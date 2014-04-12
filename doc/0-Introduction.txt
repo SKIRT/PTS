@@ -1,0 +1,32 @@
+/**
+
+\mainpage Introduction
+
+\image html SkirtLogoSmall.png
+\image latex SkirtLogoSmall.png
+
+© Astronomical Observatory, Ghent University.
+
+<B>PTS -- Python Toolkit for working with SKIRT</B>
+
+PTS consists of a set of Python modules offering functionality related to working with SKIRT, the
+Monte Carlo radiative transfer code also developed by the Astronomical Observatory at the Ghent University.
+
+This manual contains several parts:
+     - The \ref InstallationGuide describes how to install PTS on your computer.
+     - The \ref UsersGuide explains the overall philosophy behind PTS.
+     - The \ref DevelopersGuide offers guidelines on how to extend or adjust PTS.
+     - The Reference part documents every PTS class and function in detail.
+
+This manual assumes that the reader has a working knowledge of SKIRT; refer to the SKIRT manual for more information.
+
+The SKIRT web site can be found at <a href="http://www.skirt.ugent.be">www.skirt.ugent.be</a>.
+Specifically:
+ - The SKIRT documentation is available online in html format at
+   <a href="http://www.skirt.ugent.be/skirt">www.skirt.ugent.be/skirt</a>.
+ - The PTS documentation is available online in html format at
+   <a href="http://www.skirt.ugent.be/pts">www.skirt.ugent.be/pts</a>.
+ - Both can be downloaded as a PDF file from
+   <a href="http://www.skirt.ugent.be/downloads">www.skirt.ugent.be/downloads</a>.
+
+*/

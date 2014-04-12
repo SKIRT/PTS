@@ -1,0 +1,229 @@
+/**
+
+\page EagleGuide EAGLE-SKIRT guide
+
+\section EagleIntro Introduction
+
+EAGLE is a cosmological hydrodynamical simulation conducted by the VIRGO consortium. The simulation
+includes detailed recipes for star formation, gas cooling, stellar evolution, and feedback from supernovae and AGN.
+Using more than 10 billion particles, it numerically resolves thousands of galaxies in a representative cosmological
+volume that also contains groups and clusters.
+
+The EAGLE simulation output is stored in a (large) set of HDF5 data files on the Cosma high-performance
+computer in Durham, where the simulation was performed. The output is organized in \em snapshots, where
+each snapshot represents the state of the universe at a particular time (or equivalently, redshift).
+
+SKIRT is a Monte Carlo dust radiative transfer code developed by the Astronomical Observatory at the Ghent University.
+It is ideally suited to post-process the results of the EAGLE simulation to calculate observable properties
+(images and SEDs) from UV to submm wavelengths, properly taking into account the effects of dust.
+
+The Python toolkit for SKIRT (PTS) offers functionality related to working with SKIRT, including tools to
+import data, visualize results, and run test cases. This page provides an overview of the portion of PTS that
+is dedicated to the EAGLE-SKIRT cooperation. Functionality offered by PTS in this area includes:
+  - extracting relevant information from the EAGLE output in a format that can be used in SKIRT
+  - scheduling large numbers of SKIRT simulations and managing/retrieving the results
+  - visualizing the SKIRT results in meaningful ways
+
+\section EagleBasic The basics
+
+\subsection EagleBasicDirs Directory organization
+
+For an overview of the PTS directory structure at large, refer to \ref DevDirsRep.
+For information on how to use PTS command line scripts, refer to \ref UserUseDo.
+
+The source code for the EAGLE-dedicated classes and functions is grouped into the \c eagle directory. This
+code can freely use the functionality offered by the classes and functions in the \c pts directory.
+
+The EAGLE-dedicated command-line scripts share the \c do directory with the other PTS command-line scripts,
+but their file names start with the \c "eagle_" prefix. The do.__main__ package in the \c do directory implements
+a special trick to avoid the need for typing this prefix on the command line. For example, to run a script
+called "eagle_run.py" you can simply type "pts run", as long as there are no name clashes with other scripts.
+
+\subsection EagleBasicPins The underpinnings
+
+The eagle.config package defines configuration settings for the EAGLE-SKIRT tools, including user name, host name
+and relevant directory paths. All other packages import these centralized configuration settings.
+
+To help manage literally thousands of SKIRT simulations and their results, the EAGLE-SKIRT tools rely
+on a simple SQL database implemented with SQLite (from within Python). Each record in the database represents
+a single SKIRT simulation and holds information on the current status of the simulation, the EAGLE data fed to
+the simulation, and some basic characteristics of the galaxy being simulated. Refer to the eagle.database package
+for a description of the fields maintained for each record in this SKIRT-runs database.
+
+The eagle.database.Database class offers a number of important primitive operations on the SKIRT-runs database.
+Some of these functions are intended for interactive use during database maintenance operations (e.g. adding an
+extra field) and thus serve as an example rather than as a polished tool. Many other functions (e.g. selecting
+records in the database or updating the value of a field) are intented for use in production code and are invoked
+often from the other packages.
+
+Each record in the SKIRT-runs database is automatically assigned a unique integer identifier, called \em run-id.
+The run-id is used as the name of a directory containing the SKIRT in/out data for this run. These directories
+are located in the results directory configured in the the eagle.config package.
+An instance of the eagle.skirtrun.SkirtRun class manages the files related to a particular SKIRT run,
+and provides access to corresponding pts.skirtsimulation.SkirtSimulation and pts.skirtexec.SkirtExec objects.
+
+The eagle.scheduler package offers functions to schedule EAGLE-SKIRT jobs according to the specifications
+defined in the SKIRT-run database. When used on the Durham Cosma cluster, these functions create and submit
+jobs to the cluster's queueing system. The eagle.runner package offers a function to actually perform a
+SKIRT simulation on an EAGLE galaxy according to the specifications defined in a particular SKIRT-runs database record.
+This function is typically invoked as part of a queued cluster job, but it can be used on a regular computer as well.
+
+\section EagleFlow EAGLE-SKIRT workflow
+
+\subsection EagleFlowStart Getting started
+
+Setting up the EAGLE-SKIRT workflow for the first time on a new computer involves:
+  - editing the \em config.py source file in the \c eagle directory to include the path definitions
+    and other settings appropriate for the platform (see eagle.config);
+  - creating the SKIRT-runs database from an interactive Python session by invoking the
+    eagle.database.Database.createtable() function:
+
+\verbatim
+import eagle.database
+db = eagle.database.Database()
+db.createtable()
+db.close()
+\endverbatim
+
+When requirements and functionalities evolve, it is possible to add extra fields to the database records
+throught the eagle.database.Database.addfield() function, or perform other database maintenance tasks by executing
+"raw" SQL statements through the eagle.database.Database.execute() function.
+See <a href="http://www.sqlite.org/lang.html">www.sqlite.org</a> for information on the SQL dialect supported by
+the SQLite library version 3.7.3.
+
+Before making these kind of changes
+to the database, always make a backup through the eagle.database.backup() function.
+
+\subsection EagleFlowSki SKIRT parameter files
+
+You need to provide one or more ski files (SKIRT parameter files) in the directory specified in eagle.config
+to serve as a template for controlling the actual SKIRT simulations. Attributes that vary with the
+galaxy being simulated will be automatically replaced in the ski file before the simulation is started.
+These include for example the input filenames for star and gas particles, the extent of the dust grid and the
+instruments, and the number of photon packages.
+
+\subsection EagleFlowPop Populating the database
+
+The first step in a typical workflow is to populate the SKIRT-runs database with records describing the SKIRT
+simulations you'd like to perform. This process involves selecting a number of galaxies (identified by halo group and
+subgroup numbers) in the EAGLE snaphot for a particular redshift, and identifying the ski file template that will
+be used to control the actual simulation.
+
+The \c eagle_insert command-line script offers a (currently quite primitive) implementation of this workflow step.
+The script expects exactly three command-line arguments specifying respectively:
+ - a label that will identify the set of inserted records in the database
+ - a minimum number of particles (for both the stars and the gas)
+ - a maximum number of particles (for both the stars and the gas)
+
+The script shows the records that will be inserted into the database, and offers the user a chance
+to accept or reject the additions. For example:
+
+\verbatim
+$ pts insert MyTest 20000 22000
+Executing: eagle_insert MyTest 20000 22000
+Opening the snaphot...
+Box size:  100.0 Mpc
+Redshift:  0.000
+Expansion: 100.0%
+Files:     256
+Star particles: 170,562,276
+Gas particles:  909,733,923
+['runid', 'username', 'label', 'runstatus', ... 'groupnr', 'subgroupnr', ..., 'skitemplate']
+(10, 'pcamps', 'MyTest', 'inserted', ..., 1110, 0, 20344, 21261, ..., 'oli')
+(11, 'pcamps', 'MyTest', 'inserted', ..., 1192, 0, 20116, 20449, ..., 'oli')
+...
+(16, 'pcamps', 'MyTest', 'inserted', ..., 1495, 0, 20363, 20591, ..., 'oli')
+--> Would you like to commit these 7 new records to the database? [y/n]: y
+New records were committed to the database
+$
+\endverbatim
+
+The label field (here set to 'MyTest') serves to identify related records so that they can be managed as a group.
+
+The \c eagle_show command-line script lists selected records in the database, using a general SQL query.
+For example the following command would list the records just inserted:
+
+\verbatim
+$ pts show "label='MyTest'"
+...
+\endverbatim
+
+The \c eagle_update command-line script similarly allows updating the value of a particular field in selected records.
+Just as with insertion of new record, the update script shows the records that will be updated, and offers the user
+a chance to accept or reject the modifications.
+For example the following command would update the value of the 'skitemplate' field for records in the 'MyTest'
+set that have not yet been scheduled for execution:
+
+\verbatim
+$ pts update "label='MyTest' and runstatus='inserted'" skitemplate panchro
+...
+\endverbatim
+
+\subsection EagleFlowSched Scheduling SKIRT simulations
+
+The \c eagle_schedule command-line script schedules jobs for selected records in the SKIRT-runs database.
+When invoked without command line arguments, the script schedules a job for each record that has a run-status
+of 'inserted' and a username equal to the current user. After the script exits, these records will have a run-status
+of 'scheduled'.
+
+Alternatively the script accepts a single command line argument specifying the run-id for a database record.
+A job will be scheduled for the specified record regardless of its original run-status, and the record's run-status
+will be updated to 'scheduled'. This is handy to reschedule jobs that did not complete successfully.
+
+If the script is executed on the Cosma cluster, it creates and submits an actual job to the queuing system to
+perform the SKIRT simulation. For example:
+
+\verbatim
+$ pts sched 11
+Executing: eagle_schedule 11
+Submitting job for run-id 11 to queue cosma5
+Job accepted for project dp004-eagle for user pcamps.
+Job <660888> is submitted to queue <cosma5>.
+pcamps@cosma-a:~$ bjobs -w
+JOBID   USER    STAT  QUEUE   FROM_HOST  EXEC_HOST   JOB_NAME     SUBMIT_TIME
+660888  pcamps  RUN   cosma5  cosma-a    m5049:...   SKIRT-run-11 Feb 15 15:01
+$
+\endverbatim
+
+For more information on the queuing system refer to
+<a href="http://icc.dur.ac.uk/index.php?content=Computing/Batch#section1.1">Job Scheduling on
+the Durham COSMA machines</a>.
+
+If the \c eagle_schedule script is executed on a regular computer, its asks the user to perform the job by hand.
+For example:
+
+\verbatim
+$ pts sched 11
+Executing: eagle_schedule 11
+Please manually execute scheduled job for run-id 11
+$ pts run 11
+Executing: eagle_run 11
+Exporting galaxy (2164,0) from 2 files...
+Welcome to SKIRT v6 (...)
+...
+$
+\endverbatim
+
+The \c eagle_run command-line script actually executes a SKIRT simulation on an EAGLE galaxy,
+according to the specifications defined in the specified SKIRT-runs database record.
+It extracts the relevant particle data from the EAGLE snapshot files, adjusts the ski file template appropriately,
+calls SKIRT to perform the radiative transfer simulation, and creates relevant visualizations in png or pdf files.
+The script is invoked from the batch jobs created by the eagle_schedule script, and it can also be run manually.
+
+The run-status of the specified record must be 'scheduled'; if not the script fails.
+The script sets the run-status to 'running' while it is running, and it finally
+updates the run-status to 'completed' or 'failed' before exiting.
+
+\subsection EagleFlowVis Visualizing the results
+
+The results of an EAGLE-SKIRT simulation are stored in a directory hierarchy as described in eagle.skirtrun.SkirtRun.
+The root path is configured in eagle.config.
+
+The \c eagle_run command-line script automatically produces some visualizations that pertain to each individual
+simulation. For example a plot for the SED produced by each instrument, or an RGB image for the total flux.
+Visualizations involving the results of multiple simulations (e.g. scaling relations) can be produced as a
+separate process by specialized scripts. These scripts can use the eagle.database.Database class to select and
+access SKIRT-run records in the target set or with the desired characteristics, and the
+eagle.skirtrun.SkirtRun and pts.skirtsimulation.SkirtSimulation classes to access SKIRT simulation results.
+
+*/

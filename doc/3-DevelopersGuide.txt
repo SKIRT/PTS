@@ -1,0 +1,79 @@
+/**
+
+\page DevelopersGuide Developer's Guide
+
+\section DevIntro Introduction
+
+This chapter offers guidelines on how to extend or adjust PTS.
+
+\section DevDirs Directory Structure
+
+The PTS source code is contained in an online repository and can be obtained as described in
+\ref InstallSource.
+
+\subsection DevDirsRep Structure of the code repository
+
+The directories in the source code repository are structured as follows (only a partial tree is shown):
+
+\verbatim
+SKIRT6 (repository)
+    PTS
+        trunk
+            doc
+            src
+                cpp
+                do
+                eagle
+                pts
+        branches
+            branch1
+                doc
+                src
+            branch2
+    SKIRT
+        trunk
+\endverbatim
+
+The top-level directory \c PTS (next to the \c SKIRT directory) contains the source code for PTS.
+
+The \c trunk directory contains the mainstream version of the code. Changes or additions to the code deemed to be
+relatively safe (in the sense that they won't break existing code) can be applied directly to the trunk.
+
+Each subdirectory of the \c branches directory represents a \em feature \em branch. A feature branch contains a distinct
+version of the code and is used to develop and test more extensive changes before they are merged back into the trunk.
+Feature branches usually have a limited life-time.
+
+The \c .pro Qt project file for the helper application described in \ref InstallCreator
+and some shell scripts reside on the same level as the \c src directory. The contents of the \c src directory itself
+is organized as follows:
+  - the \c cpp subdirectory contains the C++ code for the helper application described in \ref InstallCreator;
+  - the \c pts subdirectory contains the Python source code for the core classes and functions offered by PTS;
+  - the \c eagle subdirectory contains Python classes and functions dedicated to the EAGLE project but integrated
+    into the PTS framework;
+  - the \c do subdirectory contains a number of Python scripts that use the PTS facilities to perform concrete tasks.
+
+\subsection DevDirsLocal Structure of a local working copy
+
+A local working copy (i.e. a copy of the code used for working with PTS on someone's computer)
+mimics either the trunk or one of the feature branches. It may look as follows:
+
+\verbatim
+~/PTS
+    svn
+        doc
+        src
+            ...
+    release
+    run
+\endverbatim
+
+When working on the main development trunk, the local \c svn directory is mapped to the \c trunk directory in the
+repository. When working on a feature branch, the local \c svn directory would be mapped to
+(for example) the \c branches/branch1 directory.
+
+The extra directories on the same level as the \c svn directory contain the results of the build process for the
+helper application described in \ref InstallCreator,
+or input/output files involved in actually running PTS. This information obviously does not belong
+in the source code repository, thus these directories occur only in the local working copy, \em not in the repository.
+
+*/

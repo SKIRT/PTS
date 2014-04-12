@@ -1,0 +1,174 @@
+/**
+
+\page InstallationGuide Installation Guide
+
+\section InstallIntro Introduction
+
+This chapter describes how to install PTS on your computer.
+
+\subsection InstallReq System requirements
+
+PTS has been developed and tested on Mac OS X 10.7 (Lion) and on the Linux distribution Ubuntu 12.04 (64-bit).
+However it should be able to run on any Unix system. At this time PTS has not been tested on Microsoft Windows systems,
+however should the need arise this could probably be supported with only a small effort.
+
+\subsection InstallComp Components to install
+
+If you need to run SKIRT, through PTS or otherwise, then you obviously need to install it: see \ref InstallSkirt.
+
+To run PTS you need to install the following components:
+ - A Python distribution including the packages used by PTS: see \ref InstallPython.
+ - The PTS source code: see \ref InstallSource.
+
+If you plan to use PTS to create movies of SKIRT results, then you need to install the command line tool
+MEncoder: see \ref InstallMEncoder.
+
+To adjust or expand the PTS code, you just need a decent text editor -- preferably one with syntax highlighting
+for Python source code. If you already have the Qt Creator development environment installed, perhaps because
+you also work on the SKIRT code, then you can easily configure Qt creator to become your PTS development center.
+See \ref InstallCreator.
+
+To generate updated versions of the PTS documentation, you need to install the documentation generation tools
+also used for SKIRT. See \ref InstallDoxygen.
+
+\section InstallSkirt Installing SKIRT
+
+If you just use PTS to pre- or post-process SKIRT-related files without actually running SKIRT, you can skip this
+section. If you need to run SKIRT on your computer, through PTS or otherwise, then you obviously need to install it.
+You can get the SKIRT source code and build the executable on your computer as described in detail in the SKIRT manual.
+
+
+\section InstallPython Installing a Python distribution
+
+PTS is written in Python and it relies on various optional Python packages; see \ref InstallPythonPacks.
+To avoid having to install each of these packages separately (which is quite an undertaking), some organisations
+offer Python distributions that include a selection of pre-installed packages.
+
+PTS has been developed and tested with the academic edition of the Enthought Python Distribution (EPD) version 7.3.
+(The limited public version called "EPD free" does not include all the packages required by PTS). The academic edition
+of the full EPD fortunately is available to academic institutions at no cost. It includes a large number of scientific
+packages, and it is offered as a one-click installer for various platforms.
+
+Go to the <a href="http://www.enthought.com/products/getepd.php">Enthought download page</a>
+and click on the "ACADEMIC" button at the bottom of the page. After entering your academic email address
+you will receive a message with the download link. Download the most recent version of the installers:
+PTS was tested with \c epd-7.3-1-macosx-i386.dmg on Mac OS X and \c epd-7.3-1-rh5-x86_64.sh on Ubuntu.
+Finally run the installer on your computer following the usual procedures.
+
+\subsection InstallPythonPacks Python packages used by PTS
+
+As you can see on the <a href="http://www.enthought.com/products/epdlibraries.php">Enthought package index page</a>,
+the EPD includes a lot of pre-installed Python packages. The table below offers a list of the subset actually
+used by PTS at this time. Future version of PTS may rely on other packages, as long as they are included in the EPD.
+
+<TABLE>
+<TR><TD><B>Package</B></TD> <TD><B>Version</B></TD> <TD><B>Description</B></TD></TR>
+<TR><TD>Python</TD>         <TD>2.7.3</TD>          <TD>Python language environment</TD></TR>
+<TR><TD></TD>               <TD></TD>               <TD></TD></TR>
+<TR><TD>numpy</TD>          <TD>1.6.1</TD>          <TD>General-purpose array-processing and math</TD></TR>
+<TR><TD>scipy</TD>          <TD>0.10.1</TD>         <TD>Mathematics, science, and engineering</TD></TR>
+<TR><TD>matplotlib</TD>     <TD>1.1.0</TD>          <TD>Interactive 2D plotting</TD></TR>
+<TR><TD></TD>               <TD></TD>               <TD></TD></TR>
+<TR><TD>lxml</TD>           <TD>2.3.4</TD>          <TD>Support for XML and XSLT</TD></TR>
+<TR><TD>PIL</TD>            <TD>1.1.7</TD>          <TD>Basic image processing</TD></TR>
+<TR><TD>pyfits</TD>         <TD>3.0.6</TD>          <TD>Interface to FITS files</TD></TR>
+<TR><TD>h5py</TD>           <TD>2.0.0</TD>          <TD>Interface to HDF5 data files</TD></TR>
+<TR><TD>Reportlab</TD>      <TD>2.5</TD>            <TD>Direct PDF file generator</TD></TR>
+<TR><TD>sqlite3</TD>        <TD>2.6.0/3.7.3</TD>    <TD>Basic SQL database interface</TD></TR>
+</TABLE>
+
+\note EPD -- and consequently PTS -- is built on Python version 2.7.3, which is the most recent and probably the
+last update of Python 2. It does not use Python 3 because some of the required packages are not yet available in
+this newer and slightly incompatible version of Python.
+
+
+\section InstallSource Installing the PTS source code
+
+\subsection InstallSourceGet Getting the code from the repository
+
+You can easily get the PTS source code using shell commands in a Terminal window.
+First create a directory hierarchy that will hold the PTS source code and run-time information.
+The top-level directory can have any name (for example \c PTS) and can be located anywhere (for example in
+your home directory), but the subdirectories must be named as indicated:
+
+\verbatim
+cd
+mkdir PTS
+cd PTS
+mkdir run git
+\endverbatim
+
+Now obtain the PTS source code from the GitHub repository as follows:
+
+\verbatim
+cd ~/PTS
+git clone git@github.ugent.be:pcamps/PTS.git git
+\endverbatim
+
+To update the local copy of the source code after changes were made to the repository, use:
+
+\verbatim
+cd ~/PTS/git
+git fetch
+\endverbatim
+
+\subsection InstallSourceConf Configuring paths and aliases
+
+It is important that your Python install can automatically locate the PTS source code, so that you can import PTS
+modules regardless of the current directory. Furthermore it is handy to provide a few aliases so that you can easily
+access PTS functionality from the command line.
+
+To accomplish this, add the following lines to your login script
+(if you are using the \c bash shell, this would be a file in your home directory
+called \c .bash_profile or \c .bash_login):
+
+\verbatim
+export PYTHONPATH=~/PTS/git
+alias pts="python -m do"
+alias ipts="python -im do"
+\endverbatim
+
+The first line must be adjusted if your PTS directory is in a different place or has another name.
+
+\subsection InstallSourceRun Running PTS scripts
+
+To test your installation, run the PTS \em try script as follows:
+
+\verbatim
+$ pts try me
+Starting try...
+['/Users/pcamps/PTS/git/do/try.py', 'me']
+Finished try.
+$
+\endverbatim
+
+
+\section InstallMEncoder Installing MEncoder
+
+MEncoder is part of the MPlayer opensource video player project. It is hard to find a recent pre-built binary
+for the MEncoder command-line tool. PTS has been tested with a fairly old version that was apparently provided
+for use in ffmpeg.
+
+Locate and download the \c ffmpegXbinaries20060307.zip archive, most likely from SourceForge. (Ignore the installers
+and projects depending on these binaries; look for the binaries themselves). The archive expands into two executables
+called \c mencoder and \c mplayer. Copy the MEncoder executable into /usr/local/bin or put it elsewhere in your path.
+You don't need the MPlayer executable.
+
+
+\section InstallCreator Configuring Qt Creator for PTS
+
+If you have the Qt development environment installed, perhaps because you're also working on the SKIRT source code,
+you can use Qt Creator to edit PTS source files.
+
+To enable syntax coloring for Python source code in the Qt Creator editor, choose the "Qt Creator->Preferences..."
+menu item to open the preferences panel. On the "Text Editor -> Generic Highlighter" tab, press the
+"Download Definitions..." button. In the new dialog, locate and select the "Python" item in the long list, and press
+the "Download Selected Definitions" buttons. Close the dialog and the preferences panel.
+
+
+\section InstallDoxygen Installing the documentation generator
+
+To generate updated versions of the PTS documentation, you need to install the documentation generation tools
+also used for SKIRT. Please refer to the section in the SKIRT manual on this subject.
+
+*/
