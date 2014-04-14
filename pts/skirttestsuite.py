@@ -238,7 +238,7 @@ def equallists(list1, list2, allowedDiffs):
             diffs += 1
             if diffs > allowedDiffs: return False
             # verify that the differing items are identical up to numerics and months
-            pattern = re.compile(r"(\d{1,4}M{0,1}:{0,1}){1,3}|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec")
+            pattern = re.compile(r"(\d{1,4}-[0-9a-f]{7,7}(-dirty){0,1})|\d{1,4}|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec")
             item1 = re.sub(pattern, "*", list1[index])
             item2 = re.sub(pattern, "*", list2[index])
             if item1 != item2: return False
