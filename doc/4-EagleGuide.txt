@@ -28,7 +28,7 @@ is dedicated to the EAGLE-SKIRT cooperation. Functionality offered by PTS in thi
 
 \subsection EagleBasicDirs Directory organization
 
-For an overview of the PTS directory structure at large, refer to \ref DevDirsRep.
+For an overview of the PTS directory structure at large, refer to \ref DevDirs.
 For information on how to use PTS command line scripts, refer to \ref UserUseDo.
 
 The source code for the EAGLE-dedicated classes and functions is grouped into the \c eagle directory. This

@@ -273,6 +273,34 @@ class Timeline:
             for i in range(last,self.n):
                 self.c[i] = g.rotate(self.c[i], axispoint=point, axisdirection=direc, angle=rotation)
 
+    ## This function gradually rotates the upwards position about the axis from the viewport position
+    #  to the crosshair position. Specifically:
+    #  - for each frame within the specified time interval, the crosshair position is rotated about the
+    #    axis from the viewport position to the crosshair position over an angle linearly interpolated
+    #    between zero and the specified total rotation angle;
+    #  - for each frame after the specified time interval, the position is rotated about the axis
+    #    determined for the last frame in the interval over the total rotation angle;
+    #  - for frames before the specified time interval, the position is not affected.
+    #
+    # The function arguments are:
+    #  - interval: a time interval in the timeline, as a 2-tuple (start,end) in atu; if only one value is
+    #    specified it is taken as the start time and the end time defaults to the end of the timeline;
+    #    if the argument is missing the interval defaults to the complete timeline.
+    #  - rotation: the total rotation angle in degrees; a positive value indicates clockwise
+    #    rotation when looking from the viewport position to the crosshair position .
+    #
+    def roll(self, interval=None, rotation=90.):
+        # get the time interval as frame indices
+        first,last = self.frames_for_interval(interval)
+        # rotate the crosshair position for frames in the specified range
+        for i in range(first,last):
+            fraction = float(1+i-first)/float(last-first)
+            self.u[i] = g.rotate(self.u[i], axispoint=self.v[i], axisdirection=self.c[i]-self.v[i],
+                                 angle=fraction*rotation)
+        # rotate the crosshair position for frames beyond the specified range
+        for i in range(last,self.n):
+            self.u[i] = g.rotate(self.u[i], axispoint=self.v[i], axisdirection=self.c[i]-self.v[i], angle=rotation)
+
     ## This internal helper function returns a tuple with the first and last frame indices
     # corresponding to a time interval in the timeline, specified as a 2-tuple (start,end) in atu.
     # If only one value is specified it is taken as the start time and the end time defaults to the

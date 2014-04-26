@@ -8,13 +8,16 @@ This chapter describes how to install PTS on your computer.
 
 \subsection InstallReq System requirements
 
-PTS has been developed and tested on Mac OS X 10.7 (Lion) and on the Linux distribution Ubuntu 12.04 (64-bit).
+PTS has been developed and tested on Mac OS X 10.9 (Mavericks) and on the Linux distribution Ubuntu 14.04 (64-bit).
 However it should be able to run on any Unix system. At this time PTS has not been tested on Microsoft Windows systems,
 however should the need arise this could probably be supported with only a small effort.
 
 \subsection InstallComp Components to install
 
-If you need to run SKIRT, through PTS or otherwise, then you obviously need to install it: see \ref InstallSkirt.
+If you need to run SKIRT on your computer, through PTS or otherwise, then you obviously need to install it.
+You can get the SKIRT source code and build the executable on your computer as described in the SKIRT manual.
+If you just use PTS to pre- or post-process SKIRT-related files without actually running SKIRT, you don't
+need to install SKIRT.
 
 To run PTS you need to install the following components:
  - A Python distribution including the packages used by PTS: see \ref InstallPython.
@@ -29,13 +32,7 @@ you also work on the SKIRT code, then you can easily configure Qt creator to bec
 See \ref InstallCreator.
 
 To generate updated versions of the PTS documentation, you need to install the documentation generation tools
-also used for SKIRT. See \ref InstallDoxygen.
-
-\section InstallSkirt Installing SKIRT
-
-If you just use PTS to pre- or post-process SKIRT-related files without actually running SKIRT, you can skip this
-section. If you need to run SKIRT on your computer, through PTS or otherwise, then you obviously need to install it.
-You can get the SKIRT source code and build the executable on your computer as described in detail in the SKIRT manual.
+also used for SKIRT. Refer to the section in the SKIRT manual on this subject.
 
 
 \section InstallPython Installing a Python distribution
@@ -109,7 +106,7 @@ To update the local copy of the source code after changes were made to the repos
 
 \verbatim
 cd ~/PTS/git
-git fetch
+git pull
 \endverbatim
 
 \subsection InstallSourceConf Configuring paths and aliases
@@ -164,11 +161,5 @@ To enable syntax coloring for Python source code in the Qt Creator editor, choos
 menu item to open the preferences panel. On the "Text Editor -> Generic Highlighter" tab, press the
 "Download Definitions..." button. In the new dialog, locate and select the "Python" item in the long list, and press
 the "Download Selected Definitions" buttons. Close the dialog and the preferences panel.
-
-
-\section InstallDoxygen Installing the documentation generator
-
-To generate updated versions of the PTS documentation, you need to install the documentation generation tools
-also used for SKIRT. Please refer to the section in the SKIRT manual on this subject.
 
 */
