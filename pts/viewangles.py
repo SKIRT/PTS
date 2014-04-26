@@ -276,7 +276,7 @@ class PerspectiveInstrument:
         if v > 0.3:
             self.transf.rotateX(c/v, -b/v)
             self.transf.rotateY(v, -a)
-            k = (a*a+b*b)*U[0] - a*b*U[1] - a*c*U[2]
+            k = (b*b+c*c)*U[0] - a*b*U[1] - a*c*U[2]
             l = c*U[1] - b*U[2]
             u = np.sqrt(k*k+l*l)
             self.transf.rotateZ(l/u, -k/u)
