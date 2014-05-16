@@ -27,6 +27,6 @@ Specifically:
  - The PTS documentation is available online in html format at
    <a href="http://www.skirt.ugent.be/pts">www.skirt.ugent.be/pts</a>.
  - Both can be downloaded as a PDF file from
-   <a href="http://www.skirt.ugent.be/downloads">www.skirt.ugent.be/downloads</a>.
+   <a href="http://www.skirt.ugent.be/downloads.html">www.skirt.ugent.be/downloads</a>.
 
 */

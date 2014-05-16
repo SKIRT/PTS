@@ -30,4 +30,56 @@ In addition the \c git directory contains subdirectories holding the source and 
   - the \c do subdirectory contains a number of Python scripts that use the PTS facilities to perform concrete tasks;
   - the \c doc subdirectory contains text files with additional documentation that doesn't fit inside the source code.
 
+\section DevBuildDocs Building the documentation
+
+The PTS documentation is generated from the Python source files (and from the extra files in the \c doc directory)
+by Doxygen. For information on how to install this free application, refer to the section
+"Installing the documentation generator" in the SKIRT documentation.
+
+The \c git directory contains shell scripts for building and publishing the documentation. These scripts have been
+tested on Mac OS X only and will need to be adjusted for use on other systems. Before invoking
+the scripts for the first time, you may need to make them executable as follows:
+
+\verbatim
+cd ~/PTS/git
+chmod +rx makeHTML.sh
+chmod +rx makePDF.sh
+chmod +rx publishToWebHost.sh
+\endverbatim
+
+To build the HTML documentation, enter:
+
+\verbatim
+cd ~/PTS/git
+./makeHTML.sh
+\endverbatim
+
+The resulting HTML files are placed in the \c html directory next to (i.e. at the same level as) the \c git directory.
+As usual, the file \c index.html provides the starting point for browsing. In addition, Doxygen places a Qt help
+archive with the same contents in the \c doc directory next to the \c git directory (not to be confused with the
+\c doc directory \em inside the \c git directory).
+
+When you run the script for the first time, Doxygen creates the \c html directory and it contents from scratch.
+If you run the script again after you modified the source code (or the extra documentation files),
+Doxygen only processes the changes so it completes a lot faster.
+
+Similarly, to build the PDF documentation, enter:
+
+\verbatim
+cd ~/PTS/git
+./makePDF.sh
+\endverbatim
+
+The output PDF file is placed in the \c doc directory next to the \c git directory (not to be confused with the
+\c doc directory \em inside the \c git directory).
+
+Finally, to publish the documentation to the SKIRT web site, enter:
+
+\verbatim
+cd ~/PTS/git
+./publishToWebHost.sh
+\endverbatim
+
+The script will request the password that provides write access to the SKIRT web area.
+
 */
