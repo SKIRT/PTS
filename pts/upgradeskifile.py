@@ -48,9 +48,9 @@ def upgradeskifile(skifile):
         ski.saveto(skifile)
 
     # for debugging purposes: if there were changes, save a copy under a new name
-##    if changed:
-##        ski.saveto(skifile[:-4]+"_upgraded.ski")
-##        os.rename(skifile[:-4]+"_upgraded.ski", skifile[:-4]+"_upgraded.xml")
+#    if changed:
+#        ski.saveto(skifile[:-4]+"_upgraded.ski")
+#        os.rename(skifile[:-4]+"_upgraded.ski", skifile[:-4]+"_upgraded.xml")
 
     return changed
 
@@ -504,6 +504,64 @@ def _get_upgrade_definitions():
         </xsl:copy>
     </xsl:template>
     <xsl:template match="//PanDustSystem/@dustEmission | //PanDustSystem/@transient">
+    </xsl:template>
+    '''),
+
+    # git 42 (June 26, 2014): replace CompStellarSystem element by identical StellarSystem element
+    ('''//CompStellarSystem''',
+    '''
+    <xsl:template match="CompStellarSystem">
+        <xsl:element name="StellarSystem">
+            <xsl:apply-templates select="@*|node()"/>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # git 42 (June 26, 2014): replace SPH/AdaptiveMesh/VoronoiStellarSystem element by StellarSystem element
+    #                         with nested SPH/AdaptiveMesh/VoronoiStellarComp
+    ('''//SPHStellarSystem''',
+    '''
+    <xsl:template match="SPHStellarSystem">
+        <xsl:element name="StellarSystem">
+            <xsl:element name="components">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'StellarComp'"/>
+                </xsl:attribute>
+                <xsl:element name="SPHStellarComp">
+                    <xsl:apply-templates select="@*|node()"/>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+    ('''//AdaptiveMeshStellarSystem''',
+    '''
+    <xsl:template match="AdaptiveMeshStellarSystem">
+        <xsl:element name="StellarSystem">
+            <xsl:element name="components">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'StellarComp'"/>
+                </xsl:attribute>
+                <xsl:element name="AdaptiveMeshStellarComp">
+                    <xsl:apply-templates select="@*|node()"/>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+    ('''//VoronoiStellarSystem''',
+    '''
+    <xsl:template match="VoronoiStellarSystem">
+        <xsl:element name="StellarSystem">
+            <xsl:element name="components">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'StellarComp'"/>
+                </xsl:attribute>
+                <xsl:element name="VoronoiStellarComp">
+                    <xsl:apply-templates select="@*|node()"/>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
     </xsl:template>
     '''),
 
