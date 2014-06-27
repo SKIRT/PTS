@@ -81,10 +81,10 @@ some of the required packages are not yet available in this newer and slightly i
 
 \subsection InstallSourceGet Getting the code from the repository
 
-You can easily get the PTS source code using shell commands in a Terminal window.
-First create a directory hierarchy that will hold the PTS source code and run-time information.
-The top-level directory can have any name (for example \c PTS) and can be located anywhere (for example in
-your home directory), but the subdirectories must be named as indicated:
+To work with PTS, you need to copy the source code to your local file system. First create a directory hierarchy that
+will hold the PTS source code, binaries and run-time information. The top-level directory can have any name (for
+example \c PTS) and can be located anywhere (for example in your home directory), but the subdirectories should be
+named as indicated:
 
 \verbatim
 cd
@@ -93,19 +93,58 @@ cd PTS
 mkdir run git
 \endverbatim
 
-Now obtain the PTS source code from the GitHub repository as follows:
+\subsubsection InstallSourceGetRepos Source code repositories
+
+The most recent stable version of the PTS source code is available from the
+<a href="https://github.com/SKIRT/PTS">public PTS GitHub repository</a> at
+<a href="https://github.com">GitHub.com</a>.
+While any user can freely retrieve the code from this repository (even anonymously), only the core SKIRT team
+has write access to it.
+
+The current development version of the PTS source code is stored in a \em private GitHub repository hosted
+on the Ghent University's web servers. You can access this repository only if you have a UGent account \em and
+the core SKIRT team has specifically granted you read-only or read/write access rights to the repository.
+
+\subsubsection InstallSourceGetPublic Using the public repository
+
+If you just want to use the stable version of PTS without making any code contributions, you can simply clone
+the public repository as an anonymous user:
+
+\verbatim
+cd ~/PTS
+git clone https://github.com/SKIRT/PTS.git git
+\endverbatim
+
+If you plan to make code contributions, you should instead create an account at
+<a href="https://github.com">GitHub.com</a>,
+fork the <a href="https://github.com/SKIRT/PTS">PTS repository</a> and then clone your own fork to your computer.
+This allows you to push your modifications to your own fork and initiate a pull request when you want to contribute
+the changes to the project. Refer to the online GitHub documentation for more information about this process.
+
+\subsubsection InstallSourceGetUGent Using the private repository
+
+If you have a UGent account and the core SKIRT team has granted you access rights to the PTS repository, you need to
+follow a slightly different procedure. Before cloning the source code to your computer, sign in to
+<a href="https://github.ugent.be">the UGent GitHub</a> using your regular universal UGent password.
+Navigate to "Edit your profile" and then "SSH keys", and follow the instructions to generate (if necessary) and add
+your public SSH key to the list.
+
+Once your SSH key has been added, you can clone the PTS source code from the private repository to your computer:
 
 \verbatim
 cd ~/PTS
 git clone git@github.ugent.be:SKIRT/PTS.git git
 \endverbatim
 
-To update the local copy of the source code after changes were made to the repository, use:
+\subsubsection InstallSourceGetUpdate Updating your local copy
+
+To update your local copy of the source code after changes were made to the repository from which you cloned it, use:
 
 \verbatim
 cd ~/PTS/git
 git pull
 \endverbatim
+
 
 \subsection InstallSourceConf Configuring paths and aliases
 
