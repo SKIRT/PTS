@@ -116,18 +116,20 @@ class SkirtSimulation:
         # handle file no found
         if not os.path.exists(logpath): return "NotStarted"
 
-        # get the last line of the file (assume it is not longer than 500 characters)
+        # get the last few lines of the file (assume the relevant portion is not longer than 500 characters)
         logfile = open(logpath, 'rb')
         logfile.seek(0, os.SEEK_END)
         logfile.seek(-min(logfile.tell(),500), os.SEEK_END)
         chunk = logfile.read()
         logfile.close()
         lines = chunk.splitlines()
-        line = lines[len(lines)-1] if len(lines)>0 else ""
+        last = lines[len(lines)-1] if len(lines)>0 else ""
+        lastbutone = lines[len(lines)-2] if len(lines)>1 else ""
 
-        # handle contents of last line
-        if line.startswith(" - Finished simulation " + self._prefix, 23): return "Finished"
-        if line.startswith(" * *** Error: ", 23): return "Crashed"
+        # handle contents of the last lines
+        if last.startswith("   Available memory: ", 23): last = lastbutone
+        if last.startswith(" - Finished simulation " + self._prefix, 23): return "Finished"
+        if last.startswith(" * *** Error: ", 23): return "Crashed"
         return "Running"
 
     # -----------------------------------------------------------------
