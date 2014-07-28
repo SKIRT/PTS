@@ -565,6 +565,19 @@ def _get_upgrade_definitions():
     </xsl:template>
     '''),
 
+    # git 68: in ZubkoGraphiteGrainSizeDistribution elements, remove the attributes minSize and maxSize
+    ('''//ZubkoPAHGrainSizeDistribution/@minSize | //ZubkoPAHGrainSizeDistribution/@maxSize |
+        //ZubkoGraphiteGrainSizeDistribution/@minSize | //ZubkoGraphiteGrainSizeDistribution/@maxSize |
+        //ZubkoSilicateGrainSizeDistribution/@minSize | //ZubkoSilicateGrainSizeDistribution/@maxSize''',
+    '''
+    <xsl:template match="//ZubkoPAHGrainSizeDistribution/@minSize | //ZubkoPAHGrainSizeDistribution/@maxSize">
+    </xsl:template>
+    <xsl:template match="//ZubkoGraphiteGrainSizeDistribution/@minSize | //ZubkoGraphiteGrainSizeDistribution/@maxSize">
+    </xsl:template>
+    <xsl:template match="//ZubkoSilicateGrainSizeDistribution/@minSize | //ZubkoSilicateGrainSizeDistribution/@maxSize">
+    </xsl:template>
+    '''),
+
     # terminate the list with a placeholder to keep the syntax of all previous items the same
     ("false()", "") )
 
