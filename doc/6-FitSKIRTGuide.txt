@@ -1,0 +1,391 @@
+/**
+
+\page FitSKIRTGuide FitSKIRT PTS guide
+
+\section FitSKIRT Introduction
+
+This guide shows you how to use the FitSKIRT PTS routines  and consists of two major parts: data preparation and
+post-processing of results. The general outline of data preparation is described in the first subsection of the
+Preparation section. The following subsection describe how to use the PTS routines to accomplish this. The last
+subsection is a hands-on tutorial with data that can be downloaded here: http://www.skirt.ugent.be/downloads.html. It is
+important to notice that these preparations don't have to be done using these routines and everyone is free to choose
+his preferred data reduction tool. If it's the first time, however, it is recommended to at least double check your
+final images  with the ones obtained using the PTS routines.
+
+\section Preparation
+\subsection Outline
+
+An IMPORTANT DISCLAIMER to start with: I will start with the assumption that the data files at this point have been
+reduced (bias, dark, flat, stacked, calibration,...) and have the same pixelscale and matching astrometry. The frames
+therefore have the same Field-of-view (for some this will be partially filled with zero's) and dimension. The latter can
+be accomplished by using the IDL routine hastrom.pro or using the open-source software Montage. An example of how to
+accomplish this has been added to files used in the tutorial (see the README.txt file in the match_WCS folder).
+Astrometry can be added to most images automagically using http://nova.astrometry.net/upload, either online or by
+installing the software.
+
+An additional requirement is the ability of the user to work with the popular tool DS9. Especially setting the scales,
+plotting contours, creating and storing regions will not be explained in this tutorial but will be used at some point.
+
+The first thing to consider when preparing data is to subtract the sky-background in an appropriate way. If not,
+FitSKIRT has no way of distinguishing intensity belonging to the galaxy and background. The result will be incorrectly
+fitted data and untrustworthy models. Notice that the sky-background is not always a straight plane but sometimes higher
+order corrections are necessary to flatten the background. Additionally, together with this step, one should determine
+the full width at half-maximum (FWHM) of the point spread function (PSF) for each observations and store it. This will
+be of importance when running an actual FitSKIRT simulation.
+
+The next step is to rotate the frame so the galaxy is aligned with the horizontal axis. Strictly speaking this is not an
+absolute necessity as the position angle can be set as a free parameter in FitSKIRT. However, in order to reduce the
+parameter space it is recommended to do so, especially because this is easily done manually. In case of doubt, it is
+still possible to allow a small range of position angles in the simulation.
+
+After rotating, it useful to crop the frame to an appropriate size and make sure the center of the galaxy matches the
+center of the frame. Determining the appropriate size can be done "by eye" or by looking at the contour of the value
+which is at least 2 times above the deviation in the background. The galaxy center can usually be found by looking at
+the pixel with the highest value. When only optical data is available, this can become harder as the true center might
+be hidden behind a dust lane. Especially in these cases in is recommended to allow FitSKIRT to adjust the center of the
+image. However, try to provide an accurate guess so the boundaries on the central position are not exceedingly big. If
+the frames are large (yes, I've intentionally kept this vague as this is hard to say in general what spatial resolution
+is needed and depends on the goal of the project), it might be worth rebinning the frames to a smaller size as this
+increases the speed of fitting procedure.
+
+The next step consists of masking all the foreground stars and replacing the values by 0.0. Pixels with this value are
+not taken into account by FitSKIRT and the mask is copied to the model images. As an important final step, it is highly
+recommended to normalise the total intensity of each of the frames. Setting the total intensity to 1, makes sure that
+FitSKIRT gives a, more or less, equal weight to all frames in the data set. In case you've started from calibrated
+images, it might be important to save this factor in order to translate the luminosities determined by FitSKIRT to
+calibrated ones.
+
+\subsection Sky-subtraction
+
+The PTS routine FitSKIRT_skysub reads in a files list, a region list and a polynome order. The files list, for example
+"files.dat", can be made using the following command in the directory containing the data set.
+
+\verbatim
+ls -1 *.fits | cut -d"." -f1 > files.dat
+\endverbatim
+
+Notice that the ".fits" extensions is removed from the file. This allows us to use the same file list for all routines,
+as long as they are used in the correct order. The region list should be created in DS9 using "box" as region and saved
+as a "image" or "soatng" file. The region should be placed in such a way that the don't include fore- or background
+objects or go into the boundary in ANY of the bands. Make sure to loop over all images to avoid misstakes at this stage.
+The order of the polynome depends on the problem itself but in most cases a second order should be sufficient to get an
+accurate constraint. As an optional parameter, True or False can be added to the arguments depending on the need to see
+a plot of the resulting background fit. An example of this routine and what output to expect can be seen in the section
+NGC4013.
+
+\subsection PSF-determination
+
+The PTS routine FitSKIRT_psf reads in the standard file list (after the FitSKIRT_skysub routine) and a region list. This
+region list is created using DS9 using "circle" regions containing stars used to determine the FWHM in each band. Again,
+it is important to make sure that these circles only contain stars which are visible EVERY band. It is possible to
+select more than one star as this will give a more accurate determination of the FWHM. As an third, optional parameter,
+True or False can be added to the arguments depending on the need to see a plot of the resulting FWHM. This will
+automatically loop over all images and all stars so be careful what you ask for. The output of the routine contains the
+average for all stars for every frame. An example of this routine and what output to expect can be seen in the section
+NGC4013.
+
+\subsection Rotate
+
+The PTS routine FitSKIRT_rotate reads in the standard file list (after the FitSKIRT_psf routine) and two coordinates
+sets. It rotates the frame so these coordinates are placed horizontal while rotating around the center of the two.
+Determining these coordinates can be done in DS9 while plotting appropriate contours (see the Outline section). The
+first coordinate set is the "edge" of the galaxy on the left side of the frame. The second coordinate set is the "edge"
+of the galaxy on the right side of the frame. A final, optional argument flips the resulting frame vertically, if set to
+True, useful in the case the inclination would exceed 90 degrees. An example of this routine and what output to expect
+can be seen in the section NGC4013
+
+\subsection Centering
+
+The PTS routine FitSKIRT_center reads in the standard file list (after the FitSKIRT_rotate routine), one coordinate set
+and two lower bounds. These coordinates should be determined in ds9 with the first coordinate set being the estimated
+center of the galaxy. The first lower bound should be the most left pixel still included in the picture while the second
+bound should be the "lowest" pixel still included. This strange way of cropping the image ensures that the determined
+center is indeed center in the cropped image. As a final parameter, a rebinning factor can be set. This factor should be
+an integer as a (n,n) area will be rescaled to (1,1). An example of this routine and what output to expect can be seen
+in the section NGC4013.
+
+\subsection Masking
+
+The PTS routine FitSKIRT_mask reads in the standard file list (after the FitSKIRT_center routine) and a region list. The
+regions are again made in ds9 and should be either "circle" or "polygon". These regions are then masked in all the
+frames. The optional, third argument controls the mask value (however, for FitSKIRT this should be the default value
+0.0). The optional, fourth argument is a boolean used to determine the normalisation of the final frame. An example of
+this routine and what output to expect can be seen in the section NGC4013.
+
+\section NGC4013
+
+For our routines we always assume the data has matching WCS and pixelscale obtained using IDL hastrom.pro or Montage. If
+you are not sure how to do this you can download an example for this galaxy on http://www.skirt.ugent.be/downloads.html
+but don't worry the frames in this tutorial already have the same Field-of-view (for some this will be partially filled
+with zero's) and dimension. Please make sure you are running the latest version of PTS that everything works as it
+should before proceeding.
+
+Download the Tutorial_NGC4013.tar.gz file (not to be confused with Tutorial_NGC4013_COMPLETE.tar.gz file, which holds
+the final result) and untar it. After that, it is a good idea to always look at your data although, if you are using
+your own data, you will probably already have done so at this stage.
+
+\verbatim
+tar xvfz Tutorial_NGC4013.tar.gz
+cd Tutorial_NGC4013
+ds9 *.fits
+\endverbatim
+
+\subsection Sky-subtraction
+
+Looking at the images, it seems like the K-band (or V-band) is a good option to start selecting regions to determine the
+skybackground. Not only is the image quite deep, the frame dimensions is smaller compared to other bands. Therefore,
+placing the regions correctly for K-band will result in valid regions for the other bands as well. To make sure we see
+every object in the frame we set the scale close to the background value. In DS9 go to Scale>Scale Parameters and set
+the values to low: 3700 and up:3800, alternatively you can set the frame to "zscale", and then click tile "color" and
+"a" to set a clear colorscale. We will now place some regions in empty parts of the frame. Go to Region>Shape>Box and
+select some empty regions in your image. A good sampling might look something like this.
+
+\image html Sky.png
+\image latex Sky.png
+
+To save the regions go to Region>Save regions... select "image" in coordinate system and give the file an appropriate
+name like "sky.reg". As a final check load the region file in all images and loop over them to make sure you haven't
+accidentally selected a foreground/background object. Select Region>Load regions... and press apply to all frames. Then
+press the file"Frame" and "blink" to loop over all images. If you notice any bad region just select it, delete it and
+save your file again, if not, close the application. Before using the routine we have to make a files list containing
+all the fits files without the ".fits" extension. This can be done by:
+
+\verbatim
+> ls -1 *.fits | cut -d"." -f1 > files.dat
+> cat files.dat
+2mass_H
+2mass_J
+2mass_K
+K_TNG
+V_TNG
+g
+i
+r
+u
+z
+\endverbatim
+
+To run the routine just make sure you give the correct filenames as arguments. It's a good idea to plot the resulting
+fit the first time you run it and should result in a set of plots like this (just close the plot to go to the next
+frame). The routine outputs both sky_$FRAMENAME$.fits and $FRAMENAME$_sub.fits, respectively containing the estimated
+skybackground and the sky-subtracted observation.
+
+\verbatim
+$ pts fitskirt_skysub files.dat sky.reg 2 True
+\endverbatim
+
+\image html Sky2.png
+\image latex Sky2.png
+
+\subsection PSF-determination
+
+The next step will be to determine the FWHM of the PSF in every image. Open DS9 and open all _sub.fits (although the
+background doesn't really matter in the FHWM determination).
+
+\verbatim
+ds9 *_sub.fits
+\endverbatim
+
+Set an appropriate scale and colorbar for all images and blink through them like before. While scrolling through the
+images, look for stars that are present in every frame. However, make sure that it is not saturated or that is not an
+extended source in any of the frames. Although one star is enough, it doesn't hurt to determine a few so the FHWM
+averages out. Go to region>circle and select those stars with a circle big enough to encompass the entire star but ONLY
+that star. Save the region, f.e. in "stars.reg" and close the application. Now determine the FWHM by running the
+routine, the plotting of the result is optional and not recommended if a lot of stars are selected. The routine doesn't
+need a new "files.dat" as it will read in the $FRAMENAME$_sub.fits results from the previous routine. This information
+should be stored for later use with FitSKIRT. It is therefore recommended to add ">psf.dat" to save the output. In the
+case you are plotting the result, it should be similar to the images below.
+
+\verbatim
+$pts fitskirt_psf files.dat stars.reg
+Executing: fitskirt_psf files.dat stars.reg
+ 2mass_H_sub.fits has FWHM :  3.48  ( 3.65 in x-dir and  3.30 in y-dir )
+ 2mass_J_sub.fits has FWHM :  3.57  ( 3.41 in x-dir and  3.73 in y-dir )
+ 2mass_K_sub.fits has FWHM :  3.71  ( 3.56 in x-dir and  3.86 in y-dir )
+ K_TNG_sub.fits has FWHM :  1.09  ( 1.16 in x-dir and  1.02 in y-dir )
+ V_TNG_sub.fits has FWHM :  2.13  ( 2.18 in x-dir and  2.08 in y-dir )
+ g_sub.fits has FWHM :  1.58  ( 1.70 in x-dir and  1.46 in y-dir )
+ i_sub.fits has FWHM :  1.43  ( 1.56 in x-dir and  1.31 in y-dir )
+ r_sub.fits has FWHM :  1.43  ( 1.54 in x-dir and  1.32 in y-dir )
+ u_sub.fits has FWHM :  1.70  ( 1.57 in x-dir and  1.83 in y-dir )
+ z_sub.fits has FWHM :  1.44  ( 1.57 in x-dir and  1.31 in y-dir )
+\endverbatim
+
+\image html Psf.png
+\image latex Psf.png
+
+\subsection Rotate
+
+To determine the position angle it is best to take a NIR image, in case it is available and has a significant
+signal-to-noise ratio. In case you are not sure you can again open all _sub.fits files again and determine which frame
+is the best option to determine the position angle. In this case the K-band from TNG is a good option as it is quite
+deep and the data is reasonably smooth. Of course warps and other structures can complicate the determination of the
+position angle and one should always be cautious. Set the scale parameters from 0 to 100, or zscale, and the colorbar
+to "cool" so it is easier to see the contours we are going to use as a guide. Go to Analysis>Contour parameters. Set
+the levels to 5 and the smoothening to 4 if they aren't already on those values. Set the lower scale to something that
+is above the devation in the background. This will allow us to make sure that we get smooth contours but still go out
+far enough to get a decent estimate on the position angle. In this case setting the low scale and the upper scale to 50
+is a good option. Press "Generate" and "Apply" which should result in something like this:
+
+\image html Rotation.png
+\image latex Rotation.png
+
+The outer countour seems a bit to broad around the edges to determine an "outer" point so the second level contour is a
+better option. The left edge of the galaxy in this case is about (484, 881) while the right point is (1009,635). We can
+now use the routine like this.
+
+\verbatim
+$pts fitskirt_rotate files.dat 484 881 1009 635 True
+Executing: fitskirt_rotate files.dat 484 881 1009 635 True
+1500 1500
+Shifted frame to center by 4,-8
+Rotated frame over 154.893553954 degrees
+1500 1500
+Shifted frame to center by 4,-8
+Rotated frame over 154.893553954 degrees
+1500 1500
+Shifted frame to center by 4,-8
+Rotated frame over 154.893553954 degrees
+1500 1500
+Shifted frame to center by 4,-8
+Rotated frame over 154.893553954 degrees
+1500 1500
+Shifted frame to center by 4,-8
+Rotated frame over 154.893553954 degrees
+1500 1500
+Shifted frame to center by 4,-8
+Rotated frame over 154.893553954 degrees
+1500 1500
+Shifted frame to center by 4,-8
+Rotated frame over 154.893553954 degrees
+1500 1500
+Shifted frame to center by 4,-8
+Rotated frame over 154.893553954 degrees
+1500 1500
+Shifted frame to center by 4,-8
+Rotated frame over 154.893553954 degrees
+1500 1500
+Shifted frame to center by 4,-8
+Rotated frame over 154.893553954 degrees
+\endverbatim
+
+The first argument is again the same "files.dat" and it will read in the $FRAMENAME$_sub.fits. Notice that the output
+should be the same for every frame if the WCS and pixelscale we're indeed matched correctly. The "True" that was added
+to the routine call is used to flip the image vertically in order to make the brightest part of the galaxy point upward.
+This is a convention thing so the inclination is 90 degrees at most. In case you are not sure which side should be up,
+don't worry FitSKIRT can handle ranges like 88 to 92 degrees. The average of those two coordinates was now set to be the
+center of the resulting frame, which is written to to $FRAMENAME$_rot.fits. This is however probably not the exact
+center of your image, which will be determined in the next step.
+
+\subsection Centering
+
+To determine the center, the most obvious way is to look at the brightest pixel in a decent resolution NIR image. In
+this case, again the K-band TNG frame is the best choice. Open the frame in DS9 and set the scale to look for high
+values, f.e. 1500 to 2000. Notice that two bright spots are appearing in your frame. In this case the left one with a
+central peak at (1007,992) is your true center. The right one is a foreground star which will later be removed. Also be
+careful to not always take the brightest pixel as a center, especially when using optical data as the actual center
+might be hiding behind a dust lane. The next step will be to determine the best size of the image and crop it in such a
+way that are center of the galaxy is the center of the newly cropped frame. Reset the scale to some very low values,
+f.e. 5 to 20, and determine which part of the frame should be easily thrown away without wasting valuable information
+about the galaxy. The lowest value we should still include for 612 and 920 for the x- and y-value respectively.
+
+\image html Center.png
+\image latex Center.png
+
+The routine again takes in the same "files.dat" now using the $FRAMENAME$_rot.fits files. The first two arguments are
+the center, followed by lowest x- and lowest y-value. In this case we will not rebin so no additional argument should be
+given. The output is written to $FRAMENAME$_ext.fits
+
+\verbatim
+$ pts fitskirt_center files.dat 1007 992 612 920
+Executing: fitskirt_center files.dat 1007 992 612 920
+rebinningfactor is = 1
+1402 1064
+Extracted frame from x: 612-1402 and y: 920-1064
+Extracted frame from x: 612-1402 and y: 920-1064
+Extracted frame from x: 612-1402 and y: 920-1064
+Extracted frame from x: 612-1402 and y: 920-1064
+Extracted frame from x: 612-1402 and y: 920-1064
+Extracted frame from x: 612-1402 and y: 920-1064
+Extracted frame from x: 612-1402 and y: 920-1064
+Extracted frame from x: 612-1402 and y: 920-1064
+Extracted frame from x: 612-1402 and y: 920-1064
+Extracted frame from x: 612-1402 and y: 920-1064
+\endverbatim
+
+\subsection Masking
+
+The final step consists of masking any sources in our observations which are not part of the target that needs fitting.
+The good thing about this galaxy is that there are not a lot of annoying targets in the field-of-view. The first steps
+consists of opening all the frames.
+
+\verbatim
+ds9 *_ext.fits
+\endverbatim
+
+Now loop through all the frames and have a look at which frame contains the most foreground/background objects and start
+with that image. Go to region and select either "circle" (for stars) or "polygon" (other, extended objects/saturated
+stars). Make sure the masks are large enough to cover the entire object in every band. If you feel confident about your
+number of masks, loop through all images again to check if you have missed anything and save all regions, f.e. mask.reg
+The routine again requires the same files.dat list and reads in all $FRAMENAME$_ext.fits files and writes the new masked
+and normalised frames to $FRAMENAME$_norm.fits. In case you are interested in the calibrated luminosities and your data
+was calibrated in advance, you should store the normalisation factors for each frame.
+
+\verbatim
+$pts fitskirt_mask files.dat mask.reg
+Executing: fitskirt_mask files.dat mask.reg
+The total value of the frame is  753287.0
+The total value of the frame is  457779.0
+The total value of the frame is  587964.0
+The total value of the frame is  3844050.67833
+The total value of the frame is  7.62862e+07
+The total value of the frame is  5.13909e+06
+The total value of the frame is  8.0145e+06
+The total value of the frame is  7.04923e+06
+The total value of the frame is  742388.0
+The total value of the frame is  2.5812e+06
+\endverbatim
+
+As a final check you can open all _norm.fits files and set the scale parameters to 0 - 0.0002 and apply "a" as colorbar.
+Then go to Frame>Match>scale and Frame>Match>colorbar. If your results looks like the image below you are done with
+preparations and can continue to set up FitSKIRT for the actual fitting.
+
+\image html Mask.png
+\image latex Mask.png
+
+\section Results
+
+The PTS routine fitskirt_results is a routine which automatically scans subdirectories for fitting results from a
+certain .fski files. In a first step it reads all the free parameters and creates a "*_result.dat" file for every fit.
+The second phase consists out of finding the best solution and determining the uncertainty on each parameter. The
+combined result and uncertainty are written to "*_RESULT.dat". An example for a fit with 5 runs can be seen here:
+
+\verbatim
+$ pts fitskirt_results ranges.fski
+Executing: fitskirt_results ranges.fski
+
+Found following labels:
+stellar_height
+stellar_length
+dust_height
+dust_length
+dust_mass
+sersic
+bulge_radius
+flattening
+inclination
+xoffset
+zoffset
+
+Creating following result files:
+./fit1/ranges_BESTsimulations_result.dat
+./fit2/ranges_BESTsimulations_result.dat
+./fit3/ranges_BESTsimulations_result.dat
+./fit4/ranges_BESTsimulations_result.dat
+./fit5/ranges_BESTsimulations_result.dat
+
+Combined result:
+ranges_RESULT.dat
+\endverbatim
+
+*/

@@ -13,11 +13,15 @@ PTS consists of a set of Python modules offering functionality related to workin
 Monte Carlo radiative transfer code also developed by the Astronomical Observatory at the Ghent University.
 
 This manual is structured as follows:
-    - \ref LegalInfo.
-    - The \ref InstallationGuide describes how to install PTS on your computer.
-    - The \ref UsersGuide explains the overall philosophy behind PTS.
-    - The \ref DevelopersGuide offers guidelines on how to extend or adjust PTS.
-    - The Reference part documents every PTS class and function in detail.
+  - Part 0: Introduction (this page) and \ref LegalInfo.
+  - Part I: Guides -- provides overall guidance and tutorials.
+      - The \ref InstallationGuide describes how to install PTS on your computer.
+      - The \ref UsersGuide explains the overall philosophy behind PTS.
+      - The \ref DevelopersGuide offers guidelines on how to extend or adjust PTS.
+  - Part II: Concepts -- offers extra information on selected topics.
+    - \ref EagleGuide describes a set of functions for working with data produced by the EAGLE simulation.
+    - \ref FitSKIRTGuide describes functions for pre- and postprocessing data for and from FitSKIRT.
+  - Part III: Reference -- documents every class and function.
 
 This manual assumes that the reader has a working knowledge of SKIRT; refer to the SKIRT manual for more information.
 
