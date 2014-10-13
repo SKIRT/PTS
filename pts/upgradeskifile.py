@@ -578,6 +578,27 @@ def _get_upgrade_definitions():
     </xsl:template>
     '''),
 
+    # git 101: remove ExpDiskSpiralArmsGeometry; use SpiralStructureGeometry decorator instead
+    ('''//ExpDiskSpiralArmsGeometry''',
+    '''
+    <xsl:template match="ExpDiskSpiralArmsGeometry">
+        <xsl:element name="SpiralStructureGeometry">
+            <xsl:attribute name="radius">
+                <xsl:value-of select="@radialScale"/>
+            </xsl:attribute>
+            <xsl:apply-templates select="@*[name()='arms']|@*[name()='pitch']|@*[name()='phase']|@*[name()='perturbWeight']"/>
+            <xsl:element name="geometry">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'AxGeometry'"/>
+                </xsl:attribute>
+                <xsl:element name="ExpDiskGeometry">
+                    <xsl:apply-templates select="@*[name()='radialScale']|@*[name()='axialScale']|@*[name()='radialTrunc']|@*[name()='axialTrunc']"/>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
     # terminate the list with a placeholder to keep the syntax of all previous items the same
     ("false()", "") )
 
