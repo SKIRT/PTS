@@ -33,8 +33,9 @@ fskiname = fski_path.split('.fski')[0].split('/')[len(fski_path.split('.fski')[0
 skifile =''
 labels, Units, wavelengths, matches, solutions = [], [], [], [], []
 fski = open(fski_path,'r')
+
 for line in fski:
-	if '<AdjustableSkirtSimulation' in line: skifile=line.split('"')[len(line.split('"'))-2]	
+	if '<AdjustableSkirtSimulation' in line: skifile=line.split('"')[len(line.split('"'))-2]
 	if '<ParameterRange label=' in line:
 		words = line.split()
 		for word in words:
@@ -50,10 +51,13 @@ for label in labels: print label
 
 # fetching wavelengths from skifile
 ski = open(skifile,'r')
+nstellarcomps=0
 for line in ski:
+	if '<OligoStellarComp' in line: nstellarcomps+=1;	
 	if '<OligoWavelengthGrid wavelengths' in line:
 		wavelengths = (line.split('"')[1]+",").split(" micron,")
 		wavelengths.pop()
+print "\nNumber of stellar components: "+str(nstellarcomps)
 
 # scan for best_simulation files
 for root, dirnames, filenames in os.walk('.'):
@@ -79,7 +83,7 @@ for match in matches:
 		if sol_length == 0:	sol_length = len(split_line)			
 		if sol_length != len(split_line):
 			raise Exception("Inconsistency in number of free parameters between best_simulations: " +bestsimulation)
-		if sol_length != len(wavelengths*3)+2+len(labels):
+		if sol_length != len(wavelengths*(nstellarcomps+1))+2+len(labels):
 			raise Exception("Inconsistency in number of free parameters for: " +bestsimulation)
 		if float(split_line[1+len(labels)]) < float(lowest_chi):
 			lowest_chi = split_line[1+len(labels)]
@@ -90,12 +94,10 @@ best_solution=solutions[lowest_chi_simul]
 best_solution.pop(0)
 best_chi=best_solution[len(labels)]
 best_solution.pop(len(labels))
-for wavelength in wavelengths:
-	labels.append("Lum at "+str(wavelength))
-	Units.append("")
-for wavelength in wavelengths:
-	labels.append("B2D at "+str(wavelength))
-	Units.append("")
+for i in range(0,nstellarcomps):
+	for wavelength in wavelengths:
+		labels.append("Lum"+str(i)+" at "+str(wavelength))
+		Units.append("")
 
 # creating separate solution files
 std2=[0]*len(labels)
