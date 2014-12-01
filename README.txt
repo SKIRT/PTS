@@ -21,6 +21,8 @@ If you use (portions of) this program in your work, please cite one or more of
 the following papers.
 
 SKIRT:
+ - Camps & Baes (2015, Astronomy and Computing, 9, 20): SKIRT: An advanced
+   dust radiative transfer code with a user-friendly architecture.
  - Baes et al. (2011, ApJS, 196, 22): Efficient Three-dimensional NLTE Dust
    Radiative Transfer with SKIRT.
  - Baes et al. (2003, MNRAS, 343, 1081–1094): Radiative transfer in disc
