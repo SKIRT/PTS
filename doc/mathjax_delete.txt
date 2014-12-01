@@ -1,3 +1,5 @@
+../html/mathjax/.git
+../html/mathjax/.gitignore
 ../html/mathjax/docs
 ../html/mathjax/test
 ../html/mathjax/unpacked
