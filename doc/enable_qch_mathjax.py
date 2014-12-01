@@ -29,7 +29,7 @@ for child in root:
         grandchild.append(st)
         
         st = ET.Element("file")
-        st.text = "mathjax/extensions/*.js"
+        st.text = "mathjax/extensions/HTML-CSS/*.js"
         grandchild.append(st)
         
         st = ET.Element("file")
