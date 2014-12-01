@@ -910,7 +910,7 @@ dl.section dd {
 #projectlogo img
 {
 	border: 0px none;
-	width: 9rem;
+	width: 10rem;
 	float:left;
 }
 #projectname
@@ -924,7 +924,7 @@ dl.section dd {
 {
 	font-size: 1.2rem;
 	margin: 0px;
-	padding: 2.5rem 0 0 .25rem;
+	padding: 1.95rem 0 0 1rem;
 	float:left;
 	font-style: italic;
 }
