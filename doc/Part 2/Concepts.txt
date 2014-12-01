@@ -1,0 +1,10 @@
+/**
+
+\page Concepts Concepts
+ 
+The topics below explain different features and use cases of <tt>PTS</tt> in detail. 
+
+  - \subpage EagleGuide describes a set of functions for working with data produced by the EAGLE simulation.
+  - \subpage FitSKIRTGuide describes functions for pre- and postprocessing data for and from FitSKIRT.
+
+*/

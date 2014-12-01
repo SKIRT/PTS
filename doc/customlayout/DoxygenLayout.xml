@@ -7,6 +7,7 @@
     <tab type="user" url="@ref InstallationGuide" title="Installation Guide"/>
     <tab type="user" url="@ref UsersGuide" title="User Guide"/>
     <tab type="user" url="@ref DevelopersGuide" title="Developer Guide"/>
+    <tab type="user" url="@ref Concepts" title="Concepts"/>
     <tab type="modules" visible="yes" title="" intro=""/>
     <tab type="namespaces" visible="yes" title="">
       <tab type="namespacelist" visible="yes" title="" intro=""/>
