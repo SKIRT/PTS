@@ -64,7 +64,7 @@ elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]
 then
     
   # generate html documentation in a temporary folder next to the git folder
-  doxygen doc/html_ubuntu.doxygen
+  doxygen doc/html.doxygen
     
   # Copy the 'mouse over' SKIRT logo
   cp doc/images/SkirtLogoSmall-home.png ../html/SkirtLogoSmall-home.png    
