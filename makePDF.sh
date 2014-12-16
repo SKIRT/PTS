@@ -4,7 +4,7 @@
 # Execute this script with "git" as default directory
 #
 
-# generate the latex documentation in a temporary folder next to the svn folder
+# generate the latex documentation in a temporary folder next to the git folder
 /Applications/Doxygen.app/Contents/Resources/doxygen doc/pdf.doxygen
 
 # generate the pdf file
