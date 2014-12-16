@@ -1,6 +1,9 @@
- /* The standard CSS for doxygen 1.8.4 */
-@import url(http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,200,200italic,400italic);
-@import url(http://fonts.googleapis.com/css?family=Roboto:400,300,300italic,400italic,500,500italic,700,700italic,900,900italic&subset=latin,greek-ext,greek,latin-ext);
+/* The CSS stylesheet for the SKIRT documentation
+ * Obtained from https://github.com/nafSadh/doxygen-theme-metro and further modified */
+
+/*@import url(http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,200,200italic,400italic);*/
+/*@import url(http://fonts.googleapis.com/css?family=Roboto:400,300,300italic,400italic,500,500italic,700,700italic,900,900italic&subset=latin,greek-ext,greek,latin-ext);*/
+
 body{
 	background-color: #fff;
 	margin: 0;
@@ -48,12 +51,22 @@ pre.fragment, div.line,
 .fieldtable th{
 	font-family: "Cambria", serif;
 }
-#projectname,#projectbrief,
+
+/* Original */
+/*#projectname,#projectbrief,
 h1, h2, h3 {
 	font-family: "Segoe UI Light", 'Source Sans Pro', sans-serif;
 	margin: 0em 0 .2em 0;
 	font-weight: 200;
+}*/
+
+#projectname,#projectbrief,
+h1, h2, h3 {
+	font-family: "Segoe UI Light", 'Source Sans Pro', "HelveticaNeue-UltraLight", "Helvetica Neue Light", Helvetica, Arial, "Lucida Grande", sans-serif;
+	margin: 0em 0 .2em 0;
+	font-weight: 200;
 }
+
 #projectname{color:#FF0000;font-weight:300;}
 #projectbrief{color:#B80000;}
 h1,h2,h3{color: #000;}
@@ -85,10 +98,10 @@ h2, h2.groupheader {
 	padding: 0px;
 	width: 100%;
 }
-h3.groupheader {
+h3, h3.groupheader {
 	font-weight: 200;
-	font-size: 1.2rem;
-	line-height: 1.2rem;
+	font-size: 1.3rem;
+	line-height: 1.3rem;
 	color: #000;
 }
 h1, h2, h3, h4, h5, h6 {
@@ -684,7 +697,7 @@ table.doxtable td, table.doxtable th {
 table.doxtable th {
 	background-color: #7f374f;
 	color: #FFFFFF;
-	font-size: 110%;
+	font-size: 90%;
 	padding-bottom: 4px;
 	padding-top: 5px;
 }
@@ -956,7 +969,9 @@ dl.section dd {
 }
 .caption
 {
+    font-style: italic;
 	font-weight: bold;
+    font-size: 0.8rem;
 }
 div.zoom
 {
