@@ -62,9 +62,12 @@ class SkirtExec:
     # (after processing any wildcards in the ski filenames), in arbitrary order.
     #
     def execute(self, skifiles, recursive=False, inpath="", outpath="", skirel=False,  \
-                threads=0, simulations=1, wait=True):
+                threads=0, simulations=1, wait=True, processes=1):
         # construct argument list
-        args = [self._path, "-b"]
+        if processes > 1:
+            args = ["mpirun", "-np", str(processes), self._path, "-b"]
+        else:
+            args = [self._path, "-b"]
         if simulations > 1: args += ["-s", str(simulations)]
         if threads > 0: args += ["-t", str(threads)]
         if skirel: args += ["-k"]

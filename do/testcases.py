@@ -28,6 +28,6 @@ subsuite = sys.argv[1] if len(sys.argv) > 1 else ""
 
 # perform the test (sub)suite
 suite = SkirtTestSuite(os.path.join("~/SKIRTtests", subsuite))
-suite.performtests(skirtpath="~/SKIRT/release/SKIRTmain", reportpath="~/SKIRTtests", sleepsecs=10)
+suite.performtests(reportpath="~/SKIRTtests", sleepsecs=10)
 
 # -----------------------------------------------------------------

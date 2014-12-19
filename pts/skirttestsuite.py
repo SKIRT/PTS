@@ -22,6 +22,8 @@ import time
 
 from pts.skirtsimulation import SkirtSimulation
 from pts.skirtexec import SkirtExec
+from pts.log import Log
+import subprocess
 
 # -----------------------------------------------------------------
 #  SkirtTestSuite class
@@ -84,6 +86,7 @@ class SkirtTestSuite:
     def __init__(self, suitedirpath):
         self._suitedirpath = os.path.realpath(os.path.expanduser(suitedirpath))
         self._suitename = os.path.basename(self._suitedirpath)
+        self._doMPI = True
 
     ## This function performs all tests in the test suite, verifies the results, and prepares a summary test report.
     # It accepts the following arguments:
@@ -96,16 +99,18 @@ class SkirtTestSuite:
     # The paths may be absolute, relative to a user's home folder, or relative to the current working directory.
     #
     def performtests(self, reportpath="", skirtpath="", sleepsecs="60"):
+        
         # create skirt execution context
-        skirt = SkirtExec(skirtpath)
+        skirt = SkirtExec()
 
-        # open the report file
-        reportpath = os.path.realpath(os.path.expanduser(reportpath))
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
-        reportfilepath = os.path.join(reportpath, "report_" + self._suitename + "_" + timestamp + ".txt")
-        self._report = open(reportfilepath, 'w')
-        self._writeline("Starting report for test suite " + self._suitedirpath)
-        self._writeline("Using " + skirt.version())
+        # create the logging mechanism
+        self._log = Log(reportpath)
+        
+        # show the path of the test suite and the SKIRT version number
+        self._log.info("Starting report for test suite " + self._suitedirpath)
+        self._log.info("Using " + skirt.version())
+        
+        # make an object that keeps track of the number of failed and succeeded simulations
         self._statistics = dict()
 
         # cleanup the contents of all "out" directories that reside next to a ski file
@@ -120,8 +125,22 @@ class SkirtTestSuite:
         skipattern = os.path.join(self._suitedirpath, "*.ski")
         simulations = skirt.execute(skipattern, recursive=True, inpath="in", outpath="out", skirel=True, \
                                     threads=1, simulations=4, wait=False)
+
+        try:
+            devnull = open(os.devnull)
+            subprocess.Popen("mpirun", stdout=devnull, stderr=devnull).communicate()
+        except:
+            self._log.warning("No mpirun executable: skipping MPI test cases!")
+            self._doMPI = False
+        
+        if self._doMPI:
+            mpiskirt = SkirtExec()
+            MPIpattern = os.path.join(self._suitedirpath, "*_MPI")
+            simulations = simulations + mpiskirt.execute(MPIpattern, recursive=True, inpath="in", outpath="out", skirel=True, \
+                                        threads=1, simulations=1, wait=False, processes=4)
+        
         numsimulations = len(simulations)
-        self._writeline("Number of test cases: " + str(numsimulations))
+        self._log.info("Number of test cases: " + str(numsimulations))
 
         # verify the results of each simulation, once it finishes (processed items are removed from the list)
         while True:
@@ -136,27 +155,26 @@ class SkirtTestSuite:
         skirt.wait()
 
         # write statistics and close the report file
-        self._writeline("Summary for total of: "+ str(numsimulations))
+        self._log.info("Summary for total of: "+ str(numsimulations))
         for key,value in self._statistics.iteritems():
-            self._writeline("  " + key + ": " + str(value))
-        self._writeline("Finished report for test suite " + self._suitedirpath)
-        self._report.close()
+            self._log.info("  " + key + ": " + str(value))
+        self._log.info("Finished report for test suite " + self._suitedirpath)
 
     ## This function verifies and reports on the test result of the given simulation.
     # It writes a line to the console and it updates the statistics.
     def _reportsimulation(self, simulation):
         casedirpath = os.path.dirname(simulation.outpath())
-        casename = os.path.join(casedirpath[len(self._suitedirpath)+1:], simulation.prefix() + ".ski")
+        casename = casedirpath[len(self._suitedirpath)+1:]
         status = simulation.status()
         message = ""
         if status == "Finished":
             message = self._finddifference(casedirpath)
             if message == "":
                 status = "Succeeded"
+                self._log.success("Test case " + casename + ": succeeded!")
             else:
                 status = "Failed"
-                message = " - " + message
-        self._writeline("Test case " + casename + ": " + status + message)
+                self._log.error("Test case " + casename + ": failed - " + message)
         self._statistics[status] = self._statistics.get(status,0) + 1
 
     ## This function looks for relevant differences between the contents of the output and reference directories
@@ -186,14 +204,6 @@ class SkirtTestSuite:
 
         # no relevant differences found
         return ""
-
-    ## This function outputs the specified string as a line in the report file, and prints it to the console.
-    def _writeline(self, line):
-        stampedline = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S ") + line
-        self._report.write(stampedline + "\n")
-        self._report.flush()
-        os.fsync(self._report.fileno())
-        print stampedline
 
 # -----------------------------------------------------------------
 
