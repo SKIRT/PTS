@@ -34,27 +34,29 @@ def createsimulations(dirpath):
 # -----------------------------------------------------------------
 
 ## An instance of the SkirtSimulation class represents all input and output files related to a single performed
-# SKIRT simulation. To create an instance of the class, one specifies the name of the ski file (used as prefix
-# for all output filenames) plus an input path and an output path. The current implementation only supports
+# <tt>SKIRT</tt> simulation. To create an instance of the class, one specifies the name of the \em ski file (used as 
+# prefix for all output filenames) plus an input path and an output path. The current implementation only supports
 # paths on the local file system; support for remote file systems may be added in the future.
 #
 # The methods of the class allow retrieving all kinds of high-level information about the simulation results.
 #
-# The code in this class uses ad-hoc knowledge about SKIRT's data formats and naming schemes; for example:
-#  - SKIRT's builtin output filenames are used to locate various output files.
-#  - the structure of the SKIRT parameter file (ski file) is used to determine things like the wavelengths used
+# The code in this class uses ad-hoc knowledge about <tt>SKIRT</tt>'s data formats and naming schemes; for example:
+#
+#  - <tt>SKIRT</tt>'s builtin output filenames are used to locate various output files.
+#  - the structure of the <tt>SKIRT</tt> parameter file (\em ski file) is used to determine things like the wavelengths used
 #    in an oligochromatic simulation, the names of the instruments, or input filenames.
 #  - the format of the log file is used to extract success or error messages.
 #
 # Combining this ad-hoc knowledge in a single class (as much as possible) will ease the pain of updating things
-# if and when the SKIRT output schemes change.
+# if and when the <tt>SKIRT</tt> output schemes change.
 #
 class SkirtSimulation:
 
     # -----------------------------------------------------------------
 
     ## The constructor accepts the following arguments:
-    # - prefix: the name of the ski file for which the simulation was performed (without the directory path)
+    #
+    # - prefix: the name of the \em ski file for which the simulation was performed (without the directory path)
     #   and which has been used as a prefix for all output filenames; if the prefix is empty (or missing) it is
     #   automatically derived from the files in the output directory, assuming the directory contains output from
     #   a single simulation (which means the simulation must already have been run, or at least started).
@@ -63,8 +65,12 @@ class SkirtSimulation:
     #   access to the input files is not needed, the inpath may be missing or empty.
     # - outpath: the output path of the simulation; the path may be absolute, relative to a user's home folder,
     #   or relative to the current working directory. A missing or empty outpath means the current working directory.
+    # - skifile: the full path to the \em ski file. This argument is optional, but needed for the execution of the
+    #   simulation by SkirtExec.
+    # - MPI: this flag indicates whether the simulation should be executed with MPI or not. This argument is also
+    #   optional, the default argument is false.
     #
-    def __init__(self, prefix="", inpath="", outpath=""):
+    def __init__(self, prefix="", inpath="", outpath="", skifile="", MPI=False):
         self._inpath = os.path.realpath(os.path.expanduser(inpath))
         self._outpath = os.path.realpath(os.path.expanduser(outpath))
         self._prefix = prefix
@@ -75,6 +81,8 @@ class SkirtSimulation:
             if len(logfiles) == 0: raise ValueError("No log file in path: " + self._outpath)
             if len(logfiles) > 1: raise ValueError("Multiple log files in path: " + self._outpath)
             self._prefix = logfiles[0][0:len(logfiles[0])-len("_log.txt")]
+        self._skifile = skifile
+        self._MPI = MPI
 
     ## This function returns the simulation name, used as a prefix for output filenames
     def prefix(self):
@@ -87,6 +95,14 @@ class SkirtSimulation:
     ## This function returns the absolute output path of the simulation
     def outpath(self):
         return self._outpath
+
+    ## This function returns the absolute path to the \em ski file
+    def skifile(self):
+        return self._skifile
+
+    ## This function returns whether the simulation should be performed with MPI or not
+    def MPI(self):
+        return self._MPI
 
     ## This function returns the absolute path for a simulation input file, given the file's name
     def infilepath(self, name):
