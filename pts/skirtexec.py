@@ -90,8 +90,10 @@ class SkirtExec:
         if parallel > 1: args += ["-s", str(parallel)]
 
         # Append the ski files to the list of arguments
+        numMPIsimulations = 0
         for simulation in simulations:
-            if simulation.MPI(): 
+            if simulation.MPI():
+                numMPIsimulations += 1 
                 argsMPI.append(simulation.skifile())
             else:
                 args.append(simulation.skifile())
@@ -103,8 +105,8 @@ class SkirtExec:
         else:
             self._process = subprocess.Popen(args, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
             
-        # If MPI is not installed on the system, skip multiprocessing mode 
-        if not self.executeMPI(): return
+        # If MPI is not installed on the system or there are no MPI simulations, skip multiprocessing mode 
+        if not self.executeMPI() or (numMPIsimulations == 0): return
         
         # Execute SKIRT in multiprocessing mode
         if wait:
