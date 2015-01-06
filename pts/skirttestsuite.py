@@ -175,7 +175,7 @@ class SkirtTestSuite:
         self._skirt.wait()
 
         # Write statistics about the number of successful test cases
-        self._writestatistics()
+        self._writestatistics(numsimulations)
         
         # Close the report file
         self._log.finish()
@@ -208,7 +208,7 @@ class SkirtTestSuite:
             self._reportsimulation(simulation)
 
     ## This function writes statistics about the number of successful test cases
-    def _writestatistics(self):
+    def _writestatistics(self, numsimulations):
         self._log.info("Summary for total of: "+ str(numsimulations))
         for key,value in self._statistics.iteritems():
             self._log.info("  " + key + ": " + str(value))
@@ -225,7 +225,7 @@ class SkirtTestSuite:
             message = self._finddifference(casedirpath)
             if message == "":
                 status = "Succeeded"
-                self._log.success("Test case " + casename + ": succeeded!")
+                self._log.success("Test case " + casename + ": succeeded")
             else:
                 status = "Failed"
                 self._log.error("Test case " + casename + ": failed - " + message)
