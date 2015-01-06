@@ -25,27 +25,28 @@ from pts.skirttestsuite import SkirtTestSuite
 from pts.log import Log
 
 # Create the full path to the SKIRTtests directory
-testpath = os.path.join(os.getenv("HOME"), "SKIRTtests")
+suitename = "SKIRTtests"
+testpath = os.path.join(os.getenv("HOME"), suitename)
 
 # Create a list of the subsuites to be tested
 if len(sys.argv) > 1: 
     # Get the command-line arguments specifying the test subsuites
-    suitenames = sys.argv[1:]
+    subsuitenames = sys.argv[1:]
 else:
     # Automatically obtain a list of all the subdirectories of the SKIRTtests directory
-    suitenames = [name for name in os.listdir(testpath) if os.path.isdir(os.path.join(testpath, name))]
+    subsuitenames = [name for name in os.listdir(testpath) if os.path.isdir(os.path.join(testpath, name))]
 
 # Create the logger
-log = Log(testpath)
+log = Log(testpath, suitename)
 
 # Create the test suite
 suite = SkirtTestSuite(suitedirpath=testpath, log=log)
 
 # Show which subsuites will be tested, while adding them to the suite
 log.info("Subsuites that will be tested:"),
-for suitename in suitenames:
-    log.info("  -  " + suitename)
-    suite.add(suitename, recursive=True)
+for subsuitename in subsuitenames:
+    log.info("  -  " + subsuitename)
+    suite.add(subsuitename, recursive=True)
 
 # Perform the test suite
 suite.perform(sleepsecs=10)
