@@ -16,18 +16,38 @@
 
 # -----------------------------------------------------------------
 
-# import standard modules
+# Import standard modules
 import os.path
 import sys
 
-# import the relevant PTS class
+# Import the relevant PTS class
 from pts.skirttestsuite import SkirtTestSuite
+from pts.log import Log
 
-# get the command-line argument specifying the test suite subset, if any
-subsuite = sys.argv[1] if len(sys.argv) > 1 else ""
+# Create the full path to the SKIRTtests directory
+testpath = os.path.join(os.getenv("HOME"), "SKIRTtests")
 
-# perform the test (sub)suite
-suite = SkirtTestSuite(os.path.join("~/SKIRTtests", subsuite))
-suite.performtests(skirtpath="~/SKIRT/release/SKIRTmain", reportpath="~/SKIRTtests", sleepsecs=10)
+# Create a list of the subsuites to be tested
+if len(sys.argv) > 1: 
+    # Get the command-line arguments specifying the test subsuites
+    suitenames = sys.argv[1:]
+else:
+    # Automatically obtain a list of all the subdirectories of the SKIRTtests directory
+    suitenames = [name for name in os.listdir(testpath) if os.path.isdir(os.path.join(testpath, name))]
+
+# Create the logger
+log = Log(testpath)
+
+# Create the test suite
+suite = SkirtTestSuite(suitedirpath=testpath, log=log)
+
+# Show which subsuites will be tested, while adding them to the suite
+log.info("Subsuites that will be tested:"),
+for suitename in suitenames:
+    log.info("  -  " + suitename)
+    suite.add(suitename, recursive=True)
+
+# Perform the test suite
+suite.perform(sleepsecs=10)
 
 # -----------------------------------------------------------------

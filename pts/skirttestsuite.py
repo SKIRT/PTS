@@ -15,19 +15,22 @@
 
 import datetime
 import filecmp
+import fnmatch
 import os
 import os.path
 import re
 import time
+import itertools
 
 from pts.skirtsimulation import SkirtSimulation
 from pts.skirtexec import SkirtExec
+from pts.log import Log
 
 # -----------------------------------------------------------------
 #  SkirtTestSuite class
 # -----------------------------------------------------------------
 
-## An instance of the SkirtTestSuite class represents a suite of SKIRT test cases, stored as
+## An instance of the SkirtTestSuite class represents a suite of <tt>SKIRT</tt> test cases, stored as
 # a nested structure of files and directories according to a specific layout, and provides facilities to
 # perform the tests, verify the results, and prepare a summary test report.
 #
@@ -36,7 +39,7 @@ from pts.skirtexec import SkirtExec
 # Each test case in a test suite is defined by a collection of files and directories as follows:
 #  - a directory with arbitrary name containing all test case files and directories, called the "case directory"
 #  - immediately inside the case directory there is:
-#    - exactly one ski file with an arbitrary name (with the \c .ski filename extension) specifying the simulation
+#    - exactly one \em ski file with an arbitrary name (with the \c .ski filename extension) specifying the simulation
 #      to be performed for the test case
 #    - a directory named \c in containing the input files for the simulation, if any
 #    - a directory named \c ref containing the reference files for the test, i.e. a copy of the output files
@@ -50,7 +53,7 @@ from pts.skirtexec import SkirtExec
 #    a test suite is named after this directory
 #  - each ski file directly or indirectly contained in the suite directory defines a test case that
 #    must adhere to the description above (no other ski files in the same directory, special directories
-#    next to the ski file, etc.)
+#    next to the \em ski file, etc.)
 #
 # For example, a test suite may be structured with nested sub-suites as follows (where each \c CaseN directory
 # contains a ski file plus \c ref, \c in, and \c out directories):
@@ -77,38 +80,110 @@ from pts.skirtexec import SkirtExec
 #
 class SkirtTestSuite:
 
-    ## The constructor accepts a single argument specifying the path of the suite directory containing the test suite,
-    #  including the directory name. The path may be absolute, relative to a user's home folder, or relative to the
+    ## The constructor accepts three arguments:
+    #
+    #   - suitedirpath: the path of the suite directory containing the test suite
+    #   - log: the logging mechanism, an instance of the Log class
+    #   - skirtpath: this optional argument specifies the path to the skirt executable. If none is given,
+    #     the skirt version used will be the one found in the standard system path.
+    #
+    #  Paths may be absolute, relative to a user's home folder, or relative to the
     #  current working directory.
     #
-    def __init__(self, suitedirpath):
+    def __init__(self, suitedirpath, log, skirtpath=""):
+        
+        # Get the full path to the suite directory
         self._suitedirpath = os.path.realpath(os.path.expanduser(suitedirpath))
+        
+        # Get the name of the test suite (the name of the directory)
         self._suitename = os.path.basename(self._suitedirpath)
-
-    ## This function performs all tests in the test suite, verifies the results, and prepares a summary test report.
-    # It accepts the following arguments:
-    # - reportpath: the path where the test report should be placed, \em not including the filename;
-    #   if empty or missing the current working directory is used.
-    # - skirtpath: the path to the SKIRT executable to be used; this is simply passed to the SkirtExec constructor.
-    # - sleepsecs: the time in seconds to sleep before checking for simulation completion again; the default
-    #   value is 60 seconds.
-    #
-    # The paths may be absolute, relative to a user's home folder, or relative to the current working directory.
-    #
-    def performtests(self, reportpath="", skirtpath="", sleepsecs="60"):
-        # create skirt execution context
-        skirt = SkirtExec(skirtpath)
-
-        # open the report file
-        reportpath = os.path.realpath(os.path.expanduser(reportpath))
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
-        reportfilepath = os.path.join(reportpath, "report_" + self._suitename + "_" + timestamp + ".txt")
-        self._report = open(reportfilepath, 'w')
-        self._writeline("Starting report for test suite " + self._suitedirpath)
-        self._writeline("Using " + skirt.version())
+        
+        # Create the logging mechanism
+        self._log = log
+        
+        # Create skirt execution context
+        self._skirt = SkirtExec(skirtpath, self._log)
+        
+        # By default, execute MPI test cases
+        self._doMPI = True
+        
+        # Create an empty list to contain the simulations to be executed
+        self._simulations = []
+        
+        # make an object that keeps track of the number of failed and succeeded simulations
         self._statistics = dict()
 
-        # cleanup the contents of all "out" directories that reside next to a ski file
+    ## This function adds all the subdirectories of the suite directory to the test suite.
+    #
+    def addall(self, recursive=False, pattern="*.ski", skirel=True, inpath="in", outpath="out"):
+        
+        # The variable dirlist becomes a list of 3-tuples (dirpath, dirnames, filenames) where dirnames is never used.
+        if recursive: 
+            dirlist = os.walk(self._suitedirpath)
+        else:
+            dirlist = [( self._suitedirpath, [ ],  filter(lambda fn: os.path.isfile(os.path.join(self._suitedirpath,fn)), os.listdir(self._suitedirpath)) )]
+
+        for dirpath, dirnames, filenames in dirlist:
+            for filename in fnmatch.filter(filenames, pattern):
+                fullinpath = os.path.join(dirpath, inpath)  if (skirel) else inpath
+                fulloutpath = os.path.join(dirpath, outpath) if (skirel) else outpath
+                skifilepath = os.path.join(dirpath, filename)
+                MPI = os.path.basename(os.path.dirname(dirpath)) == "MPI"
+                self._simulations.append(SkirtSimulation(filename, inpath=fullinpath, outpath=fulloutpath, skifile=skifilepath, MPI=MPI))
+
+    ## This function adds a certain subsuite to the suite to be tested. The first argument passed should correspond to the name of
+    #  one of the directories in the suite directory.
+    #
+    def add(self, subsuite, recursive=False, pattern="*.ski", skirel=True, inpath="in", outpath="out"):
+
+        subsuitepath = os.path.join(self._suitedirpath,subsuite)
+
+        # The variable dirlist becomes a list of 3-tuples (dirpath, dirnames, filenames) where dirnames is never used.
+        if recursive: 
+            dirlist = os.walk(subsuitepath)
+        else:
+            dirlist = [( subsuitepath, [ ], filter(lambda fn: os.path.isfile(os.path.join(subsuitepath,fn)), os.listdir(subsuitepath)) )]
+        
+        for dirpath, dirnames, filenames in dirlist:
+            for filename in fnmatch.filter(filenames, pattern):
+                fullinpath = os.path.join(dirpath, inpath)  if (skirel) else inpath
+                fulloutpath = os.path.join(dirpath, outpath) if (skirel) else outpath
+                skifilepath = os.path.join(dirpath, filename)
+                MPI = os.path.basename(os.path.dirname(dirpath)) == "MPI"
+                self._simulations.append(SkirtSimulation(filename, inpath=fullinpath, outpath=fulloutpath, skifile=skifilepath, MPI=MPI))
+        
+    ## This function performs all tests in the test suite, verifies the results, and prepares a summary test report.
+    # As an argument, it can take the time in seconds to sleep before checking for simulation completion again.
+    # The default value is 60 seconds.
+    #
+    def perform(self, sleepsecs="60"):
+        
+        # Clean the 'out' directories
+        self._clean()
+        
+        # Start performing the simulations
+        self._skirt.execute(self._simulations, recursive=True, inpath="in", outpath="out", skirel=True, threads=1, parallel=4, processes=4, wait=False)
+
+        # Show the number of test cases
+        numsimulations = len(self._simulations)
+        self._log.info("Number of test cases: " + str(numsimulations))
+
+        # Verify the results for each test case
+        self._verify(sleepsecs)
+        
+        # Wait for the skirt execution context to finish
+        self._skirt.wait()
+
+        # Write statistics about the number of successful test cases
+        self._writestatistics()
+        
+        # Close the report file
+        self._log.finish()
+
+    ## This function cleans up the contents of all "out" directories that reside next to a ski file
+    def _clean(self):
+        
+        # Find every directory in the suite directory that has the name "out" and subsequently delete its content
         for dirpath, dirs, files in os.walk(self._suitedirpath):
             if dirpath.endswith("/out"):
                 for skifile in filter(lambda fn: fn.endswith(".ski"), os.listdir(dirpath[:-4])):
@@ -116,47 +191,44 @@ class SkirtTestSuite:
                     for name in filter(lambda fn: fn.startswith(prefix), files):
                         os.remove(os.path.join(dirpath, name))
 
-        # start performing the simulations
-        skipattern = os.path.join(self._suitedirpath, "*.ski")
-        simulations = skirt.execute(skipattern, recursive=True, inpath="in", outpath="out", skirel=True, \
-                                    threads=1, simulations=4, wait=False)
-        numsimulations = len(simulations)
-        self._writeline("Number of test cases: " + str(numsimulations))
-
-        # verify the results of each simulation, once it finishes (processed items are removed from the list)
+    ## This function verifies the results for each test case
+    def _verify(self, sleepsecs):
+        
+        # Verify the results of each simulation, once it finishes (processed items are removed from the list)
         while True:
-            for simulation in simulations[:]:
+            for simulation in self._simulations[:]:
                 if simulation.status().endswith("shed"): # "Finished" or "Crashed"
                     self._reportsimulation(simulation)
-                    simulations.remove(simulation)
-            if len(simulations) == 0 or not skirt.isrunning(): break
+                    self._simulations.remove(simulation)
+            if len(self._simulations) == 0 or not self._skirt.isrunning(): break
             time.sleep(sleepsecs)
-        for simulation in simulations:
+            
+        # Report potentially unstarted simulations (which are still in the list of simulations and therefore not yet processed)
+        for simulation in self._simulations:
             self._reportsimulation(simulation)
-        skirt.wait()
 
-        # write statistics and close the report file
-        self._writeline("Summary for total of: "+ str(numsimulations))
+    ## This function writes statistics about the number of successful test cases
+    def _writestatistics(self):
+        self._log.info("Summary for total of: "+ str(numsimulations))
         for key,value in self._statistics.iteritems():
-            self._writeline("  " + key + ": " + str(value))
-        self._writeline("Finished report for test suite " + self._suitedirpath)
-        self._report.close()
+            self._log.info("  " + key + ": " + str(value))
+        self._log.info("Finished report for test suite " + self._suitedirpath)
 
     ## This function verifies and reports on the test result of the given simulation.
     # It writes a line to the console and it updates the statistics.
     def _reportsimulation(self, simulation):
         casedirpath = os.path.dirname(simulation.outpath())
-        casename = os.path.join(casedirpath[len(self._suitedirpath)+1:], simulation.prefix() + ".ski")
+        casename = casedirpath[len(self._suitedirpath)+1:]
         status = simulation.status()
         message = ""
         if status == "Finished":
             message = self._finddifference(casedirpath)
             if message == "":
                 status = "Succeeded"
+                self._log.success("Test case " + casename + ": succeeded!")
             else:
                 status = "Failed"
-                message = " - " + message
-        self._writeline("Test case " + casename + ": " + status + message)
+                self._log.error("Test case " + casename + ": failed - " + message)
         self._statistics[status] = self._statistics.get(status,0) + 1
 
     ## This function looks for relevant differences between the contents of the output and reference directories
@@ -164,12 +236,16 @@ class SkirtTestSuite:
     # The function returns a brief message describing the first relevant difference found, or the empty string
     # if there are no relevant differences.
     def _finddifference(self, casedirpath):
+
+        # Get the full output and reference paths
         outpath = os.path.join(casedirpath, "out")
         refpath = os.path.join(casedirpath, "ref")
+        
+        # Check for the presence of the reference directory
         if not os.path.isdir(refpath):
             return "Test case has no reference directory"
 
-        # verify list of filenames
+        # Verify list of filenames
         if len(filter(lambda fn: os.path.isdir(fn), os.listdir(outpath))) > 0:
             return "Output contains a directory"
         dircomp = filecmp.dircmp(outpath, refpath, ignore=['.DS_Store'])
@@ -178,22 +254,14 @@ class SkirtTestSuite:
         if (len(dircomp.right_only) > 0):
             return "Output misses " + str(len(dircomp.right_only)) + " file(s)"
 
-        # compare files, focusing on those that aren't trivially equal
+        # Compare files, focusing on those that aren't trivially equal
         matches, mismatches, errors = filecmp.cmpfiles(outpath, refpath, dircomp.common, shallow=False)
         for filename in mismatches + errors:
             if not equalfiles(os.path.join(outpath, filename), os.path.join(refpath, filename)):
                 return "Output file differs: " + filename
 
-        # no relevant differences found
+        # No relevant differences found
         return ""
-
-    ## This function outputs the specified string as a line in the report file, and prints it to the console.
-    def _writeline(self, line):
-        stampedline = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S ") + line
-        self._report.write(stampedline + "\n")
-        self._report.flush()
-        os.fsync(self._report.fileno())
-        print stampedline
 
 # -----------------------------------------------------------------
 
@@ -202,7 +270,8 @@ class SkirtTestSuite:
 # varies with the type of file, this function dispatches the comparison to various other functions depending on
 # the last portion of the first filename (i.e a generalized filename extension).
 def equalfiles(filepath1, filepath2):
-    # don't compare log files because it is too complicated (time & duration differences, changes to messages, ...)
+
+    # Don't compare log files because it is too complicated (time & duration differences, changes to messages, ...)
     if filepath1.endswith("_log.txt"): return True
 
     #  supported file types
@@ -226,7 +295,8 @@ def equalfitsfiles(filepath1, filepath2):
 ## This function returns True if the specified lists are equal except for possible time information in
 #  a number of items not larger than \em allowedDiffs, and False otherwise.
 def equallists(list1, list2, allowedDiffs):
-    # the lists must have the same length, which must be at least 2 (to avoid everything being read into 1 line)
+
+    # The lists must have the same length, which must be at least 2 (to avoid everything being read into 1 line)
     length = len(list1)
     if length < 2 or length != len(list2): return False
 

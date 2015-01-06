@@ -82,11 +82,22 @@ def adjustskifile(skifile, timeline):
 # Return value: the SkirtSimulation object returned by the SkirtExec.execute() function
 #
 def execskirt(skirtpath, skifile):
+    
+    # Create the skirt executable
     skirt = SkirtExec(skirtpath)
+    
+    # Create the output directory
     outpath = os.path.join(os.path.dirname(skifile), "flyby_out")
     if not os.path.exists(outpath): os.mkdir(outpath)
-    simulation = skirt.execute(skifile, inpath="", outpath=outpath, skirel=True)[0]
+    
+    # Create the simulation
+    filename = os.path.basename(skifile)
+    simulation = SkirtSimulation(filename, inpath="", outpath=outpath, skifile=skifile)
+    
+    # Execute the simulation
+    skirt.execute([simulation], inpath="", outpath=outpath, skirel=True)
     if simulation.status() != 'Finished':  raise ValueError("Simulation " + simulation.status())
+    
     return simulation
 
 ## This function combines the fits files resulting from the specified SKIRT simulation
