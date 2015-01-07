@@ -41,12 +41,8 @@ class SkirtExec:
         if not self._path.endswith("skirt"): self._path = os.path.join(self._path, "skirt")
         if self._path != "skirt": self._path = os.path.realpath(os.path.expanduser(self._path))
         
-        # Don't invoke the multiprocessing environment by default if no MPI simulations are encountered
-        self._domultiprocessing = False
-        
         # Indicate no simulations are running yet
-        self._singleprocess = None
-        self._multiprocess = None
+        self._process = None
         
         # Set the log mechanism
         self._log = log if log else Log()
@@ -78,10 +74,13 @@ class SkirtExec:
     # The function returns a list of SkirtSimulation instances corresponding to the simulations to be performed
     # (after processing any wildcards in the ski filenames), in arbitrary order.
     #
-    def execute(self, simulations, recursive=False, inpath="", outpath="", skirel=False, threads=0, parallel=1, processes=1, wait=True):
+    def execute(self, skipattern, recursive=False, inpath="", outpath="", skirel=False, threads=0, parallel=1, processes=1, wait=True):
+
+        # In multiprocessing mode, check whether MPI is installed on the system
+        if processes > 1 and not self._MPIinstalled(): return []
         
-        # Create the argument list
-        args = [self._path, "-b"]
+        # Create the argument list, starting with the SKIRT path in singleprocessing mode and "mpirun" in multiprocessing mode
+        args = ["mpirun", "-np", str(processes), self._path, "-b"] if processes > 1 else [self._path, "-b"]
         
         # Set general command line options 
         if skirel: args += ["-k"]
@@ -89,52 +88,44 @@ class SkirtExec:
         if threads > 0: args += ["-t", str(threads)]
         if inpath != "": args += ["-i", inpath]
         if outpath != "": args += ["-o", outpath]
-
-        # Create the argument list for simulations that should be run with MPI. Always execute one simulation after the other,
-        # do not use the multithreading for executing multiple simulations in parallel.
-        argsMPI = ["mpirun", "-np", str(processes)] + args + ["-s", "1"]
-
-        # Set the number of parallel simulations in singleprocessing mode
         if parallel > 1: args += ["-s", str(parallel)]
+        if isinstance(skipattern, basestring): skipattern = [skipattern]
+        args += skipattern
 
-        # Append the ski files to the list of arguments
-        for simulation in simulations:
-            if simulation.MPI():
-                # If an MPI simulation is encountered, set the "domultiprocessing" flag to True and add the ski file to "argsMPI".
-                self._domultiprocessing = True
-                argsMPI.append(simulation.skifile())
-            else:
-                # A ski file that should not be executed with MPI is added to the "args" list.
-                args.append(simulation.skifile())
-
-        # Check whether MPI is installed, setting the "domultiprocessing" back to false if it is not.
-        self._checkMPI()
-
-        # Wait for previously started simulations
+        # Execute SKIRT
         if wait:
-            self._singleprocess = None
-            self._multiprocess = None
+            self._process = None
             subprocess.call(args)
-            if self._domultiprocessing: subprocess.call(argsMPI)
         else:
-            # Execute SKIRT in singleprocessing mode
-            self._singleprocess = subprocess.Popen(args, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
-            
-            # Execute SKIRT in multiprocessing mode, if MPI is installed on the system and there are MPI simulations
-            if self._domultiprocessing: self._multiprocess = subprocess.Popen(argsMPI, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
+            self._process = subprocess.Popen(args, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
+
+        # Create a list of the simulations that are executed
+        simulations = []
+        for skifile in skipattern:
+            root, pattern = os.path.split(skifile)
+            root = os.path.realpath(root)
+            # The "dirlist" variable becomes a list of 3-tuples (dirpath, dirnames, filenames) where dirnames is never used
+            if recursive:
+                dirlist = os.walk(root)
+            else:
+                dirlist = [( root, [ ], filter(lambda fn: os.path.isfile(os.path.join(root,fn)), os.listdir(root)) )]
+            # Process "dirlist"
+            for dirpath, dirnames, filenames in dirlist:
+                for filename in fnmatch.filter(filenames, pattern):
+                    inp = os.path.join(dirpath, inpath)  if (skirel) else inpath
+                    out = os.path.join(dirpath, outpath) if (skirel) else outpath
+                    simulations.append(SkirtSimulation(filename, inpath=inp, outpath=out))
+
+        # Return the list of simulations so that their results can be followed up
+        return simulations
 
     ## This function returns True if the previously started SKIRT process is still running, False otherwise
     def isrunning(self):
-        runningsingle = self._singleprocess != None and self._singleprocess.poll() == None
-        runningmulti = self._multiprocess != None and self._multiprocess.poll() == None
-        
-        return (runningsingle or runningmulti)
+        return (self._process != None and self._process.poll() == None)
 
     ## This function waits for the previously started SKIRT process to complete, if needed
     def wait(self):
-        if self.isrunning(): 
-            self._singleprocess.wait()
-            self._multiprocess.wait()
+        if self.isrunning(): self._process.wait()
 
     ## This function returns a string with version information on the SKIRT executable represented by this
     # object. The function invokes SKIRT with an incorrect command line argument to obtain this information.
@@ -147,12 +138,14 @@ class SkirtExec:
         return "SKIRT" + output.splitlines()[0].partition("SKIRT")[2]
 
     ## This function checks whether the MPI executable is installed on the system.
-    def _checkMPI(self):
+    def _MPIinstalled(self):
+        MPI = True
         try:
             devnull = open(os.devnull)
-            subprocess.Popen("mpirun", stdout=devnull, stderr=devnull).communicate()
+            subprocess.Popen("mpieerun", stdout=devnull, stderr=devnull).communicate()
         except:
             self._log.warning("No mpirun executable: skipping MPI simulations!")
-            self._domultiprocessing = False
+            MPI = False
+        return MPI
 
 # -----------------------------------------------------------------

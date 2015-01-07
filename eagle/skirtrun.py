@@ -108,27 +108,21 @@ class SkirtRun:
         skifile = skifiles[0]
         return skifile[0:-len(".ski")]
 
-    ## This function returns a SkirtSimulation object for the <tt>SKIRT</tt> results stored in the output subdirectory
-    # for this <tt>SKIRT</tt> run. An error is raised if the run directory does not contain exactly one \em ski file.
+    ## This function returns a SkirtSimulation object for the SKIRT results stored in the output subdirectory
+    # for this SKIRT run. An error is raised if the run directory does not contain exactly one ski file.
     def simulation(self):
         return SkirtSimulation(self.prefix(), self.inpath(), self.outpath())
 
-    ## This function invokes the <tt>SKIRT</tt> executable with the \em ski file for this <tt>SKIRT</tt> run using 
-    # the appropriate input and output paths, waits until <tt>SKIRT</tt> execution completes, and returns a 
-    # SkirtSimulation object for the <tt>SKIRT</tt> results. An error is raised if the run directory does not contain 
-    # exactly one \em ski file. The \em threads argument specifies the number of parallel threads for each simulation; 
-    # if zero or missing the number of logical cores on the computer is used.
+    ## This function invokes the SKIRT executable with the ski file for this SKIRT run using the appropriate
+    # input and output paths, waits until SKIRT execution completes, and returns a SkirtSimulation object
+    # for the SKIRT results. An error is raised if the run directory does not contain exactly one ski file.
+    #
+    # The \em threads argument specifies the number of parallel threads for each simulation; if zero or missing
+    # the number of logical cores on the computer is used.
     def execute(self, threads=0):
-        
-        # Create the SKIRT execution environment
         skirt = SkirtExec(config.skirt_path)
-        
-        # Create the simulation
         skifile = os.path.join(self._runpath, self.prefix()+".ski")
-        simulation = SkirtSimulation(self.prefix(), inpath=self.inpath(), outpath=self.outpath(), skifile=skifile)
-        
-        # Execute the simulation
-        skirt.execute([simulation], inpath=self.inpath(), outpath=self.outpath(), threads=threads)
-        return simulation
+        simulations = skirt.execute(skifile, inpath=self.inpath(), outpath=self.outpath(), threads=threads)
+        return simulations[0]
 
 # -----------------------------------------------------------------
