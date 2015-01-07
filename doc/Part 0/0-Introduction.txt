@@ -12,25 +12,25 @@ The <tt>PTS</tt> manual is structured as follows:
   - The \ref InstallationGuide describes how to install PTS on your computer.
   - The \ref UsersGuide explains the overall philosophy behind PTS.
   - The \ref DevelopersGuide offers guidelines on how to extend or adjust PTS.
- 
+
 <b>Part II: Concepts -- offers extra information on selected topics.</b>
 
   - \ref EagleGuide describes a set of functions for working with data produced by the EAGLE simulation.
   - \ref FitSKIRTGuide describes functions for pre- and postprocessing data for and from FitSKIRT.
-  
+
 <b>Part III: Reference -- documents every class and function.</b>
 
-  - Select the "Namespaces" tab at the top to get a list of the different namespaces in the <tt>PTS</tt> code. 
+  - Select the "Namespaces" tab at the top to get a list of the different namespaces in the <tt>PTS</tt> code.
     The "Namespace Members" subtab gives a list of all the functions enclosed in namespaces.
-  - Select the "Classes" tab at the top to obtain a list of all the classes and structures in SKIRT. 
-    Select the "Class Index" subtab to search for classes alphabetically. 
-    The "Class Hierarchy" subtab brings you to a graphical representation of the relations between all classes. 
+  - Select the "Classes" tab at the top to obtain a list of all the classes and structures in SKIRT.
+    Select the "Class Index" subtab to search for classes alphabetically.
+    The "Class Hierarchy" subtab brings you to a graphical representation of the relations between all classes.
     The "Class Members" subtab provides a list of all member functions.
 
 \note This manual assumes that the reader has a working knowledge of <tt>SKIRT</tt>; see the <a href="http://www.skirt.ugent.be/skirt">SKIRT manual</a> for more information.
 
 The <tt>SKIRT</tt> website can be found at <a href="http://www.skirt.ugent.be">www.skirt.ugent.be</a>. This manual is also
-available in PDF format from <a href="http://www.skirt.ugent.be/downloads.html">www.skirt.ugent.be/downloads</a>.
+available in PDF format from <a href="http://www.skirt.ugent.be/downloads">www.skirt.ugent.be/downloads</a>.
 
 Access the \ref LegalInfo page for licensing information, a list of <tt>SKIRT</tt> publications and contact information.
 
