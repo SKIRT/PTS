@@ -35,12 +35,20 @@ class SkirtExec:
     # working directory.
     # The default value is the empty path, which means <tt>SKIRT</tt> is looked for in the standard system path \c $PATH.
     def __init__(self, path="", log=""):
+        
+        # Set the SKIRT path
         self._path = path
         if not self._path.endswith("skirt"): self._path = os.path.join(self._path, "skirt")
         if self._path != "skirt": self._path = os.path.realpath(os.path.expanduser(self._path))
-        self._process = None
-        self._MPIenv = None
         
+        # Don't invoke the multiprocessing environment by default if no MPI simulations are encountered
+        self._domultiprocessing = False
+        
+        # Indicate no simulations are running yet
+        self._singleprocess = None
+        self._multiprocess = None
+        
+        # Set the log mechanism
         self._log = log if log else Log()
 
     ## This function invokes the <tt>SKIRT</tt> executable with the simulations and command line options corresponding to the
@@ -90,39 +98,43 @@ class SkirtExec:
         if parallel > 1: args += ["-s", str(parallel)]
 
         # Append the ski files to the list of arguments
-        numMPIsimulations = 0
         for simulation in simulations:
             if simulation.MPI():
-                numMPIsimulations += 1 
+                # If an MPI simulation is encountered, set the "domultiprocessing" flag to True and add the ski file to "argsMPI".
+                self._domultiprocessing = True
                 argsMPI.append(simulation.skifile())
             else:
+                # A ski file that should not be executed with MPI is added to the "args" list.
                 args.append(simulation.skifile())
 
-        # Execute SKIRT in singleprocessing mode
+        # Check whether MPI is installed, setting the "domultiprocessing" back to false if it is not.
+        self._checkMPI()
+
+        # Wait for previously started simulations
         if wait:
-            self._process = None
+            self._singleprocess = None
+            self._multiprocess = None
             subprocess.call(args)
+            if self._domultiprocessing: subprocess.call(argsMPI)
         else:
-            self._process = subprocess.Popen(args, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
+            # Execute SKIRT in singleprocessing mode
+            self._singleprocess = subprocess.Popen(args, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
             
-        # If MPI is not installed on the system or there are no MPI simulations, skip multiprocessing mode 
-        if not self.executeMPI() or (numMPIsimulations == 0): return
-        
-        # Execute SKIRT in multiprocessing mode
-        if wait:
-            self._process = None
-            subprocess.call(argsMPI)
-        else:
-            self._process = subprocess.Popen(argsMPI, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
+            # Execute SKIRT in multiprocessing mode, if MPI is installed on the system and there are MPI simulations
+            if self._domultiprocessing: self._multiprocess = subprocess.Popen(argsMPI, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
 
     ## This function returns True if the previously started SKIRT process is still running, False otherwise
     def isrunning(self):
-        # return true if there is a process and it has no return code yet
-        return self._process != None and self._process.poll() == None
+        runningsingle = self._singleprocess != None and self._singleprocess.poll() == None
+        runningmulti = self._multiprocess != None and self._multiprocess.poll() == None
+        
+        return (runningsingle or runningmulti)
 
     ## This function waits for the previously started SKIRT process to complete, if needed
     def wait(self):
-        if self.isrunning(): self._process.wait()
+        if self.isrunning(): 
+            self._singleprocess.wait()
+            self._multiprocess.wait()
 
     ## This function returns a string with version information on the SKIRT executable represented by this
     # object. The function invokes SKIRT with an incorrect command line argument to obtain this information.
@@ -135,14 +147,12 @@ class SkirtExec:
         return "SKIRT" + output.splitlines()[0].partition("SKIRT")[2]
 
     ## This function checks whether the MPI executable is installed on the system.
-    def executeMPI(self):
-        MPI = True
+    def _checkMPI(self):
         try:
             devnull = open(os.devnull)
             subprocess.Popen("mpirun", stdout=devnull, stderr=devnull).communicate()
         except:
             self._log.warning("No mpirun executable: skipping MPI simulations!")
-            MPI = False
-        return MPI
+            self._domultiprocessing = False
 
 # -----------------------------------------------------------------
