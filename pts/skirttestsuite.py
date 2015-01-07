@@ -117,15 +117,19 @@ class SkirtTestSuite:
         # Check in which modes the test suite should be executed (singleprocessing and/or multiprocessing mode)
         # and create the appropriate ski file pattern(s).
         self._modes = []
+        self._modenames = []
         self._skipatterns = []
         if not subsuitename:
             self._modes = [(4,1), (1,4)]
+            self._modenames = [" in singleprocessing mode", " in multiprocessing mode"]
             self._skipatterns = [os.path.join(self._suitepath, "Singleprocessing", "*.ski"), os.path.join(self._suitepath, "Multiprocessing", "*.ski")]
         elif "Singleprocessing" in self._subsuitepath:
             self._modes = [(4,1)]
+            self._modenames = [""]
             self._skipatterns = [os.path.join(self._subsuitepath, "*.ski")]
         elif "Multiprocessing" in self._subsuitepath:
             self._modes = [(1,4)]
+            self._modenames = [""]
             self._skipatterns = [os.path.join(self._subsuitepath, "*.ski")]
     
     ## This function performs all tests in the test suite, verifies the results, and prepares a summary test report.
@@ -134,16 +138,23 @@ class SkirtTestSuite:
     #
     def perform(self, sleepsecs="60"):
         
+        # Inform the user of the fact that the test suite has been initiated
+        self._log.info("Starting report for test suite " + self._subsuitepath)
+        self._log.info("Using " + self._skirt.version())
+        
         # Clean the "out" directories
         self._clean()
 
         # Perform singleprocessing and multiprocessing mode sequentially
         numsimulations = 0
-        for mode, skipattern in zip(self._modes, self._skipatterns):
+        for mode, modename, skipattern in zip(self._modes, self._modenames, self._skipatterns):
                   
             # Start performing the simulations
             self._simulations += self._skirt.execute(skipattern, recursive=True, inpath="in", outpath="out", skirel=True, threads=1, parallel=mode[0], processes=mode[1], wait=False)
             numsimulations += len(self._simulations)
+
+            # Inform the user on the number of test cases (in this mode)
+            self._log.info("Number of test cases" + modename + ": " + str(numsimulations))
 
             # Verify the results for each test case
             self._verify(sleepsecs)
