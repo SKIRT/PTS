@@ -142,7 +142,7 @@ class SkirtExec:
         MPI = True
         try:
             devnull = open(os.devnull)
-            subprocess.Popen("mpieerun", stdout=devnull, stderr=devnull).communicate()
+            subprocess.Popen("mpirun", stdout=devnull, stderr=devnull).communicate()
         except:
             self._log.warning("No mpirun executable: skipping MPI simulations!")
             MPI = False
