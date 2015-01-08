@@ -154,7 +154,7 @@ class SkirtTestSuite:
             numsimulations += len(self._simulations)
 
             # Inform the user on the number of test cases (in this mode)
-            self._log.info("Number of test cases" + modename + ": " + str(numsimulations))
+            self._log.info("Number of test cases" + modename + ": " + str(len(self._simulations)))
 
             # Verify the results for each test case
             self._verify(sleepsecs)
