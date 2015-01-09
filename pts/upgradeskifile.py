@@ -599,6 +599,52 @@ def _get_upgrade_definitions():
     </xsl:template>
     '''),
 
+    # git 324 (Jan 9, 2015): rename geometry decorator classes to end in "Decorator"
+    ('''//OffsetGeometry | //RotateGeometry | //SpheroidalGeometry | //TriaxialGeometry |
+        //SphericalHoleGeometry | //SpiralStructureGeometry | //ClumpyGeometry | //FoamDecoGeometry''',
+    '''
+    <xsl:template match="OffsetGeometry">
+        <xsl:element name="OffsetGeometryDecorator">
+            <xsl:apply-templates select="@*|node()"/>
+        </xsl:element>
+    </xsl:template>
+    <xsl:template match="RotateGeometry">
+        <xsl:element name="RotateGeometryDecorator">
+            <xsl:apply-templates select="@*|node()"/>
+        </xsl:element>
+    </xsl:template>
+    <xsl:template match="SpheroidalGeometry">
+        <xsl:element name="SpheroidalGeometryDecorator">
+            <xsl:apply-templates select="@*|node()"/>
+        </xsl:element>
+    </xsl:template>
+    <xsl:template match="TriaxialGeometry">
+        <xsl:element name="TriaxialGeometryDecorator">
+            <xsl:apply-templates select="@*|node()"/>
+        </xsl:element>
+    </xsl:template>
+    <xsl:template match="SphericalHoleGeometry">
+        <xsl:element name="SphericalCavityGeometryDecorator">
+            <xsl:apply-templates select="@*|node()"/>
+        </xsl:element>
+    </xsl:template>
+    <xsl:template match="SpiralStructureGeometry">
+        <xsl:element name="SpiralStructureGeometryDecorator">
+            <xsl:apply-templates select="@*|node()"/>
+        </xsl:element>
+    </xsl:template>
+    <xsl:template match="ClumpyGeometry">
+        <xsl:element name="ClumpyGeometryDecorator">
+            <xsl:apply-templates select="@*|node()"/>
+        </xsl:element>
+    </xsl:template>
+    <xsl:template match="FoamDecoGeometry">
+        <xsl:element name="FoamGeometryDecorator">
+            <xsl:apply-templates select="@*|node()"/>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
     # terminate the list with a placeholder to keep the syntax of all previous items the same
     ("false()", "") )
 
