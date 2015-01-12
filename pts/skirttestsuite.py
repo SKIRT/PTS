@@ -206,8 +206,22 @@ class SkirtTestSuite:
     ## This function verifies and reports on the test result of the given simulation.
     # It writes a line to the console and it updates the statistics.
     def _reportsimulation(self, simulation):
+        
+        # Get the full path of the simulation directory and the name of this directory
         casedirpath = os.path.dirname(simulation.outpath())
-        casename = casedirpath[len(self._subsuitepath)+1:]
+        casename = os.path.basename(casedirpath)
+        
+        # Determine the most relevant string to identify this simulation within the current test suite
+        residual = casedirpath
+        while (True):
+            if casename == os.path.basename(self._subsuitepath): break
+            if (os.path.dirname(residual) == self._subsuitepath):
+                break
+            else:
+                residual = os.path.dirname(residual)
+                casename = os.path.join(os.path.basename(residual), casename)
+        
+        # Report the status of this simulation
         status = simulation.status()
         message = ""
         if status == "Finished":
@@ -266,7 +280,11 @@ def findsubdirectory(parent, name):
     # Find those subdirectories whose name correponds to the argument "name".
     # The path of the first subdirectory found with that name is returned.
     for dirpath, dirnames, filenames in dirlist:
-        if (os.path.basename(dirpath).lower() == name.lower()): return dirpath
+        for dirname in dirnames:
+            # Compare only the name of the directory "dirname" with the "name" string.
+            if (dirname.lower() == name.lower()): return os.path.join(dirpath, dirname)
+            # Compare the "dirname", prefixed with the name of its parent directory, to the "name" string. (e.g. "Instruments/Simple")
+            if (os.path.join(os.path.basename(dirpath), dirname).lower() == name.lower()): return os.path.join(dirpath, dirname)
 
     # If no match is found, show an error message and quit
     log = Log()
