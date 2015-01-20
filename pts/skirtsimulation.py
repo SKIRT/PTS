@@ -152,6 +152,17 @@ class SkirtSimulation:
         return [ self.outfilepath(name + "_total.fits") for name in self.parameters().instrumentnames() \
              if os.path.exists(self.outfilepath(name + "_total.fits")) ]
 
+    ## This function returns a list of absolute filepath tuples for all sets of "stokes*.fits" files
+    # produced by the simulation, in the same order as the corresponding instruments occur in the ski file.
+    # Each returned tuple includes the four files paths corresponding to the components of the Stokes vector,
+    # i.e. ("total.fits", "stokesQ.fits", "stokesU.fits", "stokesV.fits"), in that order.
+    def stokesfitspaths(self):
+        return [ ( self.outfilepath(name + "_total.fits"),
+                   self.outfilepath(name + "_stokesQ.fits"),
+                   self.outfilepath(name + "_stokesU.fits"),
+                   self.outfilepath(name + "_stokesV.fits") ) for name in self.parameters().instrumentnames() \
+             if os.path.exists(self.outfilepath(name + "_stokesQ.fits")) ]
+
     ## This function returns a list of absolute filepaths for all "sed.dat" files produced by the simulation,
     # in the same order as the corresponding instruments occur in the ski file.
     def seddatpaths(self):

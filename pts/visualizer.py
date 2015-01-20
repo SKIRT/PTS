@@ -22,6 +22,7 @@ from pts.skirtsimulation import SkirtSimulation
 from pts.plotgridpdf import plotgrid
 from pts.plotsed import plotsed
 from pts.rgbimage import RGBImage
+from pts.plotpolarization import plotpolarizationmap
 
 # -----------------------------------------------------------------
 #  Visualizer class
@@ -132,5 +133,14 @@ class Visualizer:
                 success = plotsed(sedpaths, outpath, labels, xlim=xlim, ylim=ylim)
                 if success and self.log: print "Created PDF grid plot file " + outpath
 
+    # This function creates a polarization map for each set of "prefix_instr_stokes*.fits" files in the output of
+    # the simulations held by this visualizer. Each plot is saved in a PDF file named "prefix_instr_stokes.pdf",
+    # placed next to the original set of files.
+    def plotpolarizationmaps(self):
+        for simulation in self.simulations:
+            for nametuple in simulation.stokesfitspaths():
+                plotname = nametuple[1].replace("Q.fits",".pdf")
+                plotpolarizationmap(nametuple, plotname)
+                if self.log: print "Created PDF polarization map" + plotname
 
 # -----------------------------------------------------------------
