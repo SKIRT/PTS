@@ -1,0 +1,81 @@
+/**
+
+\page InstallUbuntuGetPTS Getting the PTS source code
+
+To work with <tt>PTS</tt>, you need to copy the source code to your local file system. First create a directory hierarchy that
+will hold the <tt>PTS</tt> source code, binaries and run-time information. The top-level directory can have any name (for
+example \c PTS) and can be located anywhere (for example in your home directory), but the subdirectories should be
+named as indicated below. Execute the following commands in a Terminal window to create the <tt>PTS</tt> directory in your \em home folder.
+
+    cd [ENTER]
+    mkdir PTS [ENTER]
+    cd PTS [ENTER]
+    mkdir run git [ENTER]
+
+As to which version of <tt>PTS</tt> you want to use, you have two choices:
+
+- \ref InstallUbuntuPublic, which contains the most recent <b>stable version</b>. This is the most easy way to obtain <tt>PTS</tt>, and if you don't have a UGent account, the only one.
+- \ref InstallUbuntuPrivate, which contains the latest <b>development version</b> of the code. This means that this repository is ahead of the public repository and contains all the 
+  latest features. However, some of these features may still be experimental. Use only if you have a UGent account and you need a feature not yet present in the public version.
+
+\section InstallUbuntuPublic Using the public PTS code
+
+The most recent stable version of <tt>PTS</tt> is available from the <a href="https://github.com/SKIRT/PTS">public PTS GitHub repository</a>. While any user can freely retrieve the code from this
+repository (even anonymously), only the <tt>SKIRT</tt> team has write access to it. To obtain the code, simply type the following commands in a Terminal window:
+
+    cd ~/PTS [ENTER]
+    git clone https://github.com/SKIRT/PTS.git git [ENTER]
+
+This command will produce different kinds of output. To <em>update</em> your local copy of the source code after changes were made to the repository from which you cloned it, use:
+
+    cd ~/PTS/git [ENTER]
+    git pull [ENTER]
+    
+If you plan to make code contributions, you should create an account at <a href="https://github.com">GitHub.com</a>,
+fork the <a href="https://github.com/SKIRT/PTS">PTS repository</a> and then link this forked repository to your local <tt>PTS</tt> repository.
+This allows you to push your modifications to your own fork and initiate a pull request when you want to contribute
+the changes to the project. Refer to the <a href="http://www.skirt.ugent.be/skirt/_dev_git.html">Working with git</a> topic of the <tt>SKIRT</tt> documentation for more information. 
+
+\section InstallUbuntuPrivate Using the private PTS code
+
+\note Some features in the private <tt>PTS</tt> code may still be experimental!
+
+The current development version of the <tt>PTS</tt> source code is stored in a \em private GitHub repository hosted on the Ghent University's web servers.
+You can access this repository only if you have a UGent account and the <tt>SKIRT</tt> team has specifically granted you read access to the repository. 
+To obtain this access, first go to the <a href="https://github.ugent.be">github.ugent.be</a> webpage and log in with your UGent account name and password. This will create your account on the UGent github website. Then ask the <tt>SKIRT</tt> team to grant you the access to the private repository, providing them with your account name. If your request has been accepted, follow the instructions below.
+
+<i>Step-by-step instructions:</i>
+
+- Since you probably already obtained a copy of <tt>SKIRT</tt>, you probably also have a public SSH key added to your UGent GitHub account. If this is not the case, 
+  follow the instructions in <a href="http://www.skirt.ugent.be/skirt/_install_mac_get.html#InstallUbuntuGet__private">the SKIRT documentation</a>.
+
+- When your SSH key has been added, you can clone the <tt>PTS</tt> source code from the private repository to your computer:
+
+      cd ~/PTS
+      git clone git@github.ugent.be:SKIRT/PTS.git git
+
+  \note Don't forget to add the extra "git" at the end of the last line!
+
+- You will see the following output:
+
+      The authenticity of host 'github.ugent.be (XXX.XXX.XXX.XX)' can't be established. 
+      RSA key fingerprint is XX:XX:XX:XX:XX ... .
+      Are you sure you want to continue connecting (yes/no)? 
+
+- Type:
+
+      yes [ENTER]
+      
+  You will see different kinds of output.
+      
+- To update your local copy of the source code after changes were made to the repository from which you cloned it, use:
+
+      cd ~/PTS/git
+      git pull
+
+- You now have a local repository (\em local meaning 'on your own computer') which is a clone of the remote repository (\em remote meaning that it is located on the web).
+
+If you plan to make code contributions, you should fork the <a href="https://github.com/SKIRT/PTS">private PTS repository</a> and then link this forked repository to your local <tt>PTS</tt> repository. This allows you to push your modifications to your own fork and initiate a pull request when you want to contribute
+the changes to the project. Refer to the <a href="http://www.skirt.ugent.be/skirt/_dev_git.html">Working with git</a> topic of the <tt>SKIRT</tt> documentation for more information. 
+
+*/

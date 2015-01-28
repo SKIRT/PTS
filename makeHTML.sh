@@ -36,20 +36,32 @@ then
   ### Search for the most recent version of Qt first ##
   #####################################################
 
-  if [ -f $HOME/Qt5.3.2/5.3/clang_64/bin/qhelpgenerator ]
+  # VERSION 5.4.0
+
+  if [ -f $HOME/Qt5.4.0/5.4/clang_64/bin/qhelpgenerator ]
   then
 
-    # generate the Qt compressed help file
+    # Generate the Qt compressed help file
+    $HOME/Qt5.4.0/5.4/clang_64/bin/qhelpgenerator ../html/index_mathjax.qhp -o ../doc/PTS.qch
+    
+  #####################################################
+  ## Search for other supported versions of Qt       ##
+  #####################################################
+
+  # VERSION 5.3.2
+
+  elif [ -f $HOME/Qt5.3.2/5.3/clang_64/bin/qhelpgenerator ]
+  then
+
+    # Generate the Qt compressed help file
     $HOME/Qt5.3.2/5.3/clang_64/bin/qhelpgenerator ../html/index_mathjax.qhp -o ../doc/PTS.qch
-    
-  ############################################################
-  ## Search for the older Qt version that is also supported ##
-  ############################################################
-    
+      
+  # VERSION 5.2.1 
+
   elif [ -f $HOME/Qt5.2.1/5.2.1/clang_64/bin/qhelpgenerator ]
   then
     
-    # generate the Qt compressed help file
+    # Generate the Qt compressed help file
     $HOME/Qt5.2.1/5.2.1/clang_64/bin/qhelpgenerator ../html/index_mathjax.qhp -o ../doc/PTS.qch
     
   else
@@ -63,7 +75,7 @@ then
 elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]
 then
     
-  # generate html documentation in a temporary folder next to the git folder
+  # Generate html documentation in a temporary folder next to the git folder
   doxygen doc/html.doxygen
     
   # Copy the 'mouse over' SKIRT logo
@@ -87,21 +99,33 @@ then
   #####################################################
   ### Search for the most recent version of Qt first ##
   #####################################################
-    
-  if [ -f $HOME/Qt5.3.2/5.3/gcc_64/bin/qhelpgenerator ]
+
+  # VERSION 5.4.0
+
+  if [ -f $HOME/Qt5.4.0/5.4/gcc_64/bin/qhelpgenerator ]
   then
 
-    # generate the Qt compressed help file
+    # Generate the Qt compressed help file
+    $HOME/Qt5.4.0/5.4/gcc_64/bin/qhelpgenerator ../html/index_mathjax.qhp -o ../doc/PTS.qch
+
+  #####################################################
+  ## Search for other supported versions of Qt       ##
+  #####################################################
+    
+  # VERSION 5.3.2
+    
+  elif [ -f $HOME/Qt5.3.2/5.3/gcc_64/bin/qhelpgenerator ]
+  then
+
+    # Generate the Qt compressed help file
     $HOME/Qt5.3.2/5.3/gcc_64/bin/qhelpgenerator ../html/index_mathjax.qhp -o ../doc/PTS.qch
 
-  ############################################################
-  ## Search for the older Qt version that is also supported ##
-  ############################################################
+  # VERSION 5.2.1
 
   elif [ -f $HOME/Qt5.2.1/5.2.1/gcc_64/bin/qhelpgenerator ]
   then
 
-    # generate the Qt compressed help file
+    # Generate the Qt compressed help file
     $HOME/Qt5.2.1/5.2.1/gcc_64/bin/qhelpgenerator ../html/index_mathjax.qhp -o ../doc/PTS.qch
   
   else

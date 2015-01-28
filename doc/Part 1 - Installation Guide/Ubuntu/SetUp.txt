@@ -1,0 +1,35 @@
+/**
+
+\page InstallUbuntuSetUp Setting PTS up for running
+
+\section InstallUbuntuSetUp_path Configuring paths and aliases
+
+It is important that your Python install can automatically locate the <tt>PTS</tt> source code, so that you can import <tt>PTS</tt>
+modules regardless of the current directory. Furthermore it is handy to provide a few aliases so that you can easily
+access <tt>PTS</tt> functionality from the command line.
+
+To accomplish this, you will have to add some lines to your \c .bashrc script. To open the script, type the following commands in a Terminal window:
+
+    cd [ENTER]
+    gedit ~/.bashrc [ENTER]
+    
+Add the following lines:
+
+    export PYTHONPATH=~/PTS/git
+    alias pts="python -m do"
+    alias ipts="python -im do"
+
+Note that the first line must be adjusted if your <tt>PTS</tt> directory is in a different place or has another name.
+After you save the file, you must log out an log back in for the changes to have effect.
+
+\section InstallUbuntuSetUp_run Running PTS scripts
+
+To test your installation, run the <tt>PTS</tt> \em try script as follows:
+
+    $ pts try me
+    Starting try...
+    ['/Users/yourname/PTS/git/do/try.py', 'me']
+    Finished try.
+    $
+
+*/

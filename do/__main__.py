@@ -11,7 +11,7 @@
 
 ## \package do.__main__ Execute one of the scripts in this package from any current directory.
 #
-# Before proceeding, ensure that your login script includes the extra lines as described in \ref InstallSourceConf,
+# Before proceeding, ensure that your login script includes the extra lines as described in \ref InstallMacSetUp,
 # and that you have logged in again after that change.
 #
 # To execute a python script named \c example.py residing in this directory, enter "pts example" in a Terminal window.

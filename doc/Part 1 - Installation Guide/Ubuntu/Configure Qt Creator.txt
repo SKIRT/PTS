@@ -1,0 +1,10 @@
+/**
+
+\page InstallUbuntuConfigureforPTS Configuring Qt Creator
+
+If you have the Qt development environment installed, perhaps because you're also working on the <tt>SKIRT</tt> source code, you can use Qt Creator to edit <tt>PTS</tt> source files.
+To enable syntax coloring for Python source code in the Qt Creator editor, choose the "Tools->Options..." menu item to open the preferences panel. 
+On the "Text Editor -> Generic Highlighter" tab, press the "Download Definitions..." button. In the new dialog, locate and select the "Python" item in the long list, 
+and press the "Download Selected Definitions" button. Close the dialog and the preferences panel.
+
+*/

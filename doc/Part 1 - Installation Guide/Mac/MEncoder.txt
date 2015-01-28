@@ -1,0 +1,14 @@
+/**
+
+\page InstallMacMEncoder Installing MEncoder
+
+MEncoder is part of the MPlayer opensource video player project. It is hard to find a recent pre-built binary
+for the MEncoder command-line tool. <tt>PTS</tt> has been tested with a fairly old version that was apparently provided
+for use in ffmpeg.
+
+Locate and download the \c ffmpegXbinaries20060307.zip archive, most likely from SourceForge. (Ignore the installers
+and projects depending on these binaries; look for the binaries themselves). The archive expands into two executables
+called \c mencoder and \c mplayer. Copy the MEncoder executable into /usr/local/bin or put it elsewhere in your path.
+You don't need the MPlayer executable.
+
+*/

@@ -1,0 +1,44 @@
+/**
+
+\page UserPhil Philosophy behind PTS
+
+\section UserPhilRatio Rationale for Python
+
+The overall processes in which the <tt>SKIRT</tt> simulations take part are exceedingly complex. For example:
+  - input data (e.g. from other simulations) is presented in various formats;
+  - output data must be further analyzed, plotted, combined, or processed into final results;
+  - a large number of simulations (thousands) must be performed on various platforms including
+    high-performance clusters, and the results must be organized accordingly.
+
+This demanding usage pattern, and the growing number of <tt>SKIRT</tt> developers and users, also begs decent testing
+of the code after each change.
+
+The core <tt>SKIRT</tt> functionality is very performance-sensitive, and thus must be written in a fast compiled language
+such as C++. For the peripheral functions listed above however, ease of development is much more important than
+execution speed. It seems that the Python language, appropriately extended with the relevant scientific packages,
+perfectly fits the requirement list, which includes the following:
+
+  - data must be massaged, sometimes in non-trivial ways, but performance is not critical;
+  - several external libraries are needed to handle the various data formats;
+  - plotting capabilities must handle quick graphs for internal analysis up to publication-quality figures;
+  - the precise needs change frequently, often weekly or even daily.
+
+Since the existing Python packages fill most of the needs for external functionality, the choice for Python also
+limits the number of different tools and technologies used. Furthermore, offering all functions in the same environment
+maximizes the opportunity for future reuse, perhaps gluing components together in unforeseen ways.
+
+\section UserPhilFunc Intended functionality
+
+The intention is to include the following types of functionality in <tt>PTS</tt> (the list is not exhaustive):
+
+  - preprocessing data for input into SKIRT: data extractions and conversions on the results of hydrodynamical
+    simulations, analyzing such input data (statistics, plots, ...), preparing simulation parameters (ski files)
+    based on external input, ...
+  - postprocessing <tt>SKIRT</tt> output data: creating plots (SED's, dust grids, ...), calculating color indices,
+    combining frames into composite color images, putting results back into external data bases, creating movies, ...
+  - managing (large numbers of) <tt>SKIRT</tt> simulations: preparing and queuing jobs on the various available computers,
+    including local systems and remote high-performance clusters, copying and organizing the results, ...
+  - testing <tt>SKIRT</tt>: performing regression tests in the form of a (hopefully large) number of simulation test cases
+    (i.e. ski files), automatically verifying the test results with the provided reference data.
+    
+*/

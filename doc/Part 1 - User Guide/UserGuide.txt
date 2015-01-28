@@ -1,0 +1,12 @@
+/**
+
+\page UsersGuide User Guide
+
+This guide explains the overall philosophy behind <tt>PTS</tt> and provides overall usage guidelines. It consists of
+the following topics:
+
+- \subpage UserPhil
+- \subpage UserUse
+- \subpage UserCase
+
+*/

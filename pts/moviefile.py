@@ -23,7 +23,7 @@ import subprocess
 # write the movie header information to the file with the close() function.
 #
 # This class requires MEncoder to be installed as \c /usr/local/bin/mencoder (the location is hard-coded).
-# See \ref InstallMEncoder in the installation guide.
+# See \ref InstallMacMEncoder in the installation guide.
 #
 # This class can generate movies in two distinct formats:
 #  - MPEG-1 codec in \c .mpg container: this format is compatible with most movie players, including Windows
