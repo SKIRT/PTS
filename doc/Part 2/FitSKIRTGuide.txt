@@ -7,7 +7,7 @@
 This guide shows you how to use the FitSKIRT PTS routines  and consists of two major parts: data preparation and
 post-processing of results. The general outline of data preparation is described in the first subsection of the
 Preparation section. The following subsections describe how to use the PTS routines to accomplish this. The last
-subsection is a hands-on tutorial with data that can be downloaded here: http://www.skirt.ugent.be/downloads.html. It is
+subsection is a hands-on tutorial with data that can be downloaded here: http://www.skirt.ugent.be/downloads. It is
 important to notice that these preparations don't have to be done using these routines and everyone is free to choose
 his preferred data reduction tool. If it's the first time, however, it is recommended to at least double check your
 final images  with the ones obtained using the PTS routines.
@@ -114,7 +114,7 @@ this routine and what output to expect can be seen in the section NGC4013.
 \section NGC4013
 
 For our routines we always assume the data has matching WCS and pixelscale obtained using IDL hastrom.pro or Montage. If
-you are not sure how to do this you can download an example for this galaxy on http://www.skirt.ugent.be/downloads.html
+you are not sure how to do this you can download an example for this galaxy on http://www.skirt.ugent.be/downloads
 but don't worry the frames in this tutorial already have the same Field-of-view (for some this will be partially filled
 with zeros) and dimension. Please make sure you are running the latest version of PTS and that everything works as it
 should before proceeding.
