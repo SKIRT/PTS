@@ -129,7 +129,7 @@ cd tutorial_NGC4013
 ds9 *.fits
 \endverbatim
 
-\subsection Sky-subtraction
+\subsection NGC4013_Sky-subtraction Sky-subtraction
 
 Looking at the images, it seems like the K-band (or V-band) is a good option to start selecting regions to determine the
 skybackground. Not only is the image quite deep, the frame dimensions are smaller compared to other bands. Therefore,
@@ -176,7 +176,7 @@ $ pts fitskirt_skysub files.dat sky.reg 2 True
 \image html Sky2.png
 \image latex Sky2.png
 
-\subsection PSF-determination
+\subsection NGC4013_PSF-determination PSF-determination
 
 The next step will be to determine the FWHM of the PSF in every image. Open DS9 and open all _sub.fits (although the
 background doesn't really matter in the FHWM determination).
@@ -213,7 +213,7 @@ Executing: fitskirt_psf files.dat stars.reg
 \image html Psf.png
 \image latex Psf.png
 
-\subsection Rotate
+\subsection NGC4013_Rotate Rotate
 
 To determine the position angle it is best to take a NIR image, in case it is available and has a significant
 signal-to-noise ratio. In case you are not sure you can open all _sub.fits files again and determine which frame
@@ -276,7 +276,7 @@ don't worry FitSKIRT can handle ranges like 88 to 92 degrees. The average of tho
 center of the resulting frame, which is written to $FRAMENAME$_rot.fits. This is however probably not the exact
 center of your image, which will be determined in the next step.
 
-\subsection Centering
+\subsection NGC4013_Centering Centering
 
 To determine the center, the most obvious way is to look at the brightest pixel in a decent resolution NIR image. In
 this case, again the K-band TNG frame is the best choice. Open the frame in DS9 and set the scale to look for high
@@ -312,7 +312,7 @@ Extracted frame from x: 612-1402 and y: 920-1064
 Extracted frame from x: 612-1402 and y: 920-1064
 \endverbatim
 
-\subsection Masking
+\subsection NGC4013_Masking Masking
 
 The final step consists of masking any sources in our observations which are not part of the target that needs fitting.
 The good thing about this galaxy is that there are not a lot of annoying targets in the field-of-view. The first step

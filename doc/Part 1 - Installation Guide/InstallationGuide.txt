@@ -1,0 +1,27 @@
+/**
+
+\page InstallationGuide Installation Guide
+
+\section InstallRequirements System requirements
+
+<tt>PTS</tt> has been developed and tested on Mac OS X 10.9 (Mavericks), Mac OS X 10.10 (Yosemite) and on 
+the Linux distribution Ubuntu 14.04 (64-bit).
+However, <tt>PTS</tt> should be able to run on any Unix system. At this time <tt>PTS</tt> has not been tested on Microsoft Windows systems,
+however should the need arise this could probably be supported with only a small effort.
+
+If you need to run <tt>SKIRT</tt> on your computer, through <tt>PTS</tt> or otherwise, then you obviously need to install it.
+You can get the <tt>SKIRT</tt> source code and build the executable on your computer as described in the SKIRT manual.
+If you just use <tt>PTS</tt> to pre- or post-process <tt>SKIRT</tt> related files without actually running <tt>SKIRT</tt>, you don't
+need to install <tt>SKIRT</tt>.
+
+\section InstallTypes Types of installation
+
+Subsequent sections provide detailed installation instructions for two scenarios:
+
+- use and/or develop on <b>Mac OS X</b>: see \subpage InstallMac
+- use and/or develop on <b>Ubuntu Desktop</b>: see \subpage InstallUbuntu
+
+The procedure for other scenarios, e.g. another desktop Unix flavor, can probably (hopefully) be inferred
+by picking and choosing from these instructions.
+
+*/

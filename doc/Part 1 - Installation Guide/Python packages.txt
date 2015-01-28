@@ -1,0 +1,25 @@
+/**
+
+\page InstallPython_packages Required python packages
+
+The table below offers a list of the python packages that are actually used by <tt>PTS</tt> at this time. 
+Future version of <tt>PTS</tt> may rely on other packages, as long as they are included in Enthought Canopy.
+
+<TABLE>
+<TR><TD><B>Package</B></TD> <TD><B>Version</B></TD> <TD><B>Description</B></TD></TR>
+<TR><TD>Python</TD>         <TD>2.7.3</TD>          <TD>Python language environment</TD></TR>
+<TR><TD>numpy</TD>          <TD>1.6.1</TD>          <TD>General-purpose array-processing and math</TD></TR>
+<TR><TD>scipy</TD>          <TD>0.10.1</TD>         <TD>Mathematics, science, and engineering</TD></TR>
+<TR><TD>matplotlib</TD>     <TD>1.1.0</TD>          <TD>Interactive 2D plotting</TD></TR>
+<TR><TD>lxml</TD>           <TD>2.3.4</TD>          <TD>Support for XML and XSLT</TD></TR>
+<TR><TD>PIL</TD>            <TD>1.1.7</TD>          <TD>Basic image processing</TD></TR>
+<TR><TD>pyfits</TD>         <TD>3.0.6</TD>          <TD>Interface to FITS files</TD></TR>
+<TR><TD>h5py</TD>           <TD>2.0.0</TD>          <TD>Interface to HDF5 data files</TD></TR>
+<TR><TD>Reportlab</TD>      <TD>2.5</TD>            <TD>Direct PDF file generator</TD></TR>
+<TR><TD>sqlite3</TD>        <TD>2.6.0/3.7.3</TD>    <TD>Basic SQL database interface</TD></TR>
+</TABLE>
+
+\note Enthought Canopy -- and consequently <tt>PTS</tt> -- is built on Python version 2.7.6. It does not use Python 3 because
+some of the required packages are not yet available in this newer and slightly incompatible version of Python.
+
+*/

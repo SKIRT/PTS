@@ -1,0 +1,37 @@
+/**
+
+\page InstallMacSetUp Setting PTS up for running
+
+\section InstallMacSetUp_path Configuring paths and aliases
+
+It is important that your Python install can automatically locate the <tt>PTS</tt> source code, so that you can import <tt>PTS</tt>
+modules regardless of the current directory. Furthermore it is handy to provide a few aliases so that you can easily
+access <tt>PTS</tt> functionality from the command line.
+
+To accomplish this, you will have to add some lines to your \c .profile script. To open the script, type the following commands in a Terminal window:
+
+    cd [ENTER]
+    open ~/.profile [ENTER]
+    
+Add the following lines:
+
+    export PYTHONPATH=~/PTS/git
+    alias pts="python -m do"
+    alias ipts="python -im do"
+
+Note that the first line must be adjusted if your <tt>PTS</tt> directory is in a different place or has another name.
+After you save the file, you must log out an log back in for the changes to have effect.
+
+\note On Mac, the .profile script is not loaded when you also have a .bash_profile file in your home directory. In that case, the procedure described above will not work. To resolve this, you have two options: either you place the above line also in your .bash_profile file (which will still cause other commands in .profile to be ignored), or you add the following line to your .bash_profile: <tt>source ~/.profile</tt>. By doing this, when the system loads .bash_profile, the .profile is automatically loaded too.
+
+\section InstallMacSetUp_run Running PTS scripts
+
+To test your installation, run the <tt>PTS</tt> \em try script as follows:
+
+    $ pts try me
+    Starting try...
+    ['/Users/yourname/PTS/git/do/try.py', 'me']
+    Finished try.
+    $
+
+*/
