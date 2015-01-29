@@ -172,11 +172,19 @@ class SkiFile:
             parent.append(parent.makeelement("PerspectiveInstrument", attrs))
             index += 1
 
-    ## This function sets the filename attribute of the SPHStellarSystem element to the specified value.
+    ## This function sets the filename attribute of the SPHStellarComp element to the specified value.
     def setstarfile(self, filename):
-        # get the SPHStellarSystem element
-        elems = self.tree.xpath("//SPHStellarSystem")
-        if len(elems) != 1: raise ValueError("No SPHStellarSystem in ski file")
+        # get the SPHStellarComp element
+        elems = self.tree.xpath("//SPHStellarComp")
+        if len(elems) != 1: raise ValueError("No SPHStellarComp in ski file")
+        # set the attribute value
+        elems[0].set("filename", filename)
+
+    ## This function sets the filename attribute of the SPHStarburstComp element to the specified value.
+    def sethiifile(self, filename):
+        # get the SPHStarburstComp element
+        elems = self.tree.xpath("//SPHStarburstComp")
+        if len(elems) != 1: raise ValueError("No SPHStarburstComp in ski file")
         # set the attribute value
         elems[0].set("filename", filename)
 

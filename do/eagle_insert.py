@@ -22,7 +22,7 @@
 # -----------------------------------------------------------------
 
 import sys
-from eagle.galaxy_old import Snapshot, Galaxy
+from eagle.galaxy import Snapshot, Galaxy
 import eagle.database
 
 # -----------------------------------------------------------------
@@ -43,7 +43,7 @@ if count > 0: raise ValueError("This label is already in use for " + str(count) 
 
 # open the snaphot files
 print "Opening the snaphot..."
-snap = Snapshot("Ref100Mpc", redshift=0)
+snap = Snapshot("Ref12", redshift=0)
 snap.printinfo()
 
 # get the list of galaxies
@@ -55,7 +55,7 @@ galaxies.remove_radius_above(2000)   # these overly large radii probably result 
 for g in galaxies.galaxies:
     if g.numgasparticles>=minparticles and g.numstarparticles>=minparticles and \
        g.numgasparticles<=maxparticles and g.numstarparticles<=maxparticles:
-        db.insert(label, "Ref100Mpc", 0,
+        db.insert(label, "Ref12", 0,
               g.groupnumber, g.subgroupnumber, g.numstarparticles, g.numgasparticles, g.starmass(), g.gasmass(),
               "oli")
 

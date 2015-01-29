@@ -76,17 +76,23 @@ if "cosma" in hostname:
 
 # configuration for James's laptop
 elif "james" in hostname:
-    skirt_path = absolutepath("~/SKIRT/release/skirt")
+    skirt_path = absolutepath("~/SKIRTmap/debug/SKIRTmain/skirt")
+    eagledata_path = { 'Ref100Mpc': absolutepath("~/Documents/Eagle/Ref12MpcRedshift0/")}
+    database_path = absolutepath("~/PTS7/run/database")
+    backup_path = absolutepath("~/PTS7/run/backup")
+    templates_path = absolutepath("~/PTS7/run/templates")
+    results_path = absolutepath("~/PTS7/run/results")
     queue = None
 
 # -----------------------------------------------------------------
 
 # configuration for Peter's desktop at work
 elif "obiwan" in hostname:
-    skirt_path = absolutepath("~/SKIRT/release/skirt")
-    eagledata_path = { 'Ref100Mpc': absolutepath("~/EAGLE/Ref100MpcRedshift0/hdf5"),
-                       'Old100Mpc': absolutepath("~/EAGLE/Old100MpcRedshift3/hdf5"),
-                       'Old50Mpc': absolutepath("~/EAGLE/Old50MpcRedshift0/hdf5") }
+    skirt_path = absolutepath("~/SKIRT/release/SKIRTmain/skirt")
+    eagledata_path = { 'Ref100': absolutepath("~/EAGLE/L0100N1504REF/hdf5"),
+                       'Ref25': absolutepath("~/EAGLE/L0025N0752REF/hdf5"),
+                       'Recal25': absolutepath("~/EAGLE/L0025N0752RECAL/hdf5"),
+                       'Ref12': absolutepath("~/EAGLE/L0012N0188REF/hdf5") }
     database_path = absolutepath("~/PTS/run/database")
     backup_path = absolutepath("~/PTS/run/backup")
     templates_path = absolutepath("~/PTS/run/templates")

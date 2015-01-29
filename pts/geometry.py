@@ -131,4 +131,15 @@ class Transform:
         P = np.matrix(( x, y, z, w )) * self.T
         return (P[0,0], P[0,1], P[0,2], P[0,3])
 
+    ## This function returns the transformed coordinates for the specified sets input coordinates,
+    # specified as numpy arrays.
+    # TODO: improve efficiencey via either np.vectorize or explicit elementwise matrix multiplication
+    def transform_vec(self, x, y, z, w):
+        n = x.size
+        crds = np.zeros((n, 4))
+        for i in range(n):
+            P = np.matrix(( x[i], y[i], z[i], w[i] )) * self.T
+            crds[i] = np.asarray(P)[0,:]
+        return crds[:,:3], crds[:,3]
+
 # -----------------------------------------------------------------

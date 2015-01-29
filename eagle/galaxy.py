@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package eagle.galaxy_old Extracting data from EAGLE simulation results (obsolete).
+## \package eagle.galaxy Extracting data from EAGLE simulation results.
 #
 # EAGLE is a cosmological hydrodynamical simulation conducted by the VIRGO consortium. The simulation
 # includes detailed recipes for star formation, gas cooling, stellar evolution, and feedback from supernovae and AGN.
@@ -58,6 +58,7 @@ import h5py
 
 import eagle.config as config
 from pts.geometry import Transform
+import eagle.starformation as sf
 
 # -----------------------------------------------------------------
 
@@ -96,6 +97,20 @@ class Snapshot:
         self.boxsize = toparsec(hdf["Header"].attrs["BoxSize"], self.hubbleparam, 1)
         self.redshift = hdf["Header"].attrs["Redshift"]
         self.expansionfactor = hdf["Header"].attrs["ExpansionFactor"]
+
+         # set up attribute dictionaries
+        self.constants          = sf.readAttrs(hdf, field='Constants')
+        self.header          = sf.readAttrs(hdf, field='Header')
+        self.runpars          = sf.readAttrs(hdf, field='RuntimePars')
+
+        # extract star formation law parameters
+        self.schmidtpars      = sf.schmidtParameters(self.constants, self.runpars)
+
+        # resampling parameters
+        self.mcl          = 1.5e4     # in M_solar
+        self.mpdr          = 1.5e5 # in M_solar
+        self.agethresh           = 1e8     # in yr
+
         hdf.close()
 
         # verify that all files belong to the same snapshot
@@ -464,11 +479,102 @@ class Galaxy:
         print "Exporting galaxy ({0},{1}) from {2} files...".format(  \
                     self.groupnumber, self.subgroupnumber, len(fileindices))
 
-        # build transform to place origin in barycenter and to line up rotation axis with z-axis
+        # ---- get the particle data
+
+        # initialise star and gas dictionaries
+        sdat        = {}
+        gdat        = {}
+        yngstars    = {}
+        hiiregions  = {}
+        sdat['r']        = np.column_stack([[],[],[]])
+        sdat['v']        = np.column_stack([[],[],[]])
+        sdat['h']        = np.array([])
+        sdat['im']       = np.array([])
+        sdat['m']        = np.array([])
+        sdat['Z']        = np.array([])
+        sdat['born']     = np.array([])
+        sdat['rho_born'] = np.array([])
+        gdat['r']        = np.column_stack([[],[],[]])
+        gdat['v']        = np.column_stack([[],[],[]])
+        gdat['h']        = np.array([])
+        gdat['m']        = np.array([])
+        gdat['Z']        = np.array([])
+        gdat['T']        = np.array([])
+        gdat['rho']      = np.array([])
+        gdat['sfr']      = np.array([])
+
+        # read particle informaton
+        for index in fileindices:
+
+            hdf   = h5py.File(self.snapshot.paths[index], 'r')
+            stars = hdf["PartType4"]
+            gas   = hdf["PartType0"]
+
+            # index for subhalo stars
+            insubhalo = (stars["GroupNumber"][:] == self.groupnumber) & (stars["SubGroupNumber"][:] == self.subgroupnumber)
+            sdat['r']        = np.concatenate((sdat['r'],        stars["Coordinates"][:][insubhalo]), axis=0)
+            sdat['h']        = np.concatenate((sdat['h'],        stars["SmoothingLength"][:][insubhalo]), axis=0)
+            sdat['im']       = np.concatenate((sdat['im'],       stars["InitialMass"][:][insubhalo]), axis=0)
+            sdat['m']        = np.concatenate((sdat['m'],        stars["Mass"][:][insubhalo]), axis=0)
+            sdat['v']        = np.concatenate((sdat['v'],        stars["Velocity"][:][insubhalo]), axis=0)
+            sdat['Z']        = np.concatenate((sdat['Z'],        stars["SmoothedMetallicity"][:][insubhalo]), axis=0)
+            sdat['born']     = np.concatenate((sdat['born'],     stars["StellarFormationTime"][:][insubhalo]), axis=0)
+            sdat['rho_born'] = np.concatenate((sdat['rho_born'], stars["BirthDensity"][:][insubhalo]), axis=0)
+
+            # index for subhalo gas
+            insubhalo = (gas["GroupNumber"][:] == self.groupnumber) & (gas["SubGroupNumber"][:] == self.subgroupnumber)
+            gdat['r']        = np.concatenate((gdat['r'],   gas["Coordinates"][:][insubhalo]), axis=0)
+            gdat['h']        = np.concatenate((gdat['h'],   gas["SmoothingLength"][:][insubhalo]), axis=0)
+            gdat['m']        = np.concatenate((gdat['m'],   gas["Mass"][:][insubhalo]), axis=0)
+            gdat['v']        = np.concatenate((gdat['v'],   gas["Velocity"][:][insubhalo]), axis=0)
+            gdat['Z']        = np.concatenate((gdat['Z'],   gas["SmoothedMetallicity"][:][insubhalo]), axis=0)
+            gdat['T']        = np.concatenate((gdat['T'],   gas["Temperature"][:][insubhalo]), axis=0)
+            gdat['rho']      = np.concatenate((gdat['rho'], gas["Density"][:][insubhalo]), axis=0)
+            gdat['sfr']      = np.concatenate((gdat['sfr'], gas["StarFormationRate"][:][insubhalo]), axis=0)
+
+            hdf.close()
+
+        # convert units
+        sdat['r']        = toparsec(sdat['r'], self.snapshot.hubbleparam, self.snapshot.expansionfactor)
+        sdat['r']        = periodicCorrec(sdat['r'], self.snapshot.boxsize)
+        sdat['h']        = toparsec(sdat['h'], self.snapshot.hubbleparam, self.snapshot.expansionfactor)
+        sdat['im']       = tosolar(sdat['im'], self.snapshot.hubbleparam)
+        sdat['Z']        = sdat['Z']
+        sdat['t']        = age(sdat['born']) - age(self.snapshot.expansionfactor)
+        sdat['rho_born'] *= 6.7699e-31
+        gdat['r']        = toparsec(gdat['r'], self.snapshot.hubbleparam, self.snapshot.expansionfactor)
+        gdat['r']        = periodicCorrec(gdat['r'], self.snapshot.boxsize)
+        gdat['h']        = toparsec(gdat['h'], self.snapshot.hubbleparam, self.snapshot.expansionfactor)
+        gdat['m']        = tosolar(gdat['m'], self.snapshot.hubbleparam)
+        gdat['Z']        = gdat['Z']
+        gdat['T']        = gdat['T']
+        gdat['sfr']      = gdat['sfr']
+        gdat['rho']      = togcm3(gdat['rho'], self.snapshot.hubbleparam, self.snapshot.expansionfactor)
+
+        # density conversion from g cm^-3 to M_sun Mpc^-3
+        densconv = ((self.snapshot.constants['CM_PER_MPC']/1.e6)**3) / self.snapshot.constants['SOLAR_MASS']
+
+        # calculate new fields
+        sdat['P']        = sf.getPtot(sdat['rho_born'], self.snapshot.schmidtpars)
+        #sdat['sfr_born'] = sf.getSFR(sdat['rho_born'], sdat['m'], self.snapshot.schmidtpars)
+        sdat['h_mapp']   = (self.snapshot.mpdr / (4 * np.pi * sdat['rho_born'] * densconv))**(1/3.)
+
+        gdat['P']        = sf.getPtot(gdat['rho'].copy(), self.snapshot.schmidtpars)
+        gdat['h_mapp']   = (self.snapshot.mpdr / (4 * np.pi * gdat['rho'] * densconv))**(1/3.)
+
+        # ---- convert to Local Galactic Coordinates (LGC)
+
+        # calculate stellar centre of mass and translational velocity using shrinking aperture technique
+        com, v_bar = shrinkingCentroid(sdat['r'], sdat['m'], sdat['v'])
+
+        # find unit rotation axis vector, choosing to use only stellar information and an aperture of 30 kpc
+        n_rot = rotAxis(sdat['r'], sdat['v'], sdat['m'], com, v_bar, apt = 3.e4, aptfrac = 0.08)
+
+        # set up transform object
         transf = Transform()
-        bx, by, bz = self.barycenter()
+        bx, by, bz = com[0], com[1], com[2]
         transf.translate(-bx, -by, -bz)
-        a, b, c = self.rotationaxis()
+        a, b, c = n_rot[0], n_rot[1], n_rot[2]
         v = np.sqrt(b*b+c*c)
         if v > 0.3:
             transf.rotateX(c/v, -b/v)
@@ -478,9 +584,114 @@ class Galaxy:
             transf.rotateY(c/v, -a/v)
             transf.rotateX(v, -b)
 
+        # transform coordinates
+        sdat['r'],w = transf.transform_vec(sdat['r'][:,0],sdat['r'][:,1],sdat['r'][:,2], np.ones(sdat['r'].shape[0]))
+        gdat['r'],w = transf.transform_vec(gdat['r'][:,0],gdat['r'][:,1],gdat['r'][:,2], np.ones(gdat['r'].shape[0]))
+
+        # ---- resample star forming regions
+
+        # set up GALAXEV array
+        bcstars = np.column_stack([[],[],[],[],[],[],[]])
+
+        # set up MAPPINGS-III array
+        mapstars = np.column_stack([[],[],[],[],[],[],[],[],[]])
+
+        # set up dust array
+        dust = np.column_stack([[],[],[],[],[],[],[]])
+
+        # index for particles to resample
+        issf = gdat['sfr'] > 0.
+        isyoung = sdat['t'] < self.snapshot.agethresh
+
+        # append older stars to GALAXEV array
+        bcstars = np.concatenate((bcstars, np.column_stack([sdat['r'], sdat['h'], sdat['im'], sdat['Z'], sdat['t']])[~isyoung]), axis=0)
+
+        # append non-SF gas data to dust array
+        dust = np.concatenate((dust, np.column_stack([gdat['r'], gdat['h'], gdat['m'], gdat['Z'], gdat['T']])[~issf].copy()), axis=0)
+
+        # resample stars
+        if isyoung.any():
+            for k in sdat.keys():
+                sdat[k] = sdat[k][isyoung].copy()
+
+            # calculate SFR at birth of young star particles in M_sun / yr
+            sdat['sfr']       = sf.getSFR(sdat['rho_born'], sdat['im'], self.snapshot.schmidtpars)
+
+            resmpstr = sf.stochResamp(sdat['sfr'], sdat['im'], delm=self.snapshot.mcl, thresh_age=self.snapshot.agethresh)
+            ms, ts, sfrs, idxs, mdiffs = resmpstr
+            isinfant = ts < 1.e7
+
+            yngstars['r']     = sdat['r'][idxs][~isinfant]
+            yngstars['h']     = sdat['h'][idxs][~isinfant]
+            yngstars['im']    = ms[~isinfant]
+            yngstars['Z']     = sdat['Z'][idxs][~isinfant]
+            yngstars['t']     = ts[~isinfant]
+
+            bcstars = np.concatenate((bcstars, np.column_stack([yngstars['r'], yngstars['h'], yngstars['im'], yngstars['Z'], yngstars['t']])), axis=0)
+
+            hiiregions['r']     = sdat['r'][idxs][isinfant]
+            hiiregions['h']     = sdat['h'][idxs][isinfant]
+            hiiregions['SFR']   = ms[isinfant] * 1e-7               # Assume constant SFR over 10 Myr, so sfr =  mcl / 10 Myr
+            hiiregions['Z']     = sdat['Z'][idxs][isinfant]
+            hiiregions['P']     = sdat['P'][idxs][isinfant] * 0.1   # Convert to Pa for output
+            hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
+            hiiregions['h_mapp'] = sdat['h_mapp'][idxs][isinfant]
+
+            # Set 0.2 as fiducial value (Jonsson (2010))
+            hiiregions['fPDR']  = np.array([0.2]*hiiregions['P'].size)
+
+            # append to MAPPINGSIII array
+            mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
+                                                                  hiiregions['Z'], hiiregions['logC'], hiiregions['P'],
+                                                                  hiiregions['fPDR']])), axis=0)
+            # T is set to 0 K as T unavailable for resampled star particles
+            sdat['T'] = np.zeros(sdat['im'].shape[0])
+
+            # add unspent young star particle material to dust array.
+            dust = np.concatenate((dust, np.column_stack([sdat['r'], sdat['h'], sdat['im'] - mdiffs, sdat['Z'], sdat['T']]).copy()), axis=0)
+
+        # resample gas
+        if issf.any():
+            for k in gdat.keys():
+                gdat[k] = gdat[k][issf].copy()
+
+            resmpstr = sf.stochResamp(gdat['sfr'], gdat['m'], delm=self.snapshot.mcl, thresh_age=self.snapshot.agethresh)
+            ms, ts, sfrs, idxs, mdiffs = resmpstr
+            isinfant = ts < 1.e7
+
+            yngstars['r']       = gdat['r'][idxs][~isinfant]
+            yngstars['h']       = gdat['h'][idxs][~isinfant]
+            yngstars['im']      = ms[~isinfant]
+            yngstars['Z']       = gdat['Z'][idxs][~isinfant]
+            yngstars['t']       = ts[~isinfant]
+
+            bcstars = np.concatenate((bcstars, np.column_stack([yngstars['r'], yngstars['h'], yngstars['im'], yngstars['Z'], yngstars['t']])), axis=0)
+
+            hiiregions['r']     = gdat['r'][idxs][isinfant]
+            hiiregions['h']     = gdat['h'][idxs][isinfant]
+            hiiregions['SFR']   = ms[isinfant] * 1e-7               # Assume constant SFR over 10 Myr, so sfr =  mcl / 10 Myr
+            hiiregions['Z']     = gdat['Z'][idxs][isinfant]
+            hiiregions['P']     = gdat['P'][idxs][isinfant] * 0.1     # convert to Pa
+            hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
+            hiiregions['h_mapp'] = gdat['h_mapp'][idxs][isinfant]
+
+             # Set 0.2 as fiducial value a la Jonsson (2010)
+            hiiregions['fPDR']   = np.array([0.2]*hiiregions['P'].size)
+
+            # append to MAPPINGSIII array
+            mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
+                                                                  hiiregions['Z'], hiiregions['logC'], hiiregions['P'],
+                                                                  hiiregions['fPDR']])), axis=0)
+
+            # add unspent SF gas material to dust array
+            dust = np.concatenate((dust, np.column_stack([gdat['r'], gdat['h'], gdat['m'] - mdiffs, gdat['Z'], gdat['T']]).copy()), axis=0)
+
+        # ---- write output files
+
         # open output files
         starsfilename = "galaxy_{0}_{1}_stars.dat".format(self.groupnumber, self.subgroupnumber)
         gasfilename = "galaxy_{0}_{1}_gas.dat".format(self.groupnumber, self.subgroupnumber)
+        hiifilename = "galaxy_{0}_{1}_hii.dat".format(self.groupnumber, self.subgroupnumber)
         starsfile = open(os.path.join(directory,starsfilename), 'w')
         starsfile.write('# SPH Star Particles\n')
         starsfile.write('# Extracted from EAGLE HDF5 snapshot to SKIRT6 format\n')
@@ -489,43 +700,20 @@ class Galaxy:
         gasfile.write('# SPH Gas Particles\n')
         gasfile.write('# Extracted from EAGLE HDF5 snapshot to SKIRT6 format\n')
         gasfile.write('# Columns contain: x(pc) y(pc) z(pc) h(pc) M(Msun) Z(0-1) T(K) SFR(Msun/yr)\n')
+        hiifile = open(os.path.join(directory,hiifilename), 'w')
+        hiifile.write('# SPH Hii Particles\n')
+        hiifile.write('# Extracted from EAGLE HDF5 snapshot to SKIRT6 format\n')
+        hiifile.write('# Columns contain: x(pc) y(pc) z(pc) h(pc) SFR(Msun/yr) Z(0-1) logC P(Pa) f_PDR\n')
 
-        # export particle information
-        for index in fileindices:
-            hdf = h5py.File(self.snapshot.paths[index], 'r')
-            stars = hdf["PartType4"]
-            for groupnr,subnr,coords,length,mass,metal,born in zip(
-                        stars["GroupNumber"][:], stars["SubGroupNumber"][:],
-                        stars["Coordinates"][:], stars["SmoothingLength"][:],
-                        stars["Mass"][:], stars["Metallicity"][:], stars["StellarFormationTime"][:] ):
-                if self.groupnumber==abs(groupnr) and self.subgroupnumber==subnr:
-                    x,y,z = toparsec(coords, self.snapshot.hubbleparam, self.snapshot.expansionfactor)
-                    x,y,z,w = transf.transform(x,y,z,1.)
-                    h = toparsec(length, self.snapshot.hubbleparam, self.snapshot.expansionfactor)
-                    M = tosolar(mass, self.snapshot.hubbleparam)
-                    Z = float(metal)
-                    t = age(born) - age(self.snapshot.expansionfactor)
-                    starsfile.write((7*"{:1.9g} "+"\n").format(x,y,z,h,M,Z,t))
-            gas = hdf["PartType0"]
-            for groupnr,subnr,coords,length,mass,metal,temperature,starformationrate in zip(
-                        gas["GroupNumber"][:], gas["SubGroupNumber"][:],
-                        gas["Coordinates"][:], gas["SmoothingLength"][:],
-                        gas["Mass"][:], gas["Metallicity"][:],
-                        gas["Temperature"][:], gas["StarFormationRate"][:] ):
-                if self.groupnumber==abs(groupnr) and self.subgroupnumber==subnr:
-                    x,y,z = toparsec(coords, self.snapshot.hubbleparam, self.snapshot.expansionfactor)
-                    x,y,z,w = transf.transform(x,y,z,1.)
-                    h = toparsec(length, self.snapshot.hubbleparam, self.snapshot.expansionfactor)
-                    M = tosolar(mass, self.snapshot.hubbleparam)
-                    Z = float(metal)
-                    T = float(temperature)
-                    SFR = float(starformationrate)
-                    gasfile.write((8*"{:1.9g} "+"\n").format(x,y,z,h,M,Z,T,SFR))
-            hdf.close()
+        # save particle data
+        np.savetxt(starsfile, bcstars, fmt=['%f']*7)
+        np.savetxt(gasfile, dust, fmt=['%f']*7)
+        np.savetxt(hiifile, mapstars, fmt=['%f']*7+['%e','%f'])
 
         # close output files
         starsfile.close()
         gasfile.close()
+        hiifile.close()
 
 # -----------------------------------------------------------------
 
@@ -630,7 +818,11 @@ def tosolar(eaglevalue, hubbleparam):
 def tokms(eaglevalue, expansionfactor):
     return eaglevalue * np.sqrt(expansionfactor)
 
-# This private helper function returns the age of a star (in yr) given the universe expansion factor
+## This private helper function converts a current density value from EAGLE snapshot units to g m^-3
+def togcm3(eaglevalue, hubbleparam, expansionfactor):
+    return eaglevalue * (6.7699e-31 * (expansionfactor**-3) * (hubbleparam**2))
+
+## This private helper function returns the age of a star (in yr) given the universe expansion factor
 # when the star was born (in range 0-1)
 def age(R):
     H0 = 2.3e-18
@@ -638,5 +830,73 @@ def age(R):
     yr = 365.25 * 24 * 3600
     T0 = 13.7e9
     return T0 - (2./3./H0/np.sqrt(1-OmegaM0)) * np.arcsinh(np.sqrt( (1/OmegaM0-1)*R**3 )) / yr
+
+## This private helper function returns the periodicity corrected coordinates input as a (N,3)
+# numpy array, and takes the box size (in units of crds) and a test length in units of box size
+def periodicCorrec(crds, boxsize, testfact = 0.5):
+    for i in range(3):
+        crd = crds[:,i]
+        booldx = np.abs(crd - crd.min()) > boxsize * testfact
+        if booldx.any():
+            crd[booldx] = crd[booldx]  - boxsize
+    return crds
+
+# This private helper function returns the centre of mass or the centre of mass and mean velocity
+# from input particle data, in the units of crds and vels respectively
+def centroid(crds, masses, vels = []):
+    moments = (crds * np.column_stack([masses]*3)).sum(axis = 0)
+    M = masses.sum()
+    if vels.any():
+        momenta = (vels * np.column_stack([masses]*3)).sum(axis = 0)
+        return moments/M, momenta/M
+    else:
+        return moments/M
+
+# This private helper function returns the periodicity corrected coordinates input as a (N,3)
+# numpy array, and takes the box size (in units of crds) and a test length in units of box size.
+# Finds the centroid of a given set of particles, each time reducing the
+# maximum distance between the previously found centroid to particles used
+# to calculate the next centroid.
+def shrinkingCentroid(crds, masses, vels, thresh=200, shrinkfactor=1.2):
+    N = np.inf       # N set high initially to consider all particles
+    while N >= thresh:
+        C, C_vel = centroid(crds, masses, vels)
+
+        # define new aperture size as eps
+        eps = ((((crds-C)**2).sum(axis = -1))**0.5).max()/float(shrinkfactor)
+
+        # index for particles within new aperture size
+        shiftcrds = crds - C
+        boolidx = ((shiftcrds**2).sum(axis = -1))**0.5 < eps
+
+        N = boolidx.sum()
+        crds = crds[boolidx].copy()
+        masses = masses[boolidx].copy()
+        vels = vels[boolidx].copy()
+
+    return C, C_vel
+
+# This private helper function returns the unit vector pointing in the direction of the rotation
+# axis for input particle data, input CoM and input mean velocity. apt specifies an aperture to
+# consider particles within in the units of pos, and aptfrac defines and inner radius within which to
+# exclude particles in units of apt.
+def rotAxis(crds, vels, mass, com, v_bar, apt = 3e4, aptfrac = 0.08):
+    # put in centre of mass and rest frame
+    pos = crds - com
+    v_rel = vels - v_bar
+
+    # calculate apertures
+    disp = (pos**2).sum(axis=-1)
+    outapt = disp  < apt ** 2
+    inapt = disp  > (aptfrac * apt) ** 2
+    totapt = inapt * outapt
+
+    # calculate J vectors in arbitrary units
+    Js = np.cross(pos[totapt], v_rel[totapt]) * np.column_stack([mass[totapt]]*3)
+
+    # calculate net J vector and normalise to unit vector
+    J = Js.sum(axis = 0)
+    n_vect = J * (np.dot(J, J).sum()) ** -0.5
+    return n_vect
 
 # -----------------------------------------------------------------

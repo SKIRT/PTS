@@ -18,7 +18,7 @@ import os.path
 import shutil
 import eagle.config as config
 from eagle.database import Database
-from eagle.galaxy_old import Snapshot, Galaxy
+from eagle.galaxy import Snapshot, Galaxy
 from eagle.skirtrun import SkirtRun
 from pts.skifile import SkiFile
 from pts.visualizer import Visualizer
@@ -68,12 +68,14 @@ def run(runid):
         # construct some names based on the galaxy group/subgroup numbers
         starsname = "galaxy_{0}_{1}_stars.dat".format(record['groupnr'], record['subgroupnr'])
         gasname = "galaxy_{0}_{1}_gas.dat".format(record['groupnr'], record['subgroupnr'])
+        hiiname = "galaxy_{0}_{1}_hii.dat".format(record['groupnr'], record['subgroupnr'])
         skiname = "{0}_{1}_{2}.ski".format(record['skitemplate'], record['groupnr'], record['subgroupnr'])
 
         # create an adjusted copy of the ski file for this run
         ski = SkiFile(os.path.join(config.templates_path, record['skitemplate']+".ski"))
         ski.setstarfile(starsname)
         ski.setgasfile(gasname)
+        ski.sethiifile(hiiname)
         #ski.setextent("{0:1.0f} kpc".format(extent)) // TO DO
         ski.setpackages(100000 + 5*(record['starparticles']+record['gasparticles']))
         ski.saveto(os.path.join(skirtrun.runpath(), skiname))
