@@ -147,6 +147,18 @@ class RGBImage:
         if self.darr == None: return ( 0, 255.999 )
         else: return self.rangearr
 
+    ## This function determines the range of the image's pixel values, ignoring zero and negative values, and omitting
+    # outliers on both sides of the scale as specified by the \em from and \em to percentiles. The resulting range is
+    # returned as a tuple (min, max).
+    def percentilepixelrange(self, from_percentile=0, to_percentile=100):
+        self.ensurearr(invalidate=False)
+        # determine the range, ignoring zero and negative values, and removing the outliers
+        nonzero = self.darr[self.darr > 0]
+        if len(nonzero)==0: return (0, 0)
+        smallest = np.percentile(nonzero, from_percentile)
+        largest = np.percentile(nonzero, to_percentile)
+        return (smallest, largest)
+
     # ---------- Repurposing to target --------------------------------
 
     ## This function saves the image to a file with the specified filepath in one of the supported formats.
@@ -251,32 +263,17 @@ class RGBImage:
 
     # ---------- Adjusting the image ----------------------------------
 
-    ## This function applies the natural logarithm function to the pixel values and to the pixel value range,
-    # possibly clipping outliers on both sides as specified by the \em from and \em to percentiles.
-    # This is often relevant for luminosity data loaded from a FITS file.
-    #
-    # The percentiles must be in the range [0,100]; the default \em from percentile is 0 and the default
-    # \em to percentile is 100, effectively specifying no outliers.
-    # Zero and negative pixel values are always considered to be outliers, and are ignored while determining
-    # the pixel values corresponding to the percentiles.
-    #
-    # Specifically, a new range is set according to the following calculation (even if there are no outliers):
-    #  - create an intermediate array from which zero and negative pixel values have been removed
-    #  - determine the pixel values corresponding to the \em from and \em to percentiles in this array
-    #  - use the logarithm of these values as the new minimum and maximum range
-    def applylog(self, from_percentile=0, to_percentile=100):
+    ## This function applies the natural logarithm function to the pixel values of the image, and adjusts
+    # the pixel range accordingly. This function raises an error if any of the pixel values is zero or
+    # negative when this function is called. This can be accomplished, for example, by calling the setrange()
+    # function with a nonzero minimum value before calling the applylog() function.
+    def applylog(self):
         self.ensurearr(invalidate=True)
-        # determine the new range, ignoring zero values, and removing the outliers
-        nonzero = self.darr[self.darr > 0]
-        if len(nonzero)==0: raise ValueError("No pixels with nonzero luminosity")
-        smallest = np.percentile(nonzero, from_percentile)
-        largest = np.percentile(nonzero, to_percentile)
-        if largest <= smallest: raise ValueError("Pixel values have empty range")
-        # clip the array values to the new range
-        np.clip(self.darr, smallest, largest, out=self.darr)
+        # verify that all values are positive
+        if np.any(self.darr <= 0): raise ValueError("Log can't be applied to negative or zero pixel values")
         # apply logarithm to array values and range
         self.darr = np.log(self.darr)
-        self.rangearr = ( math.log(smallest), math.log(largest) )
+        self.rangearr = ( math.log(self.rangearr[0]), math.log(self.rangearr[1]) )
 
     ## This function applies a transformation defined by a cubic spline curve to the (scaled) pixel values,
     # and replaces the image data with the result. The pixel values are scaled to the interval [0,1].

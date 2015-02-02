@@ -38,7 +38,7 @@ from pts.moviefile import MovieFile
 #  - timeline: a pts.timeline.Timeline object containing the specifications for the movie
 #  - moviefile: absolute or relative file path of the movie file to be created
 #  - from_percentile and to_percentile: the percentile values, in range [0,100], used to clip the luminosity
-#    values loaded from the fits file (see the RGBImage.applylog() function)
+#    values loaded from the fits file
 #  - contrast: if True, the contrast of each frame is enhanced (nice, but it takes quite a while); default is False
 #
 # Important notes:
@@ -98,7 +98,7 @@ def execskirt(skirtpath, skifile):
 #  - moviefile: absolute or relative file path of the movie file to be created
 #  - rate: the number of frames per second (default is 24)
 #  - from_percentile and to_percentile: the percentile values, in range [0,100], used to clip the luminosity
-#    values loaded from the fits file (see the RGBImage.applylog() function)
+#    values loaded from the fits file
 #  - contrast: if True, the contrast of each frame is enhanced (nice, but it takes quite a while); default is False
 #
 # Important notes:
@@ -115,8 +115,7 @@ def createmovie(simulation, moviefile, rate=24, from_percentile=30, to_percentil
     ranges = []
     for fits in simulation.totalfitspaths():
         im = RGBImage(fits)
-        im.applylog(from_percentile, to_percentile)
-        ranges += list(im.pixelrange())
+        ranges += list(im.percentilepixelrange(from_percentile,to_percentile))
     rmin = min(ranges)
     rmax = max(ranges)
 
@@ -124,8 +123,8 @@ def createmovie(simulation, moviefile, rate=24, from_percentile=30, to_percentil
     movie = MovieFile(moviefile, shape=simulation.instrumentshape(), rate=rate)
     for fits in simulation.totalfitspaths():
         im = RGBImage(fits)
-        im.applylog()
         im.setrange(rmin,rmax)
+        im.applylog()
         if contrast: im.applycurve()
         im.addto(movie)
     movie.close()

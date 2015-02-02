@@ -23,6 +23,7 @@ from pts.plotgridpdf import plotgrid
 from pts.plotsed import plotsed
 from pts.rgbimage import RGBImage
 from pts.plotpolarization import plotpolarizationmap
+from pts.wavemovie import makewavemovie
 
 # -----------------------------------------------------------------
 #  Visualizer class
@@ -94,16 +95,15 @@ class Visualizer:
                     ranges = []
                     for outname in outnames:
                         im = RGBImage(outname, frames=frames)
-                        im.applylog(from_percentile,to_percentile)
-                        ranges += list(im.pixelrange())
+                        ranges += list(im.percentilepixelrange(from_percentile,to_percentile))
                     rmin = min(ranges)
                     rmax = max(ranges)
 
                     # create an RGB file for each output file
                     for outname in outnames:
                         im = RGBImage(outname, frames=frames)
-                        im.applylog()
                         im.setrange(rmin,rmax)
+                        im.applylog()
                         im.applycurve()
                         savename = outname[:-5] + (str(index+1) if index > 0 else "") + ".png"
                         im.saveto(savename)
@@ -142,5 +142,28 @@ class Visualizer:
                 plotname = nametuple[1].replace("Q.fits",".pdf")
                 plotpolarizationmap(nametuple, plotname)
                 if self.log: print "Created PDF polarization map" + plotname
+
+    # This function creates a movie for the output of each simulation held by this visualizer. The movie combines
+    # the SEDs (bottom panel) and the pixel frames (top panel, from left to right) for up to three instruments,
+    # running through all wavelengths in the simulation. The movie is placed next to the original file(s) with
+    # a similar name (omitting the instrument name) but a different extension.
+    # The function takes the following arguments:
+    #  - xlim, ylim:  the lower and upper limits of the x/y axis of the SED plot, specified as a 2-tuple;
+    #                 if missing the corresponding axis is auto-scaled
+    #  - from_percentile, to_percentile: the percentile values, in range [0,100], used to clip the luminosity values
+    #                 loaded from the fits files; the default values are 30 and 100 respectively
+    def makewavemovie(self, xlim=None, ylim=None, from_percentile=30, to_percentile=100):
+        for simulation in self.simulations:
+            sedpaths = simulation.seddatpaths()
+            if 1 <= len(sedpaths) <= 3:
+                fitspaths = simulation.totalfitspaths()
+                wavelengths = simulation.wavelengths()
+                if len(fitspaths) == len(sedpaths) and len(wavelengths) > 3:
+                    labels = [ path.rsplit("_",2)[1] for path in sedpaths ]
+                    outpath = sedpaths[0].rsplit("_",2)[0] + "_wave.mov"
+                    success = makewavemovie(sedpaths, fitspaths, labels, outpath, wavelengths,
+                                            xlim=xlim, ylim=ylim,
+                                            from_percentile=from_percentile, to_percentile=to_percentile)
+                    if success and self.log: print "Created wave movie file " + outpath
 
 # -----------------------------------------------------------------
