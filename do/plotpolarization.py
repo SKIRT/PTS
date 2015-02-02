@@ -22,20 +22,19 @@
 import sys
 
 # import relevant PTS modules
-from pts.visualizer import Visualizer
+from pts.skirtsimulation import createsimulations
+from pts.plotpolarization import plotpolarization
 
 # -----------------------------------------------------------------
 
 print "Starting plotpolarization..."
 
-# get the command-line argument specifying the simulation prefix, if any
+# get the command-line argument specifying the simulation(s)
 argument = sys.argv[1] if len(sys.argv) > 1 else ""
 
-# construct the visualizer instance
-visualizer = Visualizer(argument, log=True)
-
-# make the plots
-visualizer.plotpolarizationmaps()
+# construct the list of simulation objects and make the plots
+for simulation in createsimulations(argument):
+    plotpolarization(simulation)
 
 print "Finished plotpolarization."
 

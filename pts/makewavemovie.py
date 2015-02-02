@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+## \package pts.makewavemovie Creating a movie that runs through all wavelengths in the SKIRT simulation output.
+#
+# The function in this module creates a movie for the output of a SKIRT simulation. The movie combines
+# the SEDs (bottom panel) and the pixel frames (top panel, from left to right) for up to three instruments,
+# running through all wavelengths in the simulation.
+
+# -----------------------------------------------------------------
+
+import numpy as np
+import matplotlib
+if matplotlib.get_backend().lower() != "agg": matplotlib.use("agg")
+import matplotlib.pyplot as plt
+
+from pts.moviefile import MovieFile
+from pts.rgbimage import RGBImage
+
+# -----------------------------------------------------------------
+
+# This function creates a movie for the output of the specified simulation. The movie combines
+# the SEDs (bottom panel) and the pixel frames (top panel, from left to right) for up to three instruments,
+# running through all wavelengths in the simulation. The movie is placed next to the original file(s) with
+# a similar name (omitting the instrument name) but a different extension.
+# The function takes the following arguments:
+#  - simulation:  the SkirtSimulation object representing the simulation to be handled
+#  - xlim, ylim:  the lower and upper limits of the x/y axis of the SED plot, specified as a 2-tuple;
+#                 if missing the corresponding axis is auto-scaled
+#  - from_percentile, to_percentile: the percentile values, in range [0,100], used to clip the luminosity values
+#                 loaded from the fits files; the default values are 30 and 100 respectively
+def makewavemovie(simulation, xlim=None, ylim=None, from_percentile=30, to_percentile=100):
+    sedpaths = simulation.seddatpaths()
+    npaths = len(sedpaths)
+    if 1 <= npaths <= 3:
+        fitspaths = simulation.totalfitspaths()
+        wavelengths = simulation.wavelengths()
+        nlambda = len(wavelengths)
+        if len(fitspaths) == npaths and nlambda > 3:
+            labels = [ path.rsplit("_",2)[1] for path in sedpaths ]
+            outpath = sedpaths[0].rsplit("_",2)[0] + "_wave.mov"
+            fluxlabel = simulation.fluxlabel()
+
+            # get the image shapes (assume that fits frames in all files have the same shape)
+            fitsshape = simulation.instrumentshape()
+            sedshape = (npaths*fitsshape[0], fitsshape[1]/2)
+            totalshape = (sedshape[0], fitsshape[1]+sedshape[1])
+
+            # determine the appropriate pixel range for ALL images
+            print "  preprocessing frames for " + outpath.rsplit("/",1)[1] + "..."
+            ranges = []
+            for frame in range(nlambda):
+                for fitspath in fitspaths:
+                    im = RGBImage(fitspath, frames=(frame,frame,frame))
+                    ranges += list(im.percentilepixelrange(from_percentile,to_percentile))
+            rmin = min(ranges)
+            rmax = max(ranges)
+
+            # open the movie file
+            movie = MovieFile(outpath, shape=totalshape, rate=10)
+
+            # for each wavelength, add a movie frame
+            for frame in range(nlambda):
+                print "  adding frame " + str(frame+1)+"/"+str(nlambda) + "..."
+
+                # assemble the top panel
+                image = None;
+                for fitspath in fitspaths:
+                    im = RGBImage(fitspath, frames=(frame,frame,frame))
+                    im.setrange(rmin,rmax)
+                    im.applylog()
+                    im.applycmap("gnuplot")
+                    if image==None: image = im
+                    else: image.addright(im)
+
+                # plot the seds
+                dpi = 100
+                figure = plt.figure(dpi=dpi, figsize=(sedshape[0]/float(dpi),sedshape[1]/float(dpi)),
+                                    facecolor='w', edgecolor='w')
+                for sedpath,label in zip(sedpaths,labels):
+                    data = np.loadtxt(sedpath)
+                    plt.loglog(data[:,0], data[:,1], label=label)
+                plt.axvline(wavelengths[frame], color='m')
+                plt.figtext(0.49,0.15, r"$\lambda={0:.4g}\,\mu m$".format(wavelengths[frame]), fontsize='large')
+                plt.ylabel(fluxlabel, fontsize='large')
+                plt.gca().xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%g"))
+                if xlim != None: plt.xlim(xlim)
+                if ylim != None: plt.ylim(ylim)
+                plt.legend(loc='best')
+                plt.draw()     # flush the drawing
+                im = RGBImage(figure)
+                plt.close()
+
+                # assemble the final image and add it as a movie frame
+                image.addbelow(im)
+                image.addto(movie)
+
+            # close the movie file
+            movie.close()
+            print "Created wave movie file " + outpath
+
+# -----------------------------------------------------------------

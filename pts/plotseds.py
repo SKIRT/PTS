@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.plotsed Plot SED information contained in text files
+## \package pts.plotseds Plot SED information contained in text files
 #
 # The function in this module creates a PDF plot for one or more SEDs, each provided as a sequence
 # of SED data points in a text file.
@@ -13,7 +13,6 @@
 # -----------------------------------------------------------------
 
 import numpy as np
-import os.path
 
 # use a non-interactive back-end to generate high-quality vector graphics
 import matplotlib
@@ -22,12 +21,28 @@ import matplotlib.pyplot as plt
 
 # -----------------------------------------------------------------
 
+# This function creates a plot combining the "sed.dat" files in the output of the specified simulation.
+# The plots are saved in PDF format and are placed next to the original file(s) with
+# a similar name (omitting the instrument name) but a different extension.
+# The function takes the following arguments:
+# - simulation: the SkirtSimulation object representing the simulation to be handled
+# - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
+# - xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
+# - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
+def plotseds(simulation, figsize=(10,6), xlim=None, ylim=None):
+    sedpaths = simulation.seddatpaths()
+    if len(sedpaths) > 0:
+        labels = [ path.rsplit("_",2)[1] for path in sedpaths ]
+        outpath = sedpaths[0].rsplit("_",2)[0] + "_sed.pdf"
+        success = plotseds_impl(sedpaths, outpath, labels, simulation.fluxlabel(), figsize=figsize, xlim=xlim, ylim=ylim)
+        if success: print "Created PDF grid plot file " + outpath
+
+# -----------------------------------------------------------------
+
 ## This function creates a PDF plot for one or more SEDs, all plotted on the same log/log axes.
 # Each SED is provided as a separate text file. Each line in such a file contains two columns,
-# respectively specifying the wavelength \f$\lambda\f$ and the corresponding flux
-# \f$\lambda\,F_\lambda\f$.
-# The current implementation assumes that the wavelength is specified in micron,
-# and that the flux is specified in \f$\text{W}\,\text{m}^{-2}\f$.
+# respectively specifying the wavelength and the corresponding flux.
+# The current implementation assumes that the wavelength is specified in micron.
 #
 # The function takes the following arguments:
 # - sedfiles: a list of filepaths for the input files containing the SED data points
@@ -38,8 +53,7 @@ import matplotlib.pyplot as plt
 # - xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
 # - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
 #
-def plotsed(sedfiles, plotfile, labels=None, figsize=(10,6), xlim=None, ylim=None):
-    plotfile = os.path.expanduser(plotfile)
+def plotseds_impl(sedfiles, plotfile, labels=None, fluxlabel="Flux", figsize=(10,6), xlim=None, ylim=None):
     assert plotfile.endswith(".pdf")
     if labels == None: labels = sedfiles
 
@@ -59,8 +73,9 @@ def plotsed(sedfiles, plotfile, labels=None, figsize=(10,6), xlim=None, ylim=Non
     if ylim != None: plt.ylim(ylim)
 
     # add axis labels and a legend
-    plt.xlabel("$\lambda\,(\mu m)$", fontsize='large')
-    plt.ylabel("$\lambda\,F_\lambda\,(\mathrm{W}\,\mathrm{m}^{-2})$", fontsize='large')
+    plt.gca().xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%g"))
+    plt.xlabel(r"$\lambda\,(\mu \mathrm{m})$", fontsize='large')
+    plt.ylabel(fluxlabel, fontsize='large')
     plt.legend()
 
     # save the figure

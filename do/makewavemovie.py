@@ -40,24 +40,20 @@ to_percentile = 100
 # import standard modules
 import sys
 
-# import movie module first so that it can select the appropriate matplotlib backend
-from pts.wavemovie import makewavemovie
-
 # import relevant PTS modules
-from pts.visualizer import Visualizer
+from pts.skirtsimulation import createsimulations
+from pts.makewavemovie import makewavemovie
 
 # -----------------------------------------------------------------
 
 print "Starting makewavemovie..."
 
-# get the command-line argument specifying the simulation prefix, if any
+# get the command-line argument specifying the simulation(s)
 argument = sys.argv[1] if len(sys.argv) > 1 else ""
 
-# construct the visualizer instance
-visualizer = Visualizer(argument, log=True)
-
-# make the plots
-visualizer.makewavemovie(xlim=xlim, ylim=ylim, from_percentile=from_percentile, to_percentile=to_percentile)
+# construct the list of simulation objects and make the movies
+for simulation in createsimulations(argument):
+    makewavemovie(simulation, xlim=xlim, ylim=ylim, from_percentile=from_percentile, to_percentile=to_percentile)
 
 print "Finished makewavemovie."
 

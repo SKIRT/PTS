@@ -13,7 +13,6 @@
 # -----------------------------------------------------------------
 
 import numpy as np
-import os.path
 import pyfits
 
 # use a non-interactive back-end to generate high-quality vector graphics
@@ -23,66 +22,62 @@ import matplotlib.pyplot as plt
 
 # -----------------------------------------------------------------
 
-## This function creates a PDF polarization map for a set of "prefix_instr_stokes*.fits" files
-# produced by a SKIRT simulation. The function expects four input files respectively containing
-# the I, Q, U and V components of the Stokes vector in each pixel of the frame.
+# This function creates a polarization map for each set of "prefix_instr_stokes*.fits" files in the output of
+# the specified simulation. The plots are saved in a PDF file named "prefix_instr_stokes.pdf",
+# placed next to the original set of files.
 #
 # The function takes the following arguments:
-# - stokesfiles: a tuple containing the filepaths for the set of input files (in order I,Q,U,V)
-# - plotfile: the filepath of the plot file to be generated; this \em must have the \c .pdf filename extension
+# - simulation: the SkirtSimulation object representing the simulation to be handled
 # - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
-#
-def plotpolarizationmap(stokesfiles, plotfile, figsize=(10,6)):
-    fileI, fileQ, fileU, fileV = stokesfiles
-    plotfile = os.path.expanduser(plotfile)
-    assert plotfile.endswith(".pdf")
+def plotpolarization(simulation, figsize=(10,6)):
+    for fileI, fileQ, fileU, fileV in simulation.stokesfitspaths():
 
-    # setup the figure
-    figure = plt.figure(figsize=figsize)
+        # setup the figure
+        figure = plt.figure(figsize=figsize)
 
-    # read the Stokes frames with shape (ny, nx) or datacubes with shape (nlambda, ny, nx)
-    # if datacubes, pick the first frame (for now)
-    I = pyfits.getdata(fileI)
-    Q = pyfits.getdata(fileQ)
-    U = pyfits.getdata(fileU)
-    V = pyfits.getdata(fileV)
-    if len(I.shape)==3:
-        index = 0
-        I = I[index,:,:]
-        Q = Q[index,:,:]
-        U = U[index,:,:]
-        V = V[index,:,:]
+        # read the Stokes frames with shape (ny, nx) or datacubes with shape (nlambda, ny, nx)
+        # if datacubes, pick the first frame (for now)
+        I = pyfits.getdata(fileI)
+        Q = pyfits.getdata(fileQ)
+        U = pyfits.getdata(fileU)
+        V = pyfits.getdata(fileV)
+        if len(I.shape)==3:
+            index = 0
+            I = I[index,:,:]
+            Q = Q[index,:,:]
+            U = U[index,:,:]
+            V = V[index,:,:]
 
-    # compute the (linear or total) polarization degree
-    #degree = np.sqrt(Q**2 + U**2)
-    degree = np.sqrt(Q**2 + U**2 + V**2)
-    degree[degree>0] /= I[degree>0]
-    degree[degree<=0] = np.NaN   # so that areas with zero polarization are left blank
+        # compute the (linear or total) polarization degree
+        #degree = np.sqrt(Q**2 + U**2)
+        degree = np.sqrt(Q**2 + U**2 + V**2)
+        degree[degree>0] /= I[degree>0]
+        degree[degree<=0] = np.NaN   # so that areas with zero polarization are left blank
 
-    # compute the polarization angle
-    angle = 0.5 * np.arctan2(U,Q)
-    # add an offset according to Calamai, Landi Degl'Innocenti & Landi Degl'Innocenti (1975)
-    #angle[ Q<0 ] += np.pi/2
-    #angle[ (Q>0) & (U<0) ] += np.pi
-    #angle[ (Q==0) & (U>0) ] = np.pi/4
-    #angle[ (Q==0) & (U<0) ] = 3*np.pi/4
+        # compute the polarization angle
+        angle = 0.5 * np.arctan2(U,Q)
+        # add an offset according to Calamai, Landi Degl'Innocenti & Landi Degl'Innocenti (1975)
+        #angle[ Q<0 ] += np.pi/2
+        #angle[ (Q>0) & (U<0) ] += np.pi
+        #angle[ (Q==0) & (U>0) ] = np.pi/4
+        #angle[ (Q==0) & (U<0) ] = 3*np.pi/4
 
-    # determine the scale (fixed for now)
-    scale = 0.001
+        # determine the scale (fixed for now)
+        scale = 0.001
 
-    # plot the vector field
-    quiverplot = plt.quiver(degree*np.cos(angle), degree*np.sin(angle),
-                            pivot='middle', headwidth=0, headlength=1, headaxislength=1,
-                            units='xy', scale_units='xy', scale=scale)
+        # plot the vector field
+        quiverplot = plt.quiver(degree*np.cos(angle), degree*np.sin(angle),
+                                pivot='middle', headwidth=0, headlength=1, headaxislength=1,
+                                units='xy', scale_units='xy', scale=scale)
 
-    # add a legend
-    plt.quiverkey(quiverplot, 0.05, 0.05, scale, "{} %".format(scale*100),
-                  coordinates='axes', labelpos='E')
+        # add a legend
+        plt.quiverkey(quiverplot, 0.05, 0.05, scale, "{} %".format(scale*100),
+                      coordinates='axes', labelpos='E')
 
-    # save the figure
-    plt.savefig(plotfile, bbox_inches='tight', pad_inches=0.25)
-
-    # close things
-    plt.close()
+        # save and close the figure
+        plotfile = fileQ.replace("Q.fits",".pdf")
+        plt.savefig(plotfile, bbox_inches='tight', pad_inches=0.25)
+        plt.close()
+        print "Created PDF polarization map" + plotfile
 
 # -----------------------------------------------------------------

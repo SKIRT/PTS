@@ -21,7 +21,8 @@ from eagle.database import Database
 from eagle.galaxy import Snapshot, Galaxy
 from eagle.skirtrun import SkirtRun
 from pts.skifile import SkiFile
-from pts.visualizer import Visualizer
+from pts.makergbimages import makergbimages
+from pts.plotseds import plotseds
 
 # -----------------------------------------------------------------
 
@@ -92,9 +93,8 @@ def run(runid):
             raise ValueError("SKIRT simulation " + simulation.status())
 
         # create RGB images and/or SED plots
-        vis = Visualizer(simulation, log=True)
-        vis.createRGBimages()
-        vis.plotseds()
+        makergbimages(simulation)
+        plotseds(simulation)
 
         # move any .png and .pdf files to the visualization directory
         for visfile in filter(lambda fn: fn.endswith((".png",".pdf")), os.listdir(skirtrun.outpath())):

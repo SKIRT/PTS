@@ -15,22 +15,41 @@
 import re
 import os
 import os.path
+import types
 import numpy as np
 from pts.skifile import SkiFile
 
 # -----------------------------------------------------------------
-#  SkirtSimulation class
+
+## This function returns a list of SkirtSimulation objects depending on the type and value of the \em source argument:
+# - missing: all simulations for which there is a log file in the current directory
+# - empty string: all simulations for which there is a log file in the current directory
+# - string containing a slash: all simulations for which there is a log file in the specified directory
+# - nonempty string without a slash: the simulation with the specified prefix in the current directory
+# - simulation object: the simulation represented by the specified object
+# - list of strings and/or simulation objects: all simulations in the listed objects, as defined above
+#
+def createsimulations(source=""):
+    simulations = [ ]
+    sourcelist = source if isinstance(source, (types.TupleType,types.ListType)) else [ source ]
+    for source in sourcelist:
+        if isinstance(source, types.StringTypes):
+            if source == "" or "/" in source:
+                dirpath = os.path.realpath(os.path.expanduser(source))
+                logfiles = filter(lambda fn: fn.endswith("_log.txt"), os.listdir(dirpath))
+                for logfile in logfiles:
+                    simulations.append(SkirtSimulation(prefix=logfile[:-8], outpath=dirpath))
+            else:
+                if os.path.exists(source+"_log.txt"):
+                    simulations.append(SkirtSimulation(prefix=source))
+        elif isinstance(source,SkirtSimulation):
+            simulations.append(source)
+        else:
+            raise ValueError("Unsupported source type for simulation")
+    return simulations
+
 # -----------------------------------------------------------------
-
-## This function returns a list of SkirtSimulation objects representing all simulation results contained
-# in the specified directory. The directory path may be absolute, relative to a user's home folder,
-# or relative to the current working directory.
-def createsimulations(dirpath):
-    dirpath = os.path.realpath(os.path.expanduser(dirpath))
-    logfiles = filter(lambda fn: fn.endswith("_log.txt"), os.listdir(dirpath))
-    prefixes = [ logfile[0:-len("_log.txt")] for logfile in logfiles ]
-    return [ SkirtSimulation(prefix=prefix,outpath=dirpath) for prefix in prefixes ]
-
+#  SkirtSimulation class
 # -----------------------------------------------------------------
 
 ## An instance of the SkirtSimulation class represents all input and output files related to a single performed
@@ -230,6 +249,27 @@ class SkirtSimulation:
         for wave in wavelengths:
             result += [ np.argmin(np.abs(np.array(grid)-wave)) ]
         return result
+
+    # -----------------------------------------------------------------
+
+    ## This function returns an appropriate axis label for the flux described in the simulation output sed files,
+    # including a description of the physical quantity and the correspinding units. If there are no sed output files,
+    # or if the units are not recognized, the function returns the string "Flux".
+    def fluxlabel(self):
+        # get the paths of the sed output files
+        sedpaths = self.seddatpaths()
+        if len(sedpaths)>0:
+            # get the second line of the file, which contains the description of the flux column
+            sedfile = open(sedpaths[0], 'r')
+            sedfile.readline()
+            fluxdescription = sedfile.readline()
+            sedfile.close()
+            # select the appropriate label based on the units given in the description
+            if "(Jy)" in fluxdescription: return r"$F_\nu\,(\mathrm{Jy})$"
+            if "(W/m2/micron)" in fluxdescription: return r"$F_\lambda\,(\mathrm{W}\,\mathrm{m}^{-2}\,\mu \mathrm{m}^{-1})$"
+            if "(W/m2)" in fluxdescription: return r"$\lambda\,F_\lambda\,(\mathrm{W}\,\mathrm{m}^{-2})$"
+        # failed
+        return "Flux"
 
     # -----------------------------------------------------------------
 
