@@ -94,6 +94,22 @@ the SQLite library version 3.7.3.
 Before making these kind of changes
 to the database, always make a backup through the eagle.database.backup() function.
 
+\subsection EagleFlowCat Snapshots and catalogs
+
+After configuring a new default EAGLE snapshot (see eagle.config) for the first time, you need to construct a catalog
+for the galaxies in the snapshot. To do this, run the \em eagle_catalog script:
+
+\verbatim
+$ pts catalog
+Opening the snapshot...
+Directory: /Users/pcamps/EAGLE/Snapshots/L0012N0188REF
+...
+Do you want to build the catalog for Ref12 at redshift 0? (y/n) yes
+Building catalog...
+...
+done.
+\endverbatim
+
 \subsection EagleFlowSki SKIRT parameter files
 
 You need to provide one or more ski files (SKIRT parameter files) in the directory specified in eagle.config

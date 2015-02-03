@@ -19,11 +19,16 @@
 #<TR><TD>skirt_path</TD>            <TD>The absolute path to the SKIRT executable</TD></TR>
 #<TR><TD>eagledata_path</TD>        <TD>A dictionary containing key-value pairs providing the absolute path to the
 #                                       eagle data directory (value) for each relevant eagle simulation (key)</TD></TR>
+#<TR><TD>catalogs_path</TD>         <TD>The absolute path to the directory containing the catalog files corresponding
+#                                       to each of the the eagle snapshots used with this package</TD></TR>
 #<TR><TD>database_path</TD>         <TD>The absolute path to the directory containing the SKIRT-runs database</TD></TR>
 #<TR><TD>backup_path</TD>           <TD>The absolute path to the directory containing backups of the database</TD></TR>
 #<TR><TD>templates_path</TD>        <TD>The absolute path to the directory containing ski file templates</TD></TR>
 #<TR><TD>results_path</TD>          <TD>The absolute path to the directory containing the SKIRT results</TD></TR>
 #<TR><TD>queue</TD>                 <TD>The name of the queue to which jobs should be submitted, or None</TD></TR>
+#<TR><TD>default_eaglesim</TD>      <TD>The identifier of the eagle simulation currently in use (must be one of the
+#                                       keys in the \em eagledata_path dictionary)</TD></TR>
+#<TR><TD>default_redshift</TD>      <TD>The redshift of the snapshot currently in use</TD></TR>
 #</TABLE>
 #
 # In addition this module offers some utility functions for simple tasks such as obtaining a time stamp.
@@ -63,41 +68,37 @@ else:
 
 # configuration for the COSMA cluster in Durham
 if "cosma" in hostname:
-    skirt_path = absolutepath("~/SKIRT/release/skirt")
-    eagledata_path = { 'Ref100Mpc': "/cosma5/data/Eagle/ScienceRuns/Planck1/L0100N1504/PE/"
-                                    +"Z0p10_W1p00_E_3p0_0p3_ALPHA1p0e6_rhogas1_reposlim3p0soft_100mgas_cosma/data" }
-    database_path = "/cosma5/data/Eagle/SkirtAnalysis/database"
-    backup_path = "/cosma5/data/Eagle/SkirtAnalysis/backup"
-    templates_path = "/cosma5/data/Eagle/SkirtAnalysis/templates"
-    results_path = "/cosma5/data/Eagle/SkirtAnalysis/results"
+    skirt_path = absolutepath("~/SKIRT/release/SKIRTmain/skirt")
+    eagledata_path = { 'Ref100':  "/cosma5/data/Eagle/ScienceRuns/Planck1/L0100N1504/PE/REFERENCE/data/",
+                       'Ref25':   "/cosma5/data/Eagle/ScienceRuns/Planck1/L0025N0752/PE/REFERENCE/data",
+                       'Recal25': "/cosma5/data/Eagle/ScienceRuns/Planck1/L0025N0752/PE/RECALIBRATED/data",
+                       'Ref12':   "/cosma5/data/Eagle/ScienceRuns/Planck1/L0012N0188/PE/REFERENCE/data" }
+    catalogs_path =  "/cosma5/data/Eagle/SkirtAnalysis/Catalogs"
+    database_path =  "/cosma5/data/Eagle/SkirtAnalysis/Database"
+    backup_path =    "/cosma5/data/Eagle/SkirtAnalysis/Backup"
+    templates_path = "/cosma5/data/Eagle/SkirtAnalysis/Templates"
+    results_path =   "/cosma5/data/Eagle/SkirtAnalysis/Results"
     queue = "cosma5"
-
-# -----------------------------------------------------------------
-
-# configuration for James's laptop
-elif "james" in hostname:
-    skirt_path = absolutepath("~/SKIRTmap/debug/SKIRTmain/skirt")
-    eagledata_path = { 'Ref100Mpc': absolutepath("~/Documents/Eagle/Ref12MpcRedshift0/")}
-    database_path = absolutepath("~/PTS7/run/database")
-    backup_path = absolutepath("~/PTS7/run/backup")
-    templates_path = absolutepath("~/PTS7/run/templates")
-    results_path = absolutepath("~/PTS7/run/results")
-    queue = None
+    default_eaglesim = 'Ref12'
+    default_redshift = 0
 
 # -----------------------------------------------------------------
 
 # configuration for Peter's desktop at work
 elif "obiwan" in hostname:
     skirt_path = absolutepath("~/SKIRT/release/SKIRTmain/skirt")
-    eagledata_path = { 'Ref100': absolutepath("~/EAGLE/L0100N1504REF/hdf5"),
-                       'Ref25': absolutepath("~/EAGLE/L0025N0752REF/hdf5"),
-                       'Recal25': absolutepath("~/EAGLE/L0025N0752RECAL/hdf5"),
-                       'Ref12': absolutepath("~/EAGLE/L0012N0188REF/hdf5") }
-    database_path = absolutepath("~/PTS/run/database")
-    backup_path = absolutepath("~/PTS/run/backup")
-    templates_path = absolutepath("~/PTS/run/templates")
-    results_path = absolutepath("~/PTS/run/results")
+    eagledata_path = { 'Ref100': absolutepath("~/EAGLE/Snapshots/L0100N1504REF"),
+                       'Ref25': absolutepath("~/EAGLE/Snapshots/L0025N0752REF"),
+                       'Recal25': absolutepath("~/EAGLE/Snapshots/L0025N0752RECAL"),
+                       'Ref12': absolutepath("~/EAGLE/Snapshots/L0012N0188REF") }
+    catalogs_path =  absolutepath("~/EAGLE/Catalogs")
+    database_path =  absolutepath("~/EAGLE/Database")
+    backup_path =    absolutepath("~/EAGLE/Backup")
+    templates_path = absolutepath("~/EAGLE/Templates")
+    results_path =   absolutepath("~/EAGLE/Results")
     queue = None
+    default_eaglesim = 'Ref12'
+    default_redshift = 0
 
 # -----------------------------------------------------------------
 

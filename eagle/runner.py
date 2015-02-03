@@ -9,8 +9,6 @@
 #
 # This module offers functions to actually perform a SKIRT simulation on an EAGLE galaxy according to the
 # specifications defined in a particular SKIRT-runs database record.
-#
-# TODO: use James' mechanisms to extract info from the EAGLE snapshot instead of the obsolete galaxy_old package.
 
 # -----------------------------------------------------------------
 
@@ -77,7 +75,6 @@ def run(runid):
         ski.setstarfile(starsname)
         ski.setgasfile(gasname)
         ski.sethiifile(hiiname)
-        #ski.setextent("{0:1.0f} kpc".format(extent)) // TO DO
         ski.setpackages(100000 + 5*(record['starparticles']+record['gasparticles']))
         ski.saveto(os.path.join(skirtrun.runpath(), skiname))
 

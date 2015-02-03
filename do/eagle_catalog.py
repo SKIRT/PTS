@@ -5,48 +5,49 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.eagle_insert Insert selected records into the SKIRT-runs database.
+## \package do.eagle_catalog Inspect or build the catalog for the default EAGLE snapshot.
 #
-# This script cretes the cross-reference and catalog files specified in the eagle.galaxy module
+# This script lists the basic properties of the galaxies in the catalog for the EAGLE snapshot
+# that has been configured as the default snapshot in eagle.config.
+# If the catalog does not yet exist, the script offers to construct it.
 #
-# The script expects exactly one command-line argument specifying:
-#  - The key for the relevant simulation listed in the eagle.config file
+# The script expects either zero or exactly two command-line arguments specifying a minimum and a maximum gas mass
+# (in solar mass units). If these values are specified, only galaxies are listed with a gas mass inside the range.
 #
-# TODO: provide more meaningful selection criteria.
 
 # -----------------------------------------------------------------
 
 import sys
-from eagle.galaxy import Snapshot, Galaxy
-import eagle.database
+import os.path
+from eagle.galaxy import Snapshot
 
 # -----------------------------------------------------------------
 
-# get the command-line arguments
-if len(sys.argv) != 2: raise ValueError("This script expects exactly one command-line argument")
-snapkey = sys.argv[1]
-
-# warn the user that these things take time
-
-while True:
-    proceed = raw_input('Are you sure you want to rebuild the catalog for '+ snapkey +'? (y/n)\t')
-
-    if proceed == 'n':
-        sys.exit
-    elif proceed == 'y':
-        break
-
-    print 'Invalid input. Please enter y or n'
-
-# open the snaphot files
-print "Opening the snaphot..."
-snap = Snapshot(snapkey, redshift=0)
+# open the snapshot files
+print "Opening the snapshot..."
+snap = Snapshot()
 snap.printinfo()
+print ""
 
-# make crossreference and catalog files
-snap.exportcrossreference()
-snap.exportcatalog()
+# if the catalog exists, show info on its contents
+if os.path.isfile(snap.catalogfilepath()):
+    galaxies = snap.galaxies()
+    # if appropriate command-line arguments are provided, filter the galaxies
+    if not (len(sys.argv) in (1,3)): raise ValueError("This script expects zero or two command-line arguments")
+    if len(sys.argv) == 3:
+        mingasmass = float(sys.argv[1])
+        maxgasmass = float(sys.argv[2])
+        print "Restricting gas mass to range [{0:.1e},{1:.1e}]".format(mingasmass,maxgasmass)
+        print ""
+        galaxies.remove_gasmass_below(mingasmass)
+        galaxies.remove_gasmass_above(maxgasmass)
+    galaxies.printinfo()
 
-
+# otherwise, ask the user whether to construct it
+else:
+    proceed = raw_input("Do you want to build the catalog for {0} at redshift {1}? (y/n) "  \
+                        .format(config.default_eaglesim, config.default_redshift))
+    if proceed.lower().startswith("y"):
+        snap.exportcatalog()
 
 # -----------------------------------------------------------------

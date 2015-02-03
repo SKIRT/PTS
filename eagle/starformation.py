@@ -18,7 +18,7 @@ import numpy as np
 
 # -----------------------------------------------------------------
 
-## Reads a hdf5 field's attributes into a python dictionary
+## Reads a hdf5 field's attributes into a python dictionary.
 def readAttrs(hdf, field='Header'):
      fieldobj = hdf[field]
      headkeys = list(fieldobj.attrs)
@@ -29,7 +29,7 @@ def readAttrs(hdf, field='Header'):
 
 # -----------------------------------------------------------------
 
-## Reads the Schmidt parameters into a python structure
+## Reads the Schmidt parameters into a python structure.
 def schmidtParameters(consts, runpars):
 
     # extract relevent unit conversions
@@ -136,7 +136,7 @@ def getPtot(rho, schmidtpars):
 
 # -----------------------------------------------------------------
 
-# Function to sample a star forming gas particles into a number of sub particles at a set mass resolution.
+## Function to sample a star forming gas particles into a number of sub particles at a set mass resolution.
 #
 # Inputs:
 #  - sfr: star formation rate in solar masses per yr
