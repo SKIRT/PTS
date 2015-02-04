@@ -11,8 +11,9 @@
 # that has been configured as the default snapshot in eagle.config.
 # If the catalog does not yet exist, the script offers to construct it.
 #
-# The script expects either zero or exactly two command-line arguments specifying a minimum and a maximum gas mass
-# (in solar mass units). If these values are specified, only galaxies are listed with a gas mass inside the range.
+# The script expects up to three command-line arguments specifying a minimum number of particles (for both stars and
+# gas) and a minimum and a maximum stellar mass (in solar mass units). If these values are specified, only galaxies
+# within these constraints are listed.
 #
 
 # -----------------------------------------------------------------
@@ -33,20 +34,25 @@ print ""
 if os.path.isfile(snap.catalogfilepath()):
     galaxies = snap.galaxies()
     # if appropriate command-line arguments are provided, filter the galaxies
-    if not (len(sys.argv) in (1,3)): raise ValueError("This script expects zero or two command-line arguments")
-    if len(sys.argv) == 3:
-        mingasmass = float(sys.argv[1])
-        maxgasmass = float(sys.argv[2])
-        print "Restricting gas mass to range [{0:.1e},{1:.1e}]".format(mingasmass,maxgasmass)
-        print ""
-        galaxies.remove_gasmass_below(mingasmass)
-        galaxies.remove_gasmass_above(maxgasmass)
+    if len(sys.argv) > 1:
+        minparticles = int(sys.argv[1])
+        print "Requiring a minimum of {0} particles for stars and gas".format(minparticles)
+        galaxies.remove_starparticles_below(minparticles)
+        galaxies.remove_gasparticles_below(minparticles)
+    if len(sys.argv) > 2:
+        minstarmass = float(sys.argv[2])
+        print "Requiring a minimum stellar mass of {0:.1e} solar masses".format(minstarmass)
+        galaxies.remove_starmass_below(minstarmass)
+    if len(sys.argv) > 3:
+        maxstarmass = float(sys.argv[3])
+        print "Requiring a maximum stellar mass of {0:.1e} solar masses".format(maxstarmass)
+        galaxies.remove_starmass_above(maxstarmass)
     galaxies.printinfo()
 
 # otherwise, ask the user whether to construct it
 else:
-    proceed = raw_input("Do you want to build the catalog for {0} at redshift {1}? (y/n) "  \
-                        .format(config.default_eaglesim, config.default_redshift))
+    proceed = raw_input("--> Would you like to build the catalog for {0} at redshift {1}? [y/n] "  \
+                        .format(snap.eaglesim, snap.orig_redshift))
     if proceed.lower().startswith("y"):
         snap.exportcatalog()
 

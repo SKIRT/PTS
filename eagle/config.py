@@ -97,7 +97,7 @@ elif "obiwan" in hostname:
     templates_path = absolutepath("~/EAGLE/Templates")
     results_path =   absolutepath("~/EAGLE/Results")
     queue = None
-    default_eaglesim = 'Ref12'
+    default_eaglesim = 'Recal25'
     default_redshift = 0
 
 # -----------------------------------------------------------------

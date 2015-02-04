@@ -75,7 +75,6 @@ def run(runid):
         ski.setstarfile(starsname)
         ski.setgasfile(gasname)
         ski.sethiifile(hiiname)
-        ski.setpackages(100000 + 5*(record['starparticles']+record['gasparticles']))
         ski.saveto(os.path.join(skirtrun.runpath(), skiname))
 
         # extract the particle data for the galaxy from the EAGLE snapshot
@@ -89,8 +88,8 @@ def run(runid):
         if simulation.status() != 'Finished':
             raise ValueError("SKIRT simulation " + simulation.status())
 
-        # create RGB images and/or SED plots
-        makergbimages(simulation)
+        # create RGB images and/or SED plots at approximately the SDSS gri wavelengths
+        makergbimages(simulation, wavelength_tuples=((0.75,0.60,0.45),) )
         plotseds(simulation)
 
         # move any .png and .pdf files to the visualization directory

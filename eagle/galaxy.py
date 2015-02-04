@@ -169,7 +169,7 @@ class Snapshot:
     ## This function prints some information on the snapshot to the console.
     def printinfo(self):
         print "Directory: " + self.directory
-        print "Run label: " + self.runlabel
+        print "Simulation: " + self.eaglesim
         print "Box size:  {0:.1f} Mpc".format(self.boxsize/1e6)
         print "Redshift:  {0:.3f}".format(self.redshift)
         print "Expansion: {0:.1f}%".format(self.expansionfactor*100)
@@ -267,22 +267,30 @@ class GalaxyList:
     ## This function removes all galaxies from the list that have a stellar mass under the specified value,
     # in \f$\textrm{M}_\odot\f$.
     def remove_starmass_below(self, mass):
-        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.starmass > mass ]
+        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.starmass >= mass ]
 
     ## This function removes all galaxies from the list that have a gas mass under the specified value,
     # in \f$\textrm{M}_\odot\f$.
     def remove_gasmass_below(self, mass):
-        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.gasmass > mass ]
+        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.gasmass >= mass ]
 
     ## This function removes all galaxies from the list that have a stellar mass above the specified value,
     # in \f$\textrm{M}_\odot\f$.
     def remove_starmass_above(self, mass):
-        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.starmass < mass ]
+        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.starmass <= mass ]
 
     ## This function removes all galaxies from the list that have a gas mass above the specified value,
     # in \f$\textrm{M}_\odot\f$.
     def remove_gasmass_above(self, mass):
-        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.gasmass < mass ]
+        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.gasmass <= mass ]
+
+    ## This function removes all galaxies from the list that have less star particles than the specified value.
+    def remove_starparticles_below(self, particles):
+        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.numstarparticles >= particles ]
+
+    ## This function removes all galaxies from the list that have less gas particles than the specified value.
+    def remove_gasparticles_below(self, particles):
+        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.numgasparticles >= particles ]
 
     ## This function prints some basic properties for all galaxies currently in the list. The output has
     # one line per galaxy and is sorted on descending total number of particles.
@@ -326,12 +334,12 @@ class Galaxy:
 
     ## This function prints a header line for the information lines printed by the printinfo() function
     def printinfotitle(self):
-        print "group subgr  #star part.  #gas part.  star mass  gas mass"
-        print "---------------------------------------------------------"
+        print " group subgr  #star part.  #gas part.  star mass  gas mass"
+        print "----------------------------------------------------------"
 
     ## This function prints some information on the galaxy on a single line
     def printinfo(self):
-        print " {0:4} {1:3}  {2:11,} {3:11,}   {4:9.1e} {5:9.1e}"  \
+        print " {0:5} {1:4}  {2:11,} {3:11,}   {4:9.1e} {5:9.1e}"  \
             .format(self.groupnumber, self.subgroupnumber,
                     self.numstarparticles, self.numgasparticles, self.starmass, self.gasmass)
 

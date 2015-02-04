@@ -126,17 +126,20 @@ subgroup numbers) in the EAGLE snaphot for a particular redshift, and identifyin
 be used to control the actual simulation.
 
 The \c eagle_insert command-line script offers a (currently quite primitive) implementation of this workflow step.
-The script expects exactly three command-line arguments specifying respectively:
+The script expects exactly five command-line arguments specifying respectively:
+
  - a label that will identify the set of inserted records in the database
- - a minimum number of particles (for both the stars and the gas)
- - a maximum number of particles (for both the stars and the gas)
+ - the name of the ski file template (without extension) to be used for these runs
+ - a minimum number of particles for stars and gas (same minimum for each particle type)
+ - a minimum stellar mass (in solar mass units)
+ - a maximum stellar mass (in solar mass units)
 
 The script shows the records that will be inserted into the database, and offers the user a chance
 to accept or reject the additions. For example:
 
 \verbatim
-$ pts insert MyTest 20000 22000
-Executing: eagle_insert MyTest 20000 22000
+$ pts insert MyTest oligo 20000 1e9 1e10
+Executing: MyTest oligo 20000 1e9 1e10
 Opening the snaphot...
 Box size:  100.0 Mpc
 Redshift:  0.000

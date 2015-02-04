@@ -9,11 +9,12 @@
 #
 # This script populates the SKIRT-runs database with relevant galaxies selected from the default EAGLE snapshot.
 #
-# The script expects exactly four command-line arguments specifying respectively:
+# The script expects exactly five command-line arguments specifying respectively:
 #  - a label that will identify the set of inserted records in the database
 #  - the name of the ski file template (without extension) to be used for these runs
-#  - a minimum gas mass (in solar mass units)
-#  - a maximum gas mass (in solar mass units)
+#  - a minimum number of particles for stars and gas (same minimum for each particle type)
+#  - a minimum stellar mass (in solar mass units)
+#  - a maximum stellar mass (in solar mass units)
 #
 
 # -----------------------------------------------------------------
@@ -25,11 +26,12 @@ import eagle.database
 # -----------------------------------------------------------------
 
 # get the command-line arguments
-if len(sys.argv) != 5: raise ValueError("This script expects exactly four command-line arguments")
+if len(sys.argv) != 6: raise ValueError("This script expects exactly five command-line arguments")
 label = sys.argv[1]
 skiname = sys.argv[2]
-mingasmass = float(sys.argv[3])
-maxgasmass = float(sys.argv[4])
+minparticles = int(sys.argv[3])
+minstarmass = float(sys.argv[4])
+maxstarmass = float(sys.argv[5])
 
 # backup and open the data base
 eagle.database.backup()
@@ -45,10 +47,12 @@ snap = Snapshot()
 snap.printinfo()
 print ""
 
-# get the list of galaxies within the specified gass mass range
+# get the list of galaxies within the specified range
 galaxies = snap.galaxies()
-galaxies.remove_gasmass_below(mingasmass)
-galaxies.remove_gasmass_above(maxgasmass)
+galaxies.remove_starparticles_below(minparticles)
+galaxies.remove_gasparticles_below(minparticles)
+galaxies.remove_starmass_below(minstarmass)
+galaxies.remove_starmass_above(maxstarmass)
 
 # insert a new record into the database for each selected galaxy, without committing
 for g in galaxies.galaxies:
