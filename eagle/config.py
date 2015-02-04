@@ -25,10 +25,18 @@
 #<TR><TD>backup_path</TD>           <TD>The absolute path to the directory containing backups of the database</TD></TR>
 #<TR><TD>templates_path</TD>        <TD>The absolute path to the directory containing ski file templates</TD></TR>
 #<TR><TD>results_path</TD>          <TD>The absolute path to the directory containing the SKIRT results</TD></TR>
-#<TR><TD>queue</TD>                 <TD>The name of the queue to which jobs should be submitted, or None</TD></TR>
 #<TR><TD>default_eaglesim</TD>      <TD>The identifier of the eagle simulation currently in use (must be one of the
 #                                       keys in the \em eagledata_path dictionary)</TD></TR>
 #<TR><TD>default_redshift</TD>      <TD>The redshift of the snapshot currently in use</TD></TR>
+#<TR><TD>queue</TD>                 <TD>The name of the queue to which jobs should be submitted, or None</TD></TR>
+#<TR><TD>nodes_per_job</TD>         <TD>The number of MPI computing nodes in each job (SKIRT-run);
+#                                       specify 1 to disable MPI</TD></TR>
+#<TR><TD>processes_per_node</TD>    <TD>The number of parallel MPI processes on each computing node;
+#                                       specify 1 to disable MPI</TD></TR>
+#<TR><TD>threads_per_process</TD>   <TD>The number of parallel threads in each MPI process;
+#                                       specify zero to use the number of logical cores on the computing node</TD></TR>
+#<TR><TD>maximum_hours</TD>         <TD>The maximum wall-time for each job (SKIRT-run) in hours;
+#                                       this value is used (and enforced) only on batch queueing systems</TD></TR>
 #</TABLE>
 #
 # In addition this module offers some utility functions for simple tasks such as obtaining a time stamp.
@@ -78,9 +86,13 @@ if "cosma" in hostname:
     backup_path =    "/cosma5/data/Eagle/SkirtAnalysis/Backup"
     templates_path = "/cosma5/data/Eagle/SkirtAnalysis/Templates"
     results_path =   "/cosma5/data/Eagle/SkirtAnalysis/Results"
-    queue = "cosma5"
-    default_eaglesim = 'Ref12'
+    default_eaglesim = 'Recal25'
     default_redshift = 0
+    queue = "cosma5"
+    nodes_per_job = 8
+    processes_per_node = 4          # cosma5 nodes have 16 cores and 128GB of memory
+    threads_per_process = 4
+    maximum_hours = 24
 
 # -----------------------------------------------------------------
 
@@ -96,9 +108,13 @@ elif "obiwan" in hostname:
     backup_path =    absolutepath("~/EAGLE/Backup")
     templates_path = absolutepath("~/EAGLE/Templates")
     results_path =   absolutepath("~/EAGLE/Results")
-    queue = None
     default_eaglesim = 'Recal25'
     default_redshift = 0
+    queue = None
+    nodes_per_job = 1
+    processes_per_node = 1
+    threads_per_process = 0
+    maximum_hours = 0
 
 # -----------------------------------------------------------------
 

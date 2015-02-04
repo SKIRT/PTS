@@ -22,7 +22,8 @@
 
 # the wavelengths for each of the RGB images to be created
 wavelength_tuples = None                                    # use the default frames
-#wavelength_tuples = [ (0.77,0.55,0.33), (333,100,24) ]      # use these wavelength sets
+#wavelength_tuples=((0.75,0.60,0.45),)                       # use approximate SDSS gri wavelengths
+#wavelength_tuples = [ (0.77,0.55,0.33), (333,100,24) ]      # use these arbitrary wavelength sets
 
 # -----------------------------------------------------------------
 

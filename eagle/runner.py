@@ -12,15 +12,15 @@
 
 # -----------------------------------------------------------------
 
+import os
 import os.path
-import shutil
 import eagle.config as config
 from eagle.database import Database
 from eagle.galaxy import Snapshot, Galaxy
 from eagle.skirtrun import SkirtRun
 from pts.skifile import SkiFile
+from pts.plotseds import plotseds   # import this one first to avoid warnings about setting the matplotlib backend
 from pts.makergbimages import makergbimages
-from pts.plotseds import plotseds
 
 # -----------------------------------------------------------------
 
@@ -83,7 +83,7 @@ def run(runid):
         galaxy.export(skirtrun.inpath())
 
         # run the SKIRT simulation
-        simulation = skirtrun.execute()
+        simulation = skirtrun.execute(processes=config.processes_per_node, threads=config.threads_per_process)
         simulation.removetemporaryfiles()
         if simulation.status() != 'Finished':
             raise ValueError("SKIRT simulation " + simulation.status())
@@ -94,7 +94,8 @@ def run(runid):
 
         # move any .png and .pdf files to the visualization directory
         for visfile in filter(lambda fn: fn.endswith((".png",".pdf")), os.listdir(skirtrun.outpath())):
-            shutil.move(os.path.join(skirtrun.outpath(), visfile), skirtrun.vispath())
+            os.rename(os.path.join(skirtrun.outpath(), visfile),
+                      os.path.join(skirtrun.vispath(), visfile))
 
         # set the runstatus of the database record to 'completed'
         db = Database()

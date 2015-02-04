@@ -117,12 +117,15 @@ class SkirtRun:
     # input and output paths, waits until SKIRT execution completes, and returns a SkirtSimulation object
     # for the SKIRT results. An error is raised if the run directory does not contain exactly one ski file.
     #
+    # The \em processes argument specifies the number of parallel MPI processes to be launched; to disable MPI
+    # specify a value of one, or omit the argument.
     # The \em threads argument specifies the number of parallel threads for each simulation; if zero or missing
     # the number of logical cores on the computer is used.
-    def execute(self, threads=0):
+    def execute(self, processes=1, threads=0):
         skirt = SkirtExec(config.skirt_path)
         skifile = os.path.join(self._runpath, self.prefix()+".ski")
-        simulations = skirt.execute(skifile, inpath=self.inpath(), outpath=self.outpath(), threads=threads)
+        simulations = skirt.execute(skifile, inpath=self.inpath(), outpath=self.outpath(),
+                      processes=processes, threads=threads)
         return simulations[0]
 
 # -----------------------------------------------------------------
