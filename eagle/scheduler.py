@@ -47,15 +47,16 @@ def schedule(runid):
 
     if config.queue!=None:
         # create the bash script that will be submitted as a job
-        # option -n xx: specifies the total number of cores (nodes_per_job * processes_per_node * threads_per_process)
+        # option -n xx specifies the total number of processes (nodes_per_job * processes_per_node)
         # option -R "span[ptile=xx]" specifies the number of processes on each node (processes_per_node)
+        # option -x specifies exclusive access to the nodes so we're free to spawn multiple threads
         jobscriptname = os.path.join(skirtrun.runpath(), "job.sh")
         joblogname = os.path.join(skirtrun.runpath(), "job_log.txt")
         jobscript = open(jobscriptname,'w')
         jobscript.write("#!/bin/bash -l\n")
         jobscript.write("# Batch script for running SKIRT on the Cosma cluster\n")
         jobscript.write("#BSUB -L /bin/bash\n")
-        jobscript.write("#BSUB -n {}\n".format(config.nodes_per_job*config.processes_per_node*config.threads_per_process))
+        jobscript.write("#BSUB -n {}\n".format(config.nodes_per_job*config.processes_per_node))
         jobscript.write("#BSUB -R \"span[ptile={}]\"\n".format(config.processes_per_node))
         jobscript.write("#BSUB -x\n")
         jobscript.write("#BSUB -q {}\n".format(config.queue))

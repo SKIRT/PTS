@@ -45,7 +45,9 @@
 # -----------------------------------------------------------------
 
 import datetime
+import os
 import os.path
+import pwd
 import socket
 
 # -----------------------------------------------------------------
@@ -63,14 +65,47 @@ def absolutepath(path):
 
 # -----------------------------------------------------------------
 
-# get the name of the user logged in on the terminal controlling this process
-username = os.getlogin()
+# get the name of the user logged in on the terminal controlling this process; try various mechanisms
+username = ""
+if len(username)==0:
+    try:
+        username = os.environ['USER']
+    except Exception:
+        pass
+if len(username)==0:
+    try:
+        username = os.getlogin()
+    except Exception:
+        pass
+if len(username)==0:
+    try:
+        username = pwd.getpwuid(os.geteuid())[0]
+    except Exception:
+        pass
 
-# get the name of the current host so we can let the configuration settings depend on it
-if socket.gethostname().find('.')>=0:
-    hostname=socket.gethostname()
-else:
-    hostname=socket.gethostbyaddr(socket.gethostname())[0]
+# get the name of the current host so we can let the configuration settings depend on it; try various mechanisms
+hostname = ""
+if len(hostname)==0:
+    try:
+        hostname = os.environ['HOST']
+    except Exception:
+        pass
+if len(hostname)==0:
+    try:
+        hostname = os.environ['HOSTNAME']
+    except Exception:
+        pass
+if len(hostname)==0:
+    try:
+        if socket.gethostname().find('.')>=0:
+            hostname=socket.gethostname()
+        else:
+            hostname=socket.gethostbyaddr(socket.gethostname())[0]
+    except Exception:
+        pass
+
+# print these for debugging purposes
+print "user and host:", username, hostname
 
 # -----------------------------------------------------------------
 
