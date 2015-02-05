@@ -29,6 +29,7 @@
 #                                       keys in the \em eagledata_path dictionary)</TD></TR>
 #<TR><TD>default_redshift</TD>      <TD>The redshift of the snapshot currently in use</TD></TR>
 #<TR><TD>queue</TD>                 <TD>The name of the queue to which jobs should be submitted, or None</TD></TR>
+#<TR><TD>mpistyle</TD>              <TD>The style to invoke the mpirun command; one of 'generic' or 'lsf'</TD></TR>
 #<TR><TD>nodes_per_job</TD>         <TD>The number of MPI computing nodes in each job (SKIRT-run);
 #                                       specify 1 to disable MPI</TD></TR>
 #<TR><TD>processes_per_node</TD>    <TD>The number of parallel MPI processes on each computing node;
@@ -129,6 +130,7 @@ if "cosma" in hostname:
     default_eaglesim = 'Recal25'
     default_redshift = 0
     queue = "cosma5"
+    mpistyle = 'lsf'
     nodes_per_job = 8
     processes_per_node = 4          # cosma5 nodes have 16 cores and 128GB of memory
     threads_per_process = 4
@@ -151,9 +153,10 @@ elif "obiwan" in hostname:
     default_eaglesim = 'Recal25'
     default_redshift = 0
     queue = None
+    mpistyle = 'generic'
     nodes_per_job = 1
-    processes_per_node = 1
-    threads_per_process = 0
+    processes_per_node = 2
+    threads_per_process = 2
     maximum_hours = 0
 
 # -----------------------------------------------------------------

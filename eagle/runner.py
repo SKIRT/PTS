@@ -83,7 +83,9 @@ def run(runid):
         galaxy.export(skirtrun.inpath())
 
         # run the SKIRT simulation
-        simulation = skirtrun.execute(processes=config.processes_per_node, threads=config.threads_per_process)
+        simulation = skirtrun.execute(mpistyle=config.mpistyle,
+                                      processes=config.nodes_per_job*config.processes_per_node,
+                                      threads=config.threads_per_process)
         simulation.removetemporaryfiles()
         if simulation.status() != 'Finished':
             raise ValueError("SKIRT simulation " + simulation.status())

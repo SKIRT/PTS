@@ -121,11 +121,12 @@ class SkirtRun:
     # specify a value of one, or omit the argument.
     # The \em threads argument specifies the number of parallel threads for each simulation; if zero or missing
     # the number of logical cores on the computer is used.
-    def execute(self, processes=1, threads=0):
+    # The \em mpistyle argument specifies the style to invoke the mpirun command; default is 'generic'.
+    def execute(self, processes=1, threads=0, mpistyle='generic'):
         skirt = SkirtExec(config.skirt_path)
         skifile = os.path.join(self._runpath, self.prefix()+".ski")
         simulations = skirt.execute(skifile, inpath=self.inpath(), outpath=self.outpath(),
-                      processes=processes, threads=threads)
+                      processes=processes, threads=threads, mpistyle=mpistyle)
         return simulations[0]
 
 # -----------------------------------------------------------------
