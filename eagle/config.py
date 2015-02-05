@@ -87,6 +87,11 @@ if len(username)==0:
 hostname = ""
 if len(hostname)==0:
     try:
+        hostname = os.environ['LSB_QUEUE']      # for a queued job, use the queue name as host name
+    except Exception:
+        pass
+if len(hostname)==0:
+    try:
         hostname = os.environ['HOST']
     except Exception:
         pass
