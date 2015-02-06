@@ -110,9 +110,6 @@ if len(hostname)==0:
     except Exception:
         pass
 
-# print these for debugging purposes
-print "user and host:", username, hostname
-
 # -----------------------------------------------------------------
 
 # configuration for the COSMA cluster in Durham

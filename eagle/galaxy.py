@@ -345,8 +345,10 @@ class Galaxy:
 
     ## This function exports particle data for the galaxy to three text files that can be imported in SKIRT.
     # The exported files are placed in the specified directory and are named "galaxy_G_S_stars.dat",
-    # "galaxy_G_S_gas.dat" and "galaxy_G_S_hii.dat", where G and S are replaced
+    # "galaxy_G_S_hii.dat", and "galaxy_G_S_gas.dat" where G and S are replaced
     # by the galaxy's group number and subgroup number. The file format is as described for SKIRT SPH import.
+    # In addition, the function creates a text file named "galaxy_G_S_info.txt", which contains relevant statistics
+    # including particle numbers and various total masses. The contents is documented in the file.
     def export(self, directory=""):
         print "Exporting galaxy ({0},{1}) from {2} files...".format(  \
                     self.groupnumber, self.subgroupnumber, len(self.fileindices))
@@ -359,17 +361,17 @@ class Galaxy:
         yngstars    = {}
         hiiregions  = {}
         sdat['r']        = np.column_stack([[],[],[]])
-        sdat['v']        = np.column_stack([[],[],[]])
         sdat['h']        = np.array([])
         sdat['im']       = np.array([])
         sdat['m']        = np.array([])
+        sdat['v']        = np.column_stack([[],[],[]])
         sdat['Z']        = np.array([])
         sdat['born']     = np.array([])
         sdat['rho_born'] = np.array([])
         gdat['r']        = np.column_stack([[],[],[]])
-        gdat['v']        = np.column_stack([[],[],[]])
         gdat['h']        = np.array([])
         gdat['m']        = np.array([])
+        gdat['v']        = np.column_stack([[],[],[]])
         gdat['Z']        = np.array([])
         gdat['T']        = np.array([])
         gdat['rho']      = np.array([])
@@ -411,6 +413,7 @@ class Galaxy:
         sdat['r']        = periodicCorrec(sdat['r'], self.snapshot.boxsize)
         sdat['h']        = toparsec(sdat['h'], self.snapshot.hubbleparam, self.snapshot.expansionfactor)
         sdat['im']       = tosolar(sdat['im'], self.snapshot.hubbleparam)
+        sdat['m']        = tosolar(sdat['m'], self.snapshot.hubbleparam)
         sdat['Z']        = sdat['Z']
         sdat['t']        = age(sdat['born']) - age(self.snapshot.expansionfactor)
         sdat['rho_born'] *= 6.7699e-31
@@ -420,8 +423,8 @@ class Galaxy:
         gdat['m']        = tosolar(gdat['m'], self.snapshot.hubbleparam)
         gdat['Z']        = gdat['Z']
         gdat['T']        = gdat['T']
-        gdat['sfr']      = gdat['sfr']
         gdat['rho']      = togcm3(gdat['rho'], self.snapshot.hubbleparam, self.snapshot.expansionfactor)
+        gdat['sfr']      = gdat['sfr']
 
         # density conversion from g cm^-3 to M_sun Mpc^-3
         densconv = ((self.snapshot.constants['CM_PER_MPC']/1.e6)**3) / self.snapshot.constants['SOLAR_MASS']
@@ -433,6 +436,19 @@ class Galaxy:
 
         gdat['P']        = sf.getPtot(gdat['rho'].copy(), self.snapshot.schmidtpars)
         gdat['h_mapp']   = (self.snapshot.mpdr / (4 * np.pi * gdat['rho'] * densconv))**(1/3.)
+
+        # ---- gather statistics about data as it is stored in the hdf5 snapshot
+
+        info = { }
+        info["original_particles_stars"] = len(sdat['m'])
+        info["original_initial_mass_stars"] = sdat['im'].sum()
+        info["original_mass_stars"] = sdat['m'].sum()
+        info["original_particles_gas"] = len(gdat['m'])
+        info["original_particles_cold_gas"] = np.count_nonzero(gdat['T']<=75000)
+        info["original_mass_gas"] = gdat['m'].sum()
+        info["original_mass_cold_gas"] = gdat['m'][gdat['T']<=75000].sum()
+        info["original_mass_metallic_gas"] = (gdat['m'][gdat['T']<=75000] * gdat['Z'][gdat['T']<=75000]).sum()
+        info["original_mass_baryons"] = info["original_mass_stars"] + info["original_mass_gas"]
 
         # ---- convert to Local Galactic Coordinates (LGC)
 
@@ -460,6 +476,43 @@ class Galaxy:
         sdat['r'],w = transf.transform_vec(sdat['r'][:,0],sdat['r'][:,1],sdat['r'][:,2], np.ones(sdat['r'].shape[0]))
         gdat['r'],w = transf.transform_vec(gdat['r'][:,0],gdat['r'][:,1],gdat['r'][:,2], np.ones(gdat['r'].shape[0]))
 
+        # ---- initialize statistics about the exported data that will be gathered as we go along
+
+        info["exported_particles_old_stars"] = 0
+        info["exported_initial_mass_old_stars"] = 0
+        info["exported_mass_old_stars"] = 0
+
+        info["exported_particles_non_star_forming_gas"] = 0
+        info["exported_particles_non_star_forming_cold_gas"] = 0
+        info["exported_mass_non_star_forming_gas"] = 0
+        info["exported_mass_non_star_forming_cold_gas"] = 0
+
+        info["exported_particles_young_stars_from_stars"] = 0
+        info["exported_initial_mass_young_stars_from_stars"] = 0
+        info["exported_mass_young_stars_from_stars"] = 0
+
+        info["exported_particles_hii_regions_from_stars"] = 0
+        info["exported_initial_mass_hii_regions_from_stars"] = 0
+        info["exported_mass_hii_regions_from_stars"] = 0
+
+        info["exported_particles_unspent_gas_from_stars"] = 0
+        info["exported_particles_unspent_cold_gas_from_stars"] = 0
+        info["exported_mass_unspent_gas_from_stars"] = 0
+        info["exported_mass_unspent_cold_gas_from_stars"] = 0
+
+        info["exported_particles_young_stars_from_gas"] = 0
+        info["exported_initial_mass_young_stars_from_gas"] = 0
+        info["exported_mass_young_stars_from_gas"] = 0
+
+        info["exported_particles_hii_regions_from_gas"] = 0
+        info["exported_initial_mass_hii_regions_from_gas"] = 0
+        info["exported_mass_hii_regions_from_gas"] = 0
+
+        info["exported_particles_unspent_gas_from_gas"] = 0
+        info["exported_particles_unspent_cold_gas_from_gas"] = 0
+        info["exported_mass_unspent_gas_from_gas"] = 0
+        info["exported_mass_unspent_cold_gas_from_gas"] = 0
+
         # ---- resample star forming regions
 
         # set up GALAXEV array
@@ -476,10 +529,19 @@ class Galaxy:
         isyoung = sdat['t'] < self.snapshot.agethresh
 
         # append older stars to GALAXEV array
-        bcstars = np.concatenate((bcstars, np.column_stack([sdat['r'], sdat['h'], sdat['im'], sdat['Z'], sdat['t']])[~isyoung]), axis=0)
+        if (~isyoung).any():
+            bcstars = np.concatenate((bcstars, np.column_stack([sdat['r'], sdat['h'], sdat['im'], sdat['Z'], sdat['t']])[~isyoung]), axis=0)
+            info["exported_particles_old_stars"] = np.count_nonzero(~isyoung)
+            info["exported_initial_mass_old_stars"] = sdat['im'][~isyoung].sum()
+            info["exported_mass_old_stars"] = sdat['m'][~isyoung].sum()
 
         # append non-SF gas data to dust array
-        dust = np.concatenate((dust, np.column_stack([gdat['r'], gdat['h'], gdat['m'], gdat['Z'], gdat['T']])[~issf].copy()), axis=0)
+        if (~issf).any():
+            dust = np.concatenate((dust, np.column_stack([gdat['r'], gdat['h'], gdat['m'], gdat['Z'], gdat['T']])[~issf].copy()), axis=0)
+            info["exported_particles_non_star_forming_gas"] = np.count_nonzero(~issf)
+            info["exported_particles_non_star_forming_cold_gas"] = np.count_nonzero(gdat['T'][~issf]<=75000)
+            info["exported_mass_non_star_forming_gas"] = gdat['m'][~issf].sum()
+            info["exported_mass_non_star_forming_cold_gas"] = gdat['m'][~issf][ [gdat['T'][~issf]<=75000] ].sum()
 
         # resample stars
         if isyoung.any():
@@ -493,34 +555,47 @@ class Galaxy:
             ms, ts, sfrs, idxs, mdiffs = resmpstr
             isinfant = ts < 1.e7
 
-            yngstars['r']     = sdat['r'][idxs][~isinfant]
-            yngstars['h']     = sdat['h'][idxs][~isinfant]
-            yngstars['im']    = ms[~isinfant]
-            yngstars['Z']     = sdat['Z'][idxs][~isinfant]
-            yngstars['t']     = ts[~isinfant]
+            if (~isinfant).any():
+                yngstars['r']  = sdat['r'][idxs][~isinfant]
+                yngstars['h']  = sdat['h'][idxs][~isinfant]
+                yngstars['im'] = ms[~isinfant]
+                yngstars['Z']  = sdat['Z'][idxs][~isinfant]
+                yngstars['t']  = ts[~isinfant]
+                bcstars = np.concatenate((bcstars, np.column_stack([yngstars['r'], yngstars['h'], yngstars['im'], yngstars['Z'], yngstars['t']])), axis=0)
+                info["exported_particles_young_stars_from_stars"] = np.count_nonzero(~isinfant)
+                info["exported_initial_mass_young_stars_from_stars"] = ms[~isinfant].sum()
+                info["exported_mass_young_stars_from_stars"] = info["exported_initial_mass_young_stars_from_stars"]
 
-            bcstars = np.concatenate((bcstars, np.column_stack([yngstars['r'], yngstars['h'], yngstars['im'], yngstars['Z'], yngstars['t']])), axis=0)
+            if (isinfant).any():
+                hiiregions['r']     = sdat['r'][idxs][isinfant]
+                hiiregions['h']     = sdat['h'][idxs][isinfant]
+                hiiregions['SFR']   = ms[isinfant] * 1e-7               # Assume constant SFR over 10 Myr, so sfr =  mcl / 10 Myr
+                hiiregions['Z']     = sdat['Z'][idxs][isinfant]
+                hiiregions['P']     = sdat['P'][idxs][isinfant] * 0.1   # Convert to Pa for output
+                hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
+                hiiregions['h_mapp'] = sdat['h_mapp'][idxs][isinfant]
 
-            hiiregions['r']     = sdat['r'][idxs][isinfant]
-            hiiregions['h']     = sdat['h'][idxs][isinfant]
-            hiiregions['SFR']   = ms[isinfant] * 1e-7               # Assume constant SFR over 10 Myr, so sfr =  mcl / 10 Myr
-            hiiregions['Z']     = sdat['Z'][idxs][isinfant]
-            hiiregions['P']     = sdat['P'][idxs][isinfant] * 0.1   # Convert to Pa for output
-            hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
-            hiiregions['h_mapp'] = sdat['h_mapp'][idxs][isinfant]
+                # Set 0.2 as fiducial value (Jonsson (2010))
+                hiiregions['fPDR']  = np.array([0.2]*hiiregions['P'].size)
 
-            # Set 0.2 as fiducial value (Jonsson (2010))
-            hiiregions['fPDR']  = np.array([0.2]*hiiregions['P'].size)
+                # append to MAPPINGSIII array
+                mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
+                                                                      hiiregions['Z'], hiiregions['logC'], hiiregions['P'],
+                                                                      hiiregions['fPDR']])), axis=0)
+                info["exported_particles_hii_regions_from_stars"] = np.count_nonzero(isinfant)
+                info["exported_initial_mass_hii_regions_from_stars"] = ms[isinfant].sum()
+                info["exported_mass_hii_regions_from_stars"] = info["exported_initial_mass_hii_regions_from_stars"]
 
-            # append to MAPPINGSIII array
-            mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
-                                                                  hiiregions['Z'], hiiregions['logC'], hiiregions['P'],
-                                                                  hiiregions['fPDR']])), axis=0)
             # T is set to 0 K as T unavailable for resampled star particles
             sdat['T'] = np.zeros(sdat['im'].shape[0])
 
-            # add unspent young star particle material to dust array.
-            dust = np.concatenate((dust, np.column_stack([sdat['r'], sdat['h'], sdat['im'] - mdiffs, sdat['Z'], sdat['T']]).copy()), axis=0)
+            # add unspent young star particle material to dust array
+            mass = sdat['im'] - mdiffs
+            dust = np.concatenate((dust, np.column_stack([sdat['r'], sdat['h'], mass, sdat['Z'], sdat['T']]).copy()), axis=0)
+            info["exported_particles_unspent_gas_from_stars"] = len(mass)
+            info["exported_particles_unspent_cold_gas_from_stars"] = info["exported_particles_unspent_gas_from_stars"]
+            info["exported_mass_unspent_gas_from_stars"] = mass.sum()
+            info["exported_mass_unspent_cold_gas_from_stars"] = info["exported_mass_unspent_gas_from_stars"]
 
         # resample gas
         if issf.any():
@@ -531,32 +606,81 @@ class Galaxy:
             ms, ts, sfrs, idxs, mdiffs = resmpstr
             isinfant = ts < 1.e7
 
-            yngstars['r']       = gdat['r'][idxs][~isinfant]
-            yngstars['h']       = gdat['h'][idxs][~isinfant]
-            yngstars['im']      = ms[~isinfant]
-            yngstars['Z']       = gdat['Z'][idxs][~isinfant]
-            yngstars['t']       = ts[~isinfant]
+            if (~isinfant).any():
+                yngstars['r']  = gdat['r'][idxs][~isinfant]
+                yngstars['h']  = gdat['h'][idxs][~isinfant]
+                yngstars['im'] = ms[~isinfant]
+                yngstars['Z']  = gdat['Z'][idxs][~isinfant]
+                yngstars['t']  = ts[~isinfant]
+                bcstars = np.concatenate((bcstars, np.column_stack([yngstars['r'], yngstars['h'], yngstars['im'], yngstars['Z'], yngstars['t']])), axis=0)
+                info["exported_particles_young_stars_from_gas"] = np.count_nonzero(~isinfant)
+                info["exported_initial_mass_young_stars_from_gas"] = ms[~isinfant].sum()
+                info["exported_mass_young_stars_from_gas"] = info["exported_initial_mass_young_stars_from_gas"]
 
-            bcstars = np.concatenate((bcstars, np.column_stack([yngstars['r'], yngstars['h'], yngstars['im'], yngstars['Z'], yngstars['t']])), axis=0)
+            if (isinfant).any():
+                hiiregions['r']     = gdat['r'][idxs][isinfant]
+                hiiregions['h']     = gdat['h'][idxs][isinfant]
+                hiiregions['SFR']   = ms[isinfant] * 1e-7               # Assume constant SFR over 10 Myr, so sfr =  mcl / 10 Myr
+                hiiregions['Z']     = gdat['Z'][idxs][isinfant]
+                hiiregions['P']     = gdat['P'][idxs][isinfant] * 0.1     # convert to Pa
+                hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
+                hiiregions['h_mapp'] = gdat['h_mapp'][idxs][isinfant]
 
-            hiiregions['r']     = gdat['r'][idxs][isinfant]
-            hiiregions['h']     = gdat['h'][idxs][isinfant]
-            hiiregions['SFR']   = ms[isinfant] * 1e-7               # Assume constant SFR over 10 Myr, so sfr =  mcl / 10 Myr
-            hiiregions['Z']     = gdat['Z'][idxs][isinfant]
-            hiiregions['P']     = gdat['P'][idxs][isinfant] * 0.1     # convert to Pa
-            hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
-            hiiregions['h_mapp'] = gdat['h_mapp'][idxs][isinfant]
+                # Set 0.2 as fiducial value a la Jonsson (2010)
+                hiiregions['fPDR']   = np.array([0.2]*hiiregions['P'].size)
 
-             # Set 0.2 as fiducial value a la Jonsson (2010)
-            hiiregions['fPDR']   = np.array([0.2]*hiiregions['P'].size)
-
-            # append to MAPPINGSIII array
-            mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
-                                                                  hiiregions['Z'], hiiregions['logC'], hiiregions['P'],
-                                                                  hiiregions['fPDR']])), axis=0)
+                # append to MAPPINGSIII array
+                mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
+                                                                      hiiregions['Z'], hiiregions['logC'], hiiregions['P'],
+                                                                      hiiregions['fPDR']])), axis=0)
+                info["exported_particles_hii_regions_from_gas"] = np.count_nonzero(isinfant)
+                info["exported_initial_mass_hii_regions_from_gas"] = ms[isinfant].sum()
+                info["exported_mass_hii_regions_from_gas"] = info["exported_initial_mass_hii_regions_from_gas"]
 
             # add unspent SF gas material to dust array
-            dust = np.concatenate((dust, np.column_stack([gdat['r'], gdat['h'], gdat['m'] - mdiffs, gdat['Z'], gdat['T']]).copy()), axis=0)
+            mass = gdat['m'] - mdiffs
+            dust = np.concatenate((dust, np.column_stack([gdat['r'], gdat['h'], mass, gdat['Z'], gdat['T']]).copy()), axis=0)
+            info["exported_particles_unspent_gas_from_gas"] = len(mass)
+            info["exported_particles_unspent_cold_gas_from_gas"] = np.count_nonzero(gdat['T']<=75000)
+            info["exported_mass_unspent_gas_from_gas"] = mass.sum()
+            info["exported_mass_unspent_cold_gas_from_gas"] = mass[ [gdat['T']<=75000] ].sum()
+
+        # ---- make some sums and write statistics in info file
+
+        info["exported_particles_young_stars"] = info["exported_particles_young_stars_from_stars"] + info["exported_particles_young_stars_from_gas"]
+        info["exported_initial_mass_young_stars"] = info["exported_initial_mass_young_stars_from_stars"] + info["exported_initial_mass_young_stars_from_gas"]
+        info["exported_mass_young_stars"] = info["exported_mass_young_stars_from_stars"] + info["exported_mass_young_stars_from_gas"]
+
+        info["exported_particles_stars"] = info["exported_particles_old_stars"] + info["exported_particles_young_stars"]
+        info["exported_initial_mass_stars"] = info["exported_initial_mass_old_stars"] + info["exported_initial_mass_young_stars"]
+        info["exported_mass_stars"] = info["exported_mass_old_stars"] + info["exported_mass_young_stars"]
+
+        info["exported_particles_hii_regions"] = info["exported_particles_hii_regions_from_stars"] + info["exported_particles_hii_regions_from_gas"]
+        info["exported_initial_mass_hii_regions"] = info["exported_initial_mass_hii_regions_from_stars"] + info["exported_initial_mass_hii_regions_from_gas"]
+        info["exported_mass_hii_regions"] = info["exported_mass_hii_regions_from_stars"] + info["exported_mass_hii_regions_from_gas"]
+
+        info["exported_particles_unspent_gas"] = info["exported_particles_unspent_gas_from_stars"] + info["exported_particles_unspent_gas_from_gas"]
+        info["exported_particles_unspent_cold_gas"] = info["exported_particles_unspent_cold_gas_from_stars"] + info["exported_particles_unspent_cold_gas_from_gas"]
+        info["exported_mass_unspent_gas"] = info["exported_mass_unspent_gas_from_stars"] + info["exported_mass_unspent_gas_from_gas"]
+        info["exported_mass_unspent_cold_gas"] = info["exported_mass_unspent_cold_gas_from_stars"] + info["exported_mass_unspent_cold_gas_from_gas"]
+
+        info["exported_particles_gas"] = info["exported_particles_non_star_forming_gas"] + info["exported_particles_unspent_gas"]
+        info["exported_particles_cold_gas"] = info["exported_particles_non_star_forming_cold_gas"] + info["exported_particles_unspent_cold_gas"]
+        info["exported_mass_gas"] = info["exported_mass_non_star_forming_gas"] + info["exported_mass_unspent_gas"]
+        info["exported_mass_cold_gas"] = info["exported_mass_non_star_forming_cold_gas"] + info["exported_mass_unspent_cold_gas"]
+        m = dust[:,4];  Z = dust[:,5];  T = dust[:,6]
+        info["exported_mass_metallic_gas"] = (m[T<=75000] * Z[T<=75000]).sum()
+        info["exported_mass_baryons"] = info["exported_mass_stars"] + info["exported_mass_hii_regions"] + info["exported_mass_gas"]
+
+        infofilename = "galaxy_{0}_{1}_info.txt".format(self.groupnumber, self.subgroupnumber)
+        infofile = open(os.path.join(directory,infofilename), 'w')
+        infofile.write('# Statistics for SPH particles extracted from EAGLE HDF5 snapshot to SKIRT6 format\n')
+        infofile.write('# Masses are expressed in solar mass units\n')
+        maxkeylen = max(map(len,info.keys()))
+        for key in sorted(info.keys()):
+            valueformat = "d" if "_particles_" in key else ".9e"
+            infofile.write( ("{0:"+str(maxkeylen)+"} = {1:15"+valueformat+"}\n").format(key, info[key]) )
+        infofile.close()
 
         # ---- write output files
 

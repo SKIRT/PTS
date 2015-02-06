@@ -66,7 +66,6 @@ def schedule(runid):
         jobscript.write("#BSUB -oo {}\n".format(joblogname))
         jobscript.write("#BSUB -eo {}\n".format(joblogname))
         jobscript.write("#BSUB -W {}:00\n".format(config.maximum_hours))
-        jobscript.write("echo using hosts $LSB_HOSTS\n")
         jobscript.write("python -u -m do eagle_run {}\n".format(runid))
         jobscript.close()
 
