@@ -64,14 +64,9 @@ class SkirtRun:
         self._runpath = os.path.join(config.results_path, topdir, botdir)
 
         if create:
-            try:
-                os.makedirs(self.inpath())
-                os.makedirs(self.outpath())
-                os.makedirs(self.vispath())
-            except:
-                if (not os.path.isdir(self.inpath())): raise ValueError("Can't create directory " + self.inpath())
-                if (not os.path.isdir(self.outpath())): raise ValueError("Can't create directory " + self.outpath())
-                if (not os.path.isdir(self.vispath())): raise ValueError("Can't create directory " + self.vispath())
+            _createdir(self.inpath())
+            _createdir(self.outpath())
+            _createdir(self.vispath())
 
     ## This function returns the SKIRT run identifier that was passed to the constructor
     def runid(self):
@@ -128,5 +123,15 @@ class SkirtRun:
         simulations = skirt.execute(skifile, inpath=self.inpath(), outpath=self.outpath(),
                       processes=processes, threads=threads, mpistyle=mpistyle)
         return simulations[0]
+
+# -----------------------------------------------------------------
+
+## This private helper function creates directories along the specified path, and raises an error if there is a problem
+def _createdir(path):
+    # makedirs() fails if the directory already exists, so we catch exceptions and verify the result
+    try:
+        os.makedirs(path)
+    except Exception:
+        if (not os.path.isdir(path)): raise ValueError("Can't create directory " + path)
 
 # -----------------------------------------------------------------
