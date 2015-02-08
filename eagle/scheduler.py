@@ -26,32 +26,57 @@ from eagle.skirtrun import SkirtRun
 
 # -----------------------------------------------------------------
 
-## This function schedules a SKIRT job corresponding to the SKIRT-runs database record with the specified run-id,
-# regardless of its original run-status.
+## This function schedules a single SKIRT job to perform the SKIRT-runs corresponding to database records with the
+# specified sequence of run-ids, regardless of the original run-status of these records.
 # If the function is executed on the Cosma cluster, it creates and submits an actual job to the queuing system
-# to perform the run. If the function is executed on a regular computer, its asks the user to perform the job by hand.
-# In both cases, the script updates the run-status of the specified record in the database to 'scheduled',
-# and it appropriately updates the value of the 'queue' field.
+# to perform the run. If the function is executed on a regular computer, its asks the user to perform the runs by hand.
+# In both cases, the script updates the run-status of the specified records in the database to 'scheduled',
+# and it appropriately updates the value of the 'queue' fields.
 #
-def schedule(runid):
+# The \em runidspec argument can be an integer specifying a single run-id, or a string containing a
+# comma-seperated list of run-ids and/or runid ranges expressed as two run-ids with a dash in between.
+# Valid arguments include, for example, 6, "6", "6,9", "6-9" and "6-9,17".
+#
+def schedule(runidspec):
+    # deal with the special case of a single integer
+    runidspec = str(runidspec)
+
+    # build the sequence of run-ids
+    runids = []
+    for segment in runidspec.split(","):
+        if "-" in segment:
+            first,last = map(int,segment.split("-"))
+            runids += [ id for id in range(first,last+1) ]
+        else:
+            if segment!="": runids += [ int(segment) ]
+
     # open the database
     db = Database()
 
-    # get the record from the database
-    rows = db.select("runid = ?", (runid,))
-    if len(rows) != 1: raise ValueError("The specified run-id does not match a database record: " + str(runid))
-    record = rows[0]
+    # get the records corresponding to the run-id sequence from the database
+    records = db.select("runid in (" + ",".join(map(str,runids)) + ")")
+    if len(records) != len(runids): raise ValueError("Some of the specified run-ids do not match a database record")
+    if len(records) < 1: raise ValueError("A job must have at least one run-id")
 
-    # create the appropriate SKIRT result directories
-    skirtrun = SkirtRun(runid, create=True)
+    # inform the user and get confirmation for long sequences
+    if len(runids)>12:
+        print "Scheduling a job for runids", runids
+        proceed = raw_input("--> This job has {} runids. Do you want to proceed ? [y/n] ".format(len(runids)))
+        if not proceed.lower().startswith("y"): return
 
+    # create the appropriate SKIRT result directories for all runs in the sequence
+    for runid in runids:
+        skirtrun = SkirtRun(runid, create=True)
+
+    # create and submit a batch job
     if config.queue!=None:
         # create the bash script that will be submitted as a job
         # option -n xx specifies the total number of processes (nodes_per_job * processes_per_node)
         # option -R "span[ptile=xx]" specifies the number of processes on each node (processes_per_node)
         # option -x specifies exclusive access to the nodes so we're free to spawn multiple threads
-        jobscriptname = os.path.join(skirtrun.runpath(), "job.sh")
-        joblogname = os.path.join(skirtrun.runpath(), "job_log.txt")
+        firstrun = SkirtRun(runids[0])
+        jobscriptname = os.path.join(firstrun.runpath(), "job.sh")
+        joblogname = os.path.join(firstrun.runpath(), "job_log.txt")
         jobscript = open(jobscriptname,'w')
         jobscript.write("#!/bin/bash -l\n")
         jobscript.write("# Batch script for running SKIRT on the Cosma cluster\n")
@@ -61,44 +86,34 @@ def schedule(runid):
         jobscript.write("#BSUB -x\n")
         jobscript.write("#BSUB -q {}\n".format(config.queue))
         jobscript.write("#BSUB -P dp004-eagle\n")
-        jobscript.write("#BSUB -J SKIRT-run-{}\n".format(runid))
-        jobscript.write("#BSUB -cwd {}\n".format(skirtrun.runpath()))
+        jobscript.write("#BSUB -J \"SKIRT {}\"\n".format(runidspec))
+        jobscript.write("#BSUB -cwd {}\n".format(firstrun.runpath()))
         jobscript.write("#BSUB -oo {}\n".format(joblogname))
         jobscript.write("#BSUB -eo {}\n".format(joblogname))
         jobscript.write("#BSUB -W {}:00\n".format(config.maximum_hours))
-        jobscript.write("python -u -m do eagle_run {}\n".format(runid))
+        for runid in runids:
+            skirtrun = SkirtRun(runid)
+            jobscript.write("cd {}\n".format(firstrun.runpath()))
+            jobscript.write("python -u -m do eagle_run {}\n".format(runid))
+        jobscript.write("echo Done with SKIRT-runs {}\n".format(runidspec))
         jobscript.close()
 
-        # update the record to indicate that a run has been scheduled and submit the job;
-        # do this within a single transaction context to ensure that the scheduled job sees the updated record
-        print "Submitting job for run-id " + str(runid) + " to queue " + config.queue
+        # update the records to indicate that a run has been scheduled and submit the job;
+        # do this within a single transaction context to ensure that the scheduled job sees the updated records
+        print "Submitting job to queue", config.queue, "for run-ids", runids
         with db.transaction():
-            db.updatestatus((runid,), 'scheduled')
-            db.updatefield((runid,), 'queue', config.queue)
+            db.updatestatus(runids, 'scheduled')
+            db.updatefield(runids, 'queue', config.queue)
             subprocess.call(("bsub",), stdin=open(jobscriptname))
 
+    # or ask the user to perform the runs
     else:
-        print "Please manually execute scheduled job for run-id " + str(runid)
+        print "Please manually perform scheduled run-ids", runids
         with db.transaction():
-            db.updatestatus((runid,), 'scheduled')
-            db.updatefield((runid,), 'queue', config.hostname)
+            db.updatestatus(runids, 'scheduled')
+            db.updatefield(runids, 'queue', config.hostname)
 
     # close the database
     db.close()
-
-## This function schedules a SKIRT job for the specified user's SKIRT-runs database records that have a runstatus
-# of 'inserted'. If the username is omitted, it defaults to the current user. After the function returns,
-# the records will have a runstatus of 'scheduled' and the 'queue' field will be updated appropriately.
-def scheduleall(username=None):
-    if username==None: username = config.username;
-
-    # get the eligible records
-    db = Database()
-    records = db.select("username=? and runstatus='inserted'", (username,))
-    db.close()
-
-    # schedule a job for each of them
-    for record in records:
-        schedule(record['runid'])
 
 # -----------------------------------------------------------------
