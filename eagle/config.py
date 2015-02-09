@@ -7,15 +7,17 @@
 
 ## \package eagle.config Configuration settings and paths for the eagle package.
 #
-# This module defines configuration settings and paths for the eagle package as the values of
-# variables in its outermost namespace. For example, after executing "import eagle.config" the name
-# of the host on which the script is running can be found as the value of "eagle.config.hostname".
+# This module defines configuration settings and paths for the eagle package on various computing systems.
+# The settings for each system are bundled in a dictionary with an appropriate name. In addition, the settings
+# corresponding to the current system are copied into variables in the module's outermost namespace.
+# For example, after executing "import eagle.config" the path to the SKIRT executable for
+# the system on which the script is running can be found as the value of "eagle.config.skirt_path".
 #
-# The following table lists the variables defined by this module.
+# The following table lists the configuration variables defined for each supported system, currently "cosma"
+# and "obiwan".
 #
 #<TABLE>
 #<TR><TD><B>Variable name</B></TD>  <TD><B>Description of value</B></TD></TR>
-#<TR><TD>hostname</TD>              <TD>The name of the host on which the Python script is running</TD></TR>
 #<TR><TD>skirt_path</TD>            <TD>The absolute path to the SKIRT executable</TD></TR>
 #<TR><TD>eagledata_path</TD>        <TD>A dictionary containing key-value pairs providing the absolute path to the
 #                                       eagle data directory (value) for each relevant eagle simulation (key)</TD></TR>
@@ -40,7 +42,15 @@
 #                                       this value is used (and enforced) only on batch queueing systems</TD></TR>
 #</TABLE>
 #
-# In addition this module offers some utility functions for simple tasks such as obtaining a time stamp.
+# The module also defines some variables identifying the current system, as listed in the following table.
+#
+#<TABLE>
+#<TR><TD><B>Variable name</B></TD>  <TD><B>Description of value</B></TD></TR>
+#<TR><TD>username</TD>              <TD>The login name of the user currently running the Python script</TD></TR>
+#<TR><TD>hostname</TD>              <TD>The name of the host on which the Python script is running</TD></TR>
+#</TABLE>
+#
+# Finally the module offers some utility functions for simple tasks such as obtaining a time stamp.
 #
 
 # -----------------------------------------------------------------
@@ -66,6 +76,56 @@ def absolutepath(path):
 
 # -----------------------------------------------------------------
 
+# provide a dictionary of configuration dictionaries
+configurations = {
+
+    # the COSMA cluster in Durham
+    'cosma': {
+        'skirt_path': absolutepath("~/SKIRT/release/SKIRTmain/skirt"),
+        'eagledata_path': { 'Ref100':  "/cosma5/data/Eagle/ScienceRuns/Planck1/L0100N1504/PE/REFERENCE/data/",
+                           'Ref25':   "/cosma5/data/Eagle/ScienceRuns/Planck1/L0025N0752/PE/REFERENCE/data",
+                           'Recal25': "/cosma5/data/Eagle/ScienceRuns/Planck1/L0025N0752/PE/RECALIBRATED/data",
+                           'Ref12':   "/cosma5/data/Eagle/ScienceRuns/Planck1/L0012N0188/PE/REFERENCE/data" },
+        'catalogs_path':  "/cosma5/data/Eagle/SkirtAnalysis/Catalogs",
+        'database_path':  "/cosma5/data/Eagle/SkirtAnalysis/Database",
+        'backup_path':    "/cosma5/data/Eagle/SkirtAnalysis/Backup",
+        'templates_path': "/cosma5/data/Eagle/SkirtAnalysis/Templates",
+        'results_path':   "/cosma5/data/Eagle/SkirtAnalysis/Results",
+        'default_eaglesim': 'Recal25',
+        'default_redshift': 0,
+        'queue': "cosma5",
+        'mpistyle': 'lsf',
+        'nodes_per_job': 8,
+        'processes_per_node': 4,      # cosma5 nodes have 16 cores and 128GB of memory
+        'threads_per_process': 4,
+        'maximum_hours': 24,
+    },
+
+    # Peter's desktop at work
+    'obiwan': {
+        'skirt_path': absolutepath("~/SKIRT/release/SKIRTmain/skirt"),
+        'eagledata_path': { 'Ref100': absolutepath("~/EAGLE/Snapshots/L0100N1504REF"),
+                           'Ref25': absolutepath("~/EAGLE/Snapshots/L0025N0752REF"),
+                           'Recal25': absolutepath("~/EAGLE/Snapshots/L0025N0752RECAL"),
+                           'Ref12': absolutepath("~/EAGLE/Snapshots/L0012N0188REF") },
+        'catalogs_path':  absolutepath("~/EAGLE/Catalogs"),
+        'database_path':  absolutepath("~/EAGLE/Database"),
+        'backup_path':    absolutepath("~/EAGLE/Backup"),
+        'templates_path': absolutepath("~/EAGLE/Templates"),
+        'results_path':   absolutepath("~/EAGLE/Results"),
+        'default_eaglesim': 'Recal25',
+        'default_redshift': 0,
+        'queue': None,
+        'mpistyle': 'generic',
+        'nodes_per_job': 1,
+        'processes_per_node': 2,
+        'threads_per_process': 2,
+        'maximum_hours': 0,
+    }
+}
+
+# -----------------------------------------------------------------
+
 # get the name of the user logged in on the terminal controlling this process; try various mechanisms
 username = ""
 if len(username)==0:
@@ -84,7 +144,7 @@ if len(username)==0:
     except Exception:
         pass
 
-# get the name of the current host so we can let the configuration settings depend on it; try various mechanisms
+# get the name of the current host; try various mechanisms
 hostname = ""
 if len(hostname)==0:
     try:
@@ -112,51 +172,23 @@ if len(hostname)==0:
 
 # -----------------------------------------------------------------
 
-# configuration for the COSMA cluster in Durham
-if "cosma" in hostname:
-    skirt_path = absolutepath("~/SKIRT/release/SKIRTmain/skirt")
-    eagledata_path = { 'Ref100':  "/cosma5/data/Eagle/ScienceRuns/Planck1/L0100N1504/PE/REFERENCE/data/",
-                       'Ref25':   "/cosma5/data/Eagle/ScienceRuns/Planck1/L0025N0752/PE/REFERENCE/data",
-                       'Recal25': "/cosma5/data/Eagle/ScienceRuns/Planck1/L0025N0752/PE/RECALIBRATED/data",
-                       'Ref12':   "/cosma5/data/Eagle/ScienceRuns/Planck1/L0012N0188/PE/REFERENCE/data" }
-    catalogs_path =  "/cosma5/data/Eagle/SkirtAnalysis/Catalogs"
-    database_path =  "/cosma5/data/Eagle/SkirtAnalysis/Database"
-    backup_path =    "/cosma5/data/Eagle/SkirtAnalysis/Backup"
-    templates_path = "/cosma5/data/Eagle/SkirtAnalysis/Templates"
-    results_path =   "/cosma5/data/Eagle/SkirtAnalysis/Results"
-    default_eaglesim = 'Recal25'
-    default_redshift = 0
-    queue = "cosma5"
-    mpistyle = 'lsf'
-    nodes_per_job = 8
-    processes_per_node = 4          # cosma5 nodes have 16 cores and 128GB of memory
-    threads_per_process = 4
-    maximum_hours = 24
+# determine the configuration matching the current host
+configuration = None
+for configkey in configurations.keys():
+    if configkey in hostname:
+        configuration = configurations[configkey]
+        break
 
-# -----------------------------------------------------------------
-
-# configuration for Peter's desktop at work
-elif "obiwan" in hostname:
-    skirt_path = absolutepath("~/SKIRT/release/SKIRTmain/skirt")
-    eagledata_path = { 'Ref100': absolutepath("~/EAGLE/Snapshots/L0100N1504REF"),
-                       'Ref25': absolutepath("~/EAGLE/Snapshots/L0025N0752REF"),
-                       'Recal25': absolutepath("~/EAGLE/Snapshots/L0025N0752RECAL"),
-                       'Ref12': absolutepath("~/EAGLE/Snapshots/L0012N0188REF") }
-    catalogs_path =  absolutepath("~/EAGLE/Catalogs")
-    database_path =  absolutepath("~/EAGLE/Database")
-    backup_path =    absolutepath("~/EAGLE/Backup")
-    templates_path = absolutepath("~/EAGLE/Templates")
-    results_path =   absolutepath("~/EAGLE/Results")
-    default_eaglesim = 'Recal25'
-    default_redshift = 0
-    queue = None
-    mpistyle = 'generic'
-    nodes_per_job = 1
-    processes_per_node = 2
-    threads_per_process = 2
-    maximum_hours = 0
-
-# -----------------------------------------------------------------
-
-else:
+if configuration == None:
     raise ValueError("Unknown host: " + hostname)
+
+# -----------------------------------------------------------------
+
+# copy all configurations to the module's namespace
+globals().update(configurations)
+
+# copy the settings for the current configuration to the module's namespace
+globals().update(configuration)
+
+# -----------------------------------------------------------------
+

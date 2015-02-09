@@ -130,9 +130,12 @@ class Database:
     #db.close()
     #\endverbatim
     #
-    def __init__(self):
-        filename = os.path.join(config.database_path, "SKIRT-runs.db")
-        self._con = sqlite3.connect(filename)
+    # The optional filepath argument allows opening a SKIRT-runs database with a nonstandard location and name.
+    # In almost all cases this argument should be omitted so that the constructor opens the standard database.
+    def __init__(self, filepath=None):
+        if filepath==None:
+            filepath = os.path.join(config.database_path, "SKIRT-runs.db")
+        self._con = sqlite3.connect(filepath)
         self._con.row_factory = sqlite3.Row
         self._con.text_factory = sqlite3.OptimizedUnicode
 
@@ -261,6 +264,27 @@ class Database:
         for runid in runids:
             self._con.execute("update skirtruns set runstatus = ?, statusdate = ? where runid = ?",
                                (runstatus,statusdate,cleanrunid(runid)))
+
+    ## This function updates all fields of the database record for the specified run-id to the values contained
+    # in the specified row object. The row object should be obtained through the select() function from a database
+    # with the same fields as the target database. The value of the 'runid' field in the row is ignored.
+    # The function returns True if any of the field values were modified, and False if no changes were made
+    # (because all fields already had the proper values). However, in both cases the change is \em not committed.
+    def updaterow(self, runid, newrow):
+        # get the row for this run-id
+        cursor = self._con.execute("select * from skirtruns where runid = ?", (runid,))
+        oldrows = cursor.fetchall()
+        if len(oldrows) != 1: raise ValueError("The specified run-id does not match a database record: " + str(runid))
+        oldrow = oldrows[0]
+
+        # update each field if needed
+        modified = False
+        for fieldname in oldrow.keys():
+            if fieldname != 'runid' and oldrow[fieldname] != newrow[fieldname]:
+                self._con.execute("update skirtruns set " + fieldname + " = ? where runid = ?",
+                                  (newrow[fieldname],runid))
+                modified = True
+        return modified
 
     # -------- maintaining --------
 
