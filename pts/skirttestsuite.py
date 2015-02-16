@@ -140,7 +140,7 @@ class SkirtTestSuite:
         
         # Inform the user of the fact that the test suite has been initiated
         self._log.info("Starting report for test suite " + self._subsuitepath)
-        self._log.info("Using " + self._skirt.version())
+        self._log.info("Using " + self._skirt.version() + " in " + self._skirt.directory())
         
         # Clean the "out" directories
         self._clean()

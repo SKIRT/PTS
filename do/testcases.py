@@ -31,8 +31,12 @@ suitepath = os.path.join(os.getenv("HOME"), suitename)
 # Get the command-line argument specifying the test suite subset, if any
 subsuitename = sys.argv[1] if len(sys.argv) > 1 else ""
 
+# Check whether a development SKIRT repository is present, otherwise use the standard skirt path
+devskirtpath = os.path.join(os.getenv("HOME"), "Development", "SKIRT", "release", "SKIRTmain", "skirt")
+skirtpath = devskirtpath if os.path.isfile(devskirtpath) else "" 
+
 # Create the test suite
-suite = SkirtTestSuite(suitepath=suitepath, subsuitename=subsuitename)
+suite = SkirtTestSuite(suitepath=suitepath, subsuitename=subsuitename, skirtpath=skirtpath)
 
 # Perform the test suite
 suite.perform(sleepsecs=10)
