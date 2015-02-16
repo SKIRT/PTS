@@ -112,7 +112,7 @@ configurations = {
         'database_path':  absolutepath("~/EAGLE/Database"),
         'backup_path':    absolutepath("~/EAGLE/Backup"),
         'templates_path': absolutepath("~/EAGLE/Templates"),
-        'results_path':   absolutepath("~/EAGLE/Results"),
+        'results_path':   "/Volumes/EAGLEDATA/Results",
         'default_eaglesim': 'Recal25',
         'default_redshift': 0,
         'queue': None,
