@@ -22,7 +22,8 @@ import sys
 
 # Import the relevant PTS class
 from pts.skirttestsuite import SkirtTestSuite
-from pts.log import Log
+
+# -----------------------------------------------------------------
 
 # Create the full path to the SKIRTtests directory
 suitename = "SKIRTtests"

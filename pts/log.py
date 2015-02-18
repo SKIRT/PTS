@@ -16,7 +16,7 @@ import os.path
 # -----------------------------------------------------------------
 
 def timestamp(message):
-    stampedmessage = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S ") + message
+    stampedmessage = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S.%f")[:-3] + "   " + message
     return stampedmessage
 
 # -----------------------------------------------------------------
