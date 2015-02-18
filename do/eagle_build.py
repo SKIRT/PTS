@@ -51,11 +51,11 @@ def runids_in_range(runidspec):
     except Exception:
         return None
 
-# returns a list of SkirtRun objects corresponding to all currently completed skirt-runs, in order of run-id,
+# returns a list of SkirtRun objects corresponding to all completed or archived skirt-runs, in order of run-id,
 # optionally omitting any skirt-runs for which all files in the specified sequence exist in the visualization folder
 def completed_skirtruns(unless_filenames=None):
     db = Database()
-    runids = sorted([ row['runid'] for row in db.select("runstatus = 'completed'") ])
+    runids = sorted([ row['runid'] for row in db.select("runstatus='completed' or runstatus='archived'") ])
     runs = [ SkirtRun(runid) for runid in runids ]
     if unless_filenames!=None:
         runs = filter(lambda run: not has_visualization_files(run,unless_filenames), runs)

@@ -18,6 +18,7 @@ import os.path
 import subprocess
 import eagle.config as config
 from eagle.database import Database
+from eagle.database import backup
 from eagle.skirtrun import SkirtRun
 
 # -----------------------------------------------------------------
@@ -38,8 +39,15 @@ records = db.select("runstatus = 'completed'")
 db.close()
 print "--> Cosma has {} completed SKIRT-runs".format(len(records))
 
-# synchronize the results from each completed run
+# backup and open the local database
+backup()
 db = Database()
+
+# remove SKIRT-runs that have been archived from the do-list
+records = filter(lambda record: db.select("runid="+str(record['runid']))[0]['runstatus']!='archived', records)
+print "--> .. of which {} have not yet been archived".format(len(records))
+
+# synchronize the results from each completed run
 for record in records:
     runid = record['runid']
     print "--> Synchronizing results for run-id {}...".format(runid)
@@ -58,14 +66,19 @@ for record in records:
     # synchronize the files in each directory
     #  - skip subdirectories and symbolic links
     #  - for the vis directory, do not overwrite newer local versions
-    subprocess.call(("rsync", "-htvz", cosma_prefix+remote_runpath+"/*", local_runpath+"/"))
-    subprocess.call(("rsync", "-htvz", cosma_prefix+remote_inpath+"/*", local_inpath+"/"))
-    subprocess.call(("rsync", "-htvz", cosma_prefix+remote_outpath+"/*", local_outpath+"/"))
-    subprocess.call(("rsync", "-htvz", "--update", cosma_prefix+remote_vispath+"/*", local_vispath+"/"))
+    error = subprocess.call(("rsync", "-htvz", cosma_prefix+remote_runpath+"/*", local_runpath+"/"))
+    if error: raise ValueError("Error in rsync for run: " + str(error))
+    error = subprocess.call(("rsync", "-htvz", cosma_prefix+remote_inpath+"/*", local_inpath+"/"))
+    if error: raise ValueError("Error in rsync for in: " + str(error))
+    error = subprocess.call(("rsync", "-htvz", cosma_prefix+remote_outpath+"/*", local_outpath+"/"))
+    if error: raise ValueError("Error in rsync for out: " + str(error))
+    error = subprocess.call(("rsync", "-htvz", "--update", cosma_prefix+remote_vispath+"/*", local_vispath+"/"))
+    if error: raise ValueError("Error in rsync for vis: " + str(error))
 
     # update the record in the local database if needed
     if db.updaterow(runid, record): db.commit()
 
+# close the database
 db.close()
 
 print "--> Done synchronizing {} completed SKIRT-runs".format(len(records))

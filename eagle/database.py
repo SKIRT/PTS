@@ -43,7 +43,7 @@
 #<TR><TD>runstatus</TD>     <TD>Text</TD>
 #                           <TD>An identifier for the current status of this SKIRT run. In the current implementation,
 #                               the value should be one of "inserted", "scheduled", "running", "failed",
-#                               or "completed".</TD></TR>
+#                               "completed", or "archived".</TD></TR>
 #<TR><TD>statusdate</TD>    <TD>Date</TD>
 #                           <TD>The time and date on which this record's run status was most recently changed.</TD></TR>
 #<TR><TD>queue</TD>         <TD>Text</TD>
@@ -96,7 +96,7 @@ import eagle.config as config
 fieldtype_enum = ('text', 'numeric')
 
 ## This variable holds an enumeration for the values of the runstatus field
-runstatus_enum = ('inserted', 'scheduled', 'running', 'failed', 'completed')
+runstatus_enum = ('inserted', 'scheduled', 'running', 'failed', 'completed', 'archived')
 
 # -----------------------------------------------------------------
 
