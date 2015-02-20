@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.zip Transparently opening files from a ZIP archive.
+## \package pts.archive Transparently opening files from a ZIP archive.
 #
 # The functions in this module allow opening a file contained in a ZIP archive without first extracting the file.
 
@@ -52,18 +52,45 @@ def openbinary(filepath):
     zippath = directory + ".zip"
     return StringIO.StringIO(zipfile.ZipFile(zippath,'r').read(filename))
 
-## This function returns a list of the names of the files in the specified directory. If the directory does not exist,
-# the function looks for a ZIP archive with the same name as the directory, but with the ".zip" extension added,
-# and it lists the names of the files in that archive instead.
+## This function returns True if the specified file exists at the specified path and/or inside a ZIP archive with
+# the same name as the directory in which the file would have resided, but with the ".zip" extension added.
+# Otherwise the function returns False.
 #
-def listdir(dirpath):
+def isfile(filepath):
+    # if the specified file exists, we are done
+    if os.path.isfile(filepath):
+        return True
+
+    # otherwise, try a zip archive with the same name as the directory in which the file would have resided
+    directory,filename = os.path.split(filepath)
+    zippath = directory + ".zip"
+    if os.path.isfile(zippath):
+        try:
+            zipfile.ZipFile(zippath,'r').getinfo(filename)
+            return True
+        except KeyError:
+            pass
+    return False
+
+## This function returns a sorted list of the names of the files in the specified directory and/or in the ZIP archive
+# with the same name as the directory, but with the ".zip" extension added. If both the directory and the archive
+# exist, the two lists are merged while removing duplicates. The returned list is optionally limited to
+# filenames that end in the string (or strings) specified as the second argument to this function.
+#
+def listdir(dirpath, endswith=None):
+    filenames = [ ]
     # if the specified directory exists, list its contents
     if os.path.isdir(dirpath):
-        return os.listdir(dirpath)
-
-    # otherwise, try a zip archive with the same name as the directory
+        filenames += os.listdir(dirpath)
+    # if the corresponding zip archive exists, list its contents as well
     zippath = dirpath + ".zip"
-    return zipfile.ZipFile(zippath,'r').namelist()
+    if os.path.isfile(zippath):
+        filenames += zipfile.ZipFile(zippath,'r').namelist()
+    # if requested, filter the names
+    if endswith != None:
+        filenames = filter(lambda fn: fn.endswith(endswith), filenames)
+    # remove duplicates and sort the list
+    return sorted(list(set(filenames)))
 
 # -----------------------------------------------------------------
 

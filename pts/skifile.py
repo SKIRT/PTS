@@ -14,6 +14,7 @@
 import os.path
 from datetime import datetime
 from lxml import etree
+import pts.archive as arch
 
 # -----------------------------------------------------------------
 #  Utility functions
@@ -54,7 +55,8 @@ class SkiFile:
         if not filepath.lower().endswith((".ski","_parameters.xml")):
             raise ValueError("Invalid filename extension for ski file")
         # load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
-        self.tree = etree.parse(os.path.expanduser(filepath), parser=etree.XMLParser(remove_blank_text=True))
+        self.tree = etree.parse(arch.opentext(os.path.expanduser(filepath)),
+                                parser=etree.XMLParser(remove_blank_text=True))
 
     ## This function saves the (possibly updated) contents of the SkiFile instance into the specified file.
     # The filename \em must end with ".ski". Saving to and thus replacing the ski file from which this

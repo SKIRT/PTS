@@ -12,12 +12,12 @@
 
 # -----------------------------------------------------------------
 
-import re
 import os
 import os.path
 import types
 import numpy as np
 from pts.skifile import SkiFile
+import pts.archive as arch
 
 # -----------------------------------------------------------------
 
@@ -36,7 +36,7 @@ def createsimulations(source=""):
         if isinstance(source, types.StringTypes):
             if source == "" or "/" in source:
                 dirpath = os.path.realpath(os.path.expanduser(source))
-                logfiles = filter(lambda fn: fn.endswith("_log.txt"), os.listdir(dirpath))
+                logfiles = arch.listdir(dirpath, "_log.txt")
                 for logfile in logfiles:
                     simulations.append(SkirtSimulation(prefix=logfile[:-8], outpath=dirpath))
             else:
@@ -90,7 +90,7 @@ class SkirtSimulation:
         if self._prefix.endswith(".ski"):
             self._prefix = self._prefix[0:len(self._prefix)-len(".ski")]
         if self._prefix=="":
-            logfiles = filter(lambda fn: fn.endswith("_log.txt"), os.listdir(self._outpath))
+            logfiles = arch.listdir(self._outpath, "_log.txt")
             if len(logfiles) == 0: raise ValueError("No log file in path: " + self._outpath)
             if len(logfiles) > 1: raise ValueError("Multiple log files in path: " + self._outpath)
             self._prefix = logfiles[0][0:len(logfiles[0])-len("_log.txt")]
@@ -133,10 +133,10 @@ class SkirtSimulation:
         logpath = self.logfilepath()
 
         # handle file no found
-        if not os.path.exists(logpath): return "NotStarted"
+        if not arch.isfile(logpath): return "NotStarted"
 
         # get the last few lines of the file (assume the relevant portion is not longer than 500 characters)
-        logfile = open(logpath, 'rb')
+        logfile = arch.openbinary(logpath)
         logfile.seek(0, os.SEEK_END)
         logfile.seek(-min(logfile.tell(),500), os.SEEK_END)
         chunk = logfile.read()
@@ -169,7 +169,7 @@ class SkirtSimulation:
     # in the same order as the corresponding instruments occur in the ski file.
     def totalfitspaths(self):
         return [ self.outfilepath(name + "_total.fits") for name in self.parameters().instrumentnames() \
-             if os.path.exists(self.outfilepath(name + "_total.fits")) ]
+             if arch.isfile(self.outfilepath(name + "_total.fits")) ]
 
     ## This function returns a list of absolute filepath tuples for all sets of "stokes*.fits" files
     # produced by the simulation, in the same order as the corresponding instruments occur in the ski file.
@@ -180,37 +180,20 @@ class SkirtSimulation:
                    self.outfilepath(name + "_stokesQ.fits"),
                    self.outfilepath(name + "_stokesU.fits"),
                    self.outfilepath(name + "_stokesV.fits") ) for name in self.parameters().instrumentnames() \
-             if os.path.exists(self.outfilepath(name + "_stokesQ.fits")) ]
+             if arch.isfile(self.outfilepath(name + "_stokesQ.fits")) ]
 
     ## This function returns a list of absolute filepaths for all "sed.dat" files produced by the simulation,
     # in the same order as the corresponding instruments occur in the ski file.
     def seddatpaths(self):
         return [ self.outfilepath(name + "_sed.dat") for name in self.parameters().instrumentnames() \
-             if os.path.exists(self.outfilepath(name + "_sed.dat")) ]
+             if arch.isfile(self.outfilepath(name + "_sed.dat")) ]
 
     ## This function returns a list of absolute filepaths for all "gridxx.dat" files produced by the simulation,
     # in the order xy, xz, yz, xyz.
     def gridxxdatpaths(self):
         return [ self.outfilepath(candidate) for candidate in \
                                 ("ds_gridxy.dat", "ds_gridxz.dat", "ds_gridyz.dat", "ds_gridxyz.dat") \
-                 if os.path.exists(self.outfilepath(candidate)) ]
-
-    ## This function returns a list of absolute filepaths for all temporary files produced by the simulation,
-    # in arbitrary order.
-    def temporarypaths(self):
-        pattern = re.compile( re.escape(self.prefix()+"_")
-                              + r"\d+"
-                              + "(" + re.escape("_EXT.RES") + "|"
-                                    + re.escape("_SED.RES") + "|"
-                                    + re.escape("_ISRF.DAT") + ")"
-                              + r"\Z")
-        return [ os.path.join(self.outpath(),candidate) for candidate in os.listdir(self.outpath()) \
-                 if pattern.match(candidate) ]
-
-    ## This function removes all temporary files that were produced by the simulation
-    def removetemporaryfiles(self):
-        for path in self.temporarypaths():
-            os.remove(path)
+                 if arch.isfile(self.outfilepath(candidate)) ]
 
     ## This function returns a list of the wavelengths used by the simulation, in micron, if available.
     # For an oligochromatic simulation, the wavelengths are obtained from the ski file.
@@ -225,13 +208,13 @@ class SkirtSimulation:
         # if that fails, try the wavelengths data file
         if len(result) == 0:
             datapath = self.outfilepath("wavelengths.dat")
-            if os.path.exists(datapath):
-                result = list(np.loadtxt(datapath, usecols=(0,)))
+            if arch.isfile(datapath):
+                result = list(np.loadtxt(arch.opentext(datapath), usecols=(0,)))
         # if that fails as well, try an SED data file
         if len(result) == 0:
             sedpaths = self.seddatpaths()
             if len(sedpaths) > 0:
-                result = list(np.loadtxt(sedpaths[0], usecols=(0,)))
+                result = list(np.loadtxt(arch.opentext(sedpaths[0]), usecols=(0,)))
         # if everything fails, raise an error
         if len(result) == 0: raise ValueError("Can't determine wavelengths for simulation")
         return result
@@ -260,7 +243,7 @@ class SkirtSimulation:
         sedpaths = self.seddatpaths()
         if len(sedpaths)>0:
             # get the second line of the file, which contains the description of the flux column
-            sedfile = open(sedpaths[0], 'r')
+            sedfile = arch.opentext(sedpaths[0])
             sedfile.readline()
             fluxdescription = sedfile.readline()
             sedfile.close()
@@ -280,9 +263,9 @@ class SkirtSimulation:
     # before the units represents the returned value. If the function can't locate the field, it returns zero.
     def getfieldfromfile(self, filesuffix, trigger, header, units):
         filepath = self.outfilepath(filesuffix)
-        if os.path.exists(filepath):
+        if arch.isfile(filepath):
             triggered = False
-            for line in open(filepath, 'r'):
+            for line in arch.opentext(filepath):
                 if trigger in line: triggered = True
                 if triggered and header in line:
                     segments = line.split()
@@ -361,13 +344,13 @@ class SkirtSimulation:
     def starlambdaflux(self, wavelength):
         # get the wavelengths and the bin widths for the simulation's wavelength grid
         datapath = self.outfilepath("wavelengths.dat")
-        if not os.path.exists(datapath): raise ValueError("Can't locate wavelengths file")
-        wavelengths, binwidths = np.loadtxt(datapath, usecols=(0,1), unpack=True)
+        if not arch.isfile(datapath): raise ValueError("Can't locate wavelengths file")
+        wavelengths, binwidths = np.loadtxt(arch.opentext(datapath), usecols=(0,1), unpack=True)
 
         # get the stellar luminosities, which should be sampled on the same wavelength grid
         datapath = self.outfilepath("luminosities.dat")
-        if not os.path.exists(datapath): raise ValueError("Can't locate stellar luminosities file")
-        luminosities = np.loadtxt(datapath, usecols=(1,))
+        if not arch.isfile(datapath): raise ValueError("Can't locate stellar luminosities file")
+        luminosities = np.loadtxt(arch.opentext(datapath), usecols=(1,))
         if len(luminosities) != len(wavelengths): raise ValueError("Luminosities not sampled on wavelength grid")
 
         # convert luminosity (in Lsun) to monochromatic flux (in W/m2)
@@ -383,8 +366,8 @@ class SkirtSimulation:
         wavelength = wavelengthforband(wavelength)
         # get the wavelengths and fluxes, and interpolate
         datapath = self.outfilepath(name + "_sed.dat")
-        if not os.path.exists(datapath): raise ValueError("Can't locate sed file: " + datapath)
-        wavelengths, fluxes = np.loadtxt(datapath, usecols=(0,1), unpack=True)
+        if not arch.isfile(datapath): raise ValueError("Can't locate sed file: " + datapath)
+        wavelengths, fluxes = np.loadtxt(arch.opentext(datapath), usecols=(0,1), unpack=True)
         return self.interpolate(wavelength, wavelengths, fluxes)
 
     ## This function returns the integrated flux \f[\int_{\lambda_1}^{\lambda_2} F_{\lambda}\,\text{d}\lambda\f]
@@ -396,13 +379,13 @@ class SkirtSimulation:
     def integratedflux(self, name, wavelength1, wavelength2):
         # get the wavelengths and the bin widths for the simulation's wavelength grid
         datapath = self.outfilepath("wavelengths.dat")
-        if not os.path.exists(datapath): raise ValueError("Can't locate wavelengths file")
-        wavelengths, binwidths = np.loadtxt(datapath, usecols=(0,1), unpack=True)
+        if not arch.isfile(datapath): raise ValueError("Can't locate wavelengths file")
+        wavelengths, binwidths = np.loadtxt(arch.opentext(datapath), usecols=(0,1), unpack=True)
 
         # get the fluxes, which should be sampled on the same wavelength grid
         datapath = self.outfilepath(name + "_sed.dat")
-        if not os.path.exists(datapath): raise ValueError("Can't locate sed file: " + datapath)
-        fluxes = np.loadtxt(datapath, usecols=(1,))
+        if not arch.isfile(datapath): raise ValueError("Can't locate sed file: " + datapath)
+        fluxes = np.loadtxt(arch.opentext(datapath), usecols=(1,))
         if len(fluxes) != len(wavelengths): raise ValueError("Fluxes not sampled on wavelength grid")
 
         # locate the first and last wavelength bin touching the specified range
