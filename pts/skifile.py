@@ -14,20 +14,8 @@
 import os.path
 from datetime import datetime
 from lxml import etree
+from pts.skirtunits import SkirtUnits
 import pts.archive as arch
-
-# -----------------------------------------------------------------
-#  Utility functions
-# -----------------------------------------------------------------
-
-## This private helper function converts a string containing a decimal number followed by a units string
-# to an appropriate number. The current implementation requires that the units string equals "micron"
-# and returns the number unchanged.
-def _tonumber(stringwithunits):
-    segments = stringwithunits.split()
-    if len(segments) != 2: raise ValueError("Invalid number string")
-    if segments[1] != "micron": raise ValueError("Unsupported units")
-    return float(segments[0])
 
 # -----------------------------------------------------------------
 #  SkiFile class
@@ -75,6 +63,18 @@ class SkiFile:
 
     # ---------- Retrieving information -------------------------------
 
+    ## This function returns a SkirtUnits object initialized with the SKIRT unit system ('SI', 'stellar', or
+    # 'extragalactic') and the flux style ('neutral', 'wavelength' or 'frequency') specified in the ski file.
+    def units(self):
+        unitelements = self.tree.xpath("//units/*[1]")
+        if len(unitelements) == 1:
+            unitsystem = unitelements[0].tag
+            fluxstyle = unitelements[0].get("fluxOutputStyle", default='neutral')
+        else:
+            unitsystem = 'extragalactic'
+            fluxstyle = 'neutral'
+        return SkirtUnits(unitsystem, fluxstyle)
+
     ## This function returns a list of the wavelengths specified in the ski file for an oligochromatic simulation,
     # in micron. If the ski file specifies a panchromatic simulation, the function returns an empty list.
     # The current implementation requires that the wavelengths in the ski file are specified in micron.
@@ -83,20 +83,19 @@ class SkiFile:
         results = self.tree.xpath("//OligoWavelengthGrid/@wavelengths")
         # if not found, return an empty list
         if len(results) != 1: return [ ]
-        # split the first result in separate strings, check the units, and extract the numbers
-        return [_tonumber(s) for s in results[0].split(",")]
+        # split the first result in separate strings, extract the numbers using the appropriate units
+        units = self.units()
+        return [units.convert(s,to_unit='micron',quantity='wavelength') for s in results[0].split(",")]
 
-    ## This function returns the first instrument's distance in parsec. The current implementation requires that
-    # the distance attribute in the ski file specifies one of the following unit strings: pc, kpc, Mpc.
+    ## This function returns the first instrument's distance, in parsec.
     def instrumentdistance(self):
         # get the first instrument element
         instruments = self.tree.xpath("//instruments/*[1]")
         if len(instruments) != 1: raise ValueError("No instruments in ski file")
-        # get the distance and the unit string
-        distance, unit = instruments[0].get("distance").split()
+        # get the distance including the unit string
+        distance = instruments[0].get("distance")
         # convert to pc
-        units = { 'pc': 1.,  'kpc': 1e3,  'Mpc': 1e6 }
-        return float(distance)*units[unit]
+        return self.units().convert(distance, to_unit='pc', quantity='distance')
 
     ## This function returns the shape of the first instrument's frame, in pixels.
     def instrumentshape(self):
