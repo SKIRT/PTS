@@ -7,9 +7,9 @@
 
 ## \package pts.skirtunits Working with SKIRT output units.
 #
-# An instance of the SkirtUnits class in this module provides support for working with SKIRT output units.
-# The constructor arguments specify the name of a SKIRT output unit system (SI, stellar, or extragalactic units)
-# and the flux output style (neutral, wavelength or frequency) to set the default units for physical quantities.
+# An instance of the SkirtUnits class in this module provides support for working with SKIRT input/output units.
+# The constructor arguments specify the name of a SKIRT unit system (SI, stellar, or extragalactic units)
+# and the flux style (neutral, wavelength or frequency) to set the default units for physical quantities.
 # The instance then offers functions to convert a physical quantity from its default unit to some specified unit
 # (or between two specified units).
 
@@ -21,11 +21,11 @@ import types
 #  SkirtUnits class
 # -----------------------------------------------------------------
 
-## An instance of the SkirtUnits class represents a particular SKIRT output unit system, specified at construction
-# through the name of the unit system (SI, stellar, or extragalactic units) and the flux style
+## An instance of the SkirtUnits class represents a particular SKIRT input/output unit system, specified at
+# construction through the name of the unit system (SI, stellar, or extragalactic units) and the flux style
 # (neutral, wavelength or frequency). Based on this information, the object knows the output units used by SKIRT
 # for a series of supported physical quantities. This allows converting a value extracted from SKIRT output to
-# some specified unit without having to know its original unit.
+# some specified unit without having to know the actual output unit.
 #
 # The SkirtUnits class supports the following physical quantities and unit specifiers:
 #
@@ -43,12 +43,15 @@ import types
 #| surfacebrightness | wavelength | W/m3/sr, W/m2/micron/sr, W/m2/micron/sr, W/m2/micron/arcsec2
 #| surfacebrightness | frequency | W/m2/Hz/sr, W/m2/Hz/arcsec2, Jy/sr, Jy/arcsec2, MJy/sr, MJy/arcsec2
 #
+# Flux style 'neutral' indicates \f$\lambda F_\lambda = \nu F_\nu\f$; 'wavelength' indicates
+# \f$F_\lambda\f$; and 'frequency' indicates \f$F_\nu\f$.
+
 class SkirtUnits:
 
     ## The constructor accepts the name of the SKIRT unit system ('SI', 'stellar', or 'extragalactic')
     # and the flux style ('neutral', 'wavelength' or 'frequency') to be represented by this instance.
     # The specified strings are case-insensitive, and any portion beyond the recognized names is ignored.
-    # Based on this information, it initializes the default SKIRT output units for a series of supported
+    # Based on this information, it initializes the default SKIRT units for a series of supported
     # physical quantities.
     #
     def __init__(self, unitsystem, fluxstyle):
@@ -114,7 +117,7 @@ class SkirtUnits:
     # The unit of the incoming value is determined using three mechanisms in the following order:
     #  - if the value is a string with two segments, the second segement determines the unit.
     #  - otherwise, if \em from_unit is specified (and not None), its value determines the unit.
-    #  - otherwise, the default unit corresponding to the specified \em quantity is used.
+    #  - otherwise, the default SKIRT unit corresponding to the specified \em quantity is used.
     #
     def convert(self, value, to_unit, from_unit=None, quantity=None, wavelength=None):
 

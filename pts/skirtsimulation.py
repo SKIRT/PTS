@@ -95,6 +95,10 @@ class SkirtSimulation:
             if len(logfiles) > 1: raise ValueError("Multiple log files in path: " + self._outpath)
             self._prefix = logfiles[0][0:len(logfiles[0])-len("_log.txt")]
 
+        # provide placeholders for caching frequently-used objects
+        self._parameters = None
+        self._units = None
+
     ## This function returns the simulation name, used as a prefix for output filenames
     def prefix(self):
         return self._prefix
@@ -155,13 +159,29 @@ class SkirtSimulation:
 
     ## This function returns a SkiFile object representing the parameter file for this simulation.
     def parameters(self):
-        return SkiFile(self.outfilepath("parameters.xml"))
+        if self._parameters==None:
+            self._parameters = SkiFile(self.outfilepath("parameters.xml"))
+        return self._parameters
 
-    ## This function allows invoking any SkiFile function directly on a simulation object. For example,
-    # self.instrumentshape() is automatically translated to self.parameters().instrumentshape().
+    ## This function returns a SkirtUnits object representing the default SKIRT units for this simulation.
+    def units(self):
+        if self._units==None:
+            self._units = self.parameters().units()
+        return self._units
+
+    ## This function allows invoking any SkiFile or SkirtUnits function directly on a simulation object. For example,
+    # self.instrumentshape() is automatically translated to self.parameters().instrumentshape(); and
+    # self.convert() is automatically translated to self.units().convert().
     def __getattr__(self, attrname):
-        if attrname.startswith("__"): raise AttributeError("Don't delegate system attributes")
-        else: return getattr(self.parameters(), attrname)
+        # if this is not a system attribute
+        if not attrname.startswith("__"):
+            # attempt delegating to our SkiFile object
+            try: return getattr(self.parameters(), attrname)
+            except AttributeError: pass
+            # attempt delegating to our SkirtUnits object
+            try: return getattr(self.units(), attrname)
+            except AttributeError: pass
+        raise AttributeError("Can't delegate this attribute")
 
     # -----------------------------------------------------------------
 
@@ -200,43 +220,39 @@ class SkirtSimulation:
     # For a panchromatic simulation, the wavelengths are read from the "wavelength.dat" file optionally
     # written by the WavelengthGrid class, or from one of the "sed.dat" files written by instruments.
     # If none of these files is present, the function raises an error.
-    # The current implementation requires that the wavelengths in the ski file or in the data files
-    # are specified in micron.
     def wavelengths(self):
-        # first try the ski file
+        # first try the ski file (for oligochromatic simulations)
         result = self.parameters().wavelengths()
-        # if that fails, try the wavelengths data file
-        if len(result) == 0:
-            datapath = self.outfilepath("wavelengths.dat")
-            if arch.isfile(datapath):
-                result = list(np.loadtxt(arch.opentext(datapath), usecols=(0,)))
-        # if that fails as well, try an SED data file
-        if len(result) == 0:
-            sedpaths = self.seddatpaths()
-            if len(sedpaths) > 0:
-                result = list(np.loadtxt(arch.opentext(sedpaths[0]), usecols=(0,)))
+        if len(result) > 0: return result
+
+        # if that fails, try an SED data file or the wavelengths data file
+        sedpaths = self.seddatpaths()
+        if len(sedpaths) > 0:
+            filepath = sedpaths[0]
+        else:
+            filepath = self.outfilepath("wavelengths.dat")
+        if arch.isfile(filepath):
+            result = np.loadtxt(arch.opentext(filepath), usecols=(0,))
+            if len(result) > 0:
+                return list( self.units().convert(result, to_unit='micron', quantity='wavelength') )
+
         # if everything fails, raise an error
-        if len(result) == 0: raise ValueError("Can't determine wavelengths for simulation")
-        return result
+        raise ValueError("Can't determine wavelengths for simulation")
 
     ## This function returns a list of the frame indices (in the simulation output fits files) corresponding
-    # to each of the wavelengths in the specified list. The function searches the simulation's wavelength grid
-    # for the wavelength nearest to the requested value. It raises an error if the simulation wavelengths
-    # are not available.
+    # to each of the wavelengths in the specified list (expressed in micron). The function searches the simulation's
+    # wavelength grid for the wavelength nearest to the requested value. It raises an error if the simulation
+    # wavelengths are not available.
     def frameindices(self, wavelengths):
         # get the wavelength grid
-        grid = self.wavelengths()
-        if len(grid) == 0: raise ValueError("Wavelength grid not available for this simulation")
+        grid = np.array(self.wavelengths())
         # loop over the specified wavelengths
-        result = [ ]
-        for wave in wavelengths:
-            result += [ np.argmin(np.abs(np.array(grid)-wave)) ]
-        return result
+        return [ np.argmin(np.abs(grid-wave)) for wave in wavelengths ]
 
     # -----------------------------------------------------------------
 
     ## This function returns an appropriate axis label for the flux described in the simulation output sed files,
-    # including a description of the physical quantity and the correspinding units. If there are no sed output files,
+    # including a description of the physical quantity and the corresponding units. If there are no sed output files,
     # or if the units are not recognized, the function returns the string "Flux".
     def fluxlabel(self):
         # get the paths of the sed output files
@@ -248,9 +264,11 @@ class SkirtSimulation:
             fluxdescription = sedfile.readline()
             sedfile.close()
             # select the appropriate label based on the units given in the description
-            if "(Jy)" in fluxdescription: return r"$F_\nu\,(\mathrm{Jy})$"
-            if "(W/m2/micron)" in fluxdescription: return r"$F_\lambda\,(\mathrm{W}\,\mathrm{m}^{-2}\,\mu \mathrm{m}^{-1})$"
             if "(W/m2)" in fluxdescription: return r"$\lambda\,F_\lambda\,(\mathrm{W}\,\mathrm{m}^{-2})$"
+            if "(W/m3)" in fluxdescription: return r"$F_\lambda\,(\mathrm{W}\,\mathrm{m}^{-3})$"
+            if "(W/m2/micron)" in fluxdescription: return r"$F_\lambda\,(\mathrm{W}\,\mathrm{m}^{-2}\,\mu \mathrm{m}^{-1})$"
+            if "(W/m2/Hz)" in fluxdescription: return r"$F_\nu\,(\mathrm{W}\,\mathrm{m}^{-2}\,\mathrm{Hz}^{-1})$"
+            if "(Jy)" in fluxdescription: return r"$F_\nu\,(\mathrm{Jy})$"
         # failed
         return "Flux"
 
