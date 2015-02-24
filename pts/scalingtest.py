@@ -31,14 +31,18 @@ class ScalingTest:
     ## The constructor accepts the following arguments:
     #  - Blabla
     #
-    def __init__(self, path, system, mode):
+    def __init__(self, path, simulation, system, mode):
         
         # Set the path
         self._path = path
-        
+
+        # Set the simulation name (subdirectory of self._path) and the simulation path
+        self._simulationname = simulation
+        self._simulationpath = os.path.join(self._path, self._simulationname)
+
         # Set the output and result paths
-        self._outpath = os.path.join(self._path, "out")
-        self._respath = os.path.join(self._path, "res")
+        self._outpath = os.path.join(self._simulationpath, "out")
+        self._respath = os.path.join(self._simulationpath, "res")
         
         # Create the output directories if they do not already exist
         try: os.mkdir(self._outpath)
@@ -61,11 +65,11 @@ class ScalingTest:
         # Determine the number of cores (per node) on this system
         self._cores = multiprocessing.cpu_count()
 
-        # The name of the ski file being used for the scaling test
-        self._simulationname = "scaling"
+        # TODO: Search this file automatically
+        skifilename = "scaling.ski"
 
         # The path of the ski file
-        self._skifilepath = os.path.join(self._path, self._simulationname + ".ski")
+        self._skifilepath = os.path.join(self._simulationpath, skifilename)
 
         # Create the logging mechanism
         self._log = Log()
@@ -76,7 +80,7 @@ class ScalingTest:
         except NameError:
             self._skirt = None
 
-    def run(self, maxnodes):
+    def run(self, maxnodes, keepoutput=False):
 
         # Log the system name, the test mode and the version of SKIRT used for this test
         self._log.info("Starting parallel scaling benchmark for " + self._system + " in " + self._mode + " mode.")
@@ -94,7 +98,7 @@ class ScalingTest:
         while processors <= maxprocessors:
 
             # Perform this run
-            self._do(processors, resultsfilepath)
+            self._do(processors, resultsfilepath, keepoutput)
 
             # The next run will be performed with double the amount of processors
             processors *= 2
@@ -104,7 +108,7 @@ class ScalingTest:
         self._log.info("The results will be written to " + resultsfilepath)
 
     ## This functions schedules a simulation
-    def _schedule(self, processors, resultsfilepath):
+    def _schedule(self, processors, resultsfilepath, keepoutput):
 
         # Inform the user about the number of processes and threads used for this run
         self._log.info("Scheduling simulation with " + str(processors) + " processors")
@@ -115,15 +119,15 @@ class ScalingTest:
         # Determine the number of processors per node
         ppn = processors if nodes == 1 else self._cores
 
-        # Scaling benchmark name
+        # Scaling benchmark name (="SKIRTscaling")
         name = os.path.basename(os.path.normpath(self._path))
 
         # The path of the output directory to be created
-        dataoutputpath = os.path.join(os.getenv("VSC_DATA"), name, "out_" + self._mode + "_" + str(processors))
+        dataoutputpath = os.path.join(os.getenv("VSC_DATA"), name, self._simulationname, "out_" + self._mode + "_" + str(processors))
 
         # Create a seperate output directory for this run (different runs can be executed simultaneously)
         self._log.info("The output of this run will be placed in " + dataoutputpath)
-        os.mkdir(dataoutputpath)
+        os.makedirs(dataoutputpath)
 
         # The path of the log file for this simulation run
         logfilepath = os.path.join(dataoutputpath, self._simulationname + "_log.txt")
@@ -142,7 +146,7 @@ class ScalingTest:
         jobscript = JobScript(jobscriptpath, self._skifilepath, nodes, ppn, self._mode == "hybrid", dataoutputpath, walltime)
 
         # Add the command to go the the PTS do directory
-        jobscript.addcommand("cd $VSC_HOME/PTS/git/do")
+        jobscript.addcommand("cd $VSC_HOME/PTS/git/do", comment="Navigate to the PTS do directory")
 
         # Add the PTS command to extract the timings of this run
         processes = processors if self._mode == "mpi" else nodes
@@ -163,7 +167,7 @@ class ScalingTest:
 
     ## This function runs the simulation once with the specified number of threads,
     # and writes the timing results to the specified file object
-    def _run(self, processors, resultsfilepath):
+    def _run(self, processors, resultsfilepath, keepoutput):
 
         # Calculate the number of processes and the number of threads
         processes = processors if self._mode == "mpi" else 1
@@ -184,7 +188,15 @@ class ScalingTest:
         # Extract the timings from the log file and place them in the results file
         extract(logfilepath, processes, threads, resultsfilepath)
 
-        # REMOVE THE CONTENTS OF THE OUT DIR?
+        # Remove the contents of the output directory, if requested
+        if not keepoutput:
+            fileList = os.listdir(self._outpath)
+            for filename in fileList:
+
+                filepath=os.path.join(self._outpath,filename)
+
+                if os.path.isfile(filepath):
+                    os.remove(filepath)
 
     ## This function creates the file containing the results of the scaling benchmark test
     def _createresultsfile(self, maxnodes):
