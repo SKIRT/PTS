@@ -150,9 +150,9 @@ class SkirtSimulation:
         lastbutone = lines[len(lines)-2] if len(lines)>1 else ""
 
         # handle contents of the last lines
-        if last.startswith("   Available memory: ", 23): last = lastbutone
-        if last.startswith(" - Finished simulation " + self._prefix, 23): return "Finished"
-        if last.startswith(" * *** Error: ", 23): return "Crashed"
+        if " Available memory: " in last: last = lastbutone
+        if " Finished simulation " + self._prefix in last: return "Finished"
+        if " *** Error: " in last: return "Crashed"
         return "Running"
 
     # -----------------------------------------------------------------
@@ -274,11 +274,12 @@ class SkirtSimulation:
 
     # -----------------------------------------------------------------
 
-    ## This function retrieves a field from the specified simulation text output file, and returns its
-    # value as a float. The field is located by a trigger (a text string that must occur on a line before
-    # the one containing the field) and a header (a text string that must occur on the line containing
-    # the field). The last text segment on the line must be equal to the units string, and the segment
-    # before the units represents the returned value. If the function can't locate the field, it returns zero.
+    ## This function retrieves a field from the specified simulation text output file, and returns its value
+    # converted to the specified units. The field is located by a trigger (a text string that must occur on a line
+    # before the one containing the field) and a header (a text string that must occur on the line containing
+    # the field). The last text segment on the line represents the units of the value in the file, and the segment
+    # before the units represents the value itself. The value is converted from the units in the file to the
+    # requested units. If the function can't locate the field, it returns zero.
     def getfieldfromfile(self, filesuffix, trigger, header, units):
         filepath = self.outfilepath(filesuffix)
         if arch.isfile(filepath):
@@ -287,71 +288,98 @@ class SkirtSimulation:
                 if trigger in line: triggered = True
                 if triggered and header in line:
                     segments = line.split()
-                    if len(segments)>2 and segments[-1]==units:
-                        return float(segments[-2])
+                    if len(segments)>2:
+                        return self.units().convert(segments[-2], from_unit=segments[-1], to_unit=units)
         return 0;
 
     ## This function returns the total dust mass in the simulation's configuration space, in solar masses.
     # The function retrieves the 'expected' dust mass value listed in the convergence check data file.
     # It raises an error if the convergence check data file is not available or if the dust mass is zero.
-    # The current implementation requires that the dust mass in the convergence check data file
-    # is specified in solar masses.
     def dustmass(self):
         result = self.getfieldfromfile("ds_convergence.dat", "total dust mass", "expected value", "Msun")
         if result <= 0: raise ValueError("Can't determine dust mass")
         return result
 
-    ## This function returns the total gas mass represented by the set of SPH particles imported for
+    ## This function returns the total dust mass in the simulation's dust grid, in solar masses.
+    # The function retrieves the 'actual' dust mass value listed in the convergence check data file.
+    # It raises an error if the convergence check data file is not available or if the dust grid mass is zero.
+    def dustgridmass(self):
+        result = self.getfieldfromfile("ds_convergence.dat", "total dust mass", "actual value", "Msun")
+        if result <= 0: raise ValueError("Can't determine dust grid mass")
+        return result
+
+    ## This function returns the total mass of the cold gass represented by the set of SPH particles imported for
     # the simulation, in solar masses. The function retrieves this information from the log file entry
     # written by the SPH dust distribution. It raises an error if this entry is not found or if the mass is zero.
-    # The current implementation requires that the gas mass in the log file entry
-    # is specified in solar masses.
-    def gasmass(self):
+    def coldgasmass(self):
         result = self.getfieldfromfile("log.txt", "Reading SPH gas", "Total gas mass", "Msun")
-        if result <= 0: raise ValueError("Can't determine SPH gas mass")
+        if result <= 0: raise ValueError("Can't determine SPH cold gas mass")
         return result
 
-    ## This function returns the total stellar mass represented by the set of SPH particles imported for
+    ## This function returns the total mass of the metallic gas represented by the set of SPH particles imported for
     # the simulation, in solar masses. The function retrieves this information from the log file entry
-    # written by the SPH stellar system. It raises an error if this entry is not found or if the mass is zero.
-    # The current implementation requires that the total stellar mass in the log file entry
-    # is specified in solar masses.
-    def starmass(self):
-        result = self.getfieldfromfile("log.txt", "Reading SPH star", "Total stellar mass", "Msun")
-        if result <= 0: raise ValueError("Can't determine SPH stellar mass")
+    # written by the SPH dust distribution. It raises an error if this entry is not found or if the mass is zero.
+    def metallicgasmass(self):
+        result = self.getfieldfromfile("log.txt", "Reading SPH gas", "Total metal mass", "Msun")
+        if result <= 0: raise ValueError("Can't determine SPH metallic gas mass")
         return result
 
-    ## This function returns the total stellar luminosity represented by the set of SPH particles imported for
+    ## This function returns the total initial stellar mass (i.e. the mass at the time of birth) represented by
+    # the set of SPH particles imported for the simulation, in solar masses. The function retrieves this information
+    # from the log file entry written by the SPH stellar component. It raises an error if this entry is not found or
+    # if the mass is zero.
+    def initialstellarmass(self):
+        result = self.getfieldfromfile("log.txt", "Reading SPH star", "Total stellar mass", "Msun")
+        if result <= 0: raise ValueError("Can't determine SPH initial stellar mass")
+        return result
+
+    ## This function returns the total mass in hii regions represented by the set of SPH particles imported for
+    # the simulation, in solar masses. The function retrieves this information from the log file entry written
+    # by the SPH starburst component. It raises an error if this entry is not found or if the mass is zero.
+    def hiiregionmass(self):
+        result = self.getfieldfromfile("log.txt", "Reading SPH HII region", "Total stellar mass", "Msun")
+        if result <= 0: raise ValueError("Can't determine SPH HII region mass")
+        return result
+
+    ## This function returns the total luminosity represented by the set of SPH stellar particles imported for
     # the simulation, in solar bolometric luminosity units. The function retrieves this information from the
-    # log file entry written by the SPH stellar system. It raises an error if this entry is not found or if
+    # log file entry written by the SPH stellar component. It raises an error if this entry is not found or if
     # the total stellar luminosity is zero.
-    # The current implementation requires that the total stellar mass in the log file entry
-    # is specified in solar masses.
-    def starluminosity(self):
+    def stellarluminosity(self):
         result = self.getfieldfromfile("log.txt", "Reading SPH star", "Total luminosity", "Lsun")
         if result <= 0: raise ValueError("Can't determine SPH stellar luminosity")
         return result
 
+    ## This function returns the total luminosity represented by the set of SPH region II particles imported for
+    # the simulation, in solar bolometric luminosity units. The function retrieves this information from the
+    # log file entry written by the SPH starburst component. It raises an error if this entry is not found or if
+    # the total stellar luminosity is zero.
+    def hiiregionluminosity(self):
+        result = self.getfieldfromfile("log.txt", "Reading SPH HII region", "HII luminosity", "Lsun")
+        if result <= 0: raise ValueError("Can't determine SPH HII region luminosity")
+        return result
+
     # -----------------------------------------------------------------
 
-    ## Given a relation \f$y(x)\f$ defined by \f$(x_i,y_i)\f$ pairs, specified by the sequences \em xv and \em yv,
-    # this function returns the log-log interpolated \em y value corresponding to the specified \em x value.
-    def interpolate(self, x, xv, yv):
-        index = np.searchsorted(xv, x)
-        if index<=0 or index>=len(xv):
-            if x==xv[0]: index = 1
-            elif x==xv[-1]: index = len(xv)-1
-            else: raise ValueError("Value outside of interpolation range: " + str(x))
-        x1 = xv[index-1]; x2 = xv[index]
-        y1 = yv[index-1]; y2 = yv[index]
-        logx = np.log10(x); logx1 = np.log10(x1); logx2 = np.log10(x2)
-        fraction = (logx-logx1)/(logx2-logx1)
-        if y1>0 and y2>0:
-            logy1 = np.log10(y1); logy2 = np.log10(y2)
-            logy = logy1 + fraction*(logy2-logy1)
-            return 10.**logy
+    ## This function returns a tuple with three relevant properties of the dust grid used in the simulation:
+    # the total number of dust cells, the largest optical depth for any one cell, and the optical depth
+    # at the 90% percentile point (i.e. 90% of the cells that actually contain dust have an optical depth below
+    # this value). The function retrieves this information from the dust cell properties data file optionally
+    # written by the dust system. It raises an error if this file is not found.
+    def dustcellstats(self):
+        # load the optical depths from the file
+        filepath = self.outfilepath("ds_cellprops.dat")
+        depths = np.loadtxt(arch.opentext(filepath), usecols=(3,))
+        # calculate and return the statistics
+        nonzerodepths = depths[depths>0]
+        if len(nonzerodepths) > 0:
+            return ( len(depths), np.amax(nonzerodepths), np.percentile(nonzerodepths, 90) )
         else:
-            return y1 + fraction*(y2-y1)
+            return ( len(depths), 0, 0 )
+
+    # -----------------------------------------------------------------
+
+    # ============ re-evaluate below this line
 
     ## This function returns the monochromatic stellar flux \f$\lambda F_{*,\lambda}\f$ at the wavelength
     # \f$\lambda\f$ (specified in micron) and at the distance of the simulation's instruments, in W/m2.
