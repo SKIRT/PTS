@@ -160,11 +160,14 @@ class ScalingTest:
         command = "cd; rm -rf " + dataoutputpath
         jobscript.addcommand(command, comment="Remove the temporary output directory")
 
+        # Change the directory to the output directory for this simulation for the output.txt and error.txt files
+        os.chdir(self._outpath)
+
         # Submit the job script to the cluster scheduler
         jobscript.submit()
 
         # Remove this job script (it has been submitted)
-        #jobscript.remove()
+        jobscript.remove()
 
     ## This function runs the simulation once with the specified number of threads,
     # and writes the timing results to the specified file object
