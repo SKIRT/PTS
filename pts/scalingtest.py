@@ -14,6 +14,7 @@
 import os
 import os.path
 import multiprocessing
+import datetime
 
 # Import the relevant PTS class
 try:
@@ -201,8 +202,11 @@ class ScalingTest:
     ## This function creates the file containing the results of the scaling benchmark test
     def _createresultsfile(self, maxnodes):
 
+        # Generate a timestamp identifying this particular run for the ski file
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+
         # Create a new file
-        filepath = os.path.join(self._respath, self._system + "_" + self._mode + "_" + str(maxnodes) + ".dat")
+        filepath = os.path.join(self._respath, self._system + "_" + self._mode + "_" + str(maxnodes) + "_" + timestamp + ".dat")
         resultsfile = open(filepath, "w")
 
         # Write a header containing useful information about this test to the results file
