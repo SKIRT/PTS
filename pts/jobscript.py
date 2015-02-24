@@ -18,7 +18,7 @@ import subprocess
 
 # -----------------------------------------------------------------
 
-## The class JobScript
+## An instance of the JobScript class in this module manages a job script for the STEVIN infrastructure
 #
 class JobScript:
     

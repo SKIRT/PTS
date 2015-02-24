@@ -5,8 +5,9 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.scalingtest A class representing a SKIRT scaling test
+## \package do.scalingtest Performing a scaling test for SKIRT
 #
+# An instance of the ScalingTest class represents a SKIRT scaling benchmark test.
 
 # -----------------------------------------------------------------
 
@@ -20,17 +21,29 @@ import datetime
 try:
     from pts.skirtexec import SkirtExec
 except ImportError:
-    print "the pts.skirtexec module could not be loaded"
+    print "the pts.skirtexec module could not be loaded (this is not necessary on the cluster)"
 from pts.log import Log
 from do.extractscaling import extract
 from pts.jobscript import JobScript
 
 # -----------------------------------------------------------------
 
+## An instance of the ScalingTest class represents a SKIRT scaling benchmark test for a particular ski file.
+#
 class ScalingTest:
 
     ## The constructor accepts the following arguments:
-    #  - Blabla
+    #
+    #  - path: the path of the directory used for SKIRT scaling benchmark tests. This directory should contain
+    #          different folders, each containing a particular ski file.
+    #  - simulation: this string indicates which of the simulations or subfolders of the path (see above) should
+    #                be used for this scaling test. This string should match the name of one of the subdirectories of
+    #                the path.
+    #  - system: a string identifying the system on which this scaling test is carried out. This system name is used
+    #            in the name of the scaling test results file. If the system name has a particular value, for example
+    #            "delcatty" or "cosma", the scaling test will automatically switch to a mode where simulations are
+    #            scheduled instead of executed immediately.
+    #  - mode: the mode in which to run the scaling test. This can be either "mpi", "threads" or "hybrid".
     #
     def __init__(self, path, simulation, system, mode):
         
@@ -81,6 +94,15 @@ class ScalingTest:
         except NameError:
             self._skirt = None
 
+    ## When this function is invoked, the scaling test is started. This function takes the following arguments:
+    #
+    #  - maxnodes: the maximum number of 'nodes' to be used for this scaling test. On a desktop system, a node is
+    #              considered to be the entire set of processors. This number can range from zero to infinity, and
+    #              can be a fractional number. To use 2 processors on a system with 4 processors (per node) for example,
+    #              a value of 0.5 can be used for maxnodes.
+    #  - keepoutput: this optional argument indicates whether the output of the SKIRT simulations has to be kept
+    #                or can be deleted from the disk.
+    #
     def run(self, maxnodes, keepoutput=False):
 
         # Log the system name, the test mode and the version of SKIRT used for this test
@@ -106,9 +128,14 @@ class ScalingTest:
 
         # End with some log messages
         self._log.success("Finished parallel scaling benchmark script")
-        self._log.info("The results will be written to " + resultsfilepath)
+        self._log.info("The results are / will be written to " + resultsfilepath)
 
-    ## This functions schedules a simulation
+    ## This functions schedules a simulation on the cluster. This function takes the following arguments:
+    #
+    #   - processors: the total number of processors to be used for this run
+    #   - resultsfilepath: the path of the file that should contain the timings from this run
+    #   - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
+    #
     def _schedule(self, processors, resultsfilepath, keepoutput):
 
         # Inform the user about the number of processes and threads used for this run
@@ -157,8 +184,9 @@ class ScalingTest:
         jobscript.addcommand(command, comment="Extract the results")
 
         # Add the command to remove the output directory of this run
-        command = "cd; rm -rf " + dataoutputpath
-        jobscript.addcommand(command, comment="Remove the temporary output directory")
+        if not keepoutput:
+            command = "cd; rm -rf " + dataoutputpath
+            jobscript.addcommand(command, comment="Remove the temporary output directory")
 
         # Change the directory to the output directory for this simulation for the output.txt and error.txt files
         os.chdir(self._outpath)
@@ -167,10 +195,16 @@ class ScalingTest:
         jobscript.submit()
 
         # Remove this job script (it has been submitted)
-        jobscript.remove()
+        if not keepoutput:
+            jobscript.remove()
 
     ## This function runs the simulation once with the specified number of threads,
-    # and writes the timing results to the specified file object
+    #  and writes the timing results to the specified file object. This function takes the following arguments:
+    #
+    #  - processors: the number of processors to be used for this run
+    #  - resultsfilepath: the path of the file that should contain the timings from this run
+    #   - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
+    #
     def _run(self, processors, resultsfilepath, keepoutput):
 
         # Calculate the number of processes and the number of threads
@@ -202,7 +236,9 @@ class ScalingTest:
                 if os.path.isfile(filepath):
                     os.remove(filepath)
 
-    ## This function creates the file containing the results of the scaling benchmark test
+    ## This function creates the file containing the results of the scaling benchmark test. It takes the maximum
+    #  number of nodes, as given to the command line, as an argument. This number is used in the name of the results file,
+    #  to identify this particular scaling test.
     def _createresultsfile(self, maxnodes):
 
         # Generate a timestamp identifying this particular run for the ski file

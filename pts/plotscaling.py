@@ -77,8 +77,11 @@ def plotscaling(directory, filename):
     plotspeedups(filenames, "scaling_speedups.pdf", directory, xlim=(0,40))
     ploteffs(filenames, "scaling_effs.pdf", directory, xlim=(0,40))
 
+# -----------------------------------------------------------------
+
 ## This function creates a PDF plot showing the execution time in function of thread count.
 # The function takes the following arguments:
+#
 # - filenames: a list of names for files containing benchmark results
 # - plotfile: the name of the plot file to be generated; this \em must have the \c .pdf filename extension
 # - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
@@ -122,6 +125,7 @@ def plottimes(filenames, plotfile, path, figsize=(12,8), xlim=None, ylim=None):
 ## This function creates a PDF plot showing the efficiency in function of thread count.
 # Efficiency is defined as T(1)/T(N)/N. It is a dimensionless quantity <= 1.
 # The function takes the following arguments:
+#
 # - filenames: a list of names for files containing benchmark results
 # - plotfile: the name of the plot file to be generated; this \em must have the \c .pdf filename extension
 # - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
@@ -164,6 +168,16 @@ def ploteffs(filenames, plotfile, path, figsize=(12,8), xlim=None, ylim=None):
 
 # -----------------------------------------------------------------
 
+## This function creates a PDF plot showing the speedup in function of thread count.
+#  The speedup is defined as T(1)/T(N). It is a dimensionless quantity, theoretically it is >= 1.
+#  The function takes the following arguments:
+#
+# - filenames: a list of names for files containing benchmark results
+# - plotfile: the name of the plot file to be generated; this \em must have the \c .pdf filename extension
+# - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
+# - xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
+# - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
+#
 def plotspeedups(filenames, plotfile, path, figsize=(12,8), xlim=None, ylim=None):
 
     # Get the number of logical cores on the system
