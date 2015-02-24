@@ -20,6 +20,8 @@ import matplotlib
 if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 
+import pts.archive as arch
+
 # -----------------------------------------------------------------
 
 # This function creates a polarization map for each set of "prefix_instr_stokes*.fits" files in the output of
@@ -37,10 +39,10 @@ def plotpolarization(simulation, figsize=(10,6)):
 
         # read the Stokes frames with shape (ny, nx) or datacubes with shape (nlambda, ny, nx)
         # if datacubes, pick the first frame (for now)
-        I = pyfits.getdata(fileI)
-        Q = pyfits.getdata(fileQ)
-        U = pyfits.getdata(fileU)
-        V = pyfits.getdata(fileV)
+        I = pyfits.getdata(arch.openbinary(fileI))
+        Q = pyfits.getdata(arch.openbinary(fileQ))
+        U = pyfits.getdata(arch.openbinary(fileU))
+        V = pyfits.getdata(arch.openbinary(fileV))
         if len(I.shape)==3:
             index = 0
             I = I[index,:,:]

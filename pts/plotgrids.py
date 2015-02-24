@@ -14,6 +14,7 @@
 
 import numpy as np
 from reportlab.pdfgen import canvas
+import pts.archive as arch
 
 # -----------------------------------------------------------------
 
@@ -44,7 +45,7 @@ def plotgrids(simulation, figsize=(8,8)):
         fig.setLineWidth(0.1)
 
         # determine the format type from the first nonempty line (3D format has 3 columns, 2D format has 2 columns)
-        for line in open(gridfile):
+        for line in arch.opentext(gridfile):
             form = len(line.split())
             if form > 0: break
 
@@ -54,7 +55,7 @@ def plotgrids(simulation, figsize=(8,8)):
 
             # determine the extent of the grid being plotted
             xmin, ymin, xmax, ymax = float('Inf'), float('Inf'), float('-Inf'), float('-Inf')
-            for line in file(gridfile):
+            for line in arch.opentext(gridfile):
                 coords = line.split()
                 if len(coords)==2:
                     x, y = float(coords[0]), float(coords[1])
@@ -68,7 +69,7 @@ def plotgrids(simulation, figsize=(8,8)):
 
             # for each set of consecutive nonempty lines in the file, draw the line segments
             path = None
-            for line in open(gridfile):
+            for line in arch.opentext(gridfile):
                 coords = line.split()
                 if len(coords)==0 and path != None:
                     fig.drawPath(path)
@@ -87,7 +88,7 @@ def plotgrids(simulation, figsize=(8,8)):
 
             # determine the extent of the grid being plotted (largest half-width in all directions)
             extent = 0.
-            for line in open(gridfile):
+            for line in arch.opentext(gridfile):
                 coords = line.split()
                 if len(coords) == 3:
                     extent = max(extent, np.max(np.abs(np.array(map(float,coords)))))
@@ -106,7 +107,7 @@ def plotgrids(simulation, figsize=(8,8)):
 
             # for each set of consecutive nonempty lines in the file, draw the line segments
             path = None
-            for line in open(gridfile):
+            for line in arch.opentext(gridfile):
                 coords = line.split()
                 if len(coords)==0 and path != None:
                     fig.drawPath(path)

@@ -19,6 +19,8 @@ import matplotlib
 if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 
+import pts.archive as arch
+
 # -----------------------------------------------------------------
 
 # This function creates a plot combining the "sed.dat" files in the output of the specified simulation.
@@ -62,7 +64,7 @@ def plotseds_impl(sedfiles, plotfile, labels=None, fluxlabel="Flux", figsize=(10
 
     # loop over sed files and labels
     for sedfile,label in zip(sedfiles,labels):
-        data = np.loadtxt(sedfile)
+        data = np.loadtxt(arch.opentext(sedfile))
         if len(data.shape)==2:
             plt.loglog(data[:,0], data[:,1], label=label)
         else:

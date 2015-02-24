@@ -7,11 +7,12 @@
 
 ## \package do.eagle_build Build visualization files for completed EAGLE SKIRT-runs.
 #
-# This script builds RGB images, wavelength movies, or info files from the results of completed EAGLE SKIRT-runs.
-# The visualization files are placed in the corresponding \c vis directories, replacing any previous versions.
+# This script builds SED plots, RGB images, wavelength movies, or info files from the results of completed EAGLE .
+# SKIRT-runs. The resulting files are placed in the corresponding \c vis directories, replacing any previous versions.
 #
 # The script expects exactly two command-line arguments. The first argument specifies what type of files to build.
 # It should be one of the following strings (it is sufficient to specify an unambiguous portion of the string):
+#  - seds: a PDF plot combining the SEDs for all of the instruments
 #  - rgbimages: an optical RGB image for each of the instruments
 #  - wavemovie: a wavelength movie for the three instruments
 #  - infofile: a text info file with statistics on the simulation results
@@ -51,11 +52,11 @@ def runids_in_range(runidspec):
     except Exception:
         return None
 
-# returns a list of SkirtRun objects corresponding to all currently completed skirt-runs, in order of run-id,
+# returns a list of SkirtRun objects corresponding to all completed or archived skirt-runs, in order of run-id,
 # optionally omitting any skirt-runs for which all files in the specified sequence exist in the visualization folder
 def completed_skirtruns(unless_filenames=None):
     db = Database()
-    runids = sorted([ row['runid'] for row in db.select("runstatus = 'completed'") ])
+    runids = sorted([ row['runid'] for row in db.select("runstatus='completed' or runstatus='archived'") ])
     runs = [ SkirtRun(runid) for runid in runids ]
     if unless_filenames!=None:
         runs = filter(lambda run: not has_visualization_files(run,unless_filenames), runs)
@@ -83,10 +84,11 @@ def move_visualization_files(skirtrun, filenames):
 if len(sys.argv) != 3: raise ValueError("This script expects exactly two command-line arguments")
 
 vistype = sys.argv[1].lower()
+sed  = "seds".startswith(vistype)
 rgb  = "rgbimages".startswith(vistype)
 wave = "wavemovie".startswith(vistype)
 info = "infofile".startswith(vistype)
-if not rgb and not wave and not info: raise ValueError("Unknown visualization type: " + vistype)
+if not sed and not rgb and not wave and not info: raise ValueError("Unknown visualization type: " + vistype)
 
 buildrange = sys.argv[2].lower()
 update =  "update".startswith(buildrange)
@@ -98,6 +100,7 @@ if not update and not rebuild and not runidrange: raise ValueError("Unknown buil
 
 # construct a list of relevant filename endings depending on the visualization type
 filenames = []
+if sed: filenames += [ "sed.pdf" ]
 if rgb: filenames += [ "xy_total.png", "xz_total.png", "yz_total.png" ]
 if wave: filenames += [ "wave.mov" ]
 if info: filenames += [ "info.txt" ]
@@ -108,6 +111,15 @@ if runidrange:
     skirtruns = [ SkirtRun(runid) for runid in runidrange ]
 else:
     skirtruns = completed_skirtruns(filenames if update else None)
+
+# build SED plots for each SKIRT-run
+if sed:
+    from pts.plotseds import plotseds
+    print "Building SED plots for {} SKIRT-runs".format(len(skirtruns))
+    for skirtrun in skirtruns:
+        print "Building SED plot for SKIRT-run {}...".format(skirtrun.runid())
+        plotseds(skirtrun.simulation())
+        move_visualization_files(skirtrun, filenames)
 
 # build RGB images for each SKIRT-run
 if rgb:

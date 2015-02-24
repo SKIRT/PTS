@@ -17,9 +17,11 @@ import numpy as np
 import matplotlib
 if matplotlib.get_backend().lower() != "agg": matplotlib.use("agg")
 import matplotlib.pyplot as plt
+import pyfits
 
 from pts.moviefile import MovieFile
 from pts.rgbimage import RGBImage
+import pts.archive as arch
 
 # -----------------------------------------------------------------
 
@@ -50,12 +52,17 @@ def makewavemovie(simulation, xlim=None, ylim=None, from_percentile=30, to_perce
             sedshape = (npaths*fitsshape[0], fitsshape[1]/2)
             totalshape = (sedshape[0], fitsshape[1]+sedshape[1])
 
+            # load the data
+            print "  loading data for " + outpath.rsplit("/",1)[1] + "..."
+            datacubes = [ pyfits.getdata(arch.openbinary(fitspath)).T for fitspath in fitspaths ]
+            sedtables = [ np.loadtxt(arch.opentext(sedpath)) for sedpath in sedpaths ]
+
             # determine the appropriate pixel range for ALL images
-            print "  preprocessing frames for " + outpath.rsplit("/",1)[1] + "..."
+            print "  preprocessing frames..."
             ranges = []
             for frame in range(nlambda):
-                for fitspath in fitspaths:
-                    im = RGBImage(fitspath, frames=(frame,frame,frame))
+                for data in datacubes:
+                    im = RGBImage(np.dstack(( data[:,:,frame],data[:,:,frame],data[:,:,frame] )))
                     ranges += list(im.percentilepixelrange(from_percentile,to_percentile))
             rmin = min(ranges)
             rmax = max(ranges)
@@ -69,8 +76,8 @@ def makewavemovie(simulation, xlim=None, ylim=None, from_percentile=30, to_perce
 
                 # assemble the top panel
                 image = None;
-                for fitspath in fitspaths:
-                    im = RGBImage(fitspath, frames=(frame,frame,frame))
+                for data in datacubes:
+                    im = RGBImage(np.dstack(( data[:,:,frame],data[:,:,frame],data[:,:,frame] )))
                     im.setrange(rmin,rmax)
                     im.applylog()
                     im.applycmap("gnuplot")
@@ -81,8 +88,7 @@ def makewavemovie(simulation, xlim=None, ylim=None, from_percentile=30, to_perce
                 dpi = 100
                 figure = plt.figure(dpi=dpi, figsize=(sedshape[0]/float(dpi),sedshape[1]/float(dpi)),
                                     facecolor='w', edgecolor='w')
-                for sedpath,label in zip(sedpaths,labels):
-                    data = np.loadtxt(sedpath)
+                for data,label in zip(sedtables,labels):
                     plt.loglog(data[:,0], data[:,1], label=label)
                 plt.axvline(wavelengths[frame], color='m')
                 plt.figtext(0.49,0.15, r"$\lambda={0:.4g}\,\mu m$".format(wavelengths[frame]), fontsize='large')
