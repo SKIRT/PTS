@@ -121,7 +121,7 @@ class SkirtRun:
         skirt = SkirtExec(config.skirt_path)
         skifile = os.path.join(self._runpath, self.prefix()+".ski")
         simulations = skirt.execute(skifile, inpath=self.inpath(), outpath=self.outpath(),
-                      processes=processes, threads=threads, mpistyle=mpistyle)
+                      processes=processes, threads=threads, mpistyle=mpistyle, verbose=True)
         return simulations[0]
 
 # -----------------------------------------------------------------
