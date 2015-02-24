@@ -58,7 +58,7 @@ class JobScript:
 
         # Set the environment variables
         self._script.write("#PBS -N " + skifilename + "_" + str(nodes) + "_" + str(ppn) + "\n")
-        #self._script.write("#PBS -o output.txt\n")
+        self._script.write("#PBS -o output_" + skifilename + "_" + str(nodes) + "_" + str(ppn) + ".txt\n")
         self._script.write("#PBS -e error_" + skifilename + "_" + str(nodes) + "_" + str(ppn) + ".txt\n")
         self._script.write("#PBS -l walltime=%d:%02d:%02d\n" % (h, m, s))
         self._script.write("#PBS -l nodes=" + str(nodes) + ":ppn=" + str(ppn) + "\n")
