@@ -24,7 +24,7 @@ from pts.scalingtest import ScalingTest
 parser = argparse.ArgumentParser()
 parser.add_argument('system', type=str, help='a name identifying the system')
 parser.add_argument('mode', type=str, help='the mode for the scaling test', choices=['mpi', 'hybrid', 'threads'])
-parser.add_argument('maxnodes', type=int, help='the maximum number of nodes', nargs='?', default=1)
+parser.add_argument('maxnodes', type=float, help='the maximum number of nodes', nargs='?', default=1)
 parser.add_argument('simulation', type=str, help='the name of the simulation to use for the test', nargs='?', default="")
 parser.add_argument('--keep', action='store_true')
 

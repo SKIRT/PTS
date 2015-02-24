@@ -65,11 +65,11 @@ class ScalingTest:
         # Determine the number of cores (per node) on this system
         self._cores = multiprocessing.cpu_count()
 
-        # TODO: Search this file automatically
-        skifilename = "scaling.ski"
+        # TODO: Search this file automatically; support other names
+        self._skifilename = "scaling"
 
         # The path of the ski file
-        self._skifilepath = os.path.join(self._simulationpath, skifilename)
+        self._skifilepath = os.path.join(self._simulationpath, self._skifilename + ".ski")
 
         # Create the logging mechanism
         self._log = Log()
@@ -130,10 +130,10 @@ class ScalingTest:
         os.makedirs(dataoutputpath)
 
         # The path of the log file for this simulation run
-        logfilepath = os.path.join(dataoutputpath, self._simulationname + "_log.txt")
+        logfilepath = os.path.join(dataoutputpath, self._skifilename + "_log.txt")
 
         # Get the timings from a serial run of the simulation
-        seriallogfilepath = os.path.join(self._outpath, self._simulationname + "_log.txt")
+        seriallogfilepath = os.path.join(self._outpath, self._skifilename + "_log.txt")
         timings = extract(seriallogfilepath)
         serialtime = timings[0] + timings[2]     # setuptime + writingtime in seconds
         paralleltime = timings[1]                # in seconds
