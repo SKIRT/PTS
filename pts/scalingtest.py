@@ -13,17 +13,20 @@
 # Import standard modules
 import os
 import os.path
+import multiprocessing
 
 # Import the relevant PTS class
-from pts.skifile import SkiFile
-from pts.skirtsimulation import SkirtSimulation
-from pts.skirtexec import SkirtExec
+try:
+    from pts.skirtexec import SkirtExec
+except ImportError:
+    print "the pts.skirtexec module could not be loaded"
 from pts.log import Log
-from pts.plotscaling import plottimes, plotspeedups, ploteffs
+from do.extractscaling import extract
+from pts.jobscript import JobScript
+
+# -----------------------------------------------------------------
 
 class ScalingTest:
-
-    # -----------------------------------------------------------------
 
     ## The constructor accepts the following arguments:
     #  - Blabla
@@ -45,125 +48,167 @@ class ScalingTest:
         
         # Set the system name
         self._system = system
-        
+
+        # Determine whether we are dealing with a scheduling system or we can launch simulations right away
+        if self._system == "delcatty" or self._system == "cosma":
+            self._do = self._schedule
+        else:
+            self._do = self._run
+
         # Set the mode
         self._mode = mode
-        
+
+        # Determine the number of cores (per node) on this system
+        self._cores = multiprocessing.cpu_count()
+
+        # The name of the ski file being used for the scaling test
+        self._simulationname = "scaling"
+
+        # The path of the ski file
+        self._skifilepath = os.path.join(self._path, self._simulationname + ".ski")
+
         # Create the logging mechanism
         self._log = Log()
         
         # Create skirt execution context
-        self._skirt = SkirtExec(log=self._log)
-    
-    def run(self, processes, threads):
+        try:
+            self._skirt = SkirtExec(log=self._log)
+        except NameError:
+            self._skirt = None
 
-        # The ski file to be used for the scaling test
-        skifile = os.path.join(self._path, "scaling.ski")
-        
+    def run(self, maxnodes):
+
         # Log the system name, the test mode and the version of SKIRT used for this test
-        self._log.info("Starting parallel scaling benchmark for " + self._system + " in " + self._mode + " mode.")        
-        self._log.info("Using " + self._skirt.version())
+        self._log.info("Starting parallel scaling benchmark for " + self._system + " in " + self._mode + " mode.")
+        if self._skirt is not None:
+            self._log.info("Using " + self._skirt.version())
 
         # Create a file containing the results of the scaling test
-        resultfilename = os.path.join(self._respath, self._system + "_" + self._mode + "_" + str(processes) + "_" + str(threads) + ".dat")
-        resultfile = open(resultfilename, "w")
-        
-        # Write a header containing useful information about this test to the results file
-        resultfile.write("# Parallel scaling benchmark results for " + self._system + " in " + self._mode + " mode\n")
-        resultfile.write("# Using " + self._skirt.version() + "\n")
-        resultfile.write("# Column 1: Number of processes p\n")
-        resultfile.write("# Column 2: Number of threads per process t\n")
-        resultfile.write("# Column 3: Total number of threads (t*p)\n")
-        resultfile.write("# Column 4: Execution time for the setup (s)\n")
-        resultfile.write("# Column 5: Execution time for the stellar emission phase (s)\n")
-        resultfile.write("# Column 6: Execution time for the writing phase (s)\n")
-        resultfile.write("# Column 7: Execution time for the simulation (s)\n")
+        resultsfilepath = self._createresultsfile(maxnodes)
 
-        # Make a list of the different configurations (number of processes, number of threads) to be used for this test
-        conflist = self._makelist(processes, threads)
-                
+        # Calculate the maximum number of processors to use for the scaling test (maxnodes can be a decimal number)
+        maxprocessors = int(maxnodes * self._cores)
+
         # Perform the simulations
-        for configuration in conflist:
-            
-            self._log.info("Running simulation with " + str(configuration[0]) + " process(es) consisting of " + str(configuration[1]) + " thread(s)")
-            self._runandlog(skifile, configuration[0], configuration[1], resultfile)
+        processors = 1
+        while processors <= maxprocessors:
 
-        # Close the results file
-        resultfile.close()
-        
+            # Perform this run
+            self._do(processors, resultsfilepath)
+
+            # The next run will be performed with double the amount of processors
+            processors *= 2
+
         # End with some log messages
-        self._log.info("Finished parallel scaling benchmark.")
-        self._log.info("Results were written to " + resultfilename)
-        
-    def plot(self):
-        
-        # Get a list of result files (i.e. all *.dat files in the current directory)
-        filenames = sorted(filter(lambda fn: fn.endswith(".dat"), os.listdir(self._respath)), key=self._totalthreads)
+        self._log.success("Finished parallel scaling benchmark script")
+        self._log.info("The results will be written to " + resultsfilepath)
 
-        # Generate the plots
-        plottimes(filenames, "scaling_times.pdf", self._respath, xlim=(0,40))
-        plotspeedups(filenames, "scaling_speedups.pdf", self._respath, xlim=(0,40))
-        ploteffs(filenames, "scaling_effs.pdf", self._respath, xlim=(0,40))
+    ## This functions schedules a simulation
+    def _schedule(self, processors, resultsfilepath):
+
+        # Inform the user about the number of processes and threads used for this run
+        self._log.info("Scheduling simulation with " + str(processors) + " processors")
+
+        # Calculate the necessary amount of nodes
+        nodes = processors/self._cores + (processors % self._cores > 0)
+
+        # Determine the number of processors per node
+        ppn = processors if nodes == 1 else self._cores
+
+        # Scaling benchmark name
+        name = os.path.basename(os.path.normpath(self._path))
+
+        # The path of the output directory to be created
+        dataoutputpath = os.path.join(os.getenv("VSC_DATA"), name, "out_" + self._mode + "_" + str(processors))
+
+        # Create a seperate output directory for this run (different runs can be executed simultaneously)
+        self._log.info("The output of this run will be placed in " + dataoutputpath)
+        os.mkdir(dataoutputpath)
+
+        # The path of the log file for this simulation run
+        logfilepath = os.path.join(dataoutputpath, self._simulationname + "_log.txt")
+
+        # Get the timings from a serial run of the simulation
+        seriallogfilepath = os.path.join(self._outpath, self._simulationname + "_log.txt")
+        timings = extract(seriallogfilepath)
+        serialtime = timings[0] + timings[2]     # setuptime + writingtime in seconds
+        paralleltime = timings[1]                # in seconds
+
+        # Set the expected walltime
+        walltime = int((serialtime + paralleltime / processors)*1.5 + 100)  # in seconds
+
+        # Create the job script
+        jobscriptpath = os.path.join(self._outpath, "job_" + self._mode + "_" + str(processors) + ".sh")
+        jobscript = JobScript(jobscriptpath, self._skifilepath, nodes, ppn, self._mode == "hybrid", dataoutputpath, walltime)
+
+        # Add the command to go the the PTS do directory
+        jobscript.addcommand("cd $VSC_HOME/PTS/git/do")
+
+        # Add the PTS command to extract the timings of this run
+        processes = processors if self._mode == "mpi" else nodes
+        threads = 1 if self._mode == "mpi" else ppn
+
+        command = "python extractscaling.py " + logfilepath + " " + str(processes) + " " + str(threads) + " " + resultsfilepath
+        jobscript.addcommand(command, comment="Extract the results")
+
+        # Add the command to remove the output directory of this run
+        command = "cd; rm -rf " + dataoutputpath
+        jobscript.addcommand(command, comment="Remove the temporary output directory")
+
+        # Submit the job script to the cluster scheduler
+        jobscript.submit()
+
+        # Remove this job script (it has been submitted)
+        #jobscript.remove()
 
     ## This function runs the simulation once with the specified number of threads,
     # and writes the timing results to the specified file object
-    def _runandlog(self, skifile, processes, threads, resultfile):
-    
-        simulation = self._skirt.execute(skipattern=skifile, outpath=self._outpath, threads=threads, processes=processes)[0]
+    def _run(self, processors, resultsfilepath):
+
+        # Calculate the number of processes and the number of threads
+        processes = processors if self._mode == "mpi" else 1
+        threads = 1 if self._mode == "mpi" else processors
+
+        # Inform the user about the number of processes and threads used for this run
+        self._log.info("Running simulation with " + str(processes) + " process(es) consisting of " + str(threads) + " thread(s)")
+
+        # Run the simulation
+        simulation = self._skirt.execute(skipattern=self._skifilepath, outpath=self._outpath, threads=threads, processes=processes)[0]
+
+        # Check whether the simulation finished
         if simulation.status() != "Finished": raise ValueError("Simulation " + simulation.status())
 
-        for line in open(simulation.logfilepath()):
-            
-            if "Finished setup in" in line:
-                setuptime = float(line.split(" in ")[1].split()[0])
-                
-            elif "Finished the stellar emission phase in" in line:
-                stellartime = float(line.split(" in ")[1].split()[0])
-                    
-            elif "Finished writing results in" in line:
-                writingtime = float(line.split(" in ")[1].split()[0])
+        # Determine the path to the simulation log file
+        logfilepath = os.path.join(self._outpath, self._simulationname + "_log.txt")
 
-            elif "Finished simulation" in line:
-                simulationtime = float(line.split(" in ")[1].split()[0])
+        # Extract the timings from the log file and place them in the results file
+        extract(logfilepath, processes, threads, resultsfilepath)
 
-        resultfile.write(str(processes) + " " + str(threads) + " " + str(processes*threads) + " " + str(setuptime) 
-                                        + " " + str(stellartime) + " " + str(writingtime) + " " + str(simulationtime) + "\n")
-        
-    ## This function returns the total number of cores for a benchmark result file name,
-    # which is assumed be formatted as <system-name>_<#hard-cores>_<#extra-cores>.dat
-    def _totalthreads(self, filename):
-        
-        segments = filename.split("_")
-        threads = segments[2].split(".")[0]
-        return int(threads)
-        
-    def _makelist(self, processes, threads):
+        # REMOVE THE CONTENTS OF THE OUT DIR?
 
-        list = []
-        
-        for nprocs in (1, 2, 3, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 36, 40, 48, 56):
-            
-            # Stop when nprocs exceeds the maximum number of processes
-            if nprocs > processes: break
-            
-            # For one processes, determine the thread counts if we are in multithreading or hybrid mode
-            if nprocs == 1 and self._mode != "mpi":
-                
-                for nthreads in (1, 2, 3, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 36, 40, 48, 56):
-                    
-                    # Stop when nthreads exceeds the maximum number of threads
-                    if nthreads > threads: break
-                    
-                    # Add this configuration 3 times
-                    list.append((nprocs,nthreads))
-                    list.append((nprocs,nthreads))
-                    list.append((nprocs,nthreads))
-            
-            else:
-                
-                # Add this configuration (nprocs,threads) 3 times
-                list.append((nprocs,threads))
-                list.append((nprocs,threads))
-                list.append((nprocs,threads))
-        
-        return list
+    ## This function creates the file containing the results of the scaling benchmark test
+    def _createresultsfile(self, maxnodes):
+
+        # Create a new file
+        filepath = os.path.join(self._respath, self._system + "_" + self._mode + "_" + str(maxnodes) + ".dat")
+        resultsfile = open(filepath, "w")
+
+        # Write a header containing useful information about this test to the results file
+        resultsfile.write("# Parallel scaling benchmark results for " + self._system + " in " + self._mode + " mode\n")
+        if self._skirt is not None:
+            resultsfile.write("# Using " + self._skirt.version() + "\n")
+        resultsfile.write("# Column 1: Number of processes p\n")
+        resultsfile.write("# Column 2: Number of threads per process t\n")
+        resultsfile.write("# Column 3: Total number of threads (t*p)\n")
+        resultsfile.write("# Column 4: Execution time for the setup (s)\n")
+        resultsfile.write("# Column 5: Execution time for the stellar emission phase (s)\n")
+        resultsfile.write("# Column 6: Execution time for the writing phase (s)\n")
+        resultsfile.write("# Column 7: Execution time for the simulation (s)\n")
+
+        # Close the results file (results will be appended!)
+        resultsfile.close()
+
+        # Return the path of the newly created results file
+        return filepath
+
+# -----------------------------------------------------------------

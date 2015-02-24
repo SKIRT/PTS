@@ -12,6 +12,9 @@
 # Import standard modules
 import numpy as np
 import os.path
+import multiprocessing
+
+# -----------------------------------------------------------------
 
 # Use a non-interactive back-end to generate high-quality vector graphics
 import matplotlib
@@ -49,6 +52,31 @@ def combinesamples(counts,times):
 
 # -----------------------------------------------------------------
 
+## This function returns the total number of threads for a benchmark result file name,
+# which is assumed be formatted as <system-name>_<mode>_<#processes>_<#threads>.dat
+def totalthreads(filename):
+    segments = filename.split("_")
+    processes = segments[2]
+    threads = segments[3].split(".")[0]
+    return int(processes)*int(threads)
+
+# -----------------------------------------------------------------
+
+## This function makes the scaling plots
+def plotscaling(directory, filename):
+
+    if filename != "":
+        filenames = [filename]
+
+    else:
+        # Get a list of result files (i.e. all *.dat files in the current directory)
+        filenames = sorted(filter(lambda fn: fn.endswith(".dat"), os.listdir(directory)), key=totalthreads)
+
+    # Generate the plots
+    plottimes(filenames, "scaling_times.pdf", directory, xlim=(0,40))
+    plotspeedups(filenames, "scaling_speedups.pdf", directory, xlim=(0,40))
+    ploteffs(filenames, "scaling_effs.pdf", directory, xlim=(0,40))
+
 ## This function creates a PDF plot showing the execution time in function of thread count.
 # The function takes the following arguments:
 # - filenames: a list of names for files containing benchmark results
@@ -58,6 +86,10 @@ def combinesamples(counts,times):
 # - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
 #
 def plottimes(filenames, plotfile, path, figsize=(12,8), xlim=None, ylim=None):
+
+    # Get the number of logical cores on the system
+    logical_cores = multiprocessing.cpu_count()
+
     assert plotfile.endswith(".pdf")
     figure = plt.figure(figsize=figsize)
 
@@ -97,6 +129,10 @@ def plottimes(filenames, plotfile, path, figsize=(12,8), xlim=None, ylim=None):
 # - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
 #
 def ploteffs(filenames, plotfile, path, figsize=(12,8), xlim=None, ylim=None):
+
+    # Get the number of logical cores on the system
+    logical_cores = multiprocessing.cpu_count()
+
     assert plotfile.endswith(".pdf")
     figure = plt.figure(figsize=figsize)
 
@@ -129,6 +165,10 @@ def ploteffs(filenames, plotfile, path, figsize=(12,8), xlim=None, ylim=None):
 # -----------------------------------------------------------------
 
 def plotspeedups(filenames, plotfile, path, figsize=(12,8), xlim=None, ylim=None):
+
+    # Get the number of logical cores on the system
+    logical_cores = multiprocessing.cpu_count()
+
     assert plotfile.endswith(".pdf")
     figure = plt.figure(figsize=figsize)
 
@@ -157,3 +197,5 @@ def plotspeedups(filenames, plotfile, path, figsize=(12,8), xlim=None, ylim=None
     plotfilepath = os.path.join(path, plotfile)
     plt.savefig(plotfilepath, bbox_inches='tight', pad_inches=0.25)
     plt.close()
+
+# -----------------------------------------------------------------
