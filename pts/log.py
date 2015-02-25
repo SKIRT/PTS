@@ -20,8 +20,8 @@ import os.path
 # -----------------------------------------------------------------
 
 ## This private utility function returns the specified message decorated with a timestamp.
-def timestamp(message):
-    stampedmessage = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S ") + message
+def timestamp(message, delimiter="   "):
+    stampedmessage = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S.%f")[:-3] + delimiter + message
     return stampedmessage
 
 # -----------------------------------------------------------------
@@ -54,7 +54,7 @@ class Log:
 
     ## This function logs a warning message.
     def warning(self, message):
-        stampedmessage = timestamp(message)
+        stampedmessage = timestamp(message, delimiter=" ! ")
         if self._doreport:
             self._report.write(stampedmessage + "\n")
             self._report.flush()
@@ -63,7 +63,7 @@ class Log:
 
     ## This function logs a success message.
     def success(self, message):
-        stampedmessage = timestamp(message)
+        stampedmessage = timestamp(message, delimiter=" - ")
         if self._doreport:
             self._report.write(stampedmessage + "\n")
             self._report.flush()
@@ -72,7 +72,7 @@ class Log:
 
     ## This function logs an error message.
     def error(self, message):
-        stampedmessage = timestamp(message)
+        stampedmessage = timestamp(message, delimiter=" * ")
         if self._doreport:
             self._report.write(stampedmessage + "\n")
             self._report.flush()

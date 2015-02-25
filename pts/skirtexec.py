@@ -149,6 +149,10 @@ class SkirtExec:
         # return the relevant portion of the output
         return "SKIRT" + output.splitlines()[0].partition("SKIRT")[2]
 
+    ## This function returns a string with the path of the SKIRT directory that is used, for example: HOME/SKIRT
+    def directory(self):
+        return os.path.dirname(os.path.dirname(os.path.dirname(self._path)))
+
     ## This function checks whether the MPI executable is installed on the system.
     def _MPIinstalled(self):
         MPI = True
