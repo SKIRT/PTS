@@ -110,8 +110,6 @@ class ScalingTest:
             self._skirt = None
 
 
-        self._getserialtimings()
-
     ## When this function is invoked, the scaling test is started. This function takes the following arguments:
     #
     #  - maxnodes: the maximum number of 'nodes' to be used for this scaling test. On a desktop system, a node is
@@ -230,10 +228,6 @@ class ScalingTest:
         # Remove this job script (it has been submitted)
         if not keepoutput:
             jobscript.remove()
-
-        # Remove the (remaining) contents of the output directory, if requested
-        if not keepoutput:
-            self._removeoutput()
 
     ## This function runs the simulation once with the specified number of threads,
     #  and writes the timing results to the specified file object. This function takes the following arguments:
