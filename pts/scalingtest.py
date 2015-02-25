@@ -111,7 +111,7 @@ class ScalingTest:
             self._log.info("Using " + self._skirt.version())
 
         # Create a file containing the results of the scaling test
-        resultsfilepath = self._createresultsfile(maxnodes)
+        resultsfilepath = self._createresultsfile(maxnodes, minnodes)
 
         # Calculate the maximum number of processors to use for the scaling test (maxnodes can be a decimal number)
         maxprocessors = int(maxnodes * self._cores)
@@ -245,13 +245,15 @@ class ScalingTest:
     ## This function creates the file containing the results of the scaling benchmark test. It takes the maximum
     #  number of nodes, as given to the command line, as an argument. This number is used in the name of the results file,
     #  to identify this particular scaling test.
-    def _createresultsfile(self, maxnodes):
+    def _createresultsfile(self, maxnodes, minnodes):
 
         # Generate a timestamp identifying this particular run for the ski file
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
 
-        # Create a new file
-        filepath = os.path.join(self._respath, self._system + "_" + self._mode + "_" + str(maxnodes) + "_" + timestamp + ".dat")
+        # Create a new file, whose name includes the system identifier, the scaling test mode, the maximum and
+        # minium number of nodes and a timestamp.
+        filepath = os.path.join(self._respath, self._system + "_" + self._mode + "_" + str(maxnodes)
+                                + "_" + str(minnodes) + "_" + timestamp + ".dat")
         resultsfile = open(filepath, "w")
 
         # Write a header containing useful information about this test to the results file
