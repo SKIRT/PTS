@@ -34,6 +34,8 @@ filename = args.file
 directory = os.getcwd()
 
 # Make the scaling plots
+# TODO: combine the results of different scaling tests of the same simulation
+# TODO: choose multiple results files to include in the plots
 plotscaling(directory, filename)
 
 # -----------------------------------------------------------------

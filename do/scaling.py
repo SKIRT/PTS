@@ -23,9 +23,10 @@ from pts.scalingtest import ScalingTest
 # Create the command-line parser and a set of subparsers
 parser = argparse.ArgumentParser()
 parser.add_argument('system', type=str, help='a name identifying the system')
+parser.add_argument('simulation', type=str, help='the name of the simulation to use for the test', nargs='?', default="")
 parser.add_argument('mode', type=str, help='the mode for the scaling test', choices=['mpi', 'hybrid', 'threads'])
 parser.add_argument('maxnodes', type=float, help='the maximum number of nodes', nargs='?', default=1)
-parser.add_argument('simulation', type=str, help='the name of the simulation to use for the test', nargs='?', default="")
+parser.add_argument('minnodes', type=float, help='the minimum number of nodes', nargs='?', default=0)
 parser.add_argument('--keep', action='store_true')
 
 # Parse the command line arguments
@@ -33,9 +34,10 @@ args = parser.parse_args()
 
 # Set the command-line options
 system = args.system
+simulation = args.simulation
 mode = args.mode
 maxnodes = args.maxnodes
-simulation = args.simulation
+minnodes = args.minnodes
 keepoutput = args.keep
 
 # -----------------------------------------------------------------
@@ -48,6 +50,6 @@ scalingpath = os.path.join(os.getenv("HOME"), scalingname)
 
 # Run the test
 test = ScalingTest(scalingpath, simulation, system, mode)
-test.run(maxnodes, keepoutput)
+test.run(maxnodes, minnodes, keepoutput)
 
 # -----------------------------------------------------------------

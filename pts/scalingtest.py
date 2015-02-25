@@ -103,7 +103,7 @@ class ScalingTest:
     #  - keepoutput: this optional argument indicates whether the output of the SKIRT simulations has to be kept
     #                or can be deleted from the disk.
     #
-    def run(self, maxnodes, keepoutput=False):
+    def run(self, maxnodes, minnodes, keepoutput=False):
 
         # Log the system name, the test mode and the version of SKIRT used for this test
         self._log.info("Starting parallel scaling benchmark for " + self._system + " in " + self._mode + " mode.")
@@ -116,8 +116,14 @@ class ScalingTest:
         # Calculate the maximum number of processors to use for the scaling test (maxnodes can be a decimal number)
         maxprocessors = int(maxnodes * self._cores)
 
-        # Perform the simulations
-        processors = 1
+        # Calculate the minimum number of processors to use for the scaling test and set this as the value
+        # to start the loop below with. The default setting is minnodes and minprocessors both equal to zero. If
+        # this is the case, the starting value for the loop is set to one.
+        minprocessors = int(minnodes * self._cores)
+        processors = minprocessors
+        if processors == 0: processors = 1
+
+        # Perform the simulations with increasing number of processors
         while processors <= maxprocessors:
 
             # Perform this run
