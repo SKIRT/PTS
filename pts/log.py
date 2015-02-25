@@ -72,7 +72,7 @@ class Log:
 
     ## This function logs an error message.
     def error(self, message):
-        stampedmessage = timestamp(message, delimiter=" * ")
+        stampedmessage = timestamp(message, delimiter=" * *** Error: ")
         if self._doreport:
             self._report.write(stampedmessage + "\n")
             self._report.flush()

@@ -46,13 +46,21 @@ class ScalingTest:
     #  - mode: the mode in which to run the scaling test. This can be either "mpi", "threads" or "hybrid".
     #
     def __init__(self, path, simulation, system, mode):
-        
+
+        # Create the logging mechanism
+        self._log = Log()
+
         # Set the path
         self._path = path
 
         # Set the simulation name (subdirectory of self._path) and the simulation path
         self._simulationname = simulation
         self._simulationpath = os.path.join(self._path, self._simulationname)
+
+        # Check whether the simulation path exists
+        if not os.path.exists(self._simulationpath):
+            self._log.error("No directory called " + self._simulationname + " was found in " + self._path)
+            exit()
 
         # Set the output and result paths
         self._outpath = os.path.join(self._simulationpath, "out")
@@ -79,15 +87,21 @@ class ScalingTest:
         # Determine the number of cores (per node) on this system
         self._cores = multiprocessing.cpu_count()
 
-        # TODO: Search this file automatically; support other names
-        self._skifilename = "scaling"
+        # Search the ski file that is in the specified simulation path
+        self._skifilename = ""
+        for file in os.listdir(self._simulationpath):
+            if file.endswith(".ski"):
+                self._skifilename = file[:-4]
+                break
+
+        # Check whether a ski file is found
+        if not self._skifilename:
+            self._log.error("No ski file was found in the simulation path " + self._simulationpath)
+            exit()
 
         # The path of the ski file
         self._skifilepath = os.path.join(self._simulationpath, self._skifilename + ".ski")
 
-        # Create the logging mechanism
-        self._log = Log()
-        
         # Create skirt execution context
         try:
             self._skirt = SkirtExec(log=self._log)
@@ -203,6 +217,16 @@ class ScalingTest:
         # Remove this job script (it has been submitted)
         if not keepoutput:
             jobscript.remove()
+
+        # Remove the (remaining) contents of the output directory, if requested
+        if not keepoutput:
+            fileList = os.listdir(self._outpath)
+            for filename in fileList:
+
+                filepath=os.path.join(self._outpath,filename)
+
+                if os.path.isfile(filepath):
+                    os.remove(filepath)
 
     ## This function runs the simulation once with the specified number of threads,
     #  and writes the timing results to the specified file object. This function takes the following arguments:
