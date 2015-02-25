@@ -87,15 +87,15 @@ class SkiFile:
         units = self.units()
         return [units.convert(s,to_unit='micron',quantity='wavelength') for s in results[0].split(",")]
 
-    ## This function returns the first instrument's distance, in parsec.
-    def instrumentdistance(self):
+    ## This function returns the first instrument's distance, in the specified units (default is 'pc').
+    def instrumentdistance(self, unit='pc'):
         # get the first instrument element
         instruments = self.tree.xpath("//instruments/*[1]")
         if len(instruments) != 1: raise ValueError("No instruments in ski file")
         # get the distance including the unit string
         distance = instruments[0].get("distance")
         # convert to pc
-        return self.units().convert(distance, to_unit='pc', quantity='distance')
+        return self.units().convert(distance, to_unit=unit, quantity='distance')
 
     ## This function returns the shape of the first instrument's frame, in pixels.
     def instrumentshape(self):
