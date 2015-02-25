@@ -114,6 +114,9 @@ class ScalingTest:
     #              considered to be the entire set of processors. This number can range from zero to infinity, and
     #              can be a fractional number. To use 2 processors on a system with 4 processors (per node) for example,
     #              a value of 0.5 can be used for maxnodes.
+    #  - minnodes: the minimum number of 'nodes' to be used for this scaling test. The usage is similar as with
+    #              maxnodes. The default value of minnodes is zero, denoting no lower limit on the number of nodes.
+    #              The minimum number of processors used for the scaling test will then equal one.
     #  - keepoutput: this optional argument indicates whether the output of the SKIRT simulations has to be kept
     #                or can be deleted from the disk.
     #
@@ -220,13 +223,7 @@ class ScalingTest:
 
         # Remove the (remaining) contents of the output directory, if requested
         if not keepoutput:
-            fileList = os.listdir(self._outpath)
-            for filename in fileList:
-
-                filepath=os.path.join(self._outpath,filename)
-
-                if os.path.isfile(filepath):
-                    os.remove(filepath)
+            self._removeoutput()
 
     ## This function runs the simulation once with the specified number of threads,
     #  and writes the timing results to the specified file object. This function takes the following arguments:
@@ -258,17 +255,11 @@ class ScalingTest:
 
         # Remove the contents of the output directory, if requested
         if not keepoutput:
-            fileList = os.listdir(self._outpath)
-            for filename in fileList:
-
-                filepath=os.path.join(self._outpath,filename)
-
-                if os.path.isfile(filepath):
-                    os.remove(filepath)
+            self._removeoutput()
 
     ## This function creates the file containing the results of the scaling benchmark test. It takes the maximum
-    #  number of nodes, as given to the command line, as an argument. This number is used in the name of the results file,
-    #  to identify this particular scaling test.
+    #  and minimum number of nodes, as given to the command line, as arguments. These numbers are used in the name
+    #  of the results file, to identify this particular scaling test.
     def _createresultsfile(self, maxnodes, minnodes):
 
         # Generate a timestamp identifying this particular run for the ski file
@@ -298,4 +289,16 @@ class ScalingTest:
         # Return the path of the newly created results file
         return filepath
 
+    # This functions removes all files from the simulation output directory
+    def _removeoutput(self):
+
+        # Get a list of all present files
+        fileList = os.listdir(self._outpath)
+
+        # Remove each file
+        for filename in fileList:
+
+            filepath=os.path.join(self._outpath,filename)
+            if os.path.isfile(filepath):
+                os.remove(filepath)
 # -----------------------------------------------------------------
