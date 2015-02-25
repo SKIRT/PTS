@@ -109,6 +109,9 @@ class ScalingTest:
         except NameError:
             self._skirt = None
 
+
+        self._getserialtimings()
+
     ## When this function is invoked, the scaling test is started. This function takes the following arguments:
     #
     #  - maxnodes: the maximum number of 'nodes' to be used for this scaling test. On a desktop system, a node is
@@ -337,7 +340,7 @@ class ScalingTest:
                     # Try extracting the columns from the data file
                     try:
                         threads, setuptime, stellartime, writingtime, time = np.loadtxt(filepath, usecols=(2,3,4,5,6), unpack=True)
-                    except ValueError:
+                    except (IndexError, ValueError):
                         # Try the next file, this one is probably empty
                         continue
 
