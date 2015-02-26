@@ -1,0 +1,220 @@
+<?xml version="1.0"?>
+<VOTABLE version="1.1" xsi:schemaLocation="http://www.ivoa.net/xml/VOTable/v1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <INFO name="QUERY_STATUS" value="OK"/>
+  <RESOURCE type="results">
+    <PARAM name="FilterProfileService" value="ivo://svo/fps" ucd="meta.ref.ivorn" utype="PhotometryFilter.fpsIdentifier" datatype="char" arraysize="*"/>
+    <PARAM name="filterID" value="Misc/MCPS.B" ucd="meta.id" utype="photdm:PhotometryFilter.identifier" datatype="char" arraysize="*"/>
+    <PARAM name="WavelengthUnit" value="Angstrom" ucd="meta.unit" utype="PhotometryFilter.SpectralAxis.unit" datatype="char" arraysize="*"/>
+    <PARAM name="WavelengthUCD" value="em.wl" ucd="meta.ucd" utype="PhotometryFilter.SpectralAxis.UCD" datatype="char" arraysize="*"/>
+    <PARAM name="Description" value="MCPS Johnson B" ucd="meta.note" utype="photdm:PhotometryFilter.description" datatype="char" arraysize="*"/>
+    <PARAM name="PhotSystem" value="Johnson" utype="photdm:PhotometricSystem.description" datatype="char" arraysize="*">
+       <DESCRIPTION>Photometric system</DESCRIPTION>
+    </PARAM>
+    <PARAM name="Band" value="B" utype="photdm:PhotometryFilter.bandName" datatype="char" arraysize="*"/>
+    <PARAM name="ProfileReference" value="http://casa.colorado.edu/~ginsbura/filtersets.htm" datatype="char" arraysize="*"/>
+    <PARAM name="Description" value="MCPS Johnson B" ucd="meta.note" utype="photdm:PhotometryFilter.description" datatype="char" arraysize="*"/>
+    <PARAM name="WavelengthMean" value="4448.0733364868" unit="Angstrom" ucd="em.wl" utype="photdm:PhotometryFilter.SpectralAxis.Coverage.Location.Value" datatype="float" >
+       <DESCRIPTION>Mean wavelength. Defined as integ[x*filter(x) dx]/integ[filter(x) dx]</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WavelengthEff" value="4393.4166985657" unit="Angstrom" ucd="em.wl.effective" datatype="float" >
+       <DESCRIPTION>Effective wavelength. Defined as integ[x*filter(x)*vega(x) dx]/integ[filter(x)*vega(x) dx]</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WavelengthMin" value="3661.7647058824" unit="Angstrom" ucd="em.wl;stat.min" utype="photdm:PhotometryFilter.SpectralAxis.Coverage.Bounds.Start" datatype="float" >
+       <DESCRIPTION>Minimum filter wavelength. Defined as the first lambda value with a transmission at least 1% of maximum transmission</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WavelengthMax" value="5500" unit="Angstrom" ucd="em.wl;stat.max" utype="photdm:PhotometryFilter.SpectralAxis.Coverage.Bounds.Stop" datatype="float" >
+       <DESCRIPTION>Maximum filter wavelength. Defined as the last lambda value with a transmission at least 1% of maximum transmission</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WidthEff" value="1010.28642" unit="Angstrom" ucd="instr.bandwidth" utype="photdm:PhotometryFilter.SpectralAxis.Coverage.Bounds.Extent" datatype="float" >
+       <DESCRIPTION>Effective width. Defined as integ[x*filter(x) dx].\nEquivalent to the horizontal size of a rectangle with height equal to maximum transmission and with the same area that the one covered by the filter transmission curve.</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WavelengthCen" value="4405.8618233618" unit="Angstrom" ucd="em.wl" datatype="float" >
+       <DESCRIPTION>Central wavelength. Defined as the central wavelength between the two points defining FWMH</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WavelengthPivot" value="4433.5532043662" unit="Angstrom" ucd="em.wl" datatype="float" >
+       <DESCRIPTION>Peak wavelength. Defined as sqrt{integ[x*filter(x) dx]/integ[filter(x) dx/x]}</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WavelengthPeak" value="4250" unit="Angstrom" ucd="em.wl" datatype="float" >
+       <DESCRIPTION>Peak wavelength. Defined as the lambda value with larger transmission</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WavelengthPhot" value="4419.8921460976" unit="Angstrom" ucd="em.wl" datatype="float" >
+       <DESCRIPTION>Photon distribution based effective wavelength. Defined as integ[x^2*filter(x)*vega(x) dx]/integ[x*filter(x)*vega(x) dx]</DESCRIPTION>
+    </PARAM>
+    <PARAM name="FWHM" value="1008.6467236467" unit="Angstrom" ucd="instr.bandwidth" datatype="float" >
+       <DESCRIPTION>Full width at half maximum. Defined as the difference between the two wavelengths for which filter transmission is half maximum</DESCRIPTION>
+    </PARAM>
+    <PARAM name="PhotCalID" value="Misc/MCPS.B/Vega" ucd="meta.id" utype="photdm:PhotCal.identifier" datatype="char" arraysize="*"/>
+    <PARAM name="MagSys" value="Vega" ucd="meta.code" utype="photdm:PhotCal.MagnitudeSystem.type" datatype="char" arraysize="*"/>
+    <PARAM name="ZeroPoint" value="4021.3511818374" unit="Jy" ucd="phot.flux.density" utype="photdm:PhotCal.ZeroPoint.Flux.value" datatype="float" />
+    <PARAM name="ZeroPointUnit" value="Jy" ucd="meta.unit" utype="photdm:PhotCal.ZeroPoint.Flux.unit" datatype="char" arraysize="*"/>
+    <PARAM name="ZeroPointType" value="Pogson" ucd="meta.code" utype="photdm:PhotCal.ZeroPoint.type" datatype="char" arraysize="*"/>
+    <TABLE utype="photdm:PhotometryFilter.transmissionCurve.spectrum">
+      <FIELD name="Wavelength" utype="spec:Data.SpectralAxis.Value" ucd="em.wl" unit="Angstrom" datatype="float"/>
+      <FIELD name="Transmission" utype="spec:Data.FluxAxis.Value" ucd="phys.transmission" unit="" datatype="float"/>
+      <DATA>
+        <TABLEDATA>
+          <TR>
+            <TD>3600.00</TD>
+            <TD>0.00000</TD>
+          </TR>
+          <TR>
+            <TD>3650.00</TD>
+            <TD>0.00600</TD>
+          </TR>
+          <TR>
+            <TD>3700.00</TD>
+            <TD>0.02300</TD>
+          </TR>
+          <TR>
+            <TD>3750.00</TD>
+            <TD>0.04500</TD>
+          </TR>
+          <TR>
+            <TD>3800.00</TD>
+            <TD>0.10600</TD>
+          </TR>
+          <TR>
+            <TD>3850.00</TD>
+            <TD>0.25400</TD>
+          </TR>
+          <TR>
+            <TD>3900.00</TD>
+            <TD>0.49200</TD>
+          </TR>
+          <TR>
+            <TD>3950.00</TD>
+            <TD>0.75200</TD>
+          </TR>
+          <TR>
+            <TD>4000.00</TD>
+            <TD>0.88100</TD>
+          </TR>
+          <TR>
+            <TD>4050.00</TD>
+            <TD>0.92300</TD>
+          </TR>
+          <TR>
+            <TD>4100.00</TD>
+            <TD>0.95500</TD>
+          </TR>
+          <TR>
+            <TD>4150.00</TD>
+            <TD>0.97700</TD>
+          </TR>
+          <TR>
+            <TD>4200.00</TD>
+            <TD>0.99000</TD>
+          </TR>
+          <TR>
+            <TD>4250.00</TD>
+            <TD>1.00000</TD>
+          </TR>
+          <TR>
+            <TD>4300.00</TD>
+            <TD>1.00000</TD>
+          </TR>
+          <TR>
+            <TD>4350.00</TD>
+            <TD>0.99700</TD>
+          </TR>
+          <TR>
+            <TD>4400.00</TD>
+            <TD>0.98400</TD>
+          </TR>
+          <TR>
+            <TD>4450.00</TD>
+            <TD>0.95800</TD>
+          </TR>
+          <TR>
+            <TD>4500.00</TD>
+            <TD>0.91600</TD>
+          </TR>
+          <TR>
+            <TD>4550.00</TD>
+            <TD>0.87100</TD>
+          </TR>
+          <TR>
+            <TD>4600.00</TD>
+            <TD>0.82000</TD>
+          </TR>
+          <TR>
+            <TD>4650.00</TD>
+            <TD>0.77500</TD>
+          </TR>
+          <TR>
+            <TD>4700.00</TD>
+            <TD>0.72300</TD>
+          </TR>
+          <TR>
+            <TD>4750.00</TD>
+            <TD>0.67200</TD>
+          </TR>
+          <TR>
+            <TD>4800.00</TD>
+            <TD>0.61700</TD>
+          </TR>
+          <TR>
+            <TD>4850.00</TD>
+            <TD>0.56900</TD>
+          </TR>
+          <TR>
+            <TD>4900.00</TD>
+            <TD>0.51100</TD>
+          </TR>
+          <TR>
+            <TD>4950.00</TD>
+            <TD>0.45700</TD>
+          </TR>
+          <TR>
+            <TD>5000.00</TD>
+            <TD>0.40200</TD>
+          </TR>
+          <TR>
+            <TD>5050.00</TD>
+            <TD>0.34700</TD>
+          </TR>
+          <TR>
+            <TD>5100.00</TD>
+            <TD>0.29900</TD>
+          </TR>
+          <TR>
+            <TD>5150.00</TD>
+            <TD>0.24400</TD>
+          </TR>
+          <TR>
+            <TD>5200.00</TD>
+            <TD>0.19900</TD>
+          </TR>
+          <TR>
+            <TD>5250.00</TD>
+            <TD>0.15400</TD>
+          </TR>
+          <TR>
+            <TD>5300.00</TD>
+            <TD>0.11300</TD>
+          </TR>
+          <TR>
+            <TD>5350.00</TD>
+            <TD>0.08400</TD>
+          </TR>
+          <TR>
+            <TD>5400.00</TD>
+            <TD>0.05100</TD>
+          </TR>
+          <TR>
+            <TD>5450.00</TD>
+            <TD>0.02900</TD>
+          </TR>
+          <TR>
+            <TD>5500.00</TD>
+            <TD>0.01000</TD>
+          </TR>
+          <TR>
+            <TD>5550.00</TD>
+            <TD>0.00000</TD>
+          </TR>
+        </TABLEDATA>
+      </DATA>
+    </TABLE>
+  </RESOURCE>
+</VOTABLE>
