@@ -10,9 +10,9 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
+import math
 import numpy as np
 import os.path
-import multiprocessing
 
 # -----------------------------------------------------------------
 
@@ -144,13 +144,13 @@ class ScalingPlotter:
         plt.figure(figsize=figsize)
 
         # Loop over the different combinations of systemname and mode
-        for (systemname, mode), stats in self._statistics.items():
+        for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
 
             # Determine a label to identify this curve
             label = mode if self._system else systemname + " (" + mode + ")"
 
             # Plot the data points for this curve
-            plt.errorbar(stats[0], stats[1], stats[2], marker='.', label=label)
+            plt.errorbar(nthreads, times, errors, marker='.', label=label)
 
         # Set axis limits if requested
         plt.grid(True)
@@ -158,14 +158,14 @@ class ScalingPlotter:
         if ylim != None: plt.ylim(ylim)
 
         # Add axis labels and a legend
-        plt.xlabel("Total number of threads", fontsize='large')
-        plt.ylabel("Stellar emission time (s)", fontsize='large')
+        plt.xlabel("Total number of threads $t$", fontsize='large')
+        plt.ylabel("Stellar emission time $T$ (s)", fontsize='large')
         plt.legend(title="Modes") if self._system else plt.legend(title="Systems")
 
         # Save the figure
         filename = "scaling_" + self._system + "_times.pdf" if self._system else "scaling_times.pdf"
-        plotfilepath = os.path.join(self._directory, filename)
-        plt.savefig(plotfilepath, bbox_inches='tight', pad_inches=0.25)
+        filepath = os.path.join(self._directory, filename)
+        plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
         plt.close()
 
     # -----------------------------------------------------------------
@@ -184,21 +184,22 @@ class ScalingPlotter:
         plt.figure(figsize=figsize)
 
         # Loop over the different combinations of systemname and mode
-        for (systemname, mode), stats in self._statistics.items():
+        for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
 
             # Determine a label to identify this curve
             label = mode if self._system else systemname + " (" + mode + ")"
 
             # Calculate the speedups
-
             # TODO: check whether the first value is indeed for one thread
-            serialtime = stats[1][0]
-            speedups = serialtime / stats[1]
+            t1 = 0
+            serialtime = times[t1]
+            speedups = serialtime / times
 
-            # TODO: calculate the errors on the speedups
+            # Calculate the errors on the efficiencies
+            speedup_errors = [ speedups[i] * math.sqrt( math.pow(errors[t1]/times[t1], 2) + math.pow(errors[i]/times[i], 2) ) for i in range(len(nthreads)) ]
 
             # Plot the data points for this curve
-            plt.errorbar(stats[0], speedups, stats[2], marker='.', label=label)
+            plt.errorbar(nthreads, speedups, speedup_errors, marker='.', label=label)
 
         # Set axis limits if requested
         plt.grid(True)
@@ -206,14 +207,14 @@ class ScalingPlotter:
         if ylim != None: plt.ylim(ylim)
 
         # Add axis labels and a legend
-        plt.xlabel("Total number of threads", fontsize='large')
-        plt.ylabel("Speedup (dimensionless)", fontsize='large')
+        plt.xlabel("Total number of threads $t$", fontsize='large')
+        plt.ylabel("Speedup $S_t$", fontsize='large')
         plt.legend(title="Modes") if self._system else plt.legend(title="Systems")
 
         # Save the figure
         filename = "scaling_" + self._system + "_speedups.pdf" if self._system else "scaling_speedups.pdf"
-        plotfilepath = os.path.join(self._directory, filename)
-        plt.savefig(plotfilepath, bbox_inches='tight', pad_inches=0.25)
+        filepath = os.path.join(self._directory, filename)
+        plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
         plt.close()
 
     ## This function creates a PDF plot showing the efficiency in function of thread count.
@@ -230,21 +231,22 @@ class ScalingPlotter:
         plt.figure(figsize=figsize)
 
         # Loop over the different combinations of systemname and mode
-        for (systemname, mode), stats in self._statistics.items():
+        for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
 
             # Determine a label to identify this curve
             label = mode if self._system else systemname + " (" + mode + ")"
 
             # Calculate the efficiencies
-
             # TODO: check whether the first value is indeed for one thread
-            serialtime = stats[1][0]
-            efficiencies = (serialtime / stats[1]) / stats[0]
+            t1 = 0
+            serialtime = times[t1]
+            efficiencies = (serialtime / times) / nthreads
 
-            # TODO: calculate the errors on the efficiencies
+            # Calculate the errors on the efficiencies
+            eff_errors = [ efficiencies[i] * math.sqrt( math.pow(errors[t1]/times[t1], 2) + math.pow(errors[i]/times[i], 2) ) for i in range(len(nthreads)) ]
 
             # Plot the data points for this curve
-            plt.errorbar(stats[0], efficiencies, stats[2], marker='.', label=label)
+            plt.errorbar(nthreads, efficiencies, eff_errors, marker='.', label=label)
 
         # Set axis limits if requested
         plt.grid(True)
@@ -252,14 +254,14 @@ class ScalingPlotter:
         if ylim != None: plt.ylim(ylim)
 
         # Add axis labels and a legend
-        plt.xlabel("Total number of threads", fontsize='large')
-        plt.ylabel("Efficiency (dimensionless)", fontsize='large')
+        plt.xlabel("Total number of threads $t$", fontsize='large')
+        plt.ylabel("Efficiency $\epsilon_t$", fontsize='large')
         plt.legend(title="Modes") if self._system else plt.legend(title="Systems")
 
         # Save the figure
         filename = "scaling_" + self._system + "_efficiencies.pdf" if self._system else "scaling_efficiencies.pdf"
-        plotfilepath = os.path.join(self._directory, filename)
-        plt.savefig(plotfilepath, bbox_inches='tight', pad_inches=0.25)
+        filepath = os.path.join(self._directory, filename)
+        plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
         plt.close()
 
 # -----------------------------------------------------------------
