@@ -5,7 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-# This script creates a PDF plot showing the results of the parallel scaling benchmark on one or more target computers.
+## \package pts.plotscaling The class ScalingPlotter in this module makes plots of the results SKIRT
+#  scaling benchmark tests performed with the scalingtest module.
 
 # -----------------------------------------------------------------
 
@@ -28,7 +29,8 @@ import matplotlib.pyplot as plt
 
 # -----------------------------------------------------------------
 
-## An instance of the ScalingTest class represents a SKIRT scaling benchmark test for a particular ski file.
+## An instance of the ScalingPlotter is used to create plots of the runtimes, speedups and efficiencies as a function
+#  of the number of threads, based on the results of (multiple) SKIRT scaling benchmark tests.
 #
 class ScalingPlotter:
 
@@ -83,6 +85,12 @@ class ScalingPlotter:
         # with the keys equal to the keys of the filenames dictionary (systemname, mode).
         self._statistics = dict.fromkeys(filenames.keys(), 0)
 
+        # While we iterate through all different (systemname, mode) configurations, it is useful to keep
+        # track of the minimal runtime encountered for 1 thread. For now, we set this value to infinity.
+        # We also save the corresponding standard deviation (because there are probably multiple runs with t=1).
+        self._serialruntime = float("inf")
+        self._serialruntimeerror = float("inf")
+
         # For each different system and mode in which the scaling test has been performed
         for (systemname, mode), filelist in filenames.items():
 
@@ -108,8 +116,11 @@ class ScalingPlotter:
             # For each number of threads
             for threadcount, times in runtimes.items():
 
-                # Calculate the mean runtime and add it to the list
-                meantimes.append(np.mean(times))
+                # Calculate the mean runtime for this number of threads
+                meantime = np.mean(times)
+
+                # Add the mean runtime to the list
+                meantimes.append(meantime)
 
                 # Check whether we have more than one timing for this number of threads
                 if len(times) > 1:
@@ -123,6 +134,13 @@ class ScalingPlotter:
                     # No error bars will be plotted for an data point with infinite standard deviation.
                     errortimes.append(float("inf"))
 
+                # For the serial run (1 thread), we check whether this mean runtime is the smallest
+                if threadcount == 1.0 and meantime < self._serialruntime:
+
+                    # Update the lowest encountered serial runtime, and the corresponding error
+                    self._serialruntime = meantime
+                    self._serialruntimeerror = errortimes[-1]
+
             # Make a list of the different threadcount
             nthreads = runtimes.keys()
 
@@ -132,18 +150,18 @@ class ScalingPlotter:
     # -----------------------------------------------------------------
 
     ## This function creates a PDF plot showing the execution time in function of thread count.
-    # The function takes the following (optional) arguments:
+    #  The function takes the following (optional) arguments:
     #
-    # - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
-    # - xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
-    # - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
+    #  - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
+    #  - xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
+    #  - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
     #
     def plottimes(self, figsize=(12,8), xlim=None, ylim=None):
 
         # Initialize a figure with the appropriate size
         plt.figure(figsize=figsize)
 
-        # Loop over the different combinations of systemname and mode
+        # Loop over the different combinations of systemname and mode (i.e. different curves)
         for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
 
             # Determine a label to identify this curve
@@ -174,29 +192,26 @@ class ScalingPlotter:
     #  The speedup is defined as T(1)/T(N). It is a dimensionless quantity, theoretically it is >= 1.
     #  The function takes the following (optional) arguments:
     #
-    # - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
-    # - xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
-    # - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
+    #  - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
+    #  - xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
+    #  - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
     #
     def plotspeedups(self, figsize=(12,8), xlim=None, ylim=None):
 
         # Initialize a figure with the appropriate size
         plt.figure(figsize=figsize)
 
-        # Loop over the different combinations of systemname and mode
+        # Loop over the different combinations of systemname and mode (i.e. different curves)
         for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
 
             # Determine a label to identify this curve
             label = mode if self._system else systemname + " (" + mode + ")"
 
             # Calculate the speedups
-            # TODO: check whether the first value is indeed for one thread
-            t1 = 0
-            serialtime = times[t1]
-            speedups = serialtime / times
+            speedups = self._serialruntime / times
 
             # Calculate the errors on the efficiencies
-            speedup_errors = [ speedups[i] * math.sqrt( math.pow(errors[t1]/times[t1], 2) + math.pow(errors[i]/times[i], 2) ) for i in range(len(nthreads)) ]
+            speedup_errors = [ speedups[i] * math.sqrt( math.pow(self._serialruntimeerror/self._serialruntime, 2) + math.pow(errors[i]/times[i], 2) ) for i in range(len(nthreads)) ]
 
             # Plot the data points for this curve
             plt.errorbar(nthreads, speedups, speedup_errors, marker='.', label=label)
@@ -218,32 +233,29 @@ class ScalingPlotter:
         plt.close()
 
     ## This function creates a PDF plot showing the efficiency in function of thread count.
-    # Efficiency is defined as T(1)/T(N)/N. It is a dimensionless quantity <= 1.
-    # The function takes the following (optional) arguments:
+    #  Efficiency is defined as T(1)/T(N)/N. It is a dimensionless quantity <= 1.
+    #  The function takes the following (optional) arguments:
     #
-    # - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
-    # - xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
-    # - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
+    #  - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
+    #  - xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
+    #  - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
     #
     def ploteffs(self, figsize=(12,8), xlim=None, ylim=None):
 
         # Initialize a figure with the appropriate size
         plt.figure(figsize=figsize)
 
-        # Loop over the different combinations of systemname and mode
+        # Loop over the different combinations of systemname and mode (i.e. different curves)
         for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
 
             # Determine a label to identify this curve
             label = mode if self._system else systemname + " (" + mode + ")"
 
             # Calculate the efficiencies
-            # TODO: check whether the first value is indeed for one thread
-            t1 = 0
-            serialtime = times[t1]
-            efficiencies = (serialtime / times) / nthreads
+            efficiencies = (self._serialruntime / times) / nthreads
 
             # Calculate the errors on the efficiencies
-            eff_errors = [ efficiencies[i] * math.sqrt( math.pow(errors[t1]/times[t1], 2) + math.pow(errors[i]/times[i], 2) ) for i in range(len(nthreads)) ]
+            eff_errors = [ efficiencies[i] * math.sqrt( math.pow(self._serialruntimeerror/self._serialruntime, 2) + math.pow(errors[i]/times[i], 2) ) for i in range(len(nthreads)) ]
 
             # Plot the data points for this curve
             plt.errorbar(nthreads, efficiencies, eff_errors, marker='.', label=label)
