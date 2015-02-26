@@ -33,7 +33,7 @@ from lxml import etree
 # a filter can be created with a uniform transmission curve over a certain wavelength range.
 #
 class Filter:
-    # ---------- Constructing -----------------------------
+    # ---------- Constructing -------------------------------------
 
     ## The constructor constructs a new Filter instance in one of two ways, depending on the type of the argument.
     #
@@ -45,7 +45,7 @@ class Filter:
     # the filter profile service web site http://svo2.cab.inta-csic.es/theory/fps .
     #
     #| Filterspec | Description
-    #|--------|------------
+    #|------------|------------
     #| GALEX.FUV | GALEX FUV
     #| GALEX.NUV | GALEX NUV
     #| Pacs.blue | Herschel Pacs blue filter
@@ -161,5 +161,36 @@ class Filter:
     # and with the same area as the one covered by the filter transmission curve.
     def effectivewidth(self):
         return self._WidthEff
+
+    # ---------- Integrating --------------------------------------
+
+    ## This function applies the filter to a spectral energy distribution \f$F_\lambda(\lambda_\ell)\f$ sampled on a
+    # wavelength grid with central points \f$\lambda_\ell\f$ and corresponding bin widths \f$\Delta\lambda_\ell\f$.
+    # The function calculates and returns the mean transmitted value, defined as \f[F_T(\lambda) =
+    # \frac{\int F_\lambda(\lambda) \,T(\lambda)\,\mathrm{d}\lambda}{\int T(\lambda)\,\mathrm{d}\lambda}\f]
+    # where \f$T(\lambda)\f$ is the filter's transmission curve.
+    #
+    # The quantities \f$F_\lambda\f$ must be expressed per unit of wavelength (and \em not, for example, per unit
+    # of frequency). The resulting \f$F_T\f$ has the same units as the input distribition \f$F_\lambda\f$. Thus
+    # \f$F_\lambda\f$ can be expressed in any units (as long as it is per unit of wavelength) and it can represent
+    # various quantities; for example a flux density, a surface density, or a luminosity density.
+    #
+    # The function accepts three arguments:
+    # - \em bincenters: a numpy array specifying the wavelengths \f$\lambda_\ell\f$, in micron, on which the
+    #   distribution is sampled; these values represent the (regular or geometric) centers of the wavelength bins.
+    # - \em binwidths: a numpy array specifying the corresponding bin widths \f$\Delta\lambda_\ell\f$, in micron;
+    #   this array must have the same length as \em bincenters.
+    # - \em densities: a numpy array specifying the spectral energy distribution(s) \f$F_\lambda(\lambda_\ell)\f$
+    #   per unit of wavelength. This can be an array with the same length as \em bincenters, or a multi-dimensional
+    #   array where the last dimension has the same length as \em bincenters.
+    #
+    # The returned result will have the shape of \em densities minus the last (or only) dimension.
+    #
+    def apply(self, bincenters, binwidths, densities):
+        # interpolate the transmission curve on the specified wavelength grid (logarithmically on wavelength)
+        transmission = np.interp(np.log10(bincenters), np.log10(self._wavelengths), self._transmission,
+                                 left=0., right=0.)
+        # perform the integration
+        return np.sum(densities*transmission*binwidths, axis=-1) / self._WidthEff
 
 # -----------------------------------------------------------------
