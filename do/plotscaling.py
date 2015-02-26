@@ -16,26 +16,33 @@ import os.path
 import argparse
 
 # Import the relevant PTS class
-from pts.plotscaling import plotscaling
+from pts.plotscaling import ScalingPlotter
 
 # -----------------------------------------------------------------
 
 # Create the command-line parser and a set of subparsers
 parser = argparse.ArgumentParser()
-parser.add_argument('file', nargs='?', type=str, help='the file for which you want to create the plot', default="")
+parser.add_argument('system', nargs='?', type=str, help='the system for which you want to create the plot', default="")
 
 # Parse the command line arguments
 args = parser.parse_args()
-filename = args.file
+system = args.system
 
 # -----------------------------------------------------------------
 
 # Get the current working directory
 directory = os.getcwd()
 
-# Make the scaling plots
-# TODO: combine the results of different scaling tests of the same simulation
-# TODO: choose multiple results files to include in the plots
-plotscaling(directory, filename)
+# Create a plotting object
+plotter = ScalingPlotter(directory, system)
+
+# Plot the runtimes as a function of the number of threads
+plotter.plottimes(xlim=(0,40))
+
+# Plot the speedups as a function of the number of threads
+plotter.plotspeedups(xlim=(0,40))
+
+# Plot the efficiencies as a function of the number of threads
+plotter.ploteffs(xlim=(0,40))
 
 # -----------------------------------------------------------------
