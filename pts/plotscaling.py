@@ -109,12 +109,18 @@ class ScalingPlotter:
 
                     runtimes.setdefault(threadcount,[]).append(time)
 
+            # Make a list of the different threadcount, order them from lowest to highest
+            nthreads = sorted(runtimes.keys())
+
             # Now we want a list of the mean runtimes and their sample standard deviations
             meantimes = []
             errortimes = []
 
-            # For each number of threads
-            for threadcount, times in runtimes.items():
+            # For each number of threads (lowest to highest)
+            for threadcount in nthreads:
+
+                # Get the timings for this threadcount from the dictionary
+                times = runtimes[threadcount]
 
                 # Calculate the mean runtime for this number of threads
                 meantime = np.mean(times)
@@ -140,9 +146,6 @@ class ScalingPlotter:
                     # Update the lowest encountered serial runtime, and the corresponding error
                     self._serialruntime = meantime
                     self._serialruntimeerror = errortimes[-1]
-
-            # Make a list of the different threadcount
-            nthreads = runtimes.keys()
 
             # Add the statistics for this system and mode
             self._statistics[(systemname,mode)] = [nthreads, meantimes, errortimes]
