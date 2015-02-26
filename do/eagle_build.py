@@ -141,11 +141,11 @@ if wave:
 
 # build info files for each SKIRT-run
 if info:
-    # from pts.makeinfofile import makeinfofile
+    from eagle.makeinfofile import makeinfofile
     print "Building info files for {} SKIRT-runs".format(len(skirtruns))
     for skirtrun in skirtruns:
         print "Building info file for SKIRT-run {}...".format(skirtrun.runid())
-        # makeinfofile(skirtrun)
+        makeinfofile(skirtrun)
         move_visualization_files(skirtrun, filenames)
 
 print "Done..."
