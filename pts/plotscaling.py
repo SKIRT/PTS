@@ -29,6 +29,13 @@ import matplotlib.pyplot as plt
 
 # -----------------------------------------------------------------
 
+# Ignore warnings, otherwise Canopy would give a UserWarning on top of the error encountered when a scaling
+# test results file does not contain any data (an error which is catched an produces an error message).
+import warnings
+warnings.filterwarnings("ignore")
+
+# -----------------------------------------------------------------
+
 ## An instance of the ScalingPlotter is used to create plots of the runtimes, speedups and efficiencies as a function
 #  of the number of threads, based on the results of (multiple) SKIRT scaling benchmark tests.
 #
@@ -55,6 +62,7 @@ class ScalingPlotter:
         # ordered in a dictionary keyed on a combination of the system and mode in which the scaling test was run.
         # Each key in the dictionary will correspond to a different curve in the plots.
         filenames = dict()
+        self._log.info("Gathering the data files...")
         for filename in os.listdir(self._directory):
 
             # Check whether this file is a data file and not hidden
@@ -100,14 +108,25 @@ class ScalingPlotter:
             # For every results file in this run
             for file in filelist:
 
-                # Get the values from this results file
+                # Get the values from this results file. If no data could be found in the file, we skip it.
                 filepath = os.path.join(directory, file)
-                threadcounts, times = np.loadtxt(filepath, usecols=(2,4), unpack=True)
+                try:
+                    threadcounts, times = np.loadtxt(filepath, usecols=(2,4), unpack=True)
+                except ValueError:
+                    self._log.warning("The file " + file + " does not contain any data")
+                    continue
 
                 # Put these in a dictionary, with the keys being the number of threads
                 for threadcount, time in zip(threadcounts, times):
 
                     runtimes.setdefault(threadcount,[]).append(time)
+
+            # Check whether any valid data file was found for this system and mode. Otherwise, show a warning
+            # and remove the corresponding key from the dictionary.
+            if not runtimes:
+                self._log.warning("No valid data was found for " + systemname + " in " + mode + " mode")
+                self._statistics.pop((systemname, mode))
+                continue
 
             # Make a list of the different threadcounts, order them from lowest to highest
             nthreads = sorted(runtimes.keys())
@@ -116,6 +135,8 @@ class ScalingPlotter:
             # corresponding with the threadcounts in the 'nthreads' list.
             meantimes = []
             errortimes = []
+
+            self._log.info("Calculating the average runtimes and standard deviations for " + systemname + " in " + mode + " mode...")
 
             # For each number of threads (lowest to highest)
             for threadcount in nthreads:
@@ -162,6 +183,9 @@ class ScalingPlotter:
     #
     def plottimes(self, figsize=(12,8), xlim=None, ylim=None):
 
+        # Inform the user of the fact that the runtimes are being plotted
+        self._log.info("Plotting the runtimes...")
+
         # Initialize a figure with the appropriate size
         plt.figure(figsize=figsize)
 
@@ -201,6 +225,9 @@ class ScalingPlotter:
     #  - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
     #
     def plotspeedups(self, figsize=(12,8), xlim=None, ylim=None):
+
+        # Inform the user of the fact that the speedups are being calculated and plotted
+        self._log.info("Calculating and plotting the speedups...")
 
         # Initialize a figure with the appropriate size
         plt.figure(figsize=figsize)
@@ -245,6 +272,9 @@ class ScalingPlotter:
     #  - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
     #
     def ploteffs(self, figsize=(12,8), xlim=None, ylim=None):
+
+        # Inform the user of the fact that the efficiencies are being calculated and plotted
+        self._log.info("Calculating and plotting the efficiencies...")
 
         # Initialize a figure with the appropriate size
         plt.figure(figsize=figsize)
