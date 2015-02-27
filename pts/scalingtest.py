@@ -176,17 +176,19 @@ class ScalingTest:
         name = os.path.basename(os.path.normpath(self._path))
 
         # Check that we are indeed on the UGent HPC system
-        vscdatapath = os.getenv("VSC_DATA")
-        if vscdatapath is None:
-            self._log.error("Can't find $VSC_DATA")
-            exit()
+        #vscdatapath = os.getenv("VSC_DATA")
+        #if vscdatapath is None:
+        #    self._log.error("Can't find $VSC_DATA")
+        #    exit()
 
         # The path of the output directory to be created
-        dataoutputpath = os.path.join(vscdatapath, name, self._simulationname, "out_" + self._mode + "_" + str(processors))
+        #dataoutputpath = os.path.join(vscdatapath, name, self._simulationname, "out_" + self._mode + "_" + str(processors))
+
+        dataoutputpath = os.path.join("blabla", name, self._simulationname, "out_" + self._mode + "_" + str(processors))
 
         # Create a seperate output directory for this run (different runs can be executed simultaneously)
         self._log.info("The output of this run will be placed in " + dataoutputpath)
-        os.makedirs(dataoutputpath)
+        #os.makedirs(dataoutputpath)
 
         # The path of the log file for this simulation run
         logfilepath = os.path.join(dataoutputpath, self._skifilename + "_log.txt")
@@ -223,11 +225,11 @@ class ScalingTest:
         os.chdir(self._outpath)
 
         # Submit the job script to the cluster scheduler
-        jobscript.submit()
+        #jobscript.submit()
 
         # Remove this job script (it has been submitted)
-        if not keepoutput:
-            jobscript.remove()
+        #if not keepoutput:
+        #    jobscript.remove()
 
     ## This function runs the simulation once with the specified number of threads,
     #  and writes the timing results to the specified file object. This function takes the following arguments:

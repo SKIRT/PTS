@@ -109,10 +109,11 @@ class ScalingPlotter:
 
                     runtimes.setdefault(threadcount,[]).append(time)
 
-            # Make a list of the different threadcount, order them from lowest to highest
+            # Make a list of the different threadcounts, order them from lowest to highest
             nthreads = sorted(runtimes.keys())
 
-            # Now we want a list of the mean runtimes and their sample standard deviations
+            # Now we want a list of the mean runtimes and a list of their standard deviations,
+            # corresponding with the threadcounts in the 'nthreads' list.
             meantimes = []
             errortimes = []
 
