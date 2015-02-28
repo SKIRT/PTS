@@ -15,6 +15,7 @@
 import os
 import os.path
 import subprocess
+import multiprocessing
 
 # -----------------------------------------------------------------
 
@@ -51,6 +52,17 @@ class JobScript:
         m, s = divmod(walltime, 60)
         h, m = divmod(m, 60)
 
+        # Check whether hybrid mode is selected. If so, the number of threads is set to the appropriate value
+        # and the requested number of processors per node is set to the maximum (for performance).
+        threads = 1
+        if hybrid:
+
+            # The number of threads is the number of processors that is actually asked
+            threads = ppn
+
+            # Yet, for hybrid mode we always request the full node. Therefore, we determine the number of cores on the node.
+            ppn = multiprocessing.cpu_count()
+
         # Write a general header to the job script
         self._script.write("#!/bin/sh\n")
         self._script.write("# Batch script for running SKIRT on the UGent HPC infrastructure\n")
@@ -79,9 +91,13 @@ class JobScript:
         self._script.write("# Run the simulation\n")
         self._script.write("cd " + directorypath + "\n")
 
+        # Check whether hybrid mode is selected
         if hybrid:
-            self._script.write("mympirun --hybrid 1 skirt -t " + str(ppn) + " -o " + outputpath + " " + skifilename + ".ski\n")
+            # We add the --hybrid option to the mympirun command which launches SKIRT, with the correct number of
+            # threads specified in the command line
+            self._script.write("mympirun --hybrid 1 skirt -t " + str(threads) + " -o " + outputpath + " " + skifilename + ".ski\n")
         else:
+            # In mpi mode, the number of threads passed to the SKIRT command line is set to 1.
             self._script.write("mympirun skirt -t 1 -o " + outputpath + " " + skifilename + ".ski\n")
 
     ## Add an additional command to the job script, optionally preceeded by a comment line
