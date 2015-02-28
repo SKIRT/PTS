@@ -252,7 +252,7 @@ class ScalingTest:
         if simulation.status() != "Finished": raise ValueError("Simulation " + simulation.status())
 
         # Determine the path to the simulation log file
-        logfilepath = os.path.join(self._outpath, self._simulationname + "_log.txt")
+        logfilepath = os.path.join(self._outpath, self._skifilename + "_log.txt")
 
         # Extract the timings from the log file and place them in the results file
         extract(logfilepath, processes, threads, resultsfilepath)
