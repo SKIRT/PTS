@@ -203,6 +203,10 @@ class ScalingPlotter:
         if xlim != None: plt.xlim(xlim)
         if ylim != None: plt.ylim(ylim)
 
+        # Set the axes to log scale
+        plt.xscale('log')
+        plt.yscale('log')
+
         # Add axis labels and a legend
         plt.xlabel("Total number of threads $t$", fontsize='large')
         plt.ylabel("Stellar emission time $T$ (s)", fontsize='large')
@@ -252,6 +256,10 @@ class ScalingPlotter:
         if xlim != None: plt.xlim(xlim)
         if ylim != None: plt.ylim(ylim)
 
+        # Set the axes to log scale
+        plt.xscale('log')
+        plt.yscale('log')
+
         # Add axis labels and a legend
         plt.xlabel("Total number of threads $t$", fontsize='large')
         plt.ylabel("Speedup $S_t$", fontsize='large')
@@ -298,6 +306,10 @@ class ScalingPlotter:
         plt.grid(True)
         if xlim != None: plt.xlim(xlim)
         if ylim != None: plt.ylim(ylim)
+
+        # Set the axes to log scale
+        plt.xscale('log')
+        plt.yscale('log')
 
         # Add axis labels and a legend
         plt.xlabel("Total number of threads $t$", fontsize='large')

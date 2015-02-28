@@ -37,12 +37,12 @@ directory = os.getcwd()
 plotter = ScalingPlotter(directory, system)
 
 # Plot the runtimes as a function of the number of threads
-plotter.plottimes(xlim=(0,40))
+plotter.plottimes()
 
 # Plot the speedups as a function of the number of threads
-plotter.plotspeedups(xlim=(0,40))
+plotter.plotspeedups()
 
 # Plot the efficiencies as a function of the number of threads
-plotter.ploteffs(xlim=(0,40))
+plotter.ploteffs()
 
 # -----------------------------------------------------------------
