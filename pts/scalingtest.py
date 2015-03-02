@@ -54,6 +54,9 @@ class ScalingTest:
         # Set the path
         self._path = path
 
+        # Scaling benchmark name (="SKIRTscaling")
+        self._name = os.path.basename(os.path.normpath(self._path))
+
         # Set the simulation name (subdirectory of self._path) and the simulation path
         self._simulationname = simulation
         self._simulationpath = os.path.join(self._path, self._simulationname)
@@ -185,34 +188,14 @@ class ScalingTest:
         self._log.info(" - number of nodes = " + str(nodes))
         self._log.info(" - number of requested processors per node = " + str(ppn))
 
-        # Scaling benchmark name (="SKIRTscaling")
-        name = os.path.basename(os.path.normpath(self._path))
-
-        # Check that we are indeed on the UGent HPC system: look for the VSC_DATA directory (we need it)
-        vscdatapath = os.getenv("VSC_DATA")
-        if vscdatapath is None:
-            self._log.error("Can't find $VSC_DATA")
-            exit()
-
-        # The path of the output directory to be created
-        dataoutputpath = os.path.join(vscdatapath, name, self._simulationname, "out_" + self._mode + "_"
-                                      + str(processors) + "_" + self._timestamp)
-
         # Create a seperate output directory for this run (different runs can be executed simultaneously)
-        self._log.info("The output of this run will be placed in " + dataoutputpath)
-        os.makedirs(dataoutputpath)
+        dataoutputpath = self._createdatadir(processors)
 
         # The path of the log file for this simulation run
         logfilepath = os.path.join(dataoutputpath, self._skifilename + "_log.txt")
 
-        # Get the timings from a serial run of the simulation
-        # TODO: support panchromatic simulations!
-        timings = self._getserialtimings()
-        serialtime = timings[0] + timings[2]     # setuptime + writingtime in seconds
-        paralleltime = timings[1]                # in seconds
-
-        # Calculate the expected walltime
-        walltime = int((serialtime + paralleltime / processors)*1.5 + 100)  # in seconds
+        # Calculate the expected walltime for this number of processors
+        walltime = self._estimatewalltime(processors)
 
         # Create the job script
         jobscriptpath = os.path.join(self._outpath, "job_" + self._mode + "_" + str(processors) + ".sh")
@@ -353,6 +336,40 @@ class ScalingTest:
         ppn = processors if nodes == 1 else self._cores
 
         return nodes, ppn
+
+    ## This function creates a directory to contain the output of a certain run during the scaling test.
+    #  The name of the directory includes the mode in which the scaling test was run, the used number of
+    #  processors and the timestamp identifying this test.
+    def _createdatadir(self, processors):
+
+        # Check that we are indeed on the UGent HPC system: look for the VSC_DATA directory (we need it)
+        vscdatapath = os.getenv("VSC_DATA")
+        if vscdatapath is None:
+            self._log.error("Can't find $VSC_DATA")
+            exit()
+
+        # The path of the output directory to be created
+        dataoutputpath = os.path.join(vscdatapath, self._name, self._simulationname, "out_" + self._mode + "_"
+                                      + str(processors) + "_" + self._timestamp)
+
+        # Create a seperate output directory for this run (different runs can be executed simultaneously)
+        self._log.info("The output of this run will be placed in " + dataoutputpath)
+        os.makedirs(dataoutputpath)
+
+        # Return the path to the output directory
+        return dataoutputpath
+
+    def _estimatewalltime(self, processors):
+
+        # Get the timings from a serial run of the simulation
+        # TODO: support panchromatic simulations!
+        timings = self._getserialtimings()
+        serialtime = timings[0] + timings[2]     # setuptime + writingtime in seconds
+        paralleltime = timings[1]                # in seconds
+
+        # Calculate and return the expected walltime
+        walltime = int((serialtime + paralleltime / processors)*1.5 + 100)  # in seconds
+        return walltime
 
     ## This function extracts the timings of a serial run of the simulation from either a log file
     #  or a scaling test results file that was created earlier for this simulation.
