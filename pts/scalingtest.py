@@ -181,6 +181,14 @@ class ScalingTest:
         # Determine the number of nodes and processors per node
         nodes, ppn = self._getrequirements(processors)
 
+        # In threads mode, show a warning message if the number of threads > the number of cores per node
+        # (we can't use multiple nodes in threads mode)
+        if self._mode == "threads" and threads > self._cores:
+
+            # Show a warning and return immediately
+            self._log.warning("The number of threads " + str(threads) + " exceeds the number of cores on this system: skipping")
+            return
+
         # Inform the user about the number of processors, processes, threads per process, nodes and processors per node
         self._log.info("Scheduling simulation with :")
         self._log.info(" - total number of processors = " + str(processors))
