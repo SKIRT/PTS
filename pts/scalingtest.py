@@ -45,9 +45,8 @@ class ScalingTest:
     #            "delcatty" or "cosma", the scaling test will automatically switch to a mode where simulations are
     #            scheduled instead of executed immediately.
     #  - mode: the mode in which to run the scaling test. This can be either "mpi", "threads" or "hybrid".
-    #  - threadspp: in hybrid mode, this defines the number of parallel threads per process.
     #
-    def __init__(self, path, simulation, system, mode, threadspp):
+    def __init__(self, path, simulation, system, mode):
 
         # Create the logging mechanism
         self._log = Log()
@@ -89,15 +88,6 @@ class ScalingTest:
         # Determine the number of cores (per node) on this system
         self._cores = multiprocessing.cpu_count()
 
-        # Set the number of threads per process (only relevant in hybrid mode)
-        if threadspp == 0:
-            # If the threadspp argument is set to zero, use the number of cores (per node)
-            self._threadspp = self._cores
-
-        else:
-            # Else, use the specified value
-            self._threadspp = threadspp
-
         # Search the ski file that is in the specified simulation path
         self._skifilename = ""
         for file in os.listdir(self._simulationpath):
@@ -129,6 +119,7 @@ class ScalingTest:
     #  - minnodes: the minimum number of 'nodes' to be used for this scaling test. The usage is similar as with
     #              maxnodes. The default value of minnodes is zero, denoting no lower limit on the number of nodes.
     #              The minimum number of processors used for the scaling test will then equal one.
+    #              In hybrid mode, minnodes also defines the number of parallel threads per process.
     #  - keepoutput: this optional argument indicates whether the output of the SKIRT simulations has to be kept
     #                or can be deleted from the disk.
     #
@@ -139,9 +130,6 @@ class ScalingTest:
         if self._skirt is not None:
             self._log.info("Using " + self._skirt.version())
 
-        # Create a file containing the results of the scaling test
-        resultsfilepath = self._createresultsfile(maxnodes, minnodes)
-
         # Calculate the maximum number of processors to use for the scaling test (maxnodes can be a decimal number)
         maxprocessors = int(maxnodes * self._cores)
 
@@ -149,8 +137,15 @@ class ScalingTest:
         # to start the loop below with. The default setting is minnodes and minprocessors both equal to zero. If
         # this is the case, the starting value for the loop is set to one.
         minprocessors = int(minnodes * self._cores)
+        if minprocessors == 0: minprocessors = 1
         processors = minprocessors
-        if processors == 0: processors = 1
+
+        # In hybrid mode, the minimum number of processors also represents the number of threads per process
+        if self._mode == "hybrid":
+            self._threadspp = minprocessors
+
+        # Create a file containing the results of the scaling test
+        resultsfilepath = self._createresultsfile(maxnodes, minnodes)
 
         # Perform the simulations with increasing number of processors
         while processors <= maxprocessors:
@@ -234,7 +229,6 @@ class ScalingTest:
 
             # In hybrid mode, the number of processes depends on how many threads are requested per process
             # and the current number of processors
-            # TODO: what happens if processors < threadspp?
             threads = self._threadspp
             processes = processors / self._threadspp
 
@@ -286,11 +280,8 @@ class ScalingTest:
             threads = self._threadspp
             processes = processors / self._threadspp
 
-            # If processors < threadspp, skip to the next amount of processors
-            if processes == 0: return
-
         # Inform the user about the number of processes and threads used for this run
-        self._log.info("Running simulation with " + str(processes) + " process(es) consisting of " + str(threads) + " thread(s)")
+        self._log.info("Running simulation with " + str(processes) + " process(es), each consisting of " + str(threads) + " thread(s)")
 
         # Run the simulation
         simulation = self._skirt.execute(skipattern=self._skifilepath, outpath=self._outpath, threads=threads, processes=processes)[0]
@@ -316,9 +307,14 @@ class ScalingTest:
         # Generate a timestamp identifying this particular run for the ski file
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
 
+        # If hybrid mode is selected, add the number of threads per process to the name of the results file
+        hybridinfo = ""
+        if self._mode == "hybrid":
+            hybridinfo = "(" + str(self._threadspp) + ")"
+
         # Create a new file, whose name includes the system identifier, the scaling test mode, the maximum and
         # minium number of nodes and a timestamp.
-        filepath = os.path.join(self._respath, self._system + "_" + self._mode + "_" + str(maxnodes)
+        filepath = os.path.join(self._respath, self._system + "_" + self._mode + hybridinfo + "_" + str(maxnodes)
                                 + "_" + str(minnodes) + "_" + timestamp + ".dat")
         resultsfile = open(filepath, "w")
 
