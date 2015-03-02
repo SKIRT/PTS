@@ -45,8 +45,9 @@ class ScalingTest:
     #            "delcatty" or "cosma", the scaling test will automatically switch to a mode where simulations are
     #            scheduled instead of executed immediately.
     #  - mode: the mode in which to run the scaling test. This can be either "mpi", "threads" or "hybrid".
+    #  - threadspp: in hybrid mode, this defines the number of parallel threads per process.
     #
-    def __init__(self, path, simulation, system, mode):
+    def __init__(self, path, simulation, system, mode, threadspp):
 
         # Create the logging mechanism
         self._log = Log()
@@ -87,6 +88,15 @@ class ScalingTest:
 
         # Determine the number of cores (per node) on this system
         self._cores = multiprocessing.cpu_count()
+
+        # Set the number of threads per process (only relevant in hybrid mode)
+        if threadspp == 0:
+            # If the threadspp argument is set to zero, use the number of cores (per node)
+            self._threadspp = self._cores
+
+        else:
+            # Else, use the specified value
+            self._threadspp = threadspp
 
         # Search the ski file that is in the specified simulation path
         self._skifilename = ""
@@ -202,15 +212,33 @@ class ScalingTest:
 
         # Create the job script
         jobscriptpath = os.path.join(self._outpath, "job_" + self._mode + "_" + str(processors) + ".sh")
-        jobscript = JobScript(jobscriptpath, self._skifilepath, nodes, ppn, self._mode == "hybrid", dataoutputpath, walltime)
+        jobscript = JobScript(jobscriptpath, self._skifilepath, nodes, ppn, self._mode == "hybrid", self._threadspp, dataoutputpath, walltime)
 
         # Add the command to go the the PTS do directory
         jobscript.addcommand("cd $VSC_HOME/PTS/git/do", comment="Navigate to the PTS do directory")
 
-        # Add the PTS command to extract the timings of this run
-        processes = processors if self._mode == "mpi" else nodes
-        threads = 1 if self._mode == "mpi" else ppn
+        # Determine the number of processes and threads per process
+        threads = 1
+        processes = 1
+        if self._mode == "mpi":
 
+            # In mpi mode, each processor runs a different process
+            processes = processors
+
+        if self._mode == "threads":
+
+            # In threads mode, each processor runs a seperate thread within the same process
+            threads = processors
+
+        if self._mode == "hybrid":
+
+            # In hybrid mode, the number of processes depends on how many threads are requested per process
+            # and the current number of processors
+            # TODO: what happens if processors < threadspp?
+            threads = self._threadspp
+            processes = processors / self._threadspp
+
+        # Add the PTS command to extract the timings of this run
         command = "python extractscaling.py " + logfilepath + " " + str(processes) + " " + str(threads) + " " + resultsfilepath
         jobscript.addcommand(command, comment="Extract the results")
 
@@ -238,9 +266,28 @@ class ScalingTest:
     #
     def _run(self, processors, resultsfilepath, keepoutput):
 
-        # Calculate the number of processes and the number of threads
-        processes = processors if self._mode == "mpi" else 1
-        threads = 1 if self._mode == "mpi" else processors
+        # Determine the number of processes and threads per process
+        threads = 1
+        processes = 1
+        if self._mode == "mpi":
+
+            # In mpi mode, each processor runs a different process
+            processes = processors
+
+        if self._mode == "threads":
+
+            # In threads mode, each processor runs a seperate thread within the same process
+            threads = processors
+
+        if self._mode == "hybrid":
+
+            # In hybrid mode, the number of processes depends on how many threads are requested per process
+            # and the current number of processors
+            threads = self._threadspp
+            processes = processors / self._threadspp
+
+            # If processors < threadspp, skip to the next amount of processors
+            if processes == 0: return
 
         # Inform the user about the number of processes and threads used for this run
         self._log.info("Running simulation with " + str(processes) + " process(es) consisting of " + str(threads) + " thread(s)")

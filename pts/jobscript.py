@@ -29,12 +29,12 @@ class JobScript:
     #  - skifilepath: the path to the ski file that should be run
     #  - nodes: the number of nodes to use
     #  - ppn: the number of desired processors per node
-    #  - threads: the number of threads (per process), passed directly to the SKIRT executable
     #  - mode: should either be "mpi" or "hybrid"
+    #  - threadspp: the number of threads (per process), passed directly to the SKIRT executable
     #  - outputpath: the path of the directory to contain the output of the simulation
     #  - walltime: an (over)estimate of the required time to complete the simulation
     #
-    def __init__(self, path, skifilepath, nodes, ppn, hybrid, outputpath, walltime, mail=False):
+    def __init__(self, path, skifilepath, nodes, ppn, hybrid, threadspp, outputpath, walltime, mail=False):
 
         # Save the file path
         self._path = path
@@ -54,14 +54,18 @@ class JobScript:
 
         # Check whether hybrid mode is selected. If so, the number of threads is set to the appropriate value
         # and the requested number of processors per node is set to the maximum (for performance).
-        threads = 1
+        hybrid_threads = 1
+        hybrid_processes = 1
         if hybrid:
 
-            # The number of threads is the number of processors that is actually asked
-            threads = ppn
+            # Set the number of threads per process
+            hybrid_threads = threadspp
 
-            # Yet, for hybrid mode we always request the full node. Therefore, we determine the number of cores on the node.
+            # For hybrid mode we always request the full node. Therefore, we determine the number of cores on the node.
             ppn = multiprocessing.cpu_count()
+
+            # The number of processes per node = [processors per node] / [threads (processors) per process]
+            hybrid_processes = ppn / hybrid_threads
 
         # Write a general header to the job script
         self._script.write("#!/bin/sh\n")
@@ -95,7 +99,7 @@ class JobScript:
         if hybrid:
             # We add the --hybrid option to the mympirun command which launches SKIRT, with the correct number of
             # threads specified in the command line
-            self._script.write("mympirun --hybrid 1 skirt -t " + str(threads) + " -o " + outputpath + " " + skifilename + ".ski\n")
+            self._script.write("mympirun --hybrid " + hybrid_processes + " skirt -t " + str(hybrid_threads) + " -o " + outputpath + " " + skifilename + ".ski\n")
         else:
             # In mpi mode, the number of threads passed to the SKIRT command line is set to 1.
             self._script.write("mympirun skirt -t 1 -o " + outputpath + " " + skifilename + ".ski\n")
