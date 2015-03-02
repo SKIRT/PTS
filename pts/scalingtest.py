@@ -259,7 +259,7 @@ class ScalingTest:
         # If hybrid mode is selected, add the number of threads per process to the name of the results file
         hybridinfo = ""
         if self._mode == "hybrid":
-            hybridinfo = "(" + str(self._threadspp) + ")"
+            hybridinfo = str(self._threadspp)
 
         # Create a new file, whose name includes the system identifier, the scaling test mode, the maximum and
         # minium number of nodes and a timestamp.
