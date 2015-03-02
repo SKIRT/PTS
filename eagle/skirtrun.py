@@ -20,6 +20,24 @@ from pts.skirtsimulation import SkirtSimulation
 from pts.skirtexec import SkirtExec
 
 # -----------------------------------------------------------------
+
+## This function returns a list of run-ids (integer numbers) corresponding to the given range specification,
+# or None in case of syntax error. The range specification must be a comma-seperated list of run-ids and/or
+# run-id ranges expressed as two run-ids with a dash in between.
+def runids_in_range(runidspec):
+    try:
+        runids = []
+        for segment in runidspec.split(","):
+            if "-" in segment:
+                first,last = map(int,segment.split("-"))
+                runids += [ id for id in range(first,last+1) ]
+            else:
+                if segment!="": runids += [ int(segment) ]
+        return runids
+    except Exception:
+        return None
+
+# -----------------------------------------------------------------
 #  SkirtRun class
 # -----------------------------------------------------------------
 
