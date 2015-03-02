@@ -130,6 +130,9 @@ class ScalingTest:
         if self._skirt is not None:
             self._log.info("Using " + self._skirt.version())
 
+        # Generate a timestamp identifying this particular run for the scaling test
+        self._timestamp = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+
         # Calculate the maximum number of processors to use for the scaling test (maxnodes can be a decimal number)
         maxprocessors = int(maxnodes * self._cores)
 
@@ -192,7 +195,8 @@ class ScalingTest:
             exit()
 
         # The path of the output directory to be created
-        dataoutputpath = os.path.join(vscdatapath, name, self._simulationname, "out_" + self._mode + "_" + str(processors))
+        dataoutputpath = os.path.join(vscdatapath, name, self._simulationname, "out_" + self._mode + "_"
+                                      + str(processors) + "_" + self._timestamp)
 
         # Create a seperate output directory for this run (different runs can be executed simultaneously)
         self._log.info("The output of this run will be placed in " + dataoutputpath)
@@ -269,9 +273,6 @@ class ScalingTest:
     #  of the results file, to identify this particular scaling test.
     def _createresultsfile(self, maxnodes, minnodes):
 
-        # Generate a timestamp identifying this particular run for the ski file
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
-
         # If hybrid mode is selected, add the number of threads per process to the name of the results file
         hybridinfo = ""
         if self._mode == "hybrid":
@@ -280,7 +281,7 @@ class ScalingTest:
         # Create a new file, whose name includes the system identifier, the scaling test mode, the maximum and
         # minium number of nodes and a timestamp.
         filepath = os.path.join(self._respath, self._system + "_" + self._mode + hybridinfo + "_" + str(maxnodes)
-                                + "_" + str(minnodes) + "_" + timestamp + ".dat")
+                                + "_" + str(minnodes) + "_" + self._timestamp + ".dat")
         resultsfile = open(filepath, "w")
 
         # Write a header containing useful information about this test to the results file
