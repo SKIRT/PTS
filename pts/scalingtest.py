@@ -276,8 +276,10 @@ class ScalingTest:
         resultsfile.write("# Column 3: Total number of threads (t*p)\n")
         resultsfile.write("# Column 4: Execution time for the setup (s)\n")
         resultsfile.write("# Column 5: Execution time for the stellar emission phase (s)\n")
-        resultsfile.write("# Column 6: Execution time for the writing phase (s)\n")
-        resultsfile.write("# Column 7: Execution time for the simulation (s)\n")
+        resultsfile.write("# Column 6: Execution time for the dust-selfabsorption phase (s)\n")
+        resultsfile.write("# Column 7: Execution time for the dust emission phase (s)\n")
+        resultsfile.write("# Column 8: Execution time for the writing phase (s)\n")
+        resultsfile.write("# Column 9: Execution time for the simulation (s)\n")
 
         # Close the results file (results will be appended!)
         resultsfile.close()
@@ -361,11 +363,12 @@ class ScalingTest:
 
     def _estimatewalltime(self, processors):
 
-        # Get the timings from a serial run of the simulation
-        # TODO: support panchromatic simulations!
-        timings = self._getserialtimings()
-        serialtime = timings[0] + timings[2]     # setuptime + writingtime in seconds
-        paralleltime = timings[1]                # in seconds
+        # Get the runtimes from a serial run of the simulation
+        runtimes = self._getserialtimes()
+
+        # Calculate the portion of the total runtime spent in serial and parallel parts of the code
+        serialtime = runtimes[0] + runtimes[4]
+        paralleltime = runtimes[1] + runtimes[2] + runtimes[3]
 
         # Calculate and return the expected walltime
         walltime = int((serialtime + paralleltime / processors)*1.5 + 100)  # in seconds
@@ -373,7 +376,7 @@ class ScalingTest:
 
     ## This function extracts the timings of a serial run of the simulation from either a log file
     #  or a scaling test results file that was created earlier for this simulation.
-    def _getserialtimings(self):
+    def _getserialtimes(self):
 
         # Search for a log file
         seriallogfilepath = os.path.join(self._simulationpath, self._skifilename + "_log.txt")
@@ -398,7 +401,7 @@ class ScalingTest:
 
                     # Try extracting the columns from the data file
                     try:
-                        threads, setuptime, stellartime, writingtime, time = np.loadtxt(filepath, usecols=(2,3,4,5,6), unpack=True)
+                        threads, setuptime, stellartime, dustselfabstime, dustemissiontime, writingtime, time = np.loadtxt(filepath, usecols=(2,3,4,5,6,7,8), unpack=True)
                     except (IndexError, ValueError):
                         # Try the next file, this one is probably empty
                         continue
@@ -408,7 +411,7 @@ class ScalingTest:
                         index = [int(nthreads) for nthreads in threads].index(1)
 
                         # Return the times
-                        return [setuptime[index], stellartime[index], writingtime[index], time[index]]
+                        return [setuptime[index], stellartime[index], dustselfabstime[index], dustemissiontime[index], writingtime[index], time[index]]
 
                     except ValueError:
                         # Try the next file, no entry for a serial run could be found in this one
