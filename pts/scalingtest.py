@@ -168,19 +168,24 @@ class ScalingTest:
     #
     def _schedule(self, processors, resultsfilepath, keepoutput):
 
-        # Inform the user about the number of processes and threads used for this run
-        self._log.info("Scheduling simulation with " + str(processors) + " processors")
+        # Determine the number of processes and threads per process
+        threads, processes = self._getmapping(processors)
 
-        # Calculate the necessary amount of nodes
-        nodes = processors/self._cores + (processors % self._cores > 0)
+        # Determine the number of nodes and processors per node
+        nodes, ppn = self._getrequirements(processors)
 
-        # Determine the number of processors per node
-        ppn = processors if nodes == 1 else self._cores
+        # Inform the user about the number of processors, processes, threads per process, nodes and processors per node
+        self._log.info("Scheduling simulation with :")
+        self._log.info(" - total number of processors = " + str(processors))
+        self._log.info(" - number of parallel processes = " + str(processes))
+        self._log.info(" - number of parallel threads per process = " + str(threads))
+        self._log.info(" - number of nodes = " + str(nodes))
+        self._log.info(" - number of requested processors per node = " + str(ppn))
 
         # Scaling benchmark name (="SKIRTscaling")
         name = os.path.basename(os.path.normpath(self._path))
 
-        # Check that we are indeed on the UGent HPC system
+        # Check that we are indeed on the UGent HPC system: look for the VSC_DATA directory (we need it)
         vscdatapath = os.getenv("VSC_DATA")
         if vscdatapath is None:
             self._log.error("Can't find $VSC_DATA")
@@ -202,7 +207,7 @@ class ScalingTest:
         serialtime = timings[0] + timings[2]     # setuptime + writingtime in seconds
         paralleltime = timings[1]                # in seconds
 
-        # Set the expected walltime
+        # Calculate the expected walltime
         walltime = int((serialtime + paralleltime / processors)*1.5 + 100)  # in seconds
 
         # Create the job script
@@ -211,26 +216,6 @@ class ScalingTest:
 
         # Add the command to go the the PTS do directory
         jobscript.addcommand("cd $VSC_HOME/PTS/git/do", comment="Navigate to the PTS do directory")
-
-        # Determine the number of processes and threads per process
-        threads = 1
-        processes = 1
-        if self._mode == "mpi":
-
-            # In mpi mode, each processor runs a different process
-            processes = processors
-
-        if self._mode == "threads":
-
-            # In threads mode, each processor runs a seperate thread within the same process
-            threads = processors
-
-        if self._mode == "hybrid":
-
-            # In hybrid mode, the number of processes depends on how many threads are requested per process
-            # and the current number of processors
-            threads = self._threadspp
-            processes = processors / self._threadspp
 
         # Add the PTS command to extract the timings of this run
         command = "python extractscaling.py " + logfilepath + " " + str(processes) + " " + str(threads) + " " + resultsfilepath
@@ -261,24 +246,7 @@ class ScalingTest:
     def _run(self, processors, resultsfilepath, keepoutput):
 
         # Determine the number of processes and threads per process
-        threads = 1
-        processes = 1
-        if self._mode == "mpi":
-
-            # In mpi mode, each processor runs a different process
-            processes = processors
-
-        if self._mode == "threads":
-
-            # In threads mode, each processor runs a seperate thread within the same process
-            threads = processors
-
-        if self._mode == "hybrid":
-
-            # In hybrid mode, the number of processes depends on how many threads are requested per process
-            # and the current number of processors
-            threads = self._threadspp
-            processes = processors / self._threadspp
+        threads, processes = self._getmapping(processors)
 
         # Inform the user about the number of processes and threads used for this run
         self._log.info("Running simulation with " + str(processes) + " process(es), each consisting of " + str(threads) + " thread(s)")
@@ -289,11 +257,8 @@ class ScalingTest:
         # Check whether the simulation finished
         if simulation.status() != "Finished": raise ValueError("Simulation " + simulation.status())
 
-        # Determine the path to the simulation log file
-        logfilepath = os.path.join(self._outpath, self._skifilename + "_log.txt")
-
-        # Extract the timings from the log file and place them in the results file
-        extract(logfilepath, processes, threads, resultsfilepath)
+        # Extract the timings from the simulation's log file and place them in the results file
+        extract(simulation.logfilepath(), processes, threads, resultsfilepath)
 
         # Remove the contents of the output directory, if requested
         if not keepoutput:
@@ -348,6 +313,45 @@ class ScalingTest:
             filepath=os.path.join(self._outpath,filename)
             if os.path.isfile(filepath):
                 os.remove(filepath)
+
+    ## This function calculates the number of processes and the number of threads (per process) for
+    #  a certain number of processors, depending on the mode in which this scaling test is run.
+    #  In other words, this function determines the 'mapping' from a set of processors to an appropriate
+    #  set of threads and processes. This function takes the number of processors as the sole argument.
+    def _getmapping(self, processors):
+
+        threads = 1
+        processes = 1
+        if self._mode == "mpi":
+
+            # In mpi mode, each processor runs a different process
+            processes = processors
+
+        if self._mode == "threads":
+
+            # In threads mode, each processor runs a seperate thread within the same process
+            threads = processors
+
+        if self._mode == "hybrid":
+
+            # In hybrid mode, the number of processes depends on how many threads are requested per process
+            # and the current number of processors
+            threads = self._threadspp
+            processes = processors / self._threadspp
+
+        return threads, processes
+
+    ## This function calculates the required amount of nodes and processors per node, given a certain number
+    #  of processors. This function is only used when on a cluster with a scheduling system.
+    def _getrequirements(self, processors):
+
+        # Calculate the necessary amount of nodes
+        nodes = processors/self._cores + (processors % self._cores > 0)
+
+        # Determine the number of processors per node
+        ppn = processors if nodes == 1 else self._cores
+
+        return nodes, ppn
 
     ## This function extracts the timings of a serial run of the simulation from either a log file
     #  or a scaling test results file that was created earlier for this simulation.
