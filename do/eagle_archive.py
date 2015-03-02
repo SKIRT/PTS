@@ -27,6 +27,7 @@ import subprocess
 import eagle.config as config
 from eagle.database import Database
 from eagle.skirtrun import SkirtRun
+from eagle.skirtrun import runids_in_range
 
 # -----------------------------------------------------------------
 # ==== path definition that may be moved elsewhere over time   ====
@@ -35,21 +36,6 @@ from eagle.skirtrun import SkirtRun
 archive_path = "/Volumes/astro_skirt/pcamps/EAGLE_Archive"
 
 # -----------------------------------------------------------------
-# ==== utility functions that may be moved elsewhere over time ====
-
-# returns a list of run-ids corresponding to the specified range string, or None in case of syntax error
-def runids_in_range(runidspec):
-    try:
-        runids = []
-        for segment in runidspec.split(","):
-            if "-" in segment:
-                first,last = map(int,segment.split("-"))
-                runids += [ id for id in range(first,last+1) ]
-            else:
-                if segment!="": runids += [ int(segment) ]
-        return runids
-    except Exception:
-        return None
 
 # returns a list of run-ids for all currently completed and not-yet archived SKIRT-runs
 def completed_runids():
