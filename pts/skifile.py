@@ -112,6 +112,12 @@ class SkiFile:
         # return their names
         return [ instr.get("instrumentName") for instr in instruments ]
 
+    ## This function returns true if the ski file specifies a DustLib with a StaggeredAssigner, false otherwise.
+    def staggered(self):
+        # get any StaggeredAssigner elements as a DustLib child
+        staggered = self.tree.xpath("//dustLib/*/assigner/StaggeredAssigner")
+        return len(staggered) > 0
+
     # ---------- Updating information ---------------------------------
 
     ## This function applies an XSLT transform to the ski file if an XPath condition evaluates to true.
