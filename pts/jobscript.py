@@ -51,17 +51,13 @@ class JobScript:
         m, s = divmod(walltime, 60)
         h, m = divmod(m, 60)
 
-        # Check whether we are dealing with multithreading. If so, the number of threads is set to the appropriate
-        # value and the requested number of processors per node is set to the maximum (for performance reasons).
-        hybrid_threads = 1
+        # Check whether we are dealing with multithreading. If so, we calculate the number of processes per
+        # node and the requested number of processors per node is set to the maximum (for performance reasons).
         hybrid_processes = 1
         if threadspp > 1:
 
-            # Set the number of threads per process
-            hybrid_threads = threadspp
-
             # The number of processes per node = [processors per node] / [threads (processors) per process]
-            hybrid_processes = ppn / hybrid_threads
+            hybrid_processes = ppn / threadspp
 
             # For hybrid (or threads) mode we always request the full node.
             # Therefore, we determine the number of cores on the node.
@@ -100,7 +96,7 @@ class JobScript:
 
             hybridoptions = "--hybrid " + str(hybrid_processes) + " "
 
-        self._script.write("mympirun " + hybridoptions + "skirt -t " + str(hybrid_threads) + " -o " + outputpath + " " + skifilename + ".ski\n")
+        self._script.write("mympirun " + hybridoptions + "skirt -t " + str(threadspp) + " -o " + outputpath + " " + skifilename + ".ski\n")
 
     ## Add an additional command to the job script, optionally preceeded by a comment line
     def addcommand(self, command, comment=""):

@@ -147,7 +147,7 @@ class ScalingTest:
         processors = minprocessors
 
         # In hybrid mode, the minimum number of processors also represents the number of threads per process
-        self._threadspp = -1
+        self._threadspp = 1
         if self._mode == "hybrid":
             self._threadspp = minprocessors
 
