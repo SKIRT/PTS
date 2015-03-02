@@ -193,7 +193,7 @@ class ScalingPlotter:
         for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
 
             # Determine a label to identify this curve
-            if "hybrid" in mode: mode = "hybrid " + mode[7] + ":1"
+            if "hybrid" in mode: mode = "hybrid " + mode.strip('hybrid') + ":1"
             label = mode if self._system else systemname + " (" + mode + ")"
 
             # Plot the data points for this curve
@@ -241,7 +241,7 @@ class ScalingPlotter:
         for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
 
             # Determine a label to identify this curve
-            if "hybrid" in mode: mode = "hybrid " + mode[7] + ":1"
+            if "hybrid" in mode: mode = "hybrid " + mode.strip('hybrid') + ":1"
             label = mode if self._system else systemname + " (" + mode + ")"
 
             # Calculate the speedups
@@ -293,7 +293,7 @@ class ScalingPlotter:
         for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
 
             # Determine a label to identify this curve
-            if "hybrid" in mode: mode = "hybrid " + mode[7] + ":1"
+            if "hybrid" in mode: mode = "hybrid " + mode.strip('hybrid') + ":1"
             label = mode if self._system else systemname + " (" + mode + ")"
 
             # Calculate the efficiencies
