@@ -16,34 +16,43 @@ import argparse
 #
 def extract(logfilepath, processes=1, threads=1, resultsfilepath=""):
 
-    # Set all runtimes to zero; for stages that are not encountered in the log file the runtime will stay zero.
-    setuptime = 0.0
-    stellartime = 0.0
-    dustselfabstime = 0.0
-    dustemissiontime = 0.0
-    writingtime = 0.0
-    simulationtime = 0.0
+    # Create a dictionary with the runtimes for each simulation stage set to zero. The runtime will stay zero
+    # for stages that are not encountered in the specified log file.
+    keys = ('setup', 'stellar', 'dustselfabs', 'dustem', 'writing', 'total')
+    runtimes = dict.fromkeys(keys, 0.0)
 
     # Read each line of the specified log file to search for the end of simulation stages
     for line in open(logfilepath):
 
         if 'Finished setup in' in line:
-            setuptime = float(line.split(' in ')[1].split()[0])
+
+            # Add the runtime of the setup to the dictionary
+            runtimes['setup'] = float(line.split(' in ')[1].split()[0])
 
         elif 'Finished the stellar emission phase in' in line:
-            stellartime = float(line.split(' in ')[1].split()[0])
+
+            # Add the runtime of the stellar emission phase to the dictionary
+            runtimes['stellar'] = float(line.split(' in ')[1].split()[0])
 
         elif 'Finished the dust self-absorption phase in' in line:
-            dustselfabstime = float(line.split(' in ')[1].split()[0])
+
+            # Add the runtime of the dust self-absorption phase to the dictionary
+            runtimes['dustselfabs'] = float(line.split(' in ')[1].split()[0])
 
         elif 'Finished the dust emission phase in' in line:
-            dustemissiontime = float(line.split(' in ')[1].split()[0])
+
+            # Add the runtime of the dust emission phase to the dictionary
+            runtimes['dustem'] = float(line.split(' in ')[1].split()[0])
 
         elif 'Finished writing results in' in line:
-            writingtime = float(line.split(' in ')[1].split()[0])
+
+            # Add the runtime of the writing phase to the dictionary
+            runtimes['writing'] = float(line.split(' in ')[1].split()[0])
 
         elif 'Finished simulation' in line:
-            simulationtime = float(line.split(' in ')[1].split()[0])
+
+            # Add the total runtime of the simulation to the dictionary
+            runtimes['total'] = float(line.split(' in ')[1].split()[0])
 
     # Check whether a results file is specified
     if resultsfilepath:
@@ -52,14 +61,15 @@ def extract(logfilepath, processes=1, threads=1, resultsfilepath=""):
         resultfile = open(resultsfilepath, 'a')
 
         # Add a line containing the runtimes for this number of processes and threads per process
-        resultfile.write(str(processes) + ' ' + str(threads) + ' ' + str(processes*threads) + ' ' + str(setuptime)
-                         + ' ' + str(stellartime) + ' ' + str(dustselfabstime) + ' ' + str(dustemissiontime)
-                         + ' ' + str(writingtime) + ' ' + str(simulationtime) + '\n')
+        resultfile.write(str(processes) + ' ' + str(threads) + ' ' + str(processes*threads) + ' '
+                         + str(runtimes['setup']) + ' ' + str(runtimes['stellar']) + ' ' + str(runtimes['dustselfabs'])
+                         + ' ' + str(runtimes['dustem']) + ' ' + str(runtimes['writing']) + ' ' + str(runtimes['total'])
+                         + '\n')
 
     else:
 
-        # If no results file is given, return the extracted runtimes
-        return [setuptime, stellartime, dustselfabstime, dustemissiontime, writingtime, simulationtime]
+        # If no results file is given, return the dictionary of the extracted runtimes
+        return runtimes
 
 # -----------------------------------------------------------------
 

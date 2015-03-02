@@ -276,7 +276,7 @@ class ScalingTest:
         resultsfile.write("# Column 3: Total number of threads (t*p)\n")
         resultsfile.write("# Column 4: Execution time for the setup (s)\n")
         resultsfile.write("# Column 5: Execution time for the stellar emission phase (s)\n")
-        resultsfile.write("# Column 6: Execution time for the dust-selfabsorption phase (s)\n")
+        resultsfile.write("# Column 6: Execution time for the dust self-absorption phase (s)\n")
         resultsfile.write("# Column 7: Execution time for the dust emission phase (s)\n")
         resultsfile.write("# Column 8: Execution time for the writing phase (s)\n")
         resultsfile.write("# Column 9: Execution time for the simulation (s)\n")
@@ -363,12 +363,12 @@ class ScalingTest:
 
     def _estimatewalltime(self, processors):
 
-        # Get the runtimes from a serial run of the simulation
+        # Get the runtimes from a serial run of the simulation (a dictionary)
         runtimes = self._getserialtimes()
 
         # Calculate the portion of the total runtime spent in serial and parallel parts of the code
-        serialtime = runtimes[0] + runtimes[4]
-        paralleltime = runtimes[1] + runtimes[2] + runtimes[3]
+        serialtime = runtimes['setup'] + runtimes['writing']
+        paralleltime = runtimes['stellar'] + runtimes['dustselfabs'] + runtimes['dustem']
 
         # Calculate and return the expected walltime
         walltime = int((serialtime + paralleltime / processors)*1.5 + 100)  # in seconds
@@ -410,8 +410,17 @@ class ScalingTest:
                     try:
                         index = [int(nthreads) for nthreads in threads].index(1)
 
-                        # Return the times
-                        return [setuptime[index], stellartime[index], dustselfabstime[index], dustemissiontime[index], writingtime[index], time[index]]
+                        # Create a dictionary specifying the serial runtime of each of the different simulation phases
+                        runtimes = dict()
+                        runtimes['setup'] = setuptime[index]
+                        runtimes['stellar'] = stellartime[index]
+                        runtimes['dustselfabs'] = dustselfabstime[index]
+                        runtimes['dustem'] = dustemissiontime[index]
+                        runtimes['writing'] = writingtime[index]
+                        runtimes['total'] = time[index]
+
+                        # Return the runtimes
+                        return runtimes
 
                     except ValueError:
                         # Try the next file, no entry for a serial run could be found in this one
