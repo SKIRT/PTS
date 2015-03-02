@@ -99,7 +99,7 @@ class JobScript:
         if hybrid:
             # We add the --hybrid option to the mympirun command which launches SKIRT, with the correct number of
             # threads specified in the command line
-            self._script.write("mympirun --hybrid " + hybrid_processes + " skirt -t " + str(hybrid_threads) + " -o " + outputpath + " " + skifilename + ".ski\n")
+            self._script.write("mympirun --hybrid " + str(hybrid_processes) + " skirt -t " + str(hybrid_threads) + " -o " + outputpath + " " + skifilename + ".ski\n")
         else:
             # In mpi mode, the number of threads passed to the SKIRT command line is set to 1.
             self._script.write("mympirun skirt -t 1 -o " + outputpath + " " + skifilename + ".ski\n")
