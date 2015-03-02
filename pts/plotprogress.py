@@ -61,7 +61,7 @@ def _plot_photon_progress(simulation, figsize, phase):
         percentages = [ ]
         times = [ ]
         triggered = False
-        for line in open(logfile, 'r'):
+        for line in arch.opentext(logfile):
             if not triggered and "Starting the {} emission phase".format(phase) in line:
                 triggered = True
                 process = line.split()[2][1:5] if "[P" in line else "P000"
@@ -110,7 +110,7 @@ def _plot_spectra_progress(simulation, figsize):
         percentages = [ ]
         times = [ ]
         triggered = False
-        for line in open(logfiles[rank], 'r'):
+        for line in arch.opentext(logfiles[rank]):
             if not triggered and "Starting the dust emission phase" in line:
                 triggered = True
                 process = line.split()[2][1:5] if "[P" in line else "P000"
