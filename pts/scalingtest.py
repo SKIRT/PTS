@@ -200,7 +200,7 @@ class ScalingTest:
 
         # Create the job script
         jobscriptpath = os.path.join(self._outpath, "job_" + self._mode + "_" + str(processors) + ".sh")
-        jobscript = JobScript(jobscriptpath, self._skifilepath, nodes, ppn, self._mode == "hybrid", self._threadspp, dataoutputpath, walltime)
+        jobscript = JobScript(jobscriptpath, self._skifilepath, nodes, ppn, threads, dataoutputpath, walltime)
 
         # Add the command to go the the PTS do directory
         jobscript.addcommand("cd $VSC_HOME/PTS/git/do", comment="Navigate to the PTS do directory")

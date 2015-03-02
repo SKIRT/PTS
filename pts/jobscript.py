@@ -29,12 +29,11 @@ class JobScript:
     #  - skifilepath: the path to the ski file that should be run
     #  - nodes: the number of nodes to use
     #  - ppn: the number of desired processors per node
-    #  - mode: should either be "mpi" or "hybrid"
     #  - threadspp: the number of threads (per process), passed directly to the SKIRT executable
     #  - outputpath: the path of the directory to contain the output of the simulation
     #  - walltime: an (over)estimate of the required time to complete the simulation
     #
-    def __init__(self, path, skifilepath, nodes, ppn, hybrid, threadspp, outputpath, walltime, mail=False):
+    def __init__(self, path, skifilepath, nodes, ppn, threadspp, outputpath, walltime, mail=False):
 
         # Save the file path
         self._path = path
@@ -56,12 +55,13 @@ class JobScript:
         # and the requested number of processors per node is set to the maximum (for performance).
         hybrid_threads = 1
         hybrid_processes = 1
-        if hybrid:
+        if threadspp > 1:
 
             # Set the number of threads per process
             hybrid_threads = threadspp
 
-            # For hybrid mode we always request the full node. Therefore, we determine the number of cores on the node.
+            # For hybrid (or threads) mode we always request the full node.
+            # Therefore, we determine the number of cores on the node.
             ppn = multiprocessing.cpu_count()
 
             # The number of processes per node = [processors per node] / [threads (processors) per process]
@@ -96,7 +96,7 @@ class JobScript:
         self._script.write("cd " + directorypath + "\n")
 
         # Check whether hybrid mode is selected
-        if hybrid:
+        if threadspp > 1:
             # We add the --hybrid option to the mympirun command which launches SKIRT, with the correct number of
             # threads specified in the command line
             self._script.write("mympirun --hybrid " + str(hybrid_processes) + " skirt -t " + str(hybrid_threads) + " -o " + outputpath + " " + skifilename + ".ski\n")
