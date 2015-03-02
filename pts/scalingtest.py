@@ -169,7 +169,7 @@ class ScalingTest:
     def _schedule(self, processors, resultsfilepath, keepoutput):
 
         # Determine the number of processes and threads per process
-        threads, processes = self._getmapping(processors)
+        processes, threads = self._getmapping(processors)
 
         # Determine the number of nodes and processors per node
         nodes, ppn = self._getrequirements(processors)
@@ -246,7 +246,7 @@ class ScalingTest:
     def _run(self, processors, resultsfilepath, keepoutput):
 
         # Determine the number of processes and threads per process
-        threads, processes = self._getmapping(processors)
+        processes, threads = self._getmapping(processors)
 
         # Inform the user about the number of processes and threads used for this run
         self._log.info("Running simulation with " + str(processes) + " process(es), each consisting of " + str(threads) + " thread(s)")
@@ -339,7 +339,7 @@ class ScalingTest:
             threads = self._threadspp
             processes = processors / self._threadspp
 
-        return threads, processes
+        return processes, threads
 
     ## This function calculates the required amount of nodes and processors per node, given a certain number
     #  of processors. This function is only used when on a cluster with a scheduling system.
