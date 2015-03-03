@@ -193,6 +193,7 @@ class ScalingPlotter:
         for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
 
             # Determine a label to identify this curve
+            if "hybrid" in mode: mode = "hybrid " + mode.strip('hybrid') + ":1"
             label = mode if self._system else systemname + " (" + mode + ")"
 
             # Plot the data points for this curve
@@ -202,6 +203,10 @@ class ScalingPlotter:
         plt.grid(True)
         if xlim != None: plt.xlim(xlim)
         if ylim != None: plt.ylim(ylim)
+
+        # Set the axes to log scale
+        plt.xscale('log')
+        plt.yscale('log')
 
         # Add axis labels and a legend
         plt.xlabel("Total number of threads $t$", fontsize='large')
@@ -236,6 +241,7 @@ class ScalingPlotter:
         for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
 
             # Determine a label to identify this curve
+            if "hybrid" in mode: mode = "hybrid " + mode.strip('hybrid') + ":1"
             label = mode if self._system else systemname + " (" + mode + ")"
 
             # Calculate the speedups
@@ -251,6 +257,10 @@ class ScalingPlotter:
         plt.grid(True)
         if xlim != None: plt.xlim(xlim)
         if ylim != None: plt.ylim(ylim)
+
+        # Set the axes to log scale
+        plt.xscale('log')
+        plt.yscale('log')
 
         # Add axis labels and a legend
         plt.xlabel("Total number of threads $t$", fontsize='large')
@@ -283,6 +293,7 @@ class ScalingPlotter:
         for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
 
             # Determine a label to identify this curve
+            if "hybrid" in mode: mode = "hybrid " + mode.strip('hybrid') + ":1"
             label = mode if self._system else systemname + " (" + mode + ")"
 
             # Calculate the efficiencies
@@ -298,6 +309,10 @@ class ScalingPlotter:
         plt.grid(True)
         if xlim != None: plt.xlim(xlim)
         if ylim != None: plt.ylim(ylim)
+
+        # Set the axes to log scale
+        plt.xscale('log')
+        plt.yscale('log')
 
         # Add axis labels and a legend
         plt.xlabel("Total number of threads $t$", fontsize='large')

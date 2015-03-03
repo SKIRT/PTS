@@ -54,6 +54,9 @@ class ScalingTest:
         # Set the path
         self._path = path
 
+        # Scaling benchmark name (="SKIRTscaling")
+        self._name = os.path.basename(os.path.normpath(self._path))
+
         # Set the simulation name (subdirectory of self._path) and the simulation path
         self._simulationname = simulation
         self._simulationpath = os.path.join(self._path, self._simulationname)
@@ -119,6 +122,7 @@ class ScalingTest:
     #  - minnodes: the minimum number of 'nodes' to be used for this scaling test. The usage is similar as with
     #              maxnodes. The default value of minnodes is zero, denoting no lower limit on the number of nodes.
     #              The minimum number of processors used for the scaling test will then equal one.
+    #              In hybrid mode, minnodes also defines the number of parallel threads per process.
     #  - keepoutput: this optional argument indicates whether the output of the SKIRT simulations has to be kept
     #                or can be deleted from the disk.
     #
@@ -129,8 +133,8 @@ class ScalingTest:
         if self._skirt is not None:
             self._log.info("Using " + self._skirt.version())
 
-        # Create a file containing the results of the scaling test
-        resultsfilepath = self._createresultsfile(maxnodes, minnodes)
+        # Generate a timestamp identifying this particular run for the scaling test
+        self._timestamp = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
 
         # Calculate the maximum number of processors to use for the scaling test (maxnodes can be a decimal number)
         maxprocessors = int(maxnodes * self._cores)
@@ -139,8 +143,16 @@ class ScalingTest:
         # to start the loop below with. The default setting is minnodes and minprocessors both equal to zero. If
         # this is the case, the starting value for the loop is set to one.
         minprocessors = int(minnodes * self._cores)
+        if minprocessors == 0: minprocessors = 1
         processors = minprocessors
-        if processors == 0: processors = 1
+
+        # In hybrid mode, the minimum number of processors also represents the number of threads per process
+        self._threadspp = 1
+        if self._mode == "hybrid":
+            self._threadspp = minprocessors
+
+        # Create a file containing the results of the scaling test
+        resultsfilepath = self._createresultsfile(maxnodes, minnodes)
 
         # Perform the simulations with increasing number of processors
         while processors <= maxprocessors:
@@ -163,54 +175,45 @@ class ScalingTest:
     #
     def _schedule(self, processors, resultsfilepath, keepoutput):
 
-        # Inform the user about the number of processes and threads used for this run
-        self._log.info("Scheduling simulation with " + str(processors) + " processors")
+        # Determine the number of processes and threads per process
+        processes, threads = self._getmapping(processors)
 
-        # Calculate the necessary amount of nodes
-        nodes = processors/self._cores + (processors % self._cores > 0)
+        # Determine the number of nodes and processors per node
+        nodes, ppn = self._getrequirements(processors)
 
-        # Determine the number of processors per node
-        ppn = processors if nodes == 1 else self._cores
+        # In threads mode, show a warning message if the number of threads > the number of cores per node
+        # (we can't use multiple nodes in threads mode)
+        if self._mode == "threads" and threads > self._cores:
 
-        # Scaling benchmark name (="SKIRTscaling")
-        name = os.path.basename(os.path.normpath(self._path))
+            # Show a warning and return immediately
+            self._log.warning("The number of threads " + str(threads) + " exceeds the number of cores on this system: skipping")
+            return
 
-        # Check that we are indeed on the UGent HPC system
-        vscdatapath = os.getenv("VSC_DATA")
-        if vscdatapath is None:
-            self._log.error("Can't find $VSC_DATA")
-            exit()
-
-        # The path of the output directory to be created
-        dataoutputpath = os.path.join(vscdatapath, name, self._simulationname, "out_" + self._mode + "_" + str(processors))
+        # Inform the user about the number of processors, processes, threads per process, nodes and processors per node
+        self._log.info("Scheduling simulation with :")
+        self._log.info(" - total number of processors = " + str(processors))
+        self._log.info(" - number of parallel processes = " + str(processes))
+        self._log.info(" - number of parallel threads per process = " + str(threads))
+        self._log.info(" - number of nodes = " + str(nodes))
+        self._log.info(" - number of requested processors per node = " + str(ppn))
 
         # Create a seperate output directory for this run (different runs can be executed simultaneously)
-        self._log.info("The output of this run will be placed in " + dataoutputpath)
-        os.makedirs(dataoutputpath)
+        dataoutputpath = self._createdatadir(processors)
 
         # The path of the log file for this simulation run
         logfilepath = os.path.join(dataoutputpath, self._skifilename + "_log.txt")
 
-        # Get the timings from a serial run of the simulation
-        # TODO: support panchromatic simulations!
-        timings = self._getserialtimings()
-        serialtime = timings[0] + timings[2]     # setuptime + writingtime in seconds
-        paralleltime = timings[1]                # in seconds
-
-        # Set the expected walltime
-        walltime = int((serialtime + paralleltime / processors)*1.5 + 100)  # in seconds
+        # Calculate the expected walltime for this number of processors
+        walltime = self._estimatewalltime(processors)
 
         # Create the job script
         jobscriptpath = os.path.join(self._outpath, "job_" + self._mode + "_" + str(processors) + ".sh")
-        jobscript = JobScript(jobscriptpath, self._skifilepath, nodes, ppn, self._mode == "hybrid", dataoutputpath, walltime)
+        jobscript = JobScript(jobscriptpath, self._skifilepath, nodes, ppn, threads, dataoutputpath, walltime)
 
         # Add the command to go the the PTS do directory
         jobscript.addcommand("cd $VSC_HOME/PTS/git/do", comment="Navigate to the PTS do directory")
 
         # Add the PTS command to extract the timings of this run
-        processes = processors if self._mode == "mpi" else nodes
-        threads = 1 if self._mode == "mpi" else ppn
-
         command = "python extractscaling.py " + logfilepath + " " + str(processes) + " " + str(threads) + " " + resultsfilepath
         jobscript.addcommand(command, comment="Extract the results")
 
@@ -238,12 +241,11 @@ class ScalingTest:
     #
     def _run(self, processors, resultsfilepath, keepoutput):
 
-        # Calculate the number of processes and the number of threads
-        processes = processors if self._mode == "mpi" else 1
-        threads = 1 if self._mode == "mpi" else processors
+        # Determine the number of processes and threads per process
+        processes, threads = self._getmapping(processors)
 
         # Inform the user about the number of processes and threads used for this run
-        self._log.info("Running simulation with " + str(processes) + " process(es) consisting of " + str(threads) + " thread(s)")
+        self._log.info("Running simulation with " + str(processes) + " process(es), each consisting of " + str(threads) + " thread(s)")
 
         # Run the simulation
         simulation = self._skirt.execute(skipattern=self._skifilepath, outpath=self._outpath, threads=threads, processes=processes)[0]
@@ -251,11 +253,8 @@ class ScalingTest:
         # Check whether the simulation finished
         if simulation.status() != "Finished": raise ValueError("Simulation " + simulation.status())
 
-        # Determine the path to the simulation log file
-        logfilepath = os.path.join(self._outpath, self._simulationname + "_log.txt")
-
-        # Extract the timings from the log file and place them in the results file
-        extract(logfilepath, processes, threads, resultsfilepath)
+        # Extract the timings from the simulation's log file and place them in the results file
+        extract(simulation.logfilepath(), processes, threads, resultsfilepath)
 
         # Remove the contents of the output directory, if requested
         if not keepoutput:
@@ -266,13 +265,15 @@ class ScalingTest:
     #  of the results file, to identify this particular scaling test.
     def _createresultsfile(self, maxnodes, minnodes):
 
-        # Generate a timestamp identifying this particular run for the ski file
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+        # If hybrid mode is selected, add the number of threads per process to the name of the results file
+        hybridinfo = ""
+        if self._mode == "hybrid":
+            hybridinfo = str(self._threadspp)
 
         # Create a new file, whose name includes the system identifier, the scaling test mode, the maximum and
         # minium number of nodes and a timestamp.
-        filepath = os.path.join(self._respath, self._system + "_" + self._mode + "_" + str(maxnodes)
-                                + "_" + str(minnodes) + "_" + timestamp + ".dat")
+        filepath = os.path.join(self._respath, self._system + "_" + self._mode + hybridinfo + "_" + str(maxnodes)
+                                + "_" + str(minnodes) + "_" + self._timestamp + ".dat")
         resultsfile = open(filepath, "w")
 
         # Write a header containing useful information about this test to the results file
@@ -284,8 +285,10 @@ class ScalingTest:
         resultsfile.write("# Column 3: Total number of threads (t*p)\n")
         resultsfile.write("# Column 4: Execution time for the setup (s)\n")
         resultsfile.write("# Column 5: Execution time for the stellar emission phase (s)\n")
-        resultsfile.write("# Column 6: Execution time for the writing phase (s)\n")
-        resultsfile.write("# Column 7: Execution time for the simulation (s)\n")
+        resultsfile.write("# Column 6: Execution time for the dust self-absorption phase (s)\n")
+        resultsfile.write("# Column 7: Execution time for the dust emission phase (s)\n")
+        resultsfile.write("# Column 8: Execution time for the writing phase (s)\n")
+        resultsfile.write("# Column 9: Execution time for the simulation (s)\n")
 
         # Close the results file (results will be appended!)
         resultsfile.close()
@@ -306,9 +309,83 @@ class ScalingTest:
             if os.path.isfile(filepath):
                 os.remove(filepath)
 
+    ## This function calculates the number of processes and the number of threads (per process) for
+    #  a certain number of processors, depending on the mode in which this scaling test is run.
+    #  In other words, this function determines the 'mapping' from a set of processors to an appropriate
+    #  set of threads and processes. This function takes the number of processors as the sole argument.
+    def _getmapping(self, processors):
+
+        threads = 1
+        processes = 1
+        if self._mode == "mpi":
+
+            # In mpi mode, each processor runs a different process
+            processes = processors
+
+        if self._mode == "threads":
+
+            # In threads mode, each processor runs a seperate thread within the same process
+            threads = processors
+
+        if self._mode == "hybrid":
+
+            # In hybrid mode, the number of processes depends on how many threads are requested per process
+            # and the current number of processors
+            threads = self._threadspp
+            processes = processors / self._threadspp
+
+        return processes, threads
+
+    ## This function calculates the required amount of nodes and processors per node, given a certain number
+    #  of processors. This function is only used when on a cluster with a scheduling system.
+    def _getrequirements(self, processors):
+
+        # Calculate the necessary amount of nodes
+        nodes = processors/self._cores + (processors % self._cores > 0)
+
+        # Determine the number of processors per node
+        ppn = processors if nodes == 1 else self._cores
+
+        return nodes, ppn
+
+    ## This function creates a directory to contain the output of a certain run during the scaling test.
+    #  The name of the directory includes the mode in which the scaling test was run, the used number of
+    #  processors and the timestamp identifying this test.
+    def _createdatadir(self, processors):
+
+        # Check that we are indeed on the UGent HPC system: look for the VSC_DATA directory (we need it)
+        vscdatapath = os.getenv("VSC_DATA")
+        if vscdatapath is None:
+            self._log.error("Can't find $VSC_DATA")
+            exit()
+
+        # The path of the output directory to be created
+        dataoutputpath = os.path.join(vscdatapath, self._name, self._simulationname, "out_" + self._mode + "_"
+                                      + str(processors) + "_" + self._timestamp)
+
+        # Create a seperate output directory for this run (different runs can be executed simultaneously)
+        self._log.info("The output of this run will be placed in " + dataoutputpath)
+        os.makedirs(dataoutputpath)
+
+        # Return the path to the output directory
+        return dataoutputpath
+
+    def _estimatewalltime(self, processors):
+
+        # Get the runtimes from a serial run of the simulation (a dictionary)
+        runtimes = self._getserialtimes()
+
+        # Calculate the portion of the total runtime spent in serial and parallel parts of the code
+        serialtime = runtimes['setup'] + runtimes['writing']
+        paralleltime = runtimes['stellar'] + runtimes['dustselfabs'] + runtimes['dustem']
+
+        # Calculate and return the expected walltime
+        walltime = int((serialtime + paralleltime / processors)*1.5 + 100)  # in seconds
+        return walltime
+
     ## This function extracts the timings of a serial run of the simulation from either a log file
     #  or a scaling test results file that was created earlier for this simulation.
-    def _getserialtimings(self):
+    def _getserialtimes(self):
 
         # Search for a log file
         seriallogfilepath = os.path.join(self._simulationpath, self._skifilename + "_log.txt")
@@ -333,7 +410,7 @@ class ScalingTest:
 
                     # Try extracting the columns from the data file
                     try:
-                        threads, setuptime, stellartime, writingtime, time = np.loadtxt(filepath, usecols=(2,3,4,5,6), unpack=True)
+                        threads, setuptime, stellartime, dustselfabstime, dustemissiontime, writingtime, time = np.loadtxt(filepath, usecols=(2,3,4,5,6,7,8), unpack=True)
                     except (IndexError, ValueError):
                         # Try the next file, this one is probably empty
                         continue
@@ -342,8 +419,17 @@ class ScalingTest:
                     try:
                         index = [int(nthreads) for nthreads in threads].index(1)
 
-                        # Return the times
-                        return [setuptime[index], stellartime[index], writingtime[index], time[index]]
+                        # Create a dictionary specifying the serial runtime of each of the different simulation phases
+                        runtimes = dict()
+                        runtimes['setup'] = setuptime[index]
+                        runtimes['stellar'] = stellartime[index]
+                        runtimes['dustselfabs'] = dustselfabstime[index]
+                        runtimes['dustem'] = dustemissiontime[index]
+                        runtimes['writing'] = writingtime[index]
+                        runtimes['total'] = time[index]
+
+                        # Return the runtimes
+                        return runtimes
 
                     except ValueError:
                         # Try the next file, no entry for a serial run could be found in this one
