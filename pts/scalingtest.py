@@ -380,7 +380,7 @@ class ScalingTest:
         paralleltime = runtimes['stellar'] + runtimes['dustselfabs'] + runtimes['dustem']
 
         # Calculate and return the expected walltime
-        walltime = int((serialtime + paralleltime / processors)*1.5 + 100)  # in seconds
+        walltime = int((serialtime + paralleltime / processors)*1.5 + 5)  # in seconds
         return walltime
 
     ## This function extracts the timings of a serial run of the simulation from either a log file
