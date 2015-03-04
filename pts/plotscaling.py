@@ -116,6 +116,11 @@ class ScalingPlotter:
                     self._log.warning("The file " + file + " does not contain any data")
                     continue
 
+                # If there was only one entry in the results file, make lists of the number of threads and the runtime
+                if isinstance(threadcounts, float):
+                    threadcounts = [threadcounts]
+                    times = [times]
+
                 # Put these in a dictionary, with the keys being the number of threads
                 for threadcount, time in zip(threadcounts, times):
 
