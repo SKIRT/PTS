@@ -27,6 +27,8 @@
 #<TR><TD>backup_path</TD>           <TD>The absolute path to the directory containing backups of the database</TD></TR>
 #<TR><TD>templates_path</TD>        <TD>The absolute path to the directory containing ski file templates</TD></TR>
 #<TR><TD>results_path</TD>          <TD>The absolute path to the directory containing the SKIRT results</TD></TR>
+#<TR><TD>collect_path</TD>          <TD>The absolute path to the directory containing the collections with
+#                                       statistics on sets of SKIRT simulation results</TD></TR>
 #<TR><TD>default_eaglesim</TD>      <TD>The identifier of the eagle simulation currently in use (must be one of the
 #                                       keys in the \em eagledata_path dictionary)</TD></TR>
 #<TR><TD>default_redshift</TD>      <TD>The redshift of the snapshot currently in use</TD></TR>
@@ -91,6 +93,7 @@ configurations = {
         'backup_path':    "/cosma5/data/Eagle/SkirtAnalysis/Backup",
         'templates_path': "/cosma5/data/Eagle/SkirtAnalysis/Templates",
         'results_path':   "/cosma5/data/Eagle/SkirtAnalysis/Results",
+        'collect_path':   "/cosma5/data/Eagle/SkirtAnalysis/Collect",
         'default_eaglesim': 'Ref25',
         'default_redshift': 0,
         'queue': "cosma5",
@@ -113,6 +116,7 @@ configurations = {
         'backup_path':    absolutepath("~/EAGLE/Backup"),
         'templates_path': absolutepath("~/EAGLE/Templates"),
         'results_path':   "/Volumes/EAGLEDATA/Results",
+        'collect_path':   absolutepath("~/EAGLE/Collect"),
         'default_eaglesim': 'Ref25',
         'default_redshift': 0,
         'queue': None,
