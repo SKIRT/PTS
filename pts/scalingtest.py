@@ -123,10 +123,12 @@ class ScalingTest:
     #              maxnodes. The default value of minnodes is zero, denoting no lower limit on the number of nodes.
     #              The minimum number of processors used for the scaling test will then equal one.
     #              In hybrid mode, minnodes also defines the number of parallel threads per process.
+    #  - manual: a flag indicating whether the job script should be submitted from within this script, or just saved
+    #            so that the user can inspect it and launch it manually.
     #  - keepoutput: this optional argument indicates whether the output of the SKIRT simulations has to be kept
     #                or can be deleted from the disk.
     #
-    def run(self, maxnodes, minnodes, keepoutput=False):
+    def run(self, maxnodes, minnodes, manual=False, keepoutput=False):
 
         # Log the system name, the test mode and the version of SKIRT used for this test
         self._log.info("Starting parallel scaling benchmark for " + self._system + " in " + self._mode + " mode.")
@@ -158,7 +160,7 @@ class ScalingTest:
         while processors <= maxprocessors:
 
             # Perform this run
-            self._do(processors, resultsfilepath, keepoutput)
+            self._do(processors, resultsfilepath, manual, keepoutput)
 
             # The next run will be performed with double the amount of processors
             processors *= 2
@@ -169,11 +171,13 @@ class ScalingTest:
 
     ## This functions schedules a simulation on the cluster. This function takes the following arguments:
     #
-    #   - processors: the total number of processors to be used for this run
-    #   - resultsfilepath: the path of the file that should contain the timings from this run
-    #   - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
+    #  - processors: the total number of processors to be used for this run
+    #  - resultsfilepath: the path of the file that should contain the timings from this run
+    #  - manual: a flag indicating whether the job script should be submitted from within this script, or just saved
+    #            so that the user can inspect it and launch it manually
+    #  - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
     #
-    def _schedule(self, processors, resultsfilepath, keepoutput):
+    def _schedule(self, processors, resultsfilepath, manual, keepoutput):
 
         # Determine the number of processes and threads per process
         processes, threads = self._getmapping(processors)
@@ -226,10 +230,11 @@ class ScalingTest:
         os.chdir(self._outpath)
 
         # Submit the job script to the cluster scheduler
-        jobscript.submit()
+        if not manual:
+            jobscript.submit()
 
         # Remove this job script (it has been submitted)
-        if not keepoutput:
+        if not manual and not keepoutput:
             jobscript.remove()
 
     ## This function runs the simulation once with the specified number of threads,
@@ -237,9 +242,11 @@ class ScalingTest:
     #
     #  - processors: the number of processors to be used for this run
     #  - resultsfilepath: the path of the file that should contain the timings from this run
-    #   - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
+    #  - manual: a flag indicating whether the job script should be submitted from within this script, or just saved
+    #            so that the user can inspect it and launch it manually
+    #  - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
     #
-    def _run(self, processors, resultsfilepath, keepoutput):
+    def _run(self, processors, resultsfilepath, manual, keepoutput):
 
         # Determine the number of processes and threads per process
         processes, threads = self._getmapping(processors)
