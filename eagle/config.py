@@ -27,7 +27,9 @@
 #<TR><TD>backup_path</TD>           <TD>The absolute path to the directory containing backups of the database</TD></TR>
 #<TR><TD>templates_path</TD>        <TD>The absolute path to the directory containing ski file templates</TD></TR>
 #<TR><TD>results_path</TD>          <TD>The absolute path to the directory containing the SKIRT results</TD></TR>
-#<TR><TD>collect_path</TD>          <TD>The absolute path to the directory containing the collections with
+#<TR><TD>collections_path</TD>      <TD>The absolute path to the directory containing the collections with
+#                                       statistics on sets of SKIRT simulation results</TD></TR>
+#<TR><TD>plots_path</TD>            <TD>The absolute path to the directory containing the plots showing
 #                                       statistics on sets of SKIRT simulation results</TD></TR>
 #<TR><TD>default_eaglesim</TD>      <TD>The identifier of the eagle simulation currently in use (must be one of the
 #                                       keys in the \em eagledata_path dictionary)</TD></TR>
@@ -93,7 +95,8 @@ configurations = {
         'backup_path':    "/cosma5/data/Eagle/SkirtAnalysis/Backup",
         'templates_path': "/cosma5/data/Eagle/SkirtAnalysis/Templates",
         'results_path':   "/cosma5/data/Eagle/SkirtAnalysis/Results",
-        'collect_path':   "/cosma5/data/Eagle/SkirtAnalysis/Collect",
+        'collections_path': "/cosma5/data/Eagle/SkirtAnalysis/Collections",
+        'plots_path':     "/cosma5/data/Eagle/SkirtAnalysis/Plots",
         'default_eaglesim': 'Ref25',
         'default_redshift': 0,
         'queue': "cosma5",
@@ -116,7 +119,8 @@ configurations = {
         'backup_path':    absolutepath("~/EAGLE/Backup"),
         'templates_path': absolutepath("~/EAGLE/Templates"),
         'results_path':   "/Volumes/EAGLEDATA/Results",
-        'collect_path':   absolutepath("~/EAGLE/Collect"),
+        'collections_path': absolutepath("~/EAGLE/Collections"),
+        'plots_path':     absolutepath("~/EAGLE/Plots"),
         'default_eaglesim': 'Ref25',
         'default_redshift': 0,
         'queue': None,

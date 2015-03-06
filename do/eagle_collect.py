@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.eagle_build Build visualization files for completed EAGLE SKIRT-runs.
+## \package do.eagle_collect Collect statistics contained in the info files for a set of SKIRT-runs.
 #
 # This script collects the statistics contained in the info files for a set of SKIRT-runs into a single data file,
 # which is placed in the "Collections" directory specified in eagle.config.
@@ -71,7 +71,7 @@ skirtruns = completed_skirtruns_for_simulation(eaglesim)
 # perform the collection
 if len(skirtruns) > 0:
     print "Collecting statistics from {} SKIRT-runs for EAGLE simulation {}...".format(len(skirtruns),eaglesim)
-    collect_info(skirtruns, os.path.join(config.collect_path,"{}_info_collection.dat".format(eaglesim)))
+    collect_info(skirtruns, os.path.join(config.collections_path,"{}_info_collection.dat".format(eaglesim)))
 
 else:
     print "No SKIRT-runs for EAGLE simulation {}.".format(eaglesim)

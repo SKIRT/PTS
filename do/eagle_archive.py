@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.eagle_build Build visualization files for completed EAGLE SKIRT-runs.
+## \package do.archive Compress and archive completed EAGLE SKIRT-runs.
 #
 # This script creates compressed zip archives for the \c in and \c out directories of completed EAGLE SKIRT-runs,
 # copies these archives to an offsite archive location, and marks the SKIRT-runs as archived in the database.
