@@ -16,6 +16,7 @@
 # -----------------------------------------------------------------
 
 import types
+import numpy as np
 
 # -----------------------------------------------------------------
 #  SkirtUnits class
@@ -38,7 +39,7 @@ import types
 #| monluminosity | | W/m, W/micron, Lsun/micron
 #| fluxdensity | neutral | W/m2
 #| fluxdensity | wavelength | W/m3, W/m2/micron
-#| fluxdensity | frequency | W/m2/Hz, Jy, mJy, MJy
+#| fluxdensity | frequency | W/m2/Hz, Jy, mJy, MJy, erg/s/cm2/Hz
 #| surfacebrightness | neutral | W/m2/sr, W/m2/arcsec2
 #| surfacebrightness | wavelength | W/m3/sr, W/m2/micron/sr, W/m2/micron/sr, W/m2/micron/arcsec2
 #| surfacebrightness | frequency | W/m2/Hz/sr, W/m2/Hz/arcsec2, Jy/sr, Jy/arcsec2, MJy/sr, MJy/arcsec2
@@ -164,6 +165,23 @@ class SkirtUnits:
         else:
             raise ValueError("Can't convert from " + from_unit + " to " + to_unit)
 
+    ## This function returns the absolute AB magnitude corresponding to a given flux density and distance
+    # from the source. The units in which these values are expressed can be explicitly specified. If not,
+    # the default units for respectively flux density and distance are used instead. If the flux density
+    # is expressed per unit of frequency, the \em wavelength argument may be omitted. Otherwise, the
+    # wavelength is used to convert between flux styles.
+    #
+    # Given a flux density \f$F_\nu\f$, measured in ergs per second per square cm per Hz, the corresponding
+    # AB magnitude is defined as \f$\text{AB}=-2.5\log_{10} F_\nu -48.60\f$. The resulting apparent magnitude
+    # is converted to the absolute magnitude using the standard formula \f$M=m-5\log_{10}d^{(pc)}+5\f$.
+    def absolutemagnitude(self, fluxdensity, distance, fluxdensity_unit=None, distance_unit=None, wavelength=None):
+        fluxdensity = self.convert(fluxdensity, to_unit='erg/s/cm2/Hz', from_unit=fluxdensity_unit,
+                                   quantity='fluxdensity', wavelength=wavelength)
+        distance = self.convert(distance, to_unit='pc', from_unit=distance_unit, quantity='distance')
+        apparent = -2.5*np.log10(fluxdensity) - 48.60
+        absolute = apparent - 5*np.log10(distance) + 5
+        return absolute
+
 # -----------------------------------------------------------------
 #  Private conversion facilities
 # -----------------------------------------------------------------
@@ -198,6 +216,7 @@ _quantity = { 'A': 'length', 'nm': 'length', 'micron': 'length', 'mm': 'length',
               'Jy': 'frequencyfluxdensity',
               'mJy': 'frequencyfluxdensity',
               'MJy': 'frequencyfluxdensity',
+              'erg/s/cm2/Hz': 'frequencyfluxdensity',
               'W/m2/Hz/sr': 'frequencysurfacebrightness',
               'W/m2/Hz/arcsec2': 'frequencysurfacebrightness',
               'Jy/sr': 'frequencysurfacebrightness',
@@ -227,6 +246,7 @@ _conversion = { 'A': 1e-10, 'nm': 1e-9, 'micron': 1e-6, 'mm': 1e-3, 'cm': 1e-2,
                 'Jy': 1e-26,
                 'mJy': 1e-29,
                 'MJy': 1e-20,
+                'erg/s/cm2/Hz': 1e-3,
                 'W/m2/Hz/sr': 1.,
                 'W/m2/Hz/arcsec2': 1./_arcsec2,
                 'Jy/sr': 1e-26,

@@ -66,7 +66,6 @@ for root, dirnames, filenames in os.walk('.'):
 	for dir in dirnames:
 		if glob.glob("./"+dir+'/'+fskiname+'_BESTsimulations.dat') != []:
 			matches.append(glob.glob("./"+dir+'/'+fskiname+'_BESTsimulations.dat'))
-
 # reading last line of best_simulations while checking for inconsistencies
 # before writing the solution file for each run
 sol_length = 0
@@ -88,7 +87,6 @@ for match in matches:
 		if float(split_line[1+len(labels)]) < float(lowest_chi):
 			lowest_chi = split_line[1+len(labels)]
 			lowest_chi_simul = len(solutions)-1
-
 # adding Luminosities to labels
 best_solution=solutions[lowest_chi_simul]
 best_solution.pop(0)
@@ -103,10 +101,11 @@ for i in range(0,nstellarcomps):
 std2=[0]*len(labels)
 print "\nCreating following result files:"
 for solution in solutions:
-	chi=solution[len(labels)-2*len(wavelengths)+1]
+	chi=lowest_chi
 	if solutions.index(solution) != lowest_chi_simul:
+		chi=solution[len(labels)-nstellarcomps*len(wavelengths)+1]
 		solution.pop(0)
-		solution.pop(len(labels)-2*len(wavelengths))
+		solution.pop(len(labels)-nstellarcomps*len(wavelengths))
 	print (matches[solutions.index(solution)][0]).split(".dat")[0]+"_result.dat"
 	output = open((matches[solutions.index(solution)][0]).split(".dat")[0]+"_result.dat",'w')
 	output.write("{0:20} {1:12}".format("Parameter","Best"))

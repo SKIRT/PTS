@@ -37,7 +37,7 @@ def plotseds(simulation, figsize=(10,6), xlim=None, ylim=None):
         labels = [ path.rsplit("_",2)[1] for path in sedpaths ]
         outpath = sedpaths[0].rsplit("_",2)[0] + "_sed.pdf"
         success = plotseds_impl(sedpaths, outpath, labels, simulation.fluxlabel(), figsize=figsize, xlim=xlim, ylim=ylim)
-        if success: print "Created PDF grid plot file " + outpath
+        if success: print "Created PDF SED plot file " + outpath
 
 # -----------------------------------------------------------------
 
