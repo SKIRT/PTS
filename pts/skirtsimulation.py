@@ -287,7 +287,7 @@ class SkirtSimulation:
     # before the one containing the field) and a header (a text string that must occur on the line containing
     # the field). The last text segment on the line represents the units of the value in the file, and the segment
     # before the units represents the value itself. The value is converted from the units in the file to the
-    # requested units. If the function can't locate the field, it returns zero.
+    # requested units. If the function can't locate the field, it returns -1.
     def getfieldfromfile(self, filesuffix, trigger, header, units):
         filepath = self.outfilepath(filesuffix)
         if arch.isfile(filepath):
@@ -298,7 +298,7 @@ class SkirtSimulation:
                     segments = line.split()
                     if len(segments)>2:
                         return self.units().convert(segments[-2], from_unit=segments[-1], to_unit=units)
-        return 0;
+        return -1;
 
     ## This function returns the total dust mass in the simulation's configuration space, in solar masses.
     # The function retrieves the 'expected' dust mass value listed in the convergence check data file.
@@ -321,7 +321,7 @@ class SkirtSimulation:
     # written by the SPH dust distribution. It raises an error if this entry is not found or if the mass is zero.
     def coldgasmass(self):
         result = self.getfieldfromfile("log.txt", "Reading SPH gas", "Total gas mass", "Msun")
-        if result <= 0: raise ValueError("Can't determine SPH cold gas mass")
+        if result < 0: raise ValueError("Can't determine SPH cold gas mass")
         return result
 
     ## This function returns the total mass of the metallic gas represented by the set of SPH particles imported for
@@ -329,7 +329,7 @@ class SkirtSimulation:
     # written by the SPH dust distribution. It raises an error if this entry is not found or if the mass is zero.
     def metallicgasmass(self):
         result = self.getfieldfromfile("log.txt", "Reading SPH gas", "Total metal mass", "Msun")
-        if result <= 0: raise ValueError("Can't determine SPH metallic gas mass")
+        if result < 0: raise ValueError("Can't determine SPH metallic gas mass")
         return result
 
     ## This function returns the total initial stellar mass (i.e. the mass at the time of birth) represented by
@@ -338,7 +338,7 @@ class SkirtSimulation:
     # if the mass is zero.
     def initialstellarmass(self):
         result = self.getfieldfromfile("log.txt", "Reading SPH star", "Total stellar mass", "Msun")
-        if result <= 0: raise ValueError("Can't determine SPH initial stellar mass")
+        if result < 0: raise ValueError("Can't determine SPH initial stellar mass")
         return result
 
     ## This function returns the total mass in hii regions represented by the set of SPH particles imported for
@@ -346,7 +346,7 @@ class SkirtSimulation:
     # by the SPH starburst component. It raises an error if this entry is not found or if the mass is zero.
     def hiiregionmass(self):
         result = self.getfieldfromfile("log.txt", "Reading SPH HII region", "Total stellar mass", "Msun")
-        if result <= 0: raise ValueError("Can't determine SPH HII region mass")
+        if result < 0: raise ValueError("Can't determine SPH HII region mass")
         return result
 
     ## This function returns the total luminosity represented by the set of SPH stellar particles imported for
@@ -355,7 +355,7 @@ class SkirtSimulation:
     # the total stellar luminosity is zero.
     def stellarluminosity(self):
         result = self.getfieldfromfile("log.txt", "Reading SPH star", "Total luminosity", "Lsun")
-        if result <= 0: raise ValueError("Can't determine SPH stellar luminosity")
+        if result < 0: raise ValueError("Can't determine SPH stellar luminosity")
         return result
 
     ## This function returns the total luminosity represented by the set of SPH HII region particles imported for
@@ -364,7 +364,7 @@ class SkirtSimulation:
     # the total stellar luminosity is zero.
     def hiiregionluminosity(self):
         result = self.getfieldfromfile("log.txt", "Reading SPH HII region", "HII luminosity", "Lsun")
-        if result <= 0: raise ValueError("Can't determine SPH HII region luminosity")
+        if result < 0: raise ValueError("Can't determine SPH HII region luminosity")
         return result
 
     # -----------------------------------------------------------------
