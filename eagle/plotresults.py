@@ -37,11 +37,16 @@ axistypes = {
     'Ncells': ( r"$N_\mathrm{cells}/10^6$", lambda: setup_cells_dust_grid/1e6 ),
     'taumax': ( r"$\tau_\mathrm{max}$", lambda: setup_optical_depth_maximum ),
     'tau90': ( r"$\tau_\mathrm{90}$", lambda: setup_optical_depth_percentile90 ),
+    'dusterror': ( r"$\mathrm{1-(M_\mathrm{grid}/M_\mathrm{dust})\,[\%]}$",
+                    lambda: 100*(setup_mass_dust-setup_mass_dust_grid)/setup_mass_dust ),
 
     # intrinsic properties
     'logMstar': ( r"$\log_{10}(M_*\,[M_\odot])$", lambda: np.log10(original_mass_stars) ),
     'logMdust': ( r"$\log_{10}(M_\mathrm{dust}\,[M_\odot])$", lambda: np.log10(setup_mass_dust) ),
     'logMdust/Mstar': ( r"$\log_{10}(M_\mathrm{dust}/M_*)$", lambda: np.log10(setup_mass_dust/original_mass_stars) ),
+    'Zaverage': ( r"$Z_\mathrm{avg}$", lambda: setup_mass_metallic_gas/setup_mass_cold_gas ),
+    'fdust': ( r"$f_\mathrm{dust}$", lambda: setup_mass_dust/setup_mass_metallic_gas ),
+    'Mgas/Mdust': ( r"$M_\mathrm{gas}/M_\mathrm{dust}$", lambda: setup_mass_cold_gas/setup_mass_dust ),
 
     # magnitudes and colors
     "g" : ( r"$M_\mathrm{r}$", lambda: instr_magnitude_sdss_g ),
@@ -148,6 +153,14 @@ class Collection:
 
                 # plot the relation
                 plt.scatter(x, y, marker='o', s=15, edgecolors='k', facecolors='r')
+
+                # fit a line through the data and plot it
+                rico, y0 = np.polyfit(x, y, 1)
+                x1 = x.min()
+                x2 = x.max()
+                y1 = y0 + rico*x1
+                y2 = y0 + rico*x2
+                plt.plot( [x1,x2], [y1,y2] )
 
             # for a histogram...
             else:
