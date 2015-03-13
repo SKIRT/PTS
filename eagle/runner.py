@@ -20,7 +20,8 @@ from eagle.galaxy import Snapshot, Galaxy
 from eagle.skirtrun import SkirtRun
 from pts.skifile import SkiFile
 from pts.plotseds import plotseds   # import this one first to avoid warnings about setting the matplotlib backend
-from pts.makergbimages import makergbimages
+from pts.makergbimages import makeintegratedrgbimages
+from pts.filter import Filter
 
 # -----------------------------------------------------------------
 
@@ -89,9 +90,20 @@ def run(runid):
         if simulation.status() != 'Finished':
             raise ValueError("SKIRT simulation " + simulation.status())
 
-        # create RGB images and/or SED plots at approximately the SDSS gri wavelengths
-        makergbimages(simulation, wavelength_tuples=((0.75,0.60,0.45),) )
+        # create SED plot
         plotseds(simulation)
+
+        # create RGB images integrated over the SDSS gri bands, and with enhanced IR and and FUV channels
+        filterR = Filter('SDSS.i')
+        filterG = Filter('SDSS.r')
+        filterB = Filter('SDSS.g')
+        filterIR = Filter('IRAS.100')
+        filterUV = Filter('GALEX.FUV')
+        fmin,fmax = makeintegratedrgbimages(simulation,
+            [ (filterR, 1,0,0), (filterG, 0,1,0), (filterB, 0,0,1) ] )
+        makeintegratedrgbimages(simulation,
+            [ (filterR, 1,0,0), (filterG, 0,1,0), (filterB, 0,0,1), (filterIR, 0.02,0,0), (filterUV, 0,0,4) ],
+            postfix="2", fmin=fmin, fmax=fmax)
 
         # move any .png and .pdf files to the visualization directory
         for visfile in filter(lambda fn: fn.endswith((".png",".pdf")), os.listdir(skirtrun.outpath())):

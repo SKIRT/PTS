@@ -13,11 +13,13 @@
 # -----------------------------------------------------------------
 
 import numpy as np
+import pyfits
 from pts.rgbimage import RGBImage
+import pts.archive as arch
 
 # -----------------------------------------------------------------
 
-# This function creates one or more RGB images for each "total.fits" file in the output of the specified simulation.
+## This function creates one or more RGB images for each "total.fits" file in the output of the specified simulation.
 # If the \em wavelength_tuples argument is missing, a single image is created
 # for each "total.fits" file using the frames loaded by default by the RGBimage constructor. Otherwise,
 # the \em wavelength_tuples argument must contain a sequence of 3-tuples with (R,G,B) wavelengths; each of
@@ -57,5 +59,77 @@ def makergbimages(simulation, wavelength_tuples=None, from_percentile=30, to_per
                 savename = outname[:-5] + (str(index+1) if index > 0 else "") + ".png"
                 im.saveto(savename)
                 print "Created RGB image file " + savename
+
+# -----------------------------------------------------------------
+
+## This function creates an RGB image for each "total.fits" file in the output of the specified simulation,
+# integrating the pixel values for each color over multiple output frames according to the specified filters.
+# The images are saved in PNG format and are placed next to the original file(s) with the same name
+# but a different extension, and optionally including an extra postfix.
+#
+# The function takes the following arguments:
+#  - \em simulation: a SkirtSimulation instance representing the simulation for which to make images.
+#  - \em filterspecs: a sequence of 4-tuples (filter, r, g, b), each containg a Filter instance and three
+#        weights that specify the contribution of the fluxes integrated over this filter to each RGB channel.
+#  - \em postfix: a string that will be added to the standard image file name; defaults to the empty string.
+#  - \em fmax: the largest flux value that will be shown in the image without clipping;
+#        if None or missing the function uses the largest flux value found in any of the channels/images.
+#  - \em fmin: the smallest flux value that will be shown in the image without clipping;
+#        if None or missing the function determines this value from \em fmax and \em frange
+#        using the formula \f$f_\mathrm{range}=\log_{10}(f_\mathrm{max}/f_\mathrm{min})\f$.
+#  - \em frange: the dynamic range for the flux values, expressed in order of magnitudes (decades);
+#        the default value is 3. If \em fmin is specified, the value of \em frange is ignored.
+#
+def makeintegratedrgbimages(simulation, filterspecs, postfix="", fmax=None, fmin=None, frange=3):
+
+    # get the wavelength grid
+    bincenters, binwidths = simulation.wavelengthbins()
+
+    # get a list of output file names, including extension, one for each instrument
+    outnames = simulation.totalfitspaths()
+    if len(outnames) > 0:
+
+        # construct an image object with integrated color channels for each output file
+        # and keep track of the largest flux (in Jansky) in any of the images and channels
+        images = []
+        fluxmax = 0
+        for outname in outnames:
+
+            # get the data cube in per wavelength units
+            cube = pyfits.getdata(arch.openbinary(outname)).T
+            cube = simulation.convert(cube, to_unit='W/m3', quantity='fluxdensity', wavelength=bincenters)
+
+            # initialize an RGB frame
+            dataRGB = np.zeros( (cube.shape[0], cube.shape[1], 3) )
+
+            # add color for each filter
+            for filter,w0,w1,w2 in filterspecs:
+                data = filter.apply(bincenters, binwidths, cube)
+                data = simulation.convert(data, from_unit='W/m3', to_unit='Jy', wavelength=filter.meanwavelength())
+                dataRGB[:,:,0] += w0*data
+                dataRGB[:,:,1] += w1*data
+                dataRGB[:,:,2] += w2*data
+
+            # construct the image object
+            fluxmax = max(fluxmax, dataRGB.max())
+            images.append(RGBImage(dataRGB))
+
+        # determine the appropriate pixel range for all output images
+        if fmax==None:
+            fmax = fluxmax
+        if fmin==None:
+            fmin = fmax / 10**frange
+
+        # create an RGB file for each output file
+        for outname,im in zip(outnames,images):
+            im.setrange(fmin,fmax)
+            im.applylog()
+            im.applycurve()
+            savename = outname[:-5] + postfix + ".png"
+            im.saveto(savename)
+            print "Created integrated RGB image file " + savename
+
+        # return the flux range used for these images
+        return (fmin,fmax)
 
 # -----------------------------------------------------------------
