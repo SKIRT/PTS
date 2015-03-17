@@ -23,7 +23,7 @@ from pts.scalingtest import ScalingTest
 # Create the command-line parser and a set of subparsers
 parser = argparse.ArgumentParser()
 parser.add_argument('system', type=str, help='a name identifying the system')
-parser.add_argument('simulation', type=str, help='the name of the simulation to use for the test', nargs='?', default="")
+parser.add_argument('simulation', type=str, help='the name of the simulation to use for the test')
 parser.add_argument('mode', type=str, help='the mode for the scaling test', choices=['mpi', 'hybrid', 'threads'])
 parser.add_argument('maxnodes', type=float, help='the maximum number of nodes', nargs='?', default=1)
 parser.add_argument('minnodes', type=float, help='the minimum number of nodes. In hybrid mode, this also defines the number of threads per process', nargs='?', default=0)

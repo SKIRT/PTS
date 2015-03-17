@@ -28,7 +28,7 @@ from pts.jobscript import JobScript
 
 ## An instance of the ScalingTest class represents a SKIRT scaling benchmark test for a particular ski file.
 #
-class ScalingTest:
+class ScalingTest(object):
 
     ## The constructor accepts the following arguments:
     #
