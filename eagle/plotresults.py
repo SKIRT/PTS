@@ -21,6 +21,7 @@ import matplotlib
 if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 
+from pts.skirtunits import SkirtUnits
 import eagle.config as config
 
 # -----------------------------------------------------------------
@@ -34,26 +35,53 @@ import eagle.config as config
 axistypes = {
 
     # dust grid properties
+    'Ngasparts': ( r"$N_{\mathrm{particles},\mathrm{gas}}/10^3$", lambda: exported_particles_cold_gas/1e3 ),
     'Ncells': ( r"$N_\mathrm{cells}/10^6$", lambda: setup_cells_dust_grid/1e6 ),
-    'taumax': ( r"$\tau_\mathrm{max}$", lambda: setup_optical_depth_maximum ),
-    'tau90': ( r"$\tau_\mathrm{90}$", lambda: setup_optical_depth_percentile90 ),
+    'taumax': ( r"$\tau_\mathrm{V,max}$", lambda: setup_optical_depth_maximum ),
+    'tau90': ( r"$\tau_\mathrm{V,90}$", lambda: setup_optical_depth_percentile90 ),
     'dusterror': ( r"$\mathrm{1-(M_\mathrm{grid}/M_\mathrm{dust})\,[\%]}$",
                     lambda: 100*(setup_mass_dust-setup_mass_dust_grid)/setup_mass_dust ),
 
     # intrinsic properties
-    'logMstar': ( r"$\log_{10}(M_*\,[M_\odot])$", lambda: np.log10(original_mass_stars) ),
-    'logMdust': ( r"$\log_{10}(M_\mathrm{dust}\,[M_\odot])$", lambda: np.log10(setup_mass_dust) ),
+    'logMstar': ( r"$\log_{10}(M_*)\,[M_\odot]$", lambda: np.log10(original_mass_stars) ),
+    'logMdust': ( r"$\log_{10}(M_\mathrm{dust})\,[M_\odot])$", lambda: np.log10(setup_mass_dust) ),
     'logMdust/Mstar': ( r"$\log_{10}(M_\mathrm{dust}/M_*)$", lambda: np.log10(setup_mass_dust/original_mass_stars) ),
+    'logLtot': ( r"$\log_{10}(L_\mathrm{tot})\,[L_\odot]$", lambda: np.log10(setup_luminosity_stars+setup_luminosity_hii_regions) ),
+    'logLhii': ( r"$\log_{10}(L_\mathrm{hii})\,[L_\odot]$", lambda: np.log10(setup_luminosity_hii_regions[setup_luminosity_hii_regions>0]) ),
     'Zaverage': ( r"$Z_\mathrm{avg}$", lambda: setup_mass_metallic_gas/setup_mass_cold_gas ),
     'fdust': ( r"$f_\mathrm{dust}$", lambda: setup_mass_dust/setup_mass_metallic_gas ),
     'Mgas/Mdust': ( r"$M_\mathrm{gas}/M_\mathrm{dust}$", lambda: setup_mass_cold_gas/setup_mass_dust ),
 
     # magnitudes and colors
-    "g" : ( r"$M_\mathrm{r}$", lambda: instr_magnitude_sdss_g ),
-    "r" : ( r"$M_\mathrm{r}$", lambda: instr_magnitude_sdss_r ),
-    'g-r' : ( r"$\mathrm{g}-\mathrm{r}$", lambda: instr_magnitude_sdss_g - instr_magnitude_sdss_r ),
-    'NUV-r' : ( r"$\mathrm{NUV}-\mathrm{r}$", lambda: instr_magnitude_galex_nuv - instr_magnitude_sdss_r ),
+    'g': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g ),
+    'r': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_r ),
+    'g-r': ( r"$\mathrm{g}-\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g - instr_magnitude_sdss_r ),
+    'NUV-r': ( r"$\mathrm{NUV}-\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_galex_nuv - instr_magnitude_sdss_r ),
+
+    # flux densities (Jy)
+    'fmax': ( r"$f_{\nu,\mathrm{max}}\,[\mathrm{kJy}]$",
+        lambda: np.maximum(instr_xy_fluxdensity_maximum,instr_xz_fluxdensity_maximum,instr_yz_fluxdensity_maximum)/1e3 ),
+
+    # ratios of flux densities (Jy/Jy)
+    'logf250/f500': ( r"$\log_{10}(f_{250}/f_{500})$", lambda: np.log10(instr_fluxdensity_spire_psw / instr_fluxdensity_spire_plw) ),
+
+    # luminosities in specific bands
+    'logLk': ( r"$\log_{10}(L_\mathrm{K})\,[L_\odot]$",
+        lambda: np.log10(units.luminosityforflux(instr_yz_fluxdensity_ukidss_k,setup_distance_instrument,'W/Hz')/LsunK) ),
+
+    # other ratios
+    'logMdust/f350/D2' : ( r"$\log_{10}(M_{dust}/(f_{350}D^2))\,[\mathrm{kg}\,\mathrm{W}^{-1}\,\mathrm{Hz}]$",
+                        lambda: np.log10((setup_mass_dust*Msun)/(instr_fluxdensity_spire_pmw*1e-26)/(setup_distance_instrument*pc)**2) ),
 }
+
+# -----------------------------------------------------------------
+
+# some globals used in the axis type definitions
+units = SkirtUnits('stellar','frequency')       # distance in pc, flux density in Jy
+pc = units.convert(1., from_unit='pc', to_unit='m')
+Msun = units.convert(1., from_unit='Msun', to_unit='kg')
+Lsun = units.convert(1., from_unit='Lsun', to_unit='W')
+LsunK = 10**((34.1-5.19)/2.5)  # solar luminosity in K band expressed in W/Hz  (AB magnitude is 5.19)
 
 # -----------------------------------------------------------------
 
@@ -152,7 +180,7 @@ class Collection:
                 y = yvalue()
 
                 # plot the relation
-                plt.scatter(x, y, marker='o', s=15, edgecolors='k', facecolors='r')
+                plt.scatter(x, y, marker='o', s=10, edgecolors='k', facecolors='r')
 
                 # fit a line through the data and plot it
                 rico, y0 = np.polyfit(x, y, 1)
