@@ -12,25 +12,9 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-import math
 import numpy as np
 import itertools
 from scipy import optimize
-
-# -----------------------------------------------------------------
-
-## This function
-def inside_ellipse(x, y, xcenter, ycenter, width, height, theta):
-
-    relx = x - xcenter
-    rely = y - ycenter
-
-    newrelx = np.cos(theta) * relx - np.sin(theta) * rely
-    newrely = np.sin(theta) * relx + np.cos(theta) * rely
-
-    value = math.pow(newrelx/width,2) + math.pow(newrely/height,2)
-
-    return value < 1.0
 
 # -----------------------------------------------------------------
 
@@ -47,6 +31,7 @@ def fitpolynomial(x, y, z, order, linear):
             G[:, k] = 0
     m, _, _, _ = np.linalg.lstsq(G, z)
 
+    # Return the parameter list
     return m
 
 # -----------------------------------------------------------------
@@ -60,6 +45,8 @@ def polynomial(x, y, m):
     z = np.zeros_like(x)
     for a, (i,j) in zip(m, ij):
         z += a * x**i * y**j
+
+    # Return the value
     return z
 
 # -----------------------------------------------------------------
@@ -71,6 +58,7 @@ def fitgaussian(data):
     errorfunction = lambda p: np.ravel(gaussian(*p)(*np.indices(data.shape)) - data)
     p, success = optimize.leastsq(errorfunction, params)
 
+    # Return the parameter list
     return p
 
 # -----------------------------------------------------------------
@@ -81,11 +69,12 @@ def gaussian(height, center_x, center_y, width_x, width_y):
     width_x = float(width_x)
     width_y = float(width_y)
 
+    # Return the distribution
     return lambda x,y: height*np.exp(-(((center_x-x)/width_x)**2+((center_y-y)/width_y)**2)/2)
 
 # -----------------------------------------------------------------
 
-#  Returns (height, x, y, width_x, width_y) the gaussian parameters of a 2D distribution by calculating its moments
+# This function returns the gaussian parameters of a 2D distribution by calculating its moments
 def moments(data):
 
     total = data.sum()
@@ -98,6 +87,7 @@ def moments(data):
     width_y = np.sqrt(abs((np.arange(row.size)-x)**2*row).sum()/row.sum())
     height = data.max()
 
+    # Return the parameters
     return height, x, y, width_x, width_y
 
 # -----------------------------------------------------------------

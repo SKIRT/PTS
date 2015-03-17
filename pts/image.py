@@ -79,7 +79,10 @@ class Image(object):
         filtername = self._name
 
         # Get the filter
-        self._filter = Filter(filtername)
+        try:
+            self._filter = Filter(filtername)
+        except ValueError:
+            self._log.warning("Could not determine the filter used for this image")
 
         # Units
         self._units = self._findinheader("BUNIT")
@@ -270,58 +273,6 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    ## This function masks ...
-    def mask(self, regions, interpolate=False):
-
-        # New action
-        self._newaction("mask")
-
-        # Create the mask
-        mask = regions.get_mask(shape=(self.ysize,self.xsize))
-
-        # Mask the image with zeroes
-        self.primary.data[mask] = 0
-
-        # If we need to interpolate
-        if interpolate:
-
-            # Set some parameters
-            order = 3
-            linear = False
-
-            # For each region, we interpolate within a box surrounding the region
-            for region in regions:
-
-                # Center and radius of this region
-                xcenter = round(region.coord_list[0])
-                ycenter = round(region.coord_list[1])
-                radius  = round(region.coord_list[2])
-
-                # Construct a box around this region
-                xmin = int(xcenter -1 - 2*radius)
-                xmax = int(xcenter -1 + 2*radius)
-                ymin = int(ycenter -1 - 2*radius)
-                ymax = int(ycenter -1 + 2*radius)
-                xrange = slice(xmin,xmax)
-                yrange = slice(ymin,ymax)
-                box = self.primary.data[yrange, xrange]
-
-                # Create mask and boxminusmask
-                mask = np.zeros_like(box)
-                boxminusmask = np.ones_like(box)
-                mask[box == 0] = 1
-                boxminusmask[box == 0] = 0
-
-                # Interpolate
-                range = ((xmin,xmax),(ymin,ymax))
-                interpolatedbox = self._interpolate(order,linear,range)
-
-                # Fill the data array with the interpolated values
-                # * = elementwise product!
-                self.primary.data[yrange, xrange] = self.primary.data[yrange, xrange]*boxminusmask + interpolatedbox*mask
-
-        return mask
-
     ## This function ..
     def _interpolate(self, order, linear, limits=None):
 
@@ -511,6 +462,46 @@ class Image(object):
 
     # ----------------------------------------------------------------- MASKS
 
+    ## This function interpolates the image within the shapes in a certain region ...
+    def interpolate(self, region, order=3, linear=False):
+
+        # Make a new copy of the primary image
+        interpolated = np.copy(self.primary.data)
+
+        # For each region, we interpolate within a box surrounding the region
+        for shape in self._regions[region]:
+
+            # Center and radius of this region
+            xcenter = round(shape.coord_list[0])
+            ycenter = round(shape.coord_list[1])
+            radius  = round(shape.coord_list[2])
+
+            # Construct a box around this region
+            xmin = int(xcenter -1 - 2*radius)
+            xmax = int(xcenter -1 + 2*radius)
+            ymin = int(ycenter -1 - 2*radius)
+            ymax = int(ycenter -1 + 2*radius)
+            xrange = slice(xmin,xmax)
+            yrange = slice(ymin,ymax)
+            box = self.primary.data[yrange, xrange]
+
+            # Create mask and boxminusmask
+            mask = np.zeros_like(box)
+            boxminusmask = np.ones_like(box)
+            mask[box == 0] = 1
+            boxminusmask[box == 0] = 0
+
+            # Interpolate
+            range = ((xmin,xmax),(ymin,ymax))
+            interpolatedbox = self._interpolate(order,linear,range)
+
+            # Fill the data array with the interpolated values
+            # * = elementwise product!
+            interpolated[yrange, xrange] = self.primary.data[yrange, xrange]*boxminusmask + interpolatedbox*mask
+
+        # Add the new layer
+        self.addlayer(interpolated, "primary_interpolated")
+
     ## This function
     def combinemasks(self, mask1, mask2, name=None):
 
@@ -562,6 +553,12 @@ class Image(object):
         # Add this masked image to the layers
         self.addlayer(maskedprimary, 'primary_masked_' + maskname)
 
+    ## This function aplies a certain mask on the primary image
+    def applymask(self, m):
+
+        # Set the pixel value to 0 where the mask is True
+        self.primary.data[self._masks[m].data] = 0
+
     ## This function applies the total mask on the primary image
     def applytotalmask(self):
 
@@ -578,16 +575,16 @@ class Image(object):
         self.addmask(mask, "nans")
 
     # This function creates a new mask from a specified region. It takes the name of this region as the sole argument.
-    def createmask(self, regionname):
+    def createmask(self, r):
 
         # Get the region
-        region = self._regions[regionname]
+        region = self._regions[r]
 
         # Create the mask
         mask = region.get_mask(header=self.header, shape=(self.ysize,self.xsize))
 
         # Add the mask to the masks list
-        self.addmask(mask, regionname)
+        self.addmask(mask, r)
 
     # ----------------------------------------------------------------- IMAGE SEGMENTATION
 

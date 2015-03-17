@@ -5,22 +5,6 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-#####################################################################
-#
-# Copyright (C) 1999-2014, Michele Cappellari
-# E-mail: cappellari_at_astro.ox.ac.uk
-#
-# Updated versions of the software are available from my web page
-# http://purl.org/cappellari/software
-#
-# This software is provided as is without any warranty whatsoever.
-# Permission to use, for non-commercial purposes is granted.
-# Permission to modify for personal or internal use is granted,
-# provided this copyright and disclaimer are included unchanged
-# at the beginning of the file. All other rights are reserved.
-#
-#####################################################################
-
 # Import standard modules
 import numpy as np
 import matplotlib.pyplot as plt
@@ -100,6 +84,23 @@ class Galaxy(object):
         self._positionangle = np.mean(positionangles)
         self._center = (np.mean(xcenters), np.mean(ycenters))
         self._ellipticity = np.mean(ellipticities)
+
+
+#####################################################################
+#
+# Copyright (C) 1999-2014, Michele Cappellari
+# E-mail: cappellari_at_astro.ox.ac.uk
+#
+# Updated versions of the software are available from my web page
+# http://purl.org/cappellari/software
+#
+# This software is provided as is without any warranty whatsoever.
+# Permission to use, for non-commercial purposes is granted.
+# Permission to modify for personal or internal use is granted,
+# provided this copyright and disclaimer are included unchanged
+# at the beginning of the file. All other rights are reserved.
+#
+#####################################################################
 
 ## The class GalaxyFinder
 #
