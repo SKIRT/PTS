@@ -35,8 +35,9 @@ import numpy as np
 #| length, distance, wavelength | | A, nm, micron, mm, cm, m, km, AU, pc, kpc, Mpc
 #| volume | | m3, AU3, pc3
 #| mass | | g, kg, Msun
-#| bolluminosity | | W, Lsun
-#| monluminosity | | W/m, W/micron, Lsun/micron
+#| luminosity | | W, Lsun
+#| luminositydensity | wavelength | W/m, W/micron, Lsun/micron
+#| luminositydensity | frequency | W/Hz, Lsun/Hz
 #| fluxdensity | neutral | W/m2
 #| fluxdensity | wavelength | W/m3, W/m2/micron
 #| fluxdensity | frequency | W/m2/Hz, Jy, mJy, MJy, erg/s/cm2/Hz
@@ -62,7 +63,7 @@ class SkirtUnits:
         if unitsystem.startswith('si'):
             self._defaultunit = { 'length': 'm', 'distance': 'm', 'wavelength': 'm',
                                   'volume': 'm3', 'mass': 'kg',
-                                  'bolluminosity': 'W', 'monluminosity': 'W/m' }
+                                  'luminosity': 'W', 'luminositydensity': 'W/m' }
             if fluxstyle.startswith('neutral'):
                 self._defaultunit.update(fluxdensity='W/m2', surfacebrightness='W/m2/sr')
             elif fluxstyle.startswith('wavelength'):
@@ -75,7 +76,7 @@ class SkirtUnits:
         elif unitsystem.startswith('stellar'):
             self._defaultunit = { 'length': 'AU', 'distance': 'pc', 'wavelength': 'micron',
                                   'volume': 'AU3', 'mass': 'Msun',
-                                  'bolluminosity': 'Lsun', 'monluminosity': 'Lsun/micron' }
+                                  'luminosity': 'Lsun', 'luminositydensity': 'Lsun/micron' }
             if fluxstyle.startswith('neutral'):
                 self._defaultunit.update(fluxdensity='W/m2', surfacebrightness='W/m2/arcsec2')
             elif fluxstyle.startswith('wavelength'):
@@ -88,7 +89,7 @@ class SkirtUnits:
         elif unitsystem.startswith('extragalactic'):
             self._defaultunit = { 'length': 'pc', 'distance': 'Mpc', 'wavelength': 'micron',
                                   'volume': 'pc3', 'mass': 'Msun',
-                                  'bolluminosity': 'Lsun', 'monluminosity': 'Lsun/micron' }
+                                  'luminosity': 'Lsun', 'luminositydensity': 'Lsun/micron' }
             if fluxstyle.startswith('neutral'):
                 self._defaultunit.update(fluxdensity='W/m2', surfacebrightness='W/m2/arcsec2')
             elif fluxstyle.startswith('wavelength'):
@@ -149,6 +150,7 @@ class SkirtUnits:
 
         # perform conversion between styles of flux density or surface brightness
         if ('fluxdensity' in from_quantity and 'fluxdensity' in to_quantity) or  \
+           ('luminositydensity' in from_quantity and 'luminositydensity' in to_quantity) or  \
            ('surfacebrightness' in from_quantity and 'surfacebrightness' in to_quantity):
 
             # convert to/from SI units within the respective flux styles
@@ -182,6 +184,26 @@ class SkirtUnits:
         absolute = apparent - 5*np.log10(distance) + 5
         return absolute
 
+    ## This function returns the luminosity density corresponding to a given flux density and distance
+    # from the source. The units in which these values are expressed can be explicitly specified. If not,
+    # the default units for respectively flux density and distance are used instead. The units for the
+    # returned luminosity must be specified (there is no default). If both the flux density and the
+    # luminosity density are expressed in the same style (per unit of frequency or per unit of wavelength),
+    # the \em wavelength argument may be omitted. Otherwise, the wavelength is used to convert between styles.
+    def luminosityforflux(self, fluxdensity, distance, luminositydensity_unit,
+                                fluxdensity_unit=None, distance_unit=None, wavelength=None):
+        if 'wavelength' in _quantity[luminositydensity_unit]:
+            flux_si = 'W/m3'
+            lumi_si = 'W/m'
+        else:
+            flux_si = 'W/m2/Hz'
+            lumi_si = 'W/Hz'
+        fluxdensity = self.convert(fluxdensity, to_unit=flux_si, from_unit=fluxdensity_unit,
+                                   quantity='fluxdensity', wavelength=wavelength)
+        distance = self.convert(distance, to_unit='m', from_unit=distance_unit, quantity='distance')
+        luminosity = 4.*np.pi * distance*distance * fluxdensity
+        return self.convert(luminosity, to_unit=luminositydensity_unit, from_unit=lumi_si)
+
 # -----------------------------------------------------------------
 #  Private conversion facilities
 # -----------------------------------------------------------------
@@ -202,8 +224,12 @@ _quantity = { 'A': 'length', 'nm': 'length', 'micron': 'length', 'mm': 'length',
               'm': 'length', 'km': 'length', 'AU': 'length', 'kpc': 'length', 'pc': 'length', 'Mpc': 'length',
               'm3': 'volume', 'AU3': 'volume', 'pc3': 'volume',
               'g': 'mass', 'kg': 'mass', 'Msun': 'mass',
-              'W': 'bolluminosity', 'Lsun': 'bolluminosity',
-              'W/m': 'monluminosity', 'W/micron': 'monluminosity', 'Lsun/micron': 'monluminosity',
+              'W': 'luminosity', 'Lsun': 'luminosity',
+              'W/m': 'wavelengthluminositydensity',
+              'W/micron': 'wavelengthluminositydensity',
+              'Lsun/micron': 'wavelengthluminositydensity',
+              'W/Hz': 'frequencyluminositydensity',
+              'Lsun/Hz': 'frequencyluminositydensity',
               'W/m2': 'neutralfluxdensity',
               'W/m2/sr': 'neutralsurfacebrightness',
               'W/m2/arcsec2': 'neutralsurfacebrightness',
@@ -234,6 +260,7 @@ _conversion = { 'A': 1e-10, 'nm': 1e-9, 'micron': 1e-6, 'mm': 1e-3, 'cm': 1e-2,
                 'g': 1e-3, 'kg': 1., 'Msun': _Msun,
                 'W': 1., 'Lsun': _Lsun,
                 'W/m': 1., 'W/micron': 1e6, 'Lsun/micron': _Lsun*1e6,
+                'W/Hz': 1., 'Lsun/Hz': _Lsun,
                 'W/m2': 1.,
                 'W/m2/sr': 1.,
                 'W/m2/arcsec2': 1./_arcsec2,

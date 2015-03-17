@@ -405,7 +405,7 @@ class SkirtSimulation:
     def stellarluminosities(self, unit='Lsun'):
         filepath = self.outfilepath("luminosities.dat")
         result = np.loadtxt(arch.opentext(filepath), usecols=(1,))
-        return self.units().convert(result, to_unit=unit, quantity='bolluminosity')
+        return self.units().convert(result, to_unit=unit, quantity='luminosity')
 
     ## This function returns a numpy array containing the luminosities of the SPH HII region particles imported for
     # the simulation, specified for each wavelength bin. Thus the returned array is expected to have the same length
@@ -415,7 +415,7 @@ class SkirtSimulation:
     def hiiregionluminosities(self, unit='Lsun'):
         filepath = self.outfilepath("HII_luminosities.dat")
         result = np.loadtxt(arch.opentext(filepath), usecols=(1,))
-        return self.units().convert(result, to_unit=unit, quantity='bolluminosity')
+        return self.units().convert(result, to_unit=unit, quantity='luminosity')
 
     ## This function returns a numpy array containing the flux densities received by the specified instrument, at
     # each wavelength bin center. Thus the returned array is expected to have the same length as the wavelength grid.
