@@ -19,10 +19,7 @@ import datetime
 import numpy as np
 
 # Import the relevant PTS class
-try:
-    from pts.skirtexec import SkirtExec
-except ImportError:
-    print "the pts.skirtexec module could not be loaded (this is not necessary on the cluster)"
+from pts.skirtexec import SkirtExec
 from pts.log import Log
 from do.extractscaling import extract
 from pts.jobscript import JobScript
