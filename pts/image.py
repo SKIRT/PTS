@@ -273,47 +273,6 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    ## This function ..
-    def _interpolate(self, order, linear, limits=None):
-
-        # Make lists to contain the coordinates and fluxes from which to interpolate from
-        xvalues = []
-        yvalues = []
-        fluxes = []
-
-        # Iterate over the image pixels
-        for x in range(self.xsize):
-
-            # Check whether this x value falls within the range
-            if x < limits[0][0] or x > limits[0][1]: continue
-
-            for y in range(self.ysize):
-
-                # Check whether this y value falls within the range
-                if y < limits[1][0] or y > limits[1][1]: continue
-
-                # Get the flux in this pixel if it is not masked
-                if self.primary.data[y,x] != 0:
-
-                    xvalues.append(x)
-                    yvalues.append(y)
-                    fluxes.append(self.primary.data[y,x])
-
-        # Make nummy arrays from x and y coordinates
-        xvalues = np.array(xvalues)
-        yvalues = np.array(yvalues)
-
-        # Fit a 2D polynomial
-        self._log.info("Fitting a 2D polynomial to the surrounding pixel values")
-        m = fitpolynomial(xvalues, yvalues, fluxes, order, linear)
-
-        # Evaluate the polynomial in the specified range
-        xx, yy = np.meshgrid(range(limits[0][0],limits[0][1]), range(limits[1][0],limits[1][1]))
-        box_fluxes = polynomial(xx, yy, m)
-
-        # Return the result
-        return box_fluxes
-
     ## This function performs aperture photometry on the region
     def photometry(self, region):
 
@@ -460,16 +419,57 @@ class Image(object):
 
         pass
 
+    ## This function ..
+    def _interpolate(self, order, linear, limits=None):
+
+        # Make lists to contain the coordinates and fluxes from which to interpolate from
+        xvalues = []
+        yvalues = []
+        fluxes = []
+
+        # Iterate over the image pixels
+        for x in range(self.xsize):
+
+            # Check whether this x value falls within the range
+            if x < limits[0][0] or x > limits[0][1]: continue
+
+            for y in range(self.ysize):
+
+                # Check whether this y value falls within the range
+                if y < limits[1][0] or y > limits[1][1]: continue
+
+                # Get the flux in this pixel if it is not masked
+                if self.primary.data[y,x] != 0:
+
+                    xvalues.append(x)
+                    yvalues.append(y)
+                    fluxes.append(self.primary.data[y,x])
+
+        # Make nummy arrays from x and y coordinates
+        xvalues = np.array(xvalues)
+        yvalues = np.array(yvalues)
+
+        # Fit a 2D polynomial
+        self._log.info("Fitting a 2D polynomial to the surrounding pixel values")
+        m = fitpolynomial(xvalues, yvalues, fluxes, order, linear)
+
+        # Evaluate the polynomial in the specified range
+        xx, yy = np.meshgrid(range(limits[0][0],limits[0][1]), range(limits[1][0],limits[1][1]))
+        box_fluxes = polynomial(xx, yy, m)
+
+        # Return the result
+        return box_fluxes
+
     # ----------------------------------------------------------------- MASKS
 
     ## This function interpolates the image within the shapes in a certain region ...
-    def interpolate(self, region, order=3, linear=False):
+    def interpolate(self, r, order=3, linear=False):
 
         # Make a new copy of the primary image
         interpolated = np.copy(self.primary.data)
 
         # For each region, we interpolate within a box surrounding the region
-        for shape in self._regions[region]:
+        for shape in self._regions[r]:
 
             # Center and radius of this region
             xcenter = round(shape.coord_list[0])
@@ -503,13 +503,13 @@ class Image(object):
         self.addlayer(interpolated, "primary_interpolated")
 
     ## This function
-    def combinemasks(self, mask1, mask2, name=None):
+    def combinemasks(self, m1, m2, name=None):
 
         # Combine the 2 masks
-        mask = self._masks[mask1].data + self._masks[mask2].data
+        mask = self._masks[m1].data + self._masks[m2].data
 
         # If no name is given for this mask, combine the names of the two original masks
-        if name is None: name = mask1 + "_and_" + mask2
+        if name is None: name = m1 + "_and_" + m2
 
         # Add the mask
         self.addmask(mask.astype(bool), name)
@@ -542,16 +542,16 @@ class Image(object):
         self.addmask(mask, "edges")
 
     ## This function applies a mask on the primary image
-    def makemaskedlayer(self, maskname):
+    def makemaskedlayer(self, m):
 
         # Copy the primary image
         maskedprimary = np.copy(self.primary.data)
 
         # Mask this copy
-        maskedprimary[self._masks[maskname].data] = 0
+        maskedprimary[self._masks[m].data] = 0
 
         # Add this masked image to the layers
-        self.addlayer(maskedprimary, 'primary_masked_' + maskname)
+        self.addlayer(maskedprimary, 'primary_masked_' + m)
 
     ## This function aplies a certain mask on the primary image
     def applymask(self, m):
@@ -592,24 +592,24 @@ class Image(object):
     def findgalaxy(self, plot=True):
 
         # Find the galaxy
-        galaxy = GalaxyFinder(self.primary.data[::-1,:], quiet=True)
+        finder = GalaxyFinder(self.primary.data[::-1,:], quiet=True)
 
         # Plot the ellips onto the image frame
-        if plot: galaxy.plot()
+        if plot: finder.plot()
 
         # Get the galaxy parameters
         #positionangle = np.radians(-galaxy.theta)
-        positionangle = galaxy.theta
-        xcenter = galaxy.xpeak
-        ycenter = galaxy.ypeak
-        eps = galaxy.eps
+        positionangle = finder.theta
+        xcenter = finder.xpeak
+        ycenter = finder.ypeak
+        eps = finder.eps
 
         # The length of the major axis of the ellipse
-        mjr = 3.0 * galaxy.majoraxis
+        major = 3.0 * finder.majoraxis
 
         # The width and heigth of the ellips
-        width = mjr
-        height = mjr * (1 - eps)
+        width = major
+        height = major * (1 - eps)
 
         # Cretae a string identifying this ellipse
         region_string = "image;ellipse(" + str(xcenter) + "," + str(ycenter) + "," + str(width) + "," + str(height) + "," + str(positionangle) + ")"
