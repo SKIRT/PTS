@@ -84,7 +84,7 @@ class JobScript:
         self._script.write("module load jobs\n")
         self._script.write("module load GCC/4.8.3\n")
         #self._script.write("module load ictce/7.1.2\n")
-        self._script.write("module load Python/2.7.3-ictce-4.0.6\n")
+        self._script.write("module load Python/2.7.8-intel-2014b\n")
         self._script.write("\n")
 
         # Run the simulation
