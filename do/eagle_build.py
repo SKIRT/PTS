@@ -87,7 +87,7 @@ if not update and not rebuild and not runidrange: raise ValueError("Unknown buil
 # construct a list of relevant filename endings depending on the visualization type
 filenames = []
 if sed: filenames += [ "sed.pdf" ]
-if rgb: filenames += [ "xy_total.png", "xz_total.png", "yz_total.png" ]
+if rgb: filenames += [ "xy_total.png","xz_total.png","yz_total.png","xy_total2.png","xz_total2.png","yz_total2.png"]
 if wave: filenames += [ "wave.mov" ]
 if info: filenames += [ "info.txt" ]
 filenames = tuple(filenames)
@@ -109,11 +109,21 @@ if sed:
 
 # build RGB images for each SKIRT-run
 if rgb:
-    from pts.makergbimages import makergbimages
+    from pts.makergbimages import makeintegratedrgbimages
+    from pts.filter import Filter
     print "Building RGB images for {} SKIRT-runs".format(len(skirtruns))
+    filterR = Filter('SDSS.i')
+    filterG = Filter('SDSS.r')
+    filterB = Filter('SDSS.g')
+    filterIR = Filter('IRAS.100')
+    filterUV = Filter('GALEX.FUV')
     for skirtrun in skirtruns:
         print "Building RGB images for SKIRT-run {}...".format(skirtrun.runid())
-        makergbimages(skirtrun.simulation(), wavelength_tuples=((0.75,0.60,0.45),) )
+        fmin,fmax = makeintegratedrgbimages(skirtrun.simulation(),
+            [ (filterR, 1,0,0), (filterG, 0,1,0), (filterB, 0,0,1) ] )
+        makeintegratedrgbimages(skirtrun.simulation(),
+            [ (filterR, 1,0,0), (filterG, 0,1,0), (filterB, 0,0,1), (filterIR, 0.02,0,0), (filterUV, 0,0,4) ],
+            postfix="2", fmin=fmin, fmax=fmax)
         move_visualization_files(skirtrun, filenames)
 
 # build wavelength movies for each SKIRT-run

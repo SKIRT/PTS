@@ -96,7 +96,7 @@ def makeinfofile(skirtrun):
     for name in simulation.instrumentnames():
         # maximum flux in Jy
         fluxdensities = simulation.fluxdensities(name, unit='Jy')
-        info["result_"+name+"_fluxdensity_maximum"] = fluxdensities.max()
+        info["instr_"+name+"_fluxdensity_maximum"] = fluxdensities.max()
 
         # get flux densities per unit of wavelength because filter.apply() requires this
         fluxdensities = simulation.fluxdensities(name, unit='W/m2/micron')
@@ -109,8 +109,8 @@ def makeinfofile(skirtrun):
             magnitude = simulation.absolutemagnitude(fluxdensity, distance,
                                                      fluxdensity_unit='Jy', distance_unit='pc')
             filtername = filterspec.replace(".","_").lower()
-            info["result_"+name+"_fluxdensity_"+filtername] = fluxdensity
-            info["result_"+name+"_magnitude_"+filtername] = magnitude
+            info["instr_"+name+"_fluxdensity_"+filtername] = fluxdensity
+            info["instr_"+name+"_magnitude_"+filtername] = magnitude
 
     # save the info file
     infofilepath = simulation.outfilepath("info.txt")

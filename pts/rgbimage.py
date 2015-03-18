@@ -13,7 +13,6 @@
 
 import os
 import os.path
-import math
 import types
 import numpy as np
 import pyfits
@@ -265,16 +264,16 @@ class RGBImage:
     # ---------- Adjusting the image ----------------------------------
 
     ## This function applies the natural logarithm function to the pixel values of the image, and adjusts
-    # the pixel range accordingly. This function raises an error if any of the pixel values is zero or
-    # negative when this function is called. This can be accomplished, for example, by calling the setrange()
+    # the pixel range accordingly. This function raises an error if the pixel range includes zero or negative
+    # values when this function is called. This can be avoided, for example, by calling the setrange()
     # function with a nonzero minimum value before calling the applylog() function.
     def applylog(self):
         self.ensurearr(invalidate=True)
         # verify that all values are positive
-        if np.any(self.darr <= 0): raise ValueError("Log can't be applied to negative or zero pixel values")
+        if self.rangearr[0] <= 0: raise ValueError("Log can't be applied to negative or zero pixel values")
         # apply logarithm to array values and range
         self.darr = np.log(self.darr)
-        self.rangearr = ( math.log(self.rangearr[0]), math.log(self.rangearr[1]) )
+        self.rangearr = ( np.log(self.rangearr[0]), np.log(self.rangearr[1]) )
 
     ## This function applies a transformation defined by a cubic spline curve to the (scaled) pixel values,
     # and replaces the image data with the result. The pixel values are scaled to the interval [0,1].
@@ -284,11 +283,7 @@ class RGBImage:
     def applycurve(self, point1=(0.25,0.16), point2=(0.80,0.86)):
         self.scalevalues(0., 1.)
         curve = CubicSpline(point1, point2)
-        for i in range(self.shape[0]):
-            for j in range(self.shape[1]):
-                self.darr[i,j,0] = curve.y(self.darr[i,j,0])
-                self.darr[i,j,1] = curve.y(self.darr[i,j,1])
-                self.darr[i,j,2] = curve.y(self.darr[i,j,2])
+        self.darr = curve.ay(self.darr)
 
     ## This function applies the specified color map to the (scaled) pixel values of the red channel,
     # and replaces the image data with the result. The \em cmap argument can be one of the following:
@@ -503,7 +498,7 @@ class CubicSpline:
         self.c3 = sol[8]
         self.d3 = sol[9]
 
-    # This function returns the value of the represented function \f$y=f(x)\f$.
+    # This function returns the value of the represented function \f$y=f(x)\f$ where x is a scalar value.
     def y(self, x):
         if not (0 <= x <= 1): raise ValueError("invalid x-value")
         xp2 = x*x
@@ -512,5 +507,19 @@ class CubicSpline:
         elif x < self.x2: result = self.a2*xp3 + self.b2*xp2 + self.c2*x + self.d2
         else:             result = self.a3*xp3 + self.b3*xp2 + self.c3*x + self.d3
         return max(0,min(1,result))
+
+    # This function returns the value of the represented function \f$y=f(x)\f$ where x is a numpy array.
+    def ay(self, x):
+        if np.any(x<0) or np.any(x>1): raise ValueError("invalid x-value")
+        xp2 = x*x
+        xp3 = xp2*x
+        mask1 = x < self.x1
+        mask3 = x > self.x2
+        mask2 = np.logical_and(~mask1,~mask3)
+        result = np.empty_like(x)
+        result[mask1] = self.a1*xp3[mask1] + self.b1*xp2[mask1] + self.c1*x[mask1] + self.d1
+        result[mask2] = self.a2*xp3[mask2] + self.b2*xp2[mask2] + self.c2*x[mask2] + self.d2
+        result[mask3] = self.a3*xp3[mask3] + self.b3*xp2[mask3] + self.c3*x[mask3] + self.d3
+        return np.clip(result,0.,1.,out=result)
 
 # -----------------------------------------------------------------
