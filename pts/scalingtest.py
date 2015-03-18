@@ -464,7 +464,7 @@ class ScalingTest(object):
             if not filename.endswith(".dat") or filename.startswith("."): continue
 
             # Determine the full path to this results file
-            filepath = os.path.join(self._respath, file)
+            filepath = os.path.join(self._respath, filename)
 
             # Split the file name into its segments
             segments = filename.split("_")
