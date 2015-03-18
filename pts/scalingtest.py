@@ -91,9 +91,9 @@ class ScalingTest(object):
 
         # Search the ski file that is in the specified simulation path
         self._skifilename = ""
-        for file in os.listdir(self._simulationpath):
-            if file.endswith(".ski"):
-                self._skifilename = file[:-4]
+        for filename in os.listdir(self._simulationpath):
+            if filename.endswith(".ski") and not filename.startswith("."):
+                self._skifilename = filename[:-4]
                 break
 
         # Check whether a ski file is found
