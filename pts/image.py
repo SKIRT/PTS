@@ -5,8 +5,10 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.image Work with a FITS image
-#  bla
+## \package pts.image This module includes classes used for working with astronomical FITS images.
+#  The Image class in this package represents such a FITS image, and can be created by a statement as simple as:
+#      im = Image("example.fits")
+#  There are numerous operations possible on the image once it has been created with the above statement.
 
 # -----------------------------------------------------------------
 
@@ -33,6 +35,7 @@ from pts.mathematics import fitpolynomial, polynomial, fitgaussian, gaussian
 from pts.log import Log
 from pts.filter import Filter
 from pts.galaxy import GalaxyFinder
+from pts.skirtunits import SkirtUnits
 
 # -----------------------------------------------------------------
 
@@ -271,7 +274,12 @@ class Image(object):
 
         self.primary.histogram()
 
-    # -----------------------------------------------------------------
+    ## This function
+    def contourplot(self, path=None):
+
+        self.primary.contourplot()
+
+    # ----------------------------------------------------------------- PHOTOMETRY
 
     ## This function performs aperture photometry on the region
     def photometry(self, region):
@@ -293,10 +301,6 @@ class Image(object):
 
             # Get the sum of the flux within the aperture and return it
             return fluxtable['aperture_sum'][0]
-
-            # x and y coordinate of the center of the aperture
-            #x = fluxtable['xcenter'][0][0]
-            #y = fluxtable['ycenter'][0][0]
 
         # If the region is a box
         elif region.name == "box":
@@ -335,26 +339,68 @@ class Image(object):
         self.primary.data = self.primary.data[yrange, xrange]
 
     ## This function
-    def rotate(self):
+    def rotateandcenter_fitskirt(self, left_x, left_y, right_x, right_y, flip=False):
 
         # Nans should be masked !
 
-        ## FROM FITSKIRT_ROTATE
-
-        shift_x = inframe.shape[0]/2 - (left_x + right_x)/2
-        shift_y = inframe.shape[1]/2 - (left_y + right_y)/2
+        shift_x = self.ysize/2 - (left_x + right_x)/2
+        shift_y = self.xsize/2 - (left_y + right_y)/2
 
         print "Shifted frame to center by " + str(shift_x) + "," + str(shift_y)
 
-        shiftframe = ndimage.interpolation.shift(inframe,(shift_x, shift_y))
-        rotangle = math.degrees(math.atan(float(left_y - right_y)/float(left_x - right_x)))
-        rotangle += 180.0 if flip else 0.0
+        shiftframe = ndimage.interpolation.shift(self.primary.data,(shift_x, shift_y))
+        angle = math.degrees(math.atan(float(left_y - right_y)/float(left_x - right_x)))
+        angle += 180.0 if flip else 0.0
 
-        rotframe = ndimage.interpolation.rotate(shiftframe,rotangle)
+        # Create the rotated frame
+        rotframe = ndimage.interpolation.rotate(shiftframe, angle)
 
-        self._log.info("Rotated frame over " + str(rotangle) + " degrees")
+        # TODO: rotate the other layers, regions and masks!
 
-        ##
+        # Inform the user of the rotation angle
+        self._log.info("Rotated frame over " + str(angle) + " degrees")
+
+        # Add the new, rotated layer
+        self.addlayer(rotframe, "primary_rotated")
+
+    ## This function can be used to rotate the frame over a given angle
+    def rotate(self, angle):
+
+        # Create the rotated frame
+        rotframe = ndimage.interpolation.rotate(self.primary.data, angle)
+
+        # TODO: rotate the other layers, regions and masks!
+
+        # Inform the user of the rotation angle
+        self._log.info("Rotated frame over " + str(angle) + " degrees")
+
+        # Add the new, rotated layer
+        self.addlayer(rotframe, "primary_rotated")
+
+    ## This function rotates the image so that the galactic plane lies horizontal
+    def autorotate(self):
+
+        # Rotate about the position angle of the galaxy
+        self.rotate(-self.orientation.theta)
+
+    ## This function makes a new layer where the center of the galaxy is in the center of the plane
+    def autocenter(self):
+
+        # Determine the center pixel of the image
+        imagecenter_x = self.xsize / 2.0
+        imagecenter_y = self.ysize / 2.0
+
+        # Calculate the shift to be made in the x and y directions
+        shift_x = imagecenter_x - self.orientation.xpeak
+        shift_y = imagecenter_y - self.orientation.ypeak
+
+        # Create a centered frame
+        centered = ndimage.interpolation.shift(self.primary.data,(shift_y, shift_x))
+
+        # TODO: center the other layers, regions and masks!
+
+        # Add the new, centered layer
+        self.addlayer(centered, "primary_centered")
 
     ## This function
     def downsample(self, factor):
@@ -364,6 +410,23 @@ class Image(object):
 
         # Add the layer
         self.addlayer(newdata, 'primary_downsampled')
+
+    # ----------------------------------------------------------------- UNITS
+
+    ## This function can be used to set the units for this image
+    def setunits(self, units):
+
+        # Make a SkirtUnits object
+        self._units = SkirtUnits("extragalactic", "frequency")
+
+    ## This function
+    def convert(self, units):
+
+        # Calculate the conversion factor
+        conversionfactor = self._units.convert(1.0, units)
+
+        # Convert the data
+        self.primary.data *= conversionfactor
 
     # ----------------------------------------------------------------- VIEW AND ADD LAYERS, REGIONS AND MASKS
 
@@ -486,9 +549,9 @@ class Image(object):
             box = self.primary.data[yrange, xrange]
 
             # Create mask and boxminusmask
-            mask = np.zeros_like(box)
-            boxminusmask = np.ones_like(box)
-            mask[box == 0] = 1
+            mask = np.zeros_like(box, dtype=float)
+            boxminusmask = np.ones_like(box, dtype=float)
+            mask[box == 0] = 1.0
             boxminusmask[box == 0] = 0
 
             # Interpolate
@@ -591,28 +654,21 @@ class Image(object):
     ## This function
     def findgalaxy(self, plot=True):
 
-        # Find the galaxy
-        finder = GalaxyFinder(self.primary.data[::-1,:], quiet=True)
+        # Find the orientation of the galaxy in this iamge
+        self.orientation = GalaxyFinder(self.primary.data[::-1,:], quiet=True)
 
         # Plot the ellips onto the image frame
-        if plot: finder.plot()
-
-        # Get the galaxy parameters
-        #positionangle = np.radians(-galaxy.theta)
-        positionangle = finder.theta
-        xcenter = finder.xpeak
-        ycenter = finder.ypeak
-        eps = finder.eps
+        if plot: self.orientation.plot()
 
         # The length of the major axis of the ellipse
-        major = 3.0 * finder.majoraxis
+        major = 3.0 * self.orientation.majoraxis
 
         # The width and heigth of the ellips
         width = major
-        height = major * (1 - eps)
+        height = major * (1 - self.orientation.eps)
 
         # Cretae a string identifying this ellipse
-        region_string = "image;ellipse(" + str(xcenter) + "," + str(ycenter) + "," + str(width) + "," + str(height) + "," + str(positionangle) + ")"
+        region_string = "image;ellipse(" + str(self.orientation.xpeak) + "," + str(self.orientation.ypeak) + "," + str(width) + "," + str(height) + "," + str(self.orientation.theta) + ")"
 
         # Create a region consisting of one ellipse
         region = pyregion.parse(region_string)
@@ -938,6 +994,19 @@ class ImageLayer(object):
 
         NBINS = 1000
         plt.hist(self._data.flat, NBINS)
+
+        # Display the result
+        plt.show()
+
+    ## This function
+    def contourplot(self, path=None):
+
+        # Make the contours
+        plt.contour(xi,yi,zi,15, linewidths=0.5, colors='k')
+        plt.contourf(xi,yi,zi,15, cmap=plt.cm.jet)
+
+        # Add a color bar
+        plt.colorbar()
 
         # Display the result
         plt.show()
