@@ -51,11 +51,16 @@ axistypes = {
     'Zaverage': ( r"$Z_\mathrm{avg}$", lambda: setup_mass_metallic_gas/setup_mass_cold_gas ),
     'fdust': ( r"$f_\mathrm{dust}$", lambda: setup_mass_dust/setup_mass_metallic_gas ),
     'Mgas/Mdust': ( r"$M_\mathrm{gas}/M_\mathrm{dust}$", lambda: setup_mass_cold_gas/setup_mass_dust ),
+    'fracMgas': ( r"$M_\mathrm{gas}/(M_*+M_\mathrm{gas})$", lambda: setup_mass_cold_gas/(original_mass_stars+setup_mass_cold_gas) ),
+    'logM/L': ( r"$\log_{10}(M_*/L_\mathrm{tot})\,[M_\odot/L_\odot]$",
+        lambda: np.log10(original_mass_stars/(setup_luminosity_stars+setup_luminosity_hii_regions)) ),
 
     # magnitudes and colors
     'g': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g ),
     'r': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_r ),
     'g-r': ( r"$\mathrm{g}-\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g - instr_magnitude_sdss_r ),
+    'g-i': ( r"$\mathrm{g}-\mathrm{i}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g - instr_magnitude_sdss_i ),
+    'i-H': ( r"$\mathrm{i}-\mathrm{H}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_i - instr_magnitude_ukidss_h ),
     'NUV-r': ( r"$\mathrm{NUV}-\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_galex_nuv - instr_magnitude_sdss_r ),
 
     # flux densities (Jy)
@@ -66,8 +71,10 @@ axistypes = {
     'logf250/f500': ( r"$\log_{10}(f_{250}/f_{500})$", lambda: np.log10(instr_fluxdensity_spire_psw / instr_fluxdensity_spire_plw) ),
 
     # luminosities in specific bands
-    'logLk': ( r"$\log_{10}(L_\mathrm{K})\,[L_\odot]$",
+    'logLk': ( r"$\log_{10}(L_\mathrm{K})\,[L_{\odot,\mathrm{K}}]$",
         lambda: np.log10(units.luminosityforflux(instr_yz_fluxdensity_ukidss_k,setup_distance_instrument,'W/Hz')/LsunK) ),
+    'logM/Lh': ( r"$\log_{10}(M_*/L_\mathrm{H})\,[M_\odot/L_{\odot,\mathrm{H}}]$",
+        lambda: np.log10(original_mass_stars/units.luminosityforflux(instr_yz_fluxdensity_ukidss_h,setup_distance_instrument,'W/Hz')*LsunH) ),
 
     # other ratios
     'logMdust/f350/D2' : ( r"$\log_{10}(M_{dust}/(f_{350}D^2))\,[\mathrm{kg}\,\mathrm{W}^{-1}\,\mathrm{Hz}]$",
@@ -82,6 +89,7 @@ pc = units.convert(1., from_unit='pc', to_unit='m')
 Msun = units.convert(1., from_unit='Msun', to_unit='kg')
 Lsun = units.convert(1., from_unit='Lsun', to_unit='W')
 LsunK = 10**((34.1-5.19)/2.5)  # solar luminosity in K band expressed in W/Hz  (AB magnitude is 5.19)
+LsunH = 10**((34.1-4.71)/2.5)  # solar luminosity in H band expressed in W/Hz  (AB magnitude is 4.71)
 
 # -----------------------------------------------------------------
 
