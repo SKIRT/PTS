@@ -65,23 +65,23 @@ def subtractBackground(name, array,regfile,order,linear, plot):
         sky[i,:] = polyval2d(strip,i,m)
     
     if plot:
-		# Plot polynomial
-		fig = plt.figure(1)
-		plt.subplot(121)
-		plt.imshow(sky[::-1,:], vmin=0.95*meanbg, vmax=1.05*meanbg, cmap='hot', extent=(0,xaxis,0,yaxis))
-		plt.colorbar(orientation='horizontal')
-		plt.scatter(x, y,c='k',marker='+')
-		plt.xlim(0,xaxis)
-		plt.ylim(0,yaxis)
-	
-		# Plot image
-		plt.subplot(122)
-		plt.imshow(array[::-1,:], vmin=0.95*meanbg, vmax=1.05*meanbg, cmap='hot', extent=(0,xaxis,0,yaxis))
-		plt.xlim(0,xaxis)
-		plt.ylim(0,yaxis)
-		plt.colorbar(orientation='horizontal')
-		plt.show()
-	
+        # Plot polynomial
+        fig = plt.figure(1)
+        plt.subplot(121)
+        plt.imshow(sky[::-1,:], vmin=0.95*meanbg, vmax=1.05*meanbg, cmap='hot', extent=(0,xaxis,0,yaxis))
+        plt.colorbar(orientation='horizontal')
+        plt.scatter(x, y,c='k',marker='+')
+        plt.xlim(0,xaxis)
+        plt.ylim(0,yaxis)
+
+        # Plot image
+        plt.subplot(122)
+        plt.imshow(array[::-1,:], vmin=0.95*meanbg, vmax=1.05*meanbg, cmap='hot', extent=(0,xaxis,0,yaxis))
+        plt.xlim(0,xaxis)
+        plt.ylim(0,yaxis)
+        plt.colorbar(orientation='horizontal')
+        plt.show()
+
     hdu = pyfits.PrimaryHDU(sky)
     hdu.writeto('sky_'+name+'.fits',clobber=True)
     sframe = array - sky
@@ -134,12 +134,12 @@ def getBgPixels(array, regfile):
         line = line.replace(')',' ')
         line = line.replace(',',' ')
         line = line.split(' ')
-        xco  = np.append(xco, round(float(line[1])))
-        yco  = np.append(yco, round(float(line[2])))
-        xmin = round(float(line[1])) - round(0.5*float(line[3]))
-        xmax = round(float(line[1])) + round(0.5*float(line[3]))
-        ymin = round(float(line[2])) - round(0.5*float(line[4]))
-        ymax = round(float(line[2])) + round(0.5*float(line[4]))
+        xco  = np.append(xco, float(line[1]))
+        yco  = np.append(yco, float(line[2]))
+        xmin = round(float(line[1]) - 0.5*float(line[3]))
+        xmax = round(float(line[1]) + 0.5*float(line[3]))
+        ymin = round(float(line[2]) - 0.5*float(line[4]))
+        ymax = round(float(line[2]) + 0.5*float(line[4]))
         # append the median of each box to the set of sky points
         fluxes = np.append(fluxes,np.median(array[ymin:ymax,xmin:xmax]))
     
@@ -149,32 +149,32 @@ def getBgPixels(array, regfile):
 # Main function, this part actually runs when routine is called
 def main():
 
-	# Reading arguments from command
-	files = str(sys.argv[1])
-	regions = str(sys.argv[2])
-	order = int(sys.argv[3])
+    # Reading arguments from command
+    files = str(sys.argv[1])
+    regions = str(sys.argv[2])
+    order = int(sys.argv[3])
 
-	# If given in command, change values for fitting and plotting
-	linear, plot = True, False
-	if len(sys.argv) > 4:
-		plot = str(sys.argv[4]) in ['true', 'True', '1', 't', 'y','yes']
-			
-	# Read in frames file
-	f = open(files, 'r')
-	inputnames = f.read().splitlines()
-	nframes = len(inputnames)
-	
-	# Loop over all frames and subtract background
-	for i in range(0,nframes):
-		inputname = inputnames[i]+".fits"
-		outputname = inputnames[i]+"_sub.fits"
-		hdulist = pyfits.open(inputname)
-		primhdr = pyfits.getheader(inputname, 0)
-		frame = hdulist[0].data
-		sframe = subtractBackground(inputnames[i],frame,
-							regions,order,linear, plot)
-		hdu = pyfits.PrimaryHDU(sframe,primhdr)
-		hdu.writeto(outputname,clobber=True)		
+    # If given in command, change values for fitting and plotting
+    linear, plot = True, False
+    if len(sys.argv) > 4:
+        plot = str(sys.argv[4]) in ['true', 'True', '1', 't', 'y','yes']
+
+    # Read in frames file
+    f = open(files, 'r')
+    inputnames = f.read().splitlines()
+    nframes = len(inputnames)
+
+    # Loop over all frames and subtract background
+    for i in range(0,nframes):
+        inputname = inputnames[i]+".fits"
+        outputname = inputnames[i]+"_sub.fits"
+        hdulist = pyfits.open(inputname)
+        primhdr = pyfits.getheader(inputname, 0)
+        frame = hdulist[0].data
+        sframe = subtractBackground(inputnames[i],frame,
+                            regions,order,linear, plot)
+        hdu = pyfits.PrimaryHDU(sframe,primhdr)
+        hdu.writeto(outputname,clobber=True)
 
 if __name__ == '__main__':
     main()

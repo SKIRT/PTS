@@ -48,9 +48,9 @@ class Filter:
     #|------------|------------
     #| GALEX.FUV | GALEX FUV
     #| GALEX.NUV | GALEX NUV
-    #| Pacs.blue | Herschel Pacs blue filter
-    #| Pacs.green | Herschel Pacs green filter
-    #| Pacs.red | Herschel Pacs red filter
+    #| Pacs.blue | Herschel Pacs blue filter (60-85 micron)
+    #| Pacs.green | Herschel Pacs green filter (85-130 micron)
+    #| Pacs.red | Herschel Pacs red filter (130-210 micron)
     #| SPIRE.PLW | Herschel SPIRE PLW filter (extended sources)
     #| SPIRE.PMW | Herschel SPIRE PMW filter (extended sources)
     #| SPIRE.PSW | Herschel SPIRE PSW filter (extended sources)
@@ -72,6 +72,20 @@ class Filter:
     #| UKIDSS.K | UKIDSS K
     #| UKIDSS.Y | UKIDSS Y
     #| UKIDSS.Z | UKIDSS Z
+    #| 2MASS.H  | 2MASS H
+    #| 2MASS.J  | 2MASS J
+    #| 2MASS.K  | 2MASS K
+    #| IRAC.I1  | IRAC 3.6 micron
+    #| IRAC.I2  | IRAC 4.5 micron
+    #| IRAC.I3  | IRAC 5.8 micron
+    #| IRAC.I4  | IRAC 8.0 micron
+    #| MIPS.24  | MIPS 24 micron
+    #| MIPS.70  | MIPS 70 micron
+    #| MIPS.160 | MIPS 160 micron
+    #| WISE.W1  | WISE band 1 (3.4 micron)
+    #| WISE.W2  | WISE band 2 (4.6 micron)
+    #| WISE.W3  | WISE band 3 (11.6 micron)
+    #| WISE.W4  | WISE band 4 (22.0 micron)
     #
     # If \em filterspec is a tuple with two numbers, a filter is constructed with a uniform transmission curve
     # in the indicated range. The (min,max) wavelength values must be expressed in micron.

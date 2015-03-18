@@ -19,10 +19,7 @@ import datetime
 import numpy as np
 
 # Import the relevant PTS class
-try:
-    from pts.skirtexec import SkirtExec
-except ImportError:
-    print "the pts.skirtexec module could not be loaded (this is not necessary on the cluster)"
+from pts.skirtexec import SkirtExec
 from pts.log import Log
 from do.extractscaling import extract
 from pts.jobscript import JobScript
@@ -31,7 +28,7 @@ from pts.jobscript import JobScript
 
 ## An instance of the ScalingTest class represents a SKIRT scaling benchmark test for a particular ski file.
 #
-class ScalingTest:
+class ScalingTest(object):
 
     ## The constructor accepts the following arguments:
     #
@@ -123,10 +120,12 @@ class ScalingTest:
     #              maxnodes. The default value of minnodes is zero, denoting no lower limit on the number of nodes.
     #              The minimum number of processors used for the scaling test will then equal one.
     #              In hybrid mode, minnodes also defines the number of parallel threads per process.
+    #  - manual: a flag indicating whether the job script should be submitted from within this script, or just saved
+    #            so that the user can inspect it and launch it manually.
     #  - keepoutput: this optional argument indicates whether the output of the SKIRT simulations has to be kept
     #                or can be deleted from the disk.
     #
-    def run(self, maxnodes, minnodes, keepoutput=False):
+    def run(self, maxnodes, minnodes, manual=False, keepoutput=False):
 
         # Log the system name, the test mode and the version of SKIRT used for this test
         self._log.info("Starting parallel scaling benchmark for " + self._system + " in " + self._mode + " mode.")
@@ -158,7 +157,7 @@ class ScalingTest:
         while processors <= maxprocessors:
 
             # Perform this run
-            self._do(processors, resultsfilepath, keepoutput)
+            self._do(processors, resultsfilepath, manual, keepoutput)
 
             # The next run will be performed with double the amount of processors
             processors *= 2
@@ -169,11 +168,13 @@ class ScalingTest:
 
     ## This functions schedules a simulation on the cluster. This function takes the following arguments:
     #
-    #   - processors: the total number of processors to be used for this run
-    #   - resultsfilepath: the path of the file that should contain the timings from this run
-    #   - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
+    #  - processors: the total number of processors to be used for this run
+    #  - resultsfilepath: the path of the file that should contain the timings from this run
+    #  - manual: a flag indicating whether the job script should be submitted from within this script, or just saved
+    #            so that the user can inspect it and launch it manually
+    #  - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
     #
-    def _schedule(self, processors, resultsfilepath, keepoutput):
+    def _schedule(self, processors, resultsfilepath, manual, keepoutput):
 
         # Determine the number of processes and threads per process
         processes, threads = self._getmapping(processors)
@@ -226,10 +227,11 @@ class ScalingTest:
         os.chdir(self._outpath)
 
         # Submit the job script to the cluster scheduler
-        jobscript.submit()
+        if not manual:
+            jobscript.submit()
 
         # Remove this job script (it has been submitted)
-        if not keepoutput:
+        if not manual and not keepoutput:
             jobscript.remove()
 
     ## This function runs the simulation once with the specified number of threads,
@@ -237,9 +239,11 @@ class ScalingTest:
     #
     #  - processors: the number of processors to be used for this run
     #  - resultsfilepath: the path of the file that should contain the timings from this run
-    #   - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
+    #  - manual: a flag indicating whether the job script should be submitted from within this script, or just saved
+    #            so that the user can inspect it and launch it manually
+    #  - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
     #
-    def _run(self, processors, resultsfilepath, keepoutput):
+    def _run(self, processors, resultsfilepath, manual, keepoutput):
 
         # Determine the number of processes and threads per process
         processes, threads = self._getmapping(processors)
@@ -356,7 +360,7 @@ class ScalingTest:
         # Check that we are indeed on the UGent HPC system: look for the VSC_DATA directory (we need it)
         vscdatapath = os.getenv("VSC_DATA")
         if vscdatapath is None:
-            self._log.error("Can't find $VSC_DATA")
+            self._log.error("Can't find $VSC_DATA (Are you on indeed on the HPC infrastructure?)")
             exit()
 
         # The path of the output directory to be created
@@ -370,72 +374,138 @@ class ScalingTest:
         # Return the path to the output directory
         return dataoutputpath
 
-    def _estimatewalltime(self, processors):
+    ## This function estimates the total runtime (or walltime) for the current simulation, number of processors,
+    #  system and scaling test mode. This function takes the following arguments:
+    #
+    #  - processors: the number of processors (or total threads) used for this run of the simulation
+    #  - factor: this optional argument determines how much the upper limit on the walltime should deviate from
+    #            a previous run of this simulation.
+    #
+    def _estimatewalltime(self, processors, factor=1.5):
 
-        # Get the runtimes from a serial run of the simulation (a dictionary)
-        runtimes = self._getserialtimes()
+        # Try to get the runtimes for this number of processors
+        runtimes = self._getruntimes(processors)
 
-        # Calculate the portion of the total runtime spent in serial and parallel parts of the code
-        serialtime = runtimes['setup'] + runtimes['writing']
-        paralleltime = runtimes['stellar'] + runtimes['dustselfabs'] + runtimes['dustem']
+        # If these runtimes could be found, use the total runtime times a surplus of 1.5 as an upper limit to the
+        # walltime for this run
+        if runtimes is not None:
 
-        # Calculate and return the expected walltime
-        walltime = int((serialtime + paralleltime / processors)*1.5 + 100)  # in seconds
-        return walltime
+            # Return the estimated walltime (as an integer number in seconds)
+            return int(runtimes["total"]*factor)
 
-    ## This function extracts the timings of a serial run of the simulation from either a log file
-    #  or a scaling test results file that was created earlier for this simulation.
-    def _getserialtimes(self):
-
-        # Search for a log file
-        seriallogfilepath = os.path.join(self._simulationpath, self._skifilename + "_log.txt")
-        if os.path.exists(seriallogfilepath):
-
-            # TODO: check whether the log file comes from a simulation with 1 process and 1 thread
-
-            # If such a log file is present, extract the timings from it
-            return extract(seriallogfilepath)
-
+        # If runtimes for this number of processors could not be found, we estimate the walltime by getting the
+        # runtimes from a serial run of the simulation
         else:
 
-            # Look in the results folder now
-            for file in os.listdir(self._respath):
+            # Get the runtimes for this simulation, ran on 1 processor (with one thread), and don't look at
+            # the system name or scaling test mode.
+            runtimes = self._getruntimes(1, anysystem=True, anymode=True)
 
-                # Check whether the file is a data file
-                # TODO: is it generated by a scaling test?
-                if file.endswith(".dat"):
+        # Check if finding the serial runtimes was successfull or not
+        if runtimes is not None:
 
-                    # The file path
-                    filepath = os.path.join(self._respath, file)
+            # Calculate the portion of the total runtime spent in serial and parallel parts of the code
+            serialtime = runtimes['setup'] + runtimes['writing']
+            paralleltime = runtimes['stellar'] + runtimes['dustselfabs'] + runtimes['dustem']
 
-                    # Try extracting the columns from the data file
-                    try:
-                        threads, setuptime, stellartime, dustselfabstime, dustemissiontime, writingtime, time = np.loadtxt(filepath, usecols=(2,3,4,5,6,7,8), unpack=True)
-                    except (IndexError, ValueError):
-                        # Try the next file, this one is probably empty
-                        continue
+            # Estimate the total runtime for this number of processors, by taking an overhead of 1 percent per
+            # parallel process
+            totaltime = (serialtime + paralleltime / processors) * (1.0 + 0.01*processors)
 
-                    # Try finding an entry corresponding with a serial run of the simulation (one process, one thread)
-                    try:
-                        index = [int(nthreads) for nthreads in threads].index(1)
+            # Calculate and return the expected walltime (as an integer number in seconds)
+            return int(totaltime*factor)
 
-                        # Create a dictionary specifying the serial runtime of each of the different simulation phases
-                        runtimes = dict()
-                        runtimes['setup'] = setuptime[index]
-                        runtimes['stellar'] = stellartime[index]
-                        runtimes['dustselfabs'] = dustselfabstime[index]
-                        runtimes['dustem'] = dustemissiontime[index]
-                        runtimes['writing'] = writingtime[index]
-                        runtimes['total'] = time[index]
+        # As a last resort, look for a log file that was placed next to the ski file of this scaling test
+        else:
 
-                        # Return the runtimes
-                        return runtimes
+            # The path of the serial log file
+            seriallogfilepath = os.path.join(self._simulationpath, self._skifilename + "_log.txt")
 
-                    except ValueError:
-                        # Try the next file, no entry for a serial run could be found in this one
-                        pass
+            # Check whether such a file exists
+            if os.path.exists(seriallogfilepath):
 
+                # TODO: check whether the log file comes from a simulation with 1 process and 1 thread
 
+                # If such a log file is present, extract the timings from it
+                runtimes = extract(seriallogfilepath)
 
+                # Calculate the portion of the total runtime spent in serial and parallel parts of the code
+                serialtime = runtimes['setup'] + runtimes['writing']
+                paralleltime = runtimes['stellar'] + runtimes['dustselfabs'] + runtimes['dustem']
+
+                # Estimate the total runtime for this number of processors, by taking an overhead of 1 percent per
+                # parallel process
+                totaltime = (serialtime + paralleltime / processors) * (1.0 + 0.01*processors)
+
+                # Calculate and return the expected walltime (as an integer number in seconds)
+                return int(totaltime*factor)
+
+            # If not, exit with an error
+            else:
+
+                self._log.error("The walltime could not be estimated for a run with " + str(processors) + " processors.")
+                exit()
+
+    ## This function extracts the timings for the current simulation from a scaling test results file that was
+    #  created earlier for this simulation. This function takes the following arguments:
+    #
+    #  - processors: the number of processors (or total threads) for which to look up the runtimes
+    #  - anysystem: this flag tells whether we must look for results of any system, or only from the system
+    #               we are currently running on
+    #   - anymode: this flag tells whether we must look for results created with any mode, or only with the mode
+    #              in which we are running the current scaling test
+    #
+    def _getruntimes(self, processors, anysystem=False, anymode=False):
+
+        # Search for a results file corresponding with this system and the current mode
+        for filename in os.listdir(self._respath):
+
+            # Check whether this file is a data file and not hidden
+            if not filename.endswith(".dat") or filename.startswith("."): continue
+
+            # Determine the full path to this results file
+            filepath = os.path.join(self._respath, filename)
+
+            # Split the file name into its segments
+            segments = filename.split("_")
+
+            # Get the system name in which the scaling test was run for this results file
+            systemname = segments[0]
+
+            # Get the mode in which the scaling test was run for this results file
+            mode = segments[1]
+
+            # Check whether this results file corresponds to a test on this system and the current mode
+            if (anysystem or systemname == self._system) and (anymode or mode.startswith(self._mode)):
+
+                # Try extracting the columns from the data file
+                try:
+                    threads, setuptime, stellartime, dustselfabstime, dustemissiontime, writingtime, time = np.loadtxt(filepath, usecols=(2,3,4,5,6,7,8), unpack=True)
+                except (IndexError, ValueError):
+                    # Try the next file, this one is probably empty
+                    continue
+
+                # Look for an entry corresponding to the current number of processors (the total number of threads)
+                try:
+                    index = [int(nthreads) for nthreads in threads].index(processors)
+
+                    # Create a dictionary specifying the serial runtime of each of the different simulation phases
+                    runtimes = dict()
+                    runtimes['setup'] = setuptime[index]
+                    runtimes['stellar'] = stellartime[index]
+                    runtimes['dustselfabs'] = dustselfabstime[index]
+                    runtimes['dustem'] = dustemissiontime[index]
+                    runtimes['writing'] = writingtime[index]
+                    runtimes['total'] = time[index]
+
+                    # Return the runtimes
+                    return runtimes
+
+                except ValueError:
+                    # Try the next file, no entry for a serial run could be found in this one
+                    pass
+
+        # Return None if no file was found for this system and/or mode, or with the timings for this number of processors
+        return None
 
 # -----------------------------------------------------------------

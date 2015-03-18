@@ -36,24 +36,40 @@ warnings.filterwarnings("ignore")
 
 # -----------------------------------------------------------------
 
+# Define which column in the scaling test results file defines which quantity
+columns = {'threads': 2, 'setup': 3, 'stellar': 4, 'dustselfabs': 5, 'dustem': 6, 'writing': 7, 'total': 8}
+
+# -----------------------------------------------------------------
+
 ## An instance of the ScalingPlotter is used to create plots of the runtimes, speedups and efficiencies as a function
 #  of the number of threads, based on the results of (multiple) SKIRT scaling benchmark tests.
 #
-class ScalingPlotter:
+class ScalingPlotter(object):
 
     ## The constructor accepts the following arguments:
     #
     #  - directory: the path of the directory where the result files are located and where the plots should be created
+    #  - phase: the phase of the simulation for which the scaling should be plotted. This argument can take the
+    #           following values:
+    #               * 'setup': for the setup of the simulation
+    #               * 'stellar': for the stellar emission phase
+    #               * 'dustselfabs': for the dust selfabsorption phase
+    #               * 'dustem': for the dust emission phase
+    #               * 'writing': for the writing phase
+    #               * 'total': for the total simulation
     #  - system: the system for which to plot the statistics. If no system is given, plots are created with different
     #            curves for all the different systems (and modes) for which a results file is found.
     #
-    def __init__(self, directory, system=""):
+    def __init__(self, directory, phase, system=""):
 
         # Create a logger
         self._log = Log()
 
         # Set the directory path
         self._directory = directory
+
+        # Set the phase
+        self._phase = phase
 
         # Set the system name
         self._system = system
@@ -111,10 +127,15 @@ class ScalingPlotter:
                 # Get the values from this results file. If no data could be found in the file, we skip it.
                 filepath = os.path.join(directory, file)
                 try:
-                    threadcounts, times = np.loadtxt(filepath, usecols=(2,4), unpack=True)
+                    threadcounts, times = np.loadtxt(filepath, usecols=(columns['threads'],columns[phase]), unpack=True)
                 except ValueError:
                     self._log.warning("The file " + file + " does not contain any data")
                     continue
+
+                # If there was only one entry in the results file, make lists of the number of threads and the runtime
+                if isinstance(threadcounts, float):
+                    threadcounts = [threadcounts]
+                    times = [times]
 
                 # Put these in a dictionary, with the keys being the number of threads
                 for threadcount, time in zip(threadcounts, times):
@@ -214,7 +235,8 @@ class ScalingPlotter:
         plt.legend(title="Modes") if self._system else plt.legend(title="Systems")
 
         # Save the figure
-        filename = "scaling_" + self._system + "_times.pdf" if self._system else "scaling_times.pdf"
+        systemidentifier = self._system + "_" if self._system else ""
+        filename = "scaling_" + self._phase + "_" + systemidentifier + "times.pdf"
         filepath = os.path.join(self._directory, filename)
         plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
         plt.close()
@@ -268,7 +290,8 @@ class ScalingPlotter:
         plt.legend(title="Modes") if self._system else plt.legend(title="Systems")
 
         # Save the figure
-        filename = "scaling_" + self._system + "_speedups.pdf" if self._system else "scaling_speedups.pdf"
+        systemidentifier = self._system + "_" if self._system else ""
+        filename = "scaling_" + self._phase + "_" + systemidentifier + "speedups.pdf"
         filepath = os.path.join(self._directory, filename)
         plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
         plt.close()
@@ -320,7 +343,8 @@ class ScalingPlotter:
         plt.legend(title="Modes") if self._system else plt.legend(title="Systems")
 
         # Save the figure
-        filename = "scaling_" + self._system + "_efficiencies.pdf" if self._system else "scaling_efficiencies.pdf"
+        systemidentifier = self._system + "_" if self._system else ""
+        filename = "scaling_" + self._phase + "_" + systemidentifier + "efficiencies.pdf"
         filepath = os.path.join(self._directory, filename)
         plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
         plt.close()
