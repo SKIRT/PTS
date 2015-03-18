@@ -27,6 +27,13 @@ from pts.jobscript import JobScript
 
 # -----------------------------------------------------------------
 
+# Ignore warnings, otherwise Canopy would give a UserWarning on top of the error encountered when a scaling
+# test results file does not contain any data (an error which is catched an produces an error message).
+import warnings
+warnings.filterwarnings("ignore")
+
+# -----------------------------------------------------------------
+
 ## An instance of the ScalingTest class represents a SKIRT scaling benchmark test for a particular ski file.
 #
 class ScalingTest(object):
