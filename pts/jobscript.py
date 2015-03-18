@@ -33,7 +33,7 @@ class JobScript(object):
     #  - outputpath: the path of the directory to contain the output of the simulation
     #  - walltime: an (over)estimate of the required time to complete the simulation
     #
-    def __init__(self, path, skifilepath, nodes, ppn, threadspp, outputpath, walltime, mail=False):
+    def __init__(self, path, skifilepath, nodes, ppn, threadspp, outputpath, walltime, mail=False, verbose=False):
 
         # Save the file path
         self._path = path
@@ -91,12 +91,23 @@ class JobScript(object):
         self._script.write("# Run the simulation\n")
         self._script.write("cd " + directorypath + "\n")
 
-        hybridoptions = ""
-        if threadspp > 1:
+        # Construct a string that represents the SKIRT execution command
+        commandstring = "mympirun "
 
-            hybridoptions = "--hybrid " + str(hybrid_processes) + " "
+        # Add the appropriate syntax for hybrid / multithreaded runs
+        if threadspp > 1: commandstring += "--hybrid " + str(hybrid_processes) + " "
 
-        self._script.write("mympirun " + hybridoptions + "skirt -t " + str(threadspp) + " -o " + outputpath + " " + skifilename + ".ski\n")
+        # Add the number of threads per process and the SKIRT output path to the command string
+        commandstring += "skirt -t " + str(threadspp) + " -o " + outputpath + " "
+
+        # If verbose mode is desired, we pass the "-v" flag to SKIRT
+        if verbose: commandstring += "-v "
+
+        # Finally, give the name of the ski file to SKIRT
+        commandstring += skifilename + ".ski"
+
+        # Write the command string to the job script
+        self._script.write(commandstring + "\n")
 
     ## Add an additional command to the job script, optionally preceeded by a comment line
     def addcommand(self, command, comment=""):
