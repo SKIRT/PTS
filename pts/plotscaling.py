@@ -44,7 +44,7 @@ columns = {'threads': 2, 'setup': 3, 'stellar': 4, 'dustselfabs': 5, 'dustem': 6
 ## An instance of the ScalingPlotter is used to create plots of the runtimes, speedups and efficiencies as a function
 #  of the number of threads, based on the results of (multiple) SKIRT scaling benchmark tests.
 #
-class ScalingPlotter:
+class ScalingPlotter(object):
 
     ## The constructor accepts the following arguments:
     #
