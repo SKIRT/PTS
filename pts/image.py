@@ -90,6 +90,9 @@ class Image(object):
         # Units
         self._units = self._findinheader("BUNIT")
 
+        # The FWHM of the PSF
+        self._fwhm = None
+
         # The entries in this dictionary indicate whether certain operations have been performed on the primary image
         self._history = dict()
 
@@ -337,6 +340,12 @@ class Image(object):
 
         # Crop the image
         self.primary.data = self.primary.data[yrange, xrange]
+
+    ## This function
+    def multiply(self, factor):
+
+        # Multiply the image with the factor
+        self.primary.data = self.primary.data * factor
 
     ## This function
     def rotateandcenter_fitskirt(self, left_x, left_y, right_x, right_y, flip=False):
@@ -858,6 +867,37 @@ class Image(object):
         # Add a new layer
         self.addlayer(sky, 'sky')
 
+    ## This function
+    def estimatesky_new(self):
+
+        # The length of the major axis of the ellipse
+        major = 3.0 * self.orientation.majoraxis * 2.0
+
+        # The width and heigth of the ellips
+        width = major
+        height = major * (1 - self.orientation.eps)
+
+        # Create a string identifying this ellipse
+        region_string = "image;ellipse(" + str(self.orientation.xpeak) + "," + str(self.orientation.ypeak) + "," + str(width) + "," + str(height) + "," + str(self.orientation.theta) + ")"
+
+        # Create a region consisting of one ellipse
+        region = pyregion.parse(region_string)
+
+        # Create the mask
+        mask = np.logical_not(region.get_mask(header=self.header, shape=(self.ysize,self.xsize)))
+
+        # Combine the 2 masks
+        newmask = mask + self._masks["sky"].data + self._masks["stars"].data
+
+        # Add the mask
+        self.addmask(newmask.astype(bool), "background")
+
+        # Make a masked layer, the background
+        self.makemaskedlayer("background")
+
+        # Downsample to pixels of size 4*FWHM
+        # ...
+
     ## This function subtracts the fitted sky from the primary image
     def subtractsky(self):
 
@@ -895,7 +935,8 @@ class Image(object):
         # Inform the user
         self._log.info("FWHM : " + str("{:5.2f}".format(FWHM)) + "  ("+ str("{:5.2f}".format(FWHM_x)) + " in x direction and " + str("{:5.2f}".format(FWHM_y)) + " in y direction )")
 
-        #return aver
+        # Set the FWHM of the image
+        self._fwhm = FWHM
 
     ## This function
     def estimatepsf(self):
