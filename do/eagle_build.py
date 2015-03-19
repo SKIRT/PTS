@@ -115,7 +115,7 @@ if rgb:
     filterR = Filter('SDSS.i')
     filterG = Filter('SDSS.r')
     filterB = Filter('SDSS.g')
-    filterIR = Filter('IRAS.100')
+    filterIR = Filter('Pacs.green')
     filterUV = Filter('GALEX.FUV')
     for skirtrun in skirtruns:
         print "Building RGB images for SKIRT-run {}...".format(skirtrun.runid())
