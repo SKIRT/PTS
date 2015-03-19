@@ -7,7 +7,7 @@
 
 ## \package eagle.plotresults Plot histograms and scaling relations for a collection of EAGLE SKIRT-runs.
 #
-# The class in this module serves to plot histograms and scaling relations for the results in a set of EAGLE
+# The facilities in this module serve to plot histograms and scaling relations for the results in a set of EAGLE
 # SKIRT-runs that have been previously collected in a single data file.
 
 # -----------------------------------------------------------------
@@ -93,102 +93,109 @@ LsunH = 10**((34.1-4.71)/2.5)  # solar luminosity in H band expressed in W/Hz  (
 
 # -----------------------------------------------------------------
 
+## An instance of the Collection class represents the contents of a particular collection of EAGLE SKIRT-run results,
+# so that the data is ready for plotting. A Collection object has two public properties:
+# - \em name: a name identifying the collection
+# - \em info: a dictionary of info dictionaries, keyed on instrument name
 class Collection:
-    # ---------- Constructing -------------------------------------
 
     ## The constructor loads the contents of the specified collection so that it is ready for plotting.
     # The collection name should \em not include the directory (which is taken from eagle.conf) nor the
     # postfix "_info_collection.dat".
     def __init__(self, collectionname):
-        self._collectionname = collectionname
-        self._info = {}
+        self.name = collectionname
+        self.info = {}
 
         # load the collection
         infilepath = os.path.join(config.collections_path, collectionname+"_info_collection.dat")
         infile = open(infilepath, "r")
-        self._info['any'] = pickle.load(infile)
+        self.info['any'] = pickle.load(infile)
         infile.close()
 
         # construct filtered dicts for each instrument name
-        names = set([ key.split("_")[1] for key in filter(lambda key: key.startswith("instr_"), self._info['any'].keys()) ])
+        names = set([ key.split("_")[1] for key in filter(lambda key: key.startswith("instr_"), self.info['any'].keys()) ])
         for name in names:
-            self._info[name] = {}
-            for key,value in self._info['any'].iteritems():
+            self.info[name] = {}
+            for key,value in self.info['any'].iteritems():
                 if key.startswith("instr_"):
                     segments = key.split("_")
                     if segments[1]==name:
                         segments.pop(1)
                         cleankey = "_".join(segments)
-                        self._info[name][cleankey] = value
+                        self.info[name][cleankey] = value
                 else:
-                    self._info[name][key] = value
+                    self.info[name][key] = value
 
-    # ---------- Plotting -----------------------------------------
+# -----------------------------------------------------------------
 
-    ## This function produces a one-page pdf file with one or more plots for the collection of SKIRT-runs.
-    # It expects the following arguments:
-    # - plotname: name of the output plot \em not including the directory, collection name, nor filename extension
-    # - plotdefs: sequence of plot definitions; each item is a dictionary specifying a single plot as described below
-    # - pagesize: a 2-tuple specifying the size of the complete page in inch; default is A4 format
-    # - layout: a 2-tuple specifying the number of columns and rows in the layout of the plots; default is 2 by 3
-    #           (the layout must accomodate all items in the plotdefs sequence)
-    #
-    # The following table describes the key-value pairs in a plot definition dictionary.
-    #
-    #| Key | Presence | Description of Value
-    #|-----|----------|---------------------
-    #| x   | required | one of the axis type identifiers in the \em axistypes dictionary
-    #| y   | required | one of the axis type identifiers in the \em axistypes dictionary, or 'hist' for a histogram
-    #| instr | optional | the name of the instrument for which to plot data for both x and y axes; defaults to 'any'
-    #| xinstr | optional | the name of the instrument for the x axis; defaults to the value of \em instr
-    #| yinstr | optional, used only if y!='hist' | the name of the instrument for the y axis; defaults to the value of \em instr
-    #| bins | optional, used only if y=='hist' | the number of bins in a histogram; defaults to 10
-    #| log | optional, used only if y=='hist' | True for histogram on log scale, False for linear scale (the default)
-    #| xmin | optional | the minimum x value shown; default is smallest x value
-    #| xmax| optional | the maximum x value shown; default is largest x value
-    #| ymin | optional | the minimum y value shown; default is smallest y value
-    #| ymax| optional | the maximum y value shown; default is largest y value
-    #
-    def plotresults(self, plotname, plotdefs, layout=(2,3), pagesize=(8.268,11.693)):
+## This function produces a one-page pdf file with one or more plots for the specified SKIRT-run collections.
+# It expects the following arguments:
+# - collections: a sequence of Collection instances
+# - plotname: name of the output plot \em not including the directory, nor the filename extension
+# - plotdefs: sequence of plot definitions; each item is a dictionary specifying a single plot as described below
+# - pagesize: a 2-tuple specifying the size of the complete page in inch; default is A4 format
+# - layout: a 2-tuple specifying the number of columns and rows in the layout of the plots; default is 2 by 3
+#           (the layout must accomodate all items in the plotdefs sequence)
+#
+# The following table describes the key-value pairs in a plot definition dictionary.
+#
+#| Key | Presence | Description of Value
+#|-----|----------|---------------------
+#| x   | required | one of the axis type identifiers in the \em axistypes dictionary
+#| y   | required | one of the axis type identifiers in the \em axistypes dictionary, or 'hist' for a histogram
+#| instr | optional | the name of the instrument for which to plot data for both x and y axes; defaults to 'any'
+#| xinstr | optional | the name of the instrument for the x axis; defaults to the value of \em instr
+#| yinstr | optional, used only if y!='hist' | the name of the instrument for the y axis; defaults to the value of \em instr
+#| bins | optional, used only if y=='hist' | the number of bins in a histogram; defaults to 10
+#| log | optional, used only if y=='hist' | True for histogram on log scale, False for linear scale (the default)
+#| xmin | optional | the minimum x value shown; default is smallest x value
+#| xmax| optional | the maximum x value shown; default is largest x value
+#| ymin | optional | the minimum y value shown; default is smallest y value
+#| ymax| optional | the maximum y value shown; default is largest y value
+#
+def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,11.693)):
 
-        # setup the figure
-        figure = plt.figure(figsize=pagesize)
-        figure.subplots_adjust(wspace=0.15, hspace=0.23,
-                               left=0.08, right=0.97, top=0.93, bottom=0.1)
+    # setup the figure
+    figure = plt.figure(figsize=pagesize)
+    figure.subplots_adjust(wspace=0.15, hspace=0.23,
+                           left=0.08, right=0.97, top=0.93, bottom=0.1)
+    colors = ('r', 'g', 'b', 'm', 'c', 'y')
 
-        # add figure title
-        plt.suptitle(plotname + " for " + self._collectionname)
+    # add figure title
+    plt.suptitle(plotname)
 
-        # loop over the plots
-        plotindex = 0
-        for plotdef in plotdefs:
-            # start the appropriate subplot
-            plotindex += 1
-            ax = plt.subplot(layout[1], layout[0], plotindex)
+    # loop over the plots
+    plotindex = 0
+    for plotdef in plotdefs:
+        # start the appropriate subplot
+        plotindex += 1
+        ax = plt.subplot(layout[1], layout[0], plotindex)
 
-            # extract the main specifications from the plot definition
-            xaxis = plotdef['x']
-            yaxis = plotdef['y']
-            instr = plotdef.get('instr','any')
-            xinstr = plotdef.get('xinstr',instr)
-            yinstr = plotdef.get('yinstr',instr)
+        # extract the main specifications from the plot definition
+        xaxis = plotdef['x']
+        yaxis = plotdef['y']
+        instr = plotdef.get('instr','any')
+        xinstr = plotdef.get('xinstr',instr)
+        yinstr = plotdef.get('yinstr',instr)
 
-            # for a regular relation plot...
-            if yaxis!='hist':
-                # get the specifications from the axis type definitions
-                xlabel,xvalue = axistypes[xaxis]
-                ylabel,yvalue = axistypes[yaxis]
+        # for a regular relation plot...
+        if yaxis!='hist':
+            # get the specifications from the axis type definitions
+            xlabel,xvalue = axistypes[xaxis]
+            ylabel,yvalue = axistypes[yaxis]
 
+            # loop over the collections
+            for collection,color in zip(collections,colors):
                 # setup the x and y values for each axes,
                 # after loading the statistics for the appropriate instrument as global variables
                 # that can be used in the callables that setup the x and y values for each axis
-                globals().update(self._info[xinstr])
+                globals().update(collection.info[xinstr])
                 x = xvalue()
-                globals().update(self._info[yinstr])
+                globals().update(collection.info[yinstr])
                 y = yvalue()
 
                 # plot the relation
-                plt.scatter(x, y, marker='o', s=10, edgecolors='k', facecolors='r')
+                plt.scatter(x, y, marker='o', s=10, alpha=0.5, edgecolors='k', linewidths=(1,), facecolors=color)
 
                 # fit a line through the data and plot it
                 rico, y0 = np.polyfit(x, y, 1)
@@ -196,22 +203,26 @@ class Collection:
                 x2 = x.max()
                 y1 = y0 + rico*x1
                 y2 = y0 + rico*x2
-                plt.plot( [x1,x2], [y1,y2] )
+                plt.plot([x1,x2], [y1,y2], color=color, label=collection.name)
 
-            # for a histogram...
-            else:
-                # get the histogram options
-                bins = plotdef.get('bins', 10)
-                log = plotdef.get('log', False)
+        # for a histogram...
+        else:
+            # get the histogram options
+            bins = plotdef.get('bins', 10)
+            log = plotdef.get('log', False)
 
-                # setup the x-axis as for a relation plot
-                xlabel,xvalue = axistypes[xaxis]
-                globals().update(self._info[xinstr])
+            # get the specifications from the x-axis type definition
+            xlabel,xvalue = axistypes[xaxis]
+
+            # setup the y-axis label (force the x-axis instrument to 'any' to avoid changes to the label)
+            ylabel = r"$\log_{10}(N_\mathrm{galaxies})$" if log else r"$N_\mathrm{galaxies}$"
+            yinstr = 'any'
+
+            # loop over the collections
+            for collection,color in zip(collections,colors):
+                # setup the x values in the same way as for a regular plot
+                globals().update(collection.info[xinstr])
                 x = xvalue()
-
-                # setup the y-axis label (force the x-axis instrument to 'any' to avoid changes to the label)
-                ylabel = r"$\log_{10}(N_\mathrm{galaxies})$" if log else r"$N_\mathrm{galaxies}$"
-                yinstr = 'any'
 
                 # the plt.hist() function does not support square axes with mixed linear/log scale;
                 # so, compute the histogram
@@ -229,31 +240,34 @@ class Collection:
                 xpoints[1::2] = binedges
                 ypoints[1:-1:2] = counts
                 ypoints[2::2] = counts
-                plt.plot(xpoints, ypoints, ls='solid', color='r')
+                plt.plot(xpoints, ypoints, ls='solid', color=color, label=collection.name)
 
-            # set the data limits, if requested
-            plt.xlim( xmin=plotdef.get('xmin'), xmax=plotdef.get('xmax') )
-            plt.ylim( ymin=plotdef.get('ymin'), ymax=plotdef.get('ymax') )
+        # set the data limits, if requested
+        plt.xlim( xmin=plotdef.get('xmin'), xmax=plotdef.get('xmax') )
+        plt.ylim( ymin=plotdef.get('ymin'), ymax=plotdef.get('ymax') )
 
-            # make the plot axes square
-            ax.set_aspect(1./ax.get_data_ratio())
+        # make the plot axes square
+        ax.set_aspect(1./ax.get_data_ratio())
 
-            # include instrument names in axis labels if relevant
-            if xinstr != 'any': xlabel += r"$\;\mathrm{'"+xinstr+"'}$"
-            if yinstr != 'any': ylabel += r"$\;\mathrm{'"+yinstr+"'}$"
+        # include instrument names in axis labels if relevant
+        if xinstr != 'any': xlabel += r"$\;\mathrm{'"+xinstr+"'}$"
+        if yinstr != 'any': ylabel += r"$\;\mathrm{'"+yinstr+"'}$"
 
-            # add axis labels
-            plt.xlabel(xlabel, fontsize='medium')
-            plt.ylabel(ylabel, fontsize='medium')
+        # add axis labels
+        plt.xlabel(xlabel, fontsize='medium')
+        plt.ylabel(ylabel, fontsize='medium')
 
-            # fine-tune the tick label size
-            for item in (ax.get_xticklabels() + ax.get_yticklabels()):
-                item.set_fontsize('x-small')
+        # fine-tune the tick label size
+        for item in (ax.get_xticklabels() + ax.get_yticklabels()):
+            item.set_fontsize('x-small')
 
-        # save and close the figure
-        plotfilepath = os.path.join(config.plots_path, self._collectionname+"_"+plotname+".pdf")
-        plt.savefig(plotfilepath)
-        plt.close()
-        print "Created results plot file", plotfilepath
+        # add a legend
+        plt.legend(loc='best', prop={'size':'small'})
+
+    # save and close the figure
+    plotfilepath = os.path.join(config.plots_path, plotname+".pdf")
+    plt.savefig(plotfilepath)
+    plt.close()
+    print "Created results plot file", plotfilepath
 
 # -----------------------------------------------------------------
