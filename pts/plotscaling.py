@@ -337,9 +337,8 @@ class ScalingPlotter(object):
         if xlim != None: plt.xlim(xlim)
         if ylim != None: plt.ylim(ylim)
 
-        # Set the axes to log scale
+        # Use a logaritmic scale for the x axis
         plt.xscale('log')
-        plt.yscale('log')
 
         # Add axis labels and a legend
         plt.xlabel("Total number of threads $t$", fontsize='large')
