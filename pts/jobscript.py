@@ -33,7 +33,7 @@ class JobScript(object):
     #  - outputpath: the path of the directory to contain the output of the simulation
     #  - walltime: an (over)estimate of the required time to complete the simulation
     #
-    def __init__(self, path, skifilepath, nodes, ppn, threadspp, outputpath, walltime, mail=False, verbose=False):
+    def __init__(self, path, skifilepath, nodes, ppn, threadspp, outputpath, walltime, mail=False, verbose=False, fullnode=True):
 
         # Save the file path
         self._path = path
@@ -61,6 +61,15 @@ class JobScript(object):
 
             # For hybrid (or threads) mode we always request the full node.
             # Therefore, we determine the number of cores on the node.
+            ppn = multiprocessing.cpu_count()
+
+        # In MPI mode, we also request a full node for processors < cpu count of a node, if specified by the fullnode flag
+        elif fullnode:
+
+            # Set the number of processes per node
+            hybrid_processes = ppn
+
+            # Set the requested number of processors on the node to the maximum (a full node)
             ppn = multiprocessing.cpu_count()
 
         # Write a general header to the job script
@@ -95,7 +104,7 @@ class JobScript(object):
         commandstring = "mympirun "
 
         # Add the appropriate syntax for hybrid / multithreaded runs
-        if threadspp > 1: commandstring += "--hybrid " + str(hybrid_processes) + " "
+        if threadspp > 1 or fullnode: commandstring += "--hybrid " + str(hybrid_processes) + " "
 
         # Add the number of threads per process and the SKIRT output path to the command string
         commandstring += "skirt -t " + str(threadspp) + " -o " + outputpath + " "

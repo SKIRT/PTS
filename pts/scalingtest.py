@@ -199,7 +199,7 @@ class ScalingTest(object):
             return
 
         # Inform the user about the number of processors, processes, threads per process, nodes and processors per node
-        self._log.info("Scheduling simulation with :")
+        self._log.info("Scheduling simulation with:")
         self._log.info(" - total number of processors = " + str(processors))
         self._log.info(" - number of parallel processes = " + str(processes))
         self._log.info(" - number of parallel threads per process = " + str(threads))
@@ -355,6 +355,7 @@ class ScalingTest(object):
         # Determine the number of processors per node
         ppn = processors if nodes == 1 else self._cores
 
+        # Return the number of nodes and processors per node
         return nodes, ppn
 
     ## This function creates a directory to contain the output of a certain run during the scaling test.
@@ -486,7 +487,7 @@ class ScalingTest(object):
 
                 # Try extracting the columns from the data file
                 try:
-                    threads, setuptime, stellartime, dustselfabstime, dustemissiontime, writingtime, time = np.loadtxt(filepath, usecols=(2,3,4,5,6,7,8), unpack=True)
+                    threads, setup, stellar, dustselfabs, dustem, writing, total = np.loadtxt(filepath, usecols=(2,3,4,5,6,7,8), unpack=True)
                 except (IndexError, ValueError):
                     # Try the next file, this one is probably empty
                     continue
@@ -497,12 +498,12 @@ class ScalingTest(object):
 
                     # Create a dictionary specifying the serial runtime of each of the different simulation phases
                     runtimes = dict()
-                    runtimes['setup'] = setuptime[index]
-                    runtimes['stellar'] = stellartime[index]
-                    runtimes['dustselfabs'] = dustselfabstime[index]
-                    runtimes['dustem'] = dustemissiontime[index]
-                    runtimes['writing'] = writingtime[index]
-                    runtimes['total'] = time[index]
+                    runtimes['setup'] = setup[index]
+                    runtimes['stellar'] = stellar[index]
+                    runtimes['dustselfabs'] = dustselfabs[index]
+                    runtimes['dustem'] = dustem[index]
+                    runtimes['writing'] = writing[index]
+                    runtimes['total'] = total[index]
 
                     # Return the runtimes
                     return runtimes
