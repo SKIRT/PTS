@@ -14,6 +14,7 @@
 import math
 import numpy as np
 import os.path
+from collections import defaultdict
 
 # -----------------------------------------------------------------
 
@@ -113,12 +114,6 @@ class ScalingPlotter(object):
         # with the keys equal to the keys of the filenames dictionary (systemname, mode).
         self._statistics = dict.fromkeys(filenames.keys(), 0)
 
-        # While we iterate through all different (systemname, mode) configurations, it is useful to keep
-        # track of the minimal runtime encountered for 1 thread. For now, we set this value to infinity.
-        # We also save the corresponding standard deviation (because there are probably multiple runs with t=1).
-        self._serialruntime = float("inf")
-        self._serialruntimeerror = float("inf")
-
         # For each different system and mode in which the scaling test has been performed
         for (systemname, mode), filelist in filenames.items():
 
@@ -187,15 +182,85 @@ class ScalingPlotter(object):
                     # No error bars will be plotted for an data point with infinite standard deviation.
                     errortimes.append(float("inf"))
 
-                # For the serial run (1 thread), we check whether this mean runtime is the smallest
-                if threadcount == 1.0 and meantime < self._serialruntime:
-
-                    # Update the lowest encountered serial runtime, and the corresponding error
-                    self._serialruntime = meantime
-                    self._serialruntimeerror = errortimes[-1]
-
             # Add the statistics for this system and mode
             self._statistics[(systemname,mode)] = [nthreads, meantimes, errortimes]
+
+        # Make dictionaries to store the average serial runtime and its standard deviation for each system
+        self._serialruntime = dict()
+        self._serialerror = dict()
+
+        # Use a dictionary to temporarily store the serial runtimes for each different system
+        serialruntimes = defaultdict(list)
+
+        # For each system, average the serial (1 process, 1 threads) runtimes over the different modes
+        for (systemname, mode), [nthreads, times, _] in self._statistics.items():
+
+            try:
+
+                # Try to find the index of the entry corresponding with a total number of threads equal to 1
+                serialindex = nthreads.index(1)
+
+                # For this serial run, get the runtime
+                serialtime = times[serialindex]
+
+                # Add this serial runtime to the dictionary, corresponding to the appropriate system name
+                serialruntimes[systemname].append(serialtime)
+
+            except ValueError:
+                    # Try the next (systemname, mode): no serial runtime could be found for this combination
+                    pass
+
+        # If the dictionary with serial runtimes is empty, exit with an error
+        if not serialruntimes:
+
+            self._log.error("No serial runtimes could be found for the simulation; required to normalize the speedups"
+                            " and the efficiencies")
+            exit()
+
+        # For each system, calculate the average serial runtime and the standard deviation
+        for systemname, serialtimes in serialruntimes.items():
+
+            # Try to calculate the mean
+            mean = np.mean(serialtimes)
+
+            # If the result is NaN, the simulation was never run on one thread for this system
+            if np.isnan(mean):
+
+                # Exit with an error message
+                self._log.error("Could not find the " + phase + " runtime for one thread on this system")
+                exit()
+
+            # Check whether we have more than one serial timing for this system
+            if len(serialtimes) > 1:
+
+                # If this is the case, calculate the sample standard deviation
+                error = np.std(serialtimes, ddof=1)
+
+            else:
+
+                # If only one timing was available, set the standard deviation to infinity.
+                error = float("inf")
+
+            # Add the mean value and the standard deviation to the dictionary
+            self._serialruntime[systemname] = mean
+            self._serialerror[systemname] = error
+
+        # For each system, replace the serial runtime in every mode by the mean average runtime for that system
+        for (systemname, mode), [nthreads, _, _] in self._statistics.items():
+
+            try:
+
+                # Try to find the index of the entry corresponding with a total number of threads equal to 1
+                serialindex = nthreads.index(1)
+
+                # Replace the serial runtimes for this system and this mode
+                self._statistics[(systemname, mode)][1][serialindex] = self._serialruntime[systemname]
+                self._statistics[(systemname, mode)][2][serialindex] = self._serialerror[systemname]
+
+            except ValueError:
+
+                # Go to the next (systemname, mode): for this configuration no runtime was recorded with only one thread
+                pass
 
     # -----------------------------------------------------------------
 
@@ -270,11 +335,15 @@ class ScalingPlotter(object):
             if "hybrid" in mode: mode = "hybrid " + mode.strip('hybrid') + ":1"
             label = mode if self._system else systemname + " (" + mode + ")"
 
+            # Get the serial runtime and its standard deviation
+            serialtime = self._serialruntime[systemname]
+            serialerror = self._serialerror[systemname]
+
             # Calculate the speedups
-            speedups = self._serialruntime / times
+            speedups = serialtime / times
 
             # Calculate the errors on the efficiencies
-            speedup_errors = [ speedups[i] * math.sqrt( math.pow(self._serialruntimeerror/self._serialruntime, 2) + math.pow(errors[i]/times[i], 2) ) for i in range(len(nthreads)) ]
+            speedup_errors = [ speedups[i] * math.sqrt( math.pow(serialerror/serialtime, 2) + math.pow(errors[i]/times[i], 2) ) for i in range(len(nthreads)) ]
 
             # Plot the data points for this curve
             plt.errorbar(nthreads, speedups, speedup_errors, marker='.', label=label)
@@ -323,11 +392,15 @@ class ScalingPlotter(object):
             if "hybrid" in mode: mode = "hybrid " + mode.strip('hybrid') + ":1"
             label = mode if self._system else systemname + " (" + mode + ")"
 
+            # Get the serial runtime and its standard deviation
+            serialtime = self._serialruntime[systemname]
+            serialerror = self._serialerror[systemname]
+
             # Calculate the efficiencies
-            efficiencies = (self._serialruntime / times) / nthreads
+            efficiencies = (serialtime / times) / nthreads
 
             # Calculate the errors on the efficiencies
-            eff_errors = [ efficiencies[i] * math.sqrt( math.pow(self._serialruntimeerror/self._serialruntime, 2) + math.pow(errors[i]/times[i], 2) ) for i in range(len(nthreads)) ]
+            eff_errors = [ efficiencies[i] * math.sqrt( math.pow(serialerror/serialtime, 2) + math.pow(errors[i]/times[i], 2) ) for i in range(len(nthreads)) ]
 
             # Plot the data points for this curve
             plt.errorbar(nthreads, efficiencies, eff_errors, marker='.', label=label)
