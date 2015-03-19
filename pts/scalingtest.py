@@ -112,11 +112,7 @@ class ScalingTest(object):
         self._skifilepath = os.path.join(self._simulationpath, self._skifilename + ".ski")
 
         # Create skirt execution context
-        try:
-            self._skirt = SkirtExec(log=self._log)
-        except NameError:
-            self._skirt = None
-
+        self._skirt = SkirtExec(log=self._log)
 
     ## When this function is invoked, the scaling test is started. This function takes the following arguments:
     #
@@ -137,8 +133,7 @@ class ScalingTest(object):
 
         # Log the system name, the test mode and the version of SKIRT used for this test
         self._log.info("Starting parallel scaling benchmark for " + self._system + " in " + self._mode + " mode.")
-        if self._skirt is not None:
-            self._log.info("Using " + self._skirt.version())
+        self._log.info("Using " + self._skirt.version())
 
         # Generate a timestamp identifying this particular run for the scaling test
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
@@ -300,8 +295,7 @@ class ScalingTest(object):
 
         # Write a header containing useful information about this test to the results file
         resultsfile.write("# Parallel scaling benchmark results for " + self._system + " in " + self._mode + " mode\n")
-        if self._skirt is not None:
-            resultsfile.write("# Using " + self._skirt.version() + "\n")
+        resultsfile.write("# Using " + self._skirt.version() + "\n")
         resultsfile.write("# Column 1: Number of processes p\n")
         resultsfile.write("# Column 2: Number of threads per process t\n")
         resultsfile.write("# Column 3: Total number of threads (t*p)\n")
