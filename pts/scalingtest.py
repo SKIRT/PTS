@@ -220,9 +220,14 @@ class ScalingTest(object):
         # Calculate the expected walltime for this number of processors
         walltime = self._estimatewalltime(processors)
 
-        # Create the job script
+        # Create the job script. The name of the script indicates the mode in which we run this scaling test and
+        # the current number of processors used. We enable the SKIRT verbose logging mode to be able to compare
+        # the progress of the different parallel processes afterwards. Because for scaling tests, we don't want
+        # processes to end up on different nods or the SKIRT processes sensing interference from other programs,
+        # we set the 'fullnode' flag to True, which makes sure we always request at least one full node, even when
+        # the current number of processors is less than the number of cores per node.
         jobscriptpath = os.path.join(self._outpath, "job_" + self._mode + "_" + str(processors) + ".sh")
-        jobscript = JobScript(jobscriptpath, self._skifilepath, nodes, ppn, threads, dataoutputpath, walltime, verbose=True)
+        jobscript = JobScript(jobscriptpath, self._skifilepath, nodes, ppn, threads, dataoutputpath, walltime, verbose=True, fullnode=True)
 
         # Add the command to go the the PTS do directory
         jobscript.addcommand("cd $VSC_HOME/PTS/git/do", comment="Navigate to the PTS do directory")
