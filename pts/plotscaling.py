@@ -39,6 +39,10 @@ warnings.filterwarnings("ignore")
 # Define which column in the scaling test results file defines which quantity
 columns = {'threads': 2, 'setup': 3, 'stellar': 4, 'dustselfabs': 5, 'dustem': 6, 'writing': 7, 'total': 8}
 
+# For each different phase, define its full name
+fullnames = {'setup': 'Setup', 'stellar': 'Stellar emission', 'dustselfabs': 'Dust self-absorption',
+             'dustem': 'Dust emission', 'writing': 'Writing', 'total': 'Total simulation'}
+
 # -----------------------------------------------------------------
 
 ## An instance of the ScalingPlotter is used to create plots of the runtimes, speedups and efficiencies as a function
@@ -231,7 +235,7 @@ class ScalingPlotter(object):
 
         # Add axis labels and a legend
         plt.xlabel("Total number of threads $t$", fontsize='large')
-        plt.ylabel("Stellar emission time $T$ (s)", fontsize='large')
+        plt.ylabel(fullnames[self._phase] + " time $T$ (s)", fontsize='large')
         plt.legend(title="Modes") if self._system else plt.legend(title="Systems")
 
         # Save the figure
