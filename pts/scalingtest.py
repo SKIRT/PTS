@@ -14,6 +14,7 @@
 # Import standard modules
 import os
 import os.path
+import subprocess
 import multiprocessing
 import datetime
 import numpy as np
@@ -31,6 +32,10 @@ from pts.jobscript import JobScript
 # test results file does not contain any data (an error which is catched an produces an error message).
 import warnings
 warnings.filterwarnings("ignore")
+
+# -----------------------------------------------------------------
+
+cores = {'delcatty': 16, 'gulpin': 32, 'cosma': 16}
 
 # -----------------------------------------------------------------
 
@@ -85,16 +90,28 @@ class ScalingTest(object):
         self._system = system
 
         # Determine whether we are dealing with a scheduling system or we can launch simulations right away
-        if self._system == "delcatty" or self._system == "cosma":
+        if self._system in cores.keys():
+
+            # Set the appropriate function for scheduling simulations
             self._do = self._schedule
+
+            # Get the number of cores (per node) on this system from a pre-defined dictionary
+            self._cores = cores[self._system]
+
+            # Set the environment to launch jobs to the requested cluster
+            clusterstring = "cluster/" + self._system
+            subprocess.call(["module", "swap", clusterstring])
+
         else:
+
+            # Set the appropriate function for running simulations
             self._do = self._run
+
+            # Determine the number of cores (per node) on this system
+            self._cores = multiprocessing.cpu_count()
 
         # Set the mode
         self._mode = mode
-
-        # Determine the number of cores (per node) on this system
-        self._cores = multiprocessing.cpu_count()
 
         # Search the ski file that is in the specified simulation path
         self._skifilename = ""

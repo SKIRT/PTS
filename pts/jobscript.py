@@ -15,7 +15,10 @@
 import os
 import os.path
 import subprocess
-import multiprocessing
+
+# -----------------------------------------------------------------
+
+cores = {'delcatty': 16, 'gulpin': 32}
 
 # -----------------------------------------------------------------
 
@@ -60,6 +63,9 @@ class JobScript(object):
         m, s = divmod(walltime, 60)
         h, m = divmod(m, 60)
 
+        # Determine which cluster is currently set as the default cluster to run jobs
+        clustername = os.environ["VSC_INSTITUTE_CLUSTER"]
+
         # Check whether we are dealing with multithreading. If so, we calculate the number of processes per
         # node and the requested number of processors per node is set to the maximum (for performance reasons).
         hybrid_processes = 1
@@ -70,7 +76,7 @@ class JobScript(object):
 
             # For hybrid (or threads) mode we always request the full node.
             # Therefore, we determine the number of cores on the node.
-            ppn = multiprocessing.cpu_count()
+            ppn = cores[clustername]
 
         # In MPI mode, we also request a full node for processors < cpu count of a node, if specified by the fullnode flag
         elif fullnode:
@@ -79,7 +85,7 @@ class JobScript(object):
             hybrid_processes = ppn
 
             # Set the requested number of processors on the node to the maximum (a full node)
-            ppn = multiprocessing.cpu_count()
+            ppn = cores[clustername]
 
         # Write a general header to the job script
         self._script.write("#!/bin/sh\n")
