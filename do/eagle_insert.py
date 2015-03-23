@@ -20,6 +20,7 @@
 # -----------------------------------------------------------------
 
 import sys
+import random
 from eagle.galaxy import Snapshot
 import eagle.database
 
@@ -54,8 +55,12 @@ galaxies.remove_gasparticles_below(minparticles)
 galaxies.remove_starmass_below(minstarmass)
 galaxies.remove_starmass_above(maxstarmass)
 
+# randomize the ordering of the galaxies so that consecutive subsets are more representative of the population
+galaxies = galaxies.galaxies
+random.shuffle(galaxies)
+
 # insert a new record into the database for each selected galaxy, without committing
-for g in galaxies.galaxies:
+for g in galaxies:
     db.insert(label, snap.eaglesim, snap.orig_redshift,
               g.groupnumber, g.subgroupnumber, g.numstarparticles, g.numgasparticles, g.starmass, g.gasmass,
               skiname)
