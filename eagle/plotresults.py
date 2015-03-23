@@ -48,7 +48,8 @@ axistypes = {
     'logMdust/Mstar': ( r"$\log_{10}(M_\mathrm{dust}/M_*)$", lambda: np.log10(setup_mass_dust/original_mass_stars) ),
     'logLtot': ( r"$\log_{10}(L_\mathrm{tot})\,[L_\odot]$", lambda: np.log10(setup_luminosity_stars+setup_luminosity_hii_regions) ),
     'logLhii': ( r"$\log_{10}(L_\mathrm{hii})\,[L_\odot]$", lambda: np.log10(setup_luminosity_hii_regions[setup_luminosity_hii_regions>0]) ),
-    'Zaverage': ( r"$Z_\mathrm{avg}$", lambda: setup_mass_metallic_gas/setup_mass_cold_gas ),
+    'Zgas': ( r"$Z_\mathrm{gas}$", lambda: setup_mass_metallic_gas/setup_mass_cold_gas ),
+    'logZgas': ( r"$\log_{10}(Z_\mathrm{gas})\,[Z_\odot]$", lambda: np.log10(setup_mass_metallic_gas/setup_mass_cold_gas/Zsun) ),
     'fdust': ( r"$f_\mathrm{dust}$", lambda: setup_mass_dust/setup_mass_metallic_gas ),
     'Mgas/Mdust': ( r"$M_\mathrm{gas}/M_\mathrm{dust}$", lambda: setup_mass_cold_gas/setup_mass_dust ),
     'fracMgas': ( r"$M_\mathrm{gas}/(M_*+M_\mathrm{gas})$", lambda: setup_mass_cold_gas/(original_mass_stars+setup_mass_cold_gas) ),
@@ -90,6 +91,7 @@ Msun = units.convert(1., from_unit='Msun', to_unit='kg')
 Lsun = units.convert(1., from_unit='Lsun', to_unit='W')
 LsunK = 10**((34.1-5.19)/2.5)  # solar luminosity in K band expressed in W/Hz  (AB magnitude is 5.19)
 LsunH = 10**((34.1-4.71)/2.5)  # solar luminosity in H band expressed in W/Hz  (AB magnitude is 4.71)
+Zsun = 0.0127
 
 # -----------------------------------------------------------------
 
