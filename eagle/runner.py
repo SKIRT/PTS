@@ -97,7 +97,7 @@ def run(runid):
         filterR = Filter('SDSS.i')
         filterG = Filter('SDSS.r')
         filterB = Filter('SDSS.g')
-        filterIR = Filter('IRAS.100')
+        filterIR = Filter('Pacs.green')
         filterUV = Filter('GALEX.FUV')
         fmin,fmax = makeintegratedrgbimages(simulation,
             [ (filterR, 1,0,0), (filterG, 0,1,0), (filterB, 0,0,1) ] )
