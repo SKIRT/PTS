@@ -147,13 +147,39 @@ class Image(object):
             except KeyError: pass
 
         # Get the data from the HDU
-        data = hdu.data[0] if multiplanes else hdu.data
+        if multiplanes:
 
-        # Close the fits file
-        hdulist.close()
+            self.addlayer(hdu.data[0], "primary")
+            self.addlayer(hdu.data[1], "errors")
 
-        # Save the data in an image layer
-        self._layers['primary'] = ImageLayer(data, self._log)
+            # Close the fits file
+            hdulist.close()
+
+        else:
+
+            self.addlayer(hdu.data, "primary")
+
+            # Close the fits file
+            hdulist.close()
+
+            # Look for a seperate errors fits file
+            errorspath = os.path.splitext(path)[0] + ".ERRORS.fits"
+            if os.path.isfile(errorspath):
+
+                # Open the HDU list for the FITS file
+                hdulist = pyfits.open(errorspath)
+
+                # Get the primary data
+                hdu = hdulist[0]
+
+                self.addlayer(hdu.data, "errors")
+
+                # Close the fits file
+                hdulist.close()
+
+            else:
+
+                self._log.warning("No error data found for this image")
 
     # -----------------------------------------------------------------
 
@@ -267,20 +293,22 @@ class Image(object):
     # ----------------------------------------------------------------- VISUALISATION
 
     ## This function
-    def plot(self, path=None):
+    def plot(self, layer):
 
-        # Plot the primary image
-        self.primary.plot()
-
-    ## This function
-    def histogram(self, path=None):
-
-        self.primary.histogram()
+        # Plot the specified layer
+        self._layers[layer].plot()
 
     ## This function
-    def contourplot(self, path=None):
+    def histogram(self, layer):
 
-        self.primary.contourplot()
+        # Make a histogram of the specified layer
+        self._layers[layer].histogram()
+
+    ## This function
+    def contourplot(self, layer):
+
+        # Make a contour plot of the specified layer
+        self._layers[layer].contourplot()
 
     # ----------------------------------------------------------------- PHOTOMETRY
 
@@ -487,9 +515,33 @@ class Image(object):
     # ----------------------------------------------------------------- ADVANCED OPERATIONS
 
     ## This function ..
-    def convolve(self):
+    def convolve(self, name):
 
-        pass
+        # kernels: from http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012_May/Kernels_fits_Files/Hi_Resolution/
+
+        self._log.info("Convolving image with the kernel " + os.path.splitext(name)[0])
+
+        # The path to the kernel file
+        path = os.path.join(os.getenv("HOME"), "Kernels", name)
+
+        # Inform the user that the kernel was found
+        self._log.info("Found kernel file at " + path)
+
+        # Open the HDU list for the FITS file
+        hdulist = pyfits.open(path)
+
+        # Get the primary image
+        hdu = hdulist[0]
+
+        # Do the convolution
+        from astropy.convolution import convolve_fft
+        resultdata = convolve_fft(self.primary.data, hdu.data)
+
+        # Close the FITS file
+        hdulist.close()
+
+        # Add the new convolved layer
+        self.addlayer(resultdata, "primary_convolved")
 
     ## This function ..
     def _interpolate(self, order, linear, limits=None):
@@ -532,8 +584,6 @@ class Image(object):
         # Return the result
         return box_fluxes
 
-    # ----------------------------------------------------------------- MASKS
-
     ## This function interpolates the image within the shapes in a certain region ...
     def interpolate(self, r, order=3, linear=False):
 
@@ -574,6 +624,29 @@ class Image(object):
         # Add the new layer
         self.addlayer(interpolated, "primary_interpolated")
 
+    # ----------------------------------------------------------------- MASKS
+
+     ## This function masks the NaN values in the primary image
+    def masknans(self):
+
+        # Get a map of all the NaNs in the primary image
+        mask = np.isnan(self.primary.data)
+
+        # Make a nans mask layer
+        self.addmask(mask, "nans")
+
+    ## This function
+    def maskedges(self):
+
+        # Structure array
+        structure = ndimage.generate_binary_structure(2, 2)
+
+        # Make the new mask, made from 100 iterations with the structure array
+        mask = ndimage.binary_dilation(self._masks["nans"].data, structure, iterations=100)
+
+        # Add the mask
+        self.addmask(mask, "edges")
+
     ## This function
     def combinemasks(self, m1, m2, name=None):
 
@@ -589,29 +662,15 @@ class Image(object):
     ## This function ..
     def maketotalmask(self):
 
-        # For now, we only have the edge mask
-        totalmask = self._masks['edges'].data
+        # Create a total mask
+        totalmask = np.zeros_like(self.primary.data, dtype=bool)
+
+        for mask in self.masks():
+
+            totalmask += self._masks[mask].data
 
         # Add the mask
         self.addmask(totalmask, 'total')
-
-    ## This function ..
-    def makeskymask(self):
-
-        # Combine the edges and galaxy masks
-        self.combinemasks("edges", "galaxy", name="sky")
-
-    ## This function
-    def maskedges(self):
-
-        # Structure array
-        structure = ndimage.generate_binary_structure(2, 2)
-
-        # Make the new mask, made from 100 iterations with the structure array
-        mask = ndimage.binary_dilation(self._masks["nans"].data, structure, iterations=100)
-
-        # Add the mask
-        self.addmask(mask, "edges")
 
     ## This function applies a mask on the primary image
     def makemaskedlayer(self, m):
@@ -637,15 +696,6 @@ class Image(object):
         # Set the pixel value to 0 where the mask is True
         self.primary.data[self._masks['total'].data] = 0
 
-    ## This function masks the NaN values in the primary image
-    def masknans(self):
-
-        # Get a map of all the NaNs in the primary image
-        mask = np.isnan(self.primary.data)
-
-        # Make a nans mask layer
-        self.addmask(mask, "nans")
-
     # This function creates a new mask from a specified region. It takes the name of this region as the sole argument.
     def createmask(self, r):
 
@@ -661,7 +711,7 @@ class Image(object):
     # ----------------------------------------------------------------- IMAGE SEGMENTATION
 
     ## This function
-    def findgalaxy(self, plot=True):
+    def findgalaxy(self, plot=False):
 
         # Find the orientation of the galaxy in this iamge
         self.orientation = GalaxyFinder(self.primary.data[::-1,:], quiet=True)
@@ -684,46 +734,6 @@ class Image(object):
 
         # Add this region
         self.addregion(region, "galaxy")
-
-    ## Automatically detect sources
-    def detectsources(self):
-
-        from astropy.stats import sigma_clipped_stats
-
-        mean, median, std = sigma_clipped_stats(self.primary.data, sigma=3.0)
-        print(mean, median, std)
-
-        from photutils import daofind
-        sources = daofind(self.primary.data, fwhm=3.0, threshold=2.*std)
-
-        print sources
-
-        from astropy.visualization import SqrtStretch
-
-        from astropy.visualization.mpl_normalize import ImageNormalize
-
-        positions = (sources['xcentroid'], sources['ycentroid'])
-
-        apertures = CircularAperture(positions, r=4.)
-
-        norm = ImageNormalize(stretch=SqrtStretch())
-
-        plt.imshow(self.primary.data, cmap='Greys', origin='lower', norm=norm)
-
-        apertures.plot(color='blue', lw=1.5, alpha=0.5)
-
-        plt.show()
-
-        #from astropy.visualization import SqrtStretch
-        #from astropy.visualization.mpl_normalize import ImageNormalize
-
-        #norm = ImageNormalize(stretch=SqrtStretch())
-        #fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8))
-        #ax1.imshow(self.primary.data, origin='lower', cmap='Greys_r', norm=norm)
-        #ax2.imshow(segm, origin='lower', cmap='jet')
-
-        # Return the regions
-        #return regions
 
     ## This function determines the central peak position of the stars indicated by the region file
     def getstarpositions(self, region, plot=True):
@@ -858,17 +868,17 @@ class Image(object):
         self.addlayer(sky, "sky")
 
     ## This function
-    def estimatesky(self):
+    #def estimatesky(self):
 
         # Get the background
-        bkg = Background(self.primary.data, (100, 100), filter_shape=(3, 3), method='median', mask=self._masks['sky'].data)
-        sky = bkg.background
+        #bkg = Background(self.primary.data, (100, 100), filter_shape=(3, 3), method='median', mask=self._masks['sky'].data)
+        #sky = bkg.background
 
         # Add a new layer
-        self.addlayer(sky, 'sky')
+        #self.addlayer(sky, 'sky')
 
     ## This function
-    def estimatesky_new(self):
+    def estimatesky(self):
 
         # The length of the major axis of the ellipse
         major = 3.0 * self.orientation.majoraxis * 2.0
@@ -886,17 +896,25 @@ class Image(object):
         # Create the mask
         mask = np.logical_not(region.get_mask(header=self.header, shape=(self.ysize,self.xsize)))
 
-        # Combine the 2 masks
-        newmask = mask + self._masks["sky"].data + self._masks["stars"].data
+        # Combine the new mask with the galaxy
+        newmask = mask + self._masks["galaxy"].data + self._masks["total"].data
 
         # Add the mask
-        self.addmask(newmask.astype(bool), "background")
+        self.addmask(newmask.astype(bool), "sky")
 
         # Make a masked layer, the background
-        self.makemaskedlayer("background")
+        self.makemaskedlayer("sky")
 
-        # Downsample to pixels of size 4*FWHM
-        # ...
+        # Create a NumPy masked array
+        maskedarray = np.ma.masked_array(self.primary.data, newmask.astype(bool))
+
+        # Calculate the mean, median and standard deviation of the sky around the galaxy
+        mean = np.ma.mean(maskedarray)
+        median = np.ma.median(maskedarray)
+        error = np.ma.std(maskedarray, ddof=1)
+
+        # Return the mean, median and standard deviation
+        return mean, median, error
 
     ## This function subtracts the fitted sky from the primary image
     def subtractsky(self):
@@ -915,33 +933,22 @@ class Image(object):
         # Get the stars
         stars = self.getstarpositions(region)
 
-        # Initially, set the average x and y position to
-        FWHM_x = FWHM_y = 0.0
+        # Initially, set the average x and y fwhm to zero
+        fwhm_x = fwhm_y = 0.0
 
         # For each star in the list
         for star in stars:
 
             # Get the width in the x and y direction
-            FWHM_x += star[2]
-            FWHM_y += star[3]
+            fwhm_x += star[2]
+            fwhm_y += star[3]
 
         # Average the x and y FWHM over all the reference stars
-        FWHM_x = FWHM_x / float(len(stars))
-        FWHM_y = FWHM_y / float(len(stars))
+        fwhm_x = fwhm_x / float(len(stars))
+        fwhm_y = fwhm_y / float(len(stars))
 
-        # Circular approximation
-        FWHM = (FWHM_x + FWHM_y) / 2.0
-
-        # Inform the user
-        self._log.info("FWHM : " + str("{:5.2f}".format(FWHM)) + "  ("+ str("{:5.2f}".format(FWHM_x)) + " in x direction and " + str("{:5.2f}".format(FWHM_y)) + " in y direction )")
-
-        # Set the FWHM of the image
-        self._fwhm = FWHM
-
-    ## This function
-    def estimatepsf(self):
-
-        pass
+        # Return the fwhm in the x and the y direction
+        return fwhm_x, fwhm_y
 
 # ----------------------------------------------------------------- USEFUL FUNCTIONS
 
