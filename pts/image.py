@@ -28,7 +28,6 @@ import pyregion
 import astropy.io.fits as pyfits
 from photutils import CircularAperture
 from photutils import aperture_photometry
-from photutils.background import Background
 
 # Import PTS modules
 from pts.mathematics import fitpolynomial, polynomial, fitgaussian, gaussian
@@ -143,6 +142,10 @@ class Image(object):
                 self._log.warning("Multiple planes detected. Using PLANE0 = " + plane_id)
                 multiplanes = True
 
+                # We pretend the extra planes do not exist: remove the extra ("planes") axis
+                self.header["NAXIS"] = 2
+                self.header.pop("NAXIS3", None)
+
             # If the PLANE keyword is not found, we assume we only have one plane
             except KeyError: pass
 
@@ -183,8 +186,11 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    ## This function ..
+    ## This function ...
     def info(self):
+
+        # Print name
+        self._log.info("Name: " + self._name)
 
         # Print dimension of data
         self._log.info("Dimensions of data cube: " + str(self.xsize) + " x " + str(self.ysize))
@@ -241,25 +247,25 @@ class Image(object):
 
         return self.primary.ysize
 
-    ## This function ..
+    ## This function ...
     @property
     def mean(self):
 
         return self.primary.mean
 
-    ## This function ..
+    ## This function ...
     @property
     def median(self):
 
         return self.primary.median
 
-    ## This function ..
+    ## This function ...
     @property
     def min(self):
 
         return self.primary.min
 
-    ## This function ..
+    ## This function ...
     @property
     def max(self):
 
@@ -485,7 +491,7 @@ class Image(object):
         # Return the keys of the masks dictionary
         return self._masks.keys()
 
-    ## This function ..
+    ## This function ...
     def addlayer(self, data, name):
 
         # Inform the user
@@ -494,7 +500,7 @@ class Image(object):
         # Add the layer to the layers dictionary
         self._layers[name] = ImageLayer(data, self._log)
 
-    ## This function
+    ## This function ...
     def addregion(self, region, name):
 
         # Inform the user
@@ -503,7 +509,7 @@ class Image(object):
         # Add the region to the regions dictionary
         self._regions[name] = region
 
-    ## This function ..
+    ## This function ...
     def addmask(self, data, name):
 
         # Inform the user
@@ -514,7 +520,7 @@ class Image(object):
 
     # ----------------------------------------------------------------- ADVANCED OPERATIONS
 
-    ## This function ..
+    ## This function ...
     def convolve(self, name):
 
         # kernels: from http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012_May/Kernels_fits_Files/Hi_Resolution/
@@ -543,7 +549,31 @@ class Image(object):
         # Add the new convolved layer
         self.addlayer(resultdata, "primary_convolved")
 
-    ## This function ..
+    ## This function ...
+    def rebin(self, reference):
+
+        # Open the HDU list for the reference FITS file
+        hdulist = pyfits.open(reference)
+
+        # Get the primary image
+        hdu = hdulist[0]
+
+        referenceheader = hdu.header
+
+        referenceheader["NAXIS"] = 2
+        referenceheader.pop("NAXIS3", None)
+
+        # Do the rebinning based on the header of the reference image
+        from pts.hcongrid import hcongrid
+        newimage = hcongrid(self.primary.data, self.header, referenceheader)
+
+        # Close the reference FITS file
+        hdulist.close()
+
+        # Add the new layer
+        self.addlayer(newimage, "primary_rebinned")
+
+    ## This function ...
     def _interpolate(self, order, linear, limits=None):
 
         # Make lists to contain the coordinates and fluxes from which to interpolate from
@@ -665,8 +695,14 @@ class Image(object):
         # Create a total mask
         totalmask = np.zeros_like(self.primary.data, dtype=bool)
 
+        # Inform the user
+        self._log.info("A total mask will be made, combining the following masks:")
+
+        # Add all the masks
         for mask in self.masks():
 
+            # Log the mask name and add it to to the total
+            self._log.info("    - " + mask)
             totalmask += self._masks[mask].data
 
         # Add the mask
@@ -727,7 +763,7 @@ class Image(object):
         height = major * (1 - self.orientation.eps)
 
         # Cretae a string identifying this ellipse
-        region_string = "image;ellipse(" + str(self.orientation.xpeak) + "," + str(self.orientation.ypeak) + "," + str(width) + "," + str(height) + "," + str(self.orientation.theta) + ")"
+        region_string = "image;ellipse(" + str(self.orientation.ypeak) + "," + str(self.orientation.xpeak) + "," + str(width) + "," + str(height) + "," + str(self.orientation.theta) + ")"
 
         # Create a region consisting of one ellipse
         region = pyregion.parse(region_string)
@@ -868,16 +904,6 @@ class Image(object):
         self.addlayer(sky, "sky")
 
     ## This function
-    #def estimatesky(self):
-
-        # Get the background
-        #bkg = Background(self.primary.data, (100, 100), filter_shape=(3, 3), method='median', mask=self._masks['sky'].data)
-        #sky = bkg.background
-
-        # Add a new layer
-        #self.addlayer(sky, 'sky')
-
-    ## This function
     def estimatesky(self):
 
         # The length of the major axis of the ellipse
@@ -888,7 +914,7 @@ class Image(object):
         height = major * (1 - self.orientation.eps)
 
         # Create a string identifying this ellipse
-        region_string = "image;ellipse(" + str(self.orientation.xpeak) + "," + str(self.orientation.ypeak) + "," + str(width) + "," + str(height) + "," + str(self.orientation.theta) + ")"
+        region_string = "image;ellipse(" + str(self.orientation.ypeak) + "," + str(self.orientation.xpeak) + "," + str(width) + "," + str(height) + "," + str(self.orientation.theta) + ")"
 
         # Create a region consisting of one ellipse
         region = pyregion.parse(region_string)
