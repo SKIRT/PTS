@@ -15,7 +15,10 @@
 import os
 import os.path
 import subprocess
-import multiprocessing
+
+# -----------------------------------------------------------------
+
+cores = {'delcatty': 16, 'gulpin': 32}
 
 # -----------------------------------------------------------------
 
@@ -32,8 +35,17 @@ class JobScript(object):
     #  - threadspp: the number of threads (per process), passed directly to the SKIRT executable
     #  - outputpath: the path of the directory to contain the output of the simulation
     #  - walltime: an (over)estimate of the required time to complete the simulation
+    #  - mail: this flag indicates whether the user wants to receive e-mails when the job is started, completed or aborted.
+    #  - verbose: this flag can be used to turn SKIRT's verbose logging mode on or off
+    #  - fullnode: this flag can be set to True if one wants to request at least one full node, irrespective of the
+    #              number of processors (ppn) that is needed. When threadspp > 1, this is the default behaviour.
+    #              If a job is launched with pure mpi (threadspp = 1) where the number of processes is less than the
+    #              number of cpu's on a node, these parallel processes could get scattered amongst different nodes,
+    #              potentially increasing communication time and being affected by interference of other programs (from
+    #              other HPC users). Do not set this flag if you don't care about the reproducibility of your simulation
+    #              in terms of computation time.
     #
-    def __init__(self, path, skifilepath, nodes, ppn, threadspp, outputpath, walltime, mail=False):
+    def __init__(self, path, skifilepath, nodes, ppn, threadspp, outputpath, walltime, mail=False, verbose=False, fullnode=False):
 
         # Save the file path
         self._path = path
@@ -51,6 +63,9 @@ class JobScript(object):
         m, s = divmod(walltime, 60)
         h, m = divmod(m, 60)
 
+        # Determine which cluster is currently set as the default cluster to run jobs
+        clustername = os.environ["VSC_INSTITUTE_CLUSTER"]
+
         # Check whether we are dealing with multithreading. If so, we calculate the number of processes per
         # node and the requested number of processors per node is set to the maximum (for performance reasons).
         hybrid_processes = 1
@@ -61,7 +76,16 @@ class JobScript(object):
 
             # For hybrid (or threads) mode we always request the full node.
             # Therefore, we determine the number of cores on the node.
-            ppn = multiprocessing.cpu_count()
+            ppn = cores[clustername]
+
+        # In MPI mode, we also request a full node for processors < cpu count of a node, if specified by the fullnode flag
+        elif fullnode:
+
+            # Set the number of processes per node
+            hybrid_processes = ppn
+
+            # Set the requested number of processors on the node to the maximum (a full node)
+            ppn = cores[clustername]
 
         # Write a general header to the job script
         self._script.write("#!/bin/sh\n")
@@ -74,16 +98,13 @@ class JobScript(object):
         self._script.write("#PBS -e error_" + skifilename + "_" + str(nodes) + "_" + str(ppn) + ".txt\n")
         self._script.write("#PBS -l walltime=%d:%02d:%02d\n" % (h, m, s))
         self._script.write("#PBS -l nodes=" + str(nodes) + ":ppn=" + str(ppn) + "\n")
-        if mail:
-            self._script.write("#PBS -m bae\n")
+        if mail: self._script.write("#PBS -m bae\n")
         self._script.write("#\n")
         self._script.write("\n")
 
         # Load cluster modules
         self._script.write("# Load the necessary modules\n")
         self._script.write("module load jobs\n")
-        #self._script.write("module load GCC/4.8.3\n")
-        #self._script.write("module load ictce/7.1.2\n")
         self._script.write("module load Python/2.7.8-intel-2014b\n")
         self._script.write("\n")
 
@@ -91,12 +112,23 @@ class JobScript(object):
         self._script.write("# Run the simulation\n")
         self._script.write("cd " + directorypath + "\n")
 
-        hybridoptions = ""
-        if threadspp > 1:
+        # Construct a string that represents the SKIRT execution command
+        commandstring = "mympirun "
 
-            hybridoptions = "--hybrid " + str(hybrid_processes) + " "
+        # Add the appropriate syntax for hybrid / multithreaded runs
+        if threadspp > 1 or fullnode: commandstring += "--hybrid " + str(hybrid_processes) + " "
 
-        self._script.write("mympirun " + hybridoptions + "skirt -t " + str(threadspp) + " -o " + outputpath + " " + skifilename + ".ski\n")
+        # Add the number of threads per process and the SKIRT output path to the command string
+        commandstring += "skirt -t " + str(threadspp) + " -o " + outputpath + " "
+
+        # If verbose mode is desired, we pass the "-v" flag to SKIRT
+        if verbose: commandstring += "-v "
+
+        # Finally, give the name of the ski file to SKIRT
+        commandstring += skifilename + ".ski"
+
+        # Write the command string to the job script
+        self._script.write(commandstring + "\n")
 
     ## Add an additional command to the job script, optionally preceeded by a comment line
     def addcommand(self, command, comment=""):
@@ -105,8 +137,7 @@ class JobScript(object):
         self._script.write("\n")
 
         # Write a comment line preceeding the actual command
-        if comment:
-            self._script.write("# " + comment + "\n")
+        if comment: self._script.write("# " + comment + "\n")
 
         # Add the command to the job script
         self._script.write(command + "\n")
@@ -121,9 +152,10 @@ class JobScript(object):
         FNULL = open(os.devnull, 'w')   # We ignore the output of the qsub command
         subprocess.call(("qsub",), stdin=open(self._path), stdout=FNULL, stderr=subprocess.STDOUT)
 
-    ## Remove the job script
+    ## This function removes the job script
     def remove(self):
 
+        # Remove the script file from disk
         os.remove(self._path)
 
 # -----------------------------------------------------------------
