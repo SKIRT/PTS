@@ -29,7 +29,7 @@ import astropy.io.fits as pyfits
 from photutils import CircularAperture
 from photutils import aperture_photometry
 
-# Import PTS modules
+# Import relevant PTS modules
 from pts.mathematics import fitpolynomial, polynomial, fitgaussian, gaussian
 from pts.log import Log
 from pts.filter import Filter
@@ -82,7 +82,7 @@ class Image(object):
 
         # Get the filter
         try:
-            self._filter = Filter(filtername)
+            self.filter = Filter(filtername)
         except ValueError:
             self._log.warning("Could not determine the filter used for this image")
 
@@ -357,7 +357,16 @@ class Image(object):
             # Calculate the sum of the flux in the pixels within the box
             return np.sum(self.primary.data[ymin:ymax,xmin:xmax])
 
-    # ----------------------------------------------------------------- BASIC OPERATIONS
+
+    # ----------------------------------------------------------------- ARITHMETIC OPERATIONS
+
+    ## This function
+    def multiply(self, factor):
+
+        # Multiply the image with the factor
+        self.primary.data = self.primary.data * factor
+
+    # ----------------------------------------------------------------- BASIC IMAGE MANIPULATION
 
     ## This function crops this image (consisting of all layers, masks and regions) to a specified field.
     #  It takes the following parameters:
@@ -374,12 +383,6 @@ class Image(object):
 
         # Crop the image
         self.primary.data = self.primary.data[yrange, xrange]
-
-    ## This function
-    def multiply(self, factor):
-
-        # Multiply the image with the factor
-        self.primary.data = self.primary.data * factor
 
     ## This function
     def rotateandcenter_fitskirt(self, left_x, left_y, right_x, right_y, flip=False):
@@ -756,7 +759,7 @@ class Image(object):
         if plot: self.orientation.plot()
 
         # The length of the major axis of the ellipse
-        major = 3.0 * self.orientation.majoraxis
+        major = 3.0 * self.orientation.majoraxis * 1.7
 
         # The width and heigth of the ellips
         width = major
@@ -772,7 +775,7 @@ class Image(object):
         self.addregion(region, "galaxy")
 
     ## This function determines the central peak position of the stars indicated by the region file
-    def getstarpositions(self, region, plot=True):
+    def getstarpositions(self, region, plot=False):
 
         # Make an empty list of stars
         stars = []
@@ -825,8 +828,10 @@ class Image(object):
             # Plot the result
             if plot:
 
-                plt.matshow(square, cmap=cm.CMRmap)
-                plt.contour(fit(*indices(square.shape)), cmap=cm.Blues)
+                #plt.matshow(square, cmap=cm.CMRmap)
+                plt.matshow(square)
+                #plt.contour(fit(*indices(square.shape)), cmap=cm.Blues)
+                plt.contour(fit(*np.indices(square.shape)))
                 ax = plt.gca()
 
                 plt.text(0.95, 0.05, """
@@ -904,10 +909,15 @@ class Image(object):
         self.addlayer(sky, "sky")
 
     ## This function
-    def estimatesky(self):
+    def setorientation(self, orientation):
+
+        self.orientation = orientation
+
+    ## This function
+    def findsky(self):
 
         # The length of the major axis of the ellipse
-        major = 3.0 * self.orientation.majoraxis * 2.0
+        major = 3.0 * self.orientation.majoraxis * 2.5
 
         # The width and heigth of the ellips
         width = major
@@ -916,7 +926,7 @@ class Image(object):
         # Create a string identifying this ellipse
         region_string = "image;ellipse(" + str(self.orientation.ypeak) + "," + str(self.orientation.xpeak) + "," + str(width) + "," + str(height) + "," + str(self.orientation.theta) + ")"
 
-        # Create a region consisting of one ellipse
+        # Create a region consisting of one ellipsew
         region = pyregion.parse(region_string)
 
         # Create the mask
@@ -926,21 +936,138 @@ class Image(object):
         newmask = mask + self._masks["galaxy"].data + self._masks["total"].data
 
         # Add the mask
-        self.addmask(newmask.astype(bool), "sky")
+        #self.addmask(newmask.astype(bool), "sky_beforeclipping")
 
         # Make a masked layer, the background
-        self.makemaskedlayer("sky")
+        #self.makemaskedlayer("sky_beforeclipping")
 
         # Create a NumPy masked array
         maskedarray = np.ma.masked_array(self.primary.data, newmask.astype(bool))
 
         # Calculate the mean, median and standard deviation of the sky around the galaxy
-        mean = np.ma.mean(maskedarray)
-        median = np.ma.median(maskedarray)
-        error = np.ma.std(maskedarray, ddof=1)
+        #mean = np.ma.mean(maskedarray)
+        #median = np.ma.median(maskedarray)
+        #error = np.ma.std(maskedarray, ddof=1)
+
+        from astropy.stats import sigma_clip, sigma_clipped_stats
+
+        #testmask_withoutstarsmasked = mask + self._masks["galaxy"].data
+        #testmaskedarray = np.ma.masked_array(self.primary.data, testmask_withoutstarsmasked.astype(bool))
+
+        # Make a mask of > 3 sigma regions
+        newmaskedarray = sigma_clip(maskedarray, sig=3.0, iters=None, copy=True)
+        #self.addmask(newmaskedarray.mask, "sigmaclippedmask")
+
+        # Add the mask
+        self.addmask(newmaskedarray.mask, "sky")
+
+        # Make a masked layer, the (sigma-clipped) sky
+        self.makemaskedlayer("sky")
+
+        # Determine the mean, median and error of the sigma-clipped sky
+        mean, median, error = sigma_clipped_stats(self.primary.data, mask=newmask.astype(bool), sigma=3.0, iters=None)
 
         # Return the mean, median and standard deviation
         return mean, median, error
+
+    ## This function fits a polynomial to the sky map
+    def fitsky_lines(self):
+
+        x = np.arange(self.xsize)
+
+        bkg = np.zeros_like(self.primary.data)
+
+        for col in np.arange(self.ysize):
+
+            #maskedx = np.ma.masked_array(x, self._masks["sky"].data[col, x])
+            #maskeddata = np.ma.masked_array(self.primary.data[col, x], self._masks["sky"].data[col, x])
+
+            weigths = np.logical_not(self._masks["sky"].data[col, x]).astype(int)
+
+            #if not np.any(weigths): continue
+
+            number_of_ones = np.count_nonzero(weigths)
+
+            if number_of_ones < 100:
+
+                #print number_of_ones
+                continue
+
+            #pfit = np.ma.polyfit(maskedx, maskeddata, 2)
+
+            pfit = np.polyfit(x, self.primary.data[col, x], 3, w=weigths)
+            bkg[col, :] = np.polyval(pfit, x)
+
+        # Add the new layer
+        self.addlayer(bkg, "fittedsky")
+
+    ## This function fits a polynomial to the sky map
+    def fitsky(self, fwhm):
+
+        # Determine the size of each box
+        step = int(round(4 * fwhm))
+
+        xvalues = []
+        yvalues = []
+        fluxes = []
+
+        self._log.info("step = " + str(step))
+
+        xx = np.arange(float(step)/2.0 + 1, float(self.xsize)-float(step)/2.0 - 1, float(step))
+        yy = np.arange(float(step)/2.0 + 1, float(self.ysize)-float(step)/2.0 - 1, float(step))
+
+        # Loop over all points in an evenly spaced grid (spacing = step)
+        for x in xx:
+
+            for y in yy:
+
+                # Determine x range and y range of the box
+                xmin = int(round(x - 0.5*step))
+                xmax = int(round(x + 0.5*step))
+                ymin = int(round(y - 0.5*step))
+                ymax = int(round(y + 0.5*step))
+                x_range = slice(xmin,xmax)
+                y_range = slice(ymin,ymax)
+
+                #self._log.info("x = " + str(x) + " , y = " + str(y) + " , xmin = " + str(xmin) + " , xmax = " + str(xmax) + " , ymin = " + str(ymin) + " , ymax = " + str(ymax))
+
+                # Get the part of the sky mask that lies within this box
+                box_mask = self._masks["sky"].data[y_range, x_range]
+
+                # Make a masked array from the part of the primary image that lies within this box
+                maskedarray = np.ma.masked_array(self.primary.data[y_range, x_range], box_mask)
+
+                # Calculate the number of pixels in this box that are not masked
+                covered_pixels = np.sum(np.logical_not(box_mask))
+
+                # If this box does not include any pixels that are not masked, go to the next coordinate
+                if covered_pixels == 0: continue
+
+                # Calculate the mean flux in this box
+                flux = maskedarray.sum() / float(covered_pixels)
+
+                # Add the x coordinate, the y coordinate and the flux to the appropriate lists
+                xvalues.append(x)
+                yvalues.append(y)
+                fluxes.append(flux)
+
+        order = 3
+        linear = True
+
+        xvalues = np.array(xvalues)
+        yvalues = np.array(yvalues)
+
+        # Fit a polynomial
+        parameters = fitpolynomial(xvalues, yvalues, fluxes, order, linear)
+
+        # Image grid
+        xx, yy = np.meshgrid(range(0, self.xsize), range(0, self.ysize))
+
+        # Evaluate the polynomial on the image grid
+        fittedsky = polynomial(xx.astype(float), yy, parameters)
+
+        # Add the new layer
+        self.addlayer(fittedsky, "fittedsky_2D")
 
     ## This function subtracts the fitted sky from the primary image
     def subtractsky(self):
