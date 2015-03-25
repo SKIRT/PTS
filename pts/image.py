@@ -118,7 +118,7 @@ class Image(object):
         # Return the value
         return value
 
-    ## This function ..
+    ## This function ...
     def _import(self, path, cut):
 
         # Show which image we are importing
@@ -692,7 +692,7 @@ class Image(object):
         # Add the mask
         self.addmask(mask.astype(bool), name)
 
-    ## This function ..
+    ## This function ...
     def maketotalmask(self):
 
         # Create a total mask
@@ -1118,7 +1118,7 @@ def area(region):
 
         return region.coord_list[2] * region.coord_list[3]
 
-## This function ..
+## This function ...
 def plotdata(data, path):
 
     # Plot the data using logaritmic scale
@@ -1142,19 +1142,19 @@ class ImageMask(object):
 
         self._log = log
 
-    ## This function ..
+    ## This function ...
     @property
     def data(self):
 
         return self._data
 
-    ## This function ..
+    ## This function ...
     @data.setter
     def data(self, newdata):
 
         self._data = newdata
 
-    ## This function ..
+    ## This function ...
     def plot(self, path=None):
 
         plotdata(self._data.astype(int), path)
@@ -1229,25 +1229,25 @@ class ImageLayer(object):
 
         return self._data.dtype.name
 
-    ## This function ..
+    ## This function ...
     @property
     def mean(self):
 
         return np.mean(self._data)
 
-    ## This function ..
+    ## This function ...
     @property
     def median(self):
 
         return np.median(self._data)
 
-    ## This function ..
+    ## This function ...
     @property
     def min(self):
 
         return np.min(self._data)
 
-    ## This function ..
+    ## This function ...
     @property
     def max(self):
 
@@ -1279,7 +1279,7 @@ class ImageLayer(object):
 
             self._log.warning("Cannot undo")
 
-    ## This function ..
+    ## This function ...
     def backup(self):
 
         self._prevdata = np.copy(self._data)

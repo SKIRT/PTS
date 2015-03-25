@@ -58,7 +58,7 @@ def hcongrid(image, header1, header2, preserve_bad_pixels=True, **kwargs):
     # Return the new image array
     return newimage
 
-## This function ..
+## This function ...
 def _load_wcs_from_header(header):
 
     if issubclass(pywcs.WCS, header.__class__):

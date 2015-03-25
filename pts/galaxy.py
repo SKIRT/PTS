@@ -170,7 +170,7 @@ class GalaxyFinder(object):
 
     #-------------------------------------------------------------------------
 
-    ## This function ..
+    ## This function ...
     def second_moments(self, img, ind):
 
         # Restrict the computation of the first and second moments to
