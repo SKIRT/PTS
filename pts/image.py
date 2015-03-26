@@ -30,6 +30,7 @@ from photutils import CircularAperture
 from photutils import aperture_photometry
 
 # Import relevant PTS modules
+from pts import inpaint
 from pts.mathematics import fitpolynomial, polynomial, fitgaussian, gaussian
 from pts.log import Log
 from pts.filter import Filter
@@ -612,19 +613,21 @@ class Image(object):
 
         # Evaluate the polynomial in the specified range
         xx, yy = np.meshgrid(range(limits[0][0],limits[0][1]), range(limits[1][0],limits[1][1]))
-        box_fluxes = polynomial(xx, yy, m)
+        box_fluxes = polynomial(xx.astype(float), yy, m)
 
         # Return the result
         return box_fluxes
 
-    ## This function interpolates the image within the shapes in a certain region ...
-    def interpolate(self, r, order=3, linear=False):
+    ## This function
+    def interpolate_new(self, region):
+
+        from pts.inpaint import replace_nans
 
         # Make a new copy of the primary image
         interpolated = np.copy(self.primary.data)
 
         # For each region, we interpolate within a box surrounding the region
-        for shape in self._regions[r]:
+        for shape in self._regions[region]:
 
             # Center and radius of this region
             xcenter = round(shape.coord_list[0])
@@ -632,19 +635,76 @@ class Image(object):
             radius  = round(shape.coord_list[2])
 
             # Construct a box around this region
-            xmin = int(xcenter -1 - 2*radius)
-            xmax = int(xcenter -1 + 2*radius)
-            ymin = int(ycenter -1 - 2*radius)
-            ymax = int(ycenter -1 + 2*radius)
+            xmin = int(xcenter - 2*radius)
+            xmax = int(xcenter + 2*radius)
+            ymin = int(ycenter - 2*radius)
+            ymax = int(ycenter + 2*radius)
             xrange = slice(xmin,xmax)
             yrange = slice(ymin,ymax)
+
+            box = self.primary.data[yrange, xrange].astype(float)
+
+            # If this part of the image only contains zeros
+            if not np.any(box): continue
+
+            boxmask = self._masks["stars"].data[yrange, xrange]
+
+            maskedImg = np.ma.array(box, mask = boxmask)
+            NANMask =  maskedImg.filled(np.NaN)
+
+            # Inverse distance weighing: doesn't seem to work...
+            #filled = replace_nans(NANMask, 5, 0.5, 2, 'idw')
+
+            filled = replace_nans(NANMask, 5, 0.5, 2, "localmean")
+
+            interpolated[yrange, xrange] = filled
+
+        # Add the new layer
+        self.addlayer(interpolated, "primary_interpolated")
+
+    ## This function interpolates the image within the shapes in a certain region ...
+    def interpolate(self, region, order=3, linear=False):
+
+        # Make a new copy of the primary image
+        interpolated = np.copy(self.primary.data)
+
+        # For each region, we interpolate within a box surrounding the region
+        for shape in self._regions[region]:
+
+            # Center and radius of this region
+            xcenter = round(shape.coord_list[0])
+            ycenter = round(shape.coord_list[1])
+            radius  = round(shape.coord_list[2])
+
+            # Construct a box around this region
+            xmin = int(xcenter - 2*radius)
+            xmax = int(xcenter + 2*radius)
+            ymin = int(ycenter - 2*radius)
+            ymax = int(ycenter + 2*radius)
+            xrange = slice(xmin,xmax)
+            yrange = slice(ymin,ymax)
+
             box = self.primary.data[yrange, xrange]
 
+            print box
+
+            boxmask = self._masks["total"].data[yrange, xrange]
+
+            #print boxmask[boxmask.shape[0]/2.0-5:boxmask.shape[0]/2.0+5, boxmask.shape[1]/2.0-5:boxmask.shape[1]/2.0+5]
+
+            if not np.any(box): continue
+
             # Create mask and boxminusmask
-            mask = np.zeros_like(box, dtype=float)
+            #mask = np.zeros_like(box, dtype=float)
             boxminusmask = np.ones_like(box, dtype=float)
-            mask[box == 0] = 1.0
-            boxminusmask[box == 0] = 0
+
+            #mask[boxmask] = 1.0
+
+            boxminusmask = np.logical_not(boxmask)
+
+            #boxminusmask[boxmask] = 0.0
+
+            #print boxminusmask[boxminusmask.shape[0]/2.0-5:boxminusmask.shape[0]/2.0+5,boxminusmask.shape[1]/2.0-5:boxminusmask.shape[1]/2.0+5]
 
             # Interpolate
             range = ((xmin,xmax),(ymin,ymax))
@@ -652,7 +712,9 @@ class Image(object):
 
             # Fill the data array with the interpolated values
             # * = elementwise product!
-            interpolated[yrange, xrange] = self.primary.data[yrange, xrange]*boxminusmask + interpolatedbox*mask
+            interpolated[yrange, xrange] = self.primary.data[yrange, xrange]*boxminusmask + interpolatedbox*boxmask
+
+            #interpolated[yrange, xrange] =
 
         # Add the new layer
         self.addlayer(interpolated, "primary_interpolated")
