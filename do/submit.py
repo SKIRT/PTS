@@ -60,7 +60,7 @@ outputpath = os.path.abspath(outpath)
 
 # Set the environment for submitting to the specified cluster
 clusterstring = "cluster/" + cluster
-subprocess.call(["module", "swap", clusterstring])
+subprocess.call("module swap " + clusterstring, shell=True)
 
 # Get the number of processors per node on the specified cluster
 ppn = cores[cluster]
