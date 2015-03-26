@@ -26,6 +26,7 @@ from matplotlib.colors import LogNorm
 # Import astronomic modules
 import pyregion
 import astropy.io.fits as pyfits
+from astropy.stats import sigma_clip, sigma_clipped_stats
 from photutils import CircularAperture
 from photutils import aperture_photometry
 
@@ -36,18 +37,6 @@ from pts.log import Log
 from pts.filter import Filter
 from pts.galaxy import GalaxyFinder
 from pts.skirtunits import SkirtUnits
-
-# -----------------------------------------------------------------
-
-## This class is a wrapper around the dict class, with the additional benefit of being able to access its values
-#  with the 'dot' notation. Taken from:
-#  http://stackoverflow.com/questions/224026/javascript-style-dot-notation-for-dictionary-keys-unpythonic
-class dotdict(dict):
-
-    def __getattr__(self, attr):
-        return self.get(attr, None)
-    __setattr__= dict.__setitem__
-    __delattr__= dict.__delitem__
 
 # -----------------------------------------------------------------
 
@@ -67,21 +56,21 @@ class Image(object):
         # TODO: check whether the path points to a FITS file
 
         # Set the name of the image
-        self._name = os.path.splitext(os.path.basename(path))[0]
+        self.name = os.path.splitext(os.path.basename(path))[0]
 
         # Create a logger or use a pre-existing logger if possible
         self._log = Log() if log is None else log
 
-        # Layers: primary, sky, fittedsky, errors ...
-        self.layers = dotdict()
+        # Frames: primary, sky, fittedsky, errors ...
+        self.frames = layers()
 
         # Masks: nans, edges, galaxy, stars
-        self.masks = dotdict()
+        self.masks = layers()
 
         # Regions: sky, stars,
-        self.regions = dotdict()
+        self.regions = layers()
 
-        # Read in the data and the header. The data is saved as an ImageLayer in self.layers and
+        # Read in the data and the header. The data is saved as an ImageLayer in self.frames and
         # the header is stored as self.header
         self._import(path, cut)
 
@@ -91,7 +80,7 @@ class Image(object):
         #self._filter = self._findinheader("FILTER")
 
         # TODO: Better way? Intelligent search in name for which filter?
-        filtername = self._name
+        filtername = self.name
 
         # Get the filter
         try:
@@ -197,68 +186,95 @@ class Image(object):
 
                 self._log.warning("No error data found for this image")
 
-    # -----------------------------------------------------------------
+    # ----------------------------------------------------------------- PRINT INFORMATION
+
+    ## This function ...
+    def status(self):
+
+        # Show white line
+        self._log.info("")
+
+        # List the different frames
+        self._log.info("Frames:")
+        self._log.info("------------------------------")
+        self.frames.list()
+
+        # List the different regions
+        self._log.info("")
+        self._log.info("Regions:")
+        self._log.info("------------------------------")
+        self.regions.list()
+
+        # List the different masks
+        self._log.info("")
+        self._log.info("Masks:")
+        self._log.info("------------------------------")
+        self.masks.list()
+
+        # Show white line
+        self._log.info("")
 
     ## This function ...
     def info(self):
 
         # Print name
-        self._log.info("Name: " + self._name)
+        self._log.info("Name: " + self.name)
 
         # Print dimension of data
-        self._log.info("Dimensions of data cube: " + str(self.xsize) + " x " + str(self.ysize))
+        self._log.info("Dimensions of data array: " + str(self.xsize) + " x " + str(self.ysize))
 
         # Print type of data
         self._log.info("Type of data: " + str(self.datatype))
 
+    # ----------------------------------------------------------------- BASIC PROPERTIES OF THE PRIMARY IMAGE
+
+    ## This function returns the data type for the primary image
     @property
     def datatype(self):
 
-        return self.layers.primary.datatype()
-
-    # ----------------------------------------------------------------- BASIC PROPERTIES
+        return self.frames.primary.datatype()
 
     ## This function returns the number of pixels in the x direction
     @property
     def xsize(self):
 
-        return self.layers.primary.xsize
+        return self.frames.primary.xsize
 
     ## This function returns the number of pixels in the y direction
     @property
     def ysize(self):
 
-        return self.layers.primary.ysize
+        return self.frames.primary.ysize
 
     ## This function ...
     @property
     def mean(self):
 
-        return self.layers.primary.mean
+        return self.frames.primary.mean
 
     ## This function ...
     @property
     def median(self):
 
-        return self.layers.primary.median
+        return self.frames.primary.median
 
     ## This function ...
     @property
     def min(self):
 
-        return self.layers.primary.min
+        return self.frames.primary.min
 
     ## This function ...
     @property
     def max(self):
 
-        return self.layers.primary.max
+        return self.frames.primary.max
 
     ## This function
     @property
     def stdev(self):
 
-        return self.layers.primary.stdev
+        return self.frames.primary.stdev
 
     # ----------------------------------------------------------------- FILE OPERATIONS
 
@@ -266,10 +282,18 @@ class Image(object):
     def save(self, layer, path):
 
         # Create the HDU
-        hdu = pyfits.PrimaryHDU(self.layers[layer].data, self.header)
+        hdu = pyfits.PrimaryHDU(self.frames[layer].data, self.header)
 
         # Write to file
         hdu.writeto(path, clobber=True)
+
+    ## This function is used to import a new ImageRegion from a regions file
+    def importregion(self, path, name):
+
+        region = ImageRegion(path, self._log)
+
+        # Add the region to the set of regions
+        self.addregion(region, name)
 
     # -----------------------------------------------------------------
 
@@ -285,19 +309,19 @@ class Image(object):
     def plot(self, layer):
 
         # Plot the specified layer
-        self.layers[layer].plot()
+        self.frames[layer].plot()
 
     ## This function
     def histogram(self, layer):
 
         # Make a histogram of the specified layer
-        self.layers[layer].histogram()
+        self.frames[layer].histogram()
 
     ## This function
     def contourplot(self, layer):
 
         # Make a contour plot of the specified layer
-        self.layers[layer].contourplot()
+        self.frames[layer].contourplot()
 
     # ----------------------------------------------------------------- PHOTOMETRY
 
@@ -317,7 +341,7 @@ class Image(object):
             aperture = CircularAperture(center, radius)
 
             # Calculate the photometry in the aperture
-            fluxtable = aperture_photometry(self.primary.data, aperture)
+            fluxtable = aperture_photometry(self.frames.primary.data, aperture)
 
             # Get the sum of the flux within the aperture and return it
             return fluxtable['aperture_sum'][0]
@@ -347,7 +371,7 @@ class Image(object):
     def multiply(self, factor):
 
         # Multiply the image with the factor
-        self.layers.primary.data = self.layers.primary.data * factor
+        self.frames.primary.data = self.frames.primary.data * factor
 
     # ----------------------------------------------------------------- BASIC IMAGE MANIPULATION
 
@@ -365,7 +389,7 @@ class Image(object):
         # TODO: crop all layers, masks and edges!
 
         # Crop the image
-        self.layers.primary.data = self.layers.primary.data[yrange, xrange]
+        self.frames.primary.data = self.frames.primary.data[yrange, xrange]
 
     ## This function
     def rotateandcenter_fitskirt(self, left_x, left_y, right_x, right_y, flip=False):
@@ -377,7 +401,7 @@ class Image(object):
 
         print "Shifted frame to center by " + str(shift_x) + "," + str(shift_y)
 
-        shiftframe = ndimage.interpolation.shift(self.layers.primary.data,(shift_x, shift_y))
+        shiftframe = ndimage.interpolation.shift(self.frames.primary.data,(shift_x, shift_y))
         angle = math.degrees(math.atan(float(left_y - right_y)/float(left_x - right_x)))
         angle += 180.0 if flip else 0.0
 
@@ -396,7 +420,7 @@ class Image(object):
     def rotate(self, angle):
 
         # Create the rotated frame
-        rotframe = ndimage.interpolation.rotate(self.layers.primary.data, angle)
+        rotframe = ndimage.interpolation.rotate(self.frames.primary.data, angle)
 
         # TODO: rotate the other layers, regions and masks!
 
@@ -424,7 +448,7 @@ class Image(object):
         shift_y = imagecenter_y - self.orientation.ypeak
 
         # Create a centered frame
-        centered = ndimage.interpolation.shift(self.layers.primary.data,(shift_y, shift_x))
+        centered = ndimage.interpolation.shift(self.frames.primary.data,(shift_y, shift_x))
 
         # TODO: center the other layers, regions and masks!
 
@@ -435,7 +459,7 @@ class Image(object):
     def downsample(self, factor):
 
         # Use the zoom function to resample
-        newdata = ndimage.interpolation.zoom(self.layers.primary.data, zoom=1.0/factor)
+        newdata = ndimage.interpolation.zoom(self.frames.primary.data, zoom=1.0/factor)
 
         # Add the layer
         self.addlayer(newdata, 'primary_downsampled')
@@ -455,7 +479,7 @@ class Image(object):
         conversionfactor = self._units.convert(1.0, units)
 
         # Convert the data
-        self.primary.data *= conversionfactor
+        self.frames.primary.data *= conversionfactor
 
     # ----------------------------------------------------------------- VIEW AND ADD LAYERS, REGIONS AND MASKS
 
@@ -466,7 +490,7 @@ class Image(object):
         self._log.info("Adding '" + name + "' to the set of image layers")
 
         # Add the layer to the layers dictionary
-        self.layers[name] = ImageLayer(data, self._log)
+        self.frames[name] = ImageLayer(data, self._log)
 
     ## This function ...
     def addregion(self, region, name):
@@ -533,7 +557,7 @@ class Image(object):
 
         # Do the rebinning based on the header of the reference image
         from pts.hcongrid import hcongrid
-        newimage = hcongrid(self.layers.primary.data, self.header, referenceheader)
+        newimage = hcongrid(self.frames.primary.data, self.header, referenceheader)
 
         # Close the reference FITS file
         hdulist.close()
@@ -541,11 +565,27 @@ class Image(object):
         # Add the new layer
         self.addlayer(newimage, "primary_rebinned")
 
+    ## This function interpolates the image within the combination of the currently active masks
+    def interpolate(self):
+
+        # Combine the active masks
+        totalmask = self.combinemasks()
+
+        # Make a copy of the image where masked pixels are filled with NaNs
+        maskedimage = np.ma.array(self.frames.primary.data.astype(float), mask = totalmask)
+        image_with_nans =  maskedimage.filled(np.NaN)
+
+        # Interpolate the masked regions
+        interpolated = replace_nans(image_with_nans, 5, 0.5, 2, "localmean")
+
+        # Replace the primary image by the interpolated one
+        self.frames.primary.data = interpolated
+
     ## This function interpolates the image within the shapes in a certain region
-    def interpolate(self, region):
+    def interpolate_older(self, region):
 
         # Make a new copy of the primary image
-        interpolated = np.copy(self.layers.primary.data)
+        interpolated = np.copy(self.frames.primary.data)
 
         # For each region, we interpolate within a box surrounding the region
         for shape in self.regions[region]:
@@ -563,7 +603,7 @@ class Image(object):
             xrange = slice(xmin,xmax)
             yrange = slice(ymin,ymax)
 
-            box = self.layers.primary.data[yrange, xrange].astype(float)
+            box = self.frames.primary.data[yrange, xrange].astype(float)
 
             # If this part of the image only contains zeros
             if not np.any(box): continue
@@ -589,40 +629,53 @@ class Image(object):
     def masknans(self):
 
         # Get a map of all the NaNs in the primary image
-        mask = np.isnan(self.layers.primary.data)
+        mask = np.isnan(self.frames.primary.data)
 
         # Make a nans mask layer
         self.addmask(mask, "nans")
 
     ## This function
-    def maskedges(self):
+    def expandmasks(self, name, iterations=100):
 
-        # Structure array
+        # Define the structure for the expansion
         structure = ndimage.generate_binary_structure(2, 2)
 
+        # Get a combination of the active masks
+        oldmask = self.combinemasks()
+
         # Make the new mask, made from 100 iterations with the structure array
-        mask = ndimage.binary_dilation(self.masks["nans"].data, structure, iterations=100)
+        newmask = ndimage.binary_dilation(oldmask, structure, iterations)
 
-        # Add the mask
-        self.addmask(mask, "edges")
+        # Add the new, expanded mask
+        self.addmask(newmask, name)
 
-    ## This function
-    def combinemasks(self, m1, m2, name=None):
+    ## This function ...
+    def combinemasks(self, name=None):
 
-        # Combine the 2 masks
-        mask = self.masks[m1].data + self.masks[m2].data
+        # Initialize an boolean array for the total mask
+        totalmask = np.zeros_like(self.frames.primary.data, dtype=bool)
 
-        # If no name is given for this mask, combine the names of the two original masks
-        if name is None: name = m1 + "_and_" + m2
+        # For each active mask
+        for mask in self.masks.getactive():
 
-        # Add the mask
-        self.addmask(mask.astype(bool), name)
+            # Add this mask to the total
+            totalmask += self.masks[mask].data
+
+        # If no name is given for the total mask, return it
+        if name is None:
+
+            return totalmask
+
+        # If a name is given, save the total mask under this name
+        else:
+
+            self.addmask(totalmask, name)
 
     ## This function ...
     def maketotalmask(self):
 
-        # Create a total mask
-        totalmask = np.zeros_like(self.layers.primary.data, dtype=bool)
+        # Initialize
+        totalmask = np.zeros_like(self.frames.primary.data, dtype=bool)
 
         # Inform the user
         self._log.info("A total mask will be made, combining the following masks:")
@@ -641,7 +694,7 @@ class Image(object):
     def makemaskedlayer(self, m):
 
         # Copy the primary image
-        maskedprimary = np.copy(self.layers.primary.data)
+        maskedprimary = np.copy(self.frames.primary.data)
 
         # Mask this copy
         maskedprimary[self.masks[m].data] = 0
@@ -652,35 +705,33 @@ class Image(object):
     ## This function applies the currently active masks to the primary image. Masked pixels are set to zero.
     def applymasks(self):
 
-        # For each mask
-        for mask in self.masks.values():
+        # For each active mask
+        for name in self.masks.getactive():
 
-            # Check if the mask is currently active, if so, set the corresponding image pixels to zero
-            if mask.active: self.layers.primary.data[mask.data] = 0
+            # Set the corresponding image pixels to zero for this mask
+            self.frames.primary.data[self.masks[name].data] = 0
 
-    ## This function aplies a certain mask on the primary image
-    def applymask(self, m):
+    # This function creates a new mask from the currently selected region(s).
+    def createmask(self):
 
-        # Set the pixel value to 0 where the mask is True
-        self.layers.primary.data[self.masks[m].data] = 0
+        # Initialize an boolean array for the total mask
+        totalmask = np.zeros_like(self.frames.primary.data, dtype=bool)
 
-    ## This function applies the total mask on the primary image
-    def applytotalmask(self):
+        name = ""
 
-        # Set the pixel value to 0 where the mask is True
-        self.layers.primary.data[self.masks['total'].data] = 0
+        # For each active region
+        for region in self.regions.getactive():
 
-    # This function creates a new mask from a specified region. It takes the name of this region as the sole argument.
-    def createmask(self, r):
+            # Create the mask
+            totalmask += self.regions[region]._region.get_mask(header=self.header, shape=(self.ysize,self.xsize))
 
-        # Get the region
-        region = self.regions[r]
+            name += region + "_"
 
-        # Create the mask
-        mask = region.get_mask(header=self.header, shape=(self.ysize,self.xsize))
+        # Remove the trailing underscore
+        name = name.rstrip("_")
 
         # Add the mask to the masks list
-        self.addmask(mask, r)
+        self.addmask(totalmask, name)
 
     # ----------------------------------------------------------------- IMAGE SEGMENTATION
 
@@ -688,7 +739,7 @@ class Image(object):
     def findgalaxy(self, plot=False):
 
         # Find the orientation of the galaxy in this iamge
-        self.orientation = GalaxyFinder(self.layers.primary.data[::-1,:], quiet=True)
+        self.orientation = GalaxyFinder(self.frames.primary.data[::-1,:], quiet=True)
 
         # Plot the ellips onto the image frame
         if plot: self.orientation.plot()
@@ -700,11 +751,11 @@ class Image(object):
         width = major
         height = major * (1 - self.orientation.eps)
 
-        # Cretae a string identifying this ellipse
+        # Create a string identifying this ellipse
         region_string = "image;ellipse(" + str(self.orientation.ypeak) + "," + str(self.orientation.xpeak) + "," + str(width) + "," + str(height) + "," + str(self.orientation.theta) + ")"
 
         # Create a region consisting of one ellipse
-        region = pyregion.parse(region_string)
+        region = ImageRegion(region_string, self._log)
 
         # Add this region
         self.addregion(region, "galaxy")
@@ -751,7 +802,7 @@ class Image(object):
                 ymax = int(round(ycenter + 0.5*height))
 
             # Cut out a square of the primary image around the star
-            square = self.layers.primary.data[ymin:ymax, xmin:xmax]
+            square = self.frames.primary.data[ymin:ymax, xmin:xmax]
 
             # Fit a 2D Gaussian to the brightness distribution
             params = fitgaussian(square)
@@ -829,7 +880,7 @@ class Image(object):
         parameters = fitpolynomial(xvalues, yvalues, fluxes, order, linear)
 
         # Make a sky array and subtract it from the object frame
-        sky = np.zeros_like(self.layers.primary.data)
+        sky = np.zeros_like(self.frames.primary.data)
 
         # Create a row of pixels for the sky
         strip = np.arange(np.float(self.xsize))
@@ -861,37 +912,26 @@ class Image(object):
         # Create a string identifying this ellipse
         region_string = "image;ellipse(" + str(self.orientation.ypeak) + "," + str(self.orientation.xpeak) + "," + str(width) + "," + str(height) + "," + str(self.orientation.theta) + ")"
 
-        # Create a region consisting of one ellipsew
-        region = pyregion.parse(region_string)
+        # Create a region for the outer ellipse of the annulus
+        region = ImageRegion(region_string, self._log)
 
-        # Create the mask
-        mask = np.logical_not(region.get_mask(header=self.header, shape=(self.ysize,self.xsize)))
+        # Add the annulus region
+        self.addregion(region, "annulus")
 
-        # Combine the new mask with the galaxy
-        newmask = mask + self.masks["galaxy"].data + self.masks["total"].data
+        # Create the annulus mask
+        annulusmask = np.logical_not(region._region.get_mask(header=self.header, shape=(self.ysize,self.xsize)))
 
-        # Add the mask
-        #self.addmask(newmask.astype(bool), "sky_beforeclipping")
+        # Get a combination of the currently selected masks
+        currentmask = self.combinemasks()
 
-        # Make a masked layer, the background
-        #self.makemaskedlayer("sky_beforeclipping")
+        # Combine the currently selected mask, the galaxy mask and the annulus mask
+        skymask = currentmask + self.masks.galaxy.data + annulusmask
 
         # Create a NumPy masked array
-        maskedarray = np.ma.masked_array(self.layers.primary.data, newmask.astype(bool))
-
-        # Calculate the mean, median and standard deviation of the sky around the galaxy
-        #mean = np.ma.mean(maskedarray)
-        #median = np.ma.median(maskedarray)
-        #error = np.ma.std(maskedarray, ddof=1)
-
-        from astropy.stats import sigma_clip, sigma_clipped_stats
-
-        #testmask_withoutstarsmasked = mask + self._masks["galaxy"].data
-        #testmaskedarray = np.ma.masked_array(self.primary.data, testmask_withoutstarsmasked.astype(bool))
+        maskedarray = np.ma.masked_array(self.frames.primary.data, skymask.astype(bool))
 
         # Make a mask of > 3 sigma regions
         newmaskedarray = sigma_clip(maskedarray, sig=3.0, iters=None, copy=True)
-        #self.addmask(newmaskedarray.mask, "sigmaclippedmask")
 
         # Add the mask
         self.addmask(newmaskedarray.mask, "sky")
@@ -900,7 +940,7 @@ class Image(object):
         self.makemaskedlayer("sky")
 
         # Determine the mean, median and error of the sigma-clipped sky
-        mean, median, error = sigma_clipped_stats(self.layers.primary.data, mask=newmask.astype(bool), sigma=3.0, iters=None)
+        mean, median, error = sigma_clipped_stats(self.frames.primary.data, mask=skymask.astype(bool), sigma=3.0, iters=None)
 
         # Return the mean, median and standard deviation
         return mean, median, error
@@ -910,7 +950,7 @@ class Image(object):
 
         x = np.arange(self.xsize)
 
-        bkg = np.zeros_like(self.layers.primary.data)
+        bkg = np.zeros_like(self.frames.primary.data)
 
         for col in np.arange(self.ysize):
 
@@ -930,7 +970,7 @@ class Image(object):
 
             #pfit = np.ma.polyfit(maskedx, maskeddata, 2)
 
-            pfit = np.polyfit(x, self.layers.primary.data[col, x], 3, w=weigths)
+            pfit = np.polyfit(x, self.frames.primary.data[col, x], 3, w=weigths)
             bkg[col, :] = np.polyval(pfit, x)
 
         # Add the new layer
@@ -970,7 +1010,7 @@ class Image(object):
                 box_mask = self.masks["sky"].data[y_range, x_range]
 
                 # Make a masked array from the part of the primary image that lies within this box
-                maskedarray = np.ma.masked_array(self.layers.primary.data[y_range, x_range], box_mask)
+                maskedarray = np.ma.masked_array(self.frames.primary.data[y_range, x_range], box_mask)
 
                 # Calculate the number of pixels in this box that are not masked
                 covered_pixels = np.sum(np.logical_not(box_mask))
@@ -1011,7 +1051,7 @@ class Image(object):
         negativetotalmask = np.logical_not(self.masks["total"].data)
 
         # Subtract the sky from the data
-        self.layers.primary.data = self.layers.primary.data - self.layers.sky.data*negativetotalmask
+        self.frames.primary.data = self.frames.primary.data - self.frames.sky.data*negativetotalmask
 
     # ----------------------------------------------------------------- PSF DETERMINATION
 
@@ -1067,7 +1107,106 @@ def plotdata(data, path):
 
 # -----------------------------------------------------------------
 
-# CLASS MASK
+## This class is a wrapper around the dict class, with the additional benefit of being able to access its values
+#  with the 'dot' notation. It is a quite genious way of dealing with a set of layers (image frames, masks or regions
+#  in this case), with high user-friendliness and easy programming interface.
+#
+class layers(dict):
+
+    # Special trick to get elements from this dictionary
+    def __getattr__(self, attr):
+
+        return self.get(attr, None)
+
+    # Set an item of the dictionary
+    __setattr__= dict.__setitem__
+
+    # Delete an item from the dictionary
+    __delattr__= dict.__delitem__
+
+    # This function returns a list of the names of the layers which are currently active
+    def getactive(self):
+
+        list = []
+
+        # For each layer
+        for name in self.keys():
+
+            # If this layer is currently active, add it to the list
+            if self[name].active: list.append(name)
+
+        return list
+
+    ## This function selects all the layers
+    def selectall(self):
+
+        # For each layer
+        for name in self.keys():
+
+            # Deselect this layer
+            self[name].select()
+
+    ## This function deselects all the layers
+    def deselectall(self):
+
+        # For each layer
+        for name in self.keys():
+
+            # Deselect this layer
+            self[name].deselect()
+
+    ## This function
+    def list(self):
+
+        log = Log()
+
+        # For each layer
+        for name in self.keys():
+
+            # If this layer is active, print the name in green
+            if self[name].active:
+
+                log.success("        " + name)
+
+            else:
+
+                log.info("        " + name)
+
+# -----------------------------------------------------------------
+
+# Class ImageRegion
+class ImageRegion(object):
+
+    ## This function
+    def __init__(self, region, log):
+
+        try:
+
+            # Create a region from a .reg file
+            self._region = pyregion.open(region)
+
+        except IOError:
+
+            # Create a region from the string
+            self._region = pyregion.parse(region)
+
+        # Logger
+        self._log = log
+
+        # Set as unactive initially
+        self.active = False
+
+    ## This function
+    def select(self):
+
+        self.active = True
+
+    ## This function
+    def deselect(self):
+
+        self.active = False
+
+## Class ImageMask
 class ImageMask(object):
 
     ## This function
@@ -1075,8 +1214,10 @@ class ImageMask(object):
 
         self._data = data
 
+        # Logger
         self._log = log
 
+        # Set as unactive initially
         self.active = False
 
     ## This function
@@ -1108,7 +1249,7 @@ class ImageMask(object):
 
 # -----------------------------------------------------------------
 
-# CLASS IMAGELAYER
+## Class ImageLayer
 class ImageLayer(object):
 
     ## The constructor
@@ -1120,6 +1261,7 @@ class ImageLayer(object):
         # Logger
         self._log = log
 
+        # Set as unactive initially
         self.active = False
 
     ## This function
