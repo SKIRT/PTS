@@ -423,7 +423,7 @@ class Image(object):
 
     # ----------------------------------------------------------------- BASIC IMAGE MANIPULATION
 
-    ## This function crops this image (consisting of all layers, masks and regions) to a specified field.
+    ## This function crops the currently active frames of this image to a specified field.
     #  It takes the following parameters:
     #
     #  - xrange: a slice object: slice(lowx, highx)
@@ -431,13 +431,14 @@ class Image(object):
     #
     def crop(self, xrange, yrange):
 
-        # Save the current state of the image
-        self._newaction("cropped")
+        # For each active frame
+        for frame in self.frames.getactive():
 
-        # TODO: crop all layers, masks and edges!
+            # Inform the user that this frame is being cropped
+            self._log.info("Cropping " + frame + " frame")
 
-        # Crop the image
-        self.frames.primary.data = self.frames.primary.data[yrange, xrange]
+            # Crop this frame
+            self.frames[frame].data = self.frames[frame].data[yrange, xrange]
 
     ## This function
     def rotateandcenter_fitskirt(self, left_x, left_y, right_x, right_y, flip=False):
@@ -1025,14 +1026,30 @@ class Image(object):
         # Add the new layer
         self.addframe(fittedsky, "fittedsky_2D")
 
-    ## This function subtracts the fitted sky from the primary image
-    def subtractsky(self):
+    ## This function subtracts the currently active frame(s) from the primary image, in the pixels not covered by
+    #  any of the currently active masks (the currently active masks 'protect' the primary image from this subtraction.
+    def subtract(self):
+
+        # Get the currently active mask
+        totalmask = self.combinemasks()
 
         # Determine the negative of the total mask
-        negativetotalmask = np.logical_not(self.masks["total"].data)
+        negativetotalmask = np.logical_not(totalmask)
+
+        # For each active frame
+        for frame in self.frames.getactive():
+
+            # Subtract the data in this frame from the primary image, in the pixels that the mask does not cover
+            self.frames.primary.data -= self.frames[frame].data*negativetotalmask
+
+    ## This function subtracts the fitted sky from the primary image
+    #def subtractsky(self):
+
+        # Determine the negative of the total mask
+        #negativetotalmask = np.logical_not(self.masks["total"].data)
 
         # Subtract the sky from the data
-        self.frames.primary.data = self.frames.primary.data - self.frames.sky.data*negativetotalmask
+        #self.frames.primary.data = self.frames.primary.data - self.frames.sky.data*negativetotalmask
 
     # ----------------------------------------------------------------- PSF DETERMINATION
 
