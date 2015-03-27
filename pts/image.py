@@ -560,7 +560,7 @@ class Image(object):
 
     # ----------------------------------------------------------------- ADVANCED OPERATIONS
 
-    ## This function ...
+    ## This function convolves the currently selected frames with the specified kernel
     def convolve(self, name):
 
         # kernels: from http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012_May/Kernels_fits_Files/Hi_Resolution/
@@ -581,7 +581,7 @@ class Image(object):
 
         # Do the convolution
         from astropy.convolution import convolve_fft
-        resultdata = convolve_fft(self.primary.data, hdu.data)
+        resultdata = convolve_fft(self.frames.primary.data, hdu.data)
 
         # Close the FITS file
         hdulist.close()
