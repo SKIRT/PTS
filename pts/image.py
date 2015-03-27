@@ -918,8 +918,14 @@ class Image(object):
         # Add the mask
         self.addmask(newmaskedarray.mask, "sky")
 
-        # Make a masked layer, the (sigma-clipped) sky
-        self.makemaskedlayer("sky")
+        # Make a masked frame, the (sigma-clipped) sky
+        skyframe = np.copy(self.frames.primary.data)
+
+        # Set the sky frame to zero in the pixels masked by the new 'sky' mask
+        skyframe[self.masks.sky.data] = 0
+
+        # Add this frame to the set of frames
+        self.addframe(skyframe, "sky")
 
         # Determine the mean, median and error of the sigma-clipped sky
         mean, median, error = sigma_clipped_stats(self.frames.primary.data, mask=skymask.astype(bool), sigma=3.0, iters=None)
@@ -1041,15 +1047,6 @@ class Image(object):
 
             # Subtract the data in this frame from the primary image, in the pixels that the mask does not cover
             self.frames.primary.data -= self.frames[frame].data*negativetotalmask
-
-    ## This function subtracts the fitted sky from the primary image
-    #def subtractsky(self):
-
-        # Determine the negative of the total mask
-        #negativetotalmask = np.logical_not(self.masks["total"].data)
-
-        # Subtract the sky from the data
-        #self.frames.primary.data = self.frames.primary.data - self.frames.sky.data*negativetotalmask
 
     # ----------------------------------------------------------------- PSF DETERMINATION
 
