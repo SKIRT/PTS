@@ -528,6 +528,11 @@ class Image(object):
         # Convert the data
         self.frames.primary.data *= conversionfactor
 
+    ## This function sets the orientation of the galaxy in this image
+    def setorientation(self, orientation):
+
+        self.orientation = orientation
+
     # ----------------------------------------------------------------- VIEW AND ADD LAYERS, REGIONS AND MASKS
 
     ## This function ...
@@ -877,11 +882,6 @@ class Image(object):
         self.addframe(sky, "sky")
 
     ## This function
-    def setorientation(self, orientation):
-
-        self.orientation = orientation
-
-    ## This function
     def findsky(self):
 
         # The length of the major axis of the ellipse
@@ -942,27 +942,17 @@ class Image(object):
 
         for col in np.arange(self.ysize):
 
-            #maskedx = np.ma.masked_array(x, self._masks["sky"].data[col, x])
-            #maskeddata = np.ma.masked_array(self.primary.data[col, x], self._masks["sky"].data[col, x])
-
             weigths = np.logical_not(self.masks["sky"].data[col, x]).astype(int)
-
-            #if not np.any(weigths): continue
 
             number_of_ones = np.count_nonzero(weigths)
 
-            if number_of_ones < 100:
-
-                #print number_of_ones
-                continue
-
-            #pfit = np.ma.polyfit(maskedx, maskeddata, 2)
+            if number_of_ones < 100: continue
 
             pfit = np.polyfit(x, self.frames.primary.data[col, x], 3, w=weigths)
             bkg[col, :] = np.polyval(pfit, x)
 
         # Add the new layer
-        self.addframe(bkg, "fittedsky")
+        self.addframe(bkg, "fittedsky_lines")
 
     ## This function fits a polynomial to the sky map
     def fitsky(self, fwhm):
@@ -1030,7 +1020,7 @@ class Image(object):
         fittedsky = polynomial(xx.astype(float), yy, parameters)
 
         # Add the new layer
-        self.addframe(fittedsky, "fittedsky_2D")
+        self.addframe(fittedsky, "fittedsky")
 
     ## This function subtracts the currently active frame(s) from the primary image, in the pixels not covered by
     #  any of the currently active masks (the currently active masks 'protect' the primary image from this subtraction.
