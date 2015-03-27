@@ -563,9 +563,10 @@ class Image(object):
     ## This function convolves the currently selected frames with the specified kernel
     def convolve(self, name):
 
-        # kernels: from http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012_May/Kernels_fits_Files/Hi_Resolution/
+        # Import the convolution function
+        from astropy.convolution import convolve_fft
 
-        self._log.info("Convolving image with the kernel " + os.path.splitext(name)[0])
+        # kernels: from http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012_May/Kernels_fits_Files/Hi_Resolution/
 
         # The path to the kernel file
         path = os.path.join(os.getenv("HOME"), "Kernels", name)
@@ -579,18 +580,23 @@ class Image(object):
         # Get the primary image
         hdu = hdulist[0]
 
-        # Do the convolution
-        from astropy.convolution import convolve_fft
-        resultdata = convolve_fft(self.frames.primary.data, hdu.data)
+        # For all active frames, do the convolution
+        for frame in self.frames.getactive():
+
+            # Inform the user that this frame is being convolved
+            self._log.info("Convolving " + frame + " frame with the kernel " + os.path.splitext(name)[0])
+
+            # Do the convolution on this frame
+            self.frames[frame].data = convolve_fft(self.frames[frame].data, hdu.data)
 
         # Close the FITS file
         hdulist.close()
 
-        # Add the new convolved layer
-        self.addframe(resultdata, "primary_convolved")
-
-    ## This function ...
+    ## This function rebins the currently selected frames based on a certain reference FITS file
     def rebin(self, reference):
+
+        # Import the rebinning function
+        from pts.hcongrid import hcongrid
 
         # Open the HDU list for the reference FITS file
         hdulist = pyfits.open(reference)
@@ -603,15 +609,17 @@ class Image(object):
         referenceheader["NAXIS"] = 2
         referenceheader.pop("NAXIS3", None)
 
-        # Do the rebinning based on the header of the reference image
-        from pts.hcongrid import hcongrid
-        newimage = hcongrid(self.frames.primary.data, self.header, referenceheader)
+        # For all active frames, do the rebinning
+        for frame in self.frames.getactive():
+
+            # Inform the user that this frame is being rebinned
+            self._log.info("Rebinning " + frame + " frame to the grid of " + reference)
+
+            # Do the rebinning based on the header of the reference image
+            self.frames[frame].data = hcongrid(self.frames[frame].data, self.header, referenceheader)
 
         # Close the reference FITS file
         hdulist.close()
-
-        # Add the new layer
-        self.addframe(newimage, "primary_rebinned")
 
     ## This function interpolates the image within the combination of the currently active masks
     def interpolate(self):
