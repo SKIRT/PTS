@@ -637,48 +637,6 @@ class Image(object):
         # Replace the primary image by the interpolated one
         self.frames.primary.data = interpolated
 
-    ## This function interpolates the image within the shapes in a certain region
-    def interpolate_older(self, region):
-
-        # Make a new copy of the primary image
-        interpolated = np.copy(self.frames.primary.data)
-
-        # For each region, we interpolate within a box surrounding the region
-        for shape in self.regions[region]:
-
-            # Center and radius of this region
-            xcenter = round(shape.coord_list[0])
-            ycenter = round(shape.coord_list[1])
-            radius  = round(shape.coord_list[2])
-
-            # Construct a box around this region
-            xmin = int(xcenter - 2*radius)
-            xmax = int(xcenter + 2*radius)
-            ymin = int(ycenter - 2*radius)
-            ymax = int(ycenter + 2*radius)
-            xrange = slice(xmin,xmax)
-            yrange = slice(ymin,ymax)
-
-            box = self.frames.primary.data[yrange, xrange].astype(float)
-
-            # If this part of the image only contains zeros
-            if not np.any(box): continue
-
-            boxmask = self.masks["stars"].data[yrange, xrange]
-
-            maskedImg = np.ma.array(box, mask = boxmask)
-            NANMask =  maskedImg.filled(np.NaN)
-
-            # Inverse distance weighing: doesn't seem to work...
-            #filled = replace_nans(NANMask, 5, 0.5, 2, 'idw')
-
-            filled = replace_nans(NANMask, 5, 0.5, 2, "localmean")
-
-            interpolated[yrange, xrange] = filled
-
-        # Add the new frame
-        self.addframe(interpolated, "primary_interpolated")
-
     # ----------------------------------------------------------------- MASKS
 
      ## This function masks the NaN values in the primary image
