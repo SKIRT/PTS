@@ -464,21 +464,19 @@ class Image(object):
         # Add the new, rotated layer
         self.addframe(rotframe, "primary_rotated")
 
-    ## This function can be used to rotate the frame over a given angle
+    ## This function rotates the currently selected frames over a given angle (in degrees)
     def rotate(self, angle):
 
-        # Create the rotated frame
-        rotframe = ndimage.interpolation.rotate(self.frames.primary.data, angle)
+        # For each active frame
+        for frame in self.frames.getactive():
 
-        # TODO: rotate the other layers, regions and masks!
+            # Inform the user that this frame is being rotated
+            self._log.info("Rotated frame over " + str(angle) + " degrees")
 
-        # Inform the user of the rotation angle
-        self._log.info("Rotated frame over " + str(angle) + " degrees")
+            # Rotate this frame
+            self.frames[frame].data = ndimage.interpolation.rotate(self.frames[frame].data, angle)
 
-        # Add the new, rotated layer
-        self.addframe(rotframe, "primary_rotated")
-
-    ## This function rotates the image so that the galactic plane lies horizontal
+    ## This function rotates currently active frames so that the galactic plane lies horizontal
     def autorotate(self):
 
         # Rotate about the position angle of the galaxy
@@ -503,14 +501,14 @@ class Image(object):
         # Add the new, centered layer
         self.addframe(centered, "primary_centered")
 
-    ## This function
+    ## This function downsamples the currently active frames by a specified zooming factor
     def downsample(self, factor):
 
-        # Use the zoom function to resample
-        newdata = ndimage.interpolation.zoom(self.frames.primary.data, zoom=1.0/factor)
+        # For each active frame
+        for frame in self.frames.getactive():
 
-        # Add the layer
-        self.addframe(newdata, 'primary_downsampled')
+            # Use the zoom function to resample
+            self.frames[frame].data = ndimage.interpolation.zoom(self.frames[frame].data, zoom=1.0/factor)
 
     # ----------------------------------------------------------------- UNITS
 
