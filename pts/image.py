@@ -685,37 +685,6 @@ class Image(object):
 
             self.addmask(totalmask, name)
 
-    ## This function ...
-    def maketotalmask(self):
-
-        # Initialize
-        totalmask = np.zeros_like(self.frames.primary.data, dtype=bool)
-
-        # Inform the user
-        self._log.info("A total mask will be made, combining the following masks:")
-
-        # Add all the masks
-        for mask in self.masks.keys():
-
-            # Log the mask name and add it to to the total
-            self._log.info("    - " + mask)
-            totalmask += self.masks[mask].data
-
-        # Add the mask
-        self.addmask(totalmask, 'total')
-
-    ## This function applies a mask on the primary image
-    def makemaskedlayer(self, m):
-
-        # Copy the primary image
-        maskedprimary = np.copy(self.frames.primary.data)
-
-        # Mask this copy
-        maskedprimary[self.masks[m].data] = 0
-
-        # Add this masked image to the layers
-        self.addframe(maskedprimary, 'primary_masked_' + m)
-
     ## This function applies the currently active masks to the primary image. Masked pixels are set to zero.
     def applymasks(self):
 
