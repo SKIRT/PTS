@@ -70,7 +70,7 @@ class Image(object):
         # Regions: sky, stars,
         self.regions = layers()
 
-        # Read in the data and the header. The data is saved as an ImageLayer in self.frames and
+        # Read in the data and the header. The data is saved as an ImageFrame in self.frames and
         # the header is stored as self.header
         self._import(path, cut)
 
@@ -154,15 +154,21 @@ class Image(object):
         # Get the data from the HDU
         if multiplanes:
 
-            self.addlayer(hdu.data[0], "primary")
-            self.addlayer(hdu.data[1], "errors")
+            # Add the primary image frame and select it
+            self.addframe(hdu.data[0], "primary")
+            self.frames.primary.select()
+
+            # Add the error frame
+            self.addframe(hdu.data[1], "errors")
 
             # Close the fits file
             hdulist.close()
 
         else:
 
-            self.addlayer(hdu.data, "primary")
+            # Add the primary image frame and select it
+            self.addframe(hdu.data, "primary")
+            self.frames.primary.select()
 
             # Close the fits file
             hdulist.close()
@@ -177,7 +183,8 @@ class Image(object):
                 # Get the primary data
                 hdu = hdulist[0]
 
-                self.addlayer(hdu.data, "errors")
+                # Add the error frame
+                self.addframe(hdu.data, "errors")
 
                 # Close the fits file
                 hdulist.close()
@@ -278,11 +285,14 @@ class Image(object):
 
     # ----------------------------------------------------------------- FILE OPERATIONS
 
-    ## This function saves the image at the specified path
-    def save(self, layer, path):
+    ## This function saves the active frame
+    def save(self, path):
+
+        # Find the active layer
+        frame = self.frames.getactive()[0]
 
         # Create the HDU
-        hdu = pyfits.PrimaryHDU(self.frames[layer].data, self.header)
+        hdu = pyfits.PrimaryHDU(self.frames[frame].data, self.header)
 
         # Write to file
         hdu.writeto(path, clobber=True)
@@ -290,6 +300,7 @@ class Image(object):
     ## This function is used to import a new ImageRegion from a regions file
     def importregion(self, path, name):
 
+        # Create an ImageRegion object from the regions file
         region = ImageRegion(path, self._log)
 
         # Add the region to the set of regions
@@ -305,11 +316,45 @@ class Image(object):
 
     # ----------------------------------------------------------------- VISUALISATION
 
-    ## This function
+    ## This function shows a plot of the currently active frame, combined with the active regions and masks
     def plot(self, layer):
 
-        # Plot the specified layer
-        self.frames[layer].plot()
+        # Get the currently active frame
+        frame = self.frames.getactive()[0]
+
+        # Prepare the plot with the data of this frame
+        ax = plt.gca()
+        ax.imshow(np.log(self.frames[frame].data), cmap='hot', origin='lower', interpolation='nearest')
+        #ax.imshow(self.mask, cmap='binary', interpolation='nearest', origin='lower', alpha=0.3)
+        ax.autoscale(False) # prevents further scaling after imshow()
+
+        # Get a list of the currently active regions
+        regions = self.regions.getactive()
+
+        if len(regions) > 0: from matplotlib import patches
+
+        # Add each region to the plot
+        for region in regions:
+
+            # TODO: check which shape etc.
+
+            ellipse = patches.Ellipse(xy=(xc, yc), width=2*mjr, fill=False,
+                                      height=2*mjr*(1-self.eps), angle=-self.theta,
+                                      color='red', linewidth=3)
+            ax.add_artist(ellipse)
+
+        # Get a list of the currently active masks
+        masks = self.masks.getactive()
+
+        # Add each mask to the plot
+        for mask in masks:
+
+            pass
+
+        # Set the axis labels and make the plot
+        ax.set_xlabel("pixels")
+        ax.set_ylabel("pixels")
+        plt.show()
 
     ## This function
     def histogram(self, layer):
@@ -367,11 +412,14 @@ class Image(object):
 
     # ----------------------------------------------------------------- ARITHMETIC OPERATIONS
 
-    ## This function
+    ## This function multiplies all active layers by a given factor
     def multiply(self, factor):
 
-        # Multiply the image with the factor
-        self.frames.primary.data = self.frames.primary.data * factor
+        # Fore each active frame
+        for frame in self.frames.getactive():
+
+            # Multiply this frame with the given factor
+            self.frames[frame].data = self.frames[frame].data * factor
 
     # ----------------------------------------------------------------- BASIC IMAGE MANIPULATION
 
@@ -414,7 +462,7 @@ class Image(object):
         self._log.info("Rotated frame over " + str(angle) + " degrees")
 
         # Add the new, rotated layer
-        self.addlayer(rotframe, "primary_rotated")
+        self.addframe(rotframe, "primary_rotated")
 
     ## This function can be used to rotate the frame over a given angle
     def rotate(self, angle):
@@ -428,7 +476,7 @@ class Image(object):
         self._log.info("Rotated frame over " + str(angle) + " degrees")
 
         # Add the new, rotated layer
-        self.addlayer(rotframe, "primary_rotated")
+        self.addframe(rotframe, "primary_rotated")
 
     ## This function rotates the image so that the galactic plane lies horizontal
     def autorotate(self):
@@ -453,7 +501,7 @@ class Image(object):
         # TODO: center the other layers, regions and masks!
 
         # Add the new, centered layer
-        self.addlayer(centered, "primary_centered")
+        self.addframe(centered, "primary_centered")
 
     ## This function
     def downsample(self, factor):
@@ -462,7 +510,7 @@ class Image(object):
         newdata = ndimage.interpolation.zoom(self.frames.primary.data, zoom=1.0/factor)
 
         # Add the layer
-        self.addlayer(newdata, 'primary_downsampled')
+        self.addframe(newdata, 'primary_downsampled')
 
     # ----------------------------------------------------------------- UNITS
 
@@ -484,13 +532,13 @@ class Image(object):
     # ----------------------------------------------------------------- VIEW AND ADD LAYERS, REGIONS AND MASKS
 
     ## This function ...
-    def addlayer(self, data, name):
+    def addframe(self, data, name):
 
         # Inform the user
-        self._log.info("Adding '" + name + "' to the set of image layers")
+        self._log.info("Adding '" + name + "' to the set of image frames")
 
         # Add the layer to the layers dictionary
-        self.frames[name] = ImageLayer(data, self._log)
+        self.frames[name] = ImageFrame(data, self._log)
 
     ## This function ...
     def addregion(self, region, name):
@@ -539,7 +587,7 @@ class Image(object):
         hdulist.close()
 
         # Add the new convolved layer
-        self.addlayer(resultdata, "primary_convolved")
+        self.addframe(resultdata, "primary_convolved")
 
     ## This function ...
     def rebin(self, reference):
@@ -563,7 +611,7 @@ class Image(object):
         hdulist.close()
 
         # Add the new layer
-        self.addlayer(newimage, "primary_rebinned")
+        self.addframe(newimage, "primary_rebinned")
 
     ## This function interpolates the image within the combination of the currently active masks
     def interpolate(self):
@@ -620,8 +668,8 @@ class Image(object):
 
             interpolated[yrange, xrange] = filled
 
-        # Add the new layer
-        self.addlayer(interpolated, "primary_interpolated")
+        # Add the new frame
+        self.addframe(interpolated, "primary_interpolated")
 
     # ----------------------------------------------------------------- MASKS
 
@@ -700,7 +748,7 @@ class Image(object):
         maskedprimary[self.masks[m].data] = 0
 
         # Add this masked image to the layers
-        self.addlayer(maskedprimary, 'primary_masked_' + m)
+        self.addframe(maskedprimary, 'primary_masked_' + m)
 
     ## This function applies the currently active masks to the primary image. Masked pixels are set to zero.
     def applymasks(self):
@@ -892,7 +940,7 @@ class Image(object):
             sky[y,:] = polynomial(strip, y, parameters)
 
         # Add the sky as a new layer to this image
-        self.addlayer(sky, "sky")
+        self.addframe(sky, "sky")
 
     ## This function
     def setorientation(self, orientation):
@@ -974,7 +1022,7 @@ class Image(object):
             bkg[col, :] = np.polyval(pfit, x)
 
         # Add the new layer
-        self.addlayer(bkg, "fittedsky")
+        self.addframe(bkg, "fittedsky")
 
     ## This function fits a polynomial to the sky map
     def fitsky(self, fwhm):
@@ -1042,7 +1090,7 @@ class Image(object):
         fittedsky = polynomial(xx.astype(float), yy, parameters)
 
         # Add the new layer
-        self.addlayer(fittedsky, "fittedsky_2D")
+        self.addframe(fittedsky, "fittedsky_2D")
 
     ## This function subtracts the fitted sky from the primary image
     def subtractsky(self):
@@ -1249,8 +1297,8 @@ class ImageMask(object):
 
 # -----------------------------------------------------------------
 
-## Class ImageLayer
-class ImageLayer(object):
+## Class ImageFrame
+class ImageFrame(object):
 
     ## The constructor
     def __init__(self, data, log):
