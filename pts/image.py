@@ -793,14 +793,17 @@ class Image(object):
         # Add this region
         self.addregion(region, "galaxy")
 
-    ## This function determines the central peak position of the stars indicated by the region file
-    def getstarpositions(self, region, plot=False):
+    ## This function determines the central peak position of the stars indicated by the currently selected region file
+    def getstarpositions(self, plot=False):
+
+        # Get the currently selected region
+        region = self.regions.getactive()[0]
 
         # Make an empty list of stars
         stars = []
 
         # Loop over all the shapes in this region and fit the stellar profiles with a 2D Gaussian distribution
-        for shape in self.regions[region]:
+        for shape in self.regions[region]._region:
 
             # Initially, set the minimum and maximum x and y values to zero
             xmin = xmax = ymin = ymax = 0
@@ -836,6 +839,8 @@ class Image(object):
 
             # Cut out a square of the primary image around the star
             square = self.frames.primary.data[ymin:ymax, xmin:xmax]
+
+            if not np.any(square): continue
 
             # Fit a 2D Gaussian to the brightness distribution
             params = fitgaussian(square)
@@ -1087,10 +1092,10 @@ class Image(object):
     # ----------------------------------------------------------------- PSF DETERMINATION
 
     ## This function estimates the psf
-    def estimatepsf_fitskirt(self, region):
+    def estimatepsf_fitskirt(self, plot=False):
 
         # Get the stars
-        stars = self.getstarpositions(region)
+        stars = self.getstarpositions(plot)
 
         # Initially, set the average x and y fwhm to zero
         fwhm_x = fwhm_y = 0.0
