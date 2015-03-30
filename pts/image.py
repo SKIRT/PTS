@@ -24,6 +24,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
 # Import astronomic modules
+import aplpy
 import pyregion
 import astropy.io.fits as pyfits
 from astropy.stats import sigma_clip, sigma_clipped_stats
@@ -37,6 +38,12 @@ from pts.log import Log
 from pts.filter import Filter
 from pts.galaxy import GalaxyFinder
 from pts.skirtunits import SkirtUnits
+
+# -----------------------------------------------------------------
+
+# Do not show warnings, to block Canopy's UserWarnings from spoiling the console log
+import warnings
+warnings.filterwarnings("ignore")
 
 # -----------------------------------------------------------------
 
@@ -285,7 +292,7 @@ class Image(object):
 
     # ----------------------------------------------------------------- FILE OPERATIONS
 
-    ## This function saves the active frame
+    ## This function saves the currently active frame
     def save(self, path):
 
         # Find the active layer
@@ -317,44 +324,83 @@ class Image(object):
     # ----------------------------------------------------------------- VISUALISATION
 
     ## This function shows a plot of the currently active frame, combined with the active regions and masks
-    def plot(self, layer):
+    def plot(self, path = None, color=True, grid=False, blacknan=False, publication=False):
 
         # Get the currently active frame
         frame = self.frames.getactive()[0]
 
-        # Prepare the plot with the data of this frame
-        ax = plt.gca()
-        ax.imshow(np.log(self.frames[frame].data), cmap='hot', origin='lower', interpolation='nearest')
-        #ax.imshow(self.mask, cmap='binary', interpolation='nearest', origin='lower', alpha=0.3)
-        ax.autoscale(False) # prevents further scaling after imshow()
+        # Create a total mask of the currently active masks
+        totalmask = self.combinemasks()
 
-        # Get a list of the currently active regions
-        regions = self.regions.getactive()
+        # Mask the frame with nans
+        maskedimage = np.ma.array(self.frames[frame].data, mask = totalmask)
+        image_with_nans =  maskedimage.filled(np.NaN)
 
-        if len(regions) > 0: from matplotlib import patches
+        # Create a HDU from this frame with the image header
+        hdu = pyfits.PrimaryHDU(image_with_nans, self.header)
 
-        # Add each region to the plot
-        for region in regions:
+        if path is None:
 
-            # TODO: check which shape etc.
+            # Create a figure canvas
+            figure = plt.figure(figsize=(12, 12))
 
-            ellipse = patches.Ellipse(xy=(xc, yc), width=2*mjr, fill=False,
-                                      height=2*mjr*(1-self.eps), angle=-self.theta,
-                                      color='red', linewidth=3)
-            ax.add_artist(ellipse)
+            # Create a figure from this frame
+            plot = aplpy.FITSFigure(hdu, figure=figure)
 
-        # Get a list of the currently active masks
-        masks = self.masks.getactive()
+        else:
 
-        # Add each mask to the plot
-        for mask in masks:
+            # Create a figure from this frame
+            plot = aplpy.FITSFigure(hdu)
+
+        if color:
+
+            # Plot in color scale
+            plot.show_colorscale()
+
+        else:
+
+            # Plot in gray scale
+            plot.show_grayscale()
+
+        # Add a color bar
+        plot.add_colorbar()
+
+        if blacknan:
+
+            # Set the nan color to black
+            plot.set_nan_color('black')
+
+        if grid:
+
+            # Add a grid
+            plot.add_grid()
+
+        if publication:
+
+            # Use the 'publication' theme
+            plot.set_theme('publication')
+
+        # Add the regions
+        for region in self.regions.getactive():
+
+            # Get the shape list
+            shapes = self.regions[region]._region.as_imagecoord(self.header)
+
+            # Add these shapes to the plot
+            plot.show_regions(shapes)
+
+        # Add the masks
+        for mask in self.masks.getactive():
 
             pass
 
-        # Set the axis labels and make the plot
-        ax.set_xlabel("pixels")
-        ax.set_ylabel("pixels")
-        plt.show()
+        if path is None:
+
+            plt.show()
+
+        else:
+
+            plot.save(path)
 
     ## This function
     def histogram(self, layer):
@@ -954,7 +1000,7 @@ class Image(object):
         # Add the new layer
         self.addframe(bkg, "fittedsky_lines")
 
-    ## This function fits a polynomial to the sky map
+    ## This function fits a polynomial to the sky map and saves the result as a frame called 'fittedsky'
     def fitsky(self, fwhm):
 
         # Determine the size of each box
@@ -1159,7 +1205,7 @@ class layers(dict):
 
 # -----------------------------------------------------------------
 
-# Class ImageRegion
+## Class ImageRegion
 class ImageRegion(object):
 
     ## This function
@@ -1190,6 +1236,8 @@ class ImageRegion(object):
     def deselect(self):
 
         self.active = False
+
+# -----------------------------------------------------------------
 
 ## Class ImageMask
 class ImageMask(object):
@@ -1369,3 +1417,5 @@ class ImageFrame(object):
     def backup(self):
 
         self._prevdata = np.copy(self._data)
+
+# -----------------------------------------------------------------
