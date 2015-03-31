@@ -802,6 +802,9 @@ class Image(object):
         # Make an empty list of stars
         stars = []
 
+        # Keep track of how many stars could not be fitted
+        failed = 0
+
         # Loop over all the shapes in this region and fit the stellar profiles with a 2D Gaussian distribution
         for shape in self.regions[region]._region:
 
@@ -840,21 +843,40 @@ class Image(object):
             # Cut out a square of the primary image around the star
             square = self.frames.primary.data[ymin:ymax, xmin:xmax]
 
-            if not np.any(square): continue
+            if not np.any(square):
+                failed += 1
+                continue
 
-            # Fit a 2D Gaussian to the brightness distribution
-            params = fitgaussian(square)
-            fit = gaussian(*params)
+            try:
+                # Fit a 2D Gaussian to the brightness distribution
+                params = fitgaussian(square)
+                fit = gaussian(*params)
+            except:
+                # If the fitting failed, skip this star
+                failed += 1
+                continue
 
             # Unpack the parameters
             (height, x, y, width_x, width_y) = params
 
+            # Fix negative sigmas
+            if width_x < 0: width_x = -width_x
+            if width_y < 0: width_y = -width_y
+
+            # Skip invalid parameter values, the fitting failed
+            if np.isnan(width_x) or np.isnan(width_y):
+                failed += 1
+                continue
+
+            # If the center of the Gaussian falls out of the square, skip this star
+            if round(x) > square.shape[0] - 1 or round(y) > square.shape[1] - 1:
+                failed += 1
+                continue
+
             # Plot the result
             if plot:
 
-                #plt.matshow(square, cmap=cm.CMRmap)
                 plt.matshow(square)
-                #plt.contour(fit(*indices(square.shape)), cmap=cm.Blues)
                 plt.contour(fit(*np.indices(square.shape)))
                 ax = plt.gca()
 
@@ -876,7 +898,10 @@ class Image(object):
             y = ymin + x
 
             # Add the parameters of this star to the stars list
-            stars.append((x,y,width_x,width_y))
+            stars.append((x, y, width_x, width_y))
+
+        # Show for how many stars the fitting failed
+        if failed > 1: self._log.warning("Fitting stars failed for " + str(failed) + " out of " + str(self.regions[region].nshapes) + " objects")
 
         # Return the list of stars (their positions)
         return stars
@@ -1033,10 +1058,8 @@ class Image(object):
                 x_range = slice(xmin,xmax)
                 y_range = slice(ymin,ymax)
 
-                #self._log.info("x = " + str(x) + " , y = " + str(y) + " , xmin = " + str(xmin) + " , xmax = " + str(xmax) + " , ymin = " + str(ymin) + " , ymax = " + str(ymax))
-
                 # Get the part of the sky mask that lies within this box
-                box_mask = self.masks["sky"].data[y_range, x_range]
+                box_mask = self.masks.sky.data[y_range, x_range]
 
                 # Make a masked array from the part of the primary image that lies within this box
                 maskedarray = np.ma.masked_array(self.frames.primary.data[y_range, x_range], box_mask)
@@ -1048,7 +1071,7 @@ class Image(object):
                 if covered_pixels == 0: continue
 
                 # Calculate the mean flux in this box
-                flux = maskedarray.sum() / float(covered_pixels)
+                flux = maskedarray.mean()
 
                 # Add the x coordinate, the y coordinate and the flux to the appropriate lists
                 xvalues.append(x)
@@ -1086,8 +1109,37 @@ class Image(object):
         # For each active frame
         for frame in self.frames.getactive():
 
+            # Inform the user
+            self._log.info("Subtracting " + frame + " frame from the primary image frame")
+
             # Subtract the data in this frame from the primary image, in the pixels that the mask does not cover
             self.frames.primary.data -= self.frames[frame].data*negativetotalmask
+
+    ## This function converts the currently active frame(s) into magnitude scale, using the specified zero-point
+    #  magnitude
+    def to_magnitudes(self, m0):
+
+        # For each active frame
+        for frame in self.frames.getactive():
+
+            # Inform the user
+            self._log.info("Converting " + frame + " frame to magnitude scale")
+
+            # Convert to magnitude scale
+            self.frames[frame].data = m0 - 2.5 * np.log10(self.frames[frame].data)
+
+    ## This function converts the currently active frame(s) from magnitude to flux scale, using the specified
+    #  zero-point flux
+    def to_fluxes(self, F0):
+
+        # For each active frame
+        for frame in self.frames.getactive():
+
+            # Inform the user
+            self._log.info("Converting " + frame + " frame to flux scale")
+
+            # Convert to flux scale
+            self.frames[frame].data = F0 * np.power(10.0, - self.frames[frame].data / 2.5)
 
     # ----------------------------------------------------------------- PSF DETERMINATION
 
@@ -1097,22 +1149,24 @@ class Image(object):
         # Get the stars
         stars = self.getstarpositions(plot)
 
-        # Initially, set the average x and y fwhm to zero
-        fwhm_x = fwhm_y = 0.0
+        # Initialize two list to contain the full-width-half-maxima for the different stars
+        xfwhm_list = []
+        yfwhm_list = []
 
         # For each star in the list
         for star in stars:
 
             # Get the width in the x and y direction
-            fwhm_x += star[2]
-            fwhm_y += star[3]
+            xfwhm_list.append(star[2])
+            yfwhm_list.append(star[3])
 
-        # Average the x and y FWHM over all the reference stars
-        fwhm_x = fwhm_x / float(len(stars))
-        fwhm_y = fwhm_y / float(len(stars))
+        # Use sigma-clipped statistics to remove the outliers
+        # and determine the average FWHM in the x and y direction for the remaining stars
+        xfwhm, _, xfwhm_stdev = sigma_clipped_stats(xfwhm_list, sigma=3.0, iters=None)
+        yfwhm, _, yfwhm_stdev = sigma_clipped_stats(yfwhm_list, sigma=3.0, iters=None)
 
         # Return the fwhm in the x and the y direction
-        return fwhm_x, fwhm_y
+        return xfwhm, yfwhm
 
 # ----------------------------------------------------------------- USEFUL FUNCTIONS
 
@@ -1241,6 +1295,12 @@ class ImageRegion(object):
     def deselect(self):
 
         self.active = False
+
+    ## This function returns the number of shapes in this region
+    @property
+    def nshapes(self):
+
+        return len(self._region)
 
 # -----------------------------------------------------------------
 
