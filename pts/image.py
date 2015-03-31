@@ -464,6 +464,9 @@ class Image(object):
         # Fore each active frame
         for frame in self.frames.getactive():
 
+            # Inform the user
+            self._log.info("Multiplying " + frame + " frame with a factor of " + str(factor))
+
             # Multiply this frame with the given factor
             self.frames[frame].data = self.frames[frame].data * factor
 
@@ -518,7 +521,7 @@ class Image(object):
         for frame in self.frames.getactive():
 
             # Inform the user that this frame is being rotated
-            self._log.info("Rotated frame over " + str(angle) + " degrees")
+            self._log.info("Rotating frame over " + str(angle) + " degrees")
 
             # Rotate this frame
             self.frames[frame].data = ndimage.interpolation.rotate(self.frames[frame].data, angle)
@@ -553,6 +556,9 @@ class Image(object):
 
         # For each active frame
         for frame in self.frames.getactive():
+
+            # Inform the user
+            self._log.info("Downsampling " + frame + " frame by a factor of " + str(factor))
 
             # Use the zoom function to resample
             self.frames[frame].data = ndimage.interpolation.zoom(self.frames[frame].data, zoom=1.0/factor)
@@ -611,7 +617,7 @@ class Image(object):
     # ----------------------------------------------------------------- ADVANCED OPERATIONS
 
     ## This function convolves the currently selected frames with the specified kernel
-    def convolve(self, name):
+    def convolve(self, name, cutoff=None):
 
         # Import the convolution function
         from astropy.convolution import convolve_fft
@@ -627,8 +633,10 @@ class Image(object):
         # Open the HDU list for the FITS file
         hdulist = pyfits.open(path)
 
-        # Get the primary image
-        hdu = hdulist[0]
+        # Get the kernel data
+        kernel = hdulist[0].data
+
+
 
         # For all active frames, do the convolution
         for frame in self.frames.getactive():
@@ -637,7 +645,7 @@ class Image(object):
             self._log.info("Convolving " + frame + " frame with the kernel " + os.path.splitext(name)[0])
 
             # Do the convolution on this frame
-            self.frames[frame].data = convolve_fft(self.frames[frame].data, hdu.data)
+            self.frames[frame].data = convolve_fft(self.frames[frame].data, kernel, normalize_kernel=True)
 
         # Close the FITS file
         hdulist.close()
@@ -673,6 +681,9 @@ class Image(object):
 
     ## This function interpolates the image within the combination of the currently active masks
     def interpolate(self):
+
+        # Inform the user
+        self._log.info("Interpolating the image in the areas covered by the currently selected masks")
 
         # Combine the active masks
         totalmask = self.combinemasks()
@@ -734,6 +745,18 @@ class Image(object):
         else:
 
             self.addmask(totalmask, name)
+
+    ## This function makes a new mask which is the inverse (logical not) of the total currently selected mask
+    def invertmask(self, name):
+
+        # Get the total selected mask
+        currentmask = self.combinemasks()
+
+        # Calculate the inverse of the this total mask
+        newmask = np.logical_not(currentmask)
+
+        # Add the new, inverted mask
+        self.addmask(newmask, name)
 
     ## This function applies the currently active masks to the primary image. Masked pixels are set to zero.
     def applymasks(self):
