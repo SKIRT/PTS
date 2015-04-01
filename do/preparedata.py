@@ -86,15 +86,15 @@ def mask(image, edges=True, extra=False, write=False):
     # Apply the total mask to the primary image
     image.applymasks()
 
-    # Deselect all regions and masks
-    image.masks.deselectall()
-    image.regions.deselectall()
-
     # If requested, save the masked primary image
     if write:
 
         path = os.path.join(preppath, image.name, "masked.fits")
         image.save(path)
+
+    # Deselect all masks and regions
+    image.regions.deselectall()
+    image.masks.deselectall()
 
 ## This function interpolates over the stars
 def interpolatestars(image, write=False):
@@ -121,6 +121,10 @@ def interpolatestars(image, write=False):
         path = os.path.join(preppath, image.name, "interpolated.fits")
         image.save(path)
 
+    # Deselect all masks and regions
+    image.regions.deselectall()
+    image.masks.deselectall()
+
 ## This function subtracts the sky of the specified image
 def subtractsky(image, write=False):
 
@@ -137,6 +141,10 @@ def scale(image, factor, write=False):
 
         path = os.path.join(preppath, image.name, "scaled.fits")
         image.save(path)
+
+    # Deselect all masks and regions
+    image.regions.deselectall()
+    image.masks.deselectall()
 
 ## This function convolves the image with the PSF of the PACS 160 image
 def convolve(image, pixelscale, kernel, write=False, writekernel=False):
@@ -160,6 +168,10 @@ def convolve(image, pixelscale, kernel, write=False, writekernel=False):
         path = os.path.join(preppath, image.name, "newkernel.fits")
         image.save(path)
 
+    # Deselect all masks and regions
+    image.regions.deselectall()
+    image.masks.deselectall()
+
 ## This function rebins the image to the resolution of the Pacs 160 micron image
 def rebin(image, write=False):
 
@@ -172,6 +184,10 @@ def rebin(image, write=False):
 
         path = os.path.join(preppath, image.name, "rebinned.fits")
         image.save(path)
+
+    # Deselect all masks and regions
+    image.regions.deselectall()
+    image.masks.deselectall()
 
 # -----------------------------------------------------------------
 
