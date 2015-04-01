@@ -162,11 +162,11 @@ class Image(object):
         if multiplanes:
 
             # Add the primary image frame and select it
-            self.addframe(hdu.data[0], "primary")
+            self._addframe(hdu.data[0], "primary")
             self.frames.primary.select()
 
             # Add the error frame
-            self.addframe(hdu.data[1], "errors")
+            self._addframe(hdu.data[1], "errors")
 
             # Close the fits file
             hdulist.close()
@@ -174,7 +174,7 @@ class Image(object):
         else:
 
             # Add the primary image frame and select it
-            self.addframe(hdu.data, "primary")
+            self._addframe(hdu.data, "primary")
             self.frames.primary.select()
 
             # Close the fits file
@@ -191,7 +191,7 @@ class Image(object):
                 hdu = hdulist[0]
 
                 # Add the error frame
-                self.addframe(hdu.data, "errors")
+                self._addframe(hdu.data, "errors")
 
                 # Close the fits file
                 hdulist.close()
@@ -298,6 +298,9 @@ class Image(object):
         # Find the active layer
         frame = self.frames.getactive()[0]
 
+        # Inform the user
+        self._log.info("Saving " + frame + " frame as " + path)
+
         # Create the HDU
         hdu = pyfits.PrimaryHDU(self.frames[frame].data, self.header)
 
@@ -311,7 +314,7 @@ class Image(object):
         region = ImageRegion(path, self._log)
 
         # Add the region to the set of regions
-        self.addregion(region, name)
+        self._addregion(region, name)
 
     # -----------------------------------------------------------------
 
@@ -512,7 +515,7 @@ class Image(object):
         self._log.info("Rotated frame over " + str(angle) + " degrees")
 
         # Add the new, rotated layer
-        self.addframe(rotframe, "primary_rotated")
+        self._addframe(rotframe, "primary_rotated")
 
     ## This function rotates the currently selected frames over a given angle (in degrees)
     def rotate(self, angle):
@@ -549,7 +552,7 @@ class Image(object):
         # TODO: center the other layers, regions and masks!
 
         # Add the new, centered layer
-        self.addframe(centered, "primary_centered")
+        self._addframe(centered, "primary_centered")
 
     ## This function downsamples the currently active frames by a specified zooming factor
     def downsample(self, factor):
@@ -588,7 +591,7 @@ class Image(object):
     # ----------------------------------------------------------------- VIEW AND ADD LAYERS, REGIONS AND MASKS
 
     ## This function ...
-    def addframe(self, data, name):
+    def _addframe(self, data, name):
 
         # Inform the user
         self._log.info("Adding '" + name + "' to the set of image frames")
@@ -597,7 +600,7 @@ class Image(object):
         self.frames[name] = ImageFrame(data, self._log)
 
     ## This function ...
-    def addregion(self, region, name):
+    def _addregion(self, region, name):
 
         # Inform the user
         self._log.info("Adding '" + name + "' to the set of regions")
@@ -606,7 +609,7 @@ class Image(object):
         self.regions[name] = region
 
     ## This function ...
-    def addmask(self, data, name):
+    def _addmask(self, data, name):
 
         # Inform the user
         self._log.info("Adding '" + name + "' to the set of masks")
@@ -616,13 +619,11 @@ class Image(object):
 
     # ----------------------------------------------------------------- ADVANCED OPERATIONS
 
-    ## This function convolves the currently selected frames with the specified kernel
-    def convolve(self, name, cutoff=None):
+    ## This function convolves the currently selected frame(s) with a specified kernel (a FITS file)
+    def convolve(self, name):
 
         # Import the convolution function
         from astropy.convolution import convolve_fft
-
-        # kernels: from http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012_May/Kernels_fits_Files/Hi_Resolution/
 
         # The path to the kernel file
         path = os.path.join(os.getenv("HOME"), "Kernels", name)
@@ -633,10 +634,18 @@ class Image(object):
         # Open the HDU list for the FITS file
         hdulist = pyfits.open(path)
 
-        # Get the kernel data
+        # Get the kernel data and header
         kernel = hdulist[0].data
+        header = hdulist[0].header
 
+        # Import the rebinning function
+        from pts.hcongrid import hcongrid
 
+        # Rebin the kernel to the same grid of the image
+        kernel = hcongrid(kernel, header, self.header)
+
+        # Add a frame
+        self._addframe(kernel, "kernel")
 
         # For all active frames, do the convolution
         for frame in self.frames.getactive():
@@ -650,7 +659,7 @@ class Image(object):
         # Close the FITS file
         hdulist.close()
 
-    ## This function rebins the currently selected frames based on a certain reference FITS file
+    ## This function rebins the currently selected frame(s) based on a certain reference FITS file
     def rebin(self, reference):
 
         # Import the rebinning function
@@ -707,7 +716,7 @@ class Image(object):
         mask = np.isnan(self.frames.primary.data)
 
         # Make a nans mask layer
-        self.addmask(mask, "nans")
+        self._addmask(mask, "nans")
 
     ## This function
     def expandmasks(self, name, iterations=100):
@@ -722,7 +731,7 @@ class Image(object):
         newmask = ndimage.binary_dilation(oldmask, structure, iterations)
 
         # Add the new, expanded mask
-        self.addmask(newmask, name)
+        self._addmask(newmask, name)
 
     ## This function ...
     def combinemasks(self, name=None):
@@ -744,7 +753,7 @@ class Image(object):
         # If a name is given, save the total mask under this name
         else:
 
-            self.addmask(totalmask, name)
+            self._addmask(totalmask, name)
 
     ## This function makes a new mask which is the inverse (logical not) of the total currently selected mask
     def invertmask(self, name):
@@ -756,7 +765,7 @@ class Image(object):
         newmask = np.logical_not(currentmask)
 
         # Add the new, inverted mask
-        self.addmask(newmask, name)
+        self._addmask(newmask, name)
 
     ## This function applies the currently active masks to the primary image. Masked pixels are set to zero.
     def applymasks(self):
@@ -787,7 +796,7 @@ class Image(object):
         name = name.rstrip("_")
 
         # Add the mask to the masks list
-        self.addmask(totalmask, name)
+        self._addmask(totalmask, name)
 
     # ----------------------------------------------------------------- IMAGE SEGMENTATION
 
@@ -814,7 +823,7 @@ class Image(object):
         region = ImageRegion(region_string, self._log)
 
         # Add this region
-        self.addregion(region, "galaxy")
+        self._addregion(region, "galaxy")
 
     ## This function determines the central peak position of the stars indicated by the currently selected region file
     def getstarpositions(self, plot=False):
@@ -978,7 +987,7 @@ class Image(object):
             sky[y,:] = polynomial(strip, y, parameters)
 
         # Add the sky as a new layer to this image
-        self.addframe(sky, "sky")
+        self._addframe(sky, "sky")
 
     ## This function
     def findsky(self):
@@ -997,7 +1006,7 @@ class Image(object):
         region = ImageRegion(region_string, self._log)
 
         # Add the annulus region
-        self.addregion(region, "annulus")
+        self._addregion(region, "annulus")
 
         # Create the annulus mask
         annulusmask = np.logical_not(region._region.get_mask(header=self.header, shape=(self.ysize,self.xsize)))
@@ -1015,7 +1024,7 @@ class Image(object):
         newmaskedarray = sigma_clip(maskedarray, sig=3.0, iters=None, copy=True)
 
         # Add the mask
-        self.addmask(newmaskedarray.mask, "sky")
+        self._addmask(newmaskedarray.mask, "sky")
 
         # Make a masked frame, the (sigma-clipped) sky
         skyframe = np.copy(self.frames.primary.data)
@@ -1024,7 +1033,7 @@ class Image(object):
         skyframe[self.masks.sky.data] = 0
 
         # Add this frame to the set of frames
-        self.addframe(skyframe, "sky")
+        self._addframe(skyframe, "sky")
 
         # Determine the mean, median and error of the sigma-clipped sky
         mean, median, error = sigma_clipped_stats(self.frames.primary.data, mask=skymask.astype(bool), sigma=3.0, iters=None)
@@ -1051,7 +1060,7 @@ class Image(object):
             bkg[col, :] = np.polyval(pfit, x)
 
         # Add the new layer
-        self.addframe(bkg, "fittedsky_lines")
+        self._addframe(bkg, "fittedsky_lines")
 
     ## This function fits a polynomial to the sky map and saves the result as a frame called 'fittedsky'
     def fitsky(self, fwhm):
@@ -1117,7 +1126,7 @@ class Image(object):
         fittedsky = polynomial(xx.astype(float), yy, parameters)
 
         # Add the new layer
-        self.addframe(fittedsky, "fittedsky")
+        self._addframe(fittedsky, "fittedsky")
 
     ## This function subtracts the currently active frame(s) from the primary image, in the pixels not covered by
     #  any of the currently active masks (the currently active masks 'protect' the primary image from this subtraction.
