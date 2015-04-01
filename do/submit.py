@@ -28,7 +28,7 @@ parser.add_argument('inpath', type=str, help='the simulation input path')
 parser.add_argument('outpath', type=str, help='the simulation output path')
 parser.add_argument('nodes', type=int, help='the number of nodes to use for the simulation')
 parser.add_argument('threadspp', type=int, help='the number of parallel threads per process')
-parser.add_argument('walltime', type=int, help='the expected walltime for this simulation in hh:mm:ss format')
+parser.add_argument('walltime', type=str, help='the expected walltime for this simulation in hh:mm:ss format')
 parser.add_argument('cluster', nargs='?', type=str, help='the cluster to which the job should be submitted', default="delcatty")
 
 # Parse the command line arguments
@@ -60,7 +60,7 @@ outputpath = os.path.abspath(outpath)
 
 # Set the environment for submitting to the specified cluster
 clusterstring = "cluster/" + cluster
-subprocess.call(["module", "swap", clusterstring])
+subprocess.call("module swap " + clusterstring, shell=True)
 
 # Get the number of processors per node on the specified cluster
 ppn = cores[cluster]
