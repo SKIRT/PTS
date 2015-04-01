@@ -126,9 +126,79 @@ def interpolatestars(image, write=False):
     image.masks.deselectall()
 
 ## This function subtracts the sky of the specified image
-def subtractsky(image, write=False):
+def subtractsky(image, fwhm, write=False, writesky=False, writefsky=False):
 
-    pass
+    # Find the galaxy in the primary image (creates a region called 'galaxy')
+    image.findgalaxy()
+
+    # Select the galaxy region
+    image.regions.galaxy.select()
+
+    # Create a mask covering the galaxy ==> will also get the name "galaxy"
+    image.createmask()
+
+    # Select the total mask
+    image.masks.total.select()
+
+    # Find a map that represents the sky, ignoring pixels under either of these 3 masks:
+    #  - the mask that is currently selected
+    #  - the galaxy mask
+    #  - a mask composed of all pixels outside an annulus around the galaxy
+    # and using sigma-clipping to ignore other pixels with extreme values.
+    # Estimate the mean, median and standard deviation for the sky
+    mean, median, error = image.findsky()
+
+    # Show the mean, median and standard deviation
+    log.info("Mean sky = " + str(mean))
+    log.info("Median sky = " + str(median))
+    log.info("Standard deviation = " + str(error))
+
+    if writesky:
+
+        # Deselect the primary frame and select the sky frame
+        image.frames.deselectall()
+        image.frames.sky.select()
+
+        # Save the (sigma-clipped) sky as a FITS file
+        path = os.path.join(preppath, image.name, "sky.fits")
+        image.save(path)
+
+    # Select the primary image
+    image.frames.deselectall()
+    image.frames.primary.select()
+
+    # Fit the sky with a polynomial, using the FHWM
+    image.fitsky(fwhm)
+
+    # Deselect all frames and select the fittedsky frame
+    image.frames.deselectall()
+    image.frames.fittedsky.select()
+
+    if writefsky:
+
+        # Save the 2D fitted sky
+        path = os.path.join(preppath, image.name, "fittedsky.fits")
+        image.save(path)
+
+    # Select the total mask
+    image.masks.total.select()
+
+    # Subtract the fitted sky (this frame is selected) from the primary image (this frame is deselected)
+    image.subtract()
+
+    # Select the primary image frame
+    image.frames.deselectall()
+    image.frames.primary.select()
+
+    if write:
+
+        # Save the sky-subtracted primary image
+        path = os.path.join(preppath, image.name, "subtracted.fits")
+        image.save(path)
+
+    # Deselect all masks and regions
+    image.regions.deselectall()
+    image.masks.deselectall()
 
 ## This function scales the image by a certain factor
 def scale(image, factor, write=False):
