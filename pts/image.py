@@ -620,7 +620,7 @@ class Image(object):
     # ----------------------------------------------------------------- ADVANCED OPERATIONS
 
     ## This function convolves the currently selected frame(s) with a specified kernel (a FITS file)
-    def convolve(self, name):
+    def convolve(self, name, pixelscale):
 
         # Import the convolution function
         from astropy.convolution import convolve_fft
@@ -638,21 +638,20 @@ class Image(object):
         kernel = hdulist[0].data
         header = hdulist[0].header
 
-        # Import the rebinning function
-        from pts.hcongrid import hcongrid
-
         # Inform the user
         self._log.info("Rebinning the kernel to the image pixel grid")
 
+        # Get the pixel scale of the kernel
+        pixelscale_kernel = header["CD1_1"]*3600
+
+        # Calculate the zooming factor
+        factor = pixelscale / pixelscale_kernel
+
         # Rebin the kernel to the same grid of the image
-        kernel = hcongrid(kernel, header, self.header)
+        kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
 
         # Add a frame
         self._addframe(kernel, "kernel")
-
-        # Temporary
-        hdu = pyfits.PrimaryHDU(kernel, header)
-        hdu.writeto("newkernel.fits", clobber=True)
 
         # For all active frames, do the convolution
         for frame in self.frames.getactive():
