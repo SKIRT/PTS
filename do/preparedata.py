@@ -11,9 +11,7 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-import os
 import os.path
-import numpy as np
 
 # Import relevant PTS modules
 from pts.image import Image
@@ -24,44 +22,155 @@ from pts.log import Log
 # Create a logger
 log = Log()
 
-# Get the full path to the data directory
-datadir = os.path.join(os.getcwd(), "Data")
+# Get the full path to the preparation directory
+preppath = os.path.join(os.getcwd(), "prep")
 
+## This function
+def importimage(filter, filename):
 
-## 0. READING IMAGES
+    # Show which image we are importing
+    log.info("Importing image " + filename)
 
-log.info("Reading images...")
+    # Determine the path to this FITS file
+    filepath = os.path.join(preppath, filter, filename)
 
-# Make a list of the different images
-images = []
+    # Create an image object from this FITS file and return it
+    return Image(filepath)
 
-for filename in os.listdir(datadir):
+## This function masks the nans, edges
+def mask(image, edges=True, extra=False, write=False):
 
-    # Check whether this file is a fits file and not hidden
-    if filename.endswith(".fits") and not filename.startswith("."):
+    # Create a mask for the pixels in the primary image that have a NaN value
+    image.masknans()
 
-        filepath = os.path.join(datadir, filename)
-        images.append(Image(filepath))
+    # Select the nans mask for later
+    image.masks.nans.select()
 
-for image in images:
+    if edges:
 
-    image.maskregions()
+        # Assuming the nans are in the outer parts of the image, make an expanded mask that also covers the edges
+        image.expandmasks("edges")
 
-## 1. SKY-SUBTRACTION
+        # Deselect the nans mask
+        image.masks.nans.deselect()
 
-log.info("Sky-subtraction...")
+        # Select the edges mask for later
+        image.masks.edges.select()
 
-# Subtract sky for each image
-for image in images:
+    if extra:
 
-    # Check whether the image has already been sky-subtracted first
-    if not image.subtracted: image.subtractsky()
+        # Import 'extra' region
+        filepath = "data/extra/" + image.name + ".reg"
+        image.importregion(filepath, "extra")
 
+        # Select the extra region
+        image.regions.extra.select()
 
-## 2. UNIT CONVERSIONS
+        # Create a mask 'extra' from the 'extra' region
+        image.createmask()
 
-log.info("Unit conversions...")
+        # Deselect the extra region
+        image.regions.extra.deselect()
 
+        # Select the extra mask for later
+        image.masks.extra.select()
+
+    # Combine the edge and extra mask (the currently active masks)
+    image.combinemasks("total")
+
+    # Select the total mask
+    image.masks.deselectall()
+    image.masks.total.select()
+
+    # Apply the total mask to the primary image
+    image.applymasks()
+
+    # Deselect all regions and masks
+    image.masks.deselectall()
+    image.regions.deselectall()
+
+    # If requested, save the masked primary image
+    if write:
+
+        path = os.path.join(preppath, image.name, "masked.fits")
+        image.save(path)
+
+## This function interpolates over the stars
+def interpolatestars(image, write=False):
+
+    # Create a region object for the stars create a mask from it
+    filepath = "data/stars/" + image.name + ".reg"
+    image.importregion(filepath, "stars")
+
+    # Select the stars region
+    image.regions.stars.select()
+
+    # Create a mask from the stars region
+    image.createmask()
+
+    # Select the stars mask
+    image.masks.stars.select()
+
+    # Interpolate the image within the stars mask
+    image.interpolate()
+
+    # If requested, save the interpolated image
+    if write:
+
+        path = os.path.join(preppath, image.name, "interpolated.fits")
+        image.save(path)
+
+## This function subtracts the sky of the specified image
+def subtractsky(image, write=False):
+
+    pass
+
+## This function scales the image by a certain factor
+def scale(image, factor, write=False):
+
+    # Multiply the primary frame by the conversion factor
+    image.multiply(factor)
+
+    # If requested, save the scaled image
+    if write:
+
+        path = os.path.join(preppath, image.name, "scaled.fits")
+        image.save(path)
+
+## This function convolves the image with the PSF of the PACS 160 image
+def convolve(image, pixelscale, kernel, write=False, writekernel=False):
+
+    # Convolve to the PACS 160 resolution
+    image.convolve(kernel, pixelscale)
+
+    # If requested, save the convolved image
+    if write:
+
+        path = os.path.join(preppath, image.name, "convolved.fits")
+        image.save(path)
+
+    # If requested, save the new kernel
+    if writekernel:
+
+        # Select the kernel frame
+        image.frames.deselectall()
+        image.frames.kernel.select()
+
+        path = os.path.join(preppath, image.name, "newkernel.fits")
+        image.save(path)
+
+## This function rebins the image to the resolution of the Pacs 160 micron image
+def rebin(image, write=False):
+
+    # Do the rebinning
+    pacs160path = os.path.join(preppath, "Pacs.red", "original.fits")
+    image.rebin(pacs160path)
+
+    # If requested, save the rebinned image
+    if write:
+
+        path = os.path.join(preppath, image.name, "rebinned.fits")
+        image.save(path)
 
 # -----------------------------------------------------------------
 

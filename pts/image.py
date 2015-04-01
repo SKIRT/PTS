@@ -583,6 +583,32 @@ class Image(object):
         # Convert the data
         self.frames.primary.data *= conversionfactor
 
+    ## This function converts the currently active frame(s) into magnitude scale, using the specified zero-point
+    #  magnitude
+    def to_magnitudes(self, m0):
+
+        # For each active frame
+        for frame in self.frames.getactive():
+
+            # Inform the user
+            self._log.info("Converting " + frame + " frame to magnitude scale")
+
+            # Convert to magnitude scale
+            self.frames[frame].data = m0 - 2.5 * np.log10(self.frames[frame].data)
+
+    ## This function converts the currently active frame(s) from magnitude to flux scale, using the specified
+    #  zero-point flux
+    def to_fluxes(self, F0):
+
+        # For each active frame
+        for frame in self.frames.getactive():
+
+            # Inform the user
+            self._log.info("Converting " + frame + " frame to flux scale")
+
+            # Convert to flux scale
+            self.frames[frame].data = F0 * np.power(10.0, - self.frames[frame].data / 2.5)
+
     ## This function sets the orientation of the galaxy in this image
     def setorientation(self, orientation):
 
@@ -1152,32 +1178,6 @@ class Image(object):
 
             # Subtract the data in this frame from the primary image, in the pixels that the mask does not cover
             self.frames.primary.data -= self.frames[frame].data*negativetotalmask
-
-    ## This function converts the currently active frame(s) into magnitude scale, using the specified zero-point
-    #  magnitude
-    def to_magnitudes(self, m0):
-
-        # For each active frame
-        for frame in self.frames.getactive():
-
-            # Inform the user
-            self._log.info("Converting " + frame + " frame to magnitude scale")
-
-            # Convert to magnitude scale
-            self.frames[frame].data = m0 - 2.5 * np.log10(self.frames[frame].data)
-
-    ## This function converts the currently active frame(s) from magnitude to flux scale, using the specified
-    #  zero-point flux
-    def to_fluxes(self, F0):
-
-        # For each active frame
-        for frame in self.frames.getactive():
-
-            # Inform the user
-            self._log.info("Converting " + frame + " frame to flux scale")
-
-            # Convert to flux scale
-            self.frames[frame].data = F0 * np.power(10.0, - self.frames[frame].data / 2.5)
 
     # ----------------------------------------------------------------- PSF DETERMINATION
 
