@@ -27,13 +27,13 @@ datapath = os.path.join(os.getcwd(), "data")
 preppath = os.path.join(os.getcwd(), "prep")
 
 ## This function
-def importimage(filter, filename):
+def importimage(filter):
 
     # Show which image we are importing
-    log.info("Importing image " + filename)
+    log.info("Importing image for " + filter + " band")
 
     # Determine the path to this FITS file
-    filepath = os.path.join(datapath, filter, filename)
+    filepath = os.path.join(datapath, filter + ".fits")
 
     # Create an image object from this FITS file and return it
     return Image(filepath)
