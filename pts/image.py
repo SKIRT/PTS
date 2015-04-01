@@ -641,11 +641,18 @@ class Image(object):
         # Import the rebinning function
         from pts.hcongrid import hcongrid
 
+        # Inform the user
+        self._log.info("Rebinning the kernel to the image pixel grid")
+
         # Rebin the kernel to the same grid of the image
         kernel = hcongrid(kernel, header, self.header)
 
         # Add a frame
         self._addframe(kernel, "kernel")
+
+        # Temporary
+        hdu = pyfits.PrimaryHDU(kernel, header)
+        hdu.writeto("newkernel.fits", clobber=True)
 
         # For all active frames, do the convolution
         for frame in self.frames.getactive():
