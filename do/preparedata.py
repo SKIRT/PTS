@@ -22,7 +22,8 @@ from pts.log import Log
 # Create a logger
 log = Log()
 
-# Get the full path to the preparation directory
+# Get the full path to the data and preparation directories
+datapath = os.path.join(os.getcwd(), "data")
 preppath = os.path.join(os.getcwd(), "prep")
 
 ## This function
@@ -32,7 +33,7 @@ def importimage(filter, filename):
     log.info("Importing image " + filename)
 
     # Determine the path to this FITS file
-    filepath = os.path.join(preppath, filter, filename)
+    filepath = os.path.join(datapath, filter, filename)
 
     # Create an image object from this FITS file and return it
     return Image(filepath)
@@ -163,7 +164,7 @@ def convolve(image, pixelscale, kernel, write=False, writekernel=False):
 def rebin(image, write=False):
 
     # Do the rebinning
-    pacs160path = os.path.join(preppath, "Pacs.red", "original.fits")
+    pacs160path = os.path.join(datapath, "PACS160.fits")
     image.rebin(pacs160path)
 
     # If requested, save the rebinned image
