@@ -99,7 +99,7 @@ class Image(object):
         self._units = self._findinheader("BUNIT")
 
         # The FWHM of the PSF
-        self._fwhm = None
+        self.fwhm = None
 
         # The entries in this dictionary indicate whether certain operations have been performed on the primary image
         self._history = dict()
@@ -613,6 +613,15 @@ class Image(object):
     def setorientation(self, orientation):
 
         self.orientation = orientation
+
+    ## This functions sets the FWHM of the PSF for this image
+    def setfwhm(self, fwhm):
+
+        # Inform the user
+        self._log.info("Setting the FWHM of the PSF for this image to " + str(fwhm) + " pixels")
+
+        # Set the FWHM
+        self.fwhm = fwhm
 
     # ----------------------------------------------------------------- VIEW AND ADD LAYERS, REGIONS AND MASKS
 

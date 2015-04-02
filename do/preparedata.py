@@ -97,7 +97,7 @@ def mask(image, edges=True, extra=False, write=False):
     image.masks.deselectall()
 
 ## This function interpolates over the stars
-def interpolatestars(image, write=False):
+def interpolatestars(image, write=False, fitpsf=False):
 
     # Create a region object for the stars create a mask from it
     filepath = "data/stars/" + image.name + ".reg"
@@ -105,6 +105,17 @@ def interpolatestars(image, write=False):
 
     # Select the stars region
     image.regions.stars.select()
+
+    if fitpsf:
+
+        # Estimate the FWHM of the PSF
+        fwhm_x, fwhm_y = image.estimatepsf_fitskirt()
+
+        # Circular approximation
+        fwhm = 0.5 * (fwhm_x + fwhm_y)
+
+        # Set the fwhm
+        image.setfwhm(fwhm)
 
     # Create a mask from the stars region
     image.createmask()
@@ -137,11 +148,12 @@ def subtractsky(image, fwhm, write=False, writesky=False, writefsky=False):
     # Create a mask covering the galaxy ==> will also get the name "galaxy"
     image.createmask()
 
-    # Select the total mask
+    # Select the total mask and the stars mask
     image.masks.total.select()
+    image.masks.stars.select()
 
-    # Find a map that represents the sky, ignoring pixels under either of these 3 masks:
-    #  - the mask that is currently selected
+    # Find a map that represents the sky, ignoring pixels under either of these 4 masks:
+    #  - 2 masks that are currently selected: the total mask and the stars mask
     #  - the galaxy mask
     #  - a mask composed of all pixels outside an annulus around the galaxy
     # and using sigma-clipping to ignore other pixels with extreme values.
