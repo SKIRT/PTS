@@ -101,6 +101,9 @@ class Image(object):
         # The FWHM of the PSF
         self.fwhm = None
 
+        # The pixel scale of this image
+        self.pixelscale = None
+
         # The entries in this dictionary indicate whether certain operations have been performed on the primary image
         self._history = dict()
 
@@ -392,11 +395,6 @@ class Image(object):
             # Add these shapes to the plot
             plot.show_regions(shapes)
 
-        # Add the masks
-        for mask in self.masks.getactive():
-
-            pass
-
         if path is None:
 
             plt.show()
@@ -622,6 +620,15 @@ class Image(object):
 
         # Set the FWHM
         self.fwhm = fwhm
+
+    ## This function sets the pixel scale for this image (in arcseconds)
+    def setpixelscale(self, pixelscale):
+
+        # Inform the user
+        self._log.info("Setting the pixel scale of this image to " + str(pixelscale) + " arcseconds")
+
+        # Set the pixel scale
+        self.pixelscale = pixelscale
 
     # ----------------------------------------------------------------- VIEW AND ADD LAYERS, REGIONS AND MASKS
 
