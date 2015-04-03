@@ -126,15 +126,16 @@ class Image(object):
             for i in range(nframes):
 
                 # Get the name of this frame, but the first frame always gets the name 'primary'
-                name = getframename(header, i) if i else "primary"
+                description = getframedescription(header, i) if i else "the primary signal map"
+                name = getframename(description) if i else "primary"
 
                 # Add this frame to the frames dictionary
-                self._addframe(hdu.data[i], name)
+                self._addframe(hdu.data[i], name, description)
 
         else:
 
             # Add the primary image frame
-            self._addframe(hdu.data, "primary")
+            self._addframe(hdu.data, "primary", "the primary signal map")
 
         # Select the primary image frame
         self.frames.primary.select()
@@ -244,7 +245,7 @@ class Image(object):
         self._log.info("Saving " + frame + " frame as " + path)
 
         # Create the HDU
-        hdu = pyfits.PrimaryHDU(self.frames[frame].data, self.header)
+        hdu = pyfits.PrimaryHDU(self.frames[frame].data)
 
         # Write to file
         hdu.writeto(path, clobber=True)
@@ -615,13 +616,13 @@ class Image(object):
             del self.masks[mask]
 
     ## This function ...
-    def _addframe(self, data, name):
+    def _addframe(self, data, name, description=None):
 
         # Inform the user
         self._log.info("Adding '" + name + "' to the set of image frames")
 
         # Add the layer to the layers dictionary
-        self.frames[name] = ImageFrame(data, self._log)
+        self.frames[name] = ImageFrame(data, description, self._log)
 
     ## This function ...
     def _addregion(self, region, name):
@@ -1336,17 +1337,24 @@ def getnumberofframes(header):
     return nframes
 
 ## This function
-def getframename(header, i):
+def getframedescription(header, i):
 
     planeX = "PLANE" + str(i)
 
     # Get the description
     description = header[planeX]
 
+    # Return the description
+    return description
+
+## This function
+def getframename(description):
+
     # Convert spaces to underscores and ignore things between parentheses
     name = description.split("(")[0].rstrip(" ").replace(" ", "_")
 
-    if 'error' in description:
+    # If the frame name contains 'error', use the standard name "errors" for this frame
+    if 'error' in name:
 
         name = "errors"
 
@@ -1508,7 +1516,7 @@ class ImageMask(object):
 class ImageFrame(object):
 
     ## The constructor
-    def __init__(self, data, log):
+    def __init__(self, data, description, log):
 
         # Copy the data
         self._data = data
@@ -1518,6 +1526,9 @@ class ImageFrame(object):
 
         # Set as unactive initially
         self.active = False
+
+        # Set the description
+        self.description = description
 
     ## This function
     def select(self):
@@ -1542,28 +1553,10 @@ class ImageFrame(object):
         self._data = newdata
 
     ## This function
-    def plot(self, path=None):
-
-        plotdata(self._data, path)
-
-    ## This function
     def histogram(self, path=None):
 
         NBINS = 1000
         plt.hist(self._data.flat, NBINS)
-
-        # Display the result
-        plt.show()
-
-    ## This function
-    def contourplot(self, path=None):
-
-        # Make the contours
-        plt.contour(xi,yi,zi,15, linewidths=0.5, colors='k')
-        plt.contourf(xi,yi,zi,15, cmap=plt.cm.jet)
-
-        # Add a color bar
-        plt.colorbar()
 
         # Display the result
         plt.show()
