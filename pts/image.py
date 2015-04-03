@@ -1221,18 +1221,6 @@ def area(region):
         return region.coord_list[2] * region.coord_list[3]
 
 ## This function ...
-def plotdata(data, path):
-
-    # Plot the data using logaritmic scale
-    plt.imshow(data, cmap='gray', norm=LogNorm(), interpolation='nearest')
-
-    # Add a color bar
-    plt.colorbar()
-
-    # Display the result
-    plt.show()
-
-## This function ...
 def getpixelscale(header):
 
     # Initially, set the pixel scale to None
@@ -1475,7 +1463,8 @@ class ImageMask(object):
     ## This function
     def __init__(self, data, log):
 
-        self._data = data
+        # Set the data array
+        self.data = data
 
         # Logger
         self._log = log
@@ -1493,23 +1482,6 @@ class ImageMask(object):
 
         self.active = False
 
-    ## This function ...
-    @property
-    def data(self):
-
-        return self._data
-
-    ## This function ...
-    @data.setter
-    def data(self, newdata):
-
-        self._data = newdata
-
-    ## This function ...
-    def plot(self, path=None):
-
-        plotdata(self._data.astype(int), path)
-
 # -----------------------------------------------------------------
 
 ## Class ImageFrame
@@ -1519,7 +1491,7 @@ class ImageFrame(object):
     def __init__(self, data, description, log):
 
         # Copy the data
-        self._data = data
+        self.data = data
 
         # Logger
         self._log = log
@@ -1541,22 +1513,10 @@ class ImageFrame(object):
         self.active = False
 
     ## This function
-    @property
-    def data(self):
-
-        return self._data
-
-    ## This function
-    @data.setter
-    def data(self, newdata):
-
-        self._data = newdata
-
-    ## This function
     def histogram(self, path=None):
 
         NBINS = 1000
-        plt.hist(self._data.flat, NBINS)
+        plt.hist(self.data.flat, NBINS)
 
         # Display the result
         plt.show()
@@ -1565,42 +1525,42 @@ class ImageFrame(object):
     @property
     def xsize(self):
 
-        return self._data.shape[1]
+        return self.data.shape[1]
 
     ## This function
     @property
     def ysize(self):
 
-        return self._data.shape[0]
+        return self.data.shape[0]
 
     ## This function
     def dtype(self):
 
-        return self._data.dtype.name
+        return self.data.dtype.name
 
     ## This function ...
     @property
     def mean(self):
 
-        return np.mean(self._data)
+        return np.mean(self.data)
 
     ## This function ...
     @property
     def median(self):
 
-        return np.median(self._data)
+        return np.median(self.data)
 
     ## This function ...
     @property
     def min(self):
 
-        return np.min(self._data)
+        return np.min(self.data)
 
     ## This function ...
     @property
     def max(self):
 
-        return np.max(self._data)
+        return np.max(self.data)
 
     ## This function
     @property
@@ -1610,27 +1570,6 @@ class ImageFrame(object):
         ddof = 1
 
         # Return the standard deviation of the data
-        return np.std(self._data, ddof=ddof)
-
-    ## This function
-    def undo(self):
-
-        # Check whether the previous state has been saved or not
-        if self._prevdata is not None:
-
-            # Replace the data with the previous data
-            self._data = self._prevdata
-
-            # Set the previous data to None
-            self._prevdata = None
-
-        else:
-
-            self._log.warning("Cannot undo")
-
-    ## This function ...
-    def backup(self):
-
-        self._prevdata = np.copy(self._data)
+        return np.std(self.data, ddof=ddof)
 
 # -----------------------------------------------------------------
