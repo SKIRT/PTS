@@ -137,6 +137,9 @@ class Image(object):
             # Add the primary image frame
             self._addframe(hdu.data, "primary", "the primary signal map")
 
+        # Set the basic header for this image
+        self.header = header.copy(strip=True)
+
         # Select the primary image frame
         self.frames.primary.select()
 
@@ -410,7 +413,7 @@ class Image(object):
             ymax = int(round(ycenter + 0.5*height))
 
             # Calculate the sum of the flux in the pixels within the box
-            return np.sum(self.primary.data[ymin:ymax,xmin:xmax])
+            return np.sum(self.frames.primary.data[ymin:ymax,xmin:xmax])
 
 
     # ----------------------------------------------------------------- ARITHMETIC OPERATIONS
@@ -983,6 +986,12 @@ class Image(object):
         yvalues = []
         fluxes = []
 
+        ## Define a function that calculates the area (in pixels) of a certain shape
+        def area(shape):
+
+            if shape.name == "circle": return math.pi * shape.coord_list[2] * shape.coord_list[2]
+            if shape.name == "box": return shape.coord_list[2] * shape.coord_list[3]
+
         # For each shape in the specified region
         for shape in self.regions[region]:
 
@@ -1207,19 +1216,6 @@ class Image(object):
 
 # ----------------------------------------------------------------- USEFUL FUNCTIONS
 
-## This function returns the area for a certain region
-def area(region):
-
-    # If this region is a circle
-    if region.name == "circle":
-
-        return math.pi * region.coord_list[2] * region.coord_list[2]
-
-    # If this region is a box
-    if region.name == "box":
-
-        return region.coord_list[2] * region.coord_list[3]
-
 ## This function ...
 def getpixelscale(header):
 
@@ -1361,6 +1357,7 @@ def getframename(description):
 
     # Return the frame name
     return name
+
 # -----------------------------------------------------------------
 
 ## This class is a wrapper around the dict class, with the additional benefit of being able to access its values
