@@ -229,10 +229,10 @@ def scale(image, factor, write=False):
     image.masks.deselectall()
 
 ## This function convolves the image with the PSF of the PACS 160 image
-def convolve(image, pixelscale, kernel, write=False, writekernel=False):
+def convolve(image, kernel, write=False, writekernel=False):
 
     # Convolve to the PACS 160 resolution
-    image.convolve(kernel, pixelscale)
+    image.convolve(kernel)
 
     # If requested, save the convolved image
     if write:

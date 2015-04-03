@@ -41,6 +41,12 @@ from pts.skirtunits import SkirtUnits
 
 # -----------------------------------------------------------------
 
+# Disable astropy logging except for warnings and errors
+from astropy import log
+log.setLevel("WARNING")
+
+# -----------------------------------------------------------------
+
 # Do not show warnings, to block Canopy's UserWarnings from spoiling the console log
 import warnings
 warnings.filterwarnings("ignore")
@@ -55,18 +61,20 @@ class Image(object):
     #
     #  - path: the path of the FITS image file
     #  - log: a Log instance
-    #  - cut:
     #
-    def __init__(self, path, log=None, cut=True):
-
-        # TODO: allow just a filename (without path)
-        # TODO: check whether the path points to a FITS file
-
-        # Set the name of the image
-        self.name = os.path.splitext(os.path.basename(path))[0]
+    def __init__(self, filename, log=None):
 
         # Create a logger or use a pre-existing logger if possible
         self._log = Log() if log is None else log
+
+        # Check if the specified file exists, otherwise exit with an error
+        if not os.path.isfile(filename):
+
+            self._log.error("No such file: " + filename)
+            exit()
+
+        # Set the name of the image
+        self.name = os.path.splitext(os.path.basename(filename))[0]
 
         # Frames: primary, sky, fittedsky, errors ...
         self.frames = layers()
@@ -77,131 +85,62 @@ class Image(object):
         # Regions: sky, stars,
         self.regions = layers()
 
-        # Read in the data and the header. The data is saved as an ImageFrame in self.frames and
-        # the header is stored as self.header
-        self._import(path, cut)
-
-        # Instrument
-        #self._instrument = self._findinheader("INSTRUME")
-        # Filter
-        #self._filter = self._findinheader("FILTER")
-
-        # TODO: Better way? Intelligent search in name for which filter?
-        filtername = self.name
-
-        # Get the filter
-        try:
-            self.filter = Filter(filtername)
-        except ValueError:
-            self._log.warning("Could not determine the filter used for this image")
-
-        # Units
-        self._units = self._findinheader("BUNIT")
+        # Read in the image
+        self._loadimage(filename)
 
         # The FWHM of the PSF
         self.fwhm = None
 
-        # The pixel scale of this image
-        self.pixelscale = None
-
         # The entries in this dictionary indicate whether certain operations have been performed on the primary image
         self._history = dict()
 
-        # Check whether background has already been subtracted from this image
-        # Try to read the 'BACK_SUB' key from the header and set self._subtracted accordingly
-        self._history["sky-subtracted"] = True if self._findinheader("BACK_SUB") else False
-
-        # Inform the user if this image has already been subtracted
-        if self._history["sky-subtracted"]: self._log.success("Background already subtracted for this image")
-
-    ## This function returns None if not found, False if found but value F, True if found and value T
-    def _findinheader(self, key):
-
-        try:
-            # Get the value of this key
-            value = self.header[key]
-
-        # If the key doesn't exist
-        except KeyError:
-
-            # Set the value to None
-            value = None
-
-        # Return the value
-        return value
-
     ## This function ...
-    def _import(self, path, cut):
+    def _loadimage(self, filename):
 
         # Show which image we are importing
-        self._log.info("Reading in file: " + path)
+        self._log.info("Reading in file: " + filename)
 
         # Open the HDU list for the FITS file
-        hdulist = pyfits.open(path)
+        hdulist = pyfits.open(filename)
 
-        # Get the primary image
+        # Get the primary HDU
         hdu = hdulist[0]
 
         # Get the image header
-        self.header = hdu.header
+        header = hdu.header
 
-        # Check for multiple planes with the PLANE keyword
-        multiplanes = False
-        if cut:
-            try:
+        # Load the frames
+        self.pixelscale = getpixelscale(header)
 
-                plane_id = self.header['PLANE0']
-                self._log.warning("Multiple planes detected. Using PLANE0 = " + plane_id)
-                multiplanes = True
+        # Obtain the filter for this image
+        #self.filter = getfilter(self.name, header)
 
-                # We pretend the extra planes do not exist: remove the extra ("planes") axis
-                self.header["NAXIS"] = 2
-                self.header.pop("NAXIS3", None)
+        # Obtain the units of this image
+        self.units = getunits(header)
 
-            # If the PLANE keyword is not found, we assume we only have one plane
-            except KeyError: pass
+        # Check whether multiple planes are present in the FITS image
+        nframes = getnumberofframes(header)
+        if nframes > 1:
 
-        # Get the data from the HDU
-        if multiplanes:
+            # For each frame
+            for i in range(nframes):
 
-            # Add the primary image frame and select it
-            self._addframe(hdu.data[0], "primary")
-            self.frames.primary.select()
+                # Get the name of this frame, but the first frame always gets the name 'primary'
+                name = getframename(header, i) if i else "primary"
 
-            # Add the error frame
-            self._addframe(hdu.data[1], "errors")
-
-            # Close the fits file
-            hdulist.close()
+                # Add this frame to the frames dictionary
+                self._addframe(hdu.data[i], name)
 
         else:
 
-            # Add the primary image frame and select it
+            # Add the primary image frame
             self._addframe(hdu.data, "primary")
-            self.frames.primary.select()
 
-            # Close the fits file
-            hdulist.close()
+        # Select the primary image frame
+        self.frames.primary.select()
 
-            # Look for a seperate errors fits file
-            errorspath = os.path.splitext(path)[0] + ".ERRORS.fits"
-            if os.path.isfile(errorspath):
-
-                # Open the HDU list for the FITS file
-                hdulist = pyfits.open(errorspath)
-
-                # Get the primary data
-                hdu = hdulist[0]
-
-                # Add the error frame
-                self._addframe(hdu.data, "errors")
-
-                # Close the fits file
-                hdulist.close()
-
-            else:
-
-                self._log.warning("No error data found for this image")
+        # Close the FITS file
+        hdulist.close()
 
     # ----------------------------------------------------------------- PRINT INFORMATION
 
@@ -241,15 +180,15 @@ class Image(object):
         self._log.info("Dimensions of data array: " + str(self.xsize) + " x " + str(self.ysize))
 
         # Print type of data
-        self._log.info("Type of data: " + str(self.datatype))
+        self._log.info("Type of data: " + str(self.dtype))
 
     # ----------------------------------------------------------------- BASIC PROPERTIES OF THE PRIMARY IMAGE
 
     ## This function returns the data type for the primary image
     @property
-    def datatype(self):
+    def dtype(self):
 
-        return self.frames.primary.datatype()
+        return self.frames.primary.dtype
 
     ## This function returns the number of pixels in the x direction
     @property
@@ -309,6 +248,21 @@ class Image(object):
 
         # Write to file
         hdu.writeto(path, clobber=True)
+
+    ## This function is used to import the (first) frame of another FITS file into this image
+    def importframe(self, path, name):
+
+        # Open the HDU list for the FITS file
+        hdulist = pyfits.open(path)
+
+        # Get the primary data
+        hdu = hdulist[0]
+
+        # Add the error frame
+        self._addframe(hdu.data, name)
+
+        # Close the fits file
+        hdulist.close()
 
     ## This function is used to import a new ImageRegion from a regions file
     def importregion(self, path, name):
@@ -398,6 +352,7 @@ class Image(object):
         if path is None:
 
             plt.show()
+            plt.close('all')
 
         else:
 
@@ -630,7 +585,34 @@ class Image(object):
         # Set the pixel scale
         self.pixelscale = pixelscale
 
-    # ----------------------------------------------------------------- VIEW AND ADD LAYERS, REGIONS AND MASKS
+    # ----------------------------------------------------------------- ADD AND REMOVE LAYERS, REGIONS AND MASKS
+
+    ## This function removes the currently selected frame(s)
+    def deleteframes(self):
+
+        # For each active frame
+        for frame in self.frames.getactive():
+
+            # Remove this frame from the frames dictionary
+            del self.frames[frame]
+
+    ## This function removes the currently selected region(s)
+    def deleteregions(self):
+
+        # For each active region
+        for region in self.regions.getactive():
+
+            # Remove this region from the regions dictionary
+            del self.regions[region]
+
+    ## This function removes the currently selected mask(s)
+    def deletemasks(self):
+
+        # For each active mask
+        for mask in self.masks.getactive():
+
+            # Remove this mask from the masks dictionary
+            del self.masks[mask]
 
     ## This function ...
     def _addframe(self, data, name):
@@ -662,7 +644,7 @@ class Image(object):
     # ----------------------------------------------------------------- ADVANCED OPERATIONS
 
     ## This function convolves the currently selected frame(s) with a specified kernel (a FITS file)
-    def convolve(self, name, pixelscale):
+    def convolve(self, name):
 
         # Import the convolution function
         from astropy.convolution import convolve_fft
@@ -687,7 +669,7 @@ class Image(object):
         pixelscale_kernel = header["CD1_1"]*3600
 
         # Calculate the zooming factor
-        factor = pixelscale / pixelscale_kernel
+        factor = self.pixelscale / pixelscale_kernel
 
         # Rebin the kernel to the same grid of the image
         kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
@@ -1249,6 +1231,127 @@ def plotdata(data, path):
     # Display the result
     plt.show()
 
+## This function ...
+def getpixelscale(header):
+
+    # Initially, set the pixel scale to None
+    pixelscale = None
+
+    # Search for 'Pixel scale' keyword
+    if 'PIXSCALE' in header:
+
+        pixelscale = header['PIXSCALE']
+
+    elif 'SECPIX' in header:
+
+        pixelscale = header['SECPIX']
+
+    # Search for 'Pixel Field of View' keyword
+    elif 'PFOV' in header:
+
+        pixelscale = header['PFOV']
+
+    elif 'CD1_1' in header and 'CD1_2' in header:
+
+        pixelscale = math.sqrt(header['CD1_1']**2 + header['CD1_2']**2 ) * 3600.0
+
+    elif 'CD1_1' in header:
+
+        pixelscale = abs(header['CD1_1']) * 3600.0
+
+    elif 'CDELT1' in header:
+
+        pixelscale = abs(header['CDELT1']) * 3600.0
+
+    else:
+
+        log = Log()
+        log.warning("Could not determine the pixel scale from the image header")
+
+    # Return the pixel scale (in arcseconds)
+    return pixelscale
+
+## This function
+def getfilter(name, header):
+
+    # Initially, set the filter to None
+    filter = None
+
+    # Determine the filter from the information in the header
+    if 'INSTRUME' in header and 'FILTER' in header:
+
+        pass
+
+    # Get the filter
+    try:
+
+        filter = Filter(filtername)
+
+    except ValueError:
+
+        log = Log()
+        log.warning("Could not determine the filter used for this image")
+
+    # Return the filter
+    return filter
+
+## This function
+def getunits(header):
+
+    # Initially, set the units to None
+    units = None
+
+    if 'BUNIT' in header:
+
+        units = header['BUNIT']
+
+    # Return the units
+    return units
+
+## This function
+def isskysub(header):
+
+    # Initially, set the boolean to False
+    subtracted = False
+
+    if 'BACK_SUB' in header:
+
+        subtracted = header['BACK_SUB']
+
+    # Return the boolean value
+    return subtracted
+
+## This function
+def getnumberofframes(header):
+
+    # Initially, set the boolean to False
+    nframes = 1
+
+    if 'NAXIS' in header:
+
+        # If there are 3 axes, get the size of the third
+        if header['NAXIS'] == 3: nframes = header['NAXIS3']
+
+    # Return the boolean value
+    return nframes
+
+## This function
+def getframename(header, i):
+
+    planeX = "PLANE" + str(i)
+
+    # Get the description
+    description = header[planeX]
+
+    # Convert spaces to underscores and ignore things between parentheses
+    name = description.split("(")[0].rstrip(" ").replace(" ", "_")
+
+    if 'error' in description:
+
+        name = "errors"
+
+    # Return the frame name
+    return name
 # -----------------------------------------------------------------
 
 ## This class is a wrapper around the dict class, with the additional benefit of being able to access its values
@@ -1478,7 +1581,7 @@ class ImageFrame(object):
         return self._data.shape[0]
 
     ## This function
-    def datatype(self):
+    def dtype(self):
 
         return self._data.dtype.name
 
