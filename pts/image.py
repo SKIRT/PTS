@@ -113,7 +113,7 @@ class Image(object):
         self.pixelscale = getpixelscale(header)
 
         # Obtain the filter for this image
-        #self.filter = getfilter(self.name, header)
+        self.filter = getfilter(self.name, header)
 
         # Obtain the units of this image
         self.units = getunits(header)
@@ -1263,23 +1263,36 @@ def getpixelscale(header):
 ## This function
 def getfilter(name, header):
 
+    log = Log()
+
     # Initially, set the filter to None
     filter = None
 
     # Determine the filter from the information in the header
     if 'INSTRUME' in header and 'FILTER' in header:
 
-        pass
+        filterid = header['INSTRUME'].lower() + header['FILTER'].lower()
 
-    # Get the filter
-    try:
+    # If no filter information could be found in the header, try to obtain it from the file name
+    else:
 
-        filter = Filter(filtername)
+        filterid = name.lower()
 
-    except ValueError:
+    # Parse the filterid
+    if "fuv" in filterid: filter = Filter("GALEX.FUV")
+    elif "pacs" in filterid:
 
-        log = Log()
-        log.warning("Could not determine the filter used for this image")
+        if '70' in filterid or 'blue' in filterid: filter = Filter("Pacs.blue")
+        elif '160' in filterid or 'red' in filterid: filter = Filter("Pacs.red")
+        else: log.warning("Could not determine the filter for this image")
+
+    elif "mips" in filterid or "24" in filterid: filter = Filter("MIPS.24")
+    elif "2mass" in filterid and "h" in filterid: filter = Filter("2MASS.H")
+    elif "irac" in filterid:
+
+        if '3.6' in filterid or 'i1' in filterid: filter = Filter("IRAC.I1")
+
+    else: log.warning("Could not determine the filter for this image")
 
     # Return the filter
     return filter
