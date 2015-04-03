@@ -140,8 +140,8 @@ class Image(object):
         # Set the basic header for this image
         self.header = header.copy(strip=True)
         self.header["NAXIS"] = 2
-        self.header["NAXIS1"] = self.ysize
-        self.header["NAXIS2"] = self.xsize
+        self.header["NAXIS1"] = self.xsize
+        self.header["NAXIS2"] = self.ysize
 
         # Select the primary image frame
         self.frames.primary.select()
