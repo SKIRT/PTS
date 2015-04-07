@@ -150,7 +150,7 @@ class JobScript(object):
 
         # Then, swap to the desired cluster and launch the job script
         FNULL = open(os.devnull, 'w')   # We ignore the output of the qsub command
-        subprocess.call("module swap cluster/" + self._clustername + "; qsub " + self._path, stdout=FNULL, stderr=subprocess.STDOUT)
+        subprocess.call("module swap cluster/" + self._clustername + "; qsub " + self._path, shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
 
     ## This function removes the job script
     def remove(self):
