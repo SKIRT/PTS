@@ -441,20 +441,40 @@ class ScalingTest(object):
         # As a last resort, look for a log file that was placed next to the ski file of this scaling test
         else:
 
-            # The path of the serial log file
-            seriallogfilepath = os.path.join(self._simulationpath, self._skifilename + "_log.txt")
+            # The path of the log file
+            logfilepath = os.path.join(self._simulationpath, self._skifilename + "_log.txt")
 
             # Check whether such a file exists
-            if os.path.exists(seriallogfilepath):
+            if os.path.exists(logfilepath):
 
-                # TODO: check whether the log file comes from a simulation with 1 process and 1 thread
+                # Initially, set the number of processes and threads from the log file to one
+                logfileprocesses = 1
+                logfilethreads = 1
+
+                # Check with how many processes and threads this simulation was run, by reading each line of the
+                # specified log file and searching for indications of multiple processes and/or multiple threads
+                for line in open(logfilepath):
+
+                    if 'Starting simulation ' + self._skifilename + ' with' in line:
+
+                        logfileprocesses = int(line.split(' with ')[1].split()[0])
+
+                    elif 'Initializing random number generator for thread number' in line:
+
+                        # The last such line that is found states the rank of the last (highest-ranked) thread
+                        logfilethreads = int(line.split(' for thread number ')[1].split()[0]) + 1
+
+                # Calculate the total number of used processors used to create the log file
+                logfileprocessors = logfileprocesses * logfilethreads
 
                 # If such a log file is present, extract the timings from it
-                runtimes = extract(seriallogfilepath)
+                runtimes = extract(logfilepath)
 
                 # Calculate the portion of the total runtime spent in serial and parallel parts of the code
                 serialtime = runtimes['setup'] + runtimes['writing']
-                paralleltime = runtimes['stellar'] + runtimes['dustselfabs'] + runtimes['dustem']
+                paralleltime = runtimes['stellar']*logfileprocessors \
+                             + runtimes['dustselfabs']*logfileprocessors \
+                             + runtimes['dustem']*logfileprocessors
 
                 # Estimate the total runtime for this number of processors, by taking an overhead of 1 percent per
                 # parallel process
