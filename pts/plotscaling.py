@@ -259,8 +259,17 @@ class ScalingPlotter(object):
 
             except ValueError:
 
-                # Go to the next (systemname, mode): for this configuration no runtime was recorded with only one thread
-                pass
+                # For this configuration no runtime was recorded with only one thread, so we add an entry
+                # with the appropriate serial runtime and its error, if the mode is 'threads' or 'mpi' and not hybrid
+                # (because the curve for hybrid should only start for a number of processors = threads per process)
+                # Basically, this procedure lets us use the average runtime on 1 processor as part of an 'mpi' mode
+                # scaling test as the runtime on 1 processor for the 'threads' mode scaling relation, if we didn't
+                # have this runtime available from the 'threads' mode scaling test results file
+                if mode == "threads" or mode == "mpi":
+
+                    self._statistics[(systemname, mode)][0].insert(0, 1)
+                    self._statistics[(systemname, mode)][1].insert(0, self._serialruntime[systemname])
+                    self._statistics[(systemname, mode)][2].insert(0, self._serialerror[systemname])
 
     # -----------------------------------------------------------------
 
