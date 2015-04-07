@@ -125,7 +125,7 @@ class ScalingPlotter(object):
             for file in filelist:
 
                 # Get the values from this results file. If no data could be found in the file, we skip it.
-                filepath = os.path.join(directory, file)
+                filepath = os.path.join(self._respath, file)
                 try:
                     threadcounts, times = np.loadtxt(filepath, usecols=(columns['threads'],columns[phase]), unpack=True)
                 except ValueError:
