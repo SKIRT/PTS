@@ -70,8 +70,9 @@ class ScalingPlotter(object):
         # Create a logger
         self._log = Log()
 
-        # Set the directory path
-        self._directory = directory
+        # Set the results and visualization paths
+        self._respath = os.path.join(directory, "res")
+        self._vispath = os.path.join(directory, "vis")
 
         # Set the phase
         self._phase = phase
@@ -84,7 +85,7 @@ class ScalingPlotter(object):
         # Each key in the dictionary will correspond to a different curve in the plots.
         filenames = dict()
         self._log.info("Gathering the data files...")
-        for filename in os.listdir(self._directory):
+        for filename in os.listdir(self._respath):
 
             # Check whether this file is a data file and not hidden
             if filename.endswith(".dat") and not filename.startswith("."):
@@ -315,7 +316,7 @@ class ScalingPlotter(object):
         # Save the figure
         systemidentifier = self._system + "_" if self._system else ""
         filename = "scaling_" + self._phase + "_" + systemidentifier + "times.pdf"
-        filepath = os.path.join(self._directory, filename)
+        filepath = os.path.join(self._vispath, filename)
         plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
         plt.close()
 
@@ -374,7 +375,7 @@ class ScalingPlotter(object):
         # Save the figure
         systemidentifier = self._system + "_" if self._system else ""
         filename = "scaling_" + self._phase + "_" + systemidentifier + "speedups.pdf"
-        filepath = os.path.join(self._directory, filename)
+        filepath = os.path.join(self._vispath, filename)
         plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
         plt.close()
 
@@ -430,7 +431,7 @@ class ScalingPlotter(object):
         # Save the figure
         systemidentifier = self._system + "_" if self._system else ""
         filename = "scaling_" + self._phase + "_" + systemidentifier + "efficiencies.pdf"
-        filepath = os.path.join(self._directory, filename)
+        filepath = os.path.join(self._vispath, filename)
         plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
         plt.close()
 

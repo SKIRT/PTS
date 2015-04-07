@@ -14,16 +14,17 @@
 # Import standard modules
 import os
 import os.path
-import subprocess
 import multiprocessing
 import datetime
 import numpy as np
 import shutil
 
 # Import the relevant PTS class
+from pts.skirtsimulation import SkirtSimulation
 from pts.skirtexec import SkirtExec
 from pts.log import Log
 from do.extractscaling import extract
+from pts.plotprogress import plotprogress
 from pts.jobscript import JobScript
 
 # -----------------------------------------------------------------
@@ -76,10 +77,11 @@ class ScalingTest(object):
             self._log.error("No directory called " + self._simulationname + " was found in " + self._path)
             exit()
 
-        # Set the output and result paths
+        # Set the output, result and visualisation paths
         self._outpath = os.path.join(self._simulationpath, "out")
         self._respath = os.path.join(self._simulationpath, "res")
-        
+        self._vispath = os.path.join(self._simulationpath, "vis")
+
         # Create the output directories if they do not already exist
         try: os.mkdir(self._outpath)
         except OSError: pass
@@ -142,7 +144,7 @@ class ScalingTest(object):
     #  - keepoutput: this optional argument indicates whether the output of the SKIRT simulations has to be kept
     #                or can be deleted from the disk.
     #
-    def run(self, maxnodes, minnodes, manual=False, keepoutput=False):
+    def run(self, maxnodes, minnodes, manual=False, keepoutput=False, plotprogr=False):
 
         # Log the system name, the test mode and the version of SKIRT used for this test
         self._log.info("Starting parallel scaling benchmark for " + self._system + " in " + self._mode + " mode.")
@@ -173,7 +175,7 @@ class ScalingTest(object):
         while processors <= maxprocessors:
 
             # Perform this run
-            self._do(processors, resultsfilepath, manual, keepoutput)
+            self._do(processors, resultsfilepath, manual, keepoutput, plotprogr)
 
             # The next run will be performed with double the amount of processors
             processors *= 2
@@ -190,7 +192,7 @@ class ScalingTest(object):
     #            so that the user can inspect it and launch it manually
     #  - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
     #
-    def _schedule(self, processors, resultsfilepath, manual, keepoutput):
+    def _schedule(self, processors, resultsfilepath, manual, keepoutput, plotprogr):
 
         # Determine the number of processes and threads per process
         processes, threads = self._getmapping(processors)
@@ -257,6 +259,11 @@ class ScalingTest(object):
         command = "python extractscaling.py " + logfilepath + " " + str(processes) + " " + str(threads) + " " + resultsfilepath
         jobscript.addcommand(command, comment="Extract the results")
 
+        # Add the command to plot the progress after the job finished, if requested
+        if plotprogr:
+            command = "python plotprogress.py " + dataoutputpath + " " + self._vispath
+            jobscript.addcommand(command, comment="Plot the progress of the different processes")
+
         # Add the command to remove the output directory of this run
         if not keepoutput:
             command = "cd; rm -rf " + dataoutputpath
@@ -280,7 +287,7 @@ class ScalingTest(object):
     #            so that the user can inspect it and launch it manually
     #  - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
     #
-    def _run(self, processors, resultsfilepath, manual, keepoutput):
+    def _run(self, processors, resultsfilepath, manual, keepoutput, plotprogr):
 
         # Determine the number of processes and threads per process
         processes, threads = self._getmapping(processors)
@@ -299,6 +306,9 @@ class ScalingTest(object):
 
         # Extract the timings from the simulation's log file and place them in the results file
         extract(simulation.logfilepath(), processes, threads, resultsfilepath)
+
+        # Plot the progress of the different processes, if requested
+        if plotprogr: plotprogress(simulation, self._vispath)
 
         # Remove the contents of the output directory, if requested
         if not keepoutput: shutil.rmtree(dataoutputpath)

@@ -16,12 +16,16 @@
 
 # -----------------------------------------------------------------
 
-# use a non-interactive back-end to generate high-quality vector graphics
+# Import standard modules
+import os.path
+from datetime import datetime
+
+# Use a non-interactive back-end to generate high-quality vector graphics
 import matplotlib
 if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 
-from datetime import datetime
+# Import relevant PTS modules
 import pts.archive as arch
 
 # -----------------------------------------------------------------
@@ -42,15 +46,15 @@ import pts.archive as arch
 # - simulation: the SkirtSimulation object representing the simulation to be handled
 # - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
 #
-def plotprogress(simulation, figsize=(10,6)):
-    _plot_photon_progress(simulation, figsize, 'stellar')
-    _plot_spectra_progress(simulation, figsize)
-    _plot_photon_progress(simulation, figsize, 'dust')
+def plotprogress(simulation, plotdir="", figsize=(10,6)):
+    _plot_photon_progress(simulation, plotdir, figsize, 'stellar')
+    _plot_spectra_progress(simulation, plotdir, figsize)
+    _plot_photon_progress(simulation, plotdir, figsize, 'dust')
 
 # -----------------------------------------------------------------
 
 # this private function plots progress of the indicated photon shooting phase ('stellar' or 'dust')
-def _plot_photon_progress(simulation, figsize, phase):
+def _plot_photon_progress(simulation, plotdir, figsize, phase):
 
     # setup the figure
     figure = plt.figure(figsize=figsize)
@@ -86,9 +90,10 @@ def _plot_photon_progress(simulation, figsize, phase):
         plt.title("Progress of emitting {} photons".format(phase))
         plt.legend(loc='lower right', ncol=4, prop={'size':8})
 
-        outpath = simulation.outfilepath("progress_{}_photons.pdf".format(phase))
-        plt.savefig(outpath, bbox_inches='tight', pad_inches=0.25)
-        print "Created PDF progress plot file " + outpath
+        # Save the figure
+        path = os.path.join(plotdir, "progress_{}_photons.pdf".format(phase))
+        plt.savefig(path, bbox_inches='tight', pad_inches=0.25)
+        print "Created PDF progress plot file " + path
 
     # finalize things
     plt.close()
@@ -96,7 +101,7 @@ def _plot_photon_progress(simulation, figsize, phase):
 # -----------------------------------------------------------------
 
 # this private function plots progress of the dust spectra calculation
-def _plot_spectra_progress(simulation, figsize):
+def _plot_spectra_progress(simulation, plotdir, figsize):
 
     # setup the figure
     figure = plt.figure(figsize=figsize)
@@ -143,9 +148,10 @@ def _plot_spectra_progress(simulation, figsize):
         plt.title("Progress of calculating dust spectra")
         plt.legend(loc='lower right', ncol=4, prop={'size':8})
 
-        outpath = simulation.outfilepath("progress_dust_spectra.pdf")
-        plt.savefig(outpath, bbox_inches='tight', pad_inches=0.25)
-        print "Created PDF progress plot file " + outpath
+        # Save the figure
+        path = os.path.join(plotdir, "progress_dust_spectra.pdf")
+        plt.savefig(path, bbox_inches='tight', pad_inches=0.25)
+        print "Created PDF progress plot file " + path
 
     # finalize things
     plt.close()

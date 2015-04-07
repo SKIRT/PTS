@@ -27,10 +27,11 @@
 
 # -----------------------------------------------------------------
 
-# import standard modules
+# Import standard modules
+import os
 import sys
 
-# import relevant PTS modules
+# Import relevant PTS modules
 from pts.skirtsimulation import createsimulations
 from pts.plotprogress import plotprogress
 
@@ -40,10 +41,13 @@ print "Starting plotprogress..."
 
 # get the command-line argument specifying the simulation(s)
 argument = sys.argv[1] if len(sys.argv) > 1 else ""
+plotdir = sys.argv[2] if len(sys.argv) > 2 else os.getcwd()
 
-# construct the list of simulation objects and make the plots
+# Construct the list of simulation objects and make the plots
 for simulation in createsimulations(argument):
-    plotprogress(simulation)
+
+    # Plot the progress for this simulation
+    plotprogress(simulation, plotdir)
 
 print "Finished plotprogress."
 
