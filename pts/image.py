@@ -251,7 +251,7 @@ class Image(object):
         self._log.info("Saving " + frame + " frame as " + path)
 
         # Create the HDU
-        hdu = pyfits.PrimaryHDU(self.frames[frame].data)
+        hdu = pyfits.PrimaryHDU(self.frames[frame].data, self.header)
 
         # Write to file
         hdu.writeto(path, clobber=True)
