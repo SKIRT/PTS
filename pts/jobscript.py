@@ -105,7 +105,7 @@ class JobScript(object):
         # Load cluster modules
         self._script.write("# Load the necessary modules\n")
         self._script.write("module load jobs\n")
-        self._script.write("module load Python/2.7.8-intel-2014b\n")
+        self._script.write("module load lxml/3.4.2-intel-2015a-Python-2.7.9\n")
         self._script.write("\n")
 
         # Run the simulation
