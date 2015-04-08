@@ -20,7 +20,6 @@ import numpy as np
 import shutil
 
 # Import the relevant PTS class
-from pts.skirtsimulation import SkirtSimulation
 from pts.skirtexec import SkirtExec
 from pts.log import Log
 from do.extractscaling import extract
@@ -260,12 +259,28 @@ class ScalingTest(object):
         jobscript.addcommand(command, comment="Extract the results")
 
         # Add the command to plot the progress after the job finished, if requested
-        if plotprogr:
-            command = "python plotprogress.py " + dataoutputpath + " " + self._vispath
+        if plotprogr and processes > 1:
+
+            # Determine the path to the folder, next to the results file and bearing the same name, that will
+            # contain the data that is necessary to plot the progress of the simulation
+            resultsfilename = os.path.splitext(os.path.basename(resultsfilepath))[0]
+            progressdirpath = os.path.join(self._respath, resultsfilename)
+
+            # Create this directory if it doesn't already exist
+            try: os.mkdir(progressdirpath)
+            except OSError: pass
+
+            # Create the file to contain the progress information of this run
+            progressfilepath = self._createprogressfile(progressdirpath, processes)
+
+            # Add the command to the jobscript
+            command = "python extractprogress.py " + dataoutputpath + " " + progressfilepath
             jobscript.addcommand(command, comment="Plot the progress of the different processes")
 
         # Add the command to remove the output directory of this run
         if not keepoutput:
+
+            # Add the command to the jobscript
             command = "cd; rm -rf " + dataoutputpath
             jobscript.addcommand(command, comment="Remove the temporary output directory")
 
@@ -346,6 +361,26 @@ class ScalingTest(object):
         resultsfile.close()
 
         # Return the path of the newly created results file
+        return filepath
+
+    ## This function creates the file containing the progress
+    def _createprogressfile(self, progresspath, processes):
+
+        # Create a new file whose name includes the current number of processors
+        filepath = os.path.join(progresspath, "progress_" + str(processes) + ".dat")
+        progressfile = open(filepath, 'w')
+
+        # Write a header to this new file which contains some general info about its contents
+        progressfile.write("# Progress results for " + self._system + " with " + str(processes) + " parallel processes\n")
+        progressfile.write("# Using " + self._skirt.version() + "\n")
+        progressfile.write("# Column 1: Process rank\n")
+        progressfile.write("# Column 2: Execution time (s)\n")
+        progressfile.write("# Column 3: Progress (%)\n")
+
+        # Close the progress file (results will be appended!)
+        progressfile.close()
+
+        # Return the path of the newly created progress file
         return filepath
 
     ## This function calculates the number of processes and the number of threads (per process) for
