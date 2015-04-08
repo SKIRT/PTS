@@ -76,7 +76,7 @@ def extract(logfilepath, processes=1, threads=1, resultsfilepath=""):
 # Execute the statements below if this script is run from the command line
 if __name__ == "__main__":
 
-    # Create the command-line parser and a set of subparsers
+    # Create the command-line parser
     parser = argparse.ArgumentParser()
     parser.add_argument('logfilepath', type=str, help='the path to the log file')
     parser.add_argument('processes', type=int, help='the number of processes used for the simulation')

@@ -244,7 +244,7 @@ class ScalingTest(object):
         # Create the job script. The name of the script indicates the mode in which we run this scaling test and
         # the current number of processors used. We enable the SKIRT verbose logging mode to be able to compare
         # the progress of the different parallel processes afterwards. Because for scaling tests, we don't want
-        # processes to end up on different nods or the SKIRT processes sensing interference from other programs,
+        # processes to end up on different nodes or the SKIRT processes sensing interference from other programs,
         # we set the 'fullnode' flag to True, which makes sure we always request at least one full node, even when
         # the current number of processors is less than the number of cores per node.
         jobscriptpath = os.path.join(self._outpath, "job_" + self._mode + "_" + str(processors) + ".sh")

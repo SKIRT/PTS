@@ -30,6 +30,7 @@
 # Import standard modules
 import os
 import sys
+import argparse
 
 # Import relevant PTS modules
 from pts.skirtsimulation import createsimulations
@@ -39,12 +40,22 @@ from pts.plotprogress import plotprogress
 
 print "Starting plotprogress..."
 
-# get the command-line argument specifying the simulation(s)
-argument = sys.argv[1] if len(sys.argv) > 1 else ""
-plotdir = sys.argv[2] if len(sys.argv) > 2 else os.getcwd()
+# Create the command-line parser
+parser = argparse.ArgumentParser()
+parser.add_argument('simulations', type=str, help='a string identifying the simulation(s)', nargs='?', default="")
+parser.add_argument('plotdir', type=str, help='the path to the directory where the plots should be placed', nargs='?', default="")
+parser.add_argument('--scaling', action='store_true', help='use this option to construct the plots from the progress data files resulting from a scaling test')
+
+# Parse the command line arguments
+args = parser.parse_args()
+
+# Set the command-line options
+simulations = args.simulations
+plotdir = args.plotdir if args.plotdir else os.getcwd()
+scaling = args.scaling
 
 # Construct the list of simulation objects and make the plots
-for simulation in createsimulations(argument):
+for simulation in createsimulations(simulations):
 
     # Plot the progress for this simulation
     plotprogress(simulation, plotdir)
