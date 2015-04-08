@@ -23,7 +23,6 @@ import shutil
 from pts.skirtexec import SkirtExec
 from pts.log import Log
 from do.extractscaling import extract
-from pts.plotprogress import plotprogress
 from pts.jobscript import JobScript
 
 # -----------------------------------------------------------------
@@ -323,7 +322,9 @@ class ScalingTest(object):
         extract(simulation.logfilepath(), processes, threads, resultsfilepath)
 
         # Plot the progress of the different processes, if requested
-        if plotprogr: plotprogress(simulation, self._vispath)
+        if plotprogr:
+            from pts.plotprogress import plotprogress
+            plotprogress(simulation, self._vispath)
 
         # Remove the contents of the output directory, if requested
         if not keepoutput: shutil.rmtree(dataoutputpath)
