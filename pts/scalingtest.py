@@ -375,8 +375,9 @@ class ScalingTest(object):
         progressfile.write("# Progress results for " + self._system + " with " + str(processes) + " parallel processes\n")
         progressfile.write("# Using " + self._skirt.version() + "\n")
         progressfile.write("# Column 1: Process rank\n")
-        progressfile.write("# Column 2: Execution time (s)\n")
-        progressfile.write("# Column 3: Progress (%)\n")
+        progressfile.write("# Column 2: Simulation phase (stellar, dust or spectra)\n")
+        progressfile.write("# Column 3: Execution time (s)\n")
+        progressfile.write("# Column 4: Progress (%)\n")
 
         # Close the progress file (results will be appended!)
         progressfile.close()
