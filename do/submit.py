@@ -14,7 +14,6 @@
 import os
 import os.path
 import argparse
-import subprocess
 
 # Import the relevant PTS class
 from pts.jobscript import JobScript
@@ -30,6 +29,8 @@ parser.add_argument('nodes', type=int, help='the number of nodes to use for the 
 parser.add_argument('threadspp', type=int, help='the number of parallel threads per process')
 parser.add_argument('walltime', type=str, help='the expected walltime for this simulation in hh:mm:ss format')
 parser.add_argument('cluster', nargs='?', type=str, help='the cluster to which the job should be submitted', default="delcatty")
+parser.add_argument('--fullnode', action='store_true', help='add this option to always use a full node, irrespective of the number of processors that is needed on this node')
+parser.add_argument('--verbose', action='store_true', help='add this option to enable verbose logging mode for SKIRT')
 
 # Parse the command line arguments
 args = parser.parse_args()
@@ -40,9 +41,12 @@ nodes = args.nodes
 threadspp = args.threadspp
 walltime = args.walltime
 cluster = args.cluster
+fullnode = args.fullnode
+verbose = args.verbose
 
 # -----------------------------------------------------------------
 
+# Define the number of cores per node for this different clusters
 cores = {'delcatty': 16, 'gulpin': 32}
 
 # -----------------------------------------------------------------
@@ -58,15 +62,11 @@ skifilepath = os.path.abspath(skifile)
 inputpath = os.path.abspath(inpath)
 outputpath = os.path.abspath(outpath)
 
-# Set the environment for submitting to the specified cluster
-clusterstring = "cluster/" + cluster
-subprocess.call("module swap " + clusterstring, shell=True)
-
 # Get the number of processors per node on the specified cluster
 ppn = cores[cluster]
 
 # Create a job script for this simulation
-jobscript = JobScript("job.sh", skifilepath, nodes, ppn, threadspp, outputpath, time, mail=True)
+jobscript = JobScript("job.sh", skifilepath, cluster, nodes, ppn, threadspp, outputpath, time, mail=True, verbose=verbose, fullnode=fullnode)
 
 # Submit the job script to the cluster
 jobscript.submit()
