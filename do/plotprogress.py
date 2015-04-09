@@ -29,7 +29,6 @@
 
 # Import standard modules
 import os
-import sys
 import argparse
 
 # Import relevant PTS modules
@@ -43,22 +42,45 @@ print "Starting plotprogress..."
 # Create the command-line parser
 parser = argparse.ArgumentParser()
 parser.add_argument('simulations', type=str, help='a string identifying the simulation(s)', nargs='?', default="")
-parser.add_argument('plotdir', type=str, help='the path to the directory where the plots should be placed', nargs='?', default="")
-parser.add_argument('--scaling', action='store_true', help='use this option to construct the plots from the progress data files resulting from a scaling test')
 
 # Parse the command line arguments
 args = parser.parse_args()
 
 # Set the command-line options
 simulations = args.simulations
-plotdir = args.plotdir if args.plotdir else os.getcwd()
-scaling = args.scaling
 
-# Construct the list of simulation objects and make the plots
-for simulation in createsimulations(simulations):
+# Initialize an empty list to contain the paths of progress files
+progressfiles = []
 
-    # Plot the progress for this simulation
-    plotprogress(simulation, plotdir)
+# Find .dat files that contain extracted progress information
+for root, dirs, files in os.walk(os.getcwd()):
+
+    # For each file in the current (sub)directory
+    for file in files:
+
+        # Check if this is a progress data file
+        if file.endswith('.dat') and "progress" in file:
+
+            # Get the file path
+            filepath = os.path.join(root, file)
+
+            # Add the file path to the list of progress files
+            progressfiles.append(filepath)
+
+# If the progressfiles list is not empty
+if progressfiles:
+
+    pass
+
+# If no extracted progress information could be found, create a list of simulations from the current directory or
+# a string given as a command-line argument and first extract the progress for these simulations
+else:
+
+    # Construct the list of simulation objects and make the plots
+    for simulation in createsimulations(simulations):
+
+        # Plot the progress for this simulation
+        plotprogress(simulation, os.getcwd())
 
 print "Finished plotprogress."
 
