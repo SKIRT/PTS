@@ -73,11 +73,8 @@ for root, dirs, filenames in os.walk(os.getcwd()):
         # Check if this is a progress data file
         if filename.endswith('.dat') and not filename.startswith(".") and "progress" in filename:
 
-            # Get the file path
-            filepath = os.path.join(root, filename)
-
-            # Add the file path to the list of progress files
-            progressfiles.append(filepath)
+            # Add this file to the list of progress files
+            progressfiles.append((root, filename))
 
 # If the progressfiles list is not empty
 if progressfiles:
@@ -90,13 +87,16 @@ if progressfiles:
     except OSError: pass
 
     # For each progress file in the list
-    for progressfile in progressfiles:
+    for directory, filename in progressfiles:
+
+        # Determine the full path to the progress file
+        progressfilepath = os.path.join(directory, filename)
 
         # Determine the path to the plot file
-        plotfilepath = ""
+        plotfilepath = os.path.join(vispath, os.path.basename(directory), os.path.splitext(filename)[0] + ".pdf")
 
         # Plot the progress information in this file
-        plotprogress(progressfile, plotfilepath, phase)
+        plotprogress(progressfilepath, plotfilepath, phase)
 
 # If no extracted progress information could be found, create a list of simulations from the current directory or
 # a string given as a command-line argument and first extract the progress for these simulations into a temporary
