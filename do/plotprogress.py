@@ -38,6 +38,11 @@ from pts.plotprogress import plotprogress
 
 # -----------------------------------------------------------------
 
+# The choices for the simulation phase
+phases = ['stellar', 'dust', 'spectra']
+
+# -----------------------------------------------------------------
+
 # Create a logger
 log = Log()
 
@@ -47,12 +52,14 @@ log.info("Starting plotprogress...")
 # Create the command-line parser
 parser = argparse.ArgumentParser()
 parser.add_argument('simulations', type=str, help='a string identifying the simulation(s)', nargs='?', default="")
+parser.add_argument('phase', type=str, help='the simulation phase for which you want to plot the progress', choices=phases)
 
 # Parse the command line arguments
 args = parser.parse_args()
 
 # Set the command-line options
 simulations = args.simulations
+phase = args.phase
 
 # Initialize an empty list to contain the paths of progress files
 progressfiles = []
@@ -89,7 +96,7 @@ if progressfiles:
         plotfilepath = ""
 
         # Plot the progress information in this file
-        plotprogress(progressfile, plotfilepath)
+        plotprogress(progressfile, plotfilepath, phase)
 
 # If no extracted progress information could be found, create a list of simulations from the current directory or
 # a string given as a command-line argument and first extract the progress for these simulations into a temporary
@@ -132,7 +139,7 @@ else:
         plotfilepath = ""
 
         # Plot the progress for this simulation
-        plotprogress(progressfilepath, plotfilepath)
+        plotprogress(progressfilepath, plotfilepath, phase)
 
 # Inform the user
 log.info("Finished plotprogress.")

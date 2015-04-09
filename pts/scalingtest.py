@@ -280,7 +280,7 @@ class ScalingTest(object):
             progressfilepath = self._createprogressfile(self._progressdirpath, processes)
 
             # Add the command to the jobscript to extract the progress
-            command = "python extractprogress.py " + " " + self._skifilepath + " " + dataoutputpath + " " + progressfilepath
+            command = "python extractprogress.py " + " " + self._skifilename + " " + dataoutputpath + " " + progressfilepath
             jobscript.addcommand(command, comment="Extract the progress of the different processes")
 
         # Add the command to remove the output directory of this run
@@ -340,7 +340,7 @@ class ScalingTest(object):
             import do.extractprogress
 
             # Extract the progress information
-            do.extractprogress.extract(self._skifilepath, dataoutputpath, progressfilepath)
+            do.extractprogress.extract(self._skifilename, dataoutputpath, progressfilepath)
 
         # Remove the contents of the output directory, if requested
         if not keepoutput: shutil.rmtree(dataoutputpath)

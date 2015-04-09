@@ -16,13 +16,13 @@ from pts.skirtsimulation import SkirtSimulation
 #  - simulationpath: the path to the simulation's log file
 #  - progressfilepath: the path to a file that to where the runtimes should be written
 #
-def extract(skifilepath, outputpath, progressfilepath):
+def extract(skifilename, outputpath, progressfilepath):
 
     # Open the progress file
     progressfile = open(progressfilepath, 'a')
 
     # Create a simulation object from the simulation's output path
-    simulation = SkirtSimulation(prefix=skifilepath, outpath=outputpath)
+    simulation = SkirtSimulation(prefix=skifilename, outpath=outputpath)
 
     # Get the list of logfiles for this simulation
     logfilepaths = simulation.logfilepaths()
