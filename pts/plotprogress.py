@@ -43,10 +43,15 @@ def plotprogress(filepath, plotpath, phase, figsize=(6,10)):
 
     # Try to get the values from this progress file. If no data could be found in the file, we skip it.
     try:
-        ranks, phases, times, percentages = np.loadtxt(filepath, usecols=(0,1,2,3), unpack=True)
+        ranks, phases, times, percentages = np.loadtxt(filepath, usecols=(0,1,2,3), unpack=True, dtype=str)
     except ValueError:
         log.warning("The file " + filepath + " does not contain any data")
         return
+
+    # Convert the appropriate columns to integers or floats
+    ranks = ranks.astype(int, copy=False)
+    times = times.astype(float, copy=False)
+    percentages = percentages.astype(float, copy=False)
 
     # Setup the figure
     plt.figure(figsize=figsize)
@@ -66,7 +71,14 @@ def plotprogress(filepath, plotpath, phase, figsize=(6,10)):
         # Loop over the entries of the progress data
         for i in range(len(ranks)):
 
-            if ranks[i] == rank and phases[i] == phase:
+            # If we are below the current rank, continue to the next entry
+            if ranks[i] < rank: continue
+
+            # If we passed the current rank, stop searching for new entries
+            elif ranks[i] > rank: break
+
+            # Else, check whether this entry correponds with the specified phase
+            elif phases[i] == phase:
 
                 times_process.append(times[i])
                 percentages_process.append(percentages[i])
@@ -93,9 +105,8 @@ def plotprogress(filepath, plotpath, phase, figsize=(6,10)):
         plt.legend(loc='lower right', ncol=4, prop={'size':8})
 
         # Save the figure
-        path = os.path.join(plotdir, "progress_{}_photons.pdf".format(phase))
-        plt.savefig(path, bbox_inches='tight', pad_inches=0.25)
-        print "Created PDF progress plot file " + path
+        plt.savefig(plotpath, bbox_inches='tight', pad_inches=0.25)
+        log.info("Created PDF progress plot file " + plotpath)
 
     # Close the plotting environment
     plt.close()
