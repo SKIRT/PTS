@@ -333,11 +333,14 @@ class ScalingTest(object):
         # Extract the progress of the different processes, if requested
         if extractprogr:
 
+            # Create the file to contain the progress information of this run
+            progressfilepath = self._createprogressfile(self._progressdirpath, processes)
+
             # Load the extractprogress module
             import do.extractprogress
 
             # Extract the progress information
-            do.extractprogress.extract(self._skifilepath, dataoutputpath, self._progressfilepath)
+            do.extractprogress.extract(self._skifilepath, dataoutputpath, progressfilepath)
 
         # Remove the contents of the output directory, if requested
         if not keepoutput: shutil.rmtree(dataoutputpath)
