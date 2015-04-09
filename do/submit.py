@@ -29,7 +29,6 @@ parser.add_argument('nodes', type=int, help='the number of nodes to use for the 
 parser.add_argument('threadspp', type=int, help='the number of parallel threads per process')
 parser.add_argument('walltime', type=str, help='the expected walltime for this simulation in hh:mm:ss format')
 parser.add_argument('cluster', nargs='?', type=str, help='the cluster to which the job should be submitted', default="delcatty")
-parser.add_argument('--fullnode', action='store_true', help='add this option to always use a full node, irrespective of the number of processors that is needed on this node')
 parser.add_argument('--verbose', action='store_true', help='add this option to enable verbose logging mode for SKIRT')
 
 # Parse the command line arguments
@@ -41,7 +40,6 @@ nodes = args.nodes
 threadspp = args.threadspp
 walltime = args.walltime
 cluster = args.cluster
-fullnode = args.fullnode
 verbose = args.verbose
 
 # -----------------------------------------------------------------
@@ -66,7 +64,7 @@ outputpath = os.path.abspath(outpath)
 ppn = cores[cluster]
 
 # Create a job script for this simulation
-jobscript = JobScript("job.sh", skifilepath, cluster, nodes, ppn, threadspp, outputpath, time, mail=True, verbose=verbose, fullnode=fullnode)
+jobscript = JobScript("job.sh", skifilepath, cluster, nodes, ppn, threadspp, outputpath, time, mail=True, verbose=verbose)
 
 # Submit the job script to the cluster
 jobscript.submit()
