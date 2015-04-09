@@ -273,7 +273,7 @@ class ScalingTest(object):
             progressfilepath = self._createprogressfile(progressdirpath, processes)
 
             # Add the command to the jobscript
-            command = "python extractprogress.py " + dataoutputpath + " " + progressfilepath
+            command = "python extractprogress.py " + " " + self._skifilepath + " " + dataoutputpath + " " + progressfilepath
             jobscript.addcommand(command, comment="Plot the progress of the different processes")
 
         # Add the command to remove the output directory of this run
