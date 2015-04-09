@@ -141,8 +141,10 @@ class ScalingTest(object):
     #            so that the user can inspect it and launch it manually.
     #  - keepoutput: this optional argument indicates whether the output of the SKIRT simulations has to be kept
     #                or can be deleted from the disk.
+    #  - extractprogress: a flag indicating whether the progress of the different SKIRT processes should be extracted
+    #                     from the simulation's log files or not
     #
-    def run(self, maxnodes, minnodes, manual=False, keepoutput=False, plotprogr=False):
+    def run(self, maxnodes, minnodes, manual=False, keepoutput=False, extractprogr=False):
 
         # Log the system name, the test mode and the version of SKIRT used for this test
         self._log.info("Starting parallel scaling benchmark for " + self._system + " in " + self._mode + " mode.")
@@ -169,11 +171,23 @@ class ScalingTest(object):
         # Create a file containing the results of the scaling test
         resultsfilepath = self._createresultsfile(maxnodes, minnodes)
 
+        # If 'extractprogr' is enabled, create a directory to contain the progress data files for this scaling test
+        if extractprogr:
+
+            # Determine the path to the folder, next to the results file and bearing the same name, that will
+            # contain the data that is necessary to plot the progress of the simulation
+            resultsfilename = os.path.splitext(os.path.basename(resultsfilepath))[0]
+            self._progressdirpath = os.path.join(self._respath, resultsfilename)
+
+            # Create this directory if it doesn't already exist
+            try: os.mkdir(self._progressdirpath)
+            except OSError: pass
+
         # Perform the simulations with increasing number of processors
         while processors <= maxprocessors:
 
             # Perform this run
-            self._do(processors, resultsfilepath, manual, keepoutput, plotprogr)
+            self._do(processors, resultsfilepath, manual, keepoutput, extractprogr)
 
             # The next run will be performed with double the amount of processors
             processors *= 2
@@ -189,8 +203,10 @@ class ScalingTest(object):
     #  - manual: a flag indicating whether the job script should be submitted from within this script, or just saved
     #            so that the user can inspect it and launch it manually
     #  - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
+    #  - extractprogress: a flag indicating whether the progress of the different SKIRT processes should be extracted
+    #                     from the simulation's log files or not
     #
-    def _schedule(self, processors, resultsfilepath, manual, keepoutput, plotprogr):
+    def _schedule(self, processors, resultsfilepath, manual, keepoutput, extractprogr):
 
         # Determine the number of processes and threads per process
         processes, threads = self._getmapping(processors)
@@ -257,24 +273,15 @@ class ScalingTest(object):
         command = "python extractscaling.py " + logfilepath + " " + str(processes) + " " + str(threads) + " " + resultsfilepath
         jobscript.addcommand(command, comment="Extract the results")
 
-        # Add the command to plot the progress after the job finished, if requested
-        if plotprogr and processes > 1:
-
-            # Determine the path to the folder, next to the results file and bearing the same name, that will
-            # contain the data that is necessary to plot the progress of the simulation
-            resultsfilename = os.path.splitext(os.path.basename(resultsfilepath))[0]
-            progressdirpath = os.path.join(self._respath, resultsfilename)
-
-            # Create this directory if it doesn't already exist
-            try: os.mkdir(progressdirpath)
-            except OSError: pass
+        # Add the command to extract the progress information after the job finished, if requested
+        if extractprogr and processes > 1:
 
             # Create the file to contain the progress information of this run
-            progressfilepath = self._createprogressfile(progressdirpath, processes)
+            progressfilepath = self._createprogressfile(self._progressdirpath, processes)
 
-            # Add the command to the jobscript
+            # Add the command to the jobscript to extract the progress
             command = "python extractprogress.py " + " " + self._skifilepath + " " + dataoutputpath + " " + progressfilepath
-            jobscript.addcommand(command, comment="Plot the progress of the different processes")
+            jobscript.addcommand(command, comment="Extract the progress of the different processes")
 
         # Add the command to remove the output directory of this run
         if not keepoutput:
@@ -300,8 +307,10 @@ class ScalingTest(object):
     #  - manual: a flag indicating whether the job script should be submitted from within this script, or just saved
     #            so that the user can inspect it and launch it manually
     #  - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
+    #  - extractprogress: a flag indicating whether the progress of the different SKIRT processes should be extracted
+    #                     from the simulation's log files or not
     #
-    def _run(self, processors, resultsfilepath, manual, keepoutput, plotprogr):
+    def _run(self, processors, resultsfilepath, manual, keepoutput, extractprogr):
 
         # Determine the number of processes and threads per process
         processes, threads = self._getmapping(processors)
@@ -321,10 +330,14 @@ class ScalingTest(object):
         # Extract the timings from the simulation's log file and place them in the results file
         extract(simulation.logfilepath(), processes, threads, resultsfilepath)
 
-        # Plot the progress of the different processes, if requested
-        if plotprogr:
-            from pts.plotprogress import plotprogress
-            plotprogress(simulation, self._vispath)
+        # Extract the progress of the different processes, if requested
+        if extractprogr:
+
+            # Load the extractprogress module
+            import do.extractprogress
+
+            # Extract the progress information
+            do.extractprogress.extract(self._skifilepath, dataoutputpath, self._progressfilepath)
 
         # Remove the contents of the output directory, if requested
         if not keepoutput: shutil.rmtree(dataoutputpath)
