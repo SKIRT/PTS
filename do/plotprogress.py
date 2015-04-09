@@ -32,12 +32,17 @@ import os
 import argparse
 
 # Import relevant PTS modules
+from pts.log import Log
 from pts.skirtsimulation import createsimulations
 from pts.plotprogress import plotprogress
 
 # -----------------------------------------------------------------
 
-print "Starting plotprogress..."
+# Create a logger
+log = Log()
+
+# Inform the user
+log.info("Starting plotprogress...")
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
@@ -53,16 +58,16 @@ simulations = args.simulations
 progressfiles = []
 
 # Find .dat files that contain extracted progress information
-for root, dirs, files in os.walk(os.getcwd()):
+for root, dirs, filenames in os.walk(os.getcwd()):
 
     # For each file in the current (sub)directory
-    for file in files:
+    for filename in filenames:
 
         # Check if this is a progress data file
-        if file.endswith('.dat') and "progress" in file:
+        if filename.endswith('.dat') and not filename.startswith(".") and "progress" in filename:
 
             # Get the file path
-            filepath = os.path.join(root, file)
+            filepath = os.path.join(root, filename)
 
             # Add the file path to the list of progress files
             progressfiles.append(filepath)
@@ -70,18 +75,66 @@ for root, dirs, files in os.walk(os.getcwd()):
 # If the progressfiles list is not empty
 if progressfiles:
 
-    pass
+    # Determine the full path to the visualization directory
+    vispath = os.path.join(os.getcwd(), "vis")
+
+    # Create the visualization directory if it did not already exist
+    try: os.mkdir(vispath)
+    except OSError: pass
+
+    # For each progress file in the list
+    for progressfile in progressfiles:
+
+        # Determine the path to the plot file
+        plotfilepath = ""
+
+        # Plot the progress information in this file
+        plotprogress(progressfile, plotfilepath)
 
 # If no extracted progress information could be found, create a list of simulations from the current directory or
-# a string given as a command-line argument and first extract the progress for these simulations
+# a string given as a command-line argument and first extract the progress for these simulations into a temporary
+# progress data file
 else:
+
+    # Initialize an empty list to contain the paths of progress files
+    progressfiles = []
 
     # Construct the list of simulation objects and make the plots
     for simulation in createsimulations(simulations):
 
-        # Plot the progress for this simulation
-        plotprogress(simulation, os.getcwd())
+        # Load the extract function to extract progress information from simulation log files
+        from do.extractprogress import extract
 
-print "Finished plotprogress."
+        # Create a temporaray progress file
+        progressfilepath = os.path.join(os.getcwd(), "progress_" + simulation.prefix() + ".dat")
+        progressfile = open(progressfilepath, 'w')
+
+        # Write a header to this new file which contains some general info about its contents
+        progressfile.write("# Progress results for simulation " + simulation.prefix() + "\n")
+        progressfile.write("# Column 1: Process rank\n")
+        progressfile.write("# Column 2: Simulation phase (stellar, dust or spectra)\n")
+        progressfile.write("# Column 3: Execution time (s)\n")
+        progressfile.write("# Column 4: Progress (%)\n")
+
+        # Close the progress file (results will be appended)
+        progressfile.close()
+
+        # Determine the ski file path for this simulation
+        skifilepath = simulation.outfilepath("parameters.xml")
+
+        # Determine the output path of this simulation
+        outputpath = simulation.outpath()
+
+        # Extract the progress information
+        extract(skifilepath, outputpath, progressfilepath)
+
+        # Determine the path to the plot file
+        plotfilepath = ""
+
+        # Plot the progress for this simulation
+        plotprogress(progressfilepath, plotfilepath)
+
+# Inform the user
+log.info("Finished plotprogress.")
 
 # -----------------------------------------------------------------
