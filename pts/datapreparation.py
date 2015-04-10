@@ -118,8 +118,8 @@ class DataPreparation(object):
         # Loop over all files in the data directory
         for filename in files:
 
-            # Ignore non-FITS files
-            if not filename.endswith(".fits"): continue
+            # Ignore non-FITS files or hidden files
+            if not filename.endswith(".fits") or filename.startswith("."): continue
 
             # Add an entry to the filters dictionary
             self._filters[os.path.splitext(filename)[0]] = os.path.join(self._datapath, filename)
