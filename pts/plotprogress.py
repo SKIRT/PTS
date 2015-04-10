@@ -27,11 +27,8 @@ import matplotlib.pyplot as plt
 
 # Import relevant PTS modules
 from pts.log import Log
-import pts.archive as arch
 
 # -----------------------------------------------------------------
-
-# TODO: use pts.archive
 
 # Create a logger
 log = Log()
@@ -39,7 +36,7 @@ log = Log()
 ## This function plots the progress in function of time for certain phases of a SKIRT simulation, based on the progress
 #  information extracted from its log files. The plots are saved in PDF format and are placed next to the original
 #  file(s) with a similar name.
-def plotprogress(filepath, plotpath, phase, figsize=(6,10)):
+def plotprogress(filepath, plotpath, phase, figsize=(10,6)):
 
     # Try to get the values from this progress file. If no data could be found in the file, we skip it.
     try:
@@ -96,11 +93,11 @@ def plotprogress(filepath, plotpath, phase, figsize=(6,10)):
     # If we actually plotted something, generate the figure and save it
     if numplots > 0:
 
-        plt.xlim(0,100)
-        plt.ylim(0)
+        plt.xlim(0)
+        plt.ylim(0,100)
         plt.grid('on')
-        plt.xlabel("progress (%)", fontsize='large')
-        plt.ylabel("time (s)", fontsize='large')
+        plt.xlabel("time (s)", fontsize='large')
+        plt.ylabel("progress (%)", fontsize='large')
         plt.title("Progress of emitting {} photons".format(phase))
         plt.legend(loc='lower right', ncol=4, prop={'size':8})
 
