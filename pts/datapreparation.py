@@ -300,7 +300,7 @@ class DataPreparation(object):
         if fitpsf:
 
             # Estimate the FWHM of the PSF
-            fwhm_x, fwhm_y = image.estimatepsf_fitskirt()
+            fwhm_x, fwhm_y = image.estimatepsf_fitskirt(plot=self._plot)
 
             # Circular approximation
             fwhm = 0.5 * (fwhm_x + fwhm_y)
@@ -333,7 +333,7 @@ class DataPreparation(object):
     def subtractsky(self, image, fwhm):
 
         # Find the galaxy in the primary image (creates a region called 'galaxy')
-        image.findgalaxy()
+        image.findgalaxy(plot=self._plot)
 
         # Select the galaxy region
         image.regions.galaxy.select()
@@ -446,6 +446,10 @@ class DataPreparation(object):
 
             path = os.path.join(self._preppath, image.name, "newkernel.fits")
             image.save(path)
+
+            # Select the primary frame again
+            image.frames.deselectall()
+            image.frames.primary.select()
 
         # Deselect all masks and regions
         image.regions.deselectall()
