@@ -7,6 +7,7 @@ from datetime import datetime
 
 # Import relevant PTS modules
 from pts.skirtsimulation import SkirtSimulation
+import pts.archive as arch
 
 # -----------------------------------------------------------------
 
@@ -60,7 +61,7 @@ def _extractphotonprogress(logfiles, progressfile, phase):
         triggered = False
 
         # For each line in this log file
-        for line in open(logfile):
+        for line in arch.opentext(logfile):
 
             # Check if this line signals the start of the stellar/dust emission phase
             if not triggered and "Starting the {} emission phase".format(phase) in line: triggered = True
@@ -108,7 +109,7 @@ def _extractspectraprogress(logfiles, progressfile, staggered=False):
         triggered = False
 
         # For each line in this log file
-        for line in open(logfile):
+        for line in arch.opentext(logfile):
 
             # Check if this line signals the start of the dust emission phase
             if not triggered and "Starting the dust emission phase" in line: triggered = True
