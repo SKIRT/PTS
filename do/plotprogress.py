@@ -126,17 +126,17 @@ else:
         # Close the progress file (results will be appended)
         progressfile.close()
 
-        # Determine the ski file path for this simulation
-        skifilepath = simulation.outfilepath("parameters.xml")
+        # Determine the name of the ski file for this simulation
+        skifilename = simulation.prefix() + ".ski"
 
         # Determine the output path of this simulation
         outputpath = simulation.outpath()
 
         # Extract the progress information
-        extract(skifilepath, outputpath, progressfilepath)
+        extract(skifilename, outputpath, progressfilepath)
 
         # Determine the path to the plot file
-        plotfilepath = ""
+        plotfilepath = "progress_" + simulation.prefix() + "_" + phase + ".pdf"
 
         # Plot the progress for this simulation
         plotprogress(progressfilepath, plotfilepath, phase)
