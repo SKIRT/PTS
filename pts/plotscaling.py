@@ -70,8 +70,9 @@ class ScalingPlotter(object):
         # Create a logger
         self._log = Log()
 
-        # Set the directory path
-        self._directory = directory
+        # Set the results and visualization paths
+        self._respath = os.path.join(directory, "res")
+        self._vispath = os.path.join(directory, "vis")
 
         # Set the phase
         self._phase = phase
@@ -84,7 +85,7 @@ class ScalingPlotter(object):
         # Each key in the dictionary will correspond to a different curve in the plots.
         filenames = dict()
         self._log.info("Gathering the data files...")
-        for filename in os.listdir(self._directory):
+        for filename in os.listdir(self._respath):
 
             # Check whether this file is a data file and not hidden
             if filename.endswith(".dat") and not filename.startswith("."):
@@ -124,7 +125,7 @@ class ScalingPlotter(object):
             for file in filelist:
 
                 # Get the values from this results file. If no data could be found in the file, we skip it.
-                filepath = os.path.join(directory, file)
+                filepath = os.path.join(self._respath, file)
                 try:
                     threadcounts, times = np.loadtxt(filepath, usecols=(columns['threads'],columns[phase]), unpack=True)
                 except ValueError:
@@ -259,8 +260,17 @@ class ScalingPlotter(object):
 
             except ValueError:
 
-                # Go to the next (systemname, mode): for this configuration no runtime was recorded with only one thread
-                pass
+                # For this configuration no runtime was recorded with only one thread, so we add an entry
+                # with the appropriate serial runtime and its error, if the mode is 'threads' or 'mpi' and not hybrid
+                # (because the curve for hybrid should only start for a number of processors = threads per process)
+                # Basically, this procedure lets us use the average runtime on 1 processor as part of an 'mpi' mode
+                # scaling test as the runtime on 1 processor for the 'threads' mode scaling relation, if we didn't
+                # have this runtime available from the 'threads' mode scaling test results file
+                if mode == "threads" or mode == "mpi":
+
+                    self._statistics[(systemname, mode)][0].insert(0, 1)
+                    self._statistics[(systemname, mode)][1].insert(0, self._serialruntime[systemname])
+                    self._statistics[(systemname, mode)][2].insert(0, self._serialerror[systemname])
 
     # -----------------------------------------------------------------
 
@@ -306,7 +316,7 @@ class ScalingPlotter(object):
         # Save the figure
         systemidentifier = self._system + "_" if self._system else ""
         filename = "scaling_" + self._phase + "_" + systemidentifier + "times.pdf"
-        filepath = os.path.join(self._directory, filename)
+        filepath = os.path.join(self._vispath, filename)
         plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
         plt.close()
 
@@ -365,7 +375,7 @@ class ScalingPlotter(object):
         # Save the figure
         systemidentifier = self._system + "_" if self._system else ""
         filename = "scaling_" + self._phase + "_" + systemidentifier + "speedups.pdf"
-        filepath = os.path.join(self._directory, filename)
+        filepath = os.path.join(self._vispath, filename)
         plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
         plt.close()
 
@@ -421,7 +431,7 @@ class ScalingPlotter(object):
         # Save the figure
         systemidentifier = self._system + "_" if self._system else ""
         filename = "scaling_" + self._phase + "_" + systemidentifier + "efficiencies.pdf"
-        filepath = os.path.join(self._directory, filename)
+        filepath = os.path.join(self._vispath, filename)
         plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
         plt.close()
 

@@ -14,7 +14,6 @@
 # Import standard modules
 import os
 import os.path
-import subprocess
 import multiprocessing
 import datetime
 import numpy as np
@@ -76,10 +75,11 @@ class ScalingTest(object):
             self._log.error("No directory called " + self._simulationname + " was found in " + self._path)
             exit()
 
-        # Set the output and result paths
+        # Set the output, result and visualisation paths
         self._outpath = os.path.join(self._simulationpath, "out")
         self._respath = os.path.join(self._simulationpath, "res")
-        
+        self._vispath = os.path.join(self._simulationpath, "vis")
+
         # Create the output directories if they do not already exist
         try: os.mkdir(self._outpath)
         except OSError: pass
@@ -97,10 +97,6 @@ class ScalingTest(object):
 
             # Get the number of cores (per node) on this system from a pre-defined dictionary
             self._cores = cores[self._system]
-
-            # Set the environment to launch jobs to the requested cluster
-            clusterstring = "cluster/" + self._system
-            subprocess.call(["module", "swap", clusterstring])
 
         else:
 
@@ -145,8 +141,10 @@ class ScalingTest(object):
     #            so that the user can inspect it and launch it manually.
     #  - keepoutput: this optional argument indicates whether the output of the SKIRT simulations has to be kept
     #                or can be deleted from the disk.
+    #  - extractprogress: a flag indicating whether the progress of the different SKIRT processes should be extracted
+    #                     from the simulation's log files or not
     #
-    def run(self, maxnodes, minnodes, manual=False, keepoutput=False):
+    def run(self, maxnodes, minnodes, manual=False, keepoutput=False, extractprogr=False):
 
         # Log the system name, the test mode and the version of SKIRT used for this test
         self._log.info("Starting parallel scaling benchmark for " + self._system + " in " + self._mode + " mode.")
@@ -173,11 +171,23 @@ class ScalingTest(object):
         # Create a file containing the results of the scaling test
         resultsfilepath = self._createresultsfile(maxnodes, minnodes)
 
+        # If 'extractprogr' is enabled, create a directory to contain the progress data files for this scaling test
+        if extractprogr:
+
+            # Determine the path to the folder, next to the results file and bearing the same name, that will
+            # contain the data that is necessary to plot the progress of the simulation
+            resultsfilename = os.path.splitext(os.path.basename(resultsfilepath))[0]
+            self._progressdirpath = os.path.join(self._respath, resultsfilename)
+
+            # Create this directory if it doesn't already exist
+            try: os.mkdir(self._progressdirpath)
+            except OSError: pass
+
         # Perform the simulations with increasing number of processors
         while processors <= maxprocessors:
 
             # Perform this run
-            self._do(processors, resultsfilepath, manual, keepoutput)
+            self._do(processors, resultsfilepath, manual, keepoutput, extractprogr)
 
             # The next run will be performed with double the amount of processors
             processors *= 2
@@ -193,8 +203,10 @@ class ScalingTest(object):
     #  - manual: a flag indicating whether the job script should be submitted from within this script, or just saved
     #            so that the user can inspect it and launch it manually
     #  - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
+    #  - extractprogress: a flag indicating whether the progress of the different SKIRT processes should be extracted
+    #                     from the simulation's log files or not
     #
-    def _schedule(self, processors, resultsfilepath, manual, keepoutput):
+    def _schedule(self, processors, resultsfilepath, manual, keepoutput, extractprogr):
 
         # Determine the number of processes and threads per process
         processes, threads = self._getmapping(processors)
@@ -218,14 +230,22 @@ class ScalingTest(object):
         self._log.info(" - number of nodes = " + str(nodes))
         self._log.info(" - number of requested processors per node = " + str(ppn))
 
-        # Check that we are indeed on the UGent HPC system: look for the VSC_DATA directory (we need it)
-        vscdatapath = os.getenv("VSC_DATA")
+        # Check that we are indeed on the UGent HPC system: look for the VSC_SCRATCH or alternatively the VSC_DATA
+        # directory (we need it to store the SKIRT output)
+        vscdatapath = os.getenv("VSC_SCRATCH_" + self._system.upper())
+
+        # If no VSC_SCRATCH directory could be found for this cluster (we are not using delcatty or gulpin), then use
+        # the VSC_DATA directory
+        if vscdatapath is None: vscdatapath = os.getenv("VSC_DATA")
+
+        # If VSC_DATA is not found, we are not on the HPC infrastructure
         if vscdatapath is None:
+
             self._log.error("Can't find $VSC_DATA (Are you on indeed on the HPC infrastructure?)")
             exit()
 
-        # All the output generated by SKIRT is placed in a directory within VSC_DATA, identified by the scaling
-        # benchmark name (="SKIRTScaling") and the simulation name
+        # All the output generated by SKIRT is placed in a directory within VSC_SCRATCH or VSC_DATA, identified by
+        # the scaling benchmark name (="SKIRTScaling") and the simulation name
         outputpath = os.path.join(vscdatapath, self._name, self._simulationname)
 
         # Create a seperate output directory for this run (different runs can be executed simultaneously)
@@ -240,11 +260,11 @@ class ScalingTest(object):
         # Create the job script. The name of the script indicates the mode in which we run this scaling test and
         # the current number of processors used. We enable the SKIRT verbose logging mode to be able to compare
         # the progress of the different parallel processes afterwards. Because for scaling tests, we don't want
-        # processes to end up on different nods or the SKIRT processes sensing interference from other programs,
+        # processes to end up on different nodes or the SKIRT processes sensing interference from other programs,
         # we set the 'fullnode' flag to True, which makes sure we always request at least one full node, even when
         # the current number of processors is less than the number of cores per node.
         jobscriptpath = os.path.join(self._outpath, "job_" + self._mode + "_" + str(processors) + ".sh")
-        jobscript = JobScript(jobscriptpath, self._skifilepath, nodes, ppn, threads, dataoutputpath, walltime, verbose=True, fullnode=True)
+        jobscript = JobScript(jobscriptpath, self._skifilepath, self._system, nodes, ppn, threads, dataoutputpath, walltime, verbose=True, fullnode=True)
 
         # Add the command to go the the PTS do directory
         jobscript.addcommand("cd $VSC_HOME/PTS/git/do", comment="Navigate to the PTS do directory")
@@ -253,8 +273,20 @@ class ScalingTest(object):
         command = "python extractscaling.py " + logfilepath + " " + str(processes) + " " + str(threads) + " " + resultsfilepath
         jobscript.addcommand(command, comment="Extract the results")
 
+        # Add the command to extract the progress information after the job finished, if requested
+        if extractprogr and processes > 1:
+
+            # Create the file to contain the progress information of this run
+            progressfilepath = self._createprogressfile(self._progressdirpath, processes)
+
+            # Add the command to the jobscript to extract the progress
+            command = "python extractprogress.py " + " " + self._skifilename + " " + dataoutputpath + " " + progressfilepath
+            jobscript.addcommand(command, comment="Extract the progress of the different processes")
+
         # Add the command to remove the output directory of this run
         if not keepoutput:
+
+            # Add the command to the jobscript
             command = "cd; rm -rf " + dataoutputpath
             jobscript.addcommand(command, comment="Remove the temporary output directory")
 
@@ -275,8 +307,10 @@ class ScalingTest(object):
     #  - manual: a flag indicating whether the job script should be submitted from within this script, or just saved
     #            so that the user can inspect it and launch it manually
     #  - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
+    #  - extractprogress: a flag indicating whether the progress of the different SKIRT processes should be extracted
+    #                     from the simulation's log files or not
     #
-    def _run(self, processors, resultsfilepath, manual, keepoutput):
+    def _run(self, processors, resultsfilepath, manual, keepoutput, extractprogr):
 
         # Determine the number of processes and threads per process
         processes, threads = self._getmapping(processors)
@@ -295,6 +329,18 @@ class ScalingTest(object):
 
         # Extract the timings from the simulation's log file and place them in the results file
         extract(simulation.logfilepath(), processes, threads, resultsfilepath)
+
+        # Extract the progress of the different processes, if requested
+        if extractprogr:
+
+            # Create the file to contain the progress information of this run
+            progressfilepath = self._createprogressfile(self._progressdirpath, processes)
+
+            # Load the extractprogress module
+            import do.extractprogress
+
+            # Extract the progress information
+            do.extractprogress.extract(self._skifilename, dataoutputpath, progressfilepath)
 
         # Remove the contents of the output directory, if requested
         if not keepoutput: shutil.rmtree(dataoutputpath)
@@ -332,6 +378,27 @@ class ScalingTest(object):
         resultsfile.close()
 
         # Return the path of the newly created results file
+        return filepath
+
+    ## This function creates the file containing the progress
+    def _createprogressfile(self, progresspath, processes):
+
+        # Create a new file whose name includes the current number of processors
+        filepath = os.path.join(progresspath, "progress_" + str(processes) + ".dat")
+        progressfile = open(filepath, 'w')
+
+        # Write a header to this new file which contains some general info about its contents
+        progressfile.write("# Progress results for " + self._system + " with " + str(processes) + " parallel processes\n")
+        progressfile.write("# Using " + self._skirt.version() + "\n")
+        progressfile.write("# Column 1: Process rank\n")
+        progressfile.write("# Column 2: Simulation phase (stellar, dust or spectra)\n")
+        progressfile.write("# Column 3: Execution time (s)\n")
+        progressfile.write("# Column 4: Progress (%)\n")
+
+        # Close the progress file (results will be appended!)
+        progressfile.close()
+
+        # Return the path of the newly created progress file
         return filepath
 
     ## This function calculates the number of processes and the number of threads (per process) for
@@ -441,20 +508,40 @@ class ScalingTest(object):
         # As a last resort, look for a log file that was placed next to the ski file of this scaling test
         else:
 
-            # The path of the serial log file
-            seriallogfilepath = os.path.join(self._simulationpath, self._skifilename + "_log.txt")
+            # The path of the log file
+            logfilepath = os.path.join(self._simulationpath, self._skifilename + "_log.txt")
 
             # Check whether such a file exists
-            if os.path.exists(seriallogfilepath):
+            if os.path.exists(logfilepath):
 
-                # TODO: check whether the log file comes from a simulation with 1 process and 1 thread
+                # Initially, set the number of processes and threads from the log file to one
+                logfileprocesses = 1
+                logfilethreads = 1
+
+                # Check with how many processes and threads this simulation was run, by reading each line of the
+                # specified log file and searching for indications of multiple processes and/or multiple threads
+                for line in open(logfilepath):
+
+                    if 'Starting simulation ' + self._skifilename + ' with' in line:
+
+                        logfileprocesses = int(line.split(' with ')[1].split()[0])
+
+                    elif 'Initializing random number generator for thread number' in line:
+
+                        # The last such line that is found states the rank of the last (highest-ranked) thread
+                        logfilethreads = int(line.split(' for thread number ')[1].split()[0]) + 1
+
+                # Calculate the total number of used processors used to create the log file
+                logfileprocessors = logfileprocesses * logfilethreads
 
                 # If such a log file is present, extract the timings from it
-                runtimes = extract(seriallogfilepath)
+                runtimes = extract(logfilepath)
 
                 # Calculate the portion of the total runtime spent in serial and parallel parts of the code
                 serialtime = runtimes['setup'] + runtimes['writing']
-                paralleltime = runtimes['stellar'] + runtimes['dustselfabs'] + runtimes['dustem']
+                paralleltime = runtimes['stellar']*logfileprocessors \
+                             + runtimes['dustselfabs']*logfileprocessors \
+                             + runtimes['dustem']*logfileprocessors
 
                 # Estimate the total runtime for this number of processors, by taking an overhead of 1 percent per
                 # parallel process

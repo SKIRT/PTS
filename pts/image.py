@@ -41,6 +41,12 @@ from pts.skirtunits import SkirtUnits
 
 # -----------------------------------------------------------------
 
+# Disable astropy logging except for warnings and errors
+from astropy import log
+log.setLevel("WARNING")
+
+# -----------------------------------------------------------------
+
 # Do not show warnings, to block Canopy's UserWarnings from spoiling the console log
 import warnings
 warnings.filterwarnings("ignore")
@@ -55,18 +61,20 @@ class Image(object):
     #
     #  - path: the path of the FITS image file
     #  - log: a Log instance
-    #  - cut:
     #
-    def __init__(self, path, log=None, cut=True):
-
-        # TODO: allow just a filename (without path)
-        # TODO: check whether the path points to a FITS file
-
-        # Set the name of the image
-        self.name = os.path.splitext(os.path.basename(path))[0]
+    def __init__(self, filename, log=None):
 
         # Create a logger or use a pre-existing logger if possible
         self._log = Log() if log is None else log
+
+        # Check if the specified file exists, otherwise exit with an error
+        if not os.path.isfile(filename):
+
+            self._log.error("No such file: " + filename)
+            exit()
+
+        # Set the name of the image
+        self.name = os.path.splitext(os.path.basename(filename))[0]
 
         # Frames: primary, sky, fittedsky, errors ...
         self.frames = layers()
@@ -77,128 +85,69 @@ class Image(object):
         # Regions: sky, stars,
         self.regions = layers()
 
-        # Read in the data and the header. The data is saved as an ImageFrame in self.frames and
-        # the header is stored as self.header
-        self._import(path, cut)
-
-        # Instrument
-        #self._instrument = self._findinheader("INSTRUME")
-        # Filter
-        #self._filter = self._findinheader("FILTER")
-
-        # TODO: Better way? Intelligent search in name for which filter?
-        filtername = self.name
-
-        # Get the filter
-        try:
-            self.filter = Filter(filtername)
-        except ValueError:
-            self._log.warning("Could not determine the filter used for this image")
-
-        # Units
-        self._units = self._findinheader("BUNIT")
+        # Read in the image
+        self._loadimage(filename)
 
         # The FWHM of the PSF
-        self._fwhm = None
+        self.fwhm = None
 
         # The entries in this dictionary indicate whether certain operations have been performed on the primary image
         self._history = dict()
 
-        # Check whether background has already been subtracted from this image
-        # Try to read the 'BACK_SUB' key from the header and set self._subtracted accordingly
-        self._history["sky-subtracted"] = True if self._findinheader("BACK_SUB") else False
-
-        # Inform the user if this image has already been subtracted
-        if self._history["sky-subtracted"]: self._log.success("Background already subtracted for this image")
-
-    ## This function returns None if not found, False if found but value F, True if found and value T
-    def _findinheader(self, key):
-
-        try:
-            # Get the value of this key
-            value = self.header[key]
-
-        # If the key doesn't exist
-        except KeyError:
-
-            # Set the value to None
-            value = None
-
-        # Return the value
-        return value
-
     ## This function ...
-    def _import(self, path, cut):
+    def _loadimage(self, filename):
 
         # Show which image we are importing
-        self._log.info("Reading in file: " + path)
+        self._log.info("Reading in file: " + filename)
 
         # Open the HDU list for the FITS file
-        hdulist = pyfits.open(path)
+        hdulist = pyfits.open(filename)
 
-        # Get the primary image
+        # Get the primary HDU
         hdu = hdulist[0]
 
         # Get the image header
-        self.header = hdu.header
+        header = hdu.header
 
-        # Check for multiple planes with the PLANE keyword
-        multiplanes = False
-        if cut:
-            try:
+        # Load the frames
+        self.pixelscale = getpixelscale(header)
 
-                plane_id = self.header['PLANE0']
-                self._log.warning("Multiple planes detected. Using PLANE0 = " + plane_id)
-                multiplanes = True
+        # Obtain the filter for this image
+        self.filter = getfilter(self.name, header)
 
-                # We pretend the extra planes do not exist: remove the extra ("planes") axis
-                self.header["NAXIS"] = 2
-                self.header.pop("NAXIS3", None)
+        # Obtain the units of this image
+        self.units = getunits(header)
 
-            # If the PLANE keyword is not found, we assume we only have one plane
-            except KeyError: pass
+        # Check whether multiple planes are present in the FITS image
+        nframes = getnumberofframes(header)
+        if nframes > 1:
 
-        # Get the data from the HDU
-        if multiplanes:
+            # For each frame
+            for i in range(nframes):
 
-            # Add the primary image frame and select it
-            self._addframe(hdu.data[0], "primary")
-            self.frames.primary.select()
+                # Get the name of this frame, but the first frame always gets the name 'primary'
+                description = getframedescription(header, i) if i else "the primary signal map"
+                name = getframename(description) if i else "primary"
 
-            # Add the error frame
-            self._addframe(hdu.data[1], "errors")
-
-            # Close the fits file
-            hdulist.close()
+                # Add this frame to the frames dictionary
+                self._addframe(hdu.data[i], name, description)
 
         else:
 
-            # Add the primary image frame and select it
-            self._addframe(hdu.data, "primary")
-            self.frames.primary.select()
+            # Add the primary image frame
+            self._addframe(hdu.data, "primary", "the primary signal map")
 
-            # Close the fits file
-            hdulist.close()
+        # Set the basic header for this image
+        self.header = header.copy(strip=True)
+        self.header["NAXIS"] = 2
+        self.header["NAXIS1"] = self.xsize
+        self.header["NAXIS2"] = self.ysize
 
-            # Look for a seperate errors fits file
-            errorspath = os.path.splitext(path)[0] + ".ERRORS.fits"
-            if os.path.isfile(errorspath):
+        # Select the primary image frame
+        self.frames.primary.select()
 
-                # Open the HDU list for the FITS file
-                hdulist = pyfits.open(errorspath)
-
-                # Get the primary data
-                hdu = hdulist[0]
-
-                # Add the error frame
-                self._addframe(hdu.data, "errors")
-
-                # Close the fits file
-                hdulist.close()
-
-            else:
-
-                self._log.warning("No error data found for this image")
+        # Close the FITS file
+        hdulist.close()
 
     # ----------------------------------------------------------------- PRINT INFORMATION
 
@@ -238,15 +187,15 @@ class Image(object):
         self._log.info("Dimensions of data array: " + str(self.xsize) + " x " + str(self.ysize))
 
         # Print type of data
-        self._log.info("Type of data: " + str(self.datatype))
+        self._log.info("Type of data: " + str(self.dtype))
 
     # ----------------------------------------------------------------- BASIC PROPERTIES OF THE PRIMARY IMAGE
 
     ## This function returns the data type for the primary image
     @property
-    def datatype(self):
+    def dtype(self):
 
-        return self.frames.primary.datatype()
+        return self.frames.primary.dtype
 
     ## This function returns the number of pixels in the x direction
     @property
@@ -306,6 +255,21 @@ class Image(object):
 
         # Write to file
         hdu.writeto(path, clobber=True)
+
+    ## This function is used to import the (first) frame of another FITS file into this image
+    def importframe(self, path, name):
+
+        # Open the HDU list for the FITS file
+        hdulist = pyfits.open(path)
+
+        # Get the primary data
+        hdu = hdulist[0]
+
+        # Add the error frame
+        self._addframe(hdu.data, name)
+
+        # Close the fits file
+        hdulist.close()
 
     ## This function is used to import a new ImageRegion from a regions file
     def importregion(self, path, name):
@@ -392,14 +356,10 @@ class Image(object):
             # Add these shapes to the plot
             plot.show_regions(shapes)
 
-        # Add the masks
-        for mask in self.masks.getactive():
-
-            pass
-
         if path is None:
 
             plt.show()
+            plt.close('all')
 
         else:
 
@@ -456,7 +416,7 @@ class Image(object):
             ymax = int(round(ycenter + 0.5*height))
 
             # Calculate the sum of the flux in the pixels within the box
-            return np.sum(self.primary.data[ymin:ymax,xmin:xmax])
+            return np.sum(self.frames.primary.data[ymin:ymax,xmin:xmax])
 
 
     # ----------------------------------------------------------------- ARITHMETIC OPERATIONS
@@ -614,16 +574,61 @@ class Image(object):
 
         self.orientation = orientation
 
-    # ----------------------------------------------------------------- VIEW AND ADD LAYERS, REGIONS AND MASKS
+    ## This functions sets the FWHM of the PSF for this image
+    def setfwhm(self, fwhm):
+
+        # Inform the user
+        self._log.info("Setting the FWHM of the PSF for this image to " + str(fwhm) + " pixels")
+
+        # Set the FWHM
+        self.fwhm = fwhm
+
+    ## This function sets the pixel scale for this image (in arcseconds)
+    def setpixelscale(self, pixelscale):
+
+        # Inform the user
+        self._log.info("Setting the pixel scale of this image to " + str(pixelscale) + " arcseconds")
+
+        # Set the pixel scale
+        self.pixelscale = pixelscale
+
+    # ----------------------------------------------------------------- ADD AND REMOVE LAYERS, REGIONS AND MASKS
+
+    ## This function removes the currently selected frame(s)
+    def deleteframes(self):
+
+        # For each active frame
+        for frame in self.frames.getactive():
+
+            # Remove this frame from the frames dictionary
+            del self.frames[frame]
+
+    ## This function removes the currently selected region(s)
+    def deleteregions(self):
+
+        # For each active region
+        for region in self.regions.getactive():
+
+            # Remove this region from the regions dictionary
+            del self.regions[region]
+
+    ## This function removes the currently selected mask(s)
+    def deletemasks(self):
+
+        # For each active mask
+        for mask in self.masks.getactive():
+
+            # Remove this mask from the masks dictionary
+            del self.masks[mask]
 
     ## This function ...
-    def _addframe(self, data, name):
+    def _addframe(self, data, name, description=None):
 
         # Inform the user
         self._log.info("Adding '" + name + "' to the set of image frames")
 
         # Add the layer to the layers dictionary
-        self.frames[name] = ImageFrame(data, self._log)
+        self.frames[name] = ImageFrame(data, description, self._log)
 
     ## This function ...
     def _addregion(self, region, name):
@@ -646,7 +651,7 @@ class Image(object):
     # ----------------------------------------------------------------- ADVANCED OPERATIONS
 
     ## This function convolves the currently selected frame(s) with a specified kernel (a FITS file)
-    def convolve(self, name, pixelscale):
+    def convolve(self, name):
 
         # Import the convolution function
         from astropy.convolution import convolve_fft
@@ -671,7 +676,7 @@ class Image(object):
         pixelscale_kernel = header["CD1_1"]*3600
 
         # Calculate the zooming factor
-        factor = pixelscale / pixelscale_kernel
+        factor = self.pixelscale / pixelscale_kernel
 
         # Rebin the kernel to the same grid of the image
         kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
@@ -984,6 +989,12 @@ class Image(object):
         yvalues = []
         fluxes = []
 
+        ## Define a function that calculates the area (in pixels) of a certain shape
+        def area(shape):
+
+            if shape.name == "circle": return math.pi * shape.coord_list[2] * shape.coord_list[2]
+            if shape.name == "box": return shape.coord_list[2] * shape.coord_list[3]
+
         # For each shape in the specified region
         for shape in self.regions[region]:
 
@@ -1208,30 +1219,147 @@ class Image(object):
 
 # ----------------------------------------------------------------- USEFUL FUNCTIONS
 
-## This function returns the area for a certain region
-def area(region):
-
-    # If this region is a circle
-    if region.name == "circle":
-
-        return math.pi * region.coord_list[2] * region.coord_list[2]
-
-    # If this region is a box
-    if region.name == "box":
-
-        return region.coord_list[2] * region.coord_list[3]
-
 ## This function ...
-def plotdata(data, path):
+def getpixelscale(header):
 
-    # Plot the data using logaritmic scale
-    plt.imshow(data, cmap='gray', norm=LogNorm(), interpolation='nearest')
+    # Initially, set the pixel scale to None
+    pixelscale = None
 
-    # Add a color bar
-    plt.colorbar()
+    # Search for 'Pixel scale' keyword
+    if 'PIXSCALE' in header:
 
-    # Display the result
-    plt.show()
+        pixelscale = header['PIXSCALE']
+
+    elif 'SECPIX' in header:
+
+        pixelscale = header['SECPIX']
+
+    # Search for 'Pixel Field of View' keyword
+    elif 'PFOV' in header:
+
+        pixelscale = header['PFOV']
+
+    elif 'CD1_1' in header and 'CD1_2' in header:
+
+        pixelscale = math.sqrt(header['CD1_1']**2 + header['CD1_2']**2 ) * 3600.0
+
+    elif 'CD1_1' in header:
+
+        pixelscale = abs(header['CD1_1']) * 3600.0
+
+    elif 'CDELT1' in header:
+
+        pixelscale = abs(header['CDELT1']) * 3600.0
+
+    else:
+
+        log = Log()
+        log.warning("Could not determine the pixel scale from the image header")
+
+    # Return the pixel scale (in arcseconds)
+    return pixelscale
+
+## This function
+def getfilter(name, header):
+
+    log = Log()
+
+    # Initially, set the filter to None
+    filter = None
+
+    # Determine the filter from the information in the header
+    if 'INSTRUME' in header and 'FILTER' in header:
+
+        filterid = header['INSTRUME'].lower() + header['FILTER'].lower()
+
+    # If no filter information could be found in the header, try to obtain it from the file name
+    else:
+
+        filterid = name.lower()
+
+    # Parse the filterid
+    if "fuv" in filterid: filter = Filter("GALEX.FUV")
+    elif "pacs" in filterid:
+
+        if '70' in filterid or 'blue' in filterid: filter = Filter("Pacs.blue")
+        elif '160' in filterid or 'red' in filterid: filter = Filter("Pacs.red")
+        else: log.warning("Could not determine the filter for this image")
+
+    elif "mips" in filterid or "24" in filterid: filter = Filter("MIPS.24")
+    elif "2mass" in filterid and "h" in filterid: filter = Filter("2MASS.H")
+    elif "irac" in filterid:
+
+        if '3.6' in filterid or 'i1' in filterid: filter = Filter("IRAC.I1")
+
+    else: log.warning("Could not determine the filter for this image")
+
+    # Return the filter
+    return filter
+
+## This function
+def getunits(header):
+
+    # Initially, set the units to None
+    units = None
+
+    if 'BUNIT' in header:
+
+        units = header['BUNIT']
+
+    # Return the units
+    return units
+
+## This function
+def isskysub(header):
+
+    # Initially, set the boolean to False
+    subtracted = False
+
+    if 'BACK_SUB' in header:
+
+        subtracted = header['BACK_SUB']
+
+    # Return the boolean value
+    return subtracted
+
+## This function
+def getnumberofframes(header):
+
+    # Initially, set the boolean to False
+    nframes = 1
+
+    if 'NAXIS' in header:
+
+        # If there are 3 axes, get the size of the third
+        if header['NAXIS'] == 3: nframes = header['NAXIS3']
+
+    # Return the boolean value
+    return nframes
+
+## This function
+def getframedescription(header, i):
+
+    planeX = "PLANE" + str(i)
+
+    # Get the description
+    description = header[planeX]
+
+    # Return the description
+    return description
+
+## This function
+def getframename(description):
+
+    # Convert spaces to underscores and ignore things between parentheses
+    name = description.split("(")[0].rstrip(" ").replace(" ", "_")
+
+    # If the frame name contains 'error', use the standard name "errors" for this frame
+    if 'error' in name:
+
+        name = "errors"
+
+    # Return the frame name
+    return name
 
 # -----------------------------------------------------------------
 
@@ -1348,7 +1476,8 @@ class ImageMask(object):
     ## This function
     def __init__(self, data, log):
 
-        self._data = data
+        # Set the data array
+        self.data = data
 
         # Logger
         self._log = log
@@ -1365,23 +1494,6 @@ class ImageMask(object):
     def deselect(self):
 
         self.active = False
-
-    ## This function ...
-    @property
-    def data(self):
-
-        return self._data
-
-    ## This function ...
-    @data.setter
-    def data(self, newdata):
-
-        self._data = newdata
-
-    ## This function ...
-    def plot(self, path=None):
-
-        plotdata(self._data.astype(int), path)
 
 # -----------------------------------------------------------------
 
@@ -1389,16 +1501,19 @@ class ImageMask(object):
 class ImageFrame(object):
 
     ## The constructor
-    def __init__(self, data, log):
+    def __init__(self, data, description, log):
 
         # Copy the data
-        self._data = data
+        self.data = data
 
         # Logger
         self._log = log
 
         # Set as unactive initially
         self.active = False
+
+        # Set the description
+        self.description = description
 
     ## This function
     def select(self):
@@ -1411,40 +1526,10 @@ class ImageFrame(object):
         self.active = False
 
     ## This function
-    @property
-    def data(self):
-
-        return self._data
-
-    ## This function
-    @data.setter
-    def data(self, newdata):
-
-        self._data = newdata
-
-    ## This function
-    def plot(self, path=None):
-
-        plotdata(self._data, path)
-
-    ## This function
     def histogram(self, path=None):
 
         NBINS = 1000
-        plt.hist(self._data.flat, NBINS)
-
-        # Display the result
-        plt.show()
-
-    ## This function
-    def contourplot(self, path=None):
-
-        # Make the contours
-        plt.contour(xi,yi,zi,15, linewidths=0.5, colors='k')
-        plt.contourf(xi,yi,zi,15, cmap=plt.cm.jet)
-
-        # Add a color bar
-        plt.colorbar()
+        plt.hist(self.data.flat, NBINS)
 
         # Display the result
         plt.show()
@@ -1453,42 +1538,42 @@ class ImageFrame(object):
     @property
     def xsize(self):
 
-        return self._data.shape[1]
+        return self.data.shape[1]
 
     ## This function
     @property
     def ysize(self):
 
-        return self._data.shape[0]
+        return self.data.shape[0]
 
     ## This function
-    def datatype(self):
+    def dtype(self):
 
-        return self._data.dtype.name
+        return self.data.dtype.name
 
     ## This function ...
     @property
     def mean(self):
 
-        return np.mean(self._data)
+        return np.mean(self.data)
 
     ## This function ...
     @property
     def median(self):
 
-        return np.median(self._data)
+        return np.median(self.data)
 
     ## This function ...
     @property
     def min(self):
 
-        return np.min(self._data)
+        return np.min(self.data)
 
     ## This function ...
     @property
     def max(self):
 
-        return np.max(self._data)
+        return np.max(self.data)
 
     ## This function
     @property
@@ -1498,27 +1583,6 @@ class ImageFrame(object):
         ddof = 1
 
         # Return the standard deviation of the data
-        return np.std(self._data, ddof=ddof)
-
-    ## This function
-    def undo(self):
-
-        # Check whether the previous state has been saved or not
-        if self._prevdata is not None:
-
-            # Replace the data with the previous data
-            self._data = self._prevdata
-
-            # Set the previous data to None
-            self._prevdata = None
-
-        else:
-
-            self._log.warning("Cannot undo")
-
-    ## This function ...
-    def backup(self):
-
-        self._prevdata = np.copy(self._data)
+        return np.std(self.data, ddof=ddof)
 
 # -----------------------------------------------------------------

@@ -13,6 +13,7 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import datetime
 import filecmp
 import fnmatch
@@ -23,6 +24,7 @@ import re
 import time
 import itertools
 
+# Import relevant PTS modules
 from pts.skirtsimulation import SkirtSimulation
 from pts.skirtexec import SkirtExec
 from pts.log import Log
@@ -79,7 +81,7 @@ from pts.log import Log
 #
 # It is also allowed to nest test cases inside another test case, but this is not recommended.
 #
-class SkirtTestSuite:
+class SkirtTestSuite(object):
 
     ## The constructor accepts three arguments:
     #

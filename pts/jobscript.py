@@ -45,9 +45,12 @@ class JobScript(object):
     #              other HPC users). Do not set this flag if you don't care about the reproducibility of your simulation
     #              in terms of computation time.
     #
-    def __init__(self, path, skifilepath, nodes, ppn, threadspp, outputpath, walltime, mail=False, verbose=False, fullnode=False):
+    def __init__(self, path, skifilepath, cluster, nodes, ppn, threadspp, outputpath, walltime, mail=False, verbose=False, fullnode=False):
 
-        # Save the file path
+        # Set the name of the cluster
+        self._clustername = cluster
+
+        # Set the file path
         self._path = path
 
         # Open the job script file
@@ -63,9 +66,6 @@ class JobScript(object):
         m, s = divmod(walltime, 60)
         h, m = divmod(m, 60)
 
-        # Determine which cluster is currently set as the default cluster to run jobs
-        clustername = os.environ["VSC_INSTITUTE_CLUSTER"]
-
         # Check whether we are dealing with multithreading. If so, we calculate the number of processes per
         # node and the requested number of processors per node is set to the maximum (for performance reasons).
         hybrid_processes = 1
@@ -76,7 +76,7 @@ class JobScript(object):
 
             # For hybrid (or threads) mode we always request the full node.
             # Therefore, we determine the number of cores on the node.
-            ppn = cores[clustername]
+            ppn = cores[self._clustername]
 
         # In MPI mode, we also request a full node for processors < cpu count of a node, if specified by the fullnode flag
         elif fullnode:
@@ -85,7 +85,7 @@ class JobScript(object):
             hybrid_processes = ppn
 
             # Set the requested number of processors on the node to the maximum (a full node)
-            ppn = cores[clustername]
+            ppn = cores[self._clustername]
 
         # Write a general header to the job script
         self._script.write("#!/bin/sh\n")
@@ -105,7 +105,7 @@ class JobScript(object):
         # Load cluster modules
         self._script.write("# Load the necessary modules\n")
         self._script.write("module load jobs\n")
-        self._script.write("module load Python/2.7.8-intel-2014b\n")
+        self._script.write("module load lxml/3.4.2-intel-2015a-Python-2.7.9\n")
         self._script.write("\n")
 
         # Run the simulation
@@ -148,9 +148,9 @@ class JobScript(object):
         # First, close the file
         self._script.close()
 
-        # Then, launch the job script
+        # Then, swap to the desired cluster and launch the job script
         FNULL = open(os.devnull, 'w')   # We ignore the output of the qsub command
-        subprocess.call(("qsub",), stdin=open(self._path), stdout=FNULL, stderr=subprocess.STDOUT)
+        subprocess.call("module swap cluster/" + self._clustername + "; qsub " + self._path, shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
 
     ## This function removes the job script
     def remove(self):

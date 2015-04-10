@@ -137,6 +137,7 @@ class GalaxyFinder(object):
         self.second_moments(img, ind)
 
         if not quiet:
+
             self._log.info("Pixels used: " + str(ind.size))
             self._log.info("Peak (x,y): " + str(self.xpeak) + ", " + str(self.ypeak))
             self._log.info("Mean (x,y): " + str(self.xmed)  + ", " + str(self.ymed))
