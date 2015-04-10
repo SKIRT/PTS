@@ -131,7 +131,7 @@ class DataPreparation(object):
         for filter, filepath in self._filters.items():
 
             # Import the image
-            image = self.importimage(filepath)
+            image = self.importimage(filter)
 
             # If no error map was found in the FITS file, try to find a seperate FITS file containing error data
             if not image.frames.errors:
