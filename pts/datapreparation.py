@@ -546,7 +546,7 @@ def subtractskyFUV(image):
     image.frames.primary.select()
 
     # Fit the sky with a polynomial, using the FHWM
-    image.fitsky(fwhmax[filter])
+    image.fitsky(fwhmax["GALEXFUV"])
 
     # Deselect all frames and select the fittedsky_2D frame
     image.frames.deselectall()
@@ -591,7 +591,7 @@ def conversionfactorFUV(image):
     log.info("Converting units with factor = " + str(factor))
 
     # Get the attenuation for this filter
-    A = attenuations[filter]
+    A = attenuations["GALEXFUV"]
 
     factor2 = 10**(0.4*A)
 
@@ -628,7 +628,7 @@ def conversionfactorH(image):
 
     log.info("Converting units with factor = " + str(factor))
 
-    A = attenuations[filter]
+    A = attenuations["2MASSH"]
 
     factor2 = 10**(0.4*A)
 
@@ -674,7 +674,7 @@ def conversionfactorHa(image):
 
     log.info("Converting units with factor = " + str(factor))
 
-    A = attenuations[filter]
+    A = attenuations["Ha"]
 
     factor2 = 10**(0.4*A)
 
