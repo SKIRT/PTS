@@ -87,14 +87,14 @@ def plotprogress(filepath, plotpath, phase, figsize=(10,6)):
         if len(percentages_process) > 1:
 
             # Add the progress of the current process to the figure
-            plt.plot(times, percentages, label=process)
+            plt.plot(times_process, percentages_process, label=process)
             numplots += 1
 
     # If we actually plotted something, generate the figure and save it
     if numplots > 0:
 
         plt.xlim(0)
-        plt.ylim(0,100)
+        #plt.ylim(0,100)
         plt.grid('on')
         plt.xlabel("time (s)", fontsize='large')
         plt.ylabel("progress (%)", fontsize='large')

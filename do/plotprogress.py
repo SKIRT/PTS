@@ -82,18 +82,21 @@ if progressfiles:
     # Determine the full path to the visualization directory
     vispath = os.path.join(os.getcwd(), "vis")
 
-    # Create the visualization directory if it did not already exist
-    try: os.mkdir(vispath)
-    except OSError: pass
-
     # For each progress file in the list
     for directory, filename in progressfiles:
 
         # Determine the full path to the progress file
         progressfilepath = os.path.join(directory, filename)
 
+        # Determine the path to the directory that will contain the plot from this progress file
+        plotpath = os.path.join(vispath, os.path.basename(directory))
+
+        # Create this directory, if it didn't already exist
+        try: os.makedirs(plotpath)
+        except OSError: pass
+
         # Determine the path to the plot file
-        plotfilepath = os.path.join(vispath, os.path.basename(directory), os.path.splitext(filename)[0] + ".pdf")
+        plotfilepath = os.path.join(plotpath, os.path.splitext(filename)[0] + ".pdf")
 
         # Plot the progress information in this file
         plotprogress(progressfilepath, plotfilepath, phase)
