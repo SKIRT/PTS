@@ -80,7 +80,7 @@ class SkirtExec:
     # (after processing any wildcards in the ski filenames), in arbitrary order.
     #
     def execute(self, skipattern, recursive=False, inpath="", outpath="", skirel=False,
-                threads=0, parallel=1, processes=1, mpistyle='generic', verbose=False, wait=True):
+                threads=0, parallel=1, processes=1, mpistyle='generic', brief=False, verbose=False, wait=True):
 
         # In multiprocessing mode, check whether MPI is installed on the system
         if processes > 1 and not self._MPIinstalled(): return []
@@ -94,6 +94,7 @@ class SkirtExec:
                 args = ["mpirun", "-np", str(processes)] + args
 
         # Set general command line options
+        if brief: args += ["-b"]
         if verbose: args += ["-v"]
         if skirel: args += ["-k"]
         if recursive: args += ["-r"]
