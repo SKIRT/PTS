@@ -66,6 +66,9 @@ class JobScript(object):
         m, s = divmod(walltime, 60)
         h, m = divmod(m, 60)
 
+        # Determine an appropriate name for this job
+        name = skifilename + "_" + str(nodes) + "_" + str(ppn)
+
         # Check whether we are dealing with multithreading. If so, we calculate the number of processes per
         # node and the requested number of processors per node is set to the maximum (for performance reasons).
         hybrid_processes = 1
@@ -93,9 +96,9 @@ class JobScript(object):
         self._script.write("#\n")
 
         # Set the environment variables
-        self._script.write("#PBS -N " + skifilename + "_" + str(nodes) + "_" + str(ppn) + "\n")
-        self._script.write("#PBS -o output_" + skifilename + "_" + str(nodes) + "_" + str(ppn) + ".txt\n")
-        self._script.write("#PBS -e error_" + skifilename + "_" + str(nodes) + "_" + str(ppn) + ".txt\n")
+        self._script.write("#PBS -N " + name + "\n")
+        self._script.write("#PBS -o output_" + name + ".txt\n")
+        self._script.write("#PBS -e error_" + name + ".txt\n")
         self._script.write("#PBS -l walltime=%d:%02d:%02d\n" % (h, m, s))
         self._script.write("#PBS -l nodes=" + str(nodes) + ":ppn=" + str(ppn) + "\n")
         if mail: self._script.write("#PBS -m bae\n")
