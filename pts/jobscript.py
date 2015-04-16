@@ -33,6 +33,7 @@ class JobScript(object):
     #  - nodes: the number of nodes to use
     #  - ppn: the number of desired processors per node
     #  - threadspp: the number of threads (per process), passed directly to the SKIRT executable
+    #  - inputpath: the path of the directory to contain the input for the simulation
     #  - outputpath: the path of the directory to contain the output of the simulation
     #  - walltime: an (over)estimate of the required time to complete the simulation
     #  - mail: this flag indicates whether the user wants to receive e-mails when the job is started, completed or aborted.
@@ -45,7 +46,7 @@ class JobScript(object):
     #              other HPC users). Do not set this flag if you don't care about the reproducibility of your simulation
     #              in terms of computation time.
     #
-    def __init__(self, path, skifilepath, cluster, nodes, ppn, threadspp, outputpath, walltime, mail=False, verbose=False, fullnode=False):
+    def __init__(self, path, skifilepath, cluster, nodes, ppn, threadspp, inputpath, outputpath, walltime, mail=False, verbose=False, fullnode=False):
 
         # Set the name of the cluster
         self._clustername = cluster
@@ -65,6 +66,9 @@ class JobScript(object):
         # Determine the walltime in "hours, minutes and seconds" format
         m, s = divmod(walltime, 60)
         h, m = divmod(m, 60)
+
+        # Determine an appropriate name for this job
+        name = skifilename + "_" + str(nodes) + "_" + str(ppn)
 
         # Check whether we are dealing with multithreading. If so, we calculate the number of processes per
         # node and the requested number of processors per node is set to the maximum (for performance reasons).
@@ -93,9 +97,9 @@ class JobScript(object):
         self._script.write("#\n")
 
         # Set the environment variables
-        self._script.write("#PBS -N " + skifilename + "_" + str(nodes) + "_" + str(ppn) + "\n")
-        self._script.write("#PBS -o output_" + skifilename + "_" + str(nodes) + "_" + str(ppn) + ".txt\n")
-        self._script.write("#PBS -e error_" + skifilename + "_" + str(nodes) + "_" + str(ppn) + ".txt\n")
+        self._script.write("#PBS -N " + name + "\n")
+        self._script.write("#PBS -o output_" + name + ".txt\n")
+        self._script.write("#PBS -e error_" + name + ".txt\n")
         self._script.write("#PBS -l walltime=%d:%02d:%02d\n" % (h, m, s))
         self._script.write("#PBS -l nodes=" + str(nodes) + ":ppn=" + str(ppn) + "\n")
         if mail: self._script.write("#PBS -m bae\n")
@@ -119,7 +123,7 @@ class JobScript(object):
         if threadspp > 1 or fullnode: commandstring += "--hybrid " + str(hybrid_processes) + " "
 
         # Add the number of threads per process and the SKIRT output path to the command string
-        commandstring += "skirt -t " + str(threadspp) + " -o " + outputpath + " "
+        commandstring += "skirt -t " + str(threadspp) + " -i " + inputpath + " -o " + outputpath + " "
 
         # If verbose mode is desired, we pass the "-v" flag to SKIRT
         if verbose: commandstring += "-v "
