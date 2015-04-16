@@ -33,6 +33,7 @@ class JobScript(object):
     #  - nodes: the number of nodes to use
     #  - ppn: the number of desired processors per node
     #  - threadspp: the number of threads (per process), passed directly to the SKIRT executable
+    #  - inputpath: the path of the directory to contain the input for the simulation
     #  - outputpath: the path of the directory to contain the output of the simulation
     #  - walltime: an (over)estimate of the required time to complete the simulation
     #  - mail: this flag indicates whether the user wants to receive e-mails when the job is started, completed or aborted.
@@ -45,7 +46,7 @@ class JobScript(object):
     #              other HPC users). Do not set this flag if you don't care about the reproducibility of your simulation
     #              in terms of computation time.
     #
-    def __init__(self, path, skifilepath, cluster, nodes, ppn, threadspp, outputpath, walltime, mail=False, verbose=False, fullnode=False):
+    def __init__(self, path, skifilepath, cluster, nodes, ppn, threadspp, inputpath, outputpath, walltime, mail=False, verbose=False, fullnode=False):
 
         # Set the name of the cluster
         self._clustername = cluster
@@ -122,7 +123,7 @@ class JobScript(object):
         if threadspp > 1 or fullnode: commandstring += "--hybrid " + str(hybrid_processes) + " "
 
         # Add the number of threads per process and the SKIRT output path to the command string
-        commandstring += "skirt -t " + str(threadspp) + " -o " + outputpath + " "
+        commandstring += "skirt -t " + str(threadspp) + " -i " + inputpath + " -o " + outputpath + " "
 
         # If verbose mode is desired, we pass the "-v" flag to SKIRT
         if verbose: commandstring += "-v "

@@ -64,12 +64,12 @@ outputpath = os.path.abspath(outpath)
 ppn = cores[cluster]
 
 # Create a job script for this simulation
-jobscript = JobScript("job.sh", skifilepath, cluster, nodes, ppn, threadspp, outputpath, time, mail=True, verbose=verbose)
+jobscript = JobScript("job.sh", skifilepath, cluster, nodes, ppn, threadspp, inputpath, outputpath, time, mail=True, verbose=verbose)
 
 # Submit the job script to the cluster
-jobscript.submit()
+#jobscript.submit()
 
 # Remove the job script
-jobscript.remove()
+#jobscript.remove()
 
 # -----------------------------------------------------------------
