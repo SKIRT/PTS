@@ -67,9 +67,9 @@ ppn = cores[cluster]
 jobscript = JobScript("job.sh", skifilepath, cluster, nodes, ppn, threadspp, inputpath, outputpath, time, mail=True, verbose=verbose)
 
 # Submit the job script to the cluster
-#jobscript.submit()
+jobscript.submit()
 
 # Remove the job script
-#jobscript.remove()
+jobscript.remove()
 
 # -----------------------------------------------------------------
