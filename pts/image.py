@@ -21,9 +21,8 @@ from scipy import ndimage
 
 # Modules for plotting
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
 
-# Import astronomic modules
+# Import astronomical modules
 import aplpy
 import pyregion
 import astropy.io.fits as pyfits
@@ -274,11 +273,23 @@ class Image(object):
     ## This function is used to import a new ImageRegion from a regions file
     def importregion(self, path, name):
 
-        # Create an ImageRegion object from the regions file
-        region = ImageRegion(path, self._log)
+        # Create an pyregion object from the regions file
+        region = pyregion.open(path)
 
         # Add the region to the set of regions
         self._addregion(region, name)
+
+    ## This function is used to export the selected region(s) to a region file
+    def exportregion(self, path):
+
+        # Find the active region
+        region = self.regions.getactive()[0]
+
+        # Inform the user
+        self._log.info("Creating " + path + " from " + region)
+
+        # Write the region file
+        self.regions[region]._region.write(path)
 
     # -----------------------------------------------------------------
 
@@ -637,7 +648,7 @@ class Image(object):
         self._log.info("Adding '" + name + "' to the set of regions")
 
         # Add the region to the regions dictionary
-        self.regions[name] = region
+        self.regions[name] = ImageRegion(region, self._log)
 
     ## This function ...
     def _addmask(self, data, name):
@@ -857,10 +868,49 @@ class Image(object):
         region_string = "image;ellipse(" + str(self.orientation.ypeak) + "," + str(self.orientation.xpeak) + "," + str(width) + "," + str(height) + "," + str(self.orientation.theta) + ")"
 
         # Create a region consisting of one ellipse
-        region = ImageRegion(region_string, self._log)
+        region = pyregion.parse(region_string)
 
         # Add this region
         self._addregion(region, "galaxy")
+
+    ## This function
+    def fetchstars(self):
+
+        from pts.catalog import fetch
+        from astropy import wcs
+
+        w = wcs.WCS(self.header)
+
+        # Some pixel coordinates of interest.
+        pixels = np.array([[0,0],[self.ysize-1,self.xsize-1]], dtype=float)
+
+        # Convert pixel coordinates to world coordinates (RA and DEC in degrees)
+        world = w.wcs_pix2world(pixels, 1)
+        coordinate1 = world[0]
+        coordinate2 = world[1]
+        ra_range = [coordinate2[0], coordinate1[0]]
+        dec_range = [coordinate1[1], coordinate2[1]]
+
+        # Determine the center in RA and DEC (in degrees)
+        ra_center = 0.5*(ra_range[0] + ra_range[1])
+        dec_center = 0.5*(dec_range[0] + dec_range[1])
+
+        # Determine the width in RA and DEC (both in degrees)
+        ra_width = ra_range[1] - ra_range[0]
+        dec_width = dec_range[1] - dec_range[0]
+
+        # Determine the maximum width (in degrees)
+        width = max(ra_width, dec_width)
+
+        # Calculate the radius in arcminutes
+        width_minutes = width * 60
+        radius = 0.5*width_minutes
+
+        # Fetch the stars, create a region
+        region = fetch([ra_center,dec_center], radius, faint=16.0, filename="")
+
+        # Add this region
+        self._addregion(region, "stars")
 
     ## This function determines the central peak position of the stars indicated by the currently selected region file
     def getstarpositions(self, plot=False):
@@ -1046,7 +1096,7 @@ class Image(object):
         region_string = "image;ellipse(" + str(self.orientation.ypeak) + "," + str(self.orientation.xpeak) + "," + str(width) + "," + str(height) + "," + str(self.orientation.theta) + ")"
 
         # Create a region for the outer ellipse of the annulus
-        region = ImageRegion(region_string, self._log)
+        region = pyregion.parse(region_string)
 
         # Add the annulus region
         self._addregion(region, "annulus")
@@ -1436,15 +1486,8 @@ class ImageRegion(object):
     ## This function
     def __init__(self, region, log):
 
-        try:
-
-            # Create a region from a .reg file
-            self._region = pyregion.open(region)
-
-        except IOError:
-
-            # Create a region from the string
-            self._region = pyregion.parse(region)
+        # Set the internal pyregion object
+        self._region = region
 
         # Logger
         self._log = log

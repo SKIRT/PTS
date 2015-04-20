@@ -476,7 +476,7 @@ class DataPreparation(object):
 
 # -----------------------------------------------------------------
 
-## This function ..
+## This function ...
 def subtractskyFUV(image):
 
     log = Log()
