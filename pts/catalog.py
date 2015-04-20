@@ -13,35 +13,31 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-import sys, string, os, traceback
-import getopt, re, time, glob
+import sys, string, os
+import re, time
 from types import *
 from httplib import HTTP
-import numpy as np
 
 # Import astronomical modules
 import pyregion
 
-# -----------------------------------------------------------------
-
-# Defaults / Globals
-domain = "www.nofs.navy.mil" # USNO web site
-#ajp: USNO updates the script occasionally. 
-#     Check by running search on web-page, then view source info.
-script = "/cgi-bin/tfch3tI.cgi"
+# Import relevant PTS modules
+from pts.log import Log
 
 # -----------------------------------------------------------------
 
-class dummy_ui:
-    def error_mesg(self, txt):
-        print txt
+# Useful adresses
+domain = "www.nofs.navy.mil"      # USNO web site
+script = "/cgi-bin/tfch3tI.cgi"   #ajp: USNO updates the script occasionally. Check by running search on web-page, then view source info.
 
-    def writeln(self, txt):
-        print txt
+# Create a logger
+log = Log()
 
 # -----------------------------------------------------------------
-    
+
+## This function downloads the source code of a web page and returns its contents as a list of lines
 def download_web_page(domain, url):
+
     try:
         h = HTTP(domain)
         h.putrequest("GET", url)
@@ -61,11 +57,13 @@ def download_web_page(domain, url):
         sys.stderr.write("Error in receiving response from " + domain + \
                          '\n')
         return None
+
     results = h.getfile().read()
     return(results)
 
 # -----------------------------------------------------------------
 
+## This function converts right ascensions or declinations from degrees to hh::mm::ss or dd::mm::ss, respectively
 def dec2sxg(coord,ra=0):
 
     coox=float(coord)
@@ -87,46 +85,35 @@ def dec2sxg(coord,ra=0):
 
 # -----------------------------------------------------------------
 
-## This function ...
-# "Usage: %s [-c catusno] [-o orefcat] [-m magclr] [-b brtmag] [-f fntmag] [-e epoch] [-s flag] [-r retry] [-g regfile] <ra> <dec> [size]" % xname
-#    print "    <ra> and <dec> are sexagesimal hours/deg or decimal deg/deg"
-#    print "    <size> is length of a side in arcmin (%s)" % def_radius
-#    print "    -c <usnob/nomad> gives alternate input catalog (%s)" % def_catusno
-#    print "    -o <orefcat> gives alternate name for ouput reference catalog (%s)" % def_orefcat
-#    print "    -m <R2/K> gives alternate USNO or NOMAD sort magnitude (%s)" % def_magclr
-#    print "    -b <val> sets bright search magnitude (%s)" % def_bright
-#    print "    -f <val> sets  faint search magnitude (%s)" % def_faint
-#    print "    -e <epoch> gives the desired input coordinate epoch (%s)" % def_epoch
-#    print "    -s <off/on> sets the silent output flag (%s)" % def_silent
-#    print "    -r <val> sets the number of retries (%s)" % MAXTRY
-#    print "    -g <regfile> gives alternate name for ouput region file (%s)" % def_orefcat.replace('.cat','.reg')
+## This function fetches data from the USNOB or NOMAD catalog in a box centered around a specified location (right
+#  ascension, declination) and with a certain region. It takes the following parameters:
+#
+#  - center: the position (right ascension, declination) of the center of the box (in decimal degrees)
+#  - radius: the radius for the (square) box
+#  - catalog: defines which catalog to use (default = nomad)
+#  - filename: gives the name of the ouput reference catalog (default = asc_ref.txt)
+#  - magnitude: gives alternate USNO or NOMAD sort magnitude (default = R2)
+#  - bright: sets bright search magnitude (default = 5.0)
+#  - faint: sets faint search magnitude (default = 19.0)
+#  - epoch: gives the desired input coordinate epoch (default = 2000.0)
+#  - retry: sets the number of retries (default = 15)
+#  - debug: set to True for debug mode (default = False)
+#  - qonly: set to True if you only want to get the full URL for the query (default = False)
+#  - text: set to True if the ID's of the stars have to be included as text in the region (default = False)
 #
 def fetch(center, radius=20, catalog="nomad", filename="asc_ref.txt", magnitude="R2", bright=5.0, faint=19.0, epoch="2000.0", retry=15, debug=False, qonly=False, text=False):
-
-    # User-controllable values
-    catusno = catalog
-    magclr = magnitude
-    bright = bright
-    faint = faint
-    epoch = epoch
-    radius = radius
-    retry = retry
-
-    # Process details
-    (xdir,xname)=os.path.split(sys.argv[0])
-    pid=os.getpid()
 
     # Get the RA and DEC
     rain = center[0]
     dcin = center[1]
 
-    # Parse coordinates (RA)
+    # Convert the right ascension to hours, minutes, seconds
     (rah,ram,ras)=dec2sxg(rain, ra=1)
 
     raout='+'.join([rah,ram,ras])
     ranice=':'.join([rah,ram,ras])
 
-    # Parse coordinates (Dec)
+    # Convert the declination to degrees, minutes, seconds
     (dcd,dcm,dcs)=dec2sxg(dcin, ra=0)
 
     dcout='+'.join([dcd,dcm,dcs])
@@ -139,24 +126,28 @@ def fetch(center, radius=20, catalog="nomad", filename="asc_ref.txt", magnitude=
            "colbits=cb_sigra&colbits=cb_mura&colbits=cb_smural&colbits=cb_fitpts&" + \
            "colbits=cb_mag&clr=%s&skey=mag&bri=%s&fai=%s&" + \
            "gzf=No&cftype=ASCII") % \
-          (script,raout,dcout,epoch,radius,radius,catusno,magclr,bright,faint)
+          (script,raout,dcout,epoch,radius,radius,catalog,magnitude,bright,faint)
 
-    print "Sending %s request for %s, %s (%s')" % (catusno,ranice,dcnice,radius)
+    log.info("Sending %s request for %s, %s (%s')" % (catalog,ranice,dcnice,radius))
 
     if qonly:
-        print "Full URL of initial query:"
-        print url
+
+        log.info("Full URL of initial query: " + url)
         return
-    
+
+    # Download the results from the web
     results = download_web_page(domain, url)
 
     if debug:
-        test1="%s-%d-1.html" % (xname,pid)
-        fil=open(test1, 'w')
+
+        fil=open("debug.html", 'w')
         fil.write(results)
 
-    if type(results)==NoneType or len(results)<100:
-        sys.exit("Something went wrong, results too short\n")
+    # Check if something went wrong when getting the results
+    if results is None or len(results) < 100:
+
+        log.error("Something went wrong, results too short")
+        exit()
 
     # Successful first request:  Get link for "progress" web page
     urltrk=""
@@ -168,38 +159,49 @@ def fetch(center, radius=20, catalog="nomad", filename="asc_ref.txt", magnitude=
             urltrk=re1.group(1)
             break
 
-    if len(urltrk)>1:
-        urlcat=urltrk.replace("fch.html",catusno)
-        print "Tracking results through %s" % urltrk
-        print "Catalog should appear as %s" % urlcat
+    if len(urltrk) > 1:
+
+        urlcat=urltrk.replace("fch.html", catalog)
+
+        log.info("Tracking results through %s" % urltrk)
+        log.info("Catalog should appear as %s" % urlcat)
+
     else:
-        sys.exit("Trouble identifying tracking URL\n")
+
+        log.error("Trouble identifying tracking URL")
+        exit()
 
     re2=re.search("http://([^/]+)(/.+)$",urlcat)
     if re2:
         dom2=re2.group(1)
         url2=re2.group(2)
     else:
-        sys.exit("Problem parsing target URL\n")
 
-    # Wait a bit
+        log.error("Problem parsing target URL")
+        exit()
+
+    # Wait for successful processing of query
     time.sleep(10)
 
     # Start trying to retrieve the catalog
     itry=0
-    while 1:
+    while True:
+
+        # Download the catalog
         results2 = download_web_page(dom2, url2)
 
         if results2:
+
             lines=string.split(results2,'\n')
-            if len(lines)>=26:
-                break
+            if len(lines)>=26: break
 
         itry +=1
         if itry > retry:
-            print "Giving up"
+
+            log.error("Giving up")
             return
 
+        # Wait before next try
         time.sleep(10)
 
     # Add comment flags to header
@@ -231,7 +233,9 @@ def fetch(center, radius=20, catalog="nomad", filename="asc_ref.txt", magnitude=
         # If the line is invalid, go to the next one
         if len(els) < 16: continue
 
+        # Calculate a radius for this star
         rstar=5.0*(20.0/float(els[16]))**2
+
         if text:
             regline=("fk5;circle(%s,%s,%.2f\") # text={%s} " +
                      "B1MAG={%s} R1MAG={%s} B2MAG={%s} R2MAG={%s} " +
@@ -242,6 +246,8 @@ def fetch(center, radius=20, catalog="nomad", filename="asc_ref.txt", magnitude=
                      "B1MAG={%s} R1MAG={%s} B2MAG={%s} R2MAG={%s} " +
                      "I2MAG={%s}\n") % (els[1],els[2],rstar,
                                         els[12],els[13],els[14],els[15],els[16])
+
+        # Add the parameters of this star to the region string
         region_string += regline
 
     # Create a region
