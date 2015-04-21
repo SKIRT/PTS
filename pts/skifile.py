@@ -33,7 +33,7 @@ import pts.archive as arch
 # A SkiFile class instance is always constructed from an existing ski file; creating a new ski file from scratch
 # is not supported. To create a new ski file, start SKIRT in interactive mode (without any arguments).
 #
-class SkiFile:
+class SkiFile(object):
     # ---------- Constructing and saving -----------------------------
 
     ## The constructor loads the contents of the specified ski file into a new SkiFile instance.
@@ -74,6 +74,19 @@ class SkiFile:
             unitsystem = 'extragalactic'
             fluxstyle = 'neutral'
         return SkirtUnits(unitsystem, fluxstyle)
+
+    ## This function returns the number of wavelengths for oligochromatic or panchromatic simulations
+    def nwavelengths(self):
+
+        # Try to get the list of wavelengths from the ski file
+        wavelengths = self.wavelengths()
+
+        # If the list is not empty, retun its size
+        if wavelengths: return len(wavelengths)
+
+        # If the list is empty, the ski file represents a panchromatic simulation (get the number of points
+        # directly from the tree)
+        else: return int(self.tree.xpath("//wavelengthGrid/*[1]")[0].get("points"))
 
     ## This function returns a list of the wavelengths specified in the ski file for an oligochromatic simulation,
     # in micron. If the ski file specifies a panchromatic simulation, the function returns an empty list.
