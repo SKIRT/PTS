@@ -309,6 +309,11 @@ class DataPreparation(object):
         # Select the stars region
         image.regions.stars.select()
 
+        # If requested, plot the primary image with the stars indicated
+        if self._plot:
+
+            image.plot()
+
         if fitpsf:
 
             # Estimate the FWHM of the PSF

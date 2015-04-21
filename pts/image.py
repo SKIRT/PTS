@@ -969,6 +969,9 @@ class Image(object):
                 failed += 1
                 continue
 
+            # If the square area is too small, skip it
+            if square.shape[0] < 5 or square.shape[1] < 5: continue
+
             try:
                 # Fit a 2D Gaussian to the brightness distribution
                 params = fitgaussian(square)
@@ -991,7 +994,7 @@ class Image(object):
                 continue
 
             # If the center of the Gaussian falls out of the square, skip this star
-            if round(x) > square.shape[0] - 1 or round(y) > square.shape[1] - 1:
+            if round(x) < 0 or round(x) > square.shape[0] - 1 or round(y) < 0 or round(y) > square.shape[1] - 1:
                 failed += 1
                 continue
 
