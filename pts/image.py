@@ -925,7 +925,7 @@ class Image(object):
         failed = 0
 
         # Loop over all the shapes in this region and fit the stellar profiles with a 2D Gaussian distribution
-        for shape in self.regions[region]._region:
+        for shape in self.regions[region]._region.as_imagecoord(self.header):
 
             # Initially, set the minimum and maximum x and y values to zero
             xmin = xmax = ymin = ymax = 0
@@ -958,6 +958,9 @@ class Image(object):
                 xmax = int(round(xcenter + 0.5*width))
                 ymin = int(round(ycenter - 0.5*height))
                 ymax = int(round(ycenter + 0.5*height))
+
+            # Check whether this shape falls within the image frame
+            if xmin < 0 or xmax >= self.xsize or ymin < 0 or ymax >= self.ysize: continue
 
             # Cut out a square of the primary image around the star
             square = self.frames.primary.data[ymin:ymax, xmin:xmax]
@@ -1102,7 +1105,7 @@ class Image(object):
         self._addregion(region, "annulus")
 
         # Create the annulus mask
-        annulusmask = np.logical_not(region._region.get_mask(header=self.header, shape=(self.ysize,self.xsize)))
+        annulusmask = np.logical_not(self.regions["annulus"]._region.get_mask(header=self.header, shape=(self.ysize,self.xsize)))
 
         # Get a combination of the currently selected masks
         currentmask = self.combinemasks()
