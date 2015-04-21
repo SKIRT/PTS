@@ -281,6 +281,11 @@ class DataPreparation(object):
             path = os.path.join(self._preppath, image.name, "masked.fits")
             image.save(path)
 
+        # If requested, plot the masked primary image
+        if self._plot:
+
+            image.plot()
+
         # Deselect all masks and regions
         image.regions.deselectall()
         image.masks.deselectall()
@@ -333,6 +338,11 @@ class DataPreparation(object):
         # Deselect all masks and regions
         image.regions.deselectall()
         image.masks.deselectall()
+
+        # If requested, plot the interpolated primary image
+        if self._plot:
+
+            image.plot()
 
     # -----------------------------------------------------------------
 
@@ -412,6 +422,11 @@ class DataPreparation(object):
         image.regions.deselectall()
         image.masks.deselectall()
 
+        # If requested, plot the sky-subtracted primary image
+        if self._plot:
+
+            image.plot()
+
     # -----------------------------------------------------------------
 
     ## This function scales the image by a certain factor
@@ -462,6 +477,11 @@ class DataPreparation(object):
         image.regions.deselectall()
         image.masks.deselectall()
 
+        # If requested, plot the convolved primary image
+        if self._plot:
+
+            image.plot()
+
     # -----------------------------------------------------------------
 
     ## This function rebins the image to the resolution of the Pacs 160 micron image
@@ -480,6 +500,11 @@ class DataPreparation(object):
         # Deselect all masks and regions
         image.regions.deselectall()
         image.masks.deselectall()
+
+        # If requested, plot the rebinned primary image
+        if self._plot:
+
+            image.plot()
 
 # -----------------------------------------------------------------
 
