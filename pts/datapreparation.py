@@ -288,11 +288,18 @@ class DataPreparation(object):
     # -----------------------------------------------------------------
 
     ## This function interpolates over the stars
-    def interpolatestars(self, image, fitpsf=False):
+    def interpolatestars(self, image, fitpsf=False, manual=False):
 
-        # Create a region object for the stars create a mask from it
-        filepath = "data/stars/" + image.name + ".reg"
-        image.importregion(filepath, "stars")
+        if manual:
+
+            # Create a region object for the stars create a mask from it
+            filepath = "data/stars/" + image.name + ".reg"
+            image.importregion(filepath, "stars")
+
+        else:
+
+            # Fetch the stars automatically from the web
+            image.fetchstars()
 
         # Select the stars region
         image.regions.stars.select()
