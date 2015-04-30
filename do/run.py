@@ -20,7 +20,9 @@ import numpy as np
 
 # Import the relevant PTS modules
 from pts.log import Log
+from pts.skifile import SkiFile
 from pts.skirtexec import SkirtExec
+from pts.memory import estimate_memory
 
 # -----------------------------------------------------------------
 
@@ -71,33 +73,11 @@ memory = psutil.virtual_memory().available / 1e9
 log.info("The number of currently available processors on this system is " + str(free))
 log.info("The amount of currently available memory on this system is " + str(memory) + " gigabytes")
 
-# Find the number of wavelengths and the number of dust cells from the ski file
-wavelengths = 0
-xpoints = 0
-ypoints = 0
-zpoints = 0
-with open(skifilepath) as skifile:
-
-    for line in skifile:
-
-        if "minWavelength" in line and "maxWavelength" in line and "points" in line:
-
-            wavelengths = int(line.split('points="')[1].split('"')[0])
-
-        if "DustGridStructure" in line and "writeGrid" in line:
-
-            xpoints = int(line.split('pointsX="')[1].split('"')[0])
-            ypoints = int(line.split('pointsY="')[1].split('"')[0])
-            zpoints = int(line.split('pointsZ="')[1].split('"')[0])
-
-dustcells = xpoints * ypoints * zpoints
-
 # Calculate the amount of required memory for this simulation (in gigabytes)
-required = float(wavelengths) * float(dustcells) * 8 / 1e9
+skifile = SkiFile(skifilepath)
+required = estimate_memory(skifile)
 
 # Inform the user
-log.info("The number of wavelengths for this simulation is " + str(wavelengths))
-log.info("The number of dust cells for this simulation is " + str(dustcells))
 log.info("The estimated memory requirement for this simulation is " + str(required) + " gigabytes")
 
 # Calculate the maximum number of MPI processes

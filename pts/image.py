@@ -907,7 +907,7 @@ class Image(object):
         radius = 0.5*width_minutes
 
         # Fetch the stars, create a region
-        region = fetch([ra_center,dec_center], radius, faint=16.0, filename="")
+        region = fetch([ra_center,dec_center], radius, faint=19.0, filename="")
 
         # Add this region
         self._addregion(region, "stars")
