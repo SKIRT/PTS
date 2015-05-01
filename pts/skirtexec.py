@@ -86,7 +86,7 @@ class SkirtExec:
         if processes > 1 and not self._MPIinstalled(): return []
 
         # Create the argument list, starting with the SKIRT path in singleprocessing mode and "mpirun" in multiprocessing mode
-        args = [self._path, "-b"]
+        args = [self._path]
         if processes > 1:
             if mpistyle.lower()=='lsf':
                 args = ["mpirun", "-lsf"] + args  # the number of processes and hosts is derived from environment variables
