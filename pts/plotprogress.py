@@ -29,6 +29,13 @@ from pts.log import Log
 
 # -----------------------------------------------------------------
 
+# Ignore warnings, otherwise Canopy would give a UserWarning on top of the error encountered when a progress
+# file does not contain any data (an error which is catched an produces an error message).
+import warnings
+warnings.filterwarnings("ignore")
+
+# -----------------------------------------------------------------
+
 phaseindices = {'stellar': 0, 'spectra': 1, 'dust': 2}
 phaseinfo = {'stellar': 'emitting stellar photon packages', 'spectra': 'calculating dust emission spectra',
              'dust': 'emitting dust photon packages'}
