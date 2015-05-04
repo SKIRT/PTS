@@ -96,7 +96,7 @@ if progressfiles:
         except OSError: pass
 
         # Determine the path to the plot file
-        plotfilepath = os.path.join(plotpath, os.path.splitext(filename)[0] + ".pdf")
+        plotfilepath = os.path.join(plotpath, os.path.splitext(filename)[0] + "_" + phase + ".pdf")
 
         # Plot the progress information in this file
         plotprogress(progressfilepath, plotfilepath, phase)

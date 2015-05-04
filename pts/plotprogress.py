@@ -30,6 +30,8 @@ from pts.log import Log
 # -----------------------------------------------------------------
 
 phaseindices = {'stellar': 0, 'spectra': 1, 'dust': 2}
+phaseinfo = {'stellar': 'emitting stellar photon packages', 'spectra': 'calculating dust emission spectra',
+             'dust': 'emitting dust photon packages'}
 
 # -----------------------------------------------------------------
 
@@ -66,17 +68,17 @@ def plotprogress(filepath, plotpath, phase, figsize=(10,6)):
         # Loop over the entries of the progress data
         for i in range(len(ranks)):
 
+            # Check whether this entry corresponds with the specified phase
+            if phases[i] != phaseindices[phase]: continue
+
             # If we are below the current rank, continue to the next entry
-            if ranks[i] < rank: continue
+            elif ranks[i] < rank: continue
 
             # If we passed the current rank, stop searching for new entries
             elif ranks[i] > rank: break
 
-            # Else, check whether this entry correponds with the specified phase
-            elif phases[i] == phaseindices[phase]:
-
-                times_process.append(times[i])
-                percentages_process.append(percentages[i])
+            times_process.append(times[i])
+            percentages_process.append(percentages[i])
 
         # Name of the current process
         process = "P" + str(rank)
@@ -95,7 +97,7 @@ def plotprogress(filepath, plotpath, phase, figsize=(10,6)):
         plt.grid('on')
         plt.xlabel("Time (s)", fontsize='large')
         plt.ylabel("Progress (%)", fontsize='large')
-        plt.title("Progress of emitting {} photons".format(phase))
+        plt.title("Progress of " + phaseinfo[phase])
         plt.legend(loc='lower right', ncol=4, prop={'size':8})
 
         # Save the figure
