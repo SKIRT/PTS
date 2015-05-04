@@ -36,8 +36,10 @@ def estimate_memory(skifile):
     transientHeating = skifile.transientheating()
 
     # Overhead
-    Ndoubles = 50e6 + (Nlambda + Ncells + Ncomps + Npops) * 10
-    print 1, Ndoubles*8/1e9
+    #Ndoubles = 50e6 + (Nlambda + Ncells + Ncomps + Npops) * 10
+    #print 1, Ndoubles*8/1e9
+
+    Ndoubles = 0
 
     # Instruments
     for instrument in skifile.npixels():

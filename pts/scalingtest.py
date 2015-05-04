@@ -265,7 +265,7 @@ class ScalingTest(object):
         # we set the 'fullnode' flag to True, which makes sure we always request at least one full node, even when
         # the current number of processors is less than the number of cores per node.
         jobscriptpath = os.path.join(self._outpath, "job_" + self._mode + "_" + str(processors) + ".sh")
-        jobscript = JobScript(jobscriptpath, self._skifilepath, self._system, nodes, ppn, threads, self._inpath, dataoutputpath, walltime, verbose=True, fullnode=True)
+        jobscript = JobScript(jobscriptpath, self._skifilepath, self._system, nodes, ppn, threads, self._inpath, dataoutputpath, walltime, brief=True, verbose=True, fullnode=True)
 
         # Add the command to go the the PTS do directory
         jobscript.addcommand("cd $VSC_HOME/PTS/git/do", comment="Navigate to the PTS do directory")
@@ -323,7 +323,7 @@ class ScalingTest(object):
         dataoutputpath = self._createdatadir(processors)
 
         # Run the simulation
-        simulation = self._skirt.execute(skipattern=self._skifilepath, inpath=self._inpath, outpath=dataoutputpath, threads=threads, processes=processes, verbose=True)[0]
+        simulation = self._skirt.execute(skipattern=self._skifilepath, inpath=self._inpath, outpath=dataoutputpath, threads=threads, processes=processes, brief=True, verbose=True)[0]
 
         # Check whether the simulation finished
         if simulation.status() != "Finished": raise ValueError("Simulation " + simulation.status())

@@ -46,7 +46,7 @@ class JobScript(object):
     #              other HPC users). Do not set this flag if you don't care about the reproducibility of your simulation
     #              in terms of computation time.
     #
-    def __init__(self, path, skifilepath, cluster, nodes, ppn, threadspp, inputpath, outputpath, walltime, mail=False, verbose=False, fullnode=False):
+    def __init__(self, path, skifilepath, cluster, nodes, ppn, threadspp, inputpath, outputpath, walltime, mail=False, brief=False, verbose=False, fullnode=False):
 
         # Set the name of the cluster
         self._clustername = cluster
@@ -125,7 +125,10 @@ class JobScript(object):
         # Add the number of threads per process and the SKIRT output path to the command string
         commandstring += "skirt -t " + str(threadspp) + " -i " + inputpath + " -o " + outputpath + " "
 
-        # If verbose mode is desired, we pass the "-v" flag to SKIRT
+        # If brief console logging is desired, we pass the '-b' flag to SKIRT
+        if brief: commandstring += "-b "
+
+        # If verbose mode is desired, we pass the '-v' flag to SKIRT
         if verbose: commandstring += "-v "
 
         # Finally, give the name of the ski file to SKIRT
