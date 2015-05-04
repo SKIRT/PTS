@@ -17,7 +17,6 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-import os.path
 import numpy as np
 
 # Use a non-interactive back-end to generate high-quality vector graphics
@@ -27,6 +26,10 @@ import matplotlib.pyplot as plt
 
 # Import relevant PTS modules
 from pts.log import Log
+
+# -----------------------------------------------------------------
+
+phaseindices = {'stellar': 0, 'spectra': 1, 'dust': 2}
 
 # -----------------------------------------------------------------
 
@@ -40,21 +43,16 @@ def plotprogress(filepath, plotpath, phase, figsize=(10,6)):
 
     # Try to get the values from this progress file. If no data could be found in the file, we skip it.
     try:
-        ranks, phases, times, percentages = np.loadtxt(filepath, usecols=(0,1,2,3), unpack=True, dtype=str)
+        phases, ranks, times, percentages = np.loadtxt(filepath, usecols=(0,1,2,3), unpack=True)
     except ValueError:
         log.warning("The file " + filepath + " does not contain any data")
         return
-
-    # Convert the appropriate columns to integers or floats
-    ranks = ranks.astype(int, copy=False)
-    times = times.astype(float, copy=False)
-    percentages = percentages.astype(float, copy=False)
 
     # Setup the figure
     plt.figure(figsize=figsize)
 
     # Determine the number of processes
-    processes = ranks[-1]+1
+    processes = int(ranks[-1]) + 1
 
     numplots = 0
 
@@ -75,7 +73,7 @@ def plotprogress(filepath, plotpath, phase, figsize=(10,6)):
             elif ranks[i] > rank: break
 
             # Else, check whether this entry correponds with the specified phase
-            elif phases[i] == phase:
+            elif phases[i] == phaseindices[phase]:
 
                 times_process.append(times[i])
                 percentages_process.append(percentages[i])
@@ -94,10 +92,9 @@ def plotprogress(filepath, plotpath, phase, figsize=(10,6)):
     if numplots > 0:
 
         plt.xlim(0)
-        #plt.ylim(0,100)
         plt.grid('on')
-        plt.xlabel("time (s)", fontsize='large')
-        plt.ylabel("progress (%)", fontsize='large')
+        plt.xlabel("Time (s)", fontsize='large')
+        plt.ylabel("Progress (%)", fontsize='large')
         plt.title("Progress of emitting {} photons".format(phase))
         plt.legend(loc='lower right', ncol=4, prop={'size':8})
 

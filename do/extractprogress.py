@@ -11,6 +11,10 @@ import pts.archive as arch
 
 # -----------------------------------------------------------------
 
+phaseindices = {'stellar': 0, 'spectra': 1, 'dust': 2}
+
+# -----------------------------------------------------------------
+
 ## This function extracts the progress from the simulation log files and writes them to file.
 #  It takes the following arguments:
 #
@@ -83,7 +87,7 @@ def _extractphotonprogress(logfiles, progressfile, phase):
 
             # Write the runtime and percentage to the progress file, with the process rank in the first column and
             # the simulation phase in the second column
-            progressfile.write(str(processrank) + ' ' + phase + ' ' + str(runtime) + ' ' + str(percentage) + '\n')
+            progressfile.write(str(phaseindices[phase]) + ' ' + str(processrank) + ' ' + str(runtime) + ' ' + str(percentage) + '\n')
 
 ## This function
 def _extractspectraprogress(logfiles, progressfile, staggered=False):
@@ -142,7 +146,7 @@ def _extractspectraprogress(logfiles, progressfile, staggered=False):
 
             # Write the runtime and percentage to the progress file, with the process rank in the first column and
             # the simulation phase in the second column
-            progressfile.write(str(processrank) + ' spectra ' + str(runtime) + ' ' + str(percentage) + '\n')
+            progressfile.write(str(phaseindices['spectra']) + ' ' + str(processrank) + ' ' + str(runtime) + ' ' + str(percentage) + '\n')
 
 # -----------------------------------------------------------------
 

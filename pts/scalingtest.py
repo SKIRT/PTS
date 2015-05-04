@@ -332,7 +332,7 @@ class ScalingTest(object):
         extract(simulation.logfilepath(), processes, threads, resultsfilepath)
 
         # Extract the progress of the different processes, if requested
-        if extractprogr:
+        if extractprogr and processes > 1:
 
             # Create the file to contain the progress information of this run
             progressfilepath = self._createprogressfile(self._progressdirpath, processes)
@@ -391,8 +391,8 @@ class ScalingTest(object):
         # Write a header to this new file which contains some general info about its contents
         progressfile.write("# Progress results for " + self._system + " with " + str(processes) + " parallel processes\n")
         progressfile.write("# Using " + self._skirt.version() + "\n")
-        progressfile.write("# Column 1: Process rank\n")
-        progressfile.write("# Column 2: Simulation phase (stellar, dust or spectra)\n")
+        progressfile.write("# Column 1: Simulation phase (0=stellar, 1=spectra, 2=dust)\n")
+        progressfile.write("# Column 2: Process rank\n")
         progressfile.write("# Column 3: Execution time (s)\n")
         progressfile.write("# Column 4: Progress (%)\n")
 
