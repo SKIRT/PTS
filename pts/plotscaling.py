@@ -408,6 +408,14 @@ class ScalingPlotter(object):
         # Open the file that will contain the fitted parameters
         parameterfilepath = os.path.join(self._vispath, "parameters_" + self._phase + ".txt")
         parameterfile = open(parameterfilepath, 'w')
+        parameterfile.write("# Fit parameters for the speedups to Amdahl's law:\n")
+        parameterfile.write("#     S_n = 1 / ( 1 - p + p/n + a + b*n + c*n^2 ) \n")
+        parameterfile.write("# Column 1: System name\n")
+        parameterfile.write("# Column 2: Mode (mpi, threads or hybrid)\n")
+        parameterfile.write("# Column 3: Parallel fraction p\n")
+        parameterfile.write("# Column 4: Parameter a\n")
+        parameterfile.write("# Column 5: Parameter b\n")
+        parameterfile.write("# Column 6: Parameter c\n")
 
         # Plot the fitted speedup curves and write the parameters to the file
         fit_nthreads = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
