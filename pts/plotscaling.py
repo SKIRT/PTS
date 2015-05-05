@@ -349,7 +349,7 @@ class ScalingPlotter(object):
     #  - xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
     #  - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
     #
-    def plotspeedups(self, figsize=(12,8), xlim=None, ylim=None, fit=False):
+    def plotspeedups(self, figsize=(12,8), xlim=None, ylim=None, plotfit=False):
 
         # Inform the user of the fact that the speedups are being calculated and plotted
         self._log.info("Calculating and plotting the speedups...")
@@ -386,16 +386,21 @@ class ScalingPlotter(object):
             # Add the appropriate ticks
             ticks |= set(nthreads)
 
+            # Set the weights of the different speedup points for the fitting procedure
+            speedup_weigths = speedup_errors if not np.any(np.isinf(speedup_errors)) else None
+
             # Fit (standard or modified) Amdahl's law to the speedups
             if len(nthreads) < 4:
 
-                popt, pcov = curve_fit(Amdahl, nthreads, speedups)
-                parameters[(systemname, mode)] = [popt[0], 0.0, 0.0, 0.0]
+                popt, pcov = curve_fit(Amdahl, nthreads, speedups, sigma=speedup_weigths, absolute_sigma=False)
+                perr = np.sqrt(np.diag(pcov))
+                parameters[(systemname, mode)] = [popt[0], perr[0], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
             else:
 
-                popt, pcov = curve_fit(modAmdahl, nthreads, speedups)
-                parameters[(systemname, mode)] = popt
+                popt, pcov = curve_fit(modAmdahl, nthreads, speedups, sigma=speedup_weigths, absolute_sigma=False)
+                perr = np.sqrt(np.diag(pcov))
+                parameters[(systemname, mode)] = [popt[0], perr[0], popt[1], perr[1], popt[2], perr[2], popt[3], perr[3]]
 
         # Use a logarithmic scale for both axes
         plt.xscale('log')
@@ -413,22 +418,34 @@ class ScalingPlotter(object):
         parameterfile.write("# Column 1: System name\n")
         parameterfile.write("# Column 2: Mode (mpi, threads or hybrid)\n")
         parameterfile.write("# Column 3: Parallel fraction p\n")
-        parameterfile.write("# Column 4: Parameter a\n")
-        parameterfile.write("# Column 5: Parameter b\n")
-        parameterfile.write("# Column 6: Parameter c\n")
+        parameterfile.write("# Column 4: Error on p\n")
+        parameterfile.write("# Column 5: Parameter a\n")
+        parameterfile.write("# Column 6: Error on a\n")
+        parameterfile.write("# Column 7: Parameter b\n")
+        parameterfile.write("# Column 8: Error on b\n")
+        parameterfile.write("# Column 9: Parameter c\n")
+        parameterfile.write("# Column 10: Error on c\n")
 
         # Plot the fitted speedup curves and write the parameters to the file
         fit_nthreads = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
-        for (systemname, mode), [p, a, b, c] in parameters.items():
+        for (systemname, mode), [p, p_err, a, a_err, b, b_err, c, c_err] in parameters.items():
 
-            # Calculate the fitted speedups
-            fit_speedups = [modAmdahl(n, p, a, b, c) for n in fit_nthreads]
+            # If requested, plot the fitted curve
+            if plotfit:
 
-            # Plot the fitted curve
-            plt.plot(fit_nthreads, fit_speedups)
+                # Calculate the fitted speedups
+                fit_speedups = [modAmdahl(n, p, a, b, c) for n in fit_nthreads]
+
+                # Add the plot
+                plt.plot(fit_nthreads, fit_speedups)
 
             # Write the parameters to file
-            parameterfile.write(systemname + " " + mode + " " + str(p) + " " + str(a) + " " + str(b) + " " + str(c) + "\n")
+            parameterfile.write(systemname + " " + mode + " " + str(p) + " " + str(p_err) + " " + str(a) + " " + str(a_err)
+                                                        + " " + str(b) + " " + str(b_err) + " " + str(c) + " " + str(c_err)
+                                                        + "\n")
+
+        # Close the parameter file
+        parameterfile.close()
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -514,7 +531,7 @@ class ScalingPlotter(object):
         ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
         ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
         plt.xlim(ticks[0], ticks[-1])
-        plt.ylim(0, 1)
+        plt.ylim(0, 1.1)
         plt.grid(True)
 
         # Set custom axis limits if requested
