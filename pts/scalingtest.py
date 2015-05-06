@@ -144,8 +144,10 @@ class ScalingTest(object):
     #                or can be deleted from the disk.
     #  - extractprogress: a flag indicating whether the progress of the different SKIRT processes should be extracted
     #                     from the simulation's log files or not
+    #  - extracttimeline: a flag indicating whether timeline information of the different SKIRT processes should be
+    #                     extracted from the simulation's log files or not
     #
-    def run(self, maxnodes, minnodes, manual=False, keepoutput=False, extractprogr=False):
+    def run(self, maxnodes, minnodes, manual=False, keepoutput=False, extractprogr=False, extracttimeline=False):
 
         # Log the system name, the test mode and the version of SKIRT used for this test
         self._log.info("Starting parallel scaling benchmark for " + self._system + " in " + self._mode + " mode.")
@@ -172,8 +174,9 @@ class ScalingTest(object):
         # Create a file containing the results of the scaling test
         resultsfilepath = self._createresultsfile(maxnodes, minnodes)
 
-        # If 'extractprogr' is enabled, create a directory to contain the progress data files for this scaling test
-        if extractprogr:
+        # If 'extractprogr' or 'extracttimeline' is enabled, create a directory to contain the progress data files
+        # for this scaling test
+        if extractprogr or extracttimeline:
 
             # Determine the path to the folder, next to the results file and bearing the same name, that will
             # contain the data that is necessary to plot the progress of the simulation
@@ -188,7 +191,7 @@ class ScalingTest(object):
         while processors <= maxprocessors:
 
             # Perform this run
-            self._do(processors, resultsfilepath, manual, keepoutput, extractprogr)
+            self._do(processors, resultsfilepath, manual, keepoutput, extractprogr, extracttimeline)
 
             # The next run will be performed with double the amount of processors
             processors *= 2
@@ -206,8 +209,10 @@ class ScalingTest(object):
     #  - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
     #  - extractprogress: a flag indicating whether the progress of the different SKIRT processes should be extracted
     #                     from the simulation's log files or not
+    #  - extracttimeline: a flag indicating whether timeline information of the different SKIRT processes should be
+    #                     extracted from the simulation's log files or not
     #
-    def _schedule(self, processors, resultsfilepath, manual, keepoutput, extractprogr):
+    def _schedule(self, processors, resultsfilepath, manual, keepoutput, extractprogr, extracttimeline):
 
         # Determine the number of processes and threads per process
         processes, threads = self._getmapping(processors)
@@ -284,6 +289,16 @@ class ScalingTest(object):
             command = "python extractprogress.py " + " " + self._skifilename + " " + dataoutputpath + " " + progressfilepath
             jobscript.addcommand(command, comment="Extract the progress of the different processes")
 
+        # Add the command to extract the timeline information after the job finished, if requested
+        if extracttimeline:
+
+            # Create the file to contain the timeline information for this run
+            timelinefilepath = self._createtimelinefile(self._progressdirpath, processes)
+
+            # Add the command to the jobscript to extract the timeline data
+            command = "python extracttimeline.py " + " " + self._skifilename + " " + dataoutputpath + " " + timelinefilepath
+            jobscript.addcommand(command, comment="Extract the timeline information for the different processes")
+
         # Add the command to remove the output directory of this run
         if not keepoutput:
 
@@ -310,8 +325,10 @@ class ScalingTest(object):
     #  - keepoutput: a flag indicating whether the SKIRT output should be kept or deleted
     #  - extractprogress: a flag indicating whether the progress of the different SKIRT processes should be extracted
     #                     from the simulation's log files or not
+    #  - extracttimeline: a flag indicating whether timeline information of the different SKIRT processes should be
+    #                     extracted from the simulation's log files or not
     #
-    def _run(self, processors, resultsfilepath, manual, keepoutput, extractprogr):
+    def _run(self, processors, resultsfilepath, manual, keepoutput, extractprogr, extracttimeline):
 
         # Determine the number of processes and threads per process
         processes, threads = self._getmapping(processors)
@@ -342,6 +359,18 @@ class ScalingTest(object):
 
             # Extract the progress information
             do.extractprogress.extract(self._skifilename, dataoutputpath, progressfilepath)
+
+        # Add the command to extract the timeline information after the job finished, if requested
+        if extracttimeline:
+
+            # Create the file to contain the timeline information for this run
+            timelinefilepath = self._createtimelinefile(self._progressdirpath, processes)
+
+            # Load the extracttimeline module
+            import do.extracttimeline
+
+            # Extract the timeline information
+            do.extracttimeline.extract(self._skifilename, dataoutputpath, timelinefilepath)
 
         # Remove the contents of the output directory, if requested
         if not keepoutput: shutil.rmtree(dataoutputpath)
@@ -381,7 +410,7 @@ class ScalingTest(object):
         # Return the path of the newly created results file
         return filepath
 
-    ## This function creates the file containing the progress
+    ## This function creates the file containing the progress information
     def _createprogressfile(self, progresspath, processes):
 
         # Create a new file whose name includes the current number of processors
@@ -400,6 +429,22 @@ class ScalingTest(object):
         progressfile.close()
 
         # Return the path of the newly created progress file
+        return filepath
+
+    ## This function creates the file containing the timeline information
+    def _createtimelinefile(self, timelinepath, processes):
+
+        # Create a new file whose name includes the current number of processors
+        filepath = os.path.join(timelinepath, "timeline_" + str(processes) + ".dat")
+        timelinefile = open(filepath, 'w')
+
+        # Write a header to this new file
+        timelinefile.write("# Timeline information for " + self._system + " with " + str(processes) + " parallel processes\n")
+
+        # Close the timeline file (results will be appended!)
+        timelinefile.close()
+
+        # Return the path of the newly created timeline data file
         return filepath
 
     ## This function calculates the number of processes and the number of threads (per process) for
