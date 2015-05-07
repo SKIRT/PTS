@@ -31,6 +31,9 @@ warnings.filterwarnings("ignore")
 
 # -----------------------------------------------------------------
 
+# Define the indices used to identify the different simulation phases
+phaseindices = {'setup': 0, 'stellar': 1, 'comm': 2, 'spectra': 3, 'dust': 4, 'writing': 5}
+
 # Define the names of the different simulation phases (for the plot's legend)
 phasenames = ['Setup', 'Stellar emission', 'Communication', 'Spectra', 'Dust emission']
 
@@ -90,7 +93,7 @@ def plottimeline(filepath, plotpath, figsize=(12,8), percentages=False):
         durations = np.array(endtimes) - np.array(starttimes)
         patch_handle = ax.barh(procranks, durations, color=colors[phase], align='center', left=starttimes, alpha=0.8)
 
-        if phase not in unique_phases:
+        if phase not in unique_phases and not (phase == phaseindices['comm'] and nprocs == 1):
 
             unique_phases.append(phase)
             legendEntries.append(patch_handle)
@@ -112,9 +115,17 @@ def plottimeline(filepath, plotpath, figsize=(12,8), percentages=False):
     ax.set_ylabel('Process rank', fontsize='large')
     ax.yaxis.grid(True)
 
-    # Shrink current axis's height by 10% on the bottom
+    if nprocs == 1:
+
+        ax.set_frame_on(False)
+        fig = plt.gcf()
+        fig.set_size_inches(10,3)
+        ax.xaxis.tick_bottom()
+        ax.yaxis.set_visible(False)
+
+    # Shrink current axis's height by 20% on the bottom
     box = ax.get_position()
-    ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
+    ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
     # Put a legend below current axis
     ax.legend(legendEntries, legendNames, loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False, ncol=5)
