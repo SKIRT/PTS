@@ -11,7 +11,7 @@ from pts.skirtsimulation import SkirtSimulation
 # -----------------------------------------------------------------
 
 # Define the indices used to identify the different simulation phases
-phaseindices = {'setup': 0, 'stellar': 1, 'comm': 2, 'spectra': 3, 'dust': 4, 'writing': 5}
+phaseindices = {'setup': 0, 'stellar': 1, 'comm': 2, 'spectra': 3, 'dust': 4, 'writing': 5, 'waiting': 6}
 
 # -----------------------------------------------------------------
 
@@ -59,7 +59,16 @@ def extract(skifilename, outputpath, timelinefilepath):
                 data[processrank].append({'phase': phaseindices['setup'], 'start': time, 'end': None})
 
             # Check whether this line indicates the end of the first part of the setup, and the start of the
-            # communication of the dust densities
+            # subsequent waiting phase
+            elif "Waiting for other processes to finish the calculation of the dust cell densities" in line:
+
+                entries = len(data[processrank])
+                data[processrank][entries-1]['end'] = time
+
+                data[processrank].append({'phase': phaseindices['waiting'], 'start': time, 'end': None})
+
+            # Check whether this line indicates the end of the waiting phase after the first part of the setup,
+            # and the start of the communication of the dust densities
             elif "Starting communication of the dust densities" in line:
 
                 entries = len(data[processrank])
@@ -76,7 +85,16 @@ def extract(skifilename, outputpath, timelinefilepath):
 
                 data[processrank].append({'phase': phaseindices['setup'], 'start': time, 'end': None})
 
-            # Check whether this line indicates the end of the (second part of the) setup
+            # Check whether this line indicates the end of (the second part of) the setup, and the start of the
+            # waiting phase after the setup
+            elif "Waiting for other processes to finish the setup" in line:
+
+                entries = len(data[processrank])
+                data[processrank][entries-1]['end'] = time
+
+                data[processrank].append({'phase': phaseindices['waiting'], 'start': time, 'end': None})
+
+            # Check whether this line indicates the end of the waiting phase after the setup
             elif "Finished setup" in line:
 
                 entries = len(data[processrank])
@@ -87,7 +105,16 @@ def extract(skifilename, outputpath, timelinefilepath):
 
                 data[processrank].append({'phase': phaseindices['stellar'], 'start': time, 'end': None})
 
-            # Check whether this line indicates the end of the stellar emission phase
+            # Check whether this line indicates the end of the stellar emission phase, and the start of the
+            # waiting phase after the stellar emission phase
+            elif "Waiting for other processes to finish the stellar emission phase" in line:
+
+                entries = len(data[processrank])
+                data[processrank][entries-1]['end'] = time
+
+                data[processrank].append({'phase': phaseindices['waiting'], 'start': time, 'end': None})
+
+            # Check whether this line indicates the end of the waiting phase after the stellar emission phase
             elif "Finished the stellar emission phase" in line:
 
                 entries = len(data[processrank])
@@ -109,8 +136,18 @@ def extract(skifilename, outputpath, timelinefilepath):
 
                 data[processrank].append({'phase': phaseindices['spectra'], 'start': time, 'end': None})
 
-            # Check whether this line indicates the start of the communication of the emission luminosities
-            # (and the end of the dust emission spectra calculation)
+
+            # Check whether this line indicates the end of the dust emission spectra calculation, and the start
+            # of the waiting phase after the dust emission spectra calculation
+            elif "Waiting for other processes to finish the emission spectra calculation" in line:
+
+                entries = len(data[processrank])
+                data[processrank][entries-1]['end'] = time
+
+                data[processrank].append({'phase': phaseindices['waiting'], 'start': time, 'end': None})
+
+            # Check whether this line indicates the end of the waiting phase after the dust emission spectra
+            # calculation, and the start of the communication of the emission luminosities
             elif "Starting communication of the dust emission spectra" in line:
 
                 entries = len(data[processrank])
@@ -129,13 +166,31 @@ def extract(skifilename, outputpath, timelinefilepath):
 
                 data[processrank].append({'phase': phaseindices['dust'], 'start': time, 'end': None})
 
-            # Check whether this line indicates the end of a dust self-absorption cycle
+            # Check whether this line indicates the end of a dust self-absorption cycle, and the start of the
+            # subsequent waiting phase
+            elif "Waiting for other processes to finish this self-absorption cycle" in line:
+
+                entries = len(data[processrank])
+                data[processrank][entries-1]['end'] = time
+
+                data[processrank].append({'phase': phaseindices['waiting'], 'start': time, 'end': None})
+
+            # Check whether this line indicates the end of the waiting phase after a dust self-absorption cycle
             elif "Finished the" in line and "-stage dust self-absorption cycle" in line:
 
                 entries = len(data[processrank])
                 data[processrank][entries-1]['end'] = time
 
-            # Check whether this line indicates the end of the dust emission phase
+            # Check whether this line indicates the end of the dust emission phase, and the start of the waiting phase
+            # after the dust emission phase
+            elif "Waiting for other processes to finish the dust emission phase" in line:
+
+                entries = len(data[processrank])
+                data[processrank][entries-1]['end'] = time
+
+                data[processrank].append({'phase': phaseindices['waiting'], 'start': time, 'end': None})
+
+            # Check whether this line indicates the end of waiting phase after the dust emission phase
             elif "Finished the dust emission phase" in line:
 
                 entries = len(data[processrank])

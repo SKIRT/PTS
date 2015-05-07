@@ -32,14 +32,14 @@ warnings.filterwarnings("ignore")
 # -----------------------------------------------------------------
 
 # Define the indices used to identify the different simulation phases
-phaseindices = {'setup': 0, 'stellar': 1, 'comm': 2, 'spectra': 3, 'dust': 4, 'writing': 5}
+phaseindices = {'setup': 0, 'stellar': 1, 'comm': 2, 'spectra': 3, 'dust': 4, 'writing': 5, 'waiting': 6}
 
 # Define the names of the different simulation phases (for the plot's legend)
-phasenames = ['Setup', 'Stellar emission', 'Communication', 'Dust spectra calculation', 'Dust emission', 'Writing']
+phasenames = ['Setup', 'Stellar emission', 'Communication', 'Dust spectra calculation', 'Dust emission', 'Writing', 'Waiting']
 
 # Define the colors for the different simulation phases in the plot
-# (setup = red, stellar = green, comm = blue, spectra = magenta, dust = cyan, writing = yellow)
-colors = list('rgbmcy')
+# (setup = red, stellar = green, comm = blue, spectra = magenta, dust = cyan, writing = yellow, waiting = black)
+colors = list('rgbmcyk')
 
 # -----------------------------------------------------------------
 
