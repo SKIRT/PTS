@@ -80,7 +80,7 @@ def _extractphotonprogress(logfiles, progressfile, phase):
                 times.append(_timelapse(startline,line))
 
             # If the emission phase has been triggered, look for the line that signals the end of this phase
-            if triggered and " Finished " in line: break
+            if triggered and " Finished the {} emission phase".format(phase) in line: break
 
         # Add a line to the progress file for each (runtime, percentage) pair
         for runtime, percentage in zip(times, percentages):
