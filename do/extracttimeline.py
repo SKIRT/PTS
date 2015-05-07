@@ -10,7 +10,8 @@ from pts.skirtsimulation import SkirtSimulation
 
 # -----------------------------------------------------------------
 
-phaseindices = {'setup': 0, 'stellar': 1, 'comm': 2, 'spectra': 3, 'dust': 4}
+# Define the indices used to identify the different simulation phases
+phaseindices = {'setup': 0, 'stellar': 1, 'comm': 2, 'spectra': 3, 'dust': 4, 'writing': 5}
 
 # -----------------------------------------------------------------
 
@@ -57,7 +58,25 @@ def extract(skifilename, outputpath, timelinefilepath):
 
                 data[processrank].append({'phase': phaseindices['setup'], 'start': time, 'end': None})
 
-            # Check whether this line indicates the end of the setup
+            # Check whether this line indicates the end of the first part of the setup, and the start of the
+            # communication of the dust densities
+            elif "Starting communication of the dust densities" in line:
+
+                entries = len(data[processrank])
+                data[processrank][entries-1]['end'] = time
+
+                data[processrank].append({'phase': phaseindices['comm'], 'start': time, 'end': None})
+
+            # Check whether this line indicates the end of the communication of the dust densities, and the start
+            # of the second part of the setup
+            elif "Finished communication of the dust densities" in line:
+
+                entries = len(data[processrank])
+                data[processrank][entries-1]['end'] = time
+
+                data[processrank].append({'phase': phaseindices['setup'], 'start': time, 'end': None})
+
+            # Check whether this line indicates the end of the (second part of the) setup
             elif "Finished setup" in line:
 
                 entries = len(data[processrank])
@@ -122,13 +141,24 @@ def extract(skifilename, outputpath, timelinefilepath):
                 entries = len(data[processrank])
                 data[processrank][entries-1]['end'] = time
 
+            # Check whether this line indicates the start of the writing phase
+            elif "Starting writing results" in line:
+
+                data[processrank].append({'phase': phaseindices['writing'], 'start': time, 'end': None})
+
+            # Check whether this line indicates the end of the writing phase
+            elif "Finished writing results" in line:
+
+                entries = len(data[processrank])
+                data[processrank][entries-1]['end'] = time
+
     # Open the timeline file
     timelinefile = open(timelinefilepath, 'a')
 
     # Write a header
     timelinefile.write("# Times are in seconds, relative to T0 = " + T0.strftime("%Y-%m-%d %H:%M:%S.%f") + "\n")
     timelinefile.write("# Column 1: Process rank\n")
-    timelinefile.write("# Column 2: Simulation phase (0=setup, 1=stellar emission, 2=communication, 3=spectra, 4=dust emission)\n")
+    timelinefile.write("# Column 2: Simulation phase (0=setup, 1=stellar emission, 2=communication, 3=spectra, 4=dust emission, 5=writing)\n")
     timelinefile.write("# Column 3: Start time (s)\n")
     timelinefile.write("# Column 4: End time (s)\n")
 
