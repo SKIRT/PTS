@@ -35,11 +35,11 @@ warnings.filterwarnings("ignore")
 phaseindices = {'setup': 0, 'stellar': 1, 'comm': 2, 'spectra': 3, 'dust': 4, 'writing': 5}
 
 # Define the names of the different simulation phases (for the plot's legend)
-phasenames = ['Setup', 'Stellar emission', 'Communication', 'Spectra', 'Dust emission']
+phasenames = ['Setup', 'Stellar emission', 'Communication', 'Dust spectra calculation', 'Dust emission', 'Writing']
 
 # Define the colors for the different simulation phases in the plot
-# (setup = red, stellar = green, comm = blue, spectra = magenta, dust = cyan)
-colors = list('rgbmc')
+# (setup = red, stellar = green, comm = blue, spectra = magenta, dust = cyan, writing = yellow)
+colors = list('rgbmcy')
 
 # -----------------------------------------------------------------
 
@@ -127,8 +127,11 @@ def plottimeline(filepath, plotpath, figsize=(12,8), percentages=False):
     box = ax.get_position()
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
+    # Set the plot title
+    plt.title("Timeline of the different simulation phases")
+
     # Put a legend below current axis
-    ax.legend(legendEntries, legendNames, loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False, ncol=5)
+    ax.legend(legendEntries, legendNames, loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False, ncol=3)
 
     # Save the figure
     plt.savefig(plotpath, bbox_inches='tight', pad_inches=0.40)
