@@ -61,18 +61,18 @@ if timelinefiles:
     # For each progress file in the list
     for directory, filename in timelinefiles:
 
-        # Determine the full path to the progress file
+        # Determine the full path to the timeline data file
         timelinefilepath = os.path.join(directory, filename)
 
-        # Determine the path to the directory that will contain the plot from this progress file
-        plotpath = os.path.join(vispath, os.path.basename(directory))
+        # Determine the path to the directory that will contain the plot from this data file
+        plotpath = os.path.join(vispath, os.path.basename(directory)) if os.path.basename(directory) == "res" else os.getcwd()
 
         # Create this directory, if it didn't already exist
         try: os.makedirs(plotpath)
         except OSError: pass
 
         # Determine the path to the plot file
-        plotfilepath = os.path.join(plotpath, os.path.splitext(filename)[0] + "_" + ".pdf")
+        plotfilepath = os.path.join(plotpath, os.path.splitext(filename)[0] + ".pdf")
 
         # Plot the timeline for this simulation
         plottimeline(timelinefilepath, plotfilepath)

@@ -89,7 +89,7 @@ if progressfiles:
         progressfilepath = os.path.join(directory, filename)
 
         # Determine the path to the directory that will contain the plot from this progress file
-        plotpath = os.path.join(vispath, os.path.basename(directory))
+        plotpath = os.path.join(vispath, os.path.basename(directory)) if os.path.basename(directory) == "res" else os.getcwd()
 
         # Create this directory, if it didn't already exist
         try: os.makedirs(plotpath)

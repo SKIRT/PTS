@@ -38,8 +38,8 @@ phaseindices = {'setup': 0, 'stellar': 1, 'comm': 2, 'spectra': 3, 'dust': 4, 'w
 phasenames = ['Setup', 'Stellar emission', 'Communication', 'Dust spectra calculation', 'Dust emission', 'Writing', 'Waiting']
 
 # Define the colors for the different simulation phases in the plot
-# (setup = red, stellar = green, comm = blue, spectra = magenta, dust = cyan, writing = yellow, waiting = black)
-colors = list('rgbmcyk')
+# (setup = red, stellar = green, comm = orange, spectra = magenta, dust = cyan, writing = yellow, waiting = blue)
+colors = ['r', 'g', '#FF7626', 'm', 'c', 'y', 'b']
 
 # -----------------------------------------------------------------
 
@@ -131,7 +131,7 @@ def plottimeline(filepath, plotpath, figsize=(12,8), percentages=False):
     plt.title("Timeline of the different simulation phases")
 
     # Put a legend below current axis
-    ax.legend(legendEntries, legendNames, loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False, ncol=3)
+    ax.legend(legendEntries, legendNames, loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False, ncol=4)
 
     # Save the figure
     plt.savefig(plotpath, bbox_inches='tight', pad_inches=0.40)
