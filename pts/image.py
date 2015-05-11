@@ -662,50 +662,78 @@ class Image(object):
     # ----------------------------------------------------------------- ADVANCED OPERATIONS
 
     ## This function convolves the currently selected frame(s) with a specified kernel (a FITS file)
-    def convolve(self, name):
+    def convolve(self, name=None, fwhm=None):
 
         # Import the convolution function
-        from astropy.convolution import convolve_fft
+        from astropy.convolution import convolve, convolve_fft
 
-        # The path to the kernel file
-        path = os.path.join(os.getenv("HOME"), "Kernels", name)
+        # Check if the name of a kernel FITS file is defined
+        if name:
 
-        # Inform the user that the kernel was found
-        self._log.info("Found kernel file at " + path)
+            # The path to the kernel file
+            path = os.path.join(os.getenv("HOME"), "Kernels", name)
 
-        # Open the HDU list for the FITS file
-        hdulist = pyfits.open(path)
+            # Inform the user that the kernel was found
+            self._log.info("Found kernel file at " + path)
 
-        # Get the kernel data and header
-        kernel = hdulist[0].data
-        header = hdulist[0].header
+            # Open the HDU list for the FITS file
+            hdulist = pyfits.open(path)
 
-        # Inform the user
-        self._log.info("Rebinning the kernel to the image pixel grid")
+            # Get the kernel data and header
+            kernel = hdulist[0].data
+            header = hdulist[0].header
 
-        # Get the pixel scale of the kernel
-        pixelscale_kernel = header["CD1_1"]*3600
+            # Inform the user
+            self._log.info("Rebinning the kernel to the image pixel grid")
 
-        # Calculate the zooming factor
-        factor = self.pixelscale / pixelscale_kernel
+            # Get the pixel scale of the kernel
+            pixelscale_kernel = header["CD1_1"]*3600
 
-        # Rebin the kernel to the same grid of the image
-        kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
+            # Calculate the zooming factor
+            factor = self.pixelscale / pixelscale_kernel
 
-        # Add a frame
-        self._addframe(kernel, "kernel")
+            # Rebin the kernel to the same grid of the image
+            kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
 
-        # For all active frames, do the convolution
-        for frame in self.frames.getactive():
+            # Add a frame
+            self._addframe(kernel, "kernel")
 
-            # Inform the user that this frame is being convolved
-            self._log.info("Convolving " + frame + " frame with the kernel " + os.path.splitext(name)[0])
+            # For all active frames, do the convolution
+            for frame in self.frames.getactive():
 
-            # Do the convolution on this frame
-            self.frames[frame].data = convolve_fft(self.frames[frame].data, kernel, normalize_kernel=True)
+                # Inform the user that this frame is being convolved
+                self._log.info("Convolving " + frame + " frame with the kernel " + os.path.splitext(name)[0])
 
-        # Close the FITS file
-        hdulist.close()
+                # Do the convolution on this frame
+                self.frames[frame].data = convolve_fft(self.frames[frame].data, kernel, normalize_kernel=True)
+
+            # Close the FITS file
+            hdulist.close()
+
+        # Otherwise, use a specified FWHM
+        elif fwhm:
+
+            from astropy.convolution import Gaussian1DKernel
+
+            # From the FWHM, calculate the standard deviation
+            sigma = fwhm / 2.355
+
+            # Construct the Gaussian kernel
+            kernel = Gaussian1DKernel(stddev=sigma)
+
+            # For all active frames, do the convolution
+            for frame in self.frames.getactive():
+
+                # Inform the user that this frame is being convolved
+                self._log.info("Convolving " + frame + " frame with a 1D Gaussian kernel with a FWHM of " + str(fwhm))
+
+                # Do the convolution on this frame
+                self.frames[frame].data = convolve(self.frames[frame].data, kernel)
+
+        else:
+
+            self._log.error("Define either the name of a kernel file or a desired FWHM")
+            return
 
     ## This function rebins the currently selected frame(s) based on a certain reference FITS file
     def rebin(self, reference):
