@@ -713,13 +713,13 @@ class Image(object):
         # Otherwise, use a specified FWHM
         elif fwhm:
 
-            from astropy.convolution import Gaussian1DKernel
+            from astropy.convolution import Gaussian2DKernel
 
             # From the FWHM, calculate the standard deviation
             sigma = fwhm / 2.355
 
             # Construct the Gaussian kernel
-            kernel = Gaussian1DKernel(stddev=sigma)
+            kernel = Gaussian2DKernel(sigma)
 
             # For all active frames, do the convolution
             for frame in self.frames.getactive():
