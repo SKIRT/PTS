@@ -65,7 +65,8 @@ if timelinefiles:
         timelinefilepath = os.path.join(directory, filename)
 
         # Determine the path to the directory that will contain the plot from this data file
-        plotpath = os.path.join(vispath, os.path.basename(directory)) if os.path.basename(directory) == "res" else os.getcwd()
+        resdirname = os.path.basename(os.path.dirname(directory))
+        plotpath = os.path.join(vispath, os.path.basename(directory)) if resdirname == "res" else os.getcwd()
 
         # Create this directory, if it didn't already exist
         try: os.makedirs(plotpath)

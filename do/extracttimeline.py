@@ -18,7 +18,7 @@ phaseindices = {'setup': 0, 'stellar': 1, 'comm': 2, 'spectra': 3, 'dust': 4, 'w
 ## This function extracts the timeline of the different stages in a SKIRT simulation for the different processes
 #  from the log files created by this simulation.
 #
-def extract(skifilename, outputpath, timelinefilepath):
+def extract(skifilename, outputpath, timelinefilepath=""):
 
     # Create a simulation object from the simulation's output path
     simulation = SkirtSimulation(prefix=skifilename, outpath=outputpath)
@@ -207,32 +207,40 @@ def extract(skifilename, outputpath, timelinefilepath):
                 entries = len(data[processrank])
                 data[processrank][entries-1]['end'] = time
 
-    # Open the timeline file
-    timelinefile = open(timelinefilepath, 'a')
+    # Check whether a timeline file is specified
+    if timelinefilepath:
 
-    # Write a header
-    timelinefile.write("# Times are in seconds, relative to T0 = " + T0.strftime("%Y-%m-%d %H:%M:%S.%f") + "\n")
-    timelinefile.write("# Column 1: Process rank\n")
-    timelinefile.write("# Column 2: Simulation phase (0=setup, 1=stellar emission, 2=communication, 3=spectra, 4=dust emission, 5=writing)\n")
-    timelinefile.write("# Column 3: Start time (s)\n")
-    timelinefile.write("# Column 4: End time (s)\n")
+        # Open the timeline file
+        timelinefile = open(timelinefilepath, 'a')
 
-    # Loop over all the different ranks
-    for rank, entries in enumerate(data):
+        # Write a header
+        timelinefile.write("# Times are in seconds, relative to T0 = " + T0.strftime("%Y-%m-%d %H:%M:%S.%f") + "\n")
+        timelinefile.write("# Column 1: Process rank\n")
+        timelinefile.write("# Column 2: Simulation phase (0=setup, 1=stellar emission, 2=communication, 3=spectra, 4=dust emission, 5=writing)\n")
+        timelinefile.write("# Column 3: Start time (s)\n")
+        timelinefile.write("# Column 4: End time (s)\n")
 
-        # Loop over all the different entries (different Timespans)
-        for entry in entries:
+        # Loop over all the different ranks
+        for rank, entries in enumerate(data):
 
-            # If the end of this entry was not recorded, skip it
-            if entry['end'] is None: continue
+            # Loop over all the different entries (different Timespans)
+            for entry in entries:
 
-            phase_id = str(entry['phase'])
-            phase_start = str((entry['start'] - T0).total_seconds())
-            phase_end = str((entry['end'] - T0).total_seconds())
-            timelinefile.write(str(rank) + " " + phase_id + " " + phase_start + " " + phase_end + "\n")
+                # If the end of this entry was not recorded, skip it
+                if entry['end'] is None: continue
 
-    # Close the progress file
-    timelinefile.close()
+                phase_id = str(entry['phase'])
+                phase_start = str((entry['start'] - T0).total_seconds())
+                phase_end = str((entry['end'] - T0).total_seconds())
+                timelinefile.write(str(rank) + " " + phase_id + " " + phase_start + " " + phase_end + "\n")
+
+        # Close the progress file
+        timelinefile.close()
+
+    else:
+
+        # If no timeline file is given, return the table of extracted timeline information
+        return data
 
 # -----------------------------------------------------------------
 
