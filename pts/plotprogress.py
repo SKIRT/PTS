@@ -105,7 +105,14 @@ def plotprogress(filepath, plotpath, phase, figsize=(10,6)):
         plt.xlabel("Time (s)", fontsize='large')
         plt.ylabel("Progress (%)", fontsize='large')
         plt.title("Progress of " + phaseinfo[phase])
-        plt.legend(loc='lower right', ncol=4, prop={'size':8})
+
+        if numplots > 16:
+
+            plt.legend(loc='upper center', ncol=8, bbox_to_anchor=(0.5,-0.1), prop={'size':8})
+
+        else:
+
+            plt.legend(loc='lower right', ncol=4, prop={'size':8})
 
         # Save the figure
         plt.savefig(plotpath, bbox_inches='tight', pad_inches=0.25)

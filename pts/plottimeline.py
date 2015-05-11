@@ -131,7 +131,7 @@ def plottimeline(filepath, plotpath, figsize=(12,8), percentages=False):
     plt.title("Timeline of the different simulation phases")
 
     # Put a legend below current axis
-    ax.legend(legendEntries, legendNames, loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False, ncol=4)
+    ax.legend(legendEntries, legendNames, loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False, ncol=4, prop={'size':12})
 
     # Save the figure
     plt.savefig(plotpath, bbox_inches='tight', pad_inches=0.40)
