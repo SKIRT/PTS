@@ -119,7 +119,7 @@ def plottimeline(filepath, plotpath, figsize=(12,8), percentages=False):
 
         ax.set_frame_on(False)
         fig = plt.gcf()
-        fig.set_size_inches(10,3)
+        fig.set_size_inches(10,2)
         ax.xaxis.tick_bottom()
         ax.yaxis.set_visible(False)
 

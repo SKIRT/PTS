@@ -136,7 +136,6 @@ def extract(skifilename, outputpath, timelinefilepath=""):
 
                 data[processrank].append({'phase': phaseindices['spectra'], 'start': time, 'end': None})
 
-
             # Check whether this line indicates the end of the dust emission spectra calculation, and the start
             # of the waiting phase after the dust emission spectra calculation
             elif "Waiting for other processes to finish the emission spectra calculation" in line:

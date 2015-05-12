@@ -761,6 +761,9 @@ class Image(object):
             # Do the rebinning based on the header of the reference image
             self.frames[frame].data = hcongrid(self.frames[frame].data, self.header, referenceheader)
 
+        # Use the reference header as the new header for this image
+        self.header = referenceheader
+
         # Close the reference FITS file
         hdulist.close()
 

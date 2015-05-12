@@ -390,7 +390,7 @@ class ScalingPlotter(object):
             speedup_weigths = speedup_errors if not np.any(np.isinf(speedup_errors)) else None
 
             # Fit (standard or modified) Amdahl's law to the speedups
-            if len(nthreads) < 4:
+            if len(nthreads) < 10:
 
                 popt, pcov = curve_fit(Amdahl, nthreads, speedups, sigma=speedup_weigths, absolute_sigma=False)
                 perr = np.sqrt(np.diag(pcov))
