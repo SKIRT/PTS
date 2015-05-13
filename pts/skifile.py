@@ -33,7 +33,7 @@ import pts.archive as arch
 # A SkiFile class instance is always constructed from an existing ski file; creating a new ski file from scratch
 # is not supported. To create a new ski file, start SKIRT in interactive mode (without any arguments).
 #
-class SkiFile:
+class SkiFile(object):
     # ---------- Constructing and saving -----------------------------
 
     ## The constructor loads the contents of the specified ski file into a new SkiFile instance.
@@ -74,6 +74,140 @@ class SkiFile:
             unitsystem = 'extragalactic'
             fluxstyle = 'neutral'
         return SkirtUnits(unitsystem, fluxstyle)
+
+    ## This function returns the number of wavelengths for oligochromatic or panchromatic simulations
+    def nwavelengths(self):
+
+        # Try to get the list of wavelengths from the ski file
+        wavelengths = self.wavelengths()
+
+        # If the list is not empty, retun its size
+        if wavelengths: return len(wavelengths)
+
+        # If the list is empty, the ski file represents a panchromatic simulation (get the number of points
+        # directly from the tree)
+        else: return int(self.tree.xpath("//wavelengthGrid/*[1]")[0].get("points"))
+
+    ## This function returns the number of dust cells
+    def ncells(self):
+
+        xpoints = int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsX"))
+        ypoints = int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsY"))
+        zpoints = 1
+        try:
+            zpoints = int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsZ"))
+        except TypeError:
+            pass
+
+        # Return the total number of dust cells
+        return xpoints*ypoints*zpoints
+
+    ## This function returns the number of dust components
+    def ncomponents(self):
+
+        components = self.tree.xpath("//CompDustDistribution/components/*")
+
+        return int(len(components))
+
+    ## This function returns the number of dust library items
+    def nlibitems(self):
+
+        dustlib = self.tree.xpath("//dustLib/*")[0]
+
+        if dustlib.tag == "AllCellsDustLib":
+
+            return self.ncells()
+
+        elif dustlib.tag == "Dim2DustLib":
+
+            return dustlib.attrib["pointsTemperature"] * dustlib.attrib["pointsWavelength"]
+
+        elif dustlib.tag == "Dim1DustLib":
+
+            return dustlib.attrib["entries"]
+
+    ## This function returns the number of dust populations (from all dust mixes combined)
+    def npopulations(self):
+
+        npops = 0
+
+        # For each dust mix
+        for dustmix in self.tree.xpath("//mix/*[1]"):
+
+            if dustmix.tag in ["InterstellarDustMix", "Benchmark1DDustMix", "Benchmark2DDustMix", "DraineLiDustMix"]:
+
+                npops += 1
+
+            elif dustmix.tag == "TrustDustMix":
+
+                npops += int(dustmix.attrib["graphitePops"])
+                npops += int(dustmix.attrib["silicatePops"])
+                npops += int(dustmix.attrib["PAHPops"])
+
+            elif dustmix.tag == "ConfigurableDustMix":
+
+                npops += len(self.tree.xpath("//ConfigurableDustMix/populations/*"))
+
+        return npops
+
+    ## This function returns the number of simple instruments
+    def nsimpleinstruments(self):
+
+        return len(self.tree.xpath("//SimpleInstrument"))
+
+    ## This function returns the number of full instruments
+    def nfullinstruments(self):
+
+        return len(self.tree.xpath("//FullInstrument"))
+
+    ## This function returns whether transient heating is enabled
+    def transientheating(self):
+
+        return len(self.tree.xpath("//TransientDustEmissivity"))
+
+    ## This function returns whether dust emission is enabled
+    def dustemission(self):
+
+        return len(self.tree.xpath("//dustEmissivity"))
+
+    ## This function returns whether dust selfabsorption is enabled
+    def dustselfabsorption(self):
+
+        try:
+            pandustsystem = self.tree.xpath("//PanDustSystem")[0]
+            return (pandustsystem.attrib["selfAbsorption"] == "true")
+        except:
+            return False
+
+    ## This function returns the number of pixels for each of the instruments
+    def npixels(self):
+
+        pixels = []
+
+        nwavelengths = self.nwavelengths()
+        instruments = self.tree.xpath("//instruments/*")
+
+        for instrument in instruments:
+
+            type = instrument.tag
+            name = instrument.attrib["instrumentName"]
+            datacube = int(instrument.attrib["pixelsX"])*int(instrument.attrib["pixelsY"])*nwavelengths
+
+            if type == "SimpleInstrument":
+
+                pixels.append([name, type, datacube])
+
+            elif type == "FullInstrument":
+
+                scattlevels = int(instrument.attrib["scatteringLevels"])
+                scattering = scattlevels + 1 if scattlevels > 0 else 0
+                dustemission = 1 if self.dustemission() else 0
+
+                npixels = datacube * (3 + scattering + dustemission)
+
+                pixels.append([name, type, npixels])
+
+        return pixels
 
     ## This function returns a list of the wavelengths specified in the ski file for an oligochromatic simulation,
     # in micron. If the ski file specifies a panchromatic simulation, the function returns an empty list.

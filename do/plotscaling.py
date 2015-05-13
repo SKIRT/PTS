@@ -29,11 +29,13 @@ phases = ['setup', 'stellar', 'dustselfabs', 'dustem', 'writing', 'total']
 parser = argparse.ArgumentParser()
 parser.add_argument('phase', type=str, help='the simulation phase for which you want to plot the scaling', choices=phases)
 parser.add_argument('system', nargs='?', type=str, help='the system for which you want to plot the scaling', default="")
+parser.add_argument('--plotfit', action='store_true', help='include the fit to the speedups of a theoretical scaling relation in the plot')
 
 # Parse the command line arguments
 args = parser.parse_args()
 phase = args.phase
 system = args.system
+plotfit = args.plotfit
 
 # -----------------------------------------------------------------
 
@@ -47,7 +49,7 @@ plotter = ScalingPlotter(directory, phase, system)
 plotter.plottimes()
 
 # Plot the speedups as a function of the number of threads
-plotter.plotspeedups()
+plotter.plotspeedups(plotfit=plotfit)
 
 # Plot the efficiencies as a function of the number of threads
 plotter.ploteffs()

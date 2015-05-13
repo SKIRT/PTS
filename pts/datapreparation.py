@@ -281,6 +281,11 @@ class DataPreparation(object):
             path = os.path.join(self._preppath, image.name, "masked.fits")
             image.save(path)
 
+        # If requested, plot the masked primary image
+        if self._plot:
+
+            image.plot()
+
         # Deselect all masks and regions
         image.regions.deselectall()
         image.masks.deselectall()
@@ -288,14 +293,26 @@ class DataPreparation(object):
     # -----------------------------------------------------------------
 
     ## This function interpolates over the stars
-    def interpolatestars(self, image, fitpsf=False):
+    def interpolatestars(self, image, fitpsf=False, manual=False):
 
-        # Create a region object for the stars create a mask from it
-        filepath = "data/stars/" + image.name + ".reg"
-        image.importregion(filepath, "stars")
+        if manual:
+
+            # Create a region object for the stars create a mask from it
+            filepath = "data/stars/" + image.name + ".reg"
+            image.importregion(filepath, "stars")
+
+        else:
+
+            # Fetch the stars automatically from the web
+            image.fetchstars()
 
         # Select the stars region
         image.regions.stars.select()
+
+        # If requested, plot the primary image with the stars indicated
+        if self._plot:
+
+            image.plot()
 
         if fitpsf:
 
@@ -326,6 +343,11 @@ class DataPreparation(object):
         # Deselect all masks and regions
         image.regions.deselectall()
         image.masks.deselectall()
+
+        # If requested, plot the interpolated primary image
+        if self._plot:
+
+            image.plot()
 
     # -----------------------------------------------------------------
 
@@ -405,6 +427,11 @@ class DataPreparation(object):
         image.regions.deselectall()
         image.masks.deselectall()
 
+        # If requested, plot the sky-subtracted primary image
+        if self._plot:
+
+            image.plot()
+
     # -----------------------------------------------------------------
 
     ## This function scales the image by a certain factor
@@ -455,6 +482,11 @@ class DataPreparation(object):
         image.regions.deselectall()
         image.masks.deselectall()
 
+        # If requested, plot the convolved primary image
+        if self._plot:
+
+            image.plot()
+
     # -----------------------------------------------------------------
 
     ## This function rebins the image to the resolution of the Pacs 160 micron image
@@ -474,9 +506,14 @@ class DataPreparation(object):
         image.regions.deselectall()
         image.masks.deselectall()
 
+        # If requested, plot the rebinned primary image
+        if self._plot:
+
+            image.plot()
+
 # -----------------------------------------------------------------
 
-## This function ..
+## This function ...
 def subtractskyFUV(image):
 
     log = Log()

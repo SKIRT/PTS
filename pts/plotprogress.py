@@ -17,7 +17,6 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-import os.path
 import numpy as np
 
 # Use a non-interactive back-end to generate high-quality vector graphics
@@ -27,6 +26,19 @@ import matplotlib.pyplot as plt
 
 # Import relevant PTS modules
 from pts.log import Log
+
+# -----------------------------------------------------------------
+
+# Ignore warnings, otherwise Canopy would give a UserWarning on top of the error encountered when a progress
+# file does not contain any data (an error which is catched an produces an error message).
+import warnings
+warnings.filterwarnings("ignore")
+
+# -----------------------------------------------------------------
+
+phaseindices = {'stellar': 0, 'spectra': 1, 'dust': 2}
+phaseinfo = {'stellar': 'emitting stellar photon packages', 'spectra': 'calculating dust emission spectra',
+             'dust': 'emitting dust photon packages'}
 
 # -----------------------------------------------------------------
 
@@ -40,21 +52,16 @@ def plotprogress(filepath, plotpath, phase, figsize=(10,6)):
 
     # Try to get the values from this progress file. If no data could be found in the file, we skip it.
     try:
-        ranks, phases, times, percentages = np.loadtxt(filepath, usecols=(0,1,2,3), unpack=True, dtype=str)
+        phases, ranks, times, percentages = np.loadtxt(filepath, usecols=(0,1,2,3), unpack=True)
     except ValueError:
         log.warning("The file " + filepath + " does not contain any data")
         return
-
-    # Convert the appropriate columns to integers or floats
-    ranks = ranks.astype(int, copy=False)
-    times = times.astype(float, copy=False)
-    percentages = percentages.astype(float, copy=False)
 
     # Setup the figure
     plt.figure(figsize=figsize)
 
     # Determine the number of processes
-    processes = ranks[-1]+1
+    processes = int(ranks[-1]) + 1
 
     numplots = 0
 
@@ -68,17 +75,17 @@ def plotprogress(filepath, plotpath, phase, figsize=(10,6)):
         # Loop over the entries of the progress data
         for i in range(len(ranks)):
 
+            # Check whether this entry corresponds with the specified phase
+            if phases[i] != phaseindices[phase]: continue
+
             # If we are below the current rank, continue to the next entry
-            if ranks[i] < rank: continue
+            elif ranks[i] < rank: continue
 
             # If we passed the current rank, stop searching for new entries
             elif ranks[i] > rank: break
 
-            # Else, check whether this entry correponds with the specified phase
-            elif phases[i] == phase:
-
-                times_process.append(times[i])
-                percentages_process.append(percentages[i])
+            times_process.append(times[i])
+            percentages_process.append(percentages[i])
 
         # Name of the current process
         process = "P" + str(rank)
@@ -87,19 +94,25 @@ def plotprogress(filepath, plotpath, phase, figsize=(10,6)):
         if len(percentages_process) > 1:
 
             # Add the progress of the current process to the figure
-            plt.plot(times, percentages, label=process)
+            plt.plot(times_process, percentages_process, label=process)
             numplots += 1
 
     # If we actually plotted something, generate the figure and save it
     if numplots > 0:
 
         plt.xlim(0)
-        plt.ylim(0,100)
         plt.grid('on')
-        plt.xlabel("time (s)", fontsize='large')
-        plt.ylabel("progress (%)", fontsize='large')
-        plt.title("Progress of emitting {} photons".format(phase))
-        plt.legend(loc='lower right', ncol=4, prop={'size':8})
+        plt.xlabel("Time (s)", fontsize='large')
+        plt.ylabel("Progress (%)", fontsize='large')
+        plt.title("Progress of " + phaseinfo[phase])
+
+        if numplots > 16:
+
+            plt.legend(loc='upper center', ncol=8, bbox_to_anchor=(0.5,-0.1), prop={'size':8})
+
+        else:
+
+            plt.legend(loc='lower right', ncol=4, prop={'size':8})
 
         # Save the figure
         plt.savefig(plotpath, bbox_inches='tight', pad_inches=0.25)

@@ -15,6 +15,7 @@ import math
 import numpy as np
 import os.path
 from collections import defaultdict
+from scipy.optimize import curve_fit
 
 # -----------------------------------------------------------------
 
@@ -28,10 +29,12 @@ import matplotlib
 if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 
+import matplotlib.ticker
+
 # -----------------------------------------------------------------
 
 # Ignore warnings, otherwise Canopy would give a UserWarning on top of the error encountered when a scaling
-# test results file does not contain any data (an error which is catched an produces an error message).
+# test results file does not contain any data (an error which is catched and produces an error message).
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -289,6 +292,9 @@ class ScalingPlotter(object):
         # Initialize a figure with the appropriate size
         plt.figure(figsize=figsize)
 
+        # Create a set that stores the tick labels for the plot
+        ticks = set()
+
         # Loop over the different combinations of systemname and mode (i.e. different curves)
         for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
 
@@ -299,14 +305,27 @@ class ScalingPlotter(object):
             # Plot the data points for this curve
             plt.errorbar(nthreads, times, errors, marker='.', label=label)
 
-        # Set axis limits if requested
+            # Add the appropriate ticks
+            ticks |= set(nthreads)
+
+        # Use a logarithmic scale for the x axis (nthreads)
+        plt.xscale('log')
+
+        # Add one more tick for esthetic reasons
+        ticks = sorted(ticks)
+        ticks.append(ticks[-1]*2)
+
+        # Format the axis ticks and create a grid
+        ax = plt.gca()
+        ax.set_xticks(ticks)
+        ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
+        ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        plt.xlim(ticks[0], ticks[-1])
         plt.grid(True)
+
+        # Set custom axis limits if requested
         if xlim != None: plt.xlim(xlim)
         if ylim != None: plt.ylim(ylim)
-
-        # Set the axes to log scale
-        plt.xscale('log')
-        plt.yscale('log')
 
         # Add axis labels and a legend
         plt.xlabel("Total number of threads $t$", fontsize='large')
@@ -330,13 +349,19 @@ class ScalingPlotter(object):
     #  - xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
     #  - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
     #
-    def plotspeedups(self, figsize=(12,8), xlim=None, ylim=None):
+    def plotspeedups(self, figsize=(12,8), xlim=None, ylim=None, plotfit=False):
 
         # Inform the user of the fact that the speedups are being calculated and plotted
         self._log.info("Calculating and plotting the speedups...")
 
         # Initialize a figure with the appropriate size
         plt.figure(figsize=figsize)
+
+        # Create a set that stores the tick labels for the plot
+        ticks = set()
+
+        # Create a dictionary that stores the fitted parameters for each system and mode
+        parameters = dict.fromkeys(self._statistics.keys())
 
         # Loop over the different combinations of systemname and mode (i.e. different curves)
         for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
@@ -358,14 +383,86 @@ class ScalingPlotter(object):
             # Plot the data points for this curve
             plt.errorbar(nthreads, speedups, speedup_errors, marker='.', label=label)
 
-        # Set axis limits if requested
-        plt.grid(True)
-        if xlim != None: plt.xlim(xlim)
-        if ylim != None: plt.ylim(ylim)
+            # Add the appropriate ticks
+            ticks |= set(nthreads)
 
-        # Set the axes to log scale
+            # Set the weights of the different speedup points for the fitting procedure
+            speedup_weigths = speedup_errors if not np.any(np.isinf(speedup_errors)) else None
+
+            # Fit (standard or modified) Amdahl's law to the speedups
+            if len(nthreads) < 10:
+
+                popt, pcov = curve_fit(Amdahl, nthreads, speedups, sigma=speedup_weigths, absolute_sigma=False)
+                perr = np.sqrt(np.diag(pcov))
+                parameters[(systemname, mode)] = [popt[0], perr[0], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+            else:
+
+                popt, pcov = curve_fit(modAmdahl, nthreads, speedups, sigma=speedup_weigths, absolute_sigma=False)
+                perr = np.sqrt(np.diag(pcov))
+                parameters[(systemname, mode)] = [popt[0], perr[0], popt[1], perr[1], popt[2], perr[2], popt[3], perr[3]]
+
+        # Use a logarithmic scale for both axes
         plt.xscale('log')
         plt.yscale('log')
+
+        # Add one more tick for esthetic reasons
+        ticks = sorted(ticks)
+        ticks.append(ticks[-1]*2)
+
+        # Open the file that will contain the fitted parameters
+        parameterfilepath = os.path.join(self._vispath, "parameters_" + self._phase + ".txt")
+        parameterfile = open(parameterfilepath, 'w')
+        parameterfile.write("# Fit parameters for the speedups to Amdahl's law:\n")
+        parameterfile.write("#     S_n = 1 / ( 1 - p + p/n + a + b*n + c*n^2 ) \n")
+        parameterfile.write("# Column 1: System name\n")
+        parameterfile.write("# Column 2: Mode (mpi, threads or hybrid)\n")
+        parameterfile.write("# Column 3: Parallel fraction p\n")
+        parameterfile.write("# Column 4: Error on p\n")
+        parameterfile.write("# Column 5: Parameter a\n")
+        parameterfile.write("# Column 6: Error on a\n")
+        parameterfile.write("# Column 7: Parameter b\n")
+        parameterfile.write("# Column 8: Error on b\n")
+        parameterfile.write("# Column 9: Parameter c\n")
+        parameterfile.write("# Column 10: Error on c\n")
+
+        # Plot the fitted speedup curves and write the parameters to the file
+        fit_nthreads = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+        for (systemname, mode), [p, p_err, a, a_err, b, b_err, c, c_err] in parameters.items():
+
+            # If requested, plot the fitted curve
+            if plotfit:
+
+                # Calculate the fitted speedups
+                fit_speedups = [modAmdahl(n, p, a, b, c) for n in fit_nthreads]
+
+                # Add the plot
+                plt.plot(fit_nthreads, fit_speedups)
+
+            # Write the parameters to file
+            parameterfile.write(systemname + " " + mode + " " + str(p) + " " + str(p_err) + " " + str(a) + " " + str(a_err)
+                                                        + " " + str(b) + " " + str(b_err) + " " + str(c) + " " + str(c_err)
+                                                        + "\n")
+
+        # Close the parameter file
+        parameterfile.close()
+
+        # Format the axis ticks and create a grid
+        ax = plt.gca()
+        ax.set_xticks(ticks)
+        ax.set_yticks(ticks)
+        ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
+        ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        plt.xlim(ticks[0], ticks[-1])
+        plt.ylim(ticks[0], ticks[-1])
+        plt.grid(True)
+
+        # Plot a line that denotes linear scaling (speedup = nthreads)
+        plt.plot(ticks, ticks, linestyle='--')
+
+        # Set custom axis limits if requested
+        if xlim != None: plt.xlim(xlim)
+        if ylim != None: plt.ylim(ylim)
 
         # Add axis labels and a legend
         plt.xlabel("Total number of threads $t$", fontsize='large')
@@ -395,6 +492,9 @@ class ScalingPlotter(object):
         # Initialize a figure with the appropriate size
         plt.figure(figsize=figsize)
 
+        # Create a set that stores the tick labels for the plot
+        ticks = set()
+
         # Loop over the different combinations of systemname and mode (i.e. different curves)
         for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
 
@@ -415,13 +515,28 @@ class ScalingPlotter(object):
             # Plot the data points for this curve
             plt.errorbar(nthreads, efficiencies, eff_errors, marker='.', label=label)
 
-        # Set axis limits if requested
+            # Add the appropriate ticks
+            ticks |= set(nthreads)
+
+        # Use a logaritmic scale for the x axis (nthreads)
+        plt.xscale('log')
+
+        # Add one more tick for esthetic reasons
+        ticks = sorted(ticks)
+        ticks.append(ticks[-1]*2)
+
+        # Format the axis ticks and create a grid
+        ax = plt.gca()
+        ax.set_xticks(ticks)
+        ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
+        ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        plt.xlim(ticks[0], ticks[-1])
+        plt.ylim(0, 1.1)
         plt.grid(True)
+
+        # Set custom axis limits if requested
         if xlim != None: plt.xlim(xlim)
         if ylim != None: plt.ylim(ylim)
-
-        # Use a logaritmic scale for the x axis
-        plt.xscale('log')
 
         # Add axis labels and a legend
         plt.xlabel("Total number of threads $t$", fontsize='large')
@@ -434,5 +549,17 @@ class ScalingPlotter(object):
         filepath = os.path.join(self._vispath, filename)
         plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
         plt.close()
+
+# -----------------------------------------------------------------
+
+## This function defines Amdahl's law for the speedup
+def Amdahl(n, p):
+
+    return 1.0/(1 - p + p/n)
+
+# This function defines a modified version of Amdahl's law, which accounts for different kinds of overhead
+def modAmdahl(n, p, a, b, c):
+
+    return 1.0/(1 - p + p/n + a + b*n + c*n**2)
 
 # -----------------------------------------------------------------

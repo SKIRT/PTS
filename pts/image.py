@@ -21,9 +21,8 @@ from scipy import ndimage
 
 # Modules for plotting
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
 
-# Import astronomic modules
+# Import astronomical modules
 import aplpy
 import pyregion
 import astropy.io.fits as pyfits
@@ -274,11 +273,23 @@ class Image(object):
     ## This function is used to import a new ImageRegion from a regions file
     def importregion(self, path, name):
 
-        # Create an ImageRegion object from the regions file
-        region = ImageRegion(path, self._log)
+        # Create an pyregion object from the regions file
+        region = pyregion.open(path)
 
         # Add the region to the set of regions
         self._addregion(region, name)
+
+    ## This function is used to export the selected region(s) to a region file
+    def exportregion(self, path):
+
+        # Find the active region
+        region = self.regions.getactive()[0]
+
+        # Inform the user
+        self._log.info("Creating " + path + " from " + region)
+
+        # Write the region file
+        self.regions[region]._region.write(path)
 
     # -----------------------------------------------------------------
 
@@ -637,7 +648,7 @@ class Image(object):
         self._log.info("Adding '" + name + "' to the set of regions")
 
         # Add the region to the regions dictionary
-        self.regions[name] = region
+        self.regions[name] = ImageRegion(region, self._log)
 
     ## This function ...
     def _addmask(self, data, name):
@@ -651,50 +662,78 @@ class Image(object):
     # ----------------------------------------------------------------- ADVANCED OPERATIONS
 
     ## This function convolves the currently selected frame(s) with a specified kernel (a FITS file)
-    def convolve(self, name):
+    def convolve(self, name=None, fwhm=None):
 
         # Import the convolution function
-        from astropy.convolution import convolve_fft
+        from astropy.convolution import convolve, convolve_fft
 
-        # The path to the kernel file
-        path = os.path.join(os.getenv("HOME"), "Kernels", name)
+        # Check if the name of a kernel FITS file is defined
+        if name:
 
-        # Inform the user that the kernel was found
-        self._log.info("Found kernel file at " + path)
+            # The path to the kernel file
+            path = os.path.join(os.getenv("HOME"), "Kernels", name)
 
-        # Open the HDU list for the FITS file
-        hdulist = pyfits.open(path)
+            # Inform the user that the kernel was found
+            self._log.info("Found kernel file at " + path)
 
-        # Get the kernel data and header
-        kernel = hdulist[0].data
-        header = hdulist[0].header
+            # Open the HDU list for the FITS file
+            hdulist = pyfits.open(path)
 
-        # Inform the user
-        self._log.info("Rebinning the kernel to the image pixel grid")
+            # Get the kernel data and header
+            kernel = hdulist[0].data
+            header = hdulist[0].header
 
-        # Get the pixel scale of the kernel
-        pixelscale_kernel = header["CD1_1"]*3600
+            # Inform the user
+            self._log.info("Rebinning the kernel to the image pixel grid")
 
-        # Calculate the zooming factor
-        factor = self.pixelscale / pixelscale_kernel
+            # Get the pixel scale of the kernel
+            pixelscale_kernel = header["CD1_1"]*3600
 
-        # Rebin the kernel to the same grid of the image
-        kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
+            # Calculate the zooming factor
+            factor = self.pixelscale / pixelscale_kernel
 
-        # Add a frame
-        self._addframe(kernel, "kernel")
+            # Rebin the kernel to the same grid of the image
+            kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
 
-        # For all active frames, do the convolution
-        for frame in self.frames.getactive():
+            # Add a frame
+            self._addframe(kernel, "kernel")
 
-            # Inform the user that this frame is being convolved
-            self._log.info("Convolving " + frame + " frame with the kernel " + os.path.splitext(name)[0])
+            # For all active frames, do the convolution
+            for frame in self.frames.getactive():
 
-            # Do the convolution on this frame
-            self.frames[frame].data = convolve_fft(self.frames[frame].data, kernel, normalize_kernel=True)
+                # Inform the user that this frame is being convolved
+                self._log.info("Convolving " + frame + " frame with the kernel " + os.path.splitext(name)[0])
 
-        # Close the FITS file
-        hdulist.close()
+                # Do the convolution on this frame
+                self.frames[frame].data = convolve_fft(self.frames[frame].data, kernel, normalize_kernel=True)
+
+            # Close the FITS file
+            hdulist.close()
+
+        # Otherwise, use a specified FWHM
+        elif fwhm:
+
+            from astropy.convolution import Gaussian2DKernel
+
+            # From the FWHM, calculate the standard deviation
+            sigma = fwhm / 2.355
+
+            # Construct the Gaussian kernel
+            kernel = Gaussian2DKernel(sigma)
+
+            # For all active frames, do the convolution
+            for frame in self.frames.getactive():
+
+                # Inform the user that this frame is being convolved
+                self._log.info("Convolving " + frame + " frame with a 1D Gaussian kernel with a FWHM of " + str(fwhm))
+
+                # Do the convolution on this frame
+                self.frames[frame].data = convolve(self.frames[frame].data, kernel)
+
+        else:
+
+            self._log.error("Define either the name of a kernel file or a desired FWHM")
+            return
 
     ## This function rebins the currently selected frame(s) based on a certain reference FITS file
     def rebin(self, reference):
@@ -721,6 +760,9 @@ class Image(object):
 
             # Do the rebinning based on the header of the reference image
             self.frames[frame].data = hcongrid(self.frames[frame].data, self.header, referenceheader)
+
+        # Use the reference header as the new header for this image
+        self.header = referenceheader
 
         # Close the reference FITS file
         hdulist.close()
@@ -857,10 +899,49 @@ class Image(object):
         region_string = "image;ellipse(" + str(self.orientation.ypeak) + "," + str(self.orientation.xpeak) + "," + str(width) + "," + str(height) + "," + str(self.orientation.theta) + ")"
 
         # Create a region consisting of one ellipse
-        region = ImageRegion(region_string, self._log)
+        region = pyregion.parse(region_string)
 
         # Add this region
         self._addregion(region, "galaxy")
+
+    ## This function
+    def fetchstars(self):
+
+        from pts.catalog import fetch
+        from astropy import wcs
+
+        w = wcs.WCS(self.header)
+
+        # Some pixel coordinates of interest.
+        pixels = np.array([[0,0],[self.ysize-1,self.xsize-1]], dtype=float)
+
+        # Convert pixel coordinates to world coordinates (RA and DEC in degrees)
+        world = w.wcs_pix2world(pixels, 1)
+        coordinate1 = world[0]
+        coordinate2 = world[1]
+        ra_range = [coordinate2[0], coordinate1[0]]
+        dec_range = [coordinate1[1], coordinate2[1]]
+
+        # Determine the center in RA and DEC (in degrees)
+        ra_center = 0.5*(ra_range[0] + ra_range[1])
+        dec_center = 0.5*(dec_range[0] + dec_range[1])
+
+        # Determine the width in RA and DEC (both in degrees)
+        ra_width = ra_range[1] - ra_range[0]
+        dec_width = dec_range[1] - dec_range[0]
+
+        # Determine the maximum width (in degrees)
+        width = max(ra_width, dec_width)
+
+        # Calculate the radius in arcminutes
+        width_minutes = width * 60
+        radius = 0.5*width_minutes
+
+        # Fetch the stars, create a region
+        region = fetch([ra_center,dec_center], radius, faint=19.0, filename="")
+
+        # Add this region
+        self._addregion(region, "stars")
 
     ## This function determines the central peak position of the stars indicated by the currently selected region file
     def getstarpositions(self, plot=False):
@@ -875,7 +956,7 @@ class Image(object):
         failed = 0
 
         # Loop over all the shapes in this region and fit the stellar profiles with a 2D Gaussian distribution
-        for shape in self.regions[region]._region:
+        for shape in self.regions[region]._region.as_imagecoord(self.header):
 
             # Initially, set the minimum and maximum x and y values to zero
             xmin = xmax = ymin = ymax = 0
@@ -909,12 +990,18 @@ class Image(object):
                 ymin = int(round(ycenter - 0.5*height))
                 ymax = int(round(ycenter + 0.5*height))
 
+            # Check whether this shape falls within the image frame
+            if xmin < 0 or xmax >= self.xsize or ymin < 0 or ymax >= self.ysize: continue
+
             # Cut out a square of the primary image around the star
             square = self.frames.primary.data[ymin:ymax, xmin:xmax]
 
             if not np.any(square):
                 failed += 1
                 continue
+
+            # If the square area is too small, skip it
+            if square.shape[0] < 5 or square.shape[1] < 5: continue
 
             try:
                 # Fit a 2D Gaussian to the brightness distribution
@@ -938,7 +1025,7 @@ class Image(object):
                 continue
 
             # If the center of the Gaussian falls out of the square, skip this star
-            if round(x) > square.shape[0] - 1 or round(y) > square.shape[1] - 1:
+            if round(x) < 0 or round(x) > square.shape[0] - 1 or round(y) < 0 or round(y) > square.shape[1] - 1:
                 failed += 1
                 continue
 
@@ -1046,13 +1133,13 @@ class Image(object):
         region_string = "image;ellipse(" + str(self.orientation.ypeak) + "," + str(self.orientation.xpeak) + "," + str(width) + "," + str(height) + "," + str(self.orientation.theta) + ")"
 
         # Create a region for the outer ellipse of the annulus
-        region = ImageRegion(region_string, self._log)
+        region = pyregion.parse(region_string)
 
         # Add the annulus region
         self._addregion(region, "annulus")
 
         # Create the annulus mask
-        annulusmask = np.logical_not(region._region.get_mask(header=self.header, shape=(self.ysize,self.xsize)))
+        annulusmask = np.logical_not(self.regions["annulus"]._region.get_mask(header=self.header, shape=(self.ysize,self.xsize)))
 
         # Get a combination of the currently selected masks
         currentmask = self.combinemasks()
@@ -1436,15 +1523,8 @@ class ImageRegion(object):
     ## This function
     def __init__(self, region, log):
 
-        try:
-
-            # Create a region from a .reg file
-            self._region = pyregion.open(region)
-
-        except IOError:
-
-            # Create a region from the string
-            self._region = pyregion.parse(region)
+        # Set the internal pyregion object
+        self._region = region
 
         # Logger
         self._log = log
