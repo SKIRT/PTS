@@ -33,7 +33,7 @@ import pts.archive as arch
 # A SkiFile class instance is always constructed from an existing ski file; creating a new ski file from scratch
 # is not supported. To create a new ski file, start SKIRT in interactive mode (without any arguments).
 #
-class SkiFile(object):
+class SkiFile:
     # ---------- Constructing and saving -----------------------------
 
     ## The constructor loads the contents of the specified ski file into a new SkiFile instance.
