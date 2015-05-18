@@ -210,10 +210,6 @@ class SkirtTestSuite(object):
         casedirpath = os.path.dirname(simulation.outpath())
         casename = os.path.basename(casedirpath)
 
-        # Get the full output and reference paths
-        outpath = os.path.join(casedirpath, "out")
-        refpath = os.path.join(casedirpath, "ref")
-
         # Determine the most relevant string to identify this simulation within the current test suite
         residual = casedirpath
         while (True):

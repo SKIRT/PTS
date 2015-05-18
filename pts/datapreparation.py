@@ -102,6 +102,12 @@ class DataPreparation(object):
         self._preppath = os.path.join(basepath, "prep")
         self._inpath = os.path.join(basepath, "in")
 
+        # Create the preparation and input directories if they were not yet present
+        try: os.mkdir(self._preppath)
+        except OSError: pass
+        try: os.mkdir(self._inpath)
+        except OSError: pass
+
         # Create the logging mechanism
         self._log = Log(basepath, self._galaxyname)
 
@@ -123,6 +129,13 @@ class DataPreparation(object):
 
             # Add an entry to the filters dictionary
             self._filters[os.path.splitext(filename)[0]] = os.path.join(self._datapath, filename)
+
+            # If intermediate results should be saved, create a seperate directory for each filter
+            if save:
+
+                # Create the directory if it was not yet present
+                try: os.mkdir(os.path.join(self._preppath, os.path.splitext(filename)[0]))
+                except OSError: pass
 
     ## This function ...
     def run(self):
