@@ -14,15 +14,12 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-import datetime
 import filecmp
-import fnmatch
 import sys
 import os
 import os.path
 import re
 import time
-import itertools
 
 # Import relevant PTS modules
 from pts.skirtsimulation import SkirtSimulation
@@ -212,7 +209,11 @@ class SkirtTestSuite(object):
         # Get the full path of the simulation directory and the name of this directory
         casedirpath = os.path.dirname(simulation.outpath())
         casename = os.path.basename(casedirpath)
-        
+
+        # Get the full output and reference paths
+        outpath = os.path.join(casedirpath, "out")
+        refpath = os.path.join(casedirpath, "ref")
+
         # Determine the most relevant string to identify this simulation within the current test suite
         residual = casedirpath
         while (True):
@@ -225,15 +226,47 @@ class SkirtTestSuite(object):
         
         # Report the status of this simulation
         status = simulation.status()
-        message = ""
         if status == "Finished":
-            message = self._finddifference(casedirpath)
-            if message == "":
+
+            extra, missing, differ = self._finddifference(casedirpath)
+
+            if len(extra) == 0 and len(missing) == 0 and len(differ) == 0:
+
                 status = "Succeeded"
                 self._log.success("Test case " + casename + ": succeeded")
+
             else:
+
                 status = "Failed"
-                self._log.error("Test case " + casename + ": failed - " + message)
+                self._log.error("Test case " + casename + ": failed")
+
+                if len(extra) > 0:
+
+                    if len(extra) == 1: self._log.info("    The output contains an extra file:")
+                    else: self._log.info("    The output contains extra files:")
+
+                    for filename in extra:
+
+                        self._log.info("      * " + filename)
+
+                if len(missing) > 0:
+
+                    if len(missing) == 1: self._log.info("    The output misses a file:")
+                    else: self._log.info("    The output misses files:")
+
+                    for filename in missing:
+
+                        self._log.info("      * " + filename)
+
+                if len(differ) > 0:
+
+                    if len(differ) == 1: self._log.info("    The following file differs:")
+                    else: self._log.info("    The following files differ:")
+
+                    for filename in differ:
+
+                        self._log.info("      * " + filename)
+
         self._statistics[status] = self._statistics.get(status,0) + 1
 
     ## This function looks for relevant differences between the contents of the output and reference directories
@@ -250,23 +283,33 @@ class SkirtTestSuite(object):
         if not os.path.isdir(refpath):
             return "Test case has no reference directory"
 
+        extra = []
+        missing = []
+        differ = []
+
         # Verify list of filenames
         if len(filter(lambda fn: os.path.isdir(fn), os.listdir(outpath))) > 0:
             return "Output contains a directory"
         dircomp = filecmp.dircmp(outpath, refpath, ignore=['.DS_Store'])
-        if (len(dircomp.left_only) > 0):
-            return "Output contains " + str(len(dircomp.left_only)) + " extra file(s)"
-        if (len(dircomp.right_only) > 0):
-            return "Output misses " + str(len(dircomp.right_only)) + " file(s)"
+
+        for file in dircomp.left_only:
+
+            extra.append(file)
+
+        for file in dircomp.right_only:
+
+            missing.append(file)
 
         # Compare files, focusing on those that aren't trivially equal.
         matches, mismatches, errors = filecmp.cmpfiles(outpath, refpath, dircomp.common, shallow=False)
-        for filename in mismatches + errors:
-            if not equalfiles(os.path.join(outpath, filename), os.path.join(refpath, filename)):
-                return "Output file differs: " + filename
 
-        # No relevant differences found.
-        return ""
+        for filename in mismatches + errors:
+
+            if not equalfiles(os.path.join(outpath, filename), os.path.join(refpath, filename)):
+
+                differ.append(filename)
+
+        return extra, missing, differ
 
 # -----------------------------------------------------------------
 
@@ -304,12 +347,12 @@ def equalfiles(filepath1, filepath2):
     # Don't compare log files because it is too complicated (time & duration differences, changes to messages, ...)
     if filepath1.endswith("_log.txt"): return True
 
-    #  supported file types
+    # Supported file types
     if filepath1.endswith(".fits"): return equalfitsfiles(filepath1, filepath2)
     if filepath1.endswith("_parameters.xml"): return equaltextfiles(filepath1, filepath2, 1)
     if filepath1.endswith("_parameters.tex"): return equaltextfiles(filepath1, filepath2, 2)
 
-    # unsupported file type
+    # Unsupported file type
     return False
 
 ## This function returns True if the specified text files are equal except for time stamp information in
