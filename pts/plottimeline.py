@@ -50,7 +50,7 @@ log = Log()
 #  containing the timeline information extracted from the simulation's log files.
 def plottimeline(filepath, plotpath, figsize=(12,8), percentages=False):
 
-    # Try to get the values from the txt file. If no data could be found in the file, we skip it.
+    # Try to get the values from the data file. If no data could be found in the file, we skip it.
     try:
         ranks, phases, starttimes, endtimes = np.loadtxt(filepath, usecols=(0,1,2,3), unpack=True)
     except ValueError:
@@ -64,7 +64,7 @@ def plottimeline(filepath, plotpath, figsize=(12,8), percentages=False):
     # Initialize a data structure to contain the start times and endtimes for the different processes, indexed on the phase
     data = []
 
-    # Iterate over the different rows found in the txt file and copy the start- and endtimes in the data list
+    # Iterate over the different rows found in the data file and copy the start- and endtimes in the data list
     for i in range(len(ranks)):
 
         if int(ranks[i]) == 0:

@@ -58,7 +58,7 @@ if timelinefiles:
     # Determine the full path to the visualization directory
     vispath = os.path.join(os.getcwd(), "vis")
 
-    # For each progress file in the list
+    # For each timeline data file in the list
     for directory, filename in timelinefiles:
 
         # Determine the full path to the timeline data file
@@ -74,6 +74,9 @@ if timelinefiles:
 
         # Determine the path to the plot file
         plotfilepath = os.path.join(plotpath, os.path.splitext(filename)[0] + ".pdf")
+
+        # If the file already exists, skip the plotting procedure
+        if os.path.isfile(plotfilepath): continue
 
         # Plot the timeline for this simulation
         plottimeline(timelinefilepath, plotfilepath)
