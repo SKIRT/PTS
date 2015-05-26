@@ -20,6 +20,7 @@ import numpy as np
 import shutil
 
 # Import the relevant PTS class
+from pts.skifile import SkiFile
 from pts.skirtexec import SkirtExec
 from pts.log import Log
 from do.extractscaling import extract
@@ -147,7 +148,7 @@ class ScalingTest(object):
     #  - extracttimeline: a flag indicating whether timeline information of the different SKIRT processes should be
     #                     extracted from the simulation's log files or not
     #
-    def run(self, maxnodes, minnodes, manual=False, keepoutput=False, extractprogr=False, extracttimeline=False):
+    def run(self, maxnodes, minnodes, manual=False, keepoutput=False, extractprogr=False, extracttimeline=False, weak=False):
 
         # Log the system name, the test mode and the version of SKIRT used for this test
         self._log.info("Starting parallel scaling benchmark for " + self._system + " in " + self._mode + " mode.")
@@ -172,7 +173,7 @@ class ScalingTest(object):
             self._threadspp = minprocessors
 
         # Create a file containing the results of the scaling test
-        resultsfilepath = self._createresultsfile(maxnodes, minnodes)
+        resultsfilepath = self._createresultsfile(maxnodes, minnodes, weak)
 
         # If 'extractprogr' or 'extracttimeline' is enabled, create a directory to contain the progress data files
         # for this scaling test
@@ -191,7 +192,7 @@ class ScalingTest(object):
         while processors <= maxprocessors:
 
             # Perform this run
-            self._do(processors, resultsfilepath, manual, keepoutput, extractprogr, extracttimeline)
+            self._do(processors, resultsfilepath, manual, keepoutput, extractprogr, extracttimeline, weak)
 
             # The next run will be performed with double the amount of processors
             processors *= 2
@@ -212,7 +213,7 @@ class ScalingTest(object):
     #  - extracttimeline: a flag indicating whether timeline information of the different SKIRT processes should be
     #                     extracted from the simulation's log files or not
     #
-    def _schedule(self, processors, resultsfilepath, manual, keepoutput, extractprogr, extracttimeline):
+    def _schedule(self, processors, resultsfilepath, manual, keepoutput, extractprogr, extracttimeline, weak):
 
         # Determine the number of processes and threads per process
         processes, threads = self._getmapping(processors)
@@ -261,7 +262,20 @@ class ScalingTest(object):
         logfilepath = os.path.join(dataoutputpath, self._skifilename + "_log.txt")
 
         # Calculate the expected walltime for this number of processors
-        walltime = self._estimatewalltime(processors)
+        walltime = self._estimatewalltime(processors, weak)
+
+        # Set the path of the ski file used for this run
+        skifilepath = self._skifilepath
+
+        # If a 'weak' scaling test is performed, create a ski file that is adjusted to the current number of processors
+        if weak:
+
+            skifile = SkiFile(self._skifilepath)
+            skifile.increasepackages(processors)
+            skifile.increasedustcells(processors)
+
+            skifilepath = os.path.join(dataoutputpath, self._skifilename + ".ski")
+            skifile.saveto(skifilepath)
 
         # Create the job script. The name of the script indicates the mode in which we run this scaling test and
         # the current number of processors used. We enable the SKIRT verbose logging mode to be able to compare
@@ -270,7 +284,7 @@ class ScalingTest(object):
         # we set the 'fullnode' flag to True, which makes sure we always request at least one full node, even when
         # the current number of processors is less than the number of cores per node.
         jobscriptpath = os.path.join(self._outpath, "job_" + self._mode + "_" + str(processors) + ".sh")
-        jobscript = JobScript(jobscriptpath, self._skifilepath, self._system, nodes, ppn, threads, self._inpath, dataoutputpath, walltime, brief=True, verbose=True, fullnode=True)
+        jobscript = JobScript(jobscriptpath, skifilepath, self._system, nodes, ppn, threads, self._inpath, dataoutputpath, walltime, brief=True, verbose=True, fullnode=True)
 
         # Add the command to go the the PTS do directory
         jobscript.addcommand("cd $VSC_HOME/PTS/git/do", comment="Navigate to the PTS do directory")
@@ -328,7 +342,7 @@ class ScalingTest(object):
     #  - extracttimeline: a flag indicating whether timeline information of the different SKIRT processes should be
     #                     extracted from the simulation's log files or not
     #
-    def _run(self, processors, resultsfilepath, manual, keepoutput, extractprogr, extracttimeline):
+    def _run(self, processors, resultsfilepath, manual, keepoutput, extractprogr, extracttimeline, weak):
 
         # Determine the number of processes and threads per process
         processes, threads = self._getmapping(processors)
@@ -339,8 +353,21 @@ class ScalingTest(object):
         # Create a seperate output directory for this run (different runs can be executed simultaneously)
         dataoutputpath = self._createdatadir(processors)
 
+        # Set the path of the ski file used for this run
+        skifilepath = self._skifilepath
+
+        # If a 'weak' scaling test is performed, create a ski file that is adjusted to the current number of processors
+        if weak:
+
+            skifile = SkiFile(self._skifilepath)
+            skifile.increasepackages(processors)
+            skifile.increasedustcells(processors)
+
+            skifilepath = os.path.join(dataoutputpath, self._skifilename + ".ski")
+            skifile.saveto(skifilepath)
+
         # Run the simulation
-        simulation = self._skirt.execute(skipattern=self._skifilepath, inpath=self._inpath, outpath=dataoutputpath, threads=threads, processes=processes, brief=True, verbose=True)[0]
+        simulation = self._skirt.execute(skipattern=skifilepath, inpath=self._inpath, outpath=dataoutputpath, threads=threads, processes=processes, brief=True, verbose=True)[0]
 
         # Check whether the simulation finished
         if simulation.status() != "Finished": raise ValueError("Simulation " + simulation.status())
@@ -378,7 +405,7 @@ class ScalingTest(object):
     ## This function creates the file containing the results of the scaling benchmark test. It takes the maximum
     #  and minimum number of nodes, as given to the command line, as arguments. These numbers are used in the name
     #  of the results file, to identify this particular scaling test.
-    def _createresultsfile(self, maxnodes, minnodes):
+    def _createresultsfile(self, maxnodes, minnodes, weak):
 
         # If hybrid mode is selected, add the number of threads per process to the name of the results file
         hybridinfo = ""
@@ -391,8 +418,11 @@ class ScalingTest(object):
                                 + "_" + str(minnodes) + "_" + self._timestamp + ".dat")
         resultsfile = open(filepath, "w")
 
+        # Set a string specifying whether this scaling test is 'strong' or 'weak'
+        scalingtype = "Weak" if weak else "Strong"
+
         # Write a header containing useful information about this test to the results file
-        resultsfile.write("# Parallel scaling benchmark results for " + self._system + " in " + self._mode + " mode\n")
+        resultsfile.write("# " + scalingtype + " scaling results for " + self._system + " in " + self._mode + " mode\n")
         resultsfile.write("# Using " + self._skirt.version() + "\n")
         resultsfile.write("# Column 1: Number of processes p\n")
         resultsfile.write("# Column 2: Number of threads per process t\n")
@@ -517,7 +547,15 @@ class ScalingTest(object):
     #  - factor: this optional argument determines how much the upper limit on the walltime should deviate from
     #            a previous run of this simulation.
     #
-    def _estimatewalltime(self, processors, factor=1.5):
+    def _estimatewalltime(self, processors, weak=False, factor=1.5):
+
+        # If the scaling test is weak, use the total runtime on one processor as the reference
+        if weak:
+
+            # Get the runtime for one processor, add a surplus of one percent per processor and apply the extra factor
+            runtimes = self._getruntimes(1)
+            totaltime = runtimes["total"] * (1.0 + 0.01*processors)
+            return int(totaltime*factor)
 
         # Try to get the runtimes for this number of processors
         runtimes = self._getruntimes(processors)

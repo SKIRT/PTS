@@ -88,6 +88,16 @@ class SkiFile:
         # directly from the tree)
         else: return int(self.tree.xpath("//wavelengthGrid/*[1]")[0].get("points"))
 
+    ## This function returns the number of photon packages per wavelength
+    def packages(self):
+
+        # Get the MonteCarloSimulation element
+        elems = self.tree.xpath("//OligoMonteCarloSimulation | //PanMonteCarloSimulation")
+        if len(elems) != 1: raise ValueError("No MonteCarloSimulation in ski file")
+
+        # Get the number of packages
+        return int(float(elems[0].get("packages")))
+
     ## This function returns the number of dust cells
     def ncells(self):
 
@@ -101,6 +111,49 @@ class SkiFile:
 
         # Return the total number of dust cells
         return xpoints*ypoints*zpoints
+
+    ## This function returns the number of dust cells in the x direction
+    def nxcells(self):
+
+        return int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsX"))
+
+    ## This function returns the number of dust cells in the y direction
+    def nycells(self):
+
+        try:
+            ypoints = int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsY"))
+        except TypeError:
+            raise ValueError("The dimension of the dust grid is lower than 2")
+
+        return ypoints
+
+    ## This function returns the number of dust cells in the z direction
+    def nzcells(self):
+
+        try:
+            zpoints = int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsZ"))
+        except TypeError:
+            raise ValueError("The dimension of the dust grid is lower than 3")
+
+        return zpoints
+
+    ## This function returns the dimension of the dust grid
+    def dimension(self):
+
+        # Try to find the number of points in the y direction
+        try:
+            int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsY"))
+        except TypeError:
+            return 1
+
+        # Try to find the number of points in the z direction
+        try:
+            int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsZ"))
+        except TypeError:
+            return 2
+
+        # If finding the number of ypoints and zpoints succeeded, the grid is 3-dimensional
+        return 3
 
     ## This function returns the number of dust components
     def ncomponents(self):
@@ -284,6 +337,48 @@ class SkiFile:
         if len(elems) != 1: raise ValueError("No MonteCarloSimulation in ski file")
         # set the attribute value
         elems[0].set("packages", str(number))
+
+    ## This function sets the number of dust cells in the x direction
+    def setxdustcells(self, number):
+
+        self.tree.xpath("//dustGridStructure/*[1]")[0].set("pointsX", str(number))
+
+    ## This function sets the number of dust cells in the y direction
+    def setydustcells(self, number):
+
+        try:
+            self.tree.xpath("//dustGridStructure/*[1]")[0].set("pointsY", str(number))
+        except TypeError:
+            raise ValueError("The dimension of the dust grid is lower than 2")
+
+    ## This function sets the number of dust cells in the z direction
+    def setzdustcells(self, number):
+
+        try:
+            self.tree.xpath("//dustGridStructure/*[1]")[0].set("pointsZ", str(number))
+        except TypeError:
+            raise ValueError("The dimension of the dust grid is lower than 3")
+
+    ## This function increases the number of photon packages by a certain factor
+    def increasepackages(self, factor):
+
+        # Set the increased number of packages
+        self.setpackages(self.packages()*factor)
+
+    ## This function increases the number of dust cells by a certain factor
+    def increasedustcells(self, factor):
+
+        # Get the dimension of the dust grid
+        dimension = self.dimension()
+
+        # Set the increased number of dust cells in the x direction
+        self.setxdustcells(self.nxcells() * factor**(1 / float(dimension)))
+
+        # Set the increased number of dust cells in the y direction
+        if dimension > 1: self.setydustcells(self.nycells() * factor**(1 / float(dimension)))
+
+        # Set the increased number of dust cells in the z direction
+        if dimension > 2: self.setzdustcells(self.nzcells() * factor**(1 / float(dimension)))
 
     ## This function replaces any instruments in the ski file by a new list of perspective instruments
     # corresponding to the movie frames defined in the specified list. The instruments are named "0",
