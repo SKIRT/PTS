@@ -268,7 +268,7 @@ class ScalingTest(object):
         skifilepath = self._skifilepath
 
         # If a 'weak' scaling test is performed, create a ski file that is adjusted to the current number of processors
-        if weak:
+        if weak and processors > 1:
 
             skifile = SkiFile(self._skifilepath)
             skifile.increasepackages(processors)
@@ -357,7 +357,7 @@ class ScalingTest(object):
         skifilepath = self._skifilepath
 
         # If a 'weak' scaling test is performed, create a ski file that is adjusted to the current number of processors
-        if weak:
+        if weak and processors > 1:
 
             skifile = SkiFile(self._skifilepath)
             skifile.increasepackages(processors)

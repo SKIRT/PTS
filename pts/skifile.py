@@ -372,13 +372,13 @@ class SkiFile:
         dimension = self.dimension()
 
         # Set the increased number of dust cells in the x direction
-        self.setxdustcells(self.nxcells() * factor**(1 / float(dimension)))
+        self.setxdustcells(int(round(self.nxcells() * factor**(1 / float(dimension)))))
 
         # Set the increased number of dust cells in the y direction
-        if dimension > 1: self.setydustcells(self.nycells() * factor**(1 / float(dimension)))
+        if dimension > 1: self.setydustcells(int(round(self.nycells() * factor**(1 / float(dimension)))))
 
         # Set the increased number of dust cells in the z direction
-        if dimension > 2: self.setzdustcells(self.nzcells() * factor**(1 / float(dimension)))
+        if dimension > 2: self.setzdustcells(int(round(self.nzcells() * factor**(1 / float(dimension)))))
 
     ## This function replaces any instruments in the ski file by a new list of perspective instruments
     # corresponding to the movie frames defined in the specified list. The instruments are named "0",
