@@ -84,9 +84,25 @@ class SkiFile:
         # If the list is not empty, retun its size
         if wavelengths: return len(wavelengths)
 
-        # If the list is empty, the ski file represents a panchromatic simulation (get the number of points
-        # directly from the tree)
-        else: return int(self.tree.xpath("//wavelengthGrid/*[1]")[0].get("points"))
+        # If the list is empty, the ski file either represents a panchromatic simulation (and we can get the
+        # number of points directly from the tree) or a FileWavelengthGrid is used (in which case we raise an error)
+        entry = self.tree.xpath("//wavelengthGrid/*[1]")[0]
+
+        if entry.tag == 'PanWavelengthGrid':
+
+                return int(entry.get("points"))
+
+        elif entry.tag == 'FileWavelengthGrid':
+
+            raise ValueError("The number of wavelengths is not defined within the ski file. Call wavelengthsfile().")
+
+    ## This function returns the name of the wavelengths file that is used for the simulation, if any
+    def wavelengthsfile(self):
+
+        entry = self.tree.xpath("//FileWavelengthGrid")
+
+        if entry: return entry[0].get("filename")
+        else: return None
 
     ## This function returns the number of photon packages per wavelength
     def packages(self):
@@ -101,8 +117,15 @@ class SkiFile:
     ## This function returns the number of dust cells
     def ncells(self):
 
-        xpoints = int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsX"))
-        ypoints = int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsY"))
+        entry = self.tree.xpath("//dustGridStructure/*[1]")[0]
+
+        try:
+            xpoints = int(entry.get("pointsX"))
+        except TypeError:
+            # If this didn't work, we probably have a dust grid that is generated at runtime
+            raise ValueError("The number of dust cells is not defined within the ski file")
+
+        ypoints = int(entry.get("pointsY"))
         zpoints = 1
         try:
             zpoints = int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsZ"))
@@ -233,11 +256,11 @@ class SkiFile:
             return False
 
     ## This function returns the number of pixels for each of the instruments
-    def npixels(self):
+    def npixels(self, nwavelengths=None):
 
         pixels = []
 
-        nwavelengths = self.nwavelengths()
+        nwavelengths = nwavelengths if nwavelengths is not None else self.nwavelengths()
         instruments = self.tree.xpath("//instruments/*")
 
         for instrument in instruments:

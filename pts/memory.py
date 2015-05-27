@@ -12,14 +12,39 @@
 
 # -----------------------------------------------------------------
 
+import os.path
+
+# -----------------------------------------------------------------
+
 ## Return the estimated memory usage for a given ski file (in gigabytes)
-def estimate_memory(skifile):
+def estimate_memory(skifile, inputpath=None):
 
     # Get the number of wavelengths (force all calculations to floating point, avoiding integer overrun)
-    Nlambda = float(skifile.nwavelengths())
+    Nlambda = None
+    try:
+
+        Nlambda = float(skifile.nwavelengths())
+
+    except ValueError:
+
+        # Get the name of the wavelength data file
+        filename = skifile.wavelengthsfile()
+
+        # Open the wavelengths file
+        filepath = os.path.join(inputpath, filename)
+        with open(filepath) as file:
+
+            first = file.readlines()[0]
+
+        Nlambda = float(first.split(" ")[0])
 
     # Get the number of dust cells
-    Ncells = skifile.ncells()
+    try:
+        Ncells = skifile.ncells()
+    except ValueError:
+
+        raise ValueError("Disabled for now")
+        #Ncells = float(raw_input("\033[91m" + "\033[1m" + "?  How many dust cells do you expect for this simulation? ... \033[0m"))
 
     # Get the number of dust components
     Ncomps = skifile.ncomponents()
@@ -36,13 +61,10 @@ def estimate_memory(skifile):
     transientHeating = skifile.transientheating()
 
     # Overhead
-    #Ndoubles = 50e6 + (Nlambda + Ncells + Ncomps + Npops) * 10
-    #print 1, Ndoubles*8/1e9
-
-    Ndoubles = 0
+    Ndoubles = 50e6 + (Nlambda + Ncells + Ncomps + Npops) * 10
 
     # Instruments
-    for instrument in skifile.npixels():
+    for instrument in skifile.npixels(Nlambda):
 
         Ndoubles += instrument[2]
 
@@ -53,21 +75,22 @@ def estimate_memory(skifile):
         if selfAbsorption:
             Ndoubles += Nlambda * Ncells
 
-    # Dust grid
-    #if treeGrid:
-    #    Ndoubles += Ncells * 1.2 * 50
-    #print 4, Ndoubles*8/1e9
+    # Dust grid tree
+    if True:
+
+        Ndoubles += Ncells * 1.2 * 50
 
     # Dust mixes
     Ndoubles += Nlambda * Npops * 3
     Ndoubles += (Nlambda + Npops) * 10
 
-    # dust library
+    # Dust library
     if dustEmission:
         Ndoubles += Ncells + Nlambda*Nitems
 
-    # transient heating
+    # Transient heating
     if dustEmission and transientHeating:
+
         NT = 2250.
         Ndoubles += Ncomps * (Nlambda+1) * NT
         Ndoubles += Npops * 5./8.*NT*NT
@@ -75,8 +98,7 @@ def estimate_memory(skifile):
     # 8 bytes in a double
     Nbytes = Ndoubles * 8
 
-    #print "Estimated memory use: {:.1f} GB".format(Nbytes/1e9)
-
+    # Return the number of gigabytes
     return Nbytes/1e9
 
 # -----------------------------------------------------------------
