@@ -117,7 +117,15 @@ class TimelinePlotter(object):
 
     ## This function should be called to invoke the plotting routine, which will create a timeline plot for each
     #  file that is found with valid timeline data
-    def plot(self):
+    def plot(self, force=False):
+
+        # Set the force parameter
+        self._force = force
+
+        # Create a data structure to contain the ...
+        cpudata = dict()
+
+        nprocs_list = []
 
         # Loop over all the timeline data files
         for filepath in self._filepaths:
@@ -129,41 +137,14 @@ class TimelinePlotter(object):
                 self._log.warning("The file " + filepath + " does not contain any data")
                 continue
 
-            # Try to obtain the simulation name from the data file
-            with open(filepath) as datafile:
-
-                first = datafile.readlines()[0]
-
-            # Try to obtain the simulation name from the data file, if this works we use it for the name of
-            # the timeline plot file
-            try:
-
-                # Find the simulation name in the first line of the data file
-                simulationname = first.split("simulation ")[1].split("\n")[0]
-
-                # Set the path of the plot file
-                plotfilepath = "timeline_" + simulationname + ".pdf"
-
-            # If the simulation name is not in the header of the data file, this data file was created as part
-            # of a scaling benchmark test, and the data files are probably under the results path defined by
-            # 'self._respath'. The plot files should be placed under the visualisation path ('self._vispath')
-            except IndexError:
-
-                # Determine the path of the plotting directory (a subdirectory of the visualization directory)
-                filename = os.path.basename(filepath)
-                directorypath = os.path.dirname(filepath)
-                relative_directory = os.path.relpath(directorypath, self._respath)
-                plotpath = os.path.join(self._vispath, relative_directory)
-
-                # Create this directory, if it didn't already exist
-                try: os.makedirs(plotpath)
-                except OSError: pass
-
-                # Set the path of the plot file
-                plotfilepath = os.path.join(plotpath, os.path.splitext(filename)[0] + ".pdf")
-
-            # Determine the number of processors
+            # Determine the number of processors and add it to the list
             nprocs = int(ranks[-1]) + 1
+
+            # TODO: FIX THIS FOR ONE PROCESS
+            if not nprocs == 1: nprocs_list.append(nprocs)
+
+            # Make a list of the different process ranks
+            procranks = range(nprocs)
 
             # Initialize a data structure to contain the start times and endtimes for the different processes,
             # indexed on the phase
@@ -184,11 +165,80 @@ class TimelinePlotter(object):
                     data[i%nphases][1].append(starttimes[i])
                     data[i%nphases][2].append(endtimes[i])
 
-            self._createplot(data, plotfilepath, nprocs)
+            # Try to obtain the simulation name from the data file, if this works we use it for the name of
+            # the timeline plot file
+            with open(filepath) as datafile: first = datafile.readlines()[0]
+            try:
+
+                # Find the simulation name in the first line of the data file
+                simulationname = first.split("simulation ")[1].split("\n")[0]
+
+                # Set the path of the plot file
+                plotfilepath = "timeline_" + simulationname + ".pdf"
+
+            # If the simulation name is not in the header of the data file, this data file was created as part
+            # of a scaling benchmark test, and the data files are probably under the results path defined by
+            # 'self._respath'. The plot files should be placed under the visualisation path ('self._vispath')
+            except IndexError:
+
+                # Determine the path of the plotting directory (a subdirectory of the visualization directory)
+                filename = os.path.basename(filepath)
+                directorypath = os.path.dirname(filepath)
+                scalingtestrun = os.path.relpath(directorypath, self._respath)
+                plotpath = os.path.join(self._vispath, scalingtestrun)
+
+                # Create this directory, if it didn't already exist
+                try: os.makedirs(plotpath)
+                except OSError: pass
+
+                # Set the path of the plot file
+                plotfilepath = os.path.join(plotpath, os.path.splitext(filename)[0] + ".pdf")
+
+                # Give the cpudata list the correct dimension (the number of different phases encountered in the data)
+                if not scalingtestrun in cpudata:
+
+                    cpudata[scalingtestrun] = [[entry[0], [], []] for entry in data]
+
+                # TODO: FIX THIS FOR ONE PROCESS
+                if not nprocs == 1:
+
+                    # For each seperate phase
+                    for i in range(len(data)):
+
+                        starttimes = data[i][1]
+                        endtimes = data[i][2]
+
+                        if i == 0:
+
+                            starttime = 0.0
+
+                        else:
+
+                            starttime = cpudata[scalingtestrun][i-1][2][-1]
+
+                        durations = np.array(endtimes) - np.array(starttimes)
+                        totalduration = np.sum(durations)
+
+                        cpudata[scalingtestrun][i][1].append(starttime)
+                        cpudata[scalingtestrun][i][2].append(starttime+totalduration)
+
+            # Create a plot for this timeline data file
+            self._createplot(data, plotfilepath, procranks)
+
+        # Check whether
+        for scalingtest, data in cpudata.items():
+
+            plotpath = os.path.join(self._vispath, scalingtest)
+            plotfilepath = os.path.join(plotpath, "timeline.pdf")
+
+            self._createplot(data, plotfilepath, nprocs_list, percentages=True, totals=True, cpu=True)
 
     ## This function actually plots the timeline based on a data structure containing the starttimes and endtimes
     #  for the different simulation phases
-    def _createplot(self, data, plotfilepath, nprocs, figsize=(12,8), percentages=False):
+    def _createplot(self, data, plotfilepath, procranks, figsize=(12,8), percentages=False, totals=False, cpu=False):
+
+        # If the file already exists, skip the plotting procedure
+        if os.path.isfile(plotfilepath) and not self._force: return
 
         # Initialize a figure with the appropriate size
         plt.figure(figsize=figsize)
@@ -198,13 +248,28 @@ class TimelinePlotter(object):
         legendNames = []
         unique_phases = []
 
-        procranks = range(nprocs)
+        # Determine the number of processes
+        nprocs = len(procranks)
+
+        # Get the ordering
+        if cpu:
+            yticks = np.array(procranks).argsort().argsort()
+        else:
+            yticks = procranks
+
+        durations_list = []
+        totaldurations = np.zeros(nprocs)
+        patch_handles = []
 
         # Make the timeline plot, consisting of a set of bars of the same color for each simulation phase
         for phase, starttimes, endtimes in data:
 
             durations = np.array(endtimes) - np.array(starttimes)
-            patch_handle = ax.barh(procranks, durations, color=colors[phase], align='center', left=starttimes, alpha=0.8)
+            durations_list.append(durations)
+            totaldurations += durations
+
+            patch_handle = ax.barh(yticks, durations, color=colors[phase], align='center', left=starttimes, alpha=0.8)
+            patch_handles.append(patch_handle)
 
             if phase not in unique_phases and not (phase == phaseindices['comm'] and nprocs == 1):
 
@@ -212,20 +277,45 @@ class TimelinePlotter(object):
                 legendEntries.append(patch_handle)
                 legendNames.append(phasenames[phase])
 
-            if percentages:
+        if percentages:
 
-                for rank, patch in enumerate(patch_handle.get_children()):
+            # For the different phases
+            for phase, patch_handle in enumerate(patch_handles):
 
-                    bl = patch.get_xy()
-                    x = 0.5*patch.get_width() + bl[0]
-                    y = 0.5*patch.get_height() + bl[1]
-                    ax.text(x, y, "%d%%" % (rank), ha='center')
+                durations = durations_list[phase]
+
+                for sorting_number, rectangle in enumerate(patch_handle.get_children()):
+
+                    duration = durations[sorting_number]
+                    percentage = float(duration) / float(totaldurations[sorting_number]) * 100.0
+
+                    bl = rectangle.get_xy()
+                    x = 0.5*rectangle.get_width() + bl[0]
+                    y = 0.4*rectangle.get_height() + bl[1]
+
+                    if rectangle.get_width() > 2000:
+
+                        ax.text(x, y, "%d%%" % (percentage), ha='center', fontsize=10)
+
+        if totals:
+
+            for sorting_number, rectangle in enumerate(patch_handles[-1].get_children()):
+
+                width = rectangle.get_width()
+                label_text = str(int(totaldurations[sorting_number]))
+                plt.text(rectangle.get_x() + width + 0.02*rectangle.get_x(), rectangle.get_y() + rectangle.get_height() / 2., label_text, ha="left", va="center", fontsize=10)
 
         # Format the axis ticks and labels
-        ax.set_yticks(procranks)
-        ax.set_yticklabels(procranks)
-        ax.set_xlabel('Time (s)', fontsize='large')
-        ax.set_ylabel('Process rank', fontsize='large')
+        if cpu:
+            plt.yticks(yticks, procranks)
+            ax.set_xlabel('CPU time (s)', fontsize='large')
+            ax.set_ylabel('Number of processes', fontsize='large')
+        else:
+            ax.set_yticks(procranks)
+            ax.set_yticklabels(procranks)
+            ax.set_xlabel('Time (s)', fontsize='large')
+            ax.set_ylabel('Process rank', fontsize='large')
+
         ax.yaxis.grid(True)
 
         if nprocs == 1:
