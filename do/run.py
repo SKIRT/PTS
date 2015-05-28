@@ -81,7 +81,7 @@ log.info("The amount of currently available memory on this system is " + str(mem
 
 # Calculate the amount of required memory for this simulation (in gigabytes)
 skifile = SkiFile(skifilepath)
-required = estimate_memory(skifile)
+required = estimate_memory(skifile, inpath)
 
 # Inform the user
 log.info("The estimated memory requirement for this simulation is " + str(required) + " gigabytes")

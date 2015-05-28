@@ -300,7 +300,7 @@ class ScalingTest(object):
             progressfilepath = self._createprogressfile(self._progressdirpath, processes)
 
             # Add the command to the jobscript to extract the progress
-            command = "python extractprogress.py " + " " + self._skifilename + " " + dataoutputpath + " " + progressfilepath
+            command = "python extractprogress.py " + self._skifilename + " " + dataoutputpath + " " + progressfilepath
             jobscript.addcommand(command, comment="Extract the progress of the different processes")
 
         # Add the command to extract the timeline information after the job finished, if requested
@@ -310,7 +310,7 @@ class ScalingTest(object):
             timelinefilepath = self._createtimelinefile(self._progressdirpath, processes)
 
             # Add the command to the jobscript to extract the timeline data
-            command = "python extracttimeline.py " + " " + self._skifilename + " " + dataoutputpath + " " + timelinefilepath
+            command = "python extracttimeline.py " + self._skifilename + " " + dataoutputpath + " " + timelinefilepath
             jobscript.addcommand(command, comment="Extract the timeline information for the different processes")
 
         # Add the command to remove the output directory of this run
