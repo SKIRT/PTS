@@ -444,10 +444,7 @@ class Galaxy:
         info["original_initial_mass_stars"] = sdat['im'].sum()
         info["original_mass_stars"] = sdat['m'].sum()
         info["original_particles_gas"] = len(gdat['m'])
-        info["original_particles_cold_gas"] = np.count_nonzero(gdat['T']<=75000)
         info["original_mass_gas"] = gdat['m'].sum()
-        info["original_mass_cold_gas"] = gdat['m'][gdat['T']<=75000].sum()
-        info["original_mass_metallic_gas"] = (gdat['m'][gdat['T']<=75000] * gdat['Z'][gdat['T']<=75000]).sum()
         info["original_mass_baryons"] = info["original_mass_stars"] + info["original_mass_gas"]
 
         # ---- convert to Local Galactic Coordinates (LGC)
@@ -483,9 +480,7 @@ class Galaxy:
         info["exported_mass_old_stars"] = 0
 
         info["exported_particles_non_star_forming_gas"] = 0
-        info["exported_particles_non_star_forming_cold_gas"] = 0
         info["exported_mass_non_star_forming_gas"] = 0
-        info["exported_mass_non_star_forming_cold_gas"] = 0
 
         info["exported_particles_young_stars_from_stars"] = 0
         info["exported_initial_mass_young_stars_from_stars"] = 0
@@ -496,9 +491,7 @@ class Galaxy:
         info["exported_mass_hii_regions_from_stars"] = 0
 
         info["exported_particles_unspent_gas_from_stars"] = 0
-        info["exported_particles_unspent_cold_gas_from_stars"] = 0
         info["exported_mass_unspent_gas_from_stars"] = 0
-        info["exported_mass_unspent_cold_gas_from_stars"] = 0
 
         info["exported_particles_young_stars_from_gas"] = 0
         info["exported_initial_mass_young_stars_from_gas"] = 0
@@ -509,9 +502,7 @@ class Galaxy:
         info["exported_mass_hii_regions_from_gas"] = 0
 
         info["exported_particles_unspent_gas_from_gas"] = 0
-        info["exported_particles_unspent_cold_gas_from_gas"] = 0
         info["exported_mass_unspent_gas_from_gas"] = 0
-        info["exported_mass_unspent_cold_gas_from_gas"] = 0
 
         # ---- resample star forming regions
 
@@ -539,9 +530,7 @@ class Galaxy:
         if (~issf).any():
             dust = np.concatenate((dust, np.column_stack([gdat['r'], gdat['h'], gdat['m'], gdat['Z'], gdat['T']])[~issf].copy()), axis=0)
             info["exported_particles_non_star_forming_gas"] = np.count_nonzero(~issf)
-            info["exported_particles_non_star_forming_cold_gas"] = np.count_nonzero(gdat['T'][~issf]<=75000)
             info["exported_mass_non_star_forming_gas"] = gdat['m'][~issf].sum()
-            info["exported_mass_non_star_forming_cold_gas"] = gdat['m'][~issf][ [gdat['T'][~issf]<=75000] ].sum()
 
         # resample stars
         if isyoung.any():
@@ -593,9 +582,7 @@ class Galaxy:
             mass = sdat['im'] - mdiffs
             dust = np.concatenate((dust, np.column_stack([sdat['r'], sdat['h'], mass, sdat['Z'], sdat['T']]).copy()), axis=0)
             info["exported_particles_unspent_gas_from_stars"] = len(mass)
-            info["exported_particles_unspent_cold_gas_from_stars"] = info["exported_particles_unspent_gas_from_stars"]
             info["exported_mass_unspent_gas_from_stars"] = mass.sum()
-            info["exported_mass_unspent_cold_gas_from_stars"] = info["exported_mass_unspent_gas_from_stars"]
 
         # resample gas
         if issf.any():
@@ -637,13 +624,11 @@ class Galaxy:
                 info["exported_initial_mass_hii_regions_from_gas"] = ms[isinfant].sum()
                 info["exported_mass_hii_regions_from_gas"] = info["exported_initial_mass_hii_regions_from_gas"]
 
-            # add unspent SF gas material to dust array
+            # add unspent SF gas material to dust array; use negative temperature to indicate that it is not a physical value
             mass = gdat['m'] - mdiffs
-            dust = np.concatenate((dust, np.column_stack([gdat['r'], gdat['h'], mass, gdat['Z'], gdat['T']]).copy()), axis=0)
+            dust = np.concatenate((dust, np.column_stack([gdat['r'], gdat['h'], mass, gdat['Z'], -gdat['T']]).copy()), axis=0)
             info["exported_particles_unspent_gas_from_gas"] = len(mass)
-            info["exported_particles_unspent_cold_gas_from_gas"] = np.count_nonzero(gdat['T']<=75000)
             info["exported_mass_unspent_gas_from_gas"] = mass.sum()
-            info["exported_mass_unspent_cold_gas_from_gas"] = mass[ [gdat['T']<=75000] ].sum()
 
         # ---- make some sums and write statistics in info file
 
@@ -660,16 +645,10 @@ class Galaxy:
         info["exported_mass_hii_regions"] = info["exported_mass_hii_regions_from_stars"] + info["exported_mass_hii_regions_from_gas"]
 
         info["exported_particles_unspent_gas"] = info["exported_particles_unspent_gas_from_stars"] + info["exported_particles_unspent_gas_from_gas"]
-        info["exported_particles_unspent_cold_gas"] = info["exported_particles_unspent_cold_gas_from_stars"] + info["exported_particles_unspent_cold_gas_from_gas"]
         info["exported_mass_unspent_gas"] = info["exported_mass_unspent_gas_from_stars"] + info["exported_mass_unspent_gas_from_gas"]
-        info["exported_mass_unspent_cold_gas"] = info["exported_mass_unspent_cold_gas_from_stars"] + info["exported_mass_unspent_cold_gas_from_gas"]
 
         info["exported_particles_gas"] = info["exported_particles_non_star_forming_gas"] + info["exported_particles_unspent_gas"]
-        info["exported_particles_cold_gas"] = info["exported_particles_non_star_forming_cold_gas"] + info["exported_particles_unspent_cold_gas"]
         info["exported_mass_gas"] = info["exported_mass_non_star_forming_gas"] + info["exported_mass_unspent_gas"]
-        info["exported_mass_cold_gas"] = info["exported_mass_non_star_forming_cold_gas"] + info["exported_mass_unspent_cold_gas"]
-        m = dust[:,4];  Z = dust[:,5];  T = dust[:,6]
-        info["exported_mass_metallic_gas"] = (m[T<=75000] * Z[T<=75000]).sum()
         info["exported_mass_baryons"] = info["exported_mass_stars"] + info["exported_mass_hii_regions"] + info["exported_mass_gas"]
 
         infofilename = "galaxy_{0}_{1}_info.txt".format(self.groupnumber, self.subgroupnumber)
@@ -695,7 +674,7 @@ class Galaxy:
         gasfile = open(os.path.join(directory,gasfilename), 'w')
         gasfile.write('# SPH Gas Particles\n')
         gasfile.write('# Extracted from EAGLE HDF5 snapshot to SKIRT6 format\n')
-        gasfile.write('# Columns contain: x(pc) y(pc) z(pc) h(pc) M(Msun) Z(0-1) T(K) SFR(Msun/yr)\n')
+        gasfile.write('# Columns contain: x(pc) y(pc) z(pc) h(pc) M(Msun) Z(0-1) T(K)\n')
         hiifile = open(os.path.join(directory,hiifilename), 'w')
         hiifile.write('# SPH Hii Particles\n')
         hiifile.write('# Extracted from EAGLE HDF5 snapshot to SKIRT6 format\n')
