@@ -88,13 +88,13 @@ class SkiFile:
         # number of points directly from the tree) or a FileWavelengthGrid is used (in which case we raise an error)
         entry = self.tree.xpath("//wavelengthGrid/*[1]")[0]
 
-        if entry.tag == 'PanWavelengthGrid':
-
-                return int(entry.get("points"))
-
-        elif entry.tag == 'FileWavelengthGrid':
+        if entry.tag == 'FileWavelengthGrid':
 
             raise ValueError("The number of wavelengths is not defined within the ski file. Call wavelengthsfile().")
+
+        else:
+
+            return int(entry.get("points"))
 
     ## This function returns the name of the wavelengths file that is used for the simulation, if any
     def wavelengthsfile(self):
