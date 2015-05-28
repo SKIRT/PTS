@@ -308,7 +308,7 @@ class TimelinePlotter(object):
         # Format the axis ticks and labels
         if cpu:
             plt.yticks(yticks, procranks)
-            ax.set_xlabel('CPU time (s)', fontsize='large')
+            ax.set_xlabel('CPU time per thread (s)', fontsize='large')
             ax.set_ylabel('Number of processes', fontsize='large')
         else:
             ax.set_yticks(procranks)
