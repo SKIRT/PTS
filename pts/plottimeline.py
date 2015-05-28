@@ -12,6 +12,7 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
+import os.path
 import numpy as np
 
 # Use a non-interactive back-end to generate high-quality vector graphics
@@ -21,6 +22,7 @@ import matplotlib.pyplot as plt
 
 # Import relevant PTS modules
 from pts.log import Log
+from pts.skirtsimulation import createsimulations
 
 # -----------------------------------------------------------------
 
@@ -43,101 +45,212 @@ colors = ['r', 'g', '#FF7626', 'm', 'c', 'y', 'b']
 
 # -----------------------------------------------------------------
 
-# Create a logger
-log = Log()
+## An instance of the TimelinePlotter is used to create timeline diagrams for the different simulation phases
+#
+class TimelinePlotter(object):
 
-## This function plots the timeline of a simulation, for the different parallel processes, from a text file
-#  containing the timeline information extracted from the simulation's log files.
-def plottimeline(filepath, plotpath, figsize=(12,8), percentages=False):
+    ## The constructor accepts the following arguments:
+    #
+    #  - directory: the path of the directory where the result files are located and where the plots should be created
+    #  - system: the system for which to plot the statistics. If no system is given, plots are created with different
+    #            curves for all the different systems (and modes) for which a results file is found.
+    #
+    def __init__(self, directory, simulations):
 
-    # Try to get the values from the data file. If no data could be found in the file, we skip it.
-    try:
-        ranks, phases, starttimes, endtimes = np.loadtxt(filepath, usecols=(0,1,2,3), unpack=True)
-    except ValueError:
-        log.warning("The file " + filepath + " does not contain any data")
-        return
+        # Create a logger
+        self._log = Log()
 
-    # Determine the number of processors
-    nprocs = int(ranks[-1]) + 1
-    procranks = range(nprocs)
+        # Set the results and visualization paths
+        self._respath = os.path.join(directory, "res")
+        self._vispath = os.path.join(directory, "vis")
 
-    # Initialize a data structure to contain the start times and endtimes for the different processes, indexed on the phase
-    data = []
+        # Initialize an empty list to contain the paths of timeline files
+        self._filepaths = []
 
-    # Iterate over the different rows found in the data file and copy the start- and endtimes in the data list
-    for i in range(len(ranks)):
+        # Find .dat files that contain extracted timeline information
+        for root, dirs, filenames in os.walk(directory):
 
-        if int(ranks[i]) == 0:
+            # For each file in the current (sub)directory
+            for filename in filenames:
 
-            data.append([int(phases[i]), [], []])
-            data[len(data)-1][1].append(starttimes[i])
-            data[len(data)-1][2].append(endtimes[i])
+                # Check if this is a timeline data file
+                if filename.endswith('.dat') and not filename.startswith(".") and "timeline" in filename:
 
-        else:
+                    # Determine the full path to the timeline data file
+                    timelinefilepath = os.path.join(root, filename)
 
-            nphases = len(data)
-            data[i%nphases][1].append(starttimes[i])
-            data[i%nphases][2].append(endtimes[i])
+                    # Add this file to the list of timeline files
+                    self._filepaths.append(timelinefilepath)
 
-    # Initialize a figure with the appropriate size
-    plt.figure(figsize=figsize)
-    ax = plt.gca()
+        # If no extracted timeline information could be found, create a list of simulations from the current directory or
+        # a string given as a command-line argument and first extract the timeline information for these simulations into
+        # a temporary timeline data file
+        if not self._filepaths:
 
-    legendEntries = []
-    legendNames = []
-    unique_phases = []
+            # Construct the list of simulation objects and create the timeline data files
+            for simulation in createsimulations(simulations):
 
-    # Make the timeline plot, consisting of a set of bars of the same color for each simulation phase
-    for phase, starttimes, endtimes in data:
+                # Load the extract function to extract timeline information from simulation log files
+                from do.extracttimeline import extract
 
-        durations = np.array(endtimes) - np.array(starttimes)
-        patch_handle = ax.barh(procranks, durations, color=colors[phase], align='center', left=starttimes, alpha=0.8)
+                # Create a temporaray timeline file
+                timelinefilepath = os.path.join(os.getcwd(), "timeline_" + simulation.prefix() + ".dat")
+                timelinefile = open(timelinefilepath, 'w')
 
-        if phase not in unique_phases and not (phase == phaseindices['comm'] and nprocs == 1):
+                # Write a header to this new file
+                timelinefile.write("# Timeline information for simulation " + simulation.prefix() + "\n")
 
-            unique_phases.append(phase)
-            legendEntries.append(patch_handle)
-            legendNames.append(phasenames[phase])
+                # Close the timeline file (results will be appended)
+                timelinefile.close()
 
-        if percentages:
+                # Determine the name of the ski file for this simulation
+                skifilename = simulation.prefix() + ".ski"
 
-            for rank, patch in enumerate(patch_handle.get_children()):
+                # Determine the output path of this simulation
+                outputpath = simulation.outpath()
 
-                bl = patch.get_xy()
-                x = 0.5*patch.get_width() + bl[0]
-                y = 0.5*patch.get_height() + bl[1]
-                ax.text(x, y, "%d%%" % (rank), ha='center')
+                # Extract the timeline information
+                extract(skifilename, outputpath, timelinefilepath)
 
-    # Format the axis ticks and labels
-    ax.set_yticks(procranks)
-    ax.set_yticklabels(procranks)
-    ax.set_xlabel('Time (s)', fontsize='large')
-    ax.set_ylabel('Process rank', fontsize='large')
-    ax.yaxis.grid(True)
+                # Add this file to the list of timeline files
+                self._filepaths.append(timelinefilepath)
 
-    if nprocs == 1:
+    ## This function should be called to invoke the plotting routine, which will create a timeline plot for each
+    #  file that is found with valid timeline data
+    def plot(self):
 
-        ax.set_frame_on(False)
-        fig = plt.gcf()
-        fig.set_size_inches(10,2)
-        ax.xaxis.tick_bottom()
-        ax.yaxis.set_visible(False)
+        # Loop over all the timeline data files
+        for filepath in self._filepaths:
 
-    # Shrink current axis's height by 20% on the bottom
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
+            # Try to get the values from the data file. If no data could be found in the file, we skip it.
+            try:
+                ranks, phases, starttimes, endtimes = np.loadtxt(filepath, usecols=(0,1,2,3), unpack=True)
+            except ValueError:
+                self._log.warning("The file " + filepath + " does not contain any data")
+                continue
 
-    # Set the plot title
-    plt.title("Timeline of the different simulation phases")
+            # Try to obtain the simulation name from the data file
+            with open(filepath) as datafile:
 
-    # Put a legend below current axis
-    ax.legend(legendEntries, legendNames, loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False, ncol=4, prop={'size':12})
+                first = datafile.readlines()[0]
 
-    # Save the figure
-    plt.savefig(plotpath, bbox_inches='tight', pad_inches=0.40)
-    log.info("Created PDF timeline " + plotpath)
+            # Try to obtain the simulation name from the data file, if this works we use it for the name of
+            # the timeline plot file
+            try:
 
-    # Close the plotting environment
-    plt.close()
+                # Find the simulation name in the first line of the data file
+                simulationname = first.split("simulation ")[1].split("\n")[0]
+
+                # Set the path of the plot file
+                plotfilepath = "timeline_" + simulationname + ".pdf"
+
+            # If the simulation name is not in the header of the data file, this data file was created as part
+            # of a scaling benchmark test, and the data files are probably under the results path defined by
+            # 'self._respath'. The plot files should be placed under the visualisation path ('self._vispath')
+            except IndexError:
+
+                # Determine the path of the plotting directory (a subdirectory of the visualization directory)
+                filename = os.path.basename(filepath)
+                directorypath = os.path.dirname(filepath)
+                relative_directory = os.path.relpath(directorypath, self._respath)
+                plotpath = os.path.join(self._vispath, relative_directory)
+
+                # Create this directory, if it didn't already exist
+                try: os.makedirs(plotpath)
+                except OSError: pass
+
+                # Set the path of the plot file
+                plotfilepath = os.path.join(plotpath, os.path.splitext(filename)[0] + ".pdf")
+
+            # Determine the number of processors
+            nprocs = int(ranks[-1]) + 1
+
+            # Initialize a data structure to contain the start times and endtimes for the different processes,
+            # indexed on the phase
+            data = []
+
+            # Iterate over the different rows found in the data file and copy the start- and endtimes in the data list
+            for i in range(len(ranks)):
+
+                if int(ranks[i]) == 0:
+
+                    data.append([int(phases[i]), [], []])
+                    data[len(data)-1][1].append(starttimes[i])
+                    data[len(data)-1][2].append(endtimes[i])
+
+                else:
+
+                    nphases = len(data)
+                    data[i%nphases][1].append(starttimes[i])
+                    data[i%nphases][2].append(endtimes[i])
+
+            self._createplot(data, plotfilepath, nprocs)
+
+    ## This function actually plots the timeline based on a data structure containing the starttimes and endtimes
+    #  for the different simulation phases
+    def _createplot(self, data, plotfilepath, nprocs, figsize=(12,8), percentages=False):
+
+        # Initialize a figure with the appropriate size
+        plt.figure(figsize=figsize)
+        ax = plt.gca()
+
+        legendEntries = []
+        legendNames = []
+        unique_phases = []
+
+        procranks = range(nprocs)
+
+        # Make the timeline plot, consisting of a set of bars of the same color for each simulation phase
+        for phase, starttimes, endtimes in data:
+
+            durations = np.array(endtimes) - np.array(starttimes)
+            patch_handle = ax.barh(procranks, durations, color=colors[phase], align='center', left=starttimes, alpha=0.8)
+
+            if phase not in unique_phases and not (phase == phaseindices['comm'] and nprocs == 1):
+
+                unique_phases.append(phase)
+                legendEntries.append(patch_handle)
+                legendNames.append(phasenames[phase])
+
+            if percentages:
+
+                for rank, patch in enumerate(patch_handle.get_children()):
+
+                    bl = patch.get_xy()
+                    x = 0.5*patch.get_width() + bl[0]
+                    y = 0.5*patch.get_height() + bl[1]
+                    ax.text(x, y, "%d%%" % (rank), ha='center')
+
+        # Format the axis ticks and labels
+        ax.set_yticks(procranks)
+        ax.set_yticklabels(procranks)
+        ax.set_xlabel('Time (s)', fontsize='large')
+        ax.set_ylabel('Process rank', fontsize='large')
+        ax.yaxis.grid(True)
+
+        if nprocs == 1:
+
+            ax.set_frame_on(False)
+            fig = plt.gcf()
+            fig.set_size_inches(10,2)
+            ax.xaxis.tick_bottom()
+            ax.yaxis.set_visible(False)
+
+        # Shrink current axis's height by 20% on the bottom
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
+
+        # Set the plot title
+        plt.title("Timeline of the different simulation phases")
+
+        # Put a legend below current axis
+        ax.legend(legendEntries, legendNames, loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False, ncol=4, prop={'size':12})
+
+        # Save the figure
+        plt.savefig(plotfilepath, bbox_inches='tight', pad_inches=0.40)
+        self._log.info("Created PDF timeline " + plotfilepath)
+
+        # Close the plotting environment
+        plt.close()
 
 # -----------------------------------------------------------------
