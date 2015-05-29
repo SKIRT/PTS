@@ -150,8 +150,11 @@ class ScalingTest(object):
     #
     def run(self, maxnodes, minnodes, manual=False, keepoutput=False, extractprogr=False, extracttimeline=False, weak=False):
 
+        # Set a string specifying whether this scaling test is 'strong' or 'weak'
+        scalingtype = "weak" if weak else "strong"
+
         # Log the system name, the test mode and the version of SKIRT used for this test
-        self._log.info("Starting parallel scaling benchmark for " + self._system + " in " + self._mode + " mode.")
+        self._log.info("Starting " + scalingtype + " scaling benchmark for " + self._system + " in " + self._mode + " mode")
         self._log.info("Using " + self._skirt.version())
 
         # Generate a timestamp identifying this particular run for the scaling test
@@ -297,7 +300,7 @@ class ScalingTest(object):
         if extractprogr and processes > 1:
 
             # Create the file to contain the progress information of this run
-            progressfilepath = self._createprogressfile(self._progressdirpath, processes)
+            progressfilepath = self._createprogressfile(self._progressdirpath, processes, weak)
 
             # Add the command to the jobscript to extract the progress
             command = "python extractprogress.py " + self._skifilename + " " + dataoutputpath + " " + progressfilepath
@@ -307,7 +310,7 @@ class ScalingTest(object):
         if extracttimeline:
 
             # Create the file to contain the timeline information for this run
-            timelinefilepath = self._createtimelinefile(self._progressdirpath, processes)
+            timelinefilepath = self._createtimelinefile(self._progressdirpath, processes, weak)
 
             # Add the command to the jobscript to extract the timeline data
             command = "python extracttimeline.py " + self._skifilename + " " + dataoutputpath + " " + timelinefilepath
@@ -379,7 +382,7 @@ class ScalingTest(object):
         if extractprogr and processes > 1:
 
             # Create the file to contain the progress information of this run
-            progressfilepath = self._createprogressfile(self._progressdirpath, processes)
+            progressfilepath = self._createprogressfile(self._progressdirpath, processes, weak)
 
             # Load the extractprogress module
             import do.extractprogress
@@ -391,7 +394,7 @@ class ScalingTest(object):
         if extracttimeline:
 
             # Create the file to contain the timeline information for this run
-            timelinefilepath = self._createtimelinefile(self._progressdirpath, processes)
+            timelinefilepath = self._createtimelinefile(self._progressdirpath, processes, weak)
 
             # Load the extracttimeline module
             import do.extracttimeline
@@ -441,13 +444,17 @@ class ScalingTest(object):
         return filepath
 
     ## This function creates the file containing the progress information
-    def _createprogressfile(self, progresspath, processes):
+    def _createprogressfile(self, progresspath, processes, weak):
 
         # Create a new file whose name includes the current number of processors
         filepath = os.path.join(progresspath, "progress_" + str(processes) + ".dat")
         progressfile = open(filepath, 'w')
 
+        # Set a string specifying whether this scaling test is 'strong' or 'weak'
+        scalingtype = "Weak" if weak else "Strong"
+
         # Write a header to this new file which contains some general info about its contents
+        progressfile.write("# " + scalingtype + " scaling benchmark test\n")
         progressfile.write("# Progress results for " + self._system + " with " + str(processes) + " parallel processes\n")
         progressfile.write("# Using " + self._skirt.version() + "\n")
         progressfile.write("# Column 1: Simulation phase (0=stellar, 1=spectra, 2=dust)\n")
@@ -462,13 +469,17 @@ class ScalingTest(object):
         return filepath
 
     ## This function creates the file containing the timeline information
-    def _createtimelinefile(self, timelinepath, processes):
+    def _createtimelinefile(self, timelinepath, processes, weak):
 
         # Create a new file whose name includes the current number of processors
         filepath = os.path.join(timelinepath, "timeline_" + str(processes) + ".dat")
         timelinefile = open(filepath, 'w')
 
+        # Set a string specifying whether this scaling test is 'strong' or 'weak'
+        scalingtype = "Weak" if weak else "Strong"
+
         # Write a header to this new file
+        timelinefile.write("# " + scalingtype + " scaling benchmark test\n")
         timelinefile.write("# Timeline information for " + self._system + " with " + str(processes) + " parallel processes\n")
 
         # Close the timeline file (results will be appended!)

@@ -125,6 +125,7 @@ class TimelinePlotter(object):
         # Create a data structure to contain the ...
         cpudata = dict()
 
+        # Keep track of the number of processes
         nprocs_list = []
 
         # Loop over all the timeline data files
@@ -181,6 +182,9 @@ class TimelinePlotter(object):
             # 'self._respath'. The plot files should be placed under the visualisation path ('self._vispath')
             except IndexError:
 
+                # Find out whether the file was generated as part of a weak or a strong scaling test
+                weak = "Weak" in first
+
                 # Determine the path of the plotting directory (a subdirectory of the visualization directory)
                 filename = os.path.basename(filepath)
                 directorypath = os.path.dirname(filepath)
@@ -208,24 +212,34 @@ class TimelinePlotter(object):
                         starttimes = data[i][1]
                         endtimes = data[i][2]
 
-                        if i == 0:
+                        # If the scaling test was weak, add the times for the process with rank zero
+                        if weak:
 
-                            starttime = 0.0
+                            cpudata[scalingtestrun][i][1].append(starttimes[0])
+                            cpudata[scalingtestrun][i][2].append(endtimes[0])
 
+                        # Else, if the scaling test was strong, sum the runtimes of each process to obtain
+                        # the total CPU time
                         else:
 
-                            starttime = cpudata[scalingtestrun][i-1][2][-1]
+                            if i == 0:
 
-                        durations = np.array(endtimes) - np.array(starttimes)
-                        totalduration = np.sum(durations)
+                                starttime = 0.0
 
-                        cpudata[scalingtestrun][i][1].append(starttime)
-                        cpudata[scalingtestrun][i][2].append(starttime+totalduration)
+                            else:
+
+                                starttime = cpudata[scalingtestrun][i-1][2][-1]
+
+                            durations = np.array(endtimes) - np.array(starttimes)
+                            totalduration = np.sum(durations)
+
+                            cpudata[scalingtestrun][i][1].append(starttime)
+                            cpudata[scalingtestrun][i][2].append(starttime+totalduration)
 
             # Create a plot for this timeline data file
             self._createplot(data, plotfilepath, procranks)
 
-        # Check whether
+        # Plot a graph comparing the timeline for the runs with a different number of processes
         for scalingtest, data in cpudata.items():
 
             plotpath = os.path.join(self._vispath, scalingtest)
@@ -268,7 +282,7 @@ class TimelinePlotter(object):
             durations_list.append(durations)
             totaldurations += durations
 
-            patch_handle = ax.barh(yticks, durations, color=colors[phase], align='center', left=starttimes, alpha=0.8)
+            patch_handle = ax.barh(yticks, durations, color=colors[phase], align='center', left=starttimes, alpha=0.8, lw=0)
             patch_handles.append(patch_handle)
 
             if phase not in unique_phases and not (phase == phaseindices['comm'] and nprocs == 1):
@@ -316,7 +330,7 @@ class TimelinePlotter(object):
             ax.set_xlabel('Time (s)', fontsize='large')
             ax.set_ylabel('Process rank', fontsize='large')
 
-        ax.yaxis.grid(True)
+        #ax.yaxis.grid(True)
 
         if nprocs == 1:
 
