@@ -128,6 +128,9 @@ class TimelinePlotter(object):
         # Keep track of the number of processes
         nprocs_list = []
 
+        # keep track of which scaling test was weak
+        weaktests = dict()
+
         # Loop over all the timeline data files
         for filepath in self._filepaths:
 
@@ -202,6 +205,7 @@ class TimelinePlotter(object):
                 if not scalingtestrun in cpudata:
 
                     cpudata[scalingtestrun] = [[entry[0], [], []] for entry in data]
+                    weaktests[scalingtestrun] = weak
 
                 # TODO: FIX THIS FOR ONE PROCESS
                 if not nprocs == 1:
@@ -245,11 +249,15 @@ class TimelinePlotter(object):
             plotpath = os.path.join(self._vispath, scalingtest)
             plotfilepath = os.path.join(plotpath, "timeline.pdf")
 
-            self._createplot(data, plotfilepath, nprocs_list, percentages=True, totals=True, cpu=True)
+            # Check whether this scaling test was weak
+            weak = weaktests[scalingtest]
+
+            # Create the plot
+            self._createplot(data, plotfilepath, nprocs_list, percentages=True, totals=True, unordered=True, numberofproc=True, cpu=(not weak))
 
     ## This function actually plots the timeline based on a data structure containing the starttimes and endtimes
     #  for the different simulation phases
-    def _createplot(self, data, plotfilepath, procranks, figsize=(12,8), percentages=False, totals=False, cpu=False):
+    def _createplot(self, data, plotfilepath, procranks, figsize=(12,8), percentages=False, totals=False, unordered=False, numberofproc=False, cpu=False):
 
         # If the file already exists, skip the plotting procedure
         if os.path.isfile(plotfilepath) and not self._force: return
@@ -266,7 +274,7 @@ class TimelinePlotter(object):
         nprocs = len(procranks)
 
         # Get the ordering
-        if cpu:
+        if unordered:
             yticks = np.array(procranks).argsort().argsort()
         else:
             yticks = procranks
@@ -319,15 +327,24 @@ class TimelinePlotter(object):
                 label_text = str(int(totaldurations[sorting_number]))
                 plt.text(rectangle.get_x() + width + 0.02*rectangle.get_x(), rectangle.get_y() + rectangle.get_height() / 2., label_text, ha="left", va="center", fontsize=10)
 
-        # Format the axis ticks and labels
-        if cpu:
+        if unordered:
+
             plt.yticks(yticks, procranks)
-            ax.set_xlabel('CPU time per thread (s)', fontsize='large')
-            ax.set_ylabel('Number of processes', fontsize='large')
+
         else:
+
             ax.set_yticks(procranks)
             ax.set_yticklabels(procranks)
+
+        # Format the axis ticks and labels
+        if cpu:
+            ax.set_xlabel('CPU time per thread (s)', fontsize='large')
+        else:
             ax.set_xlabel('Time (s)', fontsize='large')
+
+        if numberofproc:
+            ax.set_ylabel('Number of processes', fontsize='large')
+        else:
             ax.set_ylabel('Process rank', fontsize='large')
 
         #ax.yaxis.grid(True)
