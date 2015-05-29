@@ -565,8 +565,27 @@ class ScalingTest(object):
 
             # Get the runtime for one processor, add a surplus of one percent per processor and apply the extra factor
             runtimes = self._getruntimes(1)
-            totaltime = runtimes["total"] * (1.0 + 0.01*processors)
-            return int(totaltime*factor)
+
+            if runtimes is not None:
+
+                totaltime = runtimes["total"] * (1.0 + 0.01*processors)
+                return int(totaltime*factor)
+
+            else:
+
+                # The path of the log file
+                logfilepath = os.path.join(self._simulationpath, self._skifilename + "_log.txt")
+
+                # TODO: don't assume the logfile was created by a simulation with only 1 process!
+
+                # Check whether such a file exists
+                if os.path.exists(logfilepath):
+
+                    # If such a log file is present, extract the timings from it
+                    runtimes = extract(logfilepath)
+
+                    totaltime = runtimes["total"] * (1.0 + 0.01*processors)
+                    return int(totaltime*factor)
 
         # Try to get the runtimes for this number of processors
         runtimes = self._getruntimes(processors)
