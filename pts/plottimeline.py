@@ -14,6 +14,7 @@
 # Import standard modules
 import os.path
 import numpy as np
+from collections import defaultdict
 
 # Use a non-interactive back-end to generate high-quality vector graphics
 import matplotlib
@@ -126,7 +127,7 @@ class TimelinePlotter(object):
         cpudata = dict()
 
         # Keep track of the number of processes
-        nprocs_list = []
+        nprocs_dict = defaultdict(list)
 
         # keep track of which scaling test was weak
         weaktests = dict()
@@ -143,9 +144,6 @@ class TimelinePlotter(object):
 
             # Determine the number of processors and add it to the list
             nprocs = int(ranks[-1]) + 1
-
-            # TODO: FIX THIS FOR ONE PROCESS
-            if not nprocs == 1: nprocs_list.append(nprocs)
 
             # Make a list of the different process ranks
             procranks = range(nprocs)
@@ -219,6 +217,9 @@ class TimelinePlotter(object):
                 # TODO: FIX THIS FOR ONE PROCESS
                 if not nprocs == 1:
 
+                    # Add this number of processes to the list for this scaling test run
+                    nprocs_dict[scalingrunname].append(nprocs)
+
                     # For each seperate phase
                     for i in range(len(data)):
 
@@ -261,6 +262,9 @@ class TimelinePlotter(object):
             # Check whether this scaling test was weak
             weak = weaktests[scalingtest]
 
+            # Get the list of number of processes for this scaling test
+            nprocs_list = nprocs_dict[scalingtest]
+
             # Create the plot
             self._createplot(data, plotfilepath, nprocs_list, percentages=True, totals=True, unordered=True, numberofproc=True, cpu=(not weak))
 
@@ -297,6 +301,7 @@ class TimelinePlotter(object):
 
             durations = np.array(endtimes) - np.array(starttimes)
             durations_list.append(durations)
+
             totaldurations += durations
 
             patch_handle = ax.barh(yticks, durations, color=colors[phase], align='center', left=starttimes, alpha=0.8, lw=0)
