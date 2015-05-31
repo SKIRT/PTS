@@ -131,7 +131,7 @@ class ScalingTest(object):
 
         else:
 
-            self._dataoutputdir = self._outpath
+            self._dataoutputpath = self._outpath
 
         # Set the mode
         self._mode = mode
@@ -252,7 +252,7 @@ class ScalingTest(object):
         skifilepath = self._skifilepath
 
         # Create a seperate output directory for this simulation (different simulations can be executed simultaneously)
-        dataoutputpath = self._createskirtoutputdir(processors)
+        simulationoutputpath = self._createskirtoutputdir(processors)
 
         # If a 'weak' scaling test is performed, create a ski file that is adjusted to the current number of processors
         if self._weak and processors > 1:
@@ -263,19 +263,19 @@ class ScalingTest(object):
             skifile.increasedustcells(processors)
 
             # Save the adjusted ski file in the output path for this simulation
-            skifilepath = os.path.join(dataoutputpath, self._skifilename + ".ski")
+            skifilepath = os.path.join(simulationoutputpath, self._skifilename + ".ski")
             skifile.saveto(skifilepath)
 
         # Write some information about this simulation to the info file
         infofile.write("Simulation performed on " + str(processors) + " processors\n")
         infofile.write(" - ski file: " + skifilepath + "\n")
-        infofile.write(" - output directory: " + dataoutputpath + "\n")
+        infofile.write(" - output directory: " + simulationoutputpath + "\n")
         infofile.write(" - number of processes: " + str(processes) + "\n")
         infofile.write(" - number of threads per processes: " + str(threads) + "\n")
 
         # Schedule or launch the simulation
-        if self._scheduler: self._schedule(processors, processes, threads, skifilepath, dataoutputpath, infofile)
-        else: self._launch(processors, processes, threads, skifilepath, dataoutputpath, infofile)
+        if self._scheduler: self._schedule(processors, processes, threads, skifilepath, simulationoutputpath, infofile)
+        else: self._launch(processors, processes, threads, skifilepath, simulationoutputpath, infofile)
 
         # Close the info file
         infofile.write("\n")
