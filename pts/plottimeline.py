@@ -185,27 +185,36 @@ class TimelinePlotter(object):
             # 'self._respath'. The plot files should be placed under the visualisation path ('self._vispath')
             except IndexError:
 
-                # Find out whether the file was generated as part of a weak or a strong scaling test
-                weak = "Weak" in first
+                # Determine the path of the scaling run directory where this timeline file belongs to
+                scalingrunpath = os.path.dirname(filepath)
+
+                # Determine the name of the scaling run
+                scalingrunname = os.path.basename(scalingrunpath)
+
+                # Open the info file corresponding with this scaling run
+                infofilepath = os.path.join(scalingrunpath, "info.txt")
+                with open(infofilepath) as infofile:
+
+                    # Find out whether the file was generated as part of a weak or a strong scaling test
+                    second = infofile.readlines()[1]
+                    weak = "weak" in second
 
                 # Determine the path of the plotting directory (a subdirectory of the visualization directory)
-                filename = os.path.basename(filepath)
-                directorypath = os.path.dirname(filepath)
-                scalingtestrun = os.path.relpath(directorypath, self._respath)
-                plotpath = os.path.join(self._vispath, scalingtestrun)
+                plotpath = os.path.join(self._vispath, scalingrunname)
 
                 # Create this directory, if it didn't already exist
                 try: os.makedirs(plotpath)
                 except OSError: pass
 
                 # Set the path of the plot file
+                filename = os.path.basename(filepath)
                 plotfilepath = os.path.join(plotpath, os.path.splitext(filename)[0] + ".pdf")
 
                 # Give the cpudata list the correct dimension (the number of different phases encountered in the data)
-                if not scalingtestrun in cpudata:
+                if not scalingrunname in cpudata:
 
-                    cpudata[scalingtestrun] = [[entry[0], [], []] for entry in data]
-                    weaktests[scalingtestrun] = weak
+                    cpudata[scalingrunname] = [[entry[0], [], []] for entry in data]
+                    weaktests[scalingrunname] = weak
 
                 # TODO: FIX THIS FOR ONE PROCESS
                 if not nprocs == 1:
@@ -219,8 +228,8 @@ class TimelinePlotter(object):
                         # If the scaling test was weak, add the times for the process with rank zero
                         if weak:
 
-                            cpudata[scalingtestrun][i][1].append(starttimes[0])
-                            cpudata[scalingtestrun][i][2].append(endtimes[0])
+                            cpudata[scalingrunname][i][1].append(starttimes[0])
+                            cpudata[scalingrunname][i][2].append(endtimes[0])
 
                         # Else, if the scaling test was strong, sum the runtimes of each process to obtain
                         # the total CPU time
@@ -232,13 +241,13 @@ class TimelinePlotter(object):
 
                             else:
 
-                                starttime = cpudata[scalingtestrun][i-1][2][-1]
+                                starttime = cpudata[scalingrunname][i-1][2][-1]
 
                             durations = np.array(endtimes) - np.array(starttimes)
                             totalduration = np.sum(durations)
 
-                            cpudata[scalingtestrun][i][1].append(starttime)
-                            cpudata[scalingtestrun][i][2].append(starttime+totalduration)
+                            cpudata[scalingrunname][i][1].append(starttime)
+                            cpudata[scalingrunname][i][2].append(starttime+totalduration)
 
             # Create a plot for this timeline data file
             self._createplot(data, plotfilepath, procranks)
@@ -311,13 +320,12 @@ class TimelinePlotter(object):
                     duration = durations[sorting_number]
                     percentage = float(duration) / float(totaldurations[sorting_number]) * 100.0
 
-                    bl = rectangle.get_xy()
-                    x = 0.5*rectangle.get_width() + bl[0]
-                    y = 0.4*rectangle.get_height() + bl[1]
+                    x = 0.5*rectangle.get_width() + rectangle.get_x()
+                    y = 0.5*rectangle.get_height() + rectangle.get_y()
 
                     if rectangle.get_width() > 2000:
 
-                        ax.text(x, y, "%d%%" % (percentage), ha='center', fontsize=10)
+                        plt.text(x, y, "%d%%" % (percentage), ha='center', va='center', fontsize=10)
 
         if totals:
 

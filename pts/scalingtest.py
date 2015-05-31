@@ -193,9 +193,6 @@ class ScalingTest(object):
         # Generate a timestamp identifying this particular run for the scaling test
         self._timestamp = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
 
-        # Create a directory that will contain the output of the simulations that are part of this scaling test run
-        self._runoutputdir = self._createrunoutputdir()
-
         # Calculate the maximum number of processors to use for the scaling test (maxnodes can be a decimal number)
         maxprocessors = int(maxnodes * self._cores)
 
@@ -210,8 +207,17 @@ class ScalingTest(object):
         self._threadspp = 1
         if self._mode == "hybrid": self._threadspp = minprocessors
 
+        # If hybrid mode is selected, add the number of threads per process to the name of the results directory
+        hybridinfo = str(self._threadspp) if self._mode == "hybrid" else ""
+
+        # Define a name identifying this scaling test run
+        self._scalingrunname = self._system + "_" + self._mode + hybridinfo + "_" + str(maxnodes) + "_" + str(minnodes) + "_" + self._timestamp
+
+        # Create a directory that will contain the output of the simulations that are part of this scaling test run
+        self._runoutputdir = self._createrunoutputdir()
+
         # Create a directory to contain the results (scaling, progress and timeline data) for this scaling test
-        self._resultsdirpath = self._createresultsdir(maxnodes, minnodes)
+        self._resultsdirpath = self._createresultsdir()
 
         # Inside this directory, create a file named 'scaling.dat' to contain the runtimes from which the scaling
         # behaviour can be inferred
@@ -272,6 +278,7 @@ class ScalingTest(object):
         else: self._launch(processors, processes, threads, skifilepath, dataoutputpath, infofile)
 
         # Close the info file
+        infofile.write("\n")
         infofile.close()
 
     ## This functions schedules a simulation on the cluster. This function takes the following arguments:
@@ -301,7 +308,7 @@ class ScalingTest(object):
 
         # Write the number of nodes and processors per node to the info file
         infofile.write(" - number of used nodes: " + str(nodes) + "\n")
-        infofile.write(" - number of requested processors per node: " + str(ppn))
+        infofile.write(" - number of requested processors per node: " + str(ppn) + "\n")
 
         # The path of the log file for this simulation run
         logfilepath = os.path.join(dataoutputpath, self._skifilename + "_log.txt")
@@ -335,6 +342,9 @@ class ScalingTest(object):
             command = "python extractprogress.py " + self._skifilename + " " + dataoutputpath + " " + progressfilepath
             jobscript.addcommand(command, comment="Extract the progress of the different processes")
 
+            # Write the path of the progress file to the info file
+            infofile.write(" - progress information extracted to: " + progressfilepath + "\n")
+
         # Add the command to extract the timeline information after the job finished, if requested
         if self._extracttimeline:
 
@@ -344,6 +354,9 @@ class ScalingTest(object):
             # Add the command to the jobscript to extract the timeline data
             command = "python extracttimeline.py " + self._skifilename + " " + dataoutputpath + " " + timelinefilepath
             jobscript.addcommand(command, comment="Extract the timeline information for the different processes")
+
+            # Write the path of the timeline file to the info file
+            infofile.write(" - timeline information extracted to: " + timelinefilepath + "\n")
 
         # Add the command to remove the output directory of this run
         if not self._keepoutput:
@@ -392,6 +405,9 @@ class ScalingTest(object):
             # Extract the progress information
             do.extractprogress.extract(self._skifilename, dataoutputpath, progressfilepath)
 
+            # Write the path of the progress file to the info file
+            infofile.write(" - progress information extracted to: " + progressfilepath + "\n")
+
         # Add the command to extract the timeline information after the job finished, if requested
         if self._extracttimeline:
 
@@ -404,6 +420,9 @@ class ScalingTest(object):
             # Extract the timeline information
             do.extracttimeline.extract(self._skifilename, dataoutputpath, timelinefilepath)
 
+            # Write the path of the timeline file to the info file
+            infofile.write(" - timeline information extracted to: " + timelinefilepath + "\n")
+
         # Remove the contents of the output directory, if requested
         if not self._keepoutput: shutil.rmtree(dataoutputpath)
 
@@ -411,15 +430,11 @@ class ScalingTest(object):
     #  'scaling.dat' inside this directory that will contain the runtimes of the test. This function takes the
     #  maximum and minimum number of nodes, as given to the command line, as arguments. These numbers are used in
     #  the name of the results directory, to identify this particular scaling test.
-    def _createresultsdir(self, maxnodes, minnodes):
-
-        # If hybrid mode is selected, add the number of threads per process to the name of the results directory
-        hybridinfo = str(self._threadspp) if self._mode == "hybrid" else ""
+    def _createresultsdir(self):
 
         # Create a new directory, whose name includes the system identifier, the scaling test mode, the maximum
         # and minium number of nodes and a timestamp
-        resultsdirpath = os.path.join(self._respath, self._system + "_" + self._mode + hybridinfo + "_" + str(maxnodes)
-                                + "_" + str(minnodes) + "_" + self._timestamp)
+        resultsdirpath = os.path.join(self._respath, self._scalingrunname)
         os.mkdir(resultsdirpath)
 
         # Return the path to the newly created directory
@@ -429,7 +444,7 @@ class ScalingTest(object):
     def _createrunoutputdir(self):
 
         # Create the new directory
-        runoutputpath = os.path.join(self._dataoutputpath, self._timestamp)
+        runoutputpath = os.path.join(self._dataoutputpath, self._scalingrunname)
         os.makedirs(runoutputpath)
 
         # Return the path to the run output directory
@@ -467,13 +482,14 @@ class ScalingTest(object):
         hybridinfo = " with " + str(self._threadspp) + " threads per process" if self._mode == "hybrid" else ""
 
         # Write some useful information to the file
-        infofile.write("Scaling benchmark test " + self._timestamp + "\n")
+        infofile.write("Scaling benchmark test " + self._scalingrunname + "\n")
         infofile.write("Scaling type: " + scalingtype + "\n")
         infofile.write("System: " + self._system + "\n")
         infofile.write("SKIRT version: " + self._skirt.version() + "\n")
         infofile.write("Mode: " + self._mode + hybridinfo + "\n")
         infofile.write("Maximum number of nodes: " + str(maxnodes) + "\n")
         infofile.write("Minimum number of nodes: " + str(minnodes) + "\n")
+        infofile.write("\n")
 
         # Close the info file (information on specific simulations will be appended)
         infofile.close()
@@ -489,7 +505,7 @@ class ScalingTest(object):
         scalingfile = open(scalingfilepath, "w")
 
         # Write a header to this new file which contains some general info about its contents
-        scalingfile.write("# Timing results for scaling benchmark test " + self._timestamp + "\n")
+        scalingfile.write("# Timing results for scaling benchmark test " + self._scalingrunname + "\n")
         scalingfile.write("# Column 1: Number of processes p\n")
         scalingfile.write("# Column 2: Number of threads per process t\n")
         scalingfile.write("# Column 3: Total number of threads (t*p)\n")
@@ -514,7 +530,7 @@ class ScalingTest(object):
         progressfile = open(filepath, 'w')
 
         # Write a header to this new file which contains some general info about its contents
-        progressfile.write("# Progress results for scaling benchmark test " + self._timestamp + "\n")
+        progressfile.write("# Progress results for scaling benchmark test " + self._scalingrunname + "\n")
         progressfile.write("# Column 1: Simulation phase (0=stellar, 1=spectra, 2=dust)\n")
         progressfile.write("# Column 2: Process rank\n")
         progressfile.write("# Column 3: Execution time (s)\n")
@@ -534,7 +550,7 @@ class ScalingTest(object):
         timelinefile = open(filepath, 'w')
 
         # Write a header to this new file which contains some general info about its contents
-        timelinefile.write("# Timeline results for scaling benchmark test " + self._timestamp + "\n")
+        timelinefile.write("# Timeline results for scaling benchmark test " + self._scalingrunname + "\n")
 
         # Close the timeline file (results will be appended)
         timelinefile.close()
@@ -548,25 +564,28 @@ class ScalingTest(object):
     #  set of threads and processes. This function takes the number of processors as the sole argument.
     def _getmapping(self, processors):
 
+        # Set default values for the number of threads and processes
         threads = 1
         processes = 1
+
+        # In mpi mode, each processor runs a different process
         if self._mode == "mpi":
 
-            # In mpi mode, each processor runs a different process
             processes = processors
 
+        # In threads mode, each processor runs a seperate thread within the same process
         if self._mode == "threads":
 
-            # In threads mode, each processor runs a seperate thread within the same process
             threads = processors
 
+        # In hybrid mode, the number of processes depends on how many threads are requested per process
+        # and the current number of processors
         if self._mode == "hybrid":
 
-            # In hybrid mode, the number of processes depends on how many threads are requested per process
-            # and the current number of processors
             threads = self._threadspp
             processes = processors / self._threadspp
 
+        # Return the number of processes and the number of threads
         return processes, threads
 
     ## This function calculates the required amount of nodes and processors per node, given a certain number

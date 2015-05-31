@@ -83,18 +83,21 @@ class ScalingPlotter(object):
         # Set the system name
         self._system = system
 
-        # Create a list of result files (i.e. all *.dat files in the current directory),
+        # Create a list of all scaling results files ('scaling.dat') found in a subdirectory of the results path,
         # ordered in a dictionary keyed on a combination of the system and mode in which the scaling test was run.
         # Each key in the dictionary will correspond to a different curve in the plots.
-        filenames = dict()
+        filepaths = defaultdict(list)
         self._log.info("Gathering the data files...")
-        for filename in os.listdir(self._respath):
+        for itemname in os.listdir(self._respath):
 
-            # Check whether this file is a data file and not hidden
-            if filename.endswith(".dat") and not filename.startswith("."):
+            # Define the full path to this item
+            itempath = os.path.join(self._respath, itemname)
+
+            # Check whether this item is a directory and it is not hidden
+            if os.path.isdir(itempath) and not itemname.startswith("."):
 
                 # Split the file name into its segments
-                segments = filename.split("_")
+                segments = itemname.split("_")
 
                 # Get the system name in which the scaling test was run for this results file
                 systemname = segments[0]
@@ -106,33 +109,34 @@ class ScalingPlotter(object):
                     # Get the mode in which the scaling test was run for this results file
                     mode = segments[1]
 
-                    # Add the filename to the library at the correct key (the name of the system + the mode),
-                    # if necessary, this will create a new key
-                    filenames.setdefault((systemname,mode),[]).append(filename)
+                    # Define the name of the scaling results file inside this directory
+                    filepath = os.path.join(itempath, "scaling.dat")
+
+                    # If this file exists, add its path to the library at the correct key (the name of the
+                    # system + the mode), if necessary, this will create a new key
+                    if os.path.isfile(filepath): filepaths[(systemname,mode)].append(filepath)
 
         # Show an error if no files were found (for the specified system)
-        if len(filenames) == 0:
-            self._log.error("No results file found for system " + self._system)
+        if len(filepaths) == 0: self._log.error("No results file found for system " + self._system)
 
         # Create a dictionary to contain the statistics (timings with error bars for different thread counts)
         # with the keys equal to the keys of the filenames dictionary (systemname, mode).
-        self._statistics = dict.fromkeys(filenames.keys(), 0)
+        self._statistics = dict.fromkeys(filepaths.keys(), 0)
 
         # For each different system and mode in which the scaling test has been performed
-        for (systemname, mode), filelist in filenames.items():
+        for (systemname, mode), filelist in filepaths.items():
 
             # A dictionary containing the runtimes for different amount of threads for this system and mode
-            runtimes = dict()
+            runtimes = defaultdict(list)
 
-            # For every results file in this run
-            for file in filelist:
+            # For every scaling results file in this run
+            for filepath in filelist:
 
                 # Get the values from this results file. If no data could be found in the file, we skip it.
-                filepath = os.path.join(self._respath, file)
                 try:
                     threadcounts, times = np.loadtxt(filepath, usecols=(columns['threads'],columns[phase]), unpack=True)
                 except ValueError:
-                    self._log.warning("The file " + file + " does not contain any data")
+                    self._log.warning("The file " + filepath + " does not contain any data")
                     continue
 
                 # If there was only one entry in the results file, make lists of the number of threads and the runtime
@@ -143,7 +147,7 @@ class ScalingPlotter(object):
                 # Put these in a dictionary, with the keys being the number of threads
                 for threadcount, time in zip(threadcounts, times):
 
-                    runtimes.setdefault(threadcount,[]).append(time)
+                    runtimes[threadcount].append(time)
 
             # Check whether any valid data file was found for this system and mode. Otherwise, show a warning
             # and remove the corresponding key from the dictionary.
