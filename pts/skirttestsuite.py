@@ -20,6 +20,7 @@ import os
 import os.path
 import re
 import time
+import datetime
 
 # Import relevant PTS modules
 from pts.skirtsimulation import SkirtSimulation
@@ -102,8 +103,15 @@ class SkirtTestSuite(object):
         self._subsuitepath = findsubdirectory(self._suitepath, subsuitename) 
                 
         # Create the logging mechanism
-        self._log = Log(suitepath, os.path.basename(self._subsuitepath))
-        
+        self._log = Log()
+
+        # Define a name identifying this test
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+        self._testname = os.path.basename(self._subsuitepath) + "_" + timestamp
+
+        # Define the path to the report file that will contain a detailed report of the test
+        self._reportfilepath = os.path.join(self._suitepath, "report_" + self._testname + ".html")
+
         # Create skirt execution context
         self._skirt = SkirtExec(skirtpath, self._log)
         
@@ -140,20 +148,45 @@ class SkirtTestSuite(object):
         # Inform the user of the fact that the test suite has been initiated
         self._log.info("Starting report for test suite " + self._subsuitepath)
         self._log.info("Using " + self._skirt.version() + " in " + self._skirt.directory())
-        
+
         # Clean the "out" directories
         self._clean()
 
+        # Create the report file
+        self._reportfile = open(self._reportfilepath, 'w')
+        self._reportfile.write("<html>\n<head>\n</head>\n<body>\n")
+        csscommands = """<style type="text/css">
+                         [id^="togList"],                        /* HIDE CHECKBOX */
+                         [id^="togList"] ~ .list,                /* HIDE LIST */
+                         [id^="togList"] + label  span + span,   /* HIDE "Collapse" */
+                         [id^="togList"]:checked + label span{   /* HIDE "Expand" (IF CHECKED) */
+                           display:none;
+                         }
+                         [id^="togList"]:checked + label span + span{
+                           display:inline-block;                 /* SHOW "Collapse" (IF CHECKED) */
+                         }
+                         [id^="togList"]:checked ~ .list{
+                           display:block;                        /* SHOW LIST (IF CHECKED) */
+                         }
+                         </style>"""
+        self._reportfile.write(csscommands + "\n")
+        self._reportfile.write("Report file for test suite " + self._subsuitepath + "<br>\n")
+        self._reportfile.write("Using " + self._skirt.version() + " in " + self._skirt.directory() + "<br>\n")
+
+        # Set the number of finished simulations to zero
+        self._finished = 0
+
         # Perform singleprocessing and multiprocessing mode sequentially
-        numsimulations = 0
+        self._numsimulations = 0
         for mode, modename, skipattern in zip(self._modes, self._modenames, self._skipatterns):
                   
             # Start performing the simulations
             self._simulations += self._skirt.execute(skipattern, recursive=True, inpath="in", outpath="out", skirel=True, threads=1, parallel=mode[0], processes=mode[1], wait=False)
-            numsimulations += len(self._simulations)
+            self._numsimulations += len(self._simulations)
 
             # Inform the user on the number of test cases (in this mode)
             self._log.info("Number of test cases" + modename + ": " + str(len(self._simulations)))
+            self._reportfile.write("Number of test cases" + modename + ": " + str(len(self._simulations)) + "<br>\n")
 
             # Verify the results for each test case
             self._verify(sleepsecs)
@@ -162,10 +195,10 @@ class SkirtTestSuite(object):
             self._skirt.wait()
 
         # Write statistics about the number of successful test cases
-        self._writestatistics(numsimulations)
+        self._writestatistics()
         
         # Close the report file
-        self._log.finish()
+        self._reportfile.close()
 
     ## This function cleans up the contents of all "out" directories that reside next to a ski file
     def _clean(self):
@@ -196,10 +229,16 @@ class SkirtTestSuite(object):
             self._simulations.remove(simulation)
 
     ## This function writes statistics about the number of successful test cases
-    def _writestatistics(self, numsimulations):
-        self._log.info("Summary for total of: "+ str(numsimulations))
+    def _writestatistics(self):
+
+        self._log.info("Summary for total of: "+ str(self._numsimulations))
+        self._reportfile.write("Summary for total of: " + str(self._numsimulations) + "<br>\n")
+
         for key,value in self._statistics.iteritems():
+
             self._log.info("  " + key + ": " + str(value))
+            self._reportfile.write("  " + key + ": " + str(value) + "<br>\n")
+
         self._log.info("Finished report for test suite " + self._subsuitepath)
 
     ## This function verifies and reports on the test result of the given simulation.
@@ -224,6 +263,9 @@ class SkirtTestSuite(object):
         status = simulation.status()
         if status == "Finished":
 
+            # Increment the number of finished simulations
+            self._finished += 1
+
             extra, missing, differ = self._finddifference(casedirpath)
 
             if len(extra) == 0 and len(missing) == 0 and len(differ) == 0:
@@ -231,37 +273,58 @@ class SkirtTestSuite(object):
                 status = "Succeeded"
                 self._log.success("Test case " + casename + ": succeeded")
 
+                # Write to the report file
+                self._reportfile.write("<span style='color:LightGreen'>Test case " + casename + ": succeeded</span><br>\n")
+
             else:
 
                 status = "Failed"
                 self._log.error("Test case " + casename + ": failed")
 
+                # Write to the report file
+                self._reportfile.write("<div class='row'>\n")
+                self._reportfile.write("  <input id='togList" + str(self._finished) + "' type='checkbox'>\n")
+                self._reportfile.write("  <label for='togList" + str(self._finished) + "'>\n")
+                self._reportfile.write("    <span style='color:red'>Test case " + casename + ": failed [click to expand] </span>\n")
+                self._reportfile.write("    <span style='color:red'>Test case " + casename + ": failed [click to collapse]</span>\n")
+                self._reportfile.write("  </label>\n")
+                self._reportfile.write("  <div class='list'>\n")
+                self._reportfile.write("    <ul>\n")
+
                 if len(extra) > 0:
 
-                    if len(extra) == 1: self._log.info("    The output contains an extra file:")
-                    else: self._log.info("    The output contains extra files:")
+                    if len(extra) == 1: self._reportfile.write("      <li>The output contains an extra file:<br>")
+                    else: self._reportfile.write("      <li>The output contains extra files:<br>")
 
                     for filename in extra:
 
-                        self._log.info("      * " + filename)
+                        self._reportfile.write("  - " + filename + "<br>")
+
+                    self._reportfile.write("</li>\n")
 
                 if len(missing) > 0:
 
-                    if len(missing) == 1: self._log.info("    The output misses a file:")
-                    else: self._log.info("    The output misses files:")
+                    if len(missing) == 1: self._reportfile.write("      <li>The output misses a file:<br>")
+                    else: self._reportfile.write("      <li>The output misses files:<br>")
 
                     for filename in missing:
 
-                        self._log.info("      * " + filename)
+                        self._reportfile.write("  - " + filename + "<br>")
+
+                    self._reportfile.write("</li>\n")
 
                 if len(differ) > 0:
 
-                    if len(differ) == 1: self._log.info("    The following file differs:")
-                    else: self._log.info("    The following files differ:")
+                    if len(differ) == 1: self._reportfile.write("      <li>The following file differs:<br>")
+                    else: self._reportfile.write("      <li>The following files differ:<br>")
 
                     for filename in differ:
 
-                        self._log.info("      * " + filename)
+                        self._reportfile.write("  - " + filename + "<br>")
+
+                    self._reportfile.write("</li>\n")
+
+                self._reportfile.write("    </ul>\n  </div>\n</div>\n")
 
         self._statistics[status] = self._statistics.get(status,0) + 1
 
