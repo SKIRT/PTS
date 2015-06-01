@@ -224,7 +224,15 @@ class ScalingTest(object):
         self._scalingfilepath = self._createscalingfile()
 
         # Create a file which gives useful information about this scaling test run
-        self._infofilepath = self._createinfofile(maxnodes, minnodes)
+        self._infofilepath = self._createinfofile(maxnodes, minnodes, maxprocessors, minprocessors)
+
+        # Create a directory to contain the job scripts for this scaling test run (if necessary)
+        localoutdirectory = os.path.join(self._outpath, self._scalingrunname)
+        self._jobscriptsoutdir = None
+        if self._scheduler:
+
+            os.mkdir(localoutdirectory)
+            self._jobscriptsoutdir = localoutdirectory
 
         # Perform the simulations with increasing number of processors
         while processors <= maxprocessors:
@@ -321,8 +329,8 @@ class ScalingTest(object):
         # the progress of the different parallel processes afterwards. Because for scaling tests, we don't want
         # processes to end up on different nodes or the SKIRT processes sensing interference from other programs,
         # we set the 'fullnode' flag to True, which makes sure we always request at least one full node, even when
-        # the current number of processors is less than the number of cores per node.
-        jobscriptpath = os.path.join(self._outpath, "job_" + self._mode + "_" + str(processors) + ".sh")
+        # the current number of processors is less than the number of cores per node
+        jobscriptpath = os.path.join(self._jobscriptsoutdir, "job_" + self._mode + "_" + str(processors) + ".sh")
         jobscript = JobScript(jobscriptpath, skifilepath, self._system, nodes, ppn, threads, self._inpath, dataoutputpath, walltime, brief=True, verbose=True, fullnode=True)
 
         # Add the command to go the the PTS do directory
@@ -365,8 +373,8 @@ class ScalingTest(object):
             command = "cd; rm -rf " + dataoutputpath
             jobscript.addcommand(command, comment="Remove the temporary output directory")
 
-        # Change the directory to the output directory for this simulation for the 'output.txt' and 'error.txt' files
-        os.chdir(self._outpath)
+        # Change the directory to the jobscripts output directory for the 'output.txt' and 'error.txt' files
+        os.chdir(self._jobscriptsoutdir)
 
         # Submit the job script to the cluster scheduler
         if not self._manual: jobscript.submit()
@@ -469,7 +477,7 @@ class ScalingTest(object):
         return skirtoutputpath
 
     ## This function creates a file containing general information about the current scaling test run
-    def _createinfofile(self, maxnodes, minnodes):
+    def _createinfofile(self, maxnodes, minnodes, maxprocessors, minprocessors):
 
         # Create the file
         infofilepath = os.path.join(self._resultsdirpath, "info.txt")
@@ -487,8 +495,8 @@ class ScalingTest(object):
         infofile.write("System: " + self._system + "\n")
         infofile.write("SKIRT version: " + self._skirt.version() + "\n")
         infofile.write("Mode: " + self._mode + hybridinfo + "\n")
-        infofile.write("Maximum number of nodes: " + str(maxnodes) + "\n")
-        infofile.write("Minimum number of nodes: " + str(minnodes) + "\n")
+        infofile.write("Maximum number of nodes: " + str(maxnodes) + "(" + str(maxprocessors) + " processors)\n")
+        infofile.write("Minimum number of nodes: " + str(minnodes) + "(" + str(minprocessors) + " processors)\n")
         infofile.write("\n")
 
         # Close the info file (information on specific simulations will be appended)
