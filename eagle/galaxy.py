@@ -437,16 +437,6 @@ class Galaxy:
         gdat['P']        = sf.getPtot(gdat['rho'].copy(), self.snapshot.schmidtpars)
         gdat['h_mapp']   = (self.snapshot.mpdr / (4 * np.pi * gdat['rho'] * densconv))**(1/3.)
 
-        # ---- gather statistics about data as it is stored in the hdf5 snapshot
-
-        info = { }
-        info["original_particles_stars"] = len(sdat['m'])
-        info["original_initial_mass_stars"] = sdat['im'].sum()
-        info["original_mass_stars"] = sdat['m'].sum()
-        info["original_particles_gas"] = len(gdat['m'])
-        info["original_mass_gas"] = gdat['m'].sum()
-        info["original_mass_baryons"] = info["original_mass_stars"] + info["original_mass_gas"]
-
         # ---- convert to Local Galactic Coordinates (LGC)
 
         # calculate stellar centre of mass and translational velocity using shrinking aperture technique
@@ -473,7 +463,21 @@ class Galaxy:
         sdat['r'],w = transf.transform_vec(sdat['r'][:,0],sdat['r'][:,1],sdat['r'][:,2], np.ones(sdat['r'].shape[0]))
         gdat['r'],w = transf.transform_vec(gdat['r'][:,0],gdat['r'][:,1],gdat['r'][:,2], np.ones(gdat['r'].shape[0]))
 
-        # ---- initialize statistics about the exported data that will be gathered as we go along
+        # apply 30kpc aperture (i.e. remove all particles outside the aperture)
+        applyAperture(sdat, 30e3)
+        applyAperture(gdat, 30e3)
+
+        # ---- gather statistics about data as it is read from the hdf5 snapshot
+
+        info = { }
+        info["original_particles_stars"] = len(sdat['m'])
+        info["original_initial_mass_stars"] = sdat['im'].sum()
+        info["original_mass_stars"] = sdat['m'].sum()
+        info["original_particles_gas"] = len(gdat['m'])
+        info["original_mass_gas"] = gdat['m'].sum()
+        info["original_mass_baryons"] = info["original_mass_stars"] + info["original_mass_gas"]
+
+        # ---- initialize statistics about the exported data
 
         info["exported_particles_old_stars"] = 0
         info["exported_initial_mass_old_stars"] = 0
@@ -799,5 +803,13 @@ def rotAxis(crds, vels, mass, com, v_bar, apt = 3e4, aptfrac = 0.08):
     J = Js.sum(axis = 0)
     n_vect = J * (np.dot(J, J).sum()) ** -0.5
     return n_vect
+
+# This private helper function applies a spherical aperture to a dictionary of particle data, i.e. it
+# adjusts the dictionary so that the particles outside the aperture are removed from each array.
+def applyAperture(data, radius):
+    x,y,z = data['r'].T
+    inside = (x*x+y*y+z*z) <= (radius*radius)
+    for key in data:
+        data[key] = data[key][inside]
 
 # -----------------------------------------------------------------
