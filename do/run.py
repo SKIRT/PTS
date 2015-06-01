@@ -33,6 +33,12 @@ parser.add_argument('inpath', type=str, help='the simulation input path')
 parser.add_argument('outpath', type=str, help='the simulation output path')
 parser.add_argument('--brief', action='store_true', help='add this option to enable brief console logging')
 parser.add_argument('--verbose', action='store_true', help='add this option to enable verbose logging mode for SKIRT')
+parser.add_argument('--plotseds', action='store_true', help='add this option to make plots of the output SEDs')
+parser.add_argument('--plotgrids', action='store_true', help='add this option to make plots of the dust grid')
+parser.add_argument('--plotprogress', action='store_true', help='add this option to make plots of the progress of the different processes as a function of time')
+parser.add_argument('--plottimeline', action='store_true', help='add this option to make a plot of the timeline for the different processes')
+parser.add_argument('--makergb', action='store_true', help='add this option to make RGB images from the SKIRT output')
+parser.add_argument('--makewave', action='store_true', help='add this option to make a wave movie from the SKIRT output')
 
 # Parse the command line arguments
 args = parser.parse_args()
@@ -75,7 +81,7 @@ log.info("The amount of currently available memory on this system is " + str(mem
 
 # Calculate the amount of required memory for this simulation (in gigabytes)
 skifile = SkiFile(skifilepath)
-required = estimate_memory(skifile)
+required = estimate_memory(skifile, inpath)
 
 # Inform the user
 log.info("The estimated memory requirement for this simulation is " + str(required) + " gigabytes")

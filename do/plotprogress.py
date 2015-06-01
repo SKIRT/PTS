@@ -99,6 +99,9 @@ if progressfiles:
         # Determine the path to the plot file
         plotfilepath = os.path.join(plotpath, os.path.splitext(filename)[0] + "_" + phase + ".pdf")
 
+        # If the file already exists, skip the plotting procedure
+        if os.path.isfile(plotfilepath): continue
+
         # Plot the progress information in this file
         plotprogress(progressfilepath, plotfilepath, phase)
 

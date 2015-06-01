@@ -42,6 +42,9 @@ def extract(skifilename, outputpath, timelinefilepath=""):
         try: processrank = int(logfile[-7:-4])
         except ValueError: pass
 
+        # Set the default value for the number of processes
+        nprocs = 1
+
         # Iterate over each line in this log file
         for line in open(logfile):
 
@@ -52,6 +55,9 @@ def extract(skifilename, outputpath, timelinefilepath=""):
             if "Starting simulation" in line:
 
                 if time < T0: T0 = time
+
+                # Get the number of processes with which the simulation was run
+                if "with" in line: nprocs = int(line.split(' with ')[1].split()[0])
 
             # Check whether this line indicates the start of the setup
             elif "Starting setup" in line:
@@ -163,6 +169,13 @@ def extract(skifilename, outputpath, timelinefilepath=""):
             # Check whether this line indicates the beginning of the dust emission phase or a dust self-absorption cycle
             elif "Dust emission spectra calculated." in line:
 
+                # If the number of processes is one, this line also marks the end of the calculation of the dust
+                # emission spectra
+                if nprocs == 1:
+
+                    entries = len(data[processrank])
+                    data[processrank][entries-1]['end'] = time
+
                 data[processrank].append({'phase': phaseindices['dust'], 'start': time, 'end': None})
 
             # Check whether this line indicates the end of a dust self-absorption cycle, and the start of the
@@ -225,7 +238,7 @@ def extract(skifilename, outputpath, timelinefilepath=""):
             # Loop over all the different entries (different Timespans)
             for entry in entries:
 
-                # If the end of this entry was not recorded, skip it
+                # If the end of this entry was not recorded, take the start of the next entry
                 if entry['end'] is None: continue
 
                 phase_id = str(entry['phase'])

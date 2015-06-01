@@ -102,6 +102,12 @@ class DataPreparation(object):
         self._preppath = os.path.join(basepath, "prep")
         self._inpath = os.path.join(basepath, "in")
 
+        # Create the preparation and input directories if they were not yet present
+        try: os.mkdir(self._preppath)
+        except OSError: pass
+        try: os.mkdir(self._inpath)
+        except OSError: pass
+
         # Create the logging mechanism
         self._log = Log(basepath, self._galaxyname)
 
@@ -121,8 +127,28 @@ class DataPreparation(object):
             # Ignore non-FITS files or hidden files
             if not filename.endswith(".fits") or filename.startswith("."): continue
 
-            # Add an entry to the filters dictionary
-            self._filters[os.path.splitext(filename)[0]] = os.path.join(self._datapath, filename)
+            # Get the name of the file without the extension
+            base_filename = os.path.splitext(filename)[0]
+
+            # If a filtername was specified, only add the file that corresponds to this filter
+            if filtername:
+
+                if filtername.lower() == base_filename.lower():
+
+                    self._filters[filtername] = os.path.join(self._datapath, filename)
+                    break
+
+            # If no filtername was specified, add each FITS file found in the data directory to the dictionary
+            else:
+
+                self._filters[base_filename] = os.path.join(self._datapath, filename)
+
+            # If intermediate results should be saved, create a seperate directory for each filter
+            if save:
+
+                # Create the directory if it was not yet present
+                try: os.mkdir(os.path.join(self._preppath, base_filename))
+                except OSError: pass
 
     ## This function ...
     def run(self):
