@@ -15,10 +15,21 @@
 import os
 import os.path
 import subprocess
+from distutils.spawn import find_executable
 
 # -----------------------------------------------------------------
 
+# Define the number of physical cores on the different clusters
 cores = {'delcatty': 16, 'gulpin': 32}
+
+# Determine the full path to the SKIRT executable
+skirtpath = find_executable("skirt")
+
+# Determine the path to the SKIRT directory
+skirtdir = os.path.dirname(os.path.dirname(os.path.dirname(skirtpath)))
+
+# Determine the path to the SKIRT/run directory
+rundir = os.path.join(skirtdir, "run")
 
 # -----------------------------------------------------------------
 
@@ -58,17 +69,21 @@ class JobScript(object):
         self._script = open(path, 'w')
 
         # The name of the ski file
-        skifilename = os.path.splitext(os.path.basename(skifilepath))[0]
+        self._skifilename = os.path.splitext(os.path.basename(skifilepath))[0]
 
         # The path of the directory containing the ski file
-        directorypath = os.path.dirname(skifilepath)
+        self._directorypath = os.path.dirname(skifilepath)
+
+        # Set the input and output paths
+        self._inputpath = inputpath
+        self._outputpath = outputpath
 
         # Determine the walltime in "hours, minutes and seconds" format
         m, s = divmod(walltime, 60)
         h, m = divmod(m, 60)
 
         # Determine an appropriate name for this job
-        name = skifilename + "_" + str(nodes) + "_" + str(ppn)
+        name = self._skifilename + "_" + str(nodes) + "_" + str(ppn)
 
         # Check whether we are dealing with multithreading. If so, we calculate the number of processes per
         # node and the requested number of processors per node is set to the maximum (for performance reasons).
@@ -114,7 +129,7 @@ class JobScript(object):
 
         # Run the simulation
         self._script.write("# Run the simulation\n")
-        self._script.write("cd " + directorypath + "\n")
+        self._script.write("cd " + self._directorypath + "\n")
 
         # Construct a string that represents the SKIRT execution command
         commandstring = "mympirun "
@@ -132,7 +147,7 @@ class JobScript(object):
         if verbose: commandstring += "-v "
 
         # Finally, give the name of the ski file to SKIRT
-        commandstring += skifilename + ".ski"
+        commandstring += self._skifilename + ".ski"
 
         # Write the command string to the job script
         self._script.write(commandstring + "\n")
@@ -156,8 +171,23 @@ class JobScript(object):
         self._script.close()
 
         # Then, swap to the desired cluster and launch the job script
-        FNULL = open(os.devnull, 'w')   # We ignore the output of the qsub command
-        subprocess.call("module swap cluster/" + self._clustername + "; qsub " + self._path, shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
+        output =  subprocess.check_output("module swap cluster/" + self._clustername + "; qsub " + self._path, shell=True, stderr=subprocess.STDOUT)
+
+        # Read the job ID from the qsub output
+        jobid = int(output.split(".")[0])
+
+        # Create the job file
+        jobfilepath = os.path.join(rundir, str(jobid) + ".txt")
+        jobfile = open(jobfilepath, 'w')
+
+        # Add the information
+        jobfile.write("ski file name: " + self._skifilename + "\n")
+        jobfile.write("ski file directory: " + self._directorypath + "\n")
+        jobfile.write("input directory: " + self._inputpath + "\n")
+        jobfile.write("output directory: " + self._outputpath + "\n")
+
+        # Close the file
+        jobfile.close()
 
     ## This function removes the job script
     def remove(self):
