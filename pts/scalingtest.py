@@ -739,17 +739,20 @@ class ScalingTest(object):
     #
     def _getruntimes(self, processors, anysystem=False, anymode=False):
 
-        # Search for a results file corresponding with this system and the current mode
-        for filename in os.listdir(self._respath):
+        # Search for a scaling results file corresponding with this system and the current mode
+        for itemname in os.listdir(self._respath):
 
-            # Check whether this file is a data file and not hidden
-            if not filename.endswith(".dat") or filename.startswith("."): continue
+            # Define the full path to this item
+            itempath = os.path.join(self._respath, itemname)
 
-            # Determine the full path to this results file
-            filepath = os.path.join(self._respath, filename)
+            # Check whether this item is a directory and it is not hidden
+            if not os.path.isdir(itempath) or itemname.startswith("."): continue
 
-            # Split the file name into its segments
-            segments = filename.split("_")
+            # Define the name of the scaling results file inside this directory
+            filepath = os.path.join(itempath, "scaling.dat")
+
+            # Split the directory name into its segments
+            segments = itemname.split("_")
 
             # Get the system name in which the scaling test was run for this results file
             systemname = segments[0]
