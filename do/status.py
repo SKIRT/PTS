@@ -27,7 +27,7 @@ from pts.skirtsimulation import SkirtSimulation
 # This private helper function returns the datetime object corresponding to the time stamp in a line
 def _timestamp(line):
 
-    date, time, dummy = line.split(None, 2)
+    date, time = line.split(" ", 2)
     day, month, year = date.split('/')
     hour, minute, second = time.split(':')
     second, microsecond = second.split('.')
@@ -57,7 +57,7 @@ skirtdir = os.path.dirname(os.path.dirname(os.path.dirname(skirtpath)))
 rundir = os.path.join(skirtdir, "run")
 
 # Execute the qstat command and get the output
-output = subprocess.check_output("qstat -a", shell=True, stderr=subprocess.STDOUT)
+output = subprocess.check_output("qstat", shell=True, stderr=subprocess.STDOUT)
 
 # Create a dictionary that contains the status of the different jobs that are scheduled or running on the cluster
 qstat = dict()
@@ -66,13 +66,17 @@ qstat = dict()
 for line in output.splitlines():
 
     # If this line mentions a job
-    if "delca" in line:
+    if "master15" in line:
 
         # Get the job ID
         jobid = int(line.split(".")[0])
 
+        parsedline = line.split(" ")
+
         # Get the status (Q=queued, R=running)
-        jobstatus = line.split(" ")[-3]
+        if "short" in parsedline: position = parsedline.index("short")
+        if "long" in parsedline: position = parsedline.index("long")
+        jobstatus = parsedline[position-1]
 
         # Add the status of this job to the dictionary
         qstat[jobid] = jobstatus
@@ -93,7 +97,7 @@ for itemname in os.listdir(rundir):
         with open(itempath) as jobfile:
 
             # Get the lines
-            lines = jobfile.readline()
+            lines = jobfile.read().splitlines()
 
             # Get the name of the ski file
             skifilename = lines[0].split("ski file name: ")[1]
@@ -182,7 +186,7 @@ for scalingtest, simulations in scalingtests.items():
         rank = simulation[3]
         jobfilepath = simulation[4]
 
-        if str(rank) in delete:
+        if delete is not None and str(rank) in delete:
 
             tag = "    [X] "
             deletethisfile = True
