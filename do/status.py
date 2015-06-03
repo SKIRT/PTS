@@ -140,7 +140,7 @@ for itemname in os.listdir(rundir):
         else:
 
             # Check the status from the simulation's log file (finished or crashed)
-            simulation = SkirtSimulation(prefix=skifilename+".ski", outpath=outputdir)
+            simulation = SkirtSimulation(prefix=skifilename+".ski", outpath=simulationoutputdir)
             stat = simulation.status()
 
             # This simulation has sucessfullly finished
