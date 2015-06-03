@@ -186,7 +186,7 @@ for scalingtest, simulations in scalingtests.items():
         rank = simulation[3]
         jobfilepath = simulation[4]
 
-        if delete is not None and str(rank) in delete:
+        if delete is not None and rank in delete:
 
             tag = "    [X] "
             deletethisfile = True
