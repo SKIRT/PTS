@@ -15,6 +15,7 @@
 import os
 import os.path
 import subprocess
+import datetime
 from distutils.spawn import find_executable
 
 # -----------------------------------------------------------------
@@ -185,6 +186,7 @@ class JobScript(object):
         jobfile.write("ski file directory: " + self._directorypath + "\n")
         jobfile.write("input directory: " + self._inputpath + "\n")
         jobfile.write("output directory: " + self._outputpath + "\n")
+        jobfile.write("submitted at: " + datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S.%f") + "\n")
 
         # Close the file
         jobfile.close()

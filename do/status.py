@@ -10,15 +10,39 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
+import argparse
 import os.path
-from distutils.spawn import find_executable
 import subprocess
+from datetime import datetime
+from operator import itemgetter
+from collections import defaultdict
+from distutils.spawn import find_executable
 
 # Import the relevant PTS modules
 from pts.log import Log
 from pts.skirtsimulation import SkirtSimulation
 
 # -----------------------------------------------------------------
+
+# This private helper function returns the datetime object corresponding to the time stamp in a line
+def _timestamp(line):
+
+    date, time, dummy = line.split(None, 2)
+    day, month, year = date.split('/')
+    hour, minute, second = time.split(':')
+    second, microsecond = second.split('.')
+    return datetime(year=int(year), month=int(month), day=int(day),
+                    hour=int(hour), minute=int(minute), second=int(second), microsecond=int(microsecond))
+
+# -----------------------------------------------------------------
+
+# Create the command-line parser
+parser = argparse.ArgumentParser()
+parser.add_argument('-d', '--delete', nargs='+', type=int)
+
+# Parse the command line arguments
+args = parser.parse_args()
+delete = args.delete
 
 # Create a logger
 log = Log()
@@ -36,7 +60,7 @@ rundir = os.path.join(skirtdir, "run")
 output = subprocess.check_output("qstat -a", shell=True, stderr=subprocess.STDOUT)
 
 # Create a dictionary that contains the status of the different jobs that are scheduled or running on the cluster
-jobs = dict()
+qstat = dict()
 
 # Check every line in the output
 for line in output.splitlines():
@@ -51,7 +75,10 @@ for line in output.splitlines():
         jobstatus = line.split(" ")[-3]
 
         # Add the status of this job to the dictionary
-        jobs[jobid] = jobstatus
+        qstat[jobid] = jobstatus
+
+# Create a list that contains the status of all the jobs (scheduled, running or finished)
+jobs = []
 
 # Search for files in the SKIRT run directory
 for itemname in os.listdir(rundir):
@@ -75,48 +102,126 @@ for itemname in os.listdir(rundir):
             skifiledir = lines[1].split("ski file directory: ")[1]
 
             # Get the output directory of the simulation
-            outputdir = lines[3].split("output directory: ")[1]
+            simulationoutputdir = lines[3].split("output directory: ")[1]
+            simulationid = os.path.basename(simulationoutputdir)
 
-        # Check if the job is in the list of queued or running jobs
-        if itemname in jobs:
+            # Get the name of the scaling test and the name of the specific run of that test
+            runoutputdir = os.path.dirname(simulationoutputdir)
+            run = os.path.basename(runoutputdir)
+            scalingoutdir = os.path.dirname(runoutputdir)
+            scalingtest = os.path.basename(scalingoutdir)
+
+            # Get the time of submitting
+            timestamp = lines[4].split("submitted at: ")[1]
+            time = _timestamp(timestamp)
+
+        # Get the job ID from the file name
+        jobid = int(os.path.splitext(itemname)[0])
+
+        # Check if the job ID is in the list of queued or running jobs
+        if jobid in qstat:
 
             # Check the status of this job
-            status = jobs[itemname]
+            stat = qstat[jobid]
 
-            if status == 'Q':
+            # This simulation is still queued
+            if stat == 'Q': status = "queued"
 
-                # This simulation is still queued
-                log.info(skifilename + " in " + skifiledir + ": queued")
+            # This simulation is currently running
+            elif stat == 'R': status = "running"
 
-            elif status == 'R':
-
-                # This simulation is currently running
-                log.warning(skifilename + " in " + skifiledir + ": running")
-
-            else:
-
-                # This simulation has an unknown status
-                log.failure(skifilename + " in " + skifiledir + ": unknown status")
+            # This simulation has an unknown status
+            else: status = "unknown"
 
         else:
 
             # Check the status from the simulation's log file (finished or crashed)
             simulation = SkirtSimulation(prefix=skifilename+".ski", outpath=outputdir)
-            status = simulation.status()
+            stat = simulation.status()
 
-            if status == "Finished":
+            # This simulation has sucessfullly finished
+            if stat == "Finished": status = "finished"
 
-                # This simulation has sucessfullly finished
-                log.success(skifilename + " in " + skifiledir + ": finished")
+            # This simulation has crashed with an error
+            elif stat == "Crashed": status = "crashed"
 
-            elif status == "Crashed":
+            # This simulation has an unkown status
+            else: status = "unknown"
 
-                # This simulation has crashed with an error
-                log.failure(skifilename + " in " + skifiledir + ": crashed")
+        # Append the properties of this job to the list
+        jobs.append([skifilename, scalingtest, run, simulationid, time, status, itempath])
 
-            else:
+# Sort the total list of jobs based on the time (the oldest has index 0)
+jobs.sort(key=itemgetter(4))
 
-                # This simulation has an unkown status
-                log.failure(skifilename + " in " + skifiledir + ": unknown status")
+# Loop over all the jobs and put them in a dictionary based on the scaling test
+scalingtests = defaultdict(list)
+
+# Iterate over the jobs and get the index (from the ordering)
+for rank, job in enumerate(jobs):
+
+    test = job[1]
+    run = job[2]
+    simulation = job[3]
+    status = job[5]
+    jobfilepath = job[6]
+
+    # Add the information to the dictionary
+    scalingtests[test].append([run, simulation, status, rank, jobfilepath])
+
+# Finally print out the information
+for scalingtest, simulations in scalingtests.items():
+
+    log.info(scalingtest + ":")
+
+    for simulation in simulations:
+
+        run = simulation[0]
+        sim = simulation[1]
+        status = simulation[2]
+        rank = simulation[3]
+        jobfilepath = simulation[4]
+
+        if str(rank) in delete:
+
+            tag = "    [X] "
+            deletethisfile = True
+
+        else:
+
+            tag = "    [" + str(rank) + "] "
+            deletethisfile = False
+
+        if status == "queued":
+
+            # TODO: figure out what to do when queued jobs should be deleted
+
+            log.info(tag + run + " > " + sim + ": " + status)
+
+        elif status == "running":
+
+            # TODO: figure out what to do when running jobs should be deleted
+
+            log.warning(tag + run + " > " + sim + ": " + status)
+
+        elif status == "finished":
+
+            # Delete the job file if requested
+            if deletethisfile: os.remove(jobfilepath)
+
+            log.success(tag + run + " > " + sim + ": " + status)
+
+        elif status == "crashed":
+
+            # Delete the job file if requested
+            if deletethisfile: os.remove(jobfilepath)
+
+            log.failure(tag + run + " > " + sim + ": " + status)
+
+        elif status == "unknown":
+
+            # TODO: figure out what to do when jobs with unknown status should be deleted
+
+            log.failure(tag + run + " > " + sim + ": " + status)
 
 # -----------------------------------------------------------------
