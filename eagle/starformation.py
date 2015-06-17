@@ -136,61 +136,87 @@ def getPtot(rho, schmidtpars):
 
 # -----------------------------------------------------------------
 
-## Function to sample a star forming gas particles into a number of sub particles at a set mass resolution.
+## Function to sample a star forming gas particles into a number of sub-particles.
 #
 # Inputs:
 #  - sfr: star formation rate in solar masses per yr
 #  - m_gas: particle mass in solar masses
-#  - del_m: mass dicretisation in solar masses
-#  - thresh_age: period over which to resample in yr (100 Myr by default)
 #
 # Outputs:
-#  - ms: sub-particle stellar masses in solar masses
-#  - ts: lookback times of sub-particle formation
-#  - sfrs: the birth star formation rate of sub-particles
-#  - idxs: index array to index inherited sub-particle properties from particle arrays
+#  - nested arrays with a list of subparticles for each parent input particle:
+#     - ms: sub-particle stellar masses in solar masses
+#     - ts: lookback times of sub-particle formation
+#     - idxs: index of the sub-particle's parent particle in input array
 #  - mdiffs: mass of parent particles locked up in new stars; this can be subtracted from the parent gas
 #            particles for mass conservation
 #
-def stochResamp(sfr, m_gas, delm=1.e4, thresh_age = 1e8):
+def stochResamp(sfr, m_gas):
 
-    # Number of sub-particles for resampling at resolution of delm
-    Ns = np.round(m_gas / delm).astype(int)
+    # resampling parameters
+    thresh_age = 1e8    # period over which to resample in yr (100 Myr)
+    m_min = 1e3         # minimum mass of sub-particle in M_solar
+    m_max = 2e4         # maximum mass of sub-particle in M_solar
+    m_avg = 0.5 * (m_min + m_max)
 
-    # find masses and SF time scales of sub-particles
-    sspm = m_gas / Ns
-    taus = m_gas / sfr
-
-    # initialise lists of lists
+    # initialise lists for output
     ms   = [[]]
     ts   = [[]]
-    Zs   = [[]]
-    sfrs = [[]]
     idxs = [[]]
-
-    # calculate mass converted to stars in each particle
     mdiffs = []
-    for i in range(Ns.size):
-        X = np.random.random(Ns[i])           # generate Ns[i] uniform random variables in range (0,1]
-        t = thresh_age + taus[i]*np.log(1-X)  # calculate decay lookback time
 
-        isCnv = t > 0.                        # check if star forms by present day
-        ages  = t[isCnv]                      # remove stars forming in the future
-        N_cnv = isCnv.sum()                   # calculate number converted
+    # for each parent particle, determine the star-forming sub-particles
+    for i in range(sfr.size):
+        sfri = sfr[i]
+        mi = m_gas[i]
 
-        ts.append(ages)
-        ms.append([sspm[i]]*N_cnv)
-        sfrs.append([sfr[i]/Ns[i]]*N_cnv)
-        idxs.append([i]*N_cnv)
-        mdiffs.append(sspm[i]*N_cnv)
+        # determine the total number of sub-particles based on the average sub-particle mass
+        N = int(max(1, round(mi / m_avg)))
+
+        # generate random sub-particle masses from a uniform distribution between min and max values
+        # and normalize them to the total mass of the parent
+        m = np.random.uniform(m_min, m_max, N)
+        m = mi/m.sum() * m
+
+        # generate random decay lookback time for each sub-particle
+        X = np.random.random(N)               # X in range (0,1]
+        t = thresh_age + mi/sfri * np.log(1-X)
+
+        # determine mask for sub-particles that form stars by present day
+        issf = t > 0.
+
+        # add star-forming sub-particles to the output lists
+        ms.append(m[issf])
+        ts.append(t[issf])
+        idxs.append([i]*np.count_nonzero(issf))
+        mdiffs.append(m[issf].sum())
 
     # convert sub-particle lists into numpy arrays
     ms     = np.hstack(ms)
     ts     = np.hstack(ts)
-    sfrs   = np.hstack(sfrs)
     idxs   = np.hstack(idxs).astype(int)
     mdiffs = np.array(mdiffs)
 
-    return ms, ts, sfrs, idxs, mdiffs
+    return ms, ts, idxs, mdiffs
+
+# -----------------------------------------------------------------
+
+## Function to randomly shift the positions of HII region sub-particles within the smoothing sphere of their parent
+#
+# Arguments:
+#  - r: parent positions; updated by this function to the shifted positions
+#  - h: the smoothing lengths of the parents
+#  - h_mapp: the smoothing lengths of the sub-particles
+#
+def stochShiftPos(r, h, h_mapp):
+    # the offset sampling smoothing length is determined so that in the limit of infinite particles,
+    # the light distribution is the same as the parent particle kernel;
+    # assuming Gaussian kernels this means h_sampling**2 + h_mapp**2 = h**2.
+    h_sampling = np.sqrt(h*h - h_mapp*h_mapp)
+
+    # sample the offset from a scaled gaussian that resembles a cubic spline kernel
+    # (see the documentation of the SPHDustDistribution class in SKIRT)
+    r[:,0] += h_sampling * np.random.normal(scale=0.29, size=h_sampling.shape)
+    r[:,1] += h_sampling * np.random.normal(scale=0.29, size=h_sampling.shape)
+    r[:,2] += h_sampling * np.random.normal(scale=0.29, size=h_sampling.shape)
 
 # -----------------------------------------------------------------

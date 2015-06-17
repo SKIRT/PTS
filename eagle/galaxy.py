@@ -110,11 +110,6 @@ class Snapshot:
         # extract star formation law parameters
         self.schmidtpars = sf.schmidtParameters(self.constants, self.runpars)
 
-        # resampling parameters
-        self.mcl = 1.5e4        # in M_solar
-        self.mpdr = 1.5e5       # in M_solar
-        self.agethresh = 1e8    # in yr
-
         hdf.close()
 
         # verify that all files belong to the same snapshot
@@ -429,13 +424,9 @@ class Galaxy:
         # density conversion from g cm^-3 to M_sun Mpc^-3
         densconv = ((self.snapshot.constants['CM_PER_MPC']/1.e6)**3) / self.snapshot.constants['SOLAR_MASS']
 
-        # calculate new fields
+        # calculate the ISM pressure
         sdat['P']        = sf.getPtot(sdat['rho_born'], self.snapshot.schmidtpars)
-        #sdat['sfr_born'] = sf.getSFR(sdat['rho_born'], sdat['m'], self.snapshot.schmidtpars)
-        sdat['h_mapp']   = (self.snapshot.mpdr / (4 * np.pi * sdat['rho_born'] * densconv))**(1/3.)
-
-        gdat['P']        = sf.getPtot(gdat['rho'].copy(), self.snapshot.schmidtpars)
-        gdat['h_mapp']   = (self.snapshot.mpdr / (4 * np.pi * gdat['rho'] * densconv))**(1/3.)
+        gdat['P']        = sf.getPtot(gdat['rho'], self.snapshot.schmidtpars)
 
         # ---- convert to Local Galactic Coordinates (LGC)
 
@@ -521,7 +512,7 @@ class Galaxy:
 
         # index for particles to resample
         issf = gdat['sfr'] > 0.
-        isyoung = sdat['t'] < self.snapshot.agethresh
+        isyoung = sdat['t'] < 1e8   # 100 Myr
 
         # append older stars to GALAXEV array
         if (~isyoung).any():
@@ -544,9 +535,8 @@ class Galaxy:
             # calculate SFR at birth of young star particles in M_sun / yr
             sdat['sfr']       = sf.getSFR(sdat['rho_born'], sdat['im'], self.snapshot.schmidtpars)
 
-            resmpstr = sf.stochResamp(sdat['sfr'], sdat['im'], delm=self.snapshot.mcl, thresh_age=self.snapshot.agethresh)
-            ms, ts, sfrs, idxs, mdiffs = resmpstr
-            isinfant = ts < 1.e7
+            ms, ts, idxs, mdiffs = sf.stochResamp(sdat['sfr'], sdat['im'])
+            isinfant = ts < 1e7
 
             if (~isinfant).any():
                 yngstars['r']  = sdat['r'][idxs][~isinfant]
@@ -566,10 +556,11 @@ class Galaxy:
                 hiiregions['Z']     = sdat['Z'][idxs][isinfant]
                 hiiregions['P']     = sdat['P'][idxs][isinfant] * 0.1   # Convert to Pa for output
                 hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
-                hiiregions['h_mapp'] = sdat['h_mapp'][idxs][isinfant]
+                hiiregions['h_mapp']  = (ms[isinfant] / (sdat['rho_born'][idxs][isinfant] * densconv))**(1/3.)
+                hiiregions['fPDR']  = 1 - (ts[isinfant]/1e7)            # Covering fraction goes from 1 to 0 over HII region lifetime
 
-                # Set 0.2 as fiducial value (Jonsson (2010))
-                hiiregions['fPDR']  = np.array([0.2]*hiiregions['P'].size)
+                # randomly shift the positions of the HII regions
+                sf.stochShiftPos(hiiregions['r'], hiiregions['h'], hiiregions['h_mapp'])
 
                 # append to MAPPINGSIII array
                 mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
@@ -593,8 +584,7 @@ class Galaxy:
             for k in gdat.keys():
                 gdat[k] = gdat[k][issf].copy()
 
-            resmpstr = sf.stochResamp(gdat['sfr'], gdat['m'], delm=self.snapshot.mcl, thresh_age=self.snapshot.agethresh)
-            ms, ts, sfrs, idxs, mdiffs = resmpstr
+            ms, ts, idxs, mdiffs = sf.stochResamp(gdat['sfr'], gdat['m'])
             isinfant = ts < 1.e7
 
             if (~isinfant).any():
@@ -615,10 +605,11 @@ class Galaxy:
                 hiiregions['Z']     = gdat['Z'][idxs][isinfant]
                 hiiregions['P']     = gdat['P'][idxs][isinfant] * 0.1     # convert to Pa
                 hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
-                hiiregions['h_mapp'] = gdat['h_mapp'][idxs][isinfant]
+                hiiregions['h_mapp'] = (ms[isinfant] / (gdat['rho'][idxs][isinfant] * densconv))**(1/3.)
+                hiiregions['fPDR']  = 1 - (ts[isinfant]/1e7)            # Covering fraction goes from 1 to 0 over HII region lifetime
 
-                # Set 0.2 as fiducial value a la Jonsson (2010)
-                hiiregions['fPDR']   = np.array([0.2]*hiiregions['P'].size)
+                # randomly shift the positions of the HII regions
+                sf.stochShiftPos(hiiregions['r'], hiiregions['h'], hiiregions['h_mapp'])
 
                 # append to MAPPINGSIII array
                 mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
