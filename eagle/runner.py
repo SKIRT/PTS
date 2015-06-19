@@ -14,6 +14,7 @@
 
 import os
 import os.path
+import shutil
 import eagle.config as config
 from eagle.database import Database
 from eagle.galaxy import Snapshot, Galaxy
@@ -77,6 +78,10 @@ def run(runid):
         ski.setgasfile(gasname)
         ski.sethiifile(hiiname)
         ski.saveto(os.path.join(skirtrun.runpath(), skiname))
+
+        # copy the wavelength grid
+        grid = record['skitemplate']+"_wavelengths.dat"
+        shutil.copyfile(os.path.join(config.templates_path, grid), os.path.join(skirtrun.inpath(), grid))
 
         # extract the particle data for the galaxy from the EAGLE snapshot
         galaxies = Snapshot(record['eaglesim'], redshift=record['redshift']).galaxies()
