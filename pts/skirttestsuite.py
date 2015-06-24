@@ -181,12 +181,16 @@ class SkirtTestSuite(object):
         for mode, modename, skipattern in zip(self._modes, self._modenames, self._skipatterns):
                   
             # Start performing the simulations
-            self._simulations += self._skirt.execute(skipattern, recursive=True, inpath="in", outpath="out", skirel=True, threads=1, parallel=mode[0], processes=mode[1], wait=False)
-            self._numsimulations += len(self._simulations)
+            simulations = self._skirt.execute(skipattern, recursive=True, inpath="in", outpath="out", skirel=True, threads=1, parallel=mode[0], processes=mode[1], wait=False)
+            numsimulations = len(simulations)
 
             # Inform the user on the number of test cases (in this mode)
-            self._log.info("Number of test cases" + modename + ": " + str(len(self._simulations)))
-            self._reportfile.write("Number of test cases" + modename + ": " + str(len(self._simulations)) + "<br>\n")
+            self._log.info("Number of test cases" + modename + ": " + str(numsimulations))
+            self._reportfile.write("Number of test cases" + modename + ": " + str(numsimulations) + "<br>\n")
+
+            # Add the new simulations to the list
+            self._simulations += simulations
+            self._numsimulations += numsimulations
 
             # Verify the results for each test case
             self._verify(sleepsecs)
