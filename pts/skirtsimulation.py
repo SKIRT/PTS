@@ -254,7 +254,7 @@ class SkirtSimulation:
     # the field). The last text segment on the line represents the units of the value in the file, and the segment
     # before the units represents the value itself. The value is converted from the units in the file to the
     # requested units. If the function can't locate the field, it returns -1.
-    def getfieldfromfile(self, filesuffix, trigger, header, units):
+    def getfieldfromfile(self, filesuffix, trigger, header, units=None):
         filepath = self.outfilepath(filesuffix)
         if arch.isfile(filepath):
             triggered = False
@@ -263,7 +263,10 @@ class SkirtSimulation:
                 if triggered and header in line:
                     segments = line.split()
                     if len(segments)>2:
-                        return self.units().convert(segments[-2], from_unit=segments[-1], to_unit=units)
+                        if units!=None:
+                            return self.units().convert(segments[-2], from_unit=segments[-1], to_unit=units)
+                        else:
+                            return float(segments[-1])
         return -1;
 
     ## This function returns the total dust mass in the simulation's configuration space, in solar masses.
@@ -284,7 +287,7 @@ class SkirtSimulation:
 
     ## This function returns the total mass of the cold gass represented by the set of SPH particles imported for
     # the simulation, in solar masses. The function retrieves this information from the log file entry
-    # written by the SPH dust distribution. It raises an error if this entry is not found or if the mass is zero.
+    # written by the SPH dust distribution. It raises an error if this entry is not found.
     def coldgasmass(self):
         result = self.getfieldfromfile("log.txt", "Reading SPH gas", "Total gas mass", "Msun")
         if result < 0: raise ValueError("Can't determine SPH cold gas mass")
@@ -292,11 +295,19 @@ class SkirtSimulation:
 
     ## This function returns the total mass of the metallic gas represented by the set of SPH particles imported for
     # the simulation, in solar masses. The function retrieves this information from the log file entry
-    # written by the SPH dust distribution. It raises an error if this entry is not found or if the mass is zero.
+    # written by the SPH dust distribution. It raises an error if this entry is not found.
     def metallicgasmass(self):
         result = self.getfieldfromfile("log.txt", "Reading SPH gas", "Total metal mass", "Msun")
         if result < 0: raise ValueError("Can't determine SPH metallic gas mass")
         return result
+
+    ## This function returns the number of "cold" SPH gas particles imported for the simulation, i.e. the gas
+    # particles that actually contain dust. The function retrieves this information from the log file entry
+    # written by the SPH dust distribution. It raises an error if this entry is not found.
+    def coldgasparticles(self):
+        result = self.getfieldfromfile("log.txt", "Reading SPH gas", "gas particles containing dust")
+        if result < 0: raise ValueError("Can't determine SPH cold gas particles")
+        return int(result)
 
     ## This function returns the total initial stellar mass (i.e. the mass at the time of birth) represented by
     # the set of SPH particles imported for the simulation, in solar masses. The function retrieves this information

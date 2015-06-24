@@ -82,6 +82,7 @@ def makeinfofile(skirtrun):
     info["setup_mass_dust"] = simulation.dustmass()
     info["setup_mass_dust_grid"] = simulation.dustgridmass()
     info["setup_mass_cold_gas"] = simulation.coldgasmass()
+    info["setup_particles_cold_gas"] = simulation.coldgasparticles()
     info["setup_mass_metallic_gas"] = simulation.metallicgasmass()
     info["setup_initial_mass_stars"] = simulation.initialstellarmass()
     info["setup_mass_hii_regions"] = simulation.hiiregionmass()
