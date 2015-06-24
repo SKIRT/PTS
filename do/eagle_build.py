@@ -7,7 +7,7 @@
 
 ## \package do.eagle_build Build visualization files for completed EAGLE SKIRT-runs.
 #
-# This script builds SED plots, RGB images, wavelength movies, or info files from the results of completed EAGLE .
+# This script builds SED plots, RGB images, wavelength movies, or info files from the results of completed EAGLE
 # SKIRT-runs. The resulting files are placed in the corresponding \c vis directories, replacing any previous versions.
 #
 # The script expects exactly two command-line arguments. The first argument specifies what type of files to build.

@@ -26,9 +26,13 @@ _filterspecs = ( \
                 "GALEX.FUV","GALEX.NUV",
                 "MCPS.U","MCPS.B","MCPS.V","MCPS.I",
                 "SDSS.u","SDSS.g","SDSS.r","SDSS.i","SDSS.z",
-                "UKIDSS.Z","UKIDSS.Y","UKIDSS.K","UKIDSS.J","UKIDSS.H",
+                "UKIDSS.Z","UKIDSS.Y","UKIDSS.J","UKIDSS.H","UKIDSS.K",
+                "2MASS.J", "2MASS.H", "2MASS.K",
                 "IRAS.12","IRAS.25","IRAS.60","IRAS.100",
-                "Pacs.blue","Pacs.green","Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW",
+                "IRAC.I1","IRAC.I2","IRAC.I3","IRAC.I4",
+                "MIPS.24", "MIPS.70", "MIPS.160",
+                "Pacs.blue","Pacs.green","Pacs.red",
+                "SPIRE.PSW","SPIRE.PMW","SPIRE.PLW",
                 )
 
 # private list of uniform filters for which integrated fluxes should be calculated;
@@ -90,7 +94,7 @@ def makeinfofile(skirtrun):
 
     # load filters and wavelength grid
     _loadfilters()
-    wavebincenters, wavebinwidths = simulation.wavelengthbins(unit='micron')
+    wavelengths = simulation.wavelengths()
 
     # gather statistics on fluxes received by each instrument
     for name in simulation.instrumentnames():
@@ -98,14 +102,14 @@ def makeinfofile(skirtrun):
         fluxdensities = simulation.fluxdensities(name, unit='Jy')
         info["instr_"+name+"_fluxdensity_maximum"] = fluxdensities.max()
 
-        # get flux densities per unit of wavelength because filter.apply() requires this
+        # get flux densities per unit of wavelength because filter.convolve() requires this
         fluxdensities = simulation.fluxdensities(name, unit='W/m2/micron')
 
         # integrated flux density and absolute magnitude for each filter
         for filterspec,filter in _filters.iteritems():
-            fluxdensity = filter.apply(wavebincenters, wavebinwidths, fluxdensities)
+            fluxdensity = filter.convolve(wavelengths, fluxdensities)
             fluxdensity = simulation.convert(fluxdensity, from_unit='W/m2/micron', to_unit='Jy',
-                                             wavelength=filter.meanwavelength())
+                                             wavelength=filter.pivotwavelength())
             magnitude = simulation.absolutemagnitude(fluxdensity, distance,
                                                      fluxdensity_unit='Jy', distance_unit='pc')
             filtername = filterspec.replace(".","_").lower()

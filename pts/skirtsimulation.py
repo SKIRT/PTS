@@ -223,40 +223,6 @@ class SkirtSimulation:
                                 ("ds_gridxy.dat", "ds_gridxz.dat", "ds_gridyz.dat", "ds_gridxyz.dat") \
                  if arch.isfile(self.outfilepath(candidate)) ]
 
-    ## This function returns a list of the wavelengths used by the simulation, in micron, if available.
-    # For an oligochromatic simulation, the wavelengths are obtained from the ski file.
-    # For a panchromatic simulation, the wavelengths are read from the "wavelength.dat" file optionally
-    # written by the WavelengthGrid class, or from one of the "sed.dat" files written by instruments.
-    # If none of these files is present, the function raises an error.
-    def wavelengths(self):
-        # first try the ski file (for oligochromatic simulations)
-        result = self.parameters().wavelengths()
-        if len(result) > 0: return result
-
-        # if that fails, try an SED data file or the wavelengths data file
-        sedpaths = self.seddatpaths()
-        if len(sedpaths) > 0:
-            filepath = sedpaths[0]
-        else:
-            filepath = self.outfilepath("wavelengths.dat")
-        if arch.isfile(filepath):
-            result = np.loadtxt(arch.opentext(filepath), usecols=(0,))
-            if len(result) > 0:
-                return list( self.units().convert(result, to_unit='micron', quantity='wavelength') )
-
-        # if everything fails, raise an error
-        raise ValueError("Can't determine wavelengths for simulation")
-
-    ## This function returns a list of the frame indices (in the simulation output fits files) corresponding
-    # to each of the wavelengths in the specified list (expressed in micron). The function searches the simulation's
-    # wavelength grid for the wavelength nearest to the requested value. It raises an error if the simulation
-    # wavelengths are not available.
-    def frameindices(self, wavelengths):
-        # get the wavelength grid
-        grid = np.array(self.wavelengths())
-        # loop over the specified wavelengths
-        return [ np.argmin(np.abs(grid-wave)) for wave in wavelengths ]
-
     # -----------------------------------------------------------------
 
     ## This function returns an appropriate axis label for the flux described in the simulation output sed files,
@@ -386,6 +352,41 @@ class SkirtSimulation:
             return ( len(depths), 0, 0 )
 
     # -----------------------------------------------------------------
+
+    ## This function returns a numpy array with the wavelengths used by the simulation, if available.
+    # The wavelengths are given in micron, and are sorted in increasing order.
+    # For an oligochromatic simulation, the wavelengths are obtained from the ski file.
+    # For a panchromatic simulation, the wavelengths are read from the "wavelength.dat" file optionally
+    # written by the WavelengthGrid class, or from one of the "sed.dat" files written by instruments.
+    # If none of these files is present, the function raises an error.
+    def wavelengths(self):
+        # first try the ski file (for oligochromatic simulations)
+        result = self.parameters().wavelengths()
+        if len(result) > 0: return np.sort(result)
+
+        # if that fails, try an SED data file or the wavelengths data file
+        sedpaths = self.seddatpaths()
+        if len(sedpaths) > 0:
+            filepath = sedpaths[0]
+        else:
+            filepath = self.outfilepath("wavelengths.dat")
+        if arch.isfile(filepath):
+            result = np.loadtxt(arch.opentext(filepath), usecols=(0,))
+            if len(result) > 0:
+                return self.units().convert(result, to_unit='micron', quantity='wavelength')
+
+        # if everything fails, raise an error
+        raise ValueError("Can't determine wavelengths for simulation")
+
+    ## This function returns a list of the frame indices (in the simulation output fits files) corresponding
+    # to each of the wavelengths in the specified list (expressed in micron). The function searches the simulation's
+    # wavelength grid for the wavelength nearest to the requested value. It raises an error if the simulation
+    # wavelengths are not available.
+    def frameindices(self, wavelengths):
+        # get the wavelength grid
+        grid = self.wavelengths()
+        # loop over the specified wavelengths
+        return [ np.argmin(np.abs(grid-wave)) for wave in wavelengths ]
 
     ## This function returns a numpy array representing the wavelength grid used by the simulation, including both
     # the wavelength bin centers and the corresponding bin widths. The returned array has a shape of (2,N) where N

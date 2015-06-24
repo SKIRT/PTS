@@ -77,46 +77,34 @@ class SkiFile:
 
     ## This function returns the number of wavelengths for oligochromatic or panchromatic simulations
     def nwavelengths(self):
-
         # Try to get the list of wavelengths from the ski file
         wavelengths = self.wavelengths()
-
         # If the list is not empty, retun its size
         if wavelengths: return len(wavelengths)
-
         # If the list is empty, the ski file either represents a panchromatic simulation (and we can get the
         # number of points directly from the tree) or a FileWavelengthGrid is used (in which case we raise an error)
         entry = self.tree.xpath("//wavelengthGrid/*[1]")[0]
-
         if entry.tag == 'FileWavelengthGrid':
-
             raise ValueError("The number of wavelengths is not defined within the ski file. Call wavelengthsfile().")
-
         else:
-
             return int(entry.get("points"))
 
     ## This function returns the name of the wavelengths file that is used for the simulation, if any
     def wavelengthsfile(self):
-
         entry = self.tree.xpath("//FileWavelengthGrid")
-
         if entry: return entry[0].get("filename")
         else: return None
 
     ## This function returns the number of photon packages per wavelength
     def packages(self):
-
         # Get the MonteCarloSimulation element
         elems = self.tree.xpath("//OligoMonteCarloSimulation | //PanMonteCarloSimulation")
         if len(elems) != 1: raise ValueError("No MonteCarloSimulation in ski file")
-
         # Get the number of packages
         return int(float(elems[0].get("packages")))
 
     ## This function returns the number of dust cells
     def ncells(self):
-
         entry = self.tree.xpath("//dustGridStructure/*[1]")[0]
 
         try:
@@ -137,32 +125,26 @@ class SkiFile:
 
     ## This function returns the number of dust cells in the x direction
     def nxcells(self):
-
         return int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsX"))
 
     ## This function returns the number of dust cells in the y direction
     def nycells(self):
-
         try:
             ypoints = int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsY"))
         except TypeError:
             raise ValueError("The dimension of the dust grid is lower than 2")
-
         return ypoints
 
     ## This function returns the number of dust cells in the z direction
     def nzcells(self):
-
         try:
             zpoints = int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsZ"))
         except TypeError:
             raise ValueError("The dimension of the dust grid is lower than 3")
-
         return zpoints
 
     ## This function returns the dimension of the dust grid
     def dimension(self):
-
         # Try to find the number of points in the y direction
         try:
             int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsY"))
@@ -180,75 +162,52 @@ class SkiFile:
 
     ## This function returns the number of dust components
     def ncomponents(self):
-
         components = self.tree.xpath("//CompDustDistribution/components/*")
-
         return int(len(components))
 
     ## This function returns the number of dust library items
     def nlibitems(self):
-
         dustlib = self.tree.xpath("//dustLib/*")[0]
-
         if dustlib.tag == "AllCellsDustLib":
-
             return self.ncells()
-
         elif dustlib.tag == "Dim2DustLib":
-
             return dustlib.attrib["pointsTemperature"] * dustlib.attrib["pointsWavelength"]
-
         elif dustlib.tag == "Dim1DustLib":
-
             return dustlib.attrib["entries"]
 
     ## This function returns the number of dust populations (from all dust mixes combined)
     def npopulations(self):
-
         npops = 0
-
         # For each dust mix
         for dustmix in self.tree.xpath("//mix/*[1]"):
-
             if dustmix.tag in ["InterstellarDustMix", "Benchmark1DDustMix", "Benchmark2DDustMix", "DraineLiDustMix"]:
-
                 npops += 1
-
             elif dustmix.tag == "TrustDustMix":
-
                 npops += int(dustmix.attrib["graphitePops"])
                 npops += int(dustmix.attrib["silicatePops"])
                 npops += int(dustmix.attrib["PAHPops"])
-
             elif dustmix.tag == "ConfigurableDustMix":
-
                 npops += len(self.tree.xpath("//ConfigurableDustMix/populations/*"))
-
         return npops
 
     ## This function returns the number of simple instruments
     def nsimpleinstruments(self):
-
         return len(self.tree.xpath("//SimpleInstrument"))
 
     ## This function returns the number of full instruments
     def nfullinstruments(self):
-
         return len(self.tree.xpath("//FullInstrument"))
 
     ## This function returns whether transient heating is enabled
     def transientheating(self):
-
         return len(self.tree.xpath("//TransientDustEmissivity"))
 
     ## This function returns whether dust emission is enabled
     def dustemission(self):
-
         return len(self.tree.xpath("//dustEmissivity"))
 
     ## This function returns whether dust selfabsorption is enabled
     def dustselfabsorption(self):
-
         try:
             pandustsystem = self.tree.xpath("//PanDustSystem")[0]
             return (pandustsystem.attrib["selfAbsorption"] == "true")
@@ -257,32 +216,21 @@ class SkiFile:
 
     ## This function returns the number of pixels for each of the instruments
     def npixels(self, nwavelengths=None):
-
         pixels = []
-
         nwavelengths = nwavelengths if nwavelengths is not None else self.nwavelengths()
         instruments = self.tree.xpath("//instruments/*")
-
         for instrument in instruments:
-
             type = instrument.tag
             name = instrument.attrib["instrumentName"]
             datacube = int(instrument.attrib["pixelsX"])*int(instrument.attrib["pixelsY"])*nwavelengths
-
             if type == "SimpleInstrument":
-
                 pixels.append([name, type, datacube])
-
             elif type == "FullInstrument":
-
                 scattlevels = int(instrument.attrib["scatteringLevels"])
                 scattering = scattlevels + 1 if scattlevels > 0 else 0
                 dustemission = 1 if self.dustemission() else 0
-
                 npixels = datacube * (3 + scattering + dustemission)
-
                 pixels.append([name, type, npixels])
-
         return pixels
 
     ## This function returns a list of the wavelengths specified in the ski file for an oligochromatic simulation,
@@ -363,12 +311,10 @@ class SkiFile:
 
     ## This function sets the number of dust cells in the x direction
     def setxdustcells(self, number):
-
         self.tree.xpath("//dustGridStructure/*[1]")[0].set("pointsX", str(number))
 
     ## This function sets the number of dust cells in the y direction
     def setydustcells(self, number):
-
         try:
             self.tree.xpath("//dustGridStructure/*[1]")[0].set("pointsY", str(number))
         except TypeError:
@@ -376,7 +322,6 @@ class SkiFile:
 
     ## This function sets the number of dust cells in the z direction
     def setzdustcells(self, number):
-
         try:
             self.tree.xpath("//dustGridStructure/*[1]")[0].set("pointsZ", str(number))
         except TypeError:
@@ -384,22 +329,17 @@ class SkiFile:
 
     ## This function increases the number of photon packages by a certain factor
     def increasepackages(self, factor):
-
         # Set the increased number of packages
         self.setpackages(self.packages()*factor)
 
     ## This function increases the number of dust cells by a certain factor
     def increasedustcells(self, factor):
-
         # Get the dimension of the dust grid
         dimension = self.dimension()
-
         # Set the increased number of dust cells in the x direction
         self.setxdustcells(int(round(self.nxcells() * factor**(1 / float(dimension)))))
-
         # Set the increased number of dust cells in the y direction
         if dimension > 1: self.setydustcells(int(round(self.nycells() * factor**(1 / float(dimension)))))
-
         # Set the increased number of dust cells in the z direction
         if dimension > 2: self.setzdustcells(int(round(self.nzcells() * factor**(1 / float(dimension)))))
 
