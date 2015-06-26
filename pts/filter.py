@@ -239,15 +239,24 @@ class Filter:
         w = np.unique(np.hstack((w1,w2)))
         if len(w) < 2: return 0
 
-        # interpolate SED and transmission on the combined wavelength grid (logarithmically on wavelength)
+        # log-log interpolate SED and transmission on the combined wavelength grid
         # (use scipy interpolation function for SED because np.interp does not support broadcasting)
-        F = interp1d(np.log10(wa), densities, copy=False, bounds_error=False, fill_value=0.)(np.log10(w))
-        T = np.interp(np.log10(w), np.log10(wb), self._Transmission, left=0., right=0.)
+        F = np.exp(interp1d(np.log10(wa), _log(densities), copy=False, bounds_error=False, fill_value=0.)(np.log10(w)))
+        T = np.exp(np.interp(np.log10(w), np.log10(wb), _log(self._Transmission), left=0., right=0.))
 
         # perform the integration
         if self._PhotonCounter:
             return np.trapz(x=w, y=w*F*T) / self._IntegratedTransmission
         else:
             return np.trapz(x=w, y=F*T) / self._IntegratedTransmission
+
+## This private helper function returns the natural logarithm for positive values, and a large negative number
+# (but not infinity) for zero or negative values.
+def _log(X):
+    zeromask = X<=0
+    logX = np.empty(X.shape)
+    logX[zeromask] = -1e100
+    logX[~zeromask] = np.log(X[~zeromask])
+    return logX
 
 # -----------------------------------------------------------------
