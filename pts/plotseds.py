@@ -61,6 +61,7 @@ def plotseds_impl(sedfiles, plotfile, labels=None, fluxlabel="Flux", figsize=(10
 
     # setup the figure
     figure = plt.figure(figsize=figsize)
+    plt.grid(True)
 
     # loop over sed files and labels
     for sedfile,label in zip(sedfiles,labels):

@@ -223,40 +223,6 @@ class SkirtSimulation:
                                 ("ds_gridxy.dat", "ds_gridxz.dat", "ds_gridyz.dat", "ds_gridxyz.dat") \
                  if arch.isfile(self.outfilepath(candidate)) ]
 
-    ## This function returns a list of the wavelengths used by the simulation, in micron, if available.
-    # For an oligochromatic simulation, the wavelengths are obtained from the ski file.
-    # For a panchromatic simulation, the wavelengths are read from the "wavelength.dat" file optionally
-    # written by the WavelengthGrid class, or from one of the "sed.dat" files written by instruments.
-    # If none of these files is present, the function raises an error.
-    def wavelengths(self):
-        # first try the ski file (for oligochromatic simulations)
-        result = self.parameters().wavelengths()
-        if len(result) > 0: return result
-
-        # if that fails, try an SED data file or the wavelengths data file
-        sedpaths = self.seddatpaths()
-        if len(sedpaths) > 0:
-            filepath = sedpaths[0]
-        else:
-            filepath = self.outfilepath("wavelengths.dat")
-        if arch.isfile(filepath):
-            result = np.loadtxt(arch.opentext(filepath), usecols=(0,))
-            if len(result) > 0:
-                return list( self.units().convert(result, to_unit='micron', quantity='wavelength') )
-
-        # if everything fails, raise an error
-        raise ValueError("Can't determine wavelengths for simulation")
-
-    ## This function returns a list of the frame indices (in the simulation output fits files) corresponding
-    # to each of the wavelengths in the specified list (expressed in micron). The function searches the simulation's
-    # wavelength grid for the wavelength nearest to the requested value. It raises an error if the simulation
-    # wavelengths are not available.
-    def frameindices(self, wavelengths):
-        # get the wavelength grid
-        grid = np.array(self.wavelengths())
-        # loop over the specified wavelengths
-        return [ np.argmin(np.abs(grid-wave)) for wave in wavelengths ]
-
     # -----------------------------------------------------------------
 
     ## This function returns an appropriate axis label for the flux described in the simulation output sed files,
@@ -288,7 +254,7 @@ class SkirtSimulation:
     # the field). The last text segment on the line represents the units of the value in the file, and the segment
     # before the units represents the value itself. The value is converted from the units in the file to the
     # requested units. If the function can't locate the field, it returns -1.
-    def getfieldfromfile(self, filesuffix, trigger, header, units):
+    def getfieldfromfile(self, filesuffix, trigger, header, units=None):
         filepath = self.outfilepath(filesuffix)
         if arch.isfile(filepath):
             triggered = False
@@ -297,7 +263,10 @@ class SkirtSimulation:
                 if triggered and header in line:
                     segments = line.split()
                     if len(segments)>2:
-                        return self.units().convert(segments[-2], from_unit=segments[-1], to_unit=units)
+                        if units!=None:
+                            return self.units().convert(segments[-2], from_unit=segments[-1], to_unit=units)
+                        else:
+                            return float(segments[-1])
         return -1;
 
     ## This function returns the total dust mass in the simulation's configuration space, in solar masses.
@@ -318,7 +287,7 @@ class SkirtSimulation:
 
     ## This function returns the total mass of the cold gass represented by the set of SPH particles imported for
     # the simulation, in solar masses. The function retrieves this information from the log file entry
-    # written by the SPH dust distribution. It raises an error if this entry is not found or if the mass is zero.
+    # written by the SPH dust distribution. It raises an error if this entry is not found.
     def coldgasmass(self):
         result = self.getfieldfromfile("log.txt", "Reading SPH gas", "Total gas mass", "Msun")
         if result < 0: raise ValueError("Can't determine SPH cold gas mass")
@@ -326,11 +295,19 @@ class SkirtSimulation:
 
     ## This function returns the total mass of the metallic gas represented by the set of SPH particles imported for
     # the simulation, in solar masses. The function retrieves this information from the log file entry
-    # written by the SPH dust distribution. It raises an error if this entry is not found or if the mass is zero.
+    # written by the SPH dust distribution. It raises an error if this entry is not found.
     def metallicgasmass(self):
         result = self.getfieldfromfile("log.txt", "Reading SPH gas", "Total metal mass", "Msun")
         if result < 0: raise ValueError("Can't determine SPH metallic gas mass")
         return result
+
+    ## This function returns the number of "cold" SPH gas particles imported for the simulation, i.e. the gas
+    # particles that actually contain dust. The function retrieves this information from the log file entry
+    # written by the SPH dust distribution. It raises an error if this entry is not found.
+    def coldgasparticles(self):
+        result = self.getfieldfromfile("log.txt", "Reading SPH gas", "gas particles containing dust")
+        if result < 0: raise ValueError("Can't determine SPH cold gas particles")
+        return int(result)
 
     ## This function returns the total initial stellar mass (i.e. the mass at the time of birth) represented by
     # the set of SPH particles imported for the simulation, in solar masses. The function retrieves this information
@@ -386,6 +363,41 @@ class SkirtSimulation:
             return ( len(depths), 0, 0 )
 
     # -----------------------------------------------------------------
+
+    ## This function returns a numpy array with the wavelengths used by the simulation, if available.
+    # The wavelengths are given in micron, and are sorted in increasing order.
+    # For an oligochromatic simulation, the wavelengths are obtained from the ski file.
+    # For a panchromatic simulation, the wavelengths are read from the "wavelength.dat" file optionally
+    # written by the WavelengthGrid class, or from one of the "sed.dat" files written by instruments.
+    # If none of these files is present, the function raises an error.
+    def wavelengths(self):
+        # first try the ski file (for oligochromatic simulations)
+        result = self.parameters().wavelengths()
+        if len(result) > 0: return np.sort(result)
+
+        # if that fails, try an SED data file or the wavelengths data file
+        sedpaths = self.seddatpaths()
+        if len(sedpaths) > 0:
+            filepath = sedpaths[0]
+        else:
+            filepath = self.outfilepath("wavelengths.dat")
+        if arch.isfile(filepath):
+            result = np.loadtxt(arch.opentext(filepath), usecols=(0,))
+            if len(result) > 0:
+                return self.units().convert(result, to_unit='micron', quantity='wavelength')
+
+        # if everything fails, raise an error
+        raise ValueError("Can't determine wavelengths for simulation")
+
+    ## This function returns a list of the frame indices (in the simulation output fits files) corresponding
+    # to each of the wavelengths in the specified list (expressed in micron). The function searches the simulation's
+    # wavelength grid for the wavelength nearest to the requested value. It raises an error if the simulation
+    # wavelengths are not available.
+    def frameindices(self, wavelengths):
+        # get the wavelength grid
+        grid = self.wavelengths()
+        # loop over the specified wavelengths
+        return [ np.argmin(np.abs(grid-wave)) for wave in wavelengths ]
 
     ## This function returns a numpy array representing the wavelength grid used by the simulation, including both
     # the wavelength bin centers and the corresponding bin widths. The returned array has a shape of (2,N) where N

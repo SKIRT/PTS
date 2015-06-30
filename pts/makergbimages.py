@@ -69,7 +69,7 @@ def makergbimages(simulation, wavelength_tuples=None, from_percentile=30, to_per
 #
 # The function takes the following arguments:
 #  - \em simulation: a SkirtSimulation instance representing the simulation for which to make images.
-#  - \em filterspecs: a sequence of 4-tuples (filter, r, g, b), each containg a Filter instance and three
+#  - \em filterspecs: a sequence of 4-tuples (filter, r, g, b), each containing a Filter instance and three
 #        weights that specify the contribution of the fluxes integrated over this filter to each RGB channel.
 #  - \em postfix: a string that will be added to the standard image file name; defaults to the empty string.
 #  - \em fmax: the largest flux value that will be shown in the image without clipping;
@@ -83,7 +83,7 @@ def makergbimages(simulation, wavelength_tuples=None, from_percentile=30, to_per
 def makeintegratedrgbimages(simulation, filterspecs, postfix="", fmax=None, fmin=None, frange=3):
 
     # get the wavelength grid
-    bincenters, binwidths = simulation.wavelengthbins()
+    wavelengths = simulation.wavelengths()
 
     # get a list of output file names, including extension, one for each instrument
     outnames = simulation.totalfitspaths()
@@ -97,15 +97,15 @@ def makeintegratedrgbimages(simulation, filterspecs, postfix="", fmax=None, fmin
 
             # get the data cube in per wavelength units
             cube = pyfits.getdata(arch.openbinary(outname)).T
-            cube = simulation.convert(cube, to_unit='W/m3', quantity='fluxdensity', wavelength=bincenters)
+            cube = simulation.convert(cube, to_unit='W/m3', quantity='fluxdensity', wavelength=wavelengths)
 
             # initialize an RGB frame
             dataRGB = np.zeros( (cube.shape[0], cube.shape[1], 3) )
 
             # add color for each filter
             for filter,w0,w1,w2 in filterspecs:
-                data = filter.apply(bincenters, binwidths, cube)
-                data = simulation.convert(data, from_unit='W/m3', to_unit='Jy', wavelength=filter.meanwavelength())
+                data = filter.convolve(wavelengths, cube)
+                data = simulation.convert(data, from_unit='W/m3', to_unit='Jy', wavelength=filter.pivotwavelength())
                 dataRGB[:,:,0] += w0*data
                 dataRGB[:,:,1] += w1*data
                 dataRGB[:,:,2] += w2*data

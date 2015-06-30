@@ -645,13 +645,12 @@ def conversionfactorFUV(image):
     # Get the pixel scale for this filter
     pixelscale = image.pixelscale
 
-    wavelength = image.filter.meanwavelength()
+    wavelength = image.filter.centerwavelength()
     wavelength = (wavelength * u.micron).to(u.AA)
 
     # Speed of light in Angstrom per seconds
     c = (299792458 * u.m / u.s).to(u.AA / u.s)
     spectralfactor = wavelength.value**2 / c.value
-    #spectralfactor = wavelength**2 / c.value
     pixelfactor = (206264.806247 / pixelscale)**2
     factor = 1.4e-15 * spectralfactor * 1e17 * pixelfactor
 
