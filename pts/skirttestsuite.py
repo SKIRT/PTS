@@ -21,6 +21,11 @@ import os.path
 import re
 import time
 import datetime
+import random
+import numpy as np
+
+# Import astronomical modules
+import astropy.io.fits as pyfits
 
 # Import relevant PTS modules
 from pts.skirtsimulation import SkirtSimulation
@@ -198,6 +203,29 @@ class SkirtTestSuite(object):
             # Wait for the skirt execution context to finish
             self._skirt.wait()
 
+        # Obtain a list of all ski files in the "Singleprocessing" directory
+        allskifiles = []
+        for path, dirs, files in os.walk(self._suitepath):
+            for filename in files:
+                if filename.endswith(".ski") and not filename.startswith("."):
+                    allskifiles.append(os.path.join(path, filename))
+
+        # Construct a list of 15 ski files randomly chosen from the list obtained above
+        randomskifiles = [random.choice(allskifiles) for _ in range(15)]
+
+        # Inform the user on the number of test cases (in this mode)
+        self._log.info("Number of test cases in parallel mode: 15")
+        self._reportfile.write("Number of test cases in parallel mode: 15<br>\n")
+
+        # Perform multithreading tests
+        for skifile in randomskifiles:
+
+            # Start the simulation and wait for it to finish
+            simulation = self._skirt.execute(skifile, inpath="in", outpath="out", skirel=True, threads=4, brief=True, wait=True, console=False)[0]
+
+            # Verify the output of the simulation
+            self._reportsimulation(simulation, soft=True)
+
         # Write statistics about the number of successful test cases
         self._writestatistics()
         
@@ -247,7 +275,7 @@ class SkirtTestSuite(object):
 
     ## This function verifies and reports on the test result of the given simulation.
     # It writes a line to the console and it updates the statistics.
-    def _reportsimulation(self, simulation):
+    def _reportsimulation(self, simulation, soft=False):
         
         # Get the full path of the simulation directory and the name of this directory
         casedirpath = os.path.dirname(simulation.outpath())
@@ -255,7 +283,7 @@ class SkirtTestSuite(object):
 
         # Determine the most relevant string to identify this simulation within the current test suite
         residual = casedirpath
-        while (True):
+        while (not soft):
             if casename == os.path.basename(self._subsuitepath): break
             if (os.path.dirname(residual) == self._subsuitepath):
                 break
@@ -270,7 +298,7 @@ class SkirtTestSuite(object):
             # Increment the number of finished simulations
             self._finished += 1
 
-            extra, missing, differ = self._finddifference(casedirpath)
+            extra, missing, differ = self._finddifference(casedirpath, soft)
 
             if len(extra) == 0 and len(missing) == 0 and len(differ) == 0:
 
@@ -283,7 +311,7 @@ class SkirtTestSuite(object):
             else:
 
                 status = "Failed"
-                self._log.error("Test case " + casename + ": failed")
+                self._log.failure("Test case " + casename + ": failed")
 
                 # Write to the report file
                 self._reportfile.write("<div class='row'>\n")
@@ -336,7 +364,7 @@ class SkirtTestSuite(object):
     # of a test case. The test case is specified as an absolute case directory path.
     # The function returns a brief message describing the first relevant difference found, or the empty string
     # if there are no relevant differences.
-    def _finddifference(self, casedirpath):
+    def _finddifference(self, casedirpath, soft):
 
         # Get the full output and reference paths
         outpath = os.path.join(casedirpath, "out")
@@ -346,32 +374,38 @@ class SkirtTestSuite(object):
         if not os.path.isdir(refpath):
             return "Test case has no reference directory"
 
+        # Initialize lists to contain the extra files, missing files and differing files
         extra = []
         missing = []
         differ = []
 
         # Verify list of filenames
-        if len(filter(lambda fn: os.path.isdir(fn), os.listdir(outpath))) > 0:
-            return "Output contains a directory"
+        if len(filter(lambda fn: os.path.isdir(fn), os.listdir(outpath))) > 0: return "Output contains a directory"
         dircomp = filecmp.dircmp(outpath, refpath, ignore=['.DS_Store'])
 
-        for file in dircomp.left_only:
+        # Create a list of files that were not present in the reference directory
+        for file in dircomp.left_only: extra.append(file)
 
-            extra.append(file)
-
-        for file in dircomp.right_only:
-
-            missing.append(file)
+        # Create a list of files that are missing from the output directory
+        for file in dircomp.right_only: missing.append(file)
 
         # Compare files, focusing on those that aren't trivially equal.
         matches, mismatches, errors = filecmp.cmpfiles(outpath, refpath, dircomp.common, shallow=False)
 
         for filename in mismatches + errors:
 
-            if not equalfiles(os.path.join(outpath, filename), os.path.join(refpath, filename)):
+            reffile = os.path.join(refpath, filename)
+            outfile = os.path.join(outpath, filename)
 
-                differ.append(filename)
+            # For a soft comparison between files, check if both files are similar enough
+            if soft:
+                if not similarfiles(reffile, outfile): differ.append(filename)
 
+            # In the other case, check if both files are equal (except for potential timestamps)
+            else:
+                if not equalfiles(reffile, outfile): differ.append(filename)
+
+        # Return the list of extra files, the list of missing files and the list of differing files
         return extra, missing, differ
 
 # -----------------------------------------------------------------
@@ -401,6 +435,23 @@ def findsubdirectory(parent, name):
 
 # -----------------------------------------------------------------
 
+## This function returns True if the specified files are similar (meaning that there relative difference is lower than
+#  a certain threshold.
+def similarfiles(filepath1, filepath2, threshold=0.1):
+
+    # Don't compare log files because it is too complicated (time & duration differences, changes to messages, ...)
+    if filepath1.endswith("_log.txt"): return True
+
+    # Supported file types
+    if filepath1.endswith(".fits"): return similarfitsfiles(filepath1, filepath2, threshold)
+    if filepath1.endswith("_parameters.xml"): return equaltextfiles(filepath1, filepath2, 1)
+    if filepath1.endswith("_parameters.tex"): return equaltextfiles(filepath1, filepath2, 2)
+    if filepath1.endswith("_sed.dat"): return similarseds(filepath1, filepath2, threshold)
+    if filepath1.endswith("_convergence.dat"): return similarconvergence(filepath1, filepath1, threshold)
+
+    # Unsupported file type
+    return False
+
 ## This function returns True if the specified files are equal except for irrelevant differences (such as
 # time stamps in a file header or prolog), and False otherwise. Since the structure of the allowed differences
 # varies with the type of file, this function dispatches the comparison to various other functions depending on
@@ -427,6 +478,49 @@ def equaltextfiles(filepath1, filepath2, allowedDiffs):
 #  header record, and False otherwise.
 def equalfitsfiles(filepath1, filepath2):
     return equallists(readblocks(filepath1), readblocks(filepath2), 1)
+
+## This function returns True if the specified FITS files are similar, meaning that their relative difference
+#  is lower than the specified threshold.
+def similarfitsfiles(filepath1, filepath2, threshold):
+
+    # Obtain the datacubes for both FITS files
+    data1 = pyfits.getdata(filepath1)
+    data2 = pyfits.getdata(filepath2)
+
+    # Compare the dimension of the datacubes
+    if data1.shape != data2.shape: return False
+
+    # Determine a cutoff for the lowest fluxes
+    cutoff = min(np.amax(data1)/100.0,np.amax(data2)/100.0)
+
+    # Compare the pixel values
+    return np.isclose(data1, data2, rtol=threshold, atol=cutoff).any()
+
+## This function returns True if the specified SED data files are similar, meaning that their relative difference
+#  is lower than the specified threshold.
+def similarseds(filepath1, filepath2, threshold):
+
+    # Obtain the fluxes of both SED files
+    fluxes1 = np.loadtxt(filepath1, usecols=[1], ndmin=1)
+    fluxes2 = np.loadtxt(filepath2, usecols=[1], ndmin=1)
+
+    # Compare the number of flux points, if
+    if len(fluxes1) != len(fluxes2): return False
+
+    # Compare the fluxes
+    return np.isclose(fluxes1, fluxes2, rtol=threshold, atol=.0).any()
+
+## This function returns \c True if the specified convergence files contain similar surface densities and dust masses
+def similarconvergence(filepath1, filepath2, threshold):
+
+    # Temporary
+    return True
+
+## This function returns \c True if the specified ISRF data files contain similar radiation field strengths
+def similarISRF(filepath1, filepath2, threshold):
+
+    # Temporary
+    return True
 
 ## This function returns True if the specified lists are equal except for possible time information in
 #  a number of items not larger than \em allowedDiffs, and False otherwise.
