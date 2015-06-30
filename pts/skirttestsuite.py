@@ -210,12 +210,12 @@ class SkirtTestSuite(object):
                 if filename.endswith(".ski") and not filename.startswith("."):
                     allskifiles.append(os.path.join(path, filename))
 
-        # Construct a list of 15 ski files randomly chosen from the list obtained above
-        randomskifiles = [random.choice(allskifiles) for _ in range(15)]
+        # Construct a list of 20 ski files randomly chosen from the list obtained above
+        randomskifiles = [random.choice(allskifiles) for _ in range(20)]
 
         # Inform the user on the number of test cases (in this mode)
-        self._log.info("Number of test cases in parallel mode: 15")
-        self._reportfile.write("Number of test cases in parallel mode: 15<br>\n")
+        self._log.info("Number of test cases in parallel mode: 20")
+        self._reportfile.write("Number of test cases in parallel mode: 20<br>\n")
 
         # Perform multithreading tests
         for skifile in randomskifiles:
@@ -279,7 +279,7 @@ class SkirtTestSuite(object):
         
         # Get the full path of the simulation directory and the name of this directory
         casedirpath = os.path.dirname(simulation.outpath())
-        casename = os.path.basename(casedirpath)
+        casename = os.path.relpath(casedirpath, self._suitepath) if soft else os.path.basename(casedirpath)
 
         # Determine the most relevant string to identify this simulation within the current test suite
         residual = casedirpath
@@ -448,6 +448,9 @@ def similarfiles(filepath1, filepath2, threshold=0.1):
     if filepath1.endswith("_parameters.tex"): return equaltextfiles(filepath1, filepath2, 2)
     if filepath1.endswith("_sed.dat"): return similarseds(filepath1, filepath2, threshold)
     if filepath1.endswith("_convergence.dat"): return similarconvergence(filepath1, filepath1, threshold)
+    if filepath1.endswith("_isrf.dat"): return similarISRF(filepath1, filepath2, threshold)
+    if filepath1.endswith("_gridxz.dat") or filepath1.endswith("_gridyz.dat") or filepath1.endswith("_gridxy.dat") or filepath1.endswith("_gridxyz.dat"):
+        return True
 
     # Unsupported file type
     return False
@@ -513,7 +516,32 @@ def similarseds(filepath1, filepath2, threshold):
 ## This function returns \c True if the specified convergence files contain similar surface densities and dust masses
 def similarconvergence(filepath1, filepath2, threshold):
 
-    # Temporary
+    # Get the lines from the first file
+    with open(filepath1) as file1: lines1 = file1.readlines()
+
+    # Get the lines from the second file
+    with open(filepath2) as file2: lines2 = file2.readlines()
+
+    # Compare the number of lines in both files
+    if len(lines1) != len(lines2): return False
+
+    # Compare the values in the convergence files, by looping over all lines
+    for i in range(len(lines1)):
+
+        line1 = lines1[i]
+        line2 = lines2[i]
+
+        # Check if this line states a value
+        if "value = " in line1:
+
+            # Get the values in the corresponding line for both files
+            value1 = float(line1.split("value = ")[1].split()[0])
+            value2 = float(line2.split("value = ")[1].split()[0])
+
+            # If the values are not similar, return False
+            if not np.isclose(value1, value2, rtol=threshold): return False
+
+    # If no dissimilarities were found, return True
     return True
 
 ## This function returns \c True if the specified ISRF data files contain similar radiation field strengths
