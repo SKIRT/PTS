@@ -103,10 +103,13 @@ class SkirtTestSuite(object):
         
         # Get the name of the test suite (the name of the directory)
         self._suitename = os.path.basename(self._suitepath)
-        
+
         # Get the path to the subsuite
-        self._subsuitepath = findsubdirectory(self._suitepath, subsuitename) 
-                
+        self._subsuitepath = self._suitepath if subsuitename == "parallel" else findsubdirectory(self._suitepath, subsuitename)
+
+        # Determine whether parallel test should be performed (if the subsuitename was 'parallel' or the entire test suite is to be executed)
+        self._parallel = (self._subsuitepath == self._suitepath)
+
         # Create the logging mechanism
         self._log = Log()
 
@@ -143,6 +146,10 @@ class SkirtTestSuite(object):
             self._modes = [(1,4)]
             self._modenames = [""]
             self._skipatterns = [os.path.join(self._subsuitepath, "*.ski")]
+        elif subsuitename.lower() == "parallel":
+            self._modes = []
+            self._modenames = []
+            self._skipatterns = []
     
     ## This function performs all tests in the test suite, verifies the results, and prepares a summary test report.
     # As an argument, it can take the time in seconds to sleep before checking for simulation completion again.
@@ -203,28 +210,31 @@ class SkirtTestSuite(object):
             # Wait for the skirt execution context to finish
             self._skirt.wait()
 
-        # Obtain a list of all ski files in the "Singleprocessing" directory
-        allskifiles = []
-        for path, dirs, files in os.walk(self._suitepath):
-            for filename in files:
-                if filename.endswith(".ski") and not filename.startswith("."):
-                    allskifiles.append(os.path.join(path, filename))
+        # Execute the parallel testcases if necessary
+        if self._parallel:
 
-        # Construct a list of 20 ski files randomly chosen from the list obtained above
-        randomskifiles = [random.choice(allskifiles) for _ in range(20)]
+            # Obtain a list of all ski files in the "Singleprocessing" directory
+            allskifiles = []
+            for path, dirs, files in os.walk(self._suitepath):
+                for filename in files:
+                    if filename.endswith(".ski") and not filename.startswith("."):
+                        allskifiles.append(os.path.join(path, filename))
 
-        # Inform the user on the number of test cases (in this mode)
-        self._log.info("Number of test cases in parallel mode: 20")
-        self._reportfile.write("Number of test cases in parallel mode: 20<br>\n")
+            # Construct a list of 20 ski files randomly chosen from the list obtained above
+            randomskifiles = [random.choice(allskifiles) for _ in range(20)]
 
-        # Perform multithreading tests
-        for skifile in randomskifiles:
+            # Inform the user on the number of test cases (in this mode)
+            self._log.info("Number of test cases in parallel mode: 20")
+            self._reportfile.write("Number of test cases in parallel mode: 20<br>\n")
 
-            # Start the simulation and wait for it to finish
-            simulation = self._skirt.execute(skifile, inpath="in", outpath="out", skirel=True, threads=4, brief=True, wait=True, console=False)[0]
+            # Perform multithreading tests
+            for skifile in randomskifiles:
 
-            # Verify the output of the simulation
-            self._reportsimulation(simulation, soft=True)
+                # Start the simulation and wait for it to finish
+                simulation = self._skirt.execute(skifile, inpath="in", outpath="out", skirel=True, threads=4, brief=True, wait=True, console=False)[0]
+
+                # Verify the output of the simulation
+                self._reportsimulation(simulation, soft=True)
 
         # Write statistics about the number of successful test cases
         self._writestatistics()
@@ -448,7 +458,7 @@ def similarfiles(filepath1, filepath2, threshold=0.1):
     if filepath1.endswith("_parameters.tex"): return equaltextfiles(filepath1, filepath2, 2)
     if filepath1.endswith("_sed.dat"): return similarseds(filepath1, filepath2, threshold)
     if filepath1.endswith("_convergence.dat"): return similarconvergence(filepath1, filepath1, threshold)
-    if filepath1.endswith("_isrf.dat"): return similarISRF(filepath1, filepath2, threshold)
+    if filepath1.endswith("_isrf.dat"): return True
     if filepath1.endswith("_gridxz.dat") or filepath1.endswith("_gridyz.dat") or filepath1.endswith("_gridxy.dat") or filepath1.endswith("_gridxyz.dat"):
         return True
 
@@ -542,12 +552,6 @@ def similarconvergence(filepath1, filepath2, threshold):
             if not np.isclose(value1, value2, rtol=threshold): return False
 
     # If no dissimilarities were found, return True
-    return True
-
-## This function returns \c True if the specified ISRF data files contain similar radiation field strengths
-def similarISRF(filepath1, filepath2, threshold):
-
-    # Temporary
     return True
 
 ## This function returns True if the specified lists are equal except for possible time information in
