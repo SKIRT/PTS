@@ -26,11 +26,13 @@ import matplotlib.pyplot as plt
 import aplpy
 import pyregion
 import astropy.io.fits as pyfits
+from astropy import wcs
 from astropy.stats import sigma_clip, sigma_clipped_stats
 from photutils import CircularAperture
 from photutils import aperture_photometry
 
 # Import relevant PTS modules
+from pts.hcongrid import hcongrid
 from pts.inpaint import replace_nans
 from pts.mathematics import fitpolynomial, polynomial, fitgaussian, gaussian
 from pts.log import Log
@@ -58,7 +60,7 @@ class Image(object):
 
     ## The constructor accepts the following arguments:
     #
-    #  - path: the path of the FITS image file
+    #  - filename: the name of the FITS file
     #  - log: a Log instance
     #
     def __init__(self, filename, log=None):
@@ -75,13 +77,13 @@ class Image(object):
         # Set the name of the image
         self.name = os.path.splitext(os.path.basename(filename))[0]
 
-        # Frames: primary, sky, fittedsky, errors ...
+        # Initialize a set of layers to represent image frames
         self.frames = layers()
 
-        # Masks: nans, edges, galaxy, stars
+        # Initialize a set of layers to represent image masks
         self.masks = layers()
 
-        # Regions: sky, stars,
+        # Initialize a set of layers to represent regions
         self.regions = layers()
 
         # Read in the image
@@ -89,9 +91,6 @@ class Image(object):
 
         # The FWHM of the PSF
         self.fwhm = None
-
-        # The entries in this dictionary indicate whether certain operations have been performed on the primary image
-        self._history = dict()
 
     ## This function ...
     def _loadimage(self, filename):
@@ -128,13 +127,16 @@ class Image(object):
                 description = getframedescription(header, i) if i else "the primary signal map"
                 name = getframename(description) if i else "primary"
 
+                print i
+                print name
+
                 # Add this frame to the frames dictionary
-                self._addframe(hdu.data[i], name, description)
+                self._addframe(hdu.data[i], None, name, description)
 
         else:
 
             # Add the primary image frame
-            self._addframe(hdu.data, "primary", "the primary signal map")
+            self._addframe(hdu.data, None, "primary", "the primary signal map")
 
         # Set the basic header for this image
         self.header = header.copy(strip=True)
@@ -240,20 +242,35 @@ class Image(object):
 
     # ----------------------------------------------------------------- FILE OPERATIONS
 
-    ## This function saves the currently active frame
-    def save(self, path):
+    ## This function saves the currently active frame(s)
+    def save(self, filepath):
 
-        # Find the active layer
-        frame = self.frames.getactive()[0]
+        # Create an array to contain the data cube
+        data = []
 
-        # Inform the user
-        self._log.info("Saving " + frame + " frame as " + path)
+        # Get the coordinates of the primary frame
+        coordinates = self.frames["primary"].coordinates
 
-        # Create the HDU
-        hdu = pyfits.PrimaryHDU(self.frames[frame].data, self.header)
+        # Export all active frames to the specified file
+        for frame in self.frames.getactive():
 
-        # Write to file
-        hdu.writeto(path, clobber=True)
+            # Inform the user that this frame is being rebinned
+            self._log.info("Exporting " + frame + " frame to " + filepath)
+
+            # Add this frame to the data cube, if its coordinates match those of the primary frame
+            if (coordinates == self.frames[frame].coordinates): data.append(self.frames[frame].data)
+
+        # Construct a header for the image based on the coordinates of the primary frame
+        header = coordinates.to_header()
+
+        # Create the HDU from the data array and the header
+        hdu = pyfits.PrimaryHDU(np.array(data), header)
+
+        # Write the HDU to a FITS file
+        hdu.writeto(filepath, clobber=True)
+
+        # Inform the user that the file has been created
+        self._log.success("File " + filepath + " created")
 
     ## This function is used to import the (first) frame of another FITS file into this image
     def importframe(self, path, name):
@@ -290,14 +307,6 @@ class Image(object):
 
         # Write the region file
         self.regions[region]._region.write(path)
-
-    # -----------------------------------------------------------------
-
-    ## This function
-    def _newaction(self, actionname):
-
-        # Indicate that this action has been performed
-        self._history[actionname] = True
 
     # ----------------------------------------------------------------- VISUALISATION
 
@@ -428,7 +437,6 @@ class Image(object):
 
             # Calculate the sum of the flux in the pixels within the box
             return np.sum(self.frames.primary.data[ymin:ymax,xmin:xmax])
-
 
     # ----------------------------------------------------------------- ARITHMETIC OPERATIONS
 
@@ -633,13 +641,13 @@ class Image(object):
             del self.masks[mask]
 
     ## This function ...
-    def _addframe(self, data, name, description=None):
+    def _addframe(self, data, coordinates, name, description=None):
 
         # Inform the user
         self._log.info("Adding '" + name + "' to the set of image frames")
 
         # Add the layer to the layers dictionary
-        self.frames[name] = ImageFrame(data, description, self._log)
+        self.frames[name] = ImageFrame(data, coordinates, description)
 
     ## This function ...
     def _addregion(self, region, name):
@@ -648,7 +656,7 @@ class Image(object):
         self._log.info("Adding '" + name + "' to the set of regions")
 
         # Add the region to the regions dictionary
-        self.regions[name] = ImageRegion(region, self._log)
+        self.regions[name] = ImageRegion(region)
 
     ## This function ...
     def _addmask(self, data, name):
@@ -657,7 +665,7 @@ class Image(object):
         self._log.info("Adding '" + name + "' to the set of masks")
 
         # Add the mask to the masks dictionary
-        self.masks[name] = ImageMask(data, self._log)
+        self.masks[name] = ImageMask(data)
 
     # ----------------------------------------------------------------- ADVANCED OPERATIONS
 
@@ -738,19 +746,11 @@ class Image(object):
     ## This function rebins the currently selected frame(s) based on a certain reference FITS file
     def rebin(self, reference):
 
-        # Import the rebinning function
-        from pts.hcongrid import hcongrid
+        # Get the header of the reference image
+        refheader = pyfits.getheader(reference)
 
-        # Open the HDU list for the reference FITS file
-        hdulist = pyfits.open(reference)
-
-        # Get the primary image
-        hdu = hdulist[0]
-
-        referenceheader = hdu.header
-
-        referenceheader["NAXIS"] = 2
-        referenceheader.pop("NAXIS3", None)
+        # Obtain the coordinate system from the reference header
+        coordinates = wcs.WCS(refheader)
 
         # For all active frames, do the rebinning
         for frame in self.frames.getactive():
@@ -759,13 +759,10 @@ class Image(object):
             self._log.info("Rebinning " + frame + " frame to the grid of " + reference)
 
             # Do the rebinning based on the header of the reference image
-            self.frames[frame].data = hcongrid(self.frames[frame].data, self.header, referenceheader)
+            self.frames[frame].data = hcongrid(self.frames[frame].data, self.header, refheader)
 
-        # Use the reference header as the new header for this image
-        self.header = referenceheader
-
-        # Close the reference FITS file
-        hdulist.close()
+            # Set the new coordinate system for this frame
+            self.frames[frame].coordinates = coordinates
 
     ## This function interpolates the image within the combination of the currently active masks
     def interpolate(self):
@@ -905,10 +902,9 @@ class Image(object):
         self._addregion(region, "galaxy")
 
     ## This function
-    def fetchstars(self):
+    def fetchstars(self, cutoff=19.0, starradius=10):
 
         from pts.catalog import fetch
-        from astropy import wcs
 
         w = wcs.WCS(self.header)
 
@@ -937,11 +933,63 @@ class Image(object):
         width_minutes = width * 60
         radius = 0.5*width_minutes
 
+        radius *= 5.0
+
         # Fetch the stars, create a region
-        region = fetch([ra_center,dec_center], radius, faint=19.0, filename="")
+        try:
+            region = fetch([ra_center,dec_center], radius, faint=cutoff, filename="", starradius=starradius)
+        except RuntimeError:
+            # Try again
+            region = fetch([ra_center,dec_center], radius, faint=cutoff, filename="", starradius=starradius)
 
         # Add this region
         self._addregion(region, "stars")
+
+    ## This function adjusts the positions and widths of the stars defined in the currently active region
+    def adjuststars(self, plot=False, filename="adjustedstars.reg"):
+
+        # Get the currently selected region (the stars)
+        regionname = self.regions.getactive()[0]
+
+        print regionname
+
+        # Get the star positions and widths
+        stars = self.getstarpositions(plot)
+
+        # Create a new region
+        #region_string = "# Region file format: DS9 version 4.1\n"
+        #region_string += "global color=green\n"
+        #region_string += "image\n"
+
+        counter = 0
+
+        regionfile = open(filename, 'w')
+        regionfile.write("# Region file format: DS9 version 4.1\n")
+        regionfile.write("global color=green\n")
+        regionfile.write("image\n")
+
+        # For each star
+        for star in stars:
+
+            radius = 0.5*(star[2] + star[3])
+            #regline = ("circle(%s,%s,%s)\n") % (star[0],star[1],radius*3.0)
+
+            # Add the parameters of this star to the region string
+            #region_string += regline
+            regionfile.write("circle(" + str(star[0]) + "," + str(star[1]) + "," + str(radius*6.0) + ")\n")
+
+            counter += 1
+
+        #print region_string
+        print counter
+
+        regionfile.close()
+
+        # Create the final stars region
+        #region = pyregion.parse(region_string)
+
+        # Change the region
+        #self.regions[regionname]._region = region
 
     ## This function determines the central peak position of the stars indicated by the currently selected region file
     def getstarpositions(self, plot=False):
@@ -1050,8 +1098,11 @@ class Image(object):
 
             # Add the fitted parameters to the list of stars.
             # NOTE: for some reason, x and y are interchanged by python.
-            x = xmin + y
-            y = ymin + x
+            #x = xmin + y
+            #y = ymin + x
+
+            x = xmin + x
+            y = ymin + y
 
             # Add the parameters of this star to the stars list
             stars.append((x, y, width_x, width_y))
@@ -1067,9 +1118,6 @@ class Image(object):
     ## This function estimes the sky from a region object
     #
     def estimatesky_fitskirt(self, region, order=3, linear=True):
-
-        # Register this new action
-        self._newaction("sky-subtraction")
 
         # For each shape in the region, we calculate the mean flux
         xvalues = []
@@ -1312,36 +1360,23 @@ def getpixelscale(header):
     # Initially, set the pixel scale to None
     pixelscale = None
 
-    # Search for 'Pixel scale' keyword
-    if 'PIXSCALE' in header:
+    # Search for 'PIXSCALE' keyword
+    if 'PIXSCALE' in header: pixelscale = header['PIXSCALE']
 
-        pixelscale = header['PIXSCALE']
-
-    elif 'SECPIX' in header:
-
-        pixelscale = header['SECPIX']
+    # Search for the 'SECPIX' keyword
+    elif 'SECPIX' in header: pixelscale = header['SECPIX']
 
     # Search for 'Pixel Field of View' keyword
-    elif 'PFOV' in header:
+    elif 'PFOV' in header: pixelscale = header['PFOV']
 
-        pixelscale = header['PFOV']
+    # Search for the CD matrix elements
+    elif 'CD1_1' in header and 'CD1_2' in header: pixelscale = math.sqrt(header['CD1_1']**2 + header['CD1_2']**2 ) * 3600.0
 
-    elif 'CD1_1' in header and 'CD1_2' in header:
+    # Search for the diagonal CD matrix elements
+    elif 'CD1_1' in header: pixelscale = abs(header['CD1_1']) * 3600.0
 
-        pixelscale = math.sqrt(header['CD1_1']**2 + header['CD1_2']**2 ) * 3600.0
-
-    elif 'CD1_1' in header:
-
-        pixelscale = abs(header['CD1_1']) * 3600.0
-
-    elif 'CDELT1' in header:
-
-        pixelscale = abs(header['CDELT1']) * 3600.0
-
-    else:
-
-        log = Log()
-        log.warning("Could not determine the pixel scale from the image header")
+    # Search for the 'CDELT1' keyword
+    elif 'CDELT1' in header: pixelscale = abs(header['CDELT1']) * 3600.0
 
     # Return the pixel scale (in arcseconds)
     return pixelscale
@@ -1349,36 +1384,28 @@ def getpixelscale(header):
 ## This function
 def getfilter(name, header):
 
-    log = Log()
-
     # Initially, set the filter to None
     filter = None
 
     # Determine the filter from the information in the header
-    if 'INSTRUME' in header and 'FILTER' in header:
-
-        filterid = header['INSTRUME'].lower() + header['FILTER'].lower()
+    if 'INSTRUME' in header and 'FILTER' in header: filterid = header['INSTRUME'].lower() + header['FILTER'].lower()
 
     # If no filter information could be found in the header, try to obtain it from the file name
-    else:
+    else: filterid = name.lower()
 
-        filterid = name.lower()
-
-    # Parse the filterid
+    # Create a filter object from the filterid
     if "fuv" in filterid: filter = Filter("GALEX.FUV")
     elif "pacs" in filterid:
 
         if '70' in filterid or 'blue' in filterid: filter = Filter("Pacs.blue")
+        elif '100' in filterid or 'green' in filterid: filter = Filter("Pacs.green")
         elif '160' in filterid or 'red' in filterid: filter = Filter("Pacs.red")
-        else: log.warning("Could not determine the filter for this image")
 
     elif "mips" in filterid or "24" in filterid: filter = Filter("MIPS.24")
     elif "2mass" in filterid and "h" in filterid: filter = Filter("2MASS.H")
     elif "irac" in filterid:
 
         if '3.6' in filterid or 'i1' in filterid: filter = Filter("IRAC.I1")
-
-    else: log.warning("Could not determine the filter for this image")
 
     # Return the filter
     return filter
@@ -1507,13 +1534,8 @@ class layers(dict):
         for name in self.keys():
 
             # If this layer is active, print the name in green
-            if self[name].active:
-
-                log.success("        " + name)
-
-            else:
-
-                log.info("        " + name)
+            if self[name].active: log.success("        " + name)
+            else: log.info("        " + name)
 
 # -----------------------------------------------------------------
 
@@ -1521,13 +1543,10 @@ class layers(dict):
 class ImageRegion(object):
 
     ## This function
-    def __init__(self, region, log):
+    def __init__(self, region):
 
         # Set the internal pyregion object
         self._region = region
-
-        # Logger
-        self._log = log
 
         # Set as unactive initially
         self.active = False
@@ -1554,13 +1573,10 @@ class ImageRegion(object):
 class ImageMask(object):
 
     ## This function
-    def __init__(self, data, log):
+    def __init__(self, data):
 
         # Set the data array
         self.data = data
-
-        # Logger
-        self._log = log
 
         # Set as unactive initially
         self.active = False
@@ -1581,13 +1597,13 @@ class ImageMask(object):
 class ImageFrame(object):
 
     ## The constructor
-    def __init__(self, data, description, log):
+    def __init__(self, data, coordinates, description):
 
         # Copy the data
         self.data = data
 
-        # Logger
-        self._log = log
+        # Copy the coordinate system
+        self.coordinates = coordinates
 
         # Set as unactive initially
         self.active = False
