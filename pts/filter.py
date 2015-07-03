@@ -241,8 +241,8 @@ class Filter:
 
         # log-log interpolate SED and transmission on the combined wavelength grid
         # (use scipy interpolation function for SED because np.interp does not support broadcasting)
-        F = np.exp(interp1d(np.log10(wa), _log(densities), copy=False, bounds_error=False, fill_value=0.)(np.log10(w)))
-        T = np.exp(np.interp(np.log10(w), np.log10(wb), _log(self._Transmission), left=0., right=0.))
+        F = np.exp(interp1d(np.log(wa), _log(densities), copy=False, bounds_error=False, fill_value=0.)(np.log(w)))
+        T = np.exp(np.interp(np.log(w), np.log(wb), _log(self._Transmission), left=0., right=0.))
 
         # perform the integration
         if self._PhotonCounter:
@@ -255,7 +255,7 @@ class Filter:
 def _log(X):
     zeromask = X<=0
     logX = np.empty(X.shape)
-    logX[zeromask] = -1e100
+    logX[zeromask] = -750.  # the smallest (in magnitude) negative value x for which np.exp(x) returns zero
     logX[~zeromask] = np.log(X[~zeromask])
     return logX
 
