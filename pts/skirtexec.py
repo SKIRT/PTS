@@ -74,16 +74,13 @@ class SkirtExec:
     #   full log file, and the other processes only create a log file when there are errors or warnings.
     # - wait: if \c True or missing, the function waits until <tt>SKIRT</tt> execution completes and sends the brief
     #   SKIRT log to the standard console; if \c False the function returns immediately without waiting for SKIRT,
-    #   and SKIRT's log messages are sent to the null device. If \c True, SKIRT's log messages are logged to the console
-    #   except when the 'console' argument is set to \c False.
-    # - console: this argument only applies when the 'wait' argument is set to \c True. It specifies whether the SKIRT
-    #   should log the console output or whether SKIRT's log messages are sent to the null device.
+    #   and SKIRT's log messages are sent to the null device.
     #
     # The function returns a list of SkirtSimulation instances corresponding to the simulations to be performed
     # (after processing any wildcards in the ski filenames), in arbitrary order.
     #
     def execute(self, skipattern, recursive=False, inpath="", outpath="", skirel=False,
-                threads=0, parallel=1, processes=1, mpistyle='generic', brief=False, verbose=False, wait=True, console=True):
+                threads=0, parallel=1, processes=1, mpistyle='generic', brief=False, verbose=False, wait=True):
 
         # In multiprocessing mode, check whether MPI is installed on the system
         if processes > 1 and not self._MPIinstalled(): return []
@@ -111,7 +108,7 @@ class SkirtExec:
         # Execute SKIRT
         if wait:
             self._process = None
-            subprocess.call(args) if console else subprocess.call(args, stdout=open(os.path.devnull, 'w'))
+            subprocess.call(args)
         else:
             self._process = subprocess.Popen(args, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
 

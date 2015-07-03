@@ -31,7 +31,7 @@ from eagle.skirtrun import SkirtRun
 # for the given eagle simulation name, in order of run-id.
 def completed_skirtruns_for_simulation(eaglesim):
     db = Database()
-    query = "runstatus in ('completed','archived') and eaglesim='{}'".format(eaglesim)
+    query = "runstatus in ('completed','archived') and skitemplate='pan_v5' and eaglesim='{}'".format(eaglesim)
     runids = sorted([ row['runid'] for row in db.select(query) ])
     runs = [ SkirtRun(runid) for runid in runids ]
     db.close()

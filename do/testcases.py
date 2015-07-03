@@ -42,7 +42,7 @@ suitepath = os.path.join(os.getenv("HOME"), suitename)
 
 # Check whether a development SKIRT repository is present, otherwise use the standard SKIRT path
 devskirtpath = os.path.join(os.getenv("HOME"), "Development", "SKIRT", "release", "SKIRTmain", "skirt")
-skirtpath = devskirtpath if os.path.isfile(devskirtpath) else None
+skirtpath = devskirtpath if os.path.isfile(devskirtpath) else ""
 
 # Create the test suite instance
 suite = SkirtTestSuite(suitepath=suitepath, subsuite=subsuite, parallel=parallel, skirtpath=skirtpath)

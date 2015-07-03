@@ -24,9 +24,7 @@ import datetime
 import random
 import numpy as np
 import multiprocessing
-
-# Import astronomical modules
-import astropy.io.fits as pyfits
+import pyfits
 
 # Import relevant PTS modules
 from pts.skirtsimulation import SkirtSimulation
@@ -99,7 +97,7 @@ class SkirtTestSuite(object):
     #  current working directory.
     #
     def __init__(self, suitepath, subsuite=None, parallel=False, skirtpath=None):
-        
+
         # Set the basic characteristics of this test run
         self._suitepath = os.path.realpath(os.path.expanduser(suitepath))
         self._suitename = os.path.basename(self._suitepath)
@@ -180,7 +178,7 @@ class SkirtTestSuite(object):
         # Perform singleprocessing and multiprocessing mode sequentially
         self._numsimulations = 0
         for mode, modename, skipattern in zip(self._modes, self._modenames, self._skipatterns):
-                  
+
             # Start performing the simulations
             simulations = self._skirt.execute(skipattern, recursive=True, inpath="in", outpath="out", skirel=True, parallel=mode[0], threads=mode[1], processes=mode[2], wait=False)
             numsimulations = len(simulations)
@@ -195,13 +193,13 @@ class SkirtTestSuite(object):
 
             # Verify the results for each test case
             self._verify(sleepsecs)
-        
+
             # Wait for the skirt execution context to finish
             self._skirt.wait()
 
         # Write statistics about the number of successful test cases
         self._writestatistics()
-        
+
         # Close the report file
         self._report.close()
 
@@ -235,7 +233,7 @@ class SkirtTestSuite(object):
 
     ## This function cleans up the contents of all "out" directories that reside next to a ski file
     def _clean(self):
-        
+
         # Find every directory in the suite directory that has the name "out" and subsequently delete its content
         for dirpath, dirs, files in os.walk(self._subsuitepath):
             if dirpath.endswith("/out"):
@@ -246,7 +244,7 @@ class SkirtTestSuite(object):
 
     ## This function verifies the results for each test case
     def _verify(self, sleepsecs):
-        
+
         # Verify the results of each simulation, once it finishes (processed items are removed from the list)
         while True:
             for simulation in self._simulations[:]:
@@ -255,7 +253,7 @@ class SkirtTestSuite(object):
                     self._simulations.remove(simulation)
             if len(self._simulations) == 0 or not self._skirt.isrunning(): break
             time.sleep(sleepsecs)
-            
+
         # Report potentially unstarted simulations (which are still in the list of simulations and therefore not yet processed)
         for simulation in self._simulations:
             self._reportsimulation(simulation)
@@ -277,7 +275,7 @@ class SkirtTestSuite(object):
     ## This function verifies and reports on the test result of the given simulation.
     # It writes a line to the console and it updates the statistics.
     def _reportsimulation(self, simulation):
-        
+
         # Get the full path of the simulation directory and the name of this directory
         casedirpath = os.path.dirname(simulation.outpath())
         casename = os.path.relpath(casedirpath, self._suitepath) if self._parallel else os.path.basename(casedirpath)
@@ -291,7 +289,7 @@ class SkirtTestSuite(object):
             else:
                 residual = os.path.dirname(residual)
                 casename = os.path.join(os.path.basename(residual), casename)
-        
+
         # Report the status of this simulation
         status = simulation.status()
         if status == "Finished":
@@ -370,7 +368,7 @@ class SkirtTestSuite(object):
         # Get the full output and reference paths
         outpath = os.path.join(casedirpath, "out")
         refpath = os.path.join(casedirpath, "ref")
-        
+
         # Check for the presence of the reference directory
         if not os.path.isdir(refpath): return "Test case has no reference directory"
 
@@ -412,10 +410,10 @@ class SkirtTestSuite(object):
 
 # This functions searches for directories within a certain parent directories that have a specific name
 def findsubdirectory(parent, name):
-    
+
     # If the name of the subdirectory is empty, simply return the parent directory.
     if not name: return parent
-    
+
     # Recursively find all subdirectories of the parent directory.
     dirlist = os.walk(parent)
 
