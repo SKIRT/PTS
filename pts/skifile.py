@@ -309,6 +309,13 @@ class SkiFile:
         # set the attribute value
         elems[0].set("packages", str(number))
 
+    ## This function sets the number of wavelengths
+    def setnwavelengths(self, number):
+
+        elems = self.tree.xpath("//wavelengthGrid/*[1]")
+
+        elems[0].set("points", str(number))
+
     ## This function sets the number of dust cells in the x direction
     def setxdustcells(self, number):
         self.tree.xpath("//dustGridStructure/*[1]")[0].set("pointsX", str(number))

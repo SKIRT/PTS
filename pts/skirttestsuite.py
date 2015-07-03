@@ -21,6 +21,12 @@ import os.path
 import re
 import time
 import datetime
+import random
+import numpy as np
+import multiprocessing
+
+# Import astronomical modules
+import astropy.io.fits as pyfits
 
 # Import relevant PTS modules
 from pts.skirtsimulation import SkirtSimulation
@@ -83,95 +89,90 @@ class SkirtTestSuite(object):
 
     ## The constructor accepts three arguments:
     #
-    #   - suitedirpath: the path of the suite directory containing the test suite
-    #   - log: the logging mechanism, an instance of the Log class
+    #   - suitepath: the path of the directory containing the complete test suite
+    #   - subsuite: the name of a certain subsuite (the name of one particular test case or an overarching name)
+    #   - parallel: this flag indicates whether the test suite is to be executed in parallel mode or not
     #   - skirtpath: this optional argument specifies the path to the skirt executable. If none is given,
     #     the skirt version used will be the one found in the standard system path.
     #
     #  Paths may be absolute, relative to a user's home folder, or relative to the
     #  current working directory.
     #
-    def __init__(self, suitepath, subsuitename="", skirtpath=""):
+    def __init__(self, suitepath, subsuite=None, parallel=False, skirtpath=None):
         
-        # Get the full path to the suite directory
+        # Set the basic characteristics of this test run
         self._suitepath = os.path.realpath(os.path.expanduser(suitepath))
-        
-        # Get the name of the test suite (the name of the directory)
         self._suitename = os.path.basename(self._suitepath)
-        
-        # Get the path to the subsuite
-        self._subsuitepath = findsubdirectory(self._suitepath, subsuitename) 
-                
+        self._subsuitepath = findsubdirectory(self._suitepath, subsuite)
+        self._parallel = parallel
+
         # Create the logging mechanism
         self._log = Log()
 
-        # Define a name identifying this test
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
-        self._testname = os.path.basename(self._subsuitepath) + "_" + timestamp
-
-        # Define the path to the report file that will contain a detailed report of the test
-        self._reportfilepath = os.path.join(self._suitepath, "report_" + self._testname + ".html")
-
-        # Create skirt execution context
+        # Create a SKIRT execution context
         self._skirt = SkirtExec(skirtpath, self._log)
-        
-        # Create an empty list to contain the simulations that will be executed
-        self._simulations = []
-        
-        # Make an object that keeps track of the number of failed and succeeded simulations
+
+        # Initialize some data structures for the test run
         self._statistics = dict()
-        
-        # Check in which modes the test suite should be executed (singleprocessing and/or multiprocessing mode)
-        # and create the appropriate ski file pattern(s).
+        self._simulations = []
         self._modes = []
         self._modenames = []
         self._skipatterns = []
-        if not subsuitename:
-            self._modes = [(4,1), (1,4)]
-            self._modenames = [" in singleprocessing mode", " in multiprocessing mode"]
+
+        # Find out the number of CPU cores on this system and determine the number of threads in singleprocessing mode,
+        # the number of processes and the number of threads per process in multiprocessing mode (based on whether
+        # parallel mode is enabled).
+        cores = multiprocessing.cpu_count()
+        if self._parallel:
+            threads = cores
+            processes = 2
+            threadspp = cores/processes
+        else:
+            threads = 1
+            processes = cores
+            threadspp = 1
+
+        # Check in which modes the test suite should be executed (singleprocessing and/or multiprocessing mode)
+        # and create the appropriate ski file pattern(s).
+        if self._subsuitepath == self._suitepath:
+            # Add configurations for both singleprocessing and multiprocessing modes
+            self._modes = [(cores, threads, 1), (1, threadspp, processes)]
+            self._modenames = ["in singleprocessing mode ", "in multiprocessing mode "]
             self._skipatterns = [os.path.join(self._suitepath, "Singleprocessing", "*.ski"), os.path.join(self._suitepath, "Multiprocessing", "*.ski")]
+
         elif "Singleprocessing" in self._subsuitepath:
-            self._modes = [(4,1)]
+            # Add the proper configuration, where 4 stands for the number of parallel simulations and 1 stands for
+            # the number of processes to use
+            self._modes = [(cores, threads, 1)]
             self._modenames = [""]
             self._skipatterns = [os.path.join(self._subsuitepath, "*.ski")]
+
         elif "Multiprocessing" in self._subsuitepath:
-            self._modes = [(1,4)]
+            # Add the proper configuration, where 1 stands for the number of parallel simulations and 4 stands for
+            # the number of processes per simulation
+            self._modes = [(1, threadspp, processes)]
             self._modenames = [""]
             self._skipatterns = [os.path.join(self._subsuitepath, "*.ski")]
-    
+
     ## This function performs all tests in the test suite, verifies the results, and prepares a summary test report.
-    # As an argument, it can take the time in seconds to sleep before checking for simulation completion again.
-    # The default value is 60 seconds.
+    #  As an argument, it can take the time in seconds to sleep before checking for simulation completion again.
+    #  The default value is 60 seconds.
     #
     def perform(self, sleepsecs="60"):
-        
+
+        # Define a name identifying this test run
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+        self._testname = os.path.basename(self._subsuitepath) + "_" + timestamp
+
         # Inform the user of the fact that the test suite has been initiated
         self._log.info("Starting report for test suite " + self._subsuitepath)
         self._log.info("Using " + self._skirt.version() + " in " + self._skirt.directory())
 
+        # Create a report file to contain a detailed report of the test run
+        self._createreportfile()
+
         # Clean the "out" directories
         self._clean()
-
-        # Create the report file
-        self._reportfile = open(self._reportfilepath, 'w')
-        self._reportfile.write("<html>\n<head>\n</head>\n<body>\n")
-        csscommands = """<style type="text/css">
-                         [id^="togList"],                        /* HIDE CHECKBOX */
-                         [id^="togList"] ~ .list,                /* HIDE LIST */
-                         [id^="togList"] + label  span + span,   /* HIDE "Collapse" */
-                         [id^="togList"]:checked + label span{   /* HIDE "Expand" (IF CHECKED) */
-                           display:none;
-                         }
-                         [id^="togList"]:checked + label span + span{
-                           display:inline-block;                 /* SHOW "Collapse" (IF CHECKED) */
-                         }
-                         [id^="togList"]:checked ~ .list{
-                           display:block;                        /* SHOW LIST (IF CHECKED) */
-                         }
-                         </style>"""
-        self._reportfile.write(csscommands + "\n")
-        self._reportfile.write("Report file for test suite " + self._subsuitepath + "<br>\n")
-        self._reportfile.write("Using " + self._skirt.version() + " in " + self._skirt.directory() + "<br>\n")
 
         # Set the number of finished simulations to zero
         self._finished = 0
@@ -181,12 +182,16 @@ class SkirtTestSuite(object):
         for mode, modename, skipattern in zip(self._modes, self._modenames, self._skipatterns):
                   
             # Start performing the simulations
-            self._simulations += self._skirt.execute(skipattern, recursive=True, inpath="in", outpath="out", skirel=True, threads=1, parallel=mode[0], processes=mode[1], wait=False)
-            self._numsimulations += len(self._simulations)
+            simulations = self._skirt.execute(skipattern, recursive=True, inpath="in", outpath="out", skirel=True, parallel=mode[0], threads=mode[1], processes=mode[2], wait=False)
+            numsimulations = len(simulations)
 
             # Inform the user on the number of test cases (in this mode)
-            self._log.info("Number of test cases" + modename + ": " + str(len(self._simulations)))
-            self._reportfile.write("Number of test cases" + modename + ": " + str(len(self._simulations)) + "<br>\n")
+            self._log.info("Number of test cases " + modename + ": " + str(numsimulations))
+            self._report.write("Number of test cases " + modename + ": " + str(numsimulations) + "<br>\n")
+
+            # Add the new simulations to the list
+            self._simulations += simulations
+            self._numsimulations += numsimulations
 
             # Verify the results for each test case
             self._verify(sleepsecs)
@@ -198,7 +203,35 @@ class SkirtTestSuite(object):
         self._writestatistics()
         
         # Close the report file
-        self._reportfile.close()
+        self._report.close()
+
+    ## This function creates a HTML file that contains a detailed report of the test run
+    def _createreportfile(self):
+
+        csscommands = """<style type="text/css">
+                             [id^="togList"],                        /* HIDE CHECKBOX */
+                             [id^="togList"] ~ .list,                /* HIDE LIST */
+                             [id^="togList"] + label  span + span,   /* HIDE "Collapse" */
+                             [id^="togList"]:checked + label span{   /* HIDE "Expand" (IF CHECKED) */
+                               display:none;
+                             }
+                             [id^="togList"]:checked + label span + span{
+                               display:inline-block;                 /* SHOW "Collapse" (IF CHECKED) */
+                             }
+                             [id^="togList"]:checked ~ .list{
+                               display:block;                        /* SHOW LIST (IF CHECKED) */
+                             }
+                             </style>"""
+
+        # Open the report file
+        filepath = os.path.join(self._suitepath, "report_" + self._testname + ".html")
+        self._report = open(filepath, 'w')
+
+        # Write some general info to the report file
+        self._report.write("<html>\n<head>\n</head>\n<body>\n")
+        self._report.write(csscommands + "\n")
+        self._report.write("Report file for test suite " + self._subsuitepath + "<br>\n")
+        self._report.write("Using " + self._skirt.version() + " in " + self._skirt.directory() + "<br>\n")
 
     ## This function cleans up the contents of all "out" directories that reside next to a ski file
     def _clean(self):
@@ -232,12 +265,12 @@ class SkirtTestSuite(object):
     def _writestatistics(self):
 
         self._log.info("Summary for total of: "+ str(self._numsimulations))
-        self._reportfile.write("Summary for total of: " + str(self._numsimulations) + "<br>\n")
+        self._report.write("Summary for total of: " + str(self._numsimulations) + "<br>\n")
 
         for key,value in self._statistics.iteritems():
 
             self._log.info("  " + key + ": " + str(value))
-            self._reportfile.write("  " + key + ": " + str(value) + "<br>\n")
+            self._report.write("  " + key + ": " + str(value) + "<br>\n")
 
         self._log.info("Finished report for test suite " + self._subsuitepath)
 
@@ -247,11 +280,11 @@ class SkirtTestSuite(object):
         
         # Get the full path of the simulation directory and the name of this directory
         casedirpath = os.path.dirname(simulation.outpath())
-        casename = os.path.basename(casedirpath)
+        casename = os.path.relpath(casedirpath, self._suitepath) if self._parallel else os.path.basename(casedirpath)
 
         # Determine the most relevant string to identify this simulation within the current test suite
         residual = casedirpath
-        while (True):
+        while (not self._parallel):
             if casename == os.path.basename(self._subsuitepath): break
             if (os.path.dirname(residual) == self._subsuitepath):
                 break
@@ -274,57 +307,57 @@ class SkirtTestSuite(object):
                 self._log.success("Test case " + casename + ": succeeded")
 
                 # Write to the report file
-                self._reportfile.write("<span style='color:LightGreen'>Test case " + casename + ": succeeded</span><br>\n")
+                self._report.write("<span style='color:LightGreen'>Test case " + casename + ": succeeded</span><br>\n")
 
             else:
 
                 status = "Failed"
-                self._log.error("Test case " + casename + ": failed")
+                self._log.failure("Test case " + casename + ": failed")
 
                 # Write to the report file
-                self._reportfile.write("<div class='row'>\n")
-                self._reportfile.write("  <input id='togList" + str(self._finished) + "' type='checkbox'>\n")
-                self._reportfile.write("  <label for='togList" + str(self._finished) + "'>\n")
-                self._reportfile.write("    <span style='color:red'>Test case " + casename + ": failed [click to expand] </span>\n")
-                self._reportfile.write("    <span style='color:red'>Test case " + casename + ": failed [click to collapse]</span>\n")
-                self._reportfile.write("  </label>\n")
-                self._reportfile.write("  <div class='list'>\n")
-                self._reportfile.write("    <ul>\n")
+                self._report.write("<div class='row'>\n")
+                self._report.write("  <input id='togList" + str(self._finished) + "' type='checkbox'>\n")
+                self._report.write("  <label for='togList" + str(self._finished) + "'>\n")
+                self._report.write("    <span style='color:red'>Test case " + casename + ": failed [click to expand] </span>\n")
+                self._report.write("    <span style='color:red'>Test case " + casename + ": failed [click to collapse]</span>\n")
+                self._report.write("  </label>\n")
+                self._report.write("  <div class='list'>\n")
+                self._report.write("    <ul>\n")
 
                 if len(extra) > 0:
 
-                    if len(extra) == 1: self._reportfile.write("      <li>The output contains an extra file:<br>")
-                    else: self._reportfile.write("      <li>The output contains extra files:<br>")
+                    if len(extra) == 1: self._report.write("      <li>The output contains an extra file:<br>")
+                    else: self._report.write("      <li>The output contains extra files:<br>")
 
                     for filename in extra:
 
-                        self._reportfile.write("  - " + filename + "<br>")
+                        self._report.write("  - " + filename + "<br>")
 
-                    self._reportfile.write("</li>\n")
+                    self._report.write("</li>\n")
 
                 if len(missing) > 0:
 
-                    if len(missing) == 1: self._reportfile.write("      <li>The output misses a file:<br>")
-                    else: self._reportfile.write("      <li>The output misses files:<br>")
+                    if len(missing) == 1: self._report.write("      <li>The output misses a file:<br>")
+                    else: self._report.write("      <li>The output misses files:<br>")
 
                     for filename in missing:
 
-                        self._reportfile.write("  - " + filename + "<br>")
+                        self._report.write("  - " + filename + "<br>")
 
-                    self._reportfile.write("</li>\n")
+                    self._report.write("</li>\n")
 
                 if len(differ) > 0:
 
-                    if len(differ) == 1: self._reportfile.write("      <li>The following file differs:<br>")
-                    else: self._reportfile.write("      <li>The following files differ:<br>")
+                    if len(differ) == 1: self._report.write("      <li>The following file differs:<br>")
+                    else: self._report.write("      <li>The following files differ:<br>")
 
                     for filename in differ:
 
-                        self._reportfile.write("  - " + filename + "<br>")
+                        self._report.write("  - " + filename + "<br>")
 
-                    self._reportfile.write("</li>\n")
+                    self._report.write("</li>\n")
 
-                self._reportfile.write("    </ul>\n  </div>\n</div>\n")
+                self._report.write("    </ul>\n  </div>\n</div>\n")
 
         self._statistics[status] = self._statistics.get(status,0) + 1
 
@@ -339,35 +372,40 @@ class SkirtTestSuite(object):
         refpath = os.path.join(casedirpath, "ref")
         
         # Check for the presence of the reference directory
-        if not os.path.isdir(refpath):
-            return "Test case has no reference directory"
+        if not os.path.isdir(refpath): return "Test case has no reference directory"
 
+        # Initialize lists to contain the extra files, missing files and differing files
         extra = []
         missing = []
         differ = []
 
         # Verify list of filenames
-        if len(filter(lambda fn: os.path.isdir(fn), os.listdir(outpath))) > 0:
-            return "Output contains a directory"
+        if len(filter(lambda fn: os.path.isdir(fn), os.listdir(outpath))) > 0: return "Output contains a directory"
         dircomp = filecmp.dircmp(outpath, refpath, ignore=['.DS_Store'])
 
-        for file in dircomp.left_only:
+        # Create a list of files that were not present in the reference directory
+        for file in dircomp.left_only: extra.append(file)
 
-            extra.append(file)
-
-        for file in dircomp.right_only:
-
-            missing.append(file)
+        # Create a list of files that are missing from the output directory
+        for file in dircomp.right_only: missing.append(file)
 
         # Compare files, focusing on those that aren't trivially equal.
         matches, mismatches, errors = filecmp.cmpfiles(outpath, refpath, dircomp.common, shallow=False)
 
         for filename in mismatches + errors:
 
-            if not equalfiles(os.path.join(outpath, filename), os.path.join(refpath, filename)):
+            reffile = os.path.join(refpath, filename)
+            outfile = os.path.join(outpath, filename)
 
-                differ.append(filename)
+            # For a soft comparison between files, check if both files are similar enough
+            if self._parallel:
+                if not similarfiles(reffile, outfile): differ.append(filename)
 
+            # In the other case, check if both files are equal (except for potential timestamps)
+            else:
+                if not equalfiles(reffile, outfile): differ.append(filename)
+
+        # Return the list of extra files, the list of missing files and the list of differing files
         return extra, missing, differ
 
 # -----------------------------------------------------------------
@@ -392,10 +430,30 @@ def findsubdirectory(parent, name):
 
     # If no match is found, show an error message and quit
     log = Log()
-    log.error("ERROR: " + name + " not found in " + parent)
+    log.error(name + " not found in " + parent)
     sys.exit()
 
 # -----------------------------------------------------------------
+
+## This function returns True if the specified files are similar (meaning that there relative difference is lower than
+#  a certain threshold.
+def similarfiles(filepath1, filepath2, threshold=0.1):
+
+    # Don't compare log files because it is too complicated (time & duration differences, changes to messages, ...)
+    if filepath1.endswith("_log.txt"): return True
+
+    # Supported file types
+    if filepath1.endswith(".fits"): return similarfitsfiles(filepath1, filepath2, threshold)
+    if filepath1.endswith("_parameters.xml"): return equaltextfiles(filepath1, filepath2, 1)
+    if filepath1.endswith("_parameters.tex"): return equaltextfiles(filepath1, filepath2, 2)
+    if filepath1.endswith("_sed.dat"): return similarseds(filepath1, filepath2, threshold)
+    if filepath1.endswith("_convergence.dat"): return similarconvergence(filepath1, filepath1, threshold)
+    if filepath1.endswith("_isrf.dat"): return True
+    if filepath1.endswith("_gridxz.dat") or filepath1.endswith("_gridyz.dat") or filepath1.endswith("_gridxy.dat") or filepath1.endswith("_gridxyz.dat"):
+        return True
+
+    # Unsupported file type
+    return False
 
 ## This function returns True if the specified files are equal except for irrelevant differences (such as
 # time stamps in a file header or prolog), and False otherwise. Since the structure of the allowed differences
@@ -423,6 +481,68 @@ def equaltextfiles(filepath1, filepath2, allowedDiffs):
 #  header record, and False otherwise.
 def equalfitsfiles(filepath1, filepath2):
     return equallists(readblocks(filepath1), readblocks(filepath2), 1)
+
+## This function returns True if the specified FITS files are similar, meaning that their relative difference
+#  is lower than the specified threshold.
+def similarfitsfiles(filepath1, filepath2, threshold):
+
+    # Obtain the datacubes for both FITS files
+    data1 = pyfits.getdata(filepath1)
+    data2 = pyfits.getdata(filepath2)
+
+    # Compare the dimension of the datacubes
+    if data1.shape != data2.shape: return False
+
+    # Determine a cutoff for the lowest fluxes
+    cutoff = min(np.amax(data1)/100.0,np.amax(data2)/100.0)
+
+    # Compare the pixel values
+    return np.isclose(data1, data2, rtol=threshold, atol=cutoff).any()
+
+## This function returns True if the specified SED data files are similar, meaning that their relative difference
+#  is lower than the specified threshold.
+def similarseds(filepath1, filepath2, threshold):
+
+    # Obtain the fluxes of both SED files
+    fluxes1 = np.loadtxt(filepath1, usecols=[1], ndmin=1)
+    fluxes2 = np.loadtxt(filepath2, usecols=[1], ndmin=1)
+
+    # Compare the number of flux points, if
+    if len(fluxes1) != len(fluxes2): return False
+
+    # Compare the fluxes
+    return np.isclose(fluxes1, fluxes2, rtol=threshold, atol=.0).any()
+
+## This function returns \c True if the specified convergence files contain similar surface densities and dust masses
+def similarconvergence(filepath1, filepath2, threshold):
+
+    # Get the lines from the first file
+    with open(filepath1) as file1: lines1 = file1.readlines()
+
+    # Get the lines from the second file
+    with open(filepath2) as file2: lines2 = file2.readlines()
+
+    # Compare the number of lines in both files
+    if len(lines1) != len(lines2): return False
+
+    # Compare the values in the convergence files, by looping over all lines
+    for i in range(len(lines1)):
+
+        line1 = lines1[i]
+        line2 = lines2[i]
+
+        # Check if this line states a value
+        if "value = " in line1:
+
+            # Get the values in the corresponding line for both files
+            value1 = float(line1.split("value = ")[1].split()[0])
+            value2 = float(line2.split("value = ")[1].split()[0])
+
+            # If the values are not similar, return False
+            if not np.isclose(value1, value2, rtol=threshold): return False
+
+    # If no dissimilarities were found, return True
+    return True
 
 ## This function returns True if the specified lists are equal except for possible time information in
 #  a number of items not larger than \em allowedDiffs, and False otherwise.

@@ -114,6 +114,25 @@ class Log(object):
         # Print the stamped message
         print "\033[32m" + stampedmessage + "\033[0m"
 
+    ## This function logs a failure message
+    def failure(self, message):
+
+        # Do not do anything if the maximum logging level is above the "error" level
+        if levels["warning"] < self._maxlevel: return
+
+        # Add a time stamp to the message
+        stampedmessage = timestamp(message, delimiter=" * ")
+
+        # If required, write the stamped message to the report file
+        if self._doreport:
+
+            self._report.write(stampedmessage + "\n")
+            self._report.flush()
+            os.fsync(self._report.fileno())
+
+        # Print the stamped message
+        print "\033[31m" + stampedmessage + "\033[0m"
+
     ## This function logs an error message.
     def error(self, message):
 
