@@ -19,25 +19,33 @@
 # Import standard modules
 import os.path
 import sys
+import argparse
 
 # Import the relevant PTS class
 from pts.skirttestsuite import SkirtTestSuite
 
 # -----------------------------------------------------------------
 
+# Create the command-line parser
+parser = argparse.ArgumentParser()
+parser.add_argument('subsuite', type=str, help='a name identifying the subsuite', nargs='?', default=None)
+parser.add_argument('-p', '--parallel', action='store_true', help='execute the test cases in parallel mode')
+
+# Parse the command line arguments
+args = parser.parse_args()
+subsuite = args.subsuite
+parallel = args.parallel
+
 # Create the full path to the SKIRTtests directory
 suitename = "SKIRTtests"
 suitepath = os.path.join(os.getenv("HOME"), suitename)
 
-# Get the command-line argument specifying the test suite subset, if any
-subsuitename = sys.argv[1] if len(sys.argv) > 1 else ""
-
-# Check whether a development SKIRT repository is present, otherwise use the standard skirt path
+# Check whether a development SKIRT repository is present, otherwise use the standard SKIRT path
 devskirtpath = os.path.join(os.getenv("HOME"), "Development", "SKIRT", "release", "SKIRTmain", "skirt")
-skirtpath = devskirtpath if os.path.isfile(devskirtpath) else "" 
+skirtpath = devskirtpath if os.path.isfile(devskirtpath) else None
 
-# Create the test suite
-suite = SkirtTestSuite(suitepath=suitepath, subsuitename=subsuitename, skirtpath=skirtpath)
+# Create the test suite instance
+suite = SkirtTestSuite(suitepath=suitepath, subsuite=subsuite, parallel=parallel, skirtpath=skirtpath)
 
 # Perform the test suite
 suite.perform(sleepsecs=10)
