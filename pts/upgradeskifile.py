@@ -645,6 +645,24 @@ def _get_upgrade_definitions():
     </xsl:template>
     '''),
 
+    # git 497 (Jul 8, 2015): merge SPHStarburstComp into SPHStellarComp
+    ('''//SPHStarburstComp''',
+    '''
+    <xsl:template match="SPHStarburstComp">
+        <xsl:element name="SPHStellarComp">
+            <xsl:apply-templates select="@*|node()"/>
+            <xsl:element name="sedFamily">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'SEDFamily'"/>
+                </xsl:attribute>
+                <xsl:element name="MappingsSEDFamily">
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+
     # terminate the list with a placeholder to keep the syntax of all previous items the same
     ("false()", "") )
 
