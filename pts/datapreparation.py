@@ -11,20 +11,20 @@
 # of a certain galaxy in different photometric filters and creating maps that represent the 2D distribution of
 # dust, star formation and old stars.
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
 # Import standard modules
 import os.path
 import numpy as np
+import logging
 
 # Import astronomical modules
 from astropy import units as u
 
-# Import relevant PTS modules
-from pts.image import Image
-from pts.log import Log
+# Import the Image class
+from image import Image
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
 # Define the full-width-half-maxima of the different images (in pixels)
 fwhmax = {"2MASSH":   None, # FIT THIS TO THE STARS!
@@ -80,19 +80,29 @@ attenuations = {"2MASSH":   0.036,
                 "PACS70":   0.0,
                 "PACS160":  0.0}
 
-# -----------------------------------------------------------------
-#  DataPreparation class
-# -----------------------------------------------------------------
+# *****************************************************************
 
-## An instance of the DataPreparation class in this module is responsible for taking reduced astronomical image data
-#  of a certain galaxy in different photometric filters and creating maps that represent the 2D distribution of
-#  dust, star formation and old stars.
-## OLD STARS: IRAC, YOUNG NI STARS: FUV, YOUNG I STARS: Ha + 24micron, DUST: H + PACS70 + PACS160
-#
 class DataPreparation(object):
 
-    ## The constructor
+    """
+    An instance of the DataPreparation class in this module is responsible for taking reduced astronomical image data
+    of a certain galaxy in different photometric filters and creating maps that represent the 2D distribution of
+    dust, star formation and old stars.
+    OLD STARS: IRAC, YOUNG NI STARS: FUV, YOUNG I STARS: Ha + 24micron, DUST: H + PACS70 + PACS160
+    """
+
+    # *****************************************************************
+
     def __init__(self, basepath, filtername="", plot=False, save=True):
+
+        """
+        This constructor ...
+        :param basepath:
+        :param filtername:
+        :param plot:
+        :param save:
+        :return:
+        """
 
         # Get the name of the galaxy (the name of the base directory)
         self._galaxyname = os.path.basename(basepath)
@@ -109,7 +119,7 @@ class DataPreparation(object):
         except OSError: pass
 
         # Create the logging mechanism
-        self._log = Log(basepath, self._galaxyname)
+        #self._log = Log(basepath, self._galaxyname)
 
         # Set the 'plot' and 'save' booleans
         self._plot = plot
@@ -150,32 +160,38 @@ class DataPreparation(object):
                 try: os.mkdir(os.path.join(self._preppath, base_filename))
                 except OSError: pass
 
-    ## This function ...
+    # *****************************************************************
+
     def run(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # For each filter
         for filter, filepath in self._filters.items():
 
             # Import the image
-            image = self.importimage(filter)
+            image = self.import_image(filter)
 
             # If no error map was found in the FITS file, try to find a seperate FITS file containing error data
-            if not image.frames.errors:
+            if image.frames.errors is None:
 
                 try:
                     path = os.path.join(self._datapath, "error", filter + ".fits")
-                    image.importframe(path, "errors")
+                    image.import_datacube(path, "errors")
                 except IOError:
-                    self._log.warning("No error data found for " + filter)
+                    logging.warning("No error data found for " + filter)
 
             # Set the fwhm of the image, if it is not None
-            if fwhmax[filter]: image.setfwhm(fwhmax[filter])
+            if fwhmax[filter]: image.set_fwhm(fwhmax[filter])
 
             # Mask NaNs, edges and extra user-defined regions
             self.mask(image, edges=edges[filter], extra=extra[filter])
 
             # Interpolate over the stars indicated by the user (if the fwhmax is None; the PSF will be fitted)
-            self.interpolatestars(image, fitpsf=(not fwhmax[filter]))
+            self.interpolate_stars(image, fitpsf=(not fwhmax[filter]))
 
             # Convert the image into units of MJy / sr
             #toMJysr(image)
@@ -183,11 +199,11 @@ class DataPreparation(object):
             # Subtract the sky
             if filter != "GALEXFUV":
 
-                if notsubtracted[filter]: self.subtractsky(image, image.fwhm)
+                if notsubtracted[filter]: self.subtract_sky(image, image.fwhm)
 
             else:
 
-                subtractskyFUV(image)
+                subtract_sky_FUV(image)
 
             # Calculate the conversion factor
             if filter == "GALEXFUV":
@@ -232,18 +248,17 @@ class DataPreparation(object):
             self.scale(image, totalfactor)
 
             # Convolve this image to the PACS 160 micron resolution
-            if filter != "PACS160": self.convolve(image, kernels[filter])
+            #if filter != "PACS160": self.convolve(image, kernels[filter])
 
             # Rebin this image to the PACS 160 micron pixel grid
             if filter != "PACS160": self.rebin(image)
 
-    # -----------------------------------------------------------------
+    # *****************************************************************
 
-    ## This function ...
-    def importimage(self, filter):
+    def import_image(self, filter):
 
         # Show which image we are importing
-        self._log.info("Importing image for " + filter + " band")
+        logging.info("Importing image for " + filter + " band")
 
         # Determine the path to this FITS file
         filepath = os.path.join(self._datapath, filter + ".fits")
@@ -251,13 +266,20 @@ class DataPreparation(object):
         # Create an image object from this FITS file and return it
         return Image(filepath)
 
-    # -----------------------------------------------------------------
+    # *****************************************************************
 
-    ## This function masks the nans, edges
     def mask(self, image, edges=True, extra=False):
 
+        """
+        This function masks the 'NaN's, edges ...
+        :param image:
+        :param edges:
+        :param extra:
+        :return:
+        """
+
         # Create a mask for the pixels in the primary image that have a NaN value
-        image.masknans()
+        image.mask_nans()
 
         # Select the nans mask for later
         image.masks.nans.select()
@@ -265,7 +287,7 @@ class DataPreparation(object):
         if edges:
 
             # Assuming the nans are in the outer parts of the image, make an expanded mask that also covers the edges
-            image.expandmasks("edges")
+            image.expand_masks("edges")
 
             # Deselect the nans mask
             image.masks.nans.deselect()
@@ -277,13 +299,13 @@ class DataPreparation(object):
 
             # Import 'extra' region
             filepath = "data/extra/" + image.name + ".reg"
-            image.importregion(filepath, "extra")
+            image.import_region(filepath, "extra")
 
             # Select the extra region
             image.regions.extra.select()
 
             # Create a mask 'extra' from the 'extra' region
-            image.createmask()
+            image.create_mask()
 
             # Deselect the extra region
             image.regions.extra.deselect()
@@ -292,20 +314,20 @@ class DataPreparation(object):
             image.masks.extra.select()
 
         # Combine the edge and extra mask (the currently active masks)
-        image.combinemasks("total")
+        image.combine_masks("total")
 
         # Select the total mask
-        image.masks.deselectall()
+        image.masks.deselect_all()
         image.masks.total.select()
 
         # Apply the total mask to the primary image
-        image.applymasks()
+        image.apply_masks()
 
         # If requested, save the masked primary image
         if self._save:
 
             path = os.path.join(self._preppath, image.name, "masked.fits")
-            image.save(path)
+            image.export_datacube(path)
 
         # If requested, plot the masked primary image
         if self._plot:
@@ -313,125 +335,183 @@ class DataPreparation(object):
             image.plot()
 
         # Deselect all masks and regions
-        image.regions.deselectall()
-        image.masks.deselectall()
+        image.regions.deselect_all()
+        image.masks.deselect_all()
 
-    # -----------------------------------------------------------------
+    # *****************************************************************
 
-    ## This function interpolates over the stars
-    def interpolatestars(self, image, fitpsf=False, manual=False):
+    def interpolate_stars(self, image, fitpsf=False, manual=False):
+
+        """
+        This function interpolates over the stars
+        :param image:
+        :param fitpsf:
+        :param manual:
+        :return:
+        """
 
         if manual:
 
-            # Create a region object for the stars create a mask from it
+            # Create a region object for the stars
             filepath = "data/stars/" + image.name + ".reg"
-            image.importregion(filepath, "stars")
+            image.import_region(filepath, "stars")
 
         else:
 
             # Fetch the stars automatically from the web
-            image.fetchstars()
+            image.find_stars()
 
         # Select the stars region
         image.regions.stars.select()
 
-        # If requested, plot the primary image with the stars indicated
-        if self._plot:
+        image.model_stars(plot=False, upsample_factor=2.0) # > regions.modeled_stars, regions.leftovers
+        
+        # Subtract the stars frame from the primary frame
+        image.frames.primary.deselect()
+        image.frames.stars.select()
+        image.subtract()
+        
+        image.frames.deselect_all()
+        image.frames.primary.select()
+        
+        image.regions.deselect_all()
 
-            image.plot()
+        image.status()
+
+        image.regions.modeled_stars.select()
+        image.create_mask()
+        image.regions.deselect_all()
+
+        image.regions.ufos.select()
+        image.create_mask()
+        image.export_region("ufos.reg")
+        image.regions.deselect_all()
+        
+        image.regions.leftovers.select()
+        image.expand_regions(factor=6.0)
+        
+        image.regions.deselect_all()
+        image.regions.leftovers_expanded.select()
+        
+        image.rename_region("leftovers_inner")
+
+        image.create_mask()
+        
+        image.masks.deselect_all()
+        image.masks.leftovers_inner.select()
+        
+        image.regions.deselect_all()
+        image.regions.leftovers.select()
+        image.expand_regions(factor=9.0)
+        
+        image.regions.deselect_all()
+        image.regions.leftovers_expanded.select()
+        image.rename_region("leftovers_outer")
+        
+        image.frames.deselect_all()
+        image.frames.primary.select()
+        
+        image.interpolate_in_regions()
+        
+        image.export_datacube("star_subtracted.fits")
+
+        image.regions.deselect_all()
+        image.regions.leftovers_inner.select()
+        
+        image.export_region("leftovers.reg")
+        
+        # If requested, plot the primary image with the stars indicated
+        #if self._plot:
+
+        #    image.plot()
 
         if fitpsf:
+            
+            image.deselect_all()
+            image.regions.modeled_stars.select()
 
-            # Estimate the FWHM of the PSF
-            fwhm_x, fwhm_y = image.estimatepsf_fitskirt(plot=self._plot)
-
-            # Circular approximation
-            fwhm = 0.5 * (fwhm_x + fwhm_y)
+            sigma = image.mean_radius()
+            fwhm = 2.355 * sigma
 
             # Set the fwhm
-            image.setfwhm(fwhm)
+            image.set_fwhm(fwhm)
 
-        # Create a mask from the stars region
-        image.createmask()
-
-        # Select the stars mask
-        image.masks.stars.select()
-
-        # Interpolate the image within the stars mask
-        image.interpolate()
+        # Deselect all masks and regions
+        image.deselect_all()
+        image.frames.primary.select()
 
         # If requested, save the interpolated image
         if self._save:
 
             path = os.path.join(self._preppath, image.name, "interpolated.fits")
-            image.save(path)
-
-        # Deselect all masks and regions
-        image.regions.deselectall()
-        image.masks.deselectall()
+            image.export_datacube(path)
 
         # If requested, plot the interpolated primary image
         if self._plot:
 
             image.plot()
 
-    # -----------------------------------------------------------------
+    # *****************************************************************
 
-    ## This function subtracts the sky of the specified image
-    def subtractsky(self, image, fwhm):
+    def subtract_sky(self, image, fwhm):
+
+        """
+        This function subtracts the sky in the image
+        :param image:
+        :param fwhm:
+        :return:
+        """
 
         # Find the galaxy in the primary image (creates a region called 'galaxy')
-        image.findgalaxy(plot=self._plot)
+        image.find_galaxy(plot=self._plot)
 
         # Select the galaxy region
         image.regions.galaxy.select()
 
         # Create a mask covering the galaxy ==> will also get the name "galaxy"
-        image.createmask()
+        image.create_mask()
 
         # Select the total mask and the stars mask
         image.masks.total.select()
-        image.masks.stars.select()
+        image.masks.leftovers_inner.select()
+        image.masks.ufos.select()
+        image.masks.modeled_stars.select()
 
         # Find a map that represents the sky, ignoring pixels under either of these 4 masks:
         #  - 2 masks that are currently selected: the total mask and the stars mask
         #  - the galaxy mask
         #  - a mask composed of all pixels outside an annulus around the galaxy
         # and using sigma-clipping to ignore other pixels with extreme values.
-        # Estimate the mean, median and standard deviation for the sky
-        mean, median, error = image.findsky()
-
-        # Show the mean, median and standard deviation
-        self._log.info("Mean sky = " + str(mean))
-        self._log.info("Median sky = " + str(median))
-        self._log.info("Standard deviation = " + str(error))
+        image.find_sky()
 
         if self._save:
 
             # Deselect the primary frame and select the sky frame
-            image.frames.deselectall()
+            image.frames.deselect_all()
             image.frames.sky.select()
 
             # Save the (sigma-clipped) sky as a FITS file
             path = os.path.join(self._preppath, image.name, "sky.fits")
-            image.save(path)
+            image.export_datacube(path)
 
         # Select the primary image
-        image.frames.deselectall()
+        image.frames.deselect_all()
         image.frames.primary.select()
 
         # Fit the sky with a polynomial, using the FHWM
-        image.fitsky(fwhm)
+        #image.fit_sky(fwhm)
+
+        image.fit_polynomial()
 
         # Deselect all frames and select the fittedsky frame
-        image.frames.deselectall()
-        image.frames.fittedsky.select()
+        image.frames.deselect_all()
+        image.frames.primary_polynomial.select()
 
         if self._save:
 
             # Save the 2D fitted sky
             path = os.path.join(self._preppath, image.name, "fittedsky.fits")
-            image.save(path)
+            image.export_datacube(path)
 
         # Select the total mask
         image.masks.total.select()
@@ -440,25 +520,25 @@ class DataPreparation(object):
         image.subtract()
 
         # Select the primary image frame
-        image.frames.deselectall()
+        image.frames.deselect_all()
         image.frames.primary.select()
 
         if self._save:
 
             # Save the sky-subtracted primary image
             path = os.path.join(self._preppath, image.name, "subtracted.fits")
-            image.save(path)
+            image.export_datacube(path)
 
         # Deselect all masks and regions
-        image.regions.deselectall()
-        image.masks.deselectall()
+        image.regions.deselect_all()
+        image.masks.deselect_all()
 
         # If requested, plot the sky-subtracted primary image
         if self._plot:
 
             image.plot()
 
-    # -----------------------------------------------------------------
+    # *****************************************************************
 
     ## This function scales the image by a certain factor
     def scale(self, image, factor):
@@ -470,13 +550,13 @@ class DataPreparation(object):
         if self._save:
 
             path = os.path.join(self._preppath, image.name, "scaled.fits")
-            image.save(path)
+            image.export_datacube(path)
 
         # Deselect all masks and regions
-        image.regions.deselectall()
-        image.masks.deselectall()
+        image.regions.deselect_all()
+        image.masks.deselect_all()
 
-    # -----------------------------------------------------------------
+    # *****************************************************************
 
     ## This function convolves the image with the PSF of the PACS 160 image
     def convolve(self, image, kernel):
@@ -488,32 +568,32 @@ class DataPreparation(object):
         if self._save:
 
             path = os.path.join(self._preppath, image.name, "convolved.fits")
-            image.save(path)
+            image.export_datacube(path)
 
         # If requested, save the new kernel
         if self._save:
 
             # Select the kernel frame
-            image.frames.deselectall()
+            image.frames.deselect_all()
             image.frames.kernel.select()
 
             path = os.path.join(self._preppath, image.name, "newkernel.fits")
-            image.save(path)
+            image.export_datacube(path)
 
             # Select the primary frame again
-            image.frames.deselectall()
+            image.frames.deselect_all()
             image.frames.primary.select()
 
         # Deselect all masks and regions
-        image.regions.deselectall()
-        image.masks.deselectall()
+        image.regions.deselect_all()
+        image.masks.deselect_all()
 
         # If requested, plot the convolved primary image
         if self._plot:
 
             image.plot()
 
-    # -----------------------------------------------------------------
+    # *****************************************************************
 
     ## This function rebins the image to the resolution of the Pacs 160 micron image
     def rebin(self, image):
@@ -526,34 +606,37 @@ class DataPreparation(object):
         if self._save:
 
             path = os.path.join(self._preppath, image.name, "rebinned.fits")
-            image.save(path)
+            image.export_datacube(path)
 
         # Deselect all masks and regions
-        image.regions.deselectall()
-        image.masks.deselectall()
+        image.regions.deselect_all()
+        image.masks.deselect_all()
 
         # If requested, plot the rebinned primary image
         if self._plot:
 
             image.plot()
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
-## This function ...
-def subtractskyFUV(image):
+def subtract_sky_FUV(image):
 
-    log = Log()
+    """
+    This function ...
+    :param image:
+    :return:
+    """
 
     # Automatically finding the galaxy in the GALEX.FUV image fails!
     filepath = "data/galaxy/GALEXFUV.reg"
-    image.importregion(filepath, "galaxy")
+    image.import_region(filepath, "galaxy")
 
     # Select the galaxy region
-    image.regions.deselectall()
+    image.regions.deselect_all()
     image.regions.galaxy.select()
 
     # Create a mask covering the galaxy
-    image.createmask()
+    image.create_mask()
 
     ####### SPECIAL THINGS TO DEFINE THE ORIENTATION OF THIS IMAGE WITHOUT HAVING TO USE THE FIND_GALAXY FUNCTION
 
@@ -578,7 +661,7 @@ def subtractskyFUV(image):
     eps = 1.0 - height / width
 
     orientation = Orientation(xpeak, ypeak, major, eps, theta)
-    image.setorientation(orientation)
+    image.set_orientation(orientation)
 
     ####### END OF SPECIAL THINGS
 
@@ -590,38 +673,34 @@ def subtractskyFUV(image):
     #  - the galaxy mask
     #  - a mask composed of all pixels outside an annulus around the galaxy
     # and using sigma-clipping to ignore other pixels with extreme values.
-    # Estimate the mean, median and standard deviation for the sky
-    mean, median, error = image.findsky()
-
-    # Show the mean, median and standard deviation
-    log.info("Mean sky = " + str(mean))
-    log.info("Median sky = " + str(median))
-    log.info("Standard deviation = " + str(error))
+    image.find_sky()
 
     # Deselect the primary frame and select the primary_masked_sky frame
-    image.frames.deselectall()
+    image.frames.deselect_all()
     image.frames.sky.select()
 
     preppathFUV = "prep/GALEXFUV"
 
     # Save the (sigma-clipped) sky as a FITS file
     path = os.path.join(preppathFUV, "sky.fits")
-    image.save(path)
+    image.export_datacube(path)
 
     # Select the primary image
-    image.frames.deselectall()
+    image.frames.deselect_all()
     image.frames.primary.select()
 
     # Fit the sky with a polynomial, using the FHWM
-    image.fitsky(fwhmax["GALEXFUV"])
+    #image.fit_sky(fwhmax["GALEXFUV"])
+
+    image.fit_polynomial()
 
     # Deselect all frames and select the fittedsky_2D frame
-    image.frames.deselectall()
-    image.frames.fittedsky.select()
+    image.frames.deselect_all()
+    image.frames.primary_polynomial.select()
 
     # Save the 2D fitted sky
     path = os.path.join(preppathFUV, "fittedsky.fits")
-    image.save(path)
+    image.export_datacube(path)
 
     # Select the total mask
     image.masks.total.select()
@@ -630,17 +709,17 @@ def subtractskyFUV(image):
     image.subtract()
 
     # Select the primary image frame
-    image.frames.deselectall()
+    image.frames.deselect_all()
     image.frames.primary.select()
 
     # Save the sky-subtracted primary image
     path = os.path.join(preppathFUV, "subtracted.fits")
-    image.save(path)
+    image.export_datacube(path)
+
+# *****************************************************************
 
 # Calculate the conversion factor for the FUV image
 def conversionfactorFUV(image):
-
-    log = Log()
 
     # Get the pixel scale for this filter
     pixelscale = image.pixelscale
@@ -654,23 +733,23 @@ def conversionfactorFUV(image):
     pixelfactor = (206264.806247 / pixelscale)**2
     factor = 1.4e-15 * spectralfactor * 1e17 * pixelfactor
 
-    log.info("Converting units with factor = " + str(factor))
+    logging.info("Converting units with factor = " + str(factor))
 
     # Get the attenuation for this filter
     A = attenuations["GALEXFUV"]
 
     factor2 = 10**(0.4*A)
 
-    log.info("Correcting for galactic extinction with factor = " + str(factor2))
+    logging.info("Correcting for galactic extinction with factor = " + str(factor2))
 
     # Calculate the total conversion factor
     totalfactor = factor * factor2
 
     return totalfactor
 
-def conversionfactorP70(image):
+# *****************************************************************
 
-    log = Log()
+def conversionfactorP70(image):
 
     pixelscale = image.pixelscale
 
@@ -678,13 +757,13 @@ def conversionfactorP70(image):
 
     factor = 1e-6 * pixelfactor
 
-    log.info("Converting units with factor = " + str(factor))
+    logging.info("Converting units with factor = " + str(factor))
 
     return factor
 
-def conversionfactorH(image):
+# *****************************************************************
 
-    log = Log()
+def conversionfactorH(image):
 
     pixelscale = image.pixelscale
 
@@ -692,22 +771,22 @@ def conversionfactorH(image):
 
     factor = 10e-6 * pixelfactor
 
-    log.info("Converting units with factor = " + str(factor))
+    logging.info("Converting units with factor = " + str(factor))
 
     A = attenuations["2MASSH"]
 
     factor2 = 10**(0.4*A)
 
-    log.info("Correcting for galactic extinction with factor = " + str(factor2))
+    logging.info("Correcting for galactic extinction with factor = " + str(factor2))
 
     # Calculate the total conversion factor
     totalfactor = factor * factor2
 
     return totalfactor
 
-def conversionfactorP160(image):
+# *****************************************************************
 
-    log = Log()
+def conversionfactorP160(image):
 
     pixelscale = image.pixelscale
 
@@ -715,13 +794,13 @@ def conversionfactorP160(image):
 
     factor = 1e-6 * pixelfactor
 
-    log.info("Converting units with factor = " + str(factor))
+    logging.info("Converting units with factor = " + str(factor))
 
     return factor
 
-def conversionfactorHa(image):
+# *****************************************************************
 
-    log = Log()
+def conversionfactorHa(image):
 
     pixelscale = image.pixelscale
 
@@ -738,15 +817,17 @@ def conversionfactorHa(image):
 
     factor = 1e23 * 1e-6 * pixelfactor / frequency
 
-    log.info("Converting units with factor = " + str(factor))
+    logging.info("Converting units with factor = " + str(factor))
 
     A = attenuations["Ha"]
 
     factor2 = 10**(0.4*A)
 
-    log.info("Correcting for galactic extinction with factor = " + str(factor2))
+    logging.info("Correcting for galactic extinction with factor = " + str(factor2))
 
     # Calculate the total conversion factor
     totalfactor = factor * factor2
 
     return totalfactor
+
+# *****************************************************************
