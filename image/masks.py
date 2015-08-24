@@ -87,3 +87,26 @@ def annuli_around(region, inner_factor, outer_factor, header, x_size, y_size):
     return mask
 
 # *****************************************************************
+
+def masked_outside(region, header, x_size, y_size, expand_factor=1.0):
+
+    """
+    This function ...
+    :param region:
+    :param header:
+    :param x_size:
+    :param y_size:
+    :param expand_factor:
+    :return:
+    """
+
+    # Create a new region ...
+    region = regions.expand(region, factor=expand_factor)
+
+    # Create a mask from the region
+    mask = np.logical_not(regions.create_mask(region, header, x_size, y_size))
+
+    # Return the mask
+    return mask
+
+# *****************************************************************

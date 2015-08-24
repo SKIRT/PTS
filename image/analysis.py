@@ -518,41 +518,6 @@ def estimate_background(data, mask, interpolate=True, sigma_clip=True):
 
 # *****************************************************************
 
-def model_star(data, mask, background, model='Gaussian', x_center=None, y_center=None, radius=None, x_shift=0.0, y_shift=0.0, pixel_deviation=0.5, upsample_factor=1.0):
-
-    # If the box around the star has to be upsampled for fitting
-    if upsample_factor > 1.0:
-
-        data = ndimage.interpolation.zoom(data, zoom=upsample_factor)
-        mask = ndimage.interpolation.zoom(mask, zoom=upsample_factor)
-        background = ndimage.interpolation.zoom(background, zoom=upsample_factor)
-
-        x_center *= upsample_factor
-        y_center *= upsample_factor
-        radius *= upsample_factor
-        pixel_deviation *= upsample_factor
-
-    # Subtract the background from the box
-    data_without_background = data - background
-
-    # Don't keep the center fixed; this did not work
-    fixed_center = False
-
-    # Define the fitting functions
-    fitting_functions = {'Gaussian': fitting.fit_2D_Gaussian, 'Airy': fitting.fit_2D_Airy,
-                         'Moffat': fitting.fit_2D_Moffat, 'MexicanHat': fitting.fit_2D_MexicanHat}
-
-    # Do the fitting, obtain a model function
-    model_function = fitting_functions[model](data_without_background, center=(x_center, y_center),
-                                              fixed_center=fixed_center, deviation_center=pixel_deviation,
-                                              radius=radius, x_shift=x_shift, y_shift=y_shift,
-                                              zoom_factor=upsample_factor, mask=mask)
-
-    # Return the model
-    return model_function
-
-# *****************************************************************
-
 def make_star_model(shape, data, annuli_mask, fit_mask, background_outer_sigmas, fit_sigmas,
                     model_name, upsample_factor=1.0, interpolate_background=True, sigma_clip_background=True, plot=False):
 
@@ -607,9 +572,9 @@ def make_star_model(shape, data, annuli_mask, fit_mask, background_outer_sigmas,
     x_center_rel, y_center_rel = coordinates.relative_coordinate(x_center, y_center, x_min, y_min)
 
     # Fit the star
-    model_function = model_star(star, star_mask, star_background, model=model_name, x_center=x_center_rel,
-                                         y_center=y_center_rel, radius=radius, x_shift=x_min, y_shift=y_min,
-                                         upsample_factor=upsample_factor, pixel_deviation=0.5)
+    model_function = fitting.fit_2D_model(star, star_mask, star_background, model=model_name, x_center=x_center_rel,
+                                          y_center=y_center_rel, radius=radius, x_shift=x_min, y_shift=y_min,
+                                          upsample_factor=upsample_factor, pixel_deviation=0.5)
 
     # Evaluate the model
     evaluated_model = fitting.evaluate_model(model_function, x_min, x_max, y_min, y_max, x_delta=1.0/upsample_factor, y_delta=1.0/upsample_factor)
@@ -619,6 +584,8 @@ def make_star_model(shape, data, annuli_mask, fit_mask, background_outer_sigmas,
 
     if success:
 
+        if upsample_factor > 1.0: evaluated_model = ndimage.interpolation.zoom(evaluated_model, zoom=1.0/upsample_factor)
+
         # Plot
         if plot: plotting.plot_star_model(background=np.ma.masked_array(background,mask=background_mask_beforeclipping),
                                           background_clipped=np.ma.masked_array(background,mask=background_mask),
@@ -626,10 +593,6 @@ def make_star_model(shape, data, annuli_mask, fit_mask, background_outer_sigmas,
                                           star=np.ma.masked_array(star,mask=star_mask),
                                           est_background_star= star_background,
                                           fitted_star=evaluated_model)
-
-        if upsample_factor > 1.0:
-
-            evaluated_model = ndimage.interpolation.zoom(evaluated_model, zoom=1.0/upsample_factor)
 
         # Adjust the parameters of the shape to the model of this star
         shape.coord_list[0] = model_function.x_mean.value
@@ -639,3 +602,5 @@ def make_star_model(shape, data, annuli_mask, fit_mask, background_outer_sigmas,
 
     # Return ...
     return success, shape, evaluated_model, (x_min, x_max, y_min, y_max)
+
+# *****************************************************************

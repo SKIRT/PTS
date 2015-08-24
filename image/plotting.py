@@ -198,7 +198,7 @@ def plot_star_model(background, background_clipped, est_background, star, est_ba
     plt.title("Star")
 
     plt.subplot(1,7,5)
-    plt.imshow(star-est_background_star, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(star.data - est_background_star, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, star.shape[1]-1)
     plt.ylim(0, star.shape[0]-1)
     plt.title("Star without background")
@@ -210,7 +210,7 @@ def plot_star_model(background, background_clipped, est_background, star, est_ba
     plt.title("Fitted star")
 
     plt.subplot(1,7,7)
-    plt.imshow(star - fitted_star, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(star.data - fitted_star, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, star.shape[1]-1)
     plt.ylim(0, star.shape[0]-1)
     plt.title("Residual")

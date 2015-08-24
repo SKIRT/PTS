@@ -5,19 +5,19 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.preparedata Prepare data for use with SKIRT
+## \package do.prepareimages Prepare images for SKIRT radiative transfer simulations
 #
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
 # Import standard modules
 import os.path
 import argparse
 
 # Import relevant PTS modules
-from pts.datapreparation import DataPreparation
+from pts.imagepreparation import ImagePreparation
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
@@ -33,19 +33,17 @@ filter = args.filter
 plot = args.plot
 save = args.save
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
 # Get the path to the current working directory
-basepath = os.getcwd()
+working_directory = os.getcwd()
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
-# Create a DataPreparation object
-preparation = DataPreparation(basepath, filter, plot, save)
+# Create a ImagePreparation object
+preparation = ImagePreparation(working_directory, filter, plot, save)
 
-# -----------------------------------------------------------------
-
-# Run the data preparation
+# Run the image preparation
 preparation.run()
 
-# -----------------------------------------------------------------
+# *****************************************************************
