@@ -101,7 +101,7 @@ def dec2sxg(coord,ra=0):
 #  - qonly: set to True if you only want to get the full URL for the query (default = False)
 #  - text: set to True if the ID's of the stars have to be included as text in the region (default = False)
 #
-def fetch(center, radius=20, catalog="nomad", filename="asc_ref.txt", magnitude="R2", bright=5.0, faint=19.0, epoch="2000.0", retry=15, debug=False, qonly=False, text=False):
+def fetch(center, radius=20, catalog="nomad", filename="asc_ref.txt", magnitude="R2", bright=5.0, faint=19.0, epoch="2000.0", retry=15, debug=False, qonly=False, text=False, onlypositions=False, starradius=None):
 
     # Get the RA and DEC
     rain = center[0]
@@ -133,7 +133,7 @@ def fetch(center, radius=20, catalog="nomad", filename="asc_ref.txt", magnitude=
     if qonly:
 
         log.info("Full URL of initial query: " + url)
-        return
+        return None
 
     # Download the results from the web
     results = download_web_page(domain, url)
@@ -146,8 +146,7 @@ def fetch(center, radius=20, catalog="nomad", filename="asc_ref.txt", magnitude=
     # Check if something went wrong when getting the results
     if results is None or len(results) < 100:
 
-        log.error("Something went wrong, results too short")
-        exit()
+        raise RuntimeError("Something went wrong, results too short")
 
     # Successful first request:  Get link for "progress" web page
     urltrk=""
@@ -161,24 +160,24 @@ def fetch(center, radius=20, catalog="nomad", filename="asc_ref.txt", magnitude=
 
     if len(urltrk) > 1:
 
-        urlcat=urltrk.replace("fch.html", catalog)
+        urlcat = urltrk.replace("fch.html", catalog)
 
         log.info("Tracking results through %s" % urltrk)
         log.info("Catalog should appear as %s" % urlcat)
 
     else:
 
-        log.error("Trouble identifying tracking URL")
-        exit()
+        raise RuntimeError("Trouble identifying tracking URL")
 
     re2=re.search("http://([^/]+)(/.+)$",urlcat)
     if re2:
+
         dom2=re2.group(1)
         url2=re2.group(2)
+
     else:
 
-        log.error("Problem parsing target URL")
-        exit()
+        raise RuntimeError("Problem parsing target URL")
 
     # Wait for successful processing of query
     time.sleep(10)
@@ -198,8 +197,7 @@ def fetch(center, radius=20, catalog="nomad", filename="asc_ref.txt", magnitude=
         itry +=1
         if itry > retry:
 
-            log.error("Giving up")
-            return
+            raise RuntimeError("Giving up")
 
         # Wait before next try
         time.sleep(10)
@@ -224,6 +222,10 @@ def fetch(center, radius=20, catalog="nomad", filename="asc_ref.txt", magnitude=
     region_string = "# Region file format: DS9 version 3.0\n"
     region_string += "global color=green\n"
 
+    positions = []
+
+    counter = 0
+
     # For each line that represents a star
     for line in lines[nhead:]:
 
@@ -233,25 +235,46 @@ def fetch(center, radius=20, catalog="nomad", filename="asc_ref.txt", magnitude=
         # If the line is invalid, go to the next one
         if len(els) < 16: continue
 
-        # Calculate a radius for this star
-        rstar=5.0*(20.0/float(els[16]))**2
+        if onlypositions:
 
-        if text:
-            regline=("fk5;circle(%s,%s,%.2f\") # text={%s} " +
-                     "B1MAG={%s} R1MAG={%s} B2MAG={%s} R2MAG={%s} " +
-                     "I2MAG={%s}\n") % (els[1],els[2],rstar,els[0],
-                                        els[12],els[13],els[14],els[15],els[16])
+            positions.append((els[1],els[2]))
+
         else:
-            regline=("fk5;circle(%s,%s,%.2f\") # " +
-                     "B1MAG={%s} R1MAG={%s} B2MAG={%s} R2MAG={%s} " +
-                     "I2MAG={%s}\n") % (els[1],els[2],rstar,
-                                        els[12],els[13],els[14],els[15],els[16])
 
-        # Add the parameters of this star to the region string
-        region_string += regline
+            # If the starradius is specified, use it as the standard radius for all stars in the region
+            if starradius:
 
-    # Create a region
-    region = pyregion.parse(region_string)
+                rstar = starradius
+
+            # Else, use some heuristic to estimate a radius
+            else:
+
+                rstar=5.0*(20.0/float(els[16]))**2
+
+            if text:
+                regline=("fk5;circle(%s,%s,%.2f\") # text={%s} " +
+                         "B1MAG={%s} R1MAG={%s} B2MAG={%s} R2MAG={%s} " +
+                         "I2MAG={%s}\n") % (els[1],els[2],rstar,els[0],
+                                            els[12],els[13],els[14],els[15],els[16])
+            else:
+                regline=("fk5;circle(%s,%s,%.2f\") # " +
+                         "B1MAG={%s} R1MAG={%s} B2MAG={%s} R2MAG={%s} " +
+                         "I2MAG={%s}\n") % (els[1],els[2],rstar,
+                                            els[12],els[13],els[14],els[15],els[16])
+
+            # Add the parameters of this star to the region string
+            region_string += regline
+            counter += 1
+
+    print counter
 
     # Return the region
-    return region
+    if onlypositions:
+
+        return positions
+
+    else:
+
+        # Create a region
+        region = pyregion.parse(region_string)
+        return region

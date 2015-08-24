@@ -35,6 +35,10 @@ __doctest_skip__ = ['hcongrid']
 #
 def hcongrid(image, header1, header2, preserve_bad_pixels=True, **kwargs):
 
+    # Remove the third axis of the reference header
+    header2["NAXIS"] = 2
+    header2.pop("NAXIS3", None)
+
     # Check whether the passed image matches the information in header1
     _check_header_matches_image(image, header1)
 
