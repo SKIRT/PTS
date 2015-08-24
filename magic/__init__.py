@@ -33,7 +33,6 @@ import image.plotting
 import image.analysis
 import image.regions
 import image.statistics
-
 from image.layers import Layers
 from image.frames import Frame
 from image.masks import Mask
@@ -285,6 +284,51 @@ class Image(object):
 
     # *****************************************************************
 
+    def get_state(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create an empty dictionary to contain the state of the current image
+        state = dict()
+
+        # Loop over all frames, regions and masks and record whether they are selected
+        for frame_name in self.frames: state["frames/"+frame_name] = self.frames[frame_name].selected
+        for region_name in self.regions: state["regions/"+region_name] = self.regions[region_name].selected
+        for mask_name in self.masks: state["masks/"+mask_name] = self.masks[mask_name].selected
+
+        # Return the state dictionary
+        return state
+
+    # *****************************************************************
+
+    def set_state(self, state):
+
+        """
+        This function ...
+        :param state:
+        :return:
+        """
+
+        # Deselect all frames, regions and masks of this image
+        self.deselect_all()
+
+        # Loop over the entries in the state dictionary
+        for identifier, selected in state.items():
+
+            # Split the layer identifier into the layer type and the actual name of that layer
+            layer_type, name = identifier.split("/")
+
+            # Set the appropriate flag
+            if layer_type == "frames": self.frames[name].selected = selected
+            elif layer_type == "regions": self.regions[name].selected = selected
+            elif layer_type == "masks": self.masks[name].selected = selected
+            else: raise ValueError("Invalid state dictionary")
+
+    # *****************************************************************
+
     def plot(self, path = None, color=True, grid=False, blacknan=False, publication=False):
 
         """
@@ -301,7 +345,7 @@ class Image(object):
         frame = self.frames.get_selected()[0]
 
         # Create a total mask of the currently active masks
-        total_mask = self.combine_masks()
+        total_mask = self.combine_masks(return_mask=True)
 
         # Mask the frame with nans
         maskedimage = np.ma.array(self.frames[frame].data, mask = total_mask)
@@ -475,8 +519,12 @@ class Image(object):
 
     # *****************************************************************
 
-    ## This function makes a new layer where the center of the galaxy is in the center of the plane
     def auto_center(self):
+
+        """
+        This function makes a new layer where the center of the galaxy is in the center of the plane
+        :return:
+        """
 
         # Determine the center pixel of the image
         imagecenter_x = self.xsize / 2.0
@@ -789,7 +837,7 @@ class Image(object):
         logging.info("Interpolating the image in the areas covered by the currently selected masks")
 
         # Combine the active masks
-        total_mask = self.combine_masks()
+        total_mask = self.combine_masks(return_mask=True)
 
         # Loop over all active frames
         for frame_name in self.frames.get_selected():
@@ -807,12 +855,8 @@ class Image(object):
         :return:
         """
 
-        # Inform the user
-        logging.info("Interpolating the image within the areas covered by the currently selected masks, if enclosed"
-                       " by any of the currently selected regions")
-
         # Combine the active masks
-        total_mask = self.combine_masks(allow_none=False)
+        total_mask = self.combine_masks(allow_none=False, return_mask=True)
 
         # Combine all the active regions
         region = self.combine_regions(allow_none=False)
@@ -828,6 +872,10 @@ class Image(object):
 
             # Loop over all active frames
             for frame_name in self.frames.get_selected(allow_none=False):
+
+                # Inform the user
+                logging.info("Interpolating the " + frame_name + " frame within the areas covered by the currently "
+                             "selected masks, if enclosed by any of the currently selected regions")
 
                 # Cut out the box
                 box, x_min, x_max, y_min, y_max = cropping.crop_direct(self.frames[frame_name].data, x_min, x_max, y_min, y_max)
@@ -883,10 +931,10 @@ class Image(object):
         structure = ndimage.generate_binary_structure(2, 2)
 
         # Get a combination of the active masks
-        oldmask = self.combine_masks()
+        old_mask = self.combine_masks(return_mask=True)
 
         # Make the new mask, made from 100 iterations with the structure array
-        newmask = ndimage.binary_dilation(oldmask, structure, iterations)
+        newmask = ndimage.binary_dilation(old_mask, structure, iterations)
 
         # Add the new, expanded mask
         self._add_mask(newmask, name)
@@ -924,7 +972,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def combine_masks(self, name=None, allow_none=True):
+    def combine_masks(self, name=None, allow_none=True, return_mask=False):
 
         """
         This function ...
@@ -942,15 +990,12 @@ class Image(object):
             # Add this mask to the total
             total_mask += self.masks[mask_name].data
 
-        # If no name is given for the total mask, return it
-        if name is None:
+        # Set the name of the total mask
+        name = name if name is not None else "total"
 
-            return total_mask
-
-        # If a name is given, save the total mask under this name
-        else:
-
-            self._add_mask(total_mask, name)
+        # Return the mask or add it to this image
+        if return_mask: return total_mask
+        else: self._add_mask(total_mask, name)
 
     # *****************************************************************
 
@@ -963,7 +1008,7 @@ class Image(object):
         """
 
         # Get the total selected mask
-        currentmask = self.combine_masks()
+        currentmask = self.combine_masks(return_mask=True)
 
         # Calculate the inverse of the this total mask
         newmask = np.logical_not(currentmask)
@@ -982,23 +1027,25 @@ class Image(object):
         """
 
         # Get the total selected mask
-        current_mask = self.combine_masks(allow_none=False)
+        total_mask = self.combine_masks(allow_none=False, return_mask=True)
 
         # For each active frame
         for frame_name in self.frames.get_selected(allow_none=False):
 
             # TODO: check if the dimensions of frame and mask match!
 
+            # Inform the user
+            logging.info("Applying the total selected mask to the " + frame_name + " frame")
+
             # Set the corresponding image pixels to zero for this mask
-            self.frames[frame_name].data[current_mask.data] = fill
+            self.frames[frame_name].data[total_mask] = fill
 
     # *****************************************************************
 
-    # This function creates a new mask from the currently selected region(s).
-    def create_mask(self):
+    def create_mask(self, return_mask=False):
 
         """
-        This function creates a mask ...
+        This function creates a mask from the currently selected region(s)
         :return:
         """
 
@@ -1019,8 +1066,9 @@ class Image(object):
         # Remove the trailing underscore
         name = name.rstrip("_")
 
-        # Add the mask to the masks list
-        self._add_mask(total_mask, name)
+        # Return the mask or add it to this image
+        if return_mask: return total_mask
+        else: self._add_mask(total_mask, name)
 
     # *****************************************************************
 
@@ -1204,8 +1252,8 @@ class Image(object):
         # TODO: should not only work with regions that contain nothing but ellipses
 
         # Create a region for stars that were succesfully modeled and a region for objects that could not be fitted to a star model
-        modeled_stars = pyregion.ShapeList([])
-        leftovers = pyregion.ShapeList([])
+        modeled = pyregion.ShapeList([])
+        unmodeled = pyregion.ShapeList([])
 
         # Get the name of the active frame
         frame_name = self.frames.get_selected(require_single=True)
@@ -1219,11 +1267,8 @@ class Image(object):
         # Create the background mask
         annuli_mask = masks.annuli_around(total_region, background_inner_sigmas, background_outer_sigmas, self.header, self.xsize, self.ysize)
 
-        # Create a new region to contain the contours within which the stars will be fitted
-        fit_region = regions.expand(total_region, factor=fit_sigmas)
-
-        # Create a mask from the region
-        fit_mask = np.logical_not(regions.create_mask(fit_region, self.header, self.xsize, self.ysize))
+        # Create a mask that covers pixels too far away from the center of the star (for fitting the model)
+        fit_mask = masks.masked_outside(total_region, self.header, self.xsize, self.ysize, expand_factor=fit_sigmas)
 
         # For each shape (star)
         for shape in total_region:
@@ -1240,19 +1285,19 @@ class Image(object):
             if success:
 
                 # Add the 1-sigma contour of the analytical model to the modeled stars region
-                modeled_stars.append(shape)
+                modeled.append(shape)
 
                 # Add the model to the stars frame
                 stars_frame[extents[2]:extents[3], extents[0]:extents[1]] += model
 
-            else: leftovers.append(shape)
+            else: unmodeled.append(shape)
 
         # Add the modelled stars frame to the list of frames
         self._add_frame(stars_frame, self.frames[frame_name].coordinates, "stars")
 
-        # Add the successfully modeled stars and the leftovers to the corresponding regions
-        self._add_region(modeled_stars, "modeled_stars")
-        self._add_region(leftovers, "leftovers")
+        # Add the successfully modeled stars and the unmodeled stars to the corresponding regions
+        self._add_region(modeled, "modeled_stars")
+        self._add_region(unmodeled, "unmodeled_stars")
 
     # *****************************************************************
 
@@ -1324,10 +1369,10 @@ class Image(object):
         annulusmask = np.logical_not(self.regions["annulus"]._region.get_mask(header=self.header, shape=(self.ysize,self.xsize)))
 
         # Get a combination of the currently selected masks
-        currentmask = self.combine_masks()
+        current_mask = self.combine_masks(return_mask=True)
 
         # Combine the currently selected mask, the galaxy mask and the annulus mask
-        sky_mask = (currentmask + self.masks.galaxy.data + annulusmask).astype(bool)
+        sky_mask = (current_mask + self.masks.galaxy.data + annulusmask).astype(bool)
 
         # Make a mask of > 3 sigma regions
         new_mask = statistics.sigma_clip_mask(self.frames[frame_name].data, sigma=3.0, mask=sky_mask)
@@ -1356,7 +1401,7 @@ class Image(object):
         """
 
         # Get the currently active mask
-        total_mask = self.combine_masks()
+        total_mask = self.combine_masks(return_mask=True)
 
         # For each currently active frame
         for frame_name in self.frames.get_selected(allow_none=False):
@@ -1384,10 +1429,10 @@ class Image(object):
         """
 
         # Get the currently active mask
-        totalmask = self.combine_masks()
+        total_mask = self.combine_masks(return_mask=True)
 
         # Determine the negative of the total mask
-        negativetotalmask = np.logical_not(totalmask)
+        negativetotalmask = np.logical_not(total_mask)
 
         # For each active frame
         for frame_name in self.frames.get_selected():
