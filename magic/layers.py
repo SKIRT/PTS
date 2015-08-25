@@ -5,11 +5,6 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-# Import image modules
-import logging
-
-# *****************************************************************
-
 class Layers(dict):
 
     """
@@ -77,18 +72,29 @@ class Layers(dict):
 
     # *****************************************************************
 
-    def list(self):
+    def get_state(self):
 
-        """
-        This function ...
-        :return:
-        """
+        # Create an empty dictionary to contain the state of the layers
+        state = dict()
 
-        # For each layer
-        for name in self.keys():
+        # Loop over all frames, regions and masks and record whether they are selected
+        for layer_name in self: state[layer_name] = self[layer_name].selected
 
-            # If this layer is selected, print the name in green
-            if self[name].selected: logging.info("        " + name)
-            else: logging.info("        " + name)
+        # Return the state dictionary
+        return state
+
+    # *****************************************************************
+
+    def set_state(self, state):
+
+        # Deselect all layers
+        self.deselect_all()
+
+        # Loop over the entries in the state dictionary
+        for layer_name, selected in state.items():
+
+            # Check if a layer with this name exists and set the appropriate flag
+            if layer_name in self: self[layer_name].selected = selected
+            else: raise ValueError("Invalid state dictionary")
 
 # *******************************************************************
