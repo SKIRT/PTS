@@ -260,3 +260,16 @@ def create_mask(region, header, x_size, y_size):
     return region.get_mask(header=header, shape=(y_size,x_size))
 
 # *****************************************************************
+
+def parse(region_string):
+
+    """
+    This function is a simple wrapper around the pyregion.parse function, to contain
+    :param region_string:
+    :return:
+    """
+
+    # Parse the region string and create a region
+    return pyregion.parse(region_string)
+
+# *****************************************************************

@@ -20,19 +20,18 @@ import pyregion
 import astropy.io.fits as pyfits
 from astropy import wcs
 import astropy.units as u
-import astropy.coordinates as coord
 from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
-from astroquery.vizier import Vizier
 
 # Import image modules
-from image.hcongrid import hcongrid
 from image.galaxy import GalaxyFinder
 from image.tools import general, headers, cropping, interpolation, coordinates
+import image.transformations
 import image.fitting
 import image.plotting
 import image.analysis
 import image.regions
 import image.statistics
+import image.catalogs
 from image.layers import Layers
 from image.frames import Frame
 from image.masks import Mask
@@ -99,38 +98,6 @@ class Image(object):
         self.frames.deselect_all()
         self.regions.deselect_all()
         self.masks.deselect_all()
-
-    # *****************************************************************
-
-    def status(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Show white line
-        logging.info("")
-
-        # List the different frames
-        logging.info("Frames:")
-        logging.info("------------------------------")
-        self.frames.list()
-
-        # List the different regions
-        logging.info("")
-        logging.info("Regions:")
-        logging.info("------------------------------")
-        self.regions.list()
-
-        # List the different masks
-        logging.info("")
-        logging.info("Masks:")
-        logging.info("------------------------------")
-        self.masks.list()
-
-        # Show white line
-        logging.info("")
 
     # *****************************************************************
 
@@ -819,7 +786,7 @@ class Image(object):
             logging.info("Rebinning " + frame_name + " frame to the grid of " + reference)
 
             # Do the rebinning based on the header of the reference image
-            self.frames[frame_name].data = hcongrid(self.frames[frame_name].data, self.header, refheader)
+            self.frames[frame_name].data = transformations.align_and_rebin(self.frames[frame_name].data, self.header, refheader)
 
             # Set the new coordinate system for this frame
             self.frames[frame_name].coordinates = coordinates
@@ -1104,11 +1071,52 @@ class Image(object):
 
     # *****************************************************************
 
-    def fetch_stars(self, catalog=None, name=None, color="green", return_region=False, radius=40):
+    def fetch_galaxy(self, galaxy_name, name=None, radius=100, return_region=False):
+
+        # Inform the user
+        logging.info("Fetching galaxy positions from an online catalog...")
+
+        # Get the range of RA and DEC of this image
+        #ra_center, dec_center, size_ra_deg, size_dec_deg = self._get_coordinate_range()
+
+        # Search for the galaxy
+        #box = (ra_center, dec_center, size_ra_deg, size_dec_deg)
+
+        # Possible catalogs:
+        # HYPERLEDA
+        # II/262/batc : BATC Data Release One - BATC DR1 (Zhou+ 1995-2005)
+        # VII/1B/catalog : Revised New General Catalogue (Sulentic+, 1973)
+        # ...
+        #region = catalogs.fetch_objects_in_box(box, catalog, [galaxy_name, "galaxies", "optical"], color=color, limit=5)
+
+        # Search for the position of the specified galaxy in the image
+        region = catalogs.fetch_object_by_name(galaxy_name, radius)
+
+        # Set the name of the new region
+        name = name if name is not None else "galaxy"
+
+        # Return the region or add it to this image
+        if return_region: return region
+        else: self._add_region(region, name)
+
+    # *****************************************************************
+
+    def perform_mge(self):
+
+        pass
+
+    # *****************************************************************
+
+    def find_galaxy(self):
+
+        pass
+
+    # *****************************************************************
+
+    def fetch_stars(self, name=None, radius=40, return_region=False):
 
         """
-        This function fetches star positions from an online catalog
-        :param catalog:
+        This function fetches the positions of astrophysical objects in the image
         :param name:
         :param color:
         :param return_region:
@@ -1117,55 +1125,21 @@ class Image(object):
         """
 
         # Inform the user
-        logging.info("Fetching approximate star positions from an online catalog...")
+        logging.info("Fetching star positions from an online catalog...")
 
         # Get the range of RA and DEC of this image
         ra_center, dec_center, size_ra_deg, size_dec_deg = self._get_coordinate_range()
 
-        # Define the center coordinate for the box
-        coordinate = coord.SkyCoord(ra=ra_center, dec=dec_center, unit=(u.deg, u.deg), frame='fk5') # frame: icrs, fk5... ?
+        # Search for stars
+        box = (ra_center, dec_center, size_ra_deg, size_dec_deg)
+        region = catalogs.fetch_objects_in_box(box, ["UCAC", "NOMAD"], ["optical", "stars"], radius, column_filters={"Vmag":"<19"})
 
-        # Set the catalog name or list of catalog names
-        catalogs = catalog if catalog is not None else ["UCAC", "NOMAD"]
+        # Set the name of the new region
+        name = name if name is not None else "stars"
 
-        # Make a Vizier object
-        viz = Vizier(columns=['_RAJ2000', '_DEJ2000','B-V', 'Vmag', 'Plx'], column_filters={"Vmag":"<19"}, keywords=["optical", "stars"])
-
-        # No limit on the number of entries
-        viz.ROW_LIMIT = -1
-
-        # Query the box of our image frame
-        result = viz.query_region(coordinate, width=size_dec_deg*u.deg, height=size_ra_deg*u.deg, catalog=catalogs)
-
-        region_string = "# Region file format: DS9 version 3.0\n"
-        region_string += "global color=" + color + "\n"
-
-        # Result may contain multiple tables (for different catalogs)
-        for table in result:
-
-            # For every entry in the table
-            for entry in table:
-
-                # Get the right ascension and the declination
-                ra = entry[0]
-                dec = entry[1]
-
-                # Create a string with the coordinates of the star
-                regline = "fk5;circle(%s,%s,%.2f\")\n" % (ra, dec, radius)
-
-                # Add the parameters of this star to the region string
-                region_string += regline
-
-        # Parse the region string and create a region
-        region = pyregion.parse(region_string)
-
-        regionname = name if name is not None else "stars"
-
+        # Return the region or add it to this image
         if return_region: return region
-        else:
-
-            # Add this region to the list of regions
-            self._add_region(region, regionname)
+        else: self._add_region(region, name)
 
     # *****************************************************************
 
@@ -1601,14 +1575,12 @@ class Image(object):
 
         w = wcs.WCS(self.header)
 
-        # MANIER MET HANDMATIG NULPUNT EN EINDE
         # Some pixel coordinates of interest.
         pixels = np.array([[0,0],[self.xsize-1,self.ysize-1]], dtype=float)
 
         world = w.wcs_pix2world(pixels, 0)  # Convert pixel coordinates to world coordinates (RA and DEC in degrees)
         coordinate1 = world[0]
         coordinate2 = world[1]
-        #print "(" + str(coordinate1[0]) + ", " + str(coordinate1[1]) + ") (" + str(coordinate2[0]) + ", " + str(coordinate2[1]) + ")"
         ra_range = [coordinate2[0], coordinate1[0]]
         dec_range = [coordinate1[1], coordinate2[1]]
 
@@ -1628,52 +1600,25 @@ class Image(object):
         dec_begin = dec_center - 0.5*dec_width
         dec_end = dec_center + 0.5*dec_width
 
-
-        ref_string = "# Region file format: DS9 version 3.0\n"
-        ref_string += "global color=red\n"
-        regline = ("fk5;circle(%s,%s,%.2f\")\n") % (ra_center, dec_center, 20)
-        ref_string += regline
-        regline = ("fk5;circle(%s,%s,%.2f\")\n") % (ra_begin, dec_begin, 40)
-        ref_string += regline
-        regline = ("fk5;circle(%s,%s,%.2f\")\n") % (ra_begin, dec_end, 40)
-        ref_string += regline
-        regline = ("fk5;circle(%s,%s,%.2f\")\n") % (ra_end, dec_begin, 40)
-        ref_string += regline
-        regline = ("fk5;circle(%s,%s,%.2f\")\n") % (ra_end, dec_end, 40)
-        ref_string += regline
-
+        # Calculate the
         ra_distance = coordinates.ra_distance(dec_center, ra_begin, ra_end)
+        dec_distance = dec_end - dec_begin
 
-        #------------------------------------------------
-
-        # MANIER MET CENTER UIT HEADER EN PIXELSCALE
+        # Calculate the pixel scale of this image in degrees
         pixelscale = self.pixelscale * u.arcsec
         pixelscale_deg = pixelscale.to("deg").value
+
         # Get the center pixel
         ref_pix = w.wcs.crpix
         ref_world = w.wcs.crval
+
         # Get the number of pixels
         size_dec_deg = self.ysize * pixelscale_deg
         size_ra_deg = self.xsize * pixelscale_deg
 
-        # Print coordinates of center and reference point
-        #print "center: (" + str(ra_center) + ", " + str(dec_center) + ")"
-        #print "reference point: (" + str(ref_world[0]) + ", " + str(ref_world[1]) + ")"
-
-        # Print DEC and RA range
-        #print "DEC range = " + str(size_dec_deg) + " degrees"
-        #print "RA range = " + str(size_ra_deg) + " degrees"   # From pixel scale
-        #print "RA range calculated from coordinates = " + str(ra_distance)
-
-        # Add the reference point to the region
-        regline = ("fk5;circle(%s,%s,%.2f\")\n") % (ref_world[0], ref_world[1], 40)
-        ref_string += regline
-
-        # Parse the region
-        region = pyregion.parse(ref_string)
-
-        # Add this region
-        self._add_region(region, "ref")
+        # Check whether the two different ways of calculating the RA width result in approximately the same value
+        assert np.isclose(ra_distance, size_ra_deg, rtol=0.01), "The coordinate system and pixel scale do not match"
+        assert np.isclose(dec_distance, size_dec_deg, rtol=0.01), "The coordinate system and pixel scale do not match"
 
         # Return ...
         return (ra_center, dec_center, size_ra_deg, size_dec_deg)

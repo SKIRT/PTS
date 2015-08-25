@@ -173,7 +173,7 @@ class ImagePreparation(object):
             image = iu.open(path)
 
             # Set the fwhm of the image, if it is not None
-            if fwhmax[filter_name]: image.set_fwhm(fwhmax[filter_name])
+            if fwhmax[filter_name] is not None: image.set_fwhm(fwhmax[filter_name])
 
             # Mask NaNs, edges and extra user-defined regions
             extra_reg = os.path.join(self.data_path, 'extra', image.name + '.reg') if extra[filter_name] else None

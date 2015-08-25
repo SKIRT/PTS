@@ -77,6 +77,31 @@ def export_region(image, directory, name):
 
 # *****************************************************************
 
+def print_status(image):
+
+    # Print the status of the image frames
+    logging.info("Frames:")
+    frames_state = image.frames.get_state()
+    for frame_name, selected in frames_state:
+
+        logging.info("  " + frame_name + ": " + str(selected))
+
+    # Print the status of the image regions
+    logging.info("Regions:")
+    regions_state = image.regions.get_state()
+    for region_name, selected in regions_state:
+
+        logging.info("  " + region_name + ": " + str(selected))
+
+    # Print the status of the image masks
+    logging.info("Masks:")
+    masks_state = image.masks.get_state()
+    for mask_name, selected in masks_state:
+
+        logging.info("  " + region_name + ": " + str(selected))
+
+# *****************************************************************
+
 def mask(image, edges=True, extra=None, plot=False):
 
     """

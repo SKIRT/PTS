@@ -8,42 +8,44 @@
 # This module was adapted from the FITS_Tools package written by Adam Ginsburg
 # Link: https://github.com/keflavich/FITS_tools
 
+# *****************************************************************
+
 # Import standard modules
 import numpy as np
 import scipy.ndimage
 
+# Import image modules
+from tools import headers
+
 # Import astronomical modules
 import astropy.io.fits as pyfits
-import astropy.wcs as pywcs
-from astropy import coordinates
-from astropy import units as u
 
-__doctest_skip__ = ['hcongrid']
+# *****************************************************************
 
-## This function interpolates an image from one FITS header onto another.
-#  It takes the following arguments:
-#
-#  - image: an array of two-dimensional image data
-#  - header1: the header of this image
-#  - header2: the reference header, the one which will be used to
-#  - preserve_bad_pixels: if set to True, try to set NaN pixels to NaN in the zoomed image. Otherwise, bad
-#    pixels will be set to zero.
-#
-#  This function returns a NumPy array with shape defined by header2's naxis1 and naxis2. It raises a TypeError if
-#  either of the headers is not a Header or a WCS instance. An exception is also raised when image1's shape doesn't
-#  match header1's naxis1 and naxis2.
-#
-def hcongrid(image, header1, header2, preserve_bad_pixels=True, **kwargs):
+def align_and_rebin(image, header1, header2, preserve_bad_pixels=True, **kwargs):
+
+    """
+    This function interpolates an image from one FITS header onto another. It takes the following arguments:
+    :param image: an array of two-dimensional image data
+    :param header1: the header of this image
+    :param header2: the reference header
+    :param preserve_bad_pixels: if set to True, try to set NaN pixels to NaN in the zoomed image. Otherwise, bad pixels
+    will be set to zero.
+    :param kwargs:
+    :return: a NumPy array with shape defined by header2's naxis1 and naxis2. It raises a TypeError if either of the
+    headers is not a Header or a WCS instance. An exception is also raised when image1's shape does not match
+    header1's naxis1 and naxis2.
+    """
 
     # Remove the third axis of the reference header
     header2["NAXIS"] = 2
     header2.pop("NAXIS3", None)
 
     # Check whether the passed image matches the information in header1
-    _check_header_matches_image(image, header1)
+    headers.check_header_matches_image(image, header1)
 
     # Get the mapping from pixels in the image to pixels defined on the coordinate system of the reference header
-    grid1 = get_pixel_mapping(header1, header2)
+    grid1 = headers.get_pixel_mapping(header1, header2)
 
     # Look for bad pixels (NaN's or infinities)
     bad_pixels = np.isnan(image) + np.isinf(image)
@@ -52,129 +54,30 @@ def hcongrid(image, header1, header2, preserve_bad_pixels=True, **kwargs):
     image[bad_pixels] = 0
 
     # Use Scipy to create the new image
-    newimage = scipy.ndimage.map_coordinates(image, grid1, **kwargs)
+    new_image = scipy.ndimage.map_coordinates(image, grid1, **kwargs)
 
     if preserve_bad_pixels:
 
         newbad = scipy.ndimage.map_coordinates(bad_pixels, grid1, order=0, mode='constant', cval=np.nan)
-        newimage[newbad] = np.nan
+        new_image[newbad] = np.nan
 
     # Return the new image array
-    return newimage
+    return new_image
 
-## This function ...
-def _load_wcs_from_header(header):
+# *****************************************************************
 
-    if issubclass(pywcs.WCS, header.__class__):
-        wcs = header
-    else:
-        try:
-            wcs = pywcs.WCS(header)
-        except:
-            raise TypeError("header must either be a pyfits.Header or pywcs.WCS instance")
-
-        if not hasattr(wcs,'naxis1'):
-            wcs.naxis1 = header['NAXIS1']
-        if not hasattr(wcs,'naxis2'):
-            wcs.naxis2 = header['NAXIS2']
-
-    return wcs
-
-## This function
-def _check_header_matches_image(image, header):
-
-    wcs = _load_wcs_from_header(header)
-
-    # wcs.naxis attributes are deprecated, so we perform this check conditionally
-    if ((hasattr(wcs,'naxis1') and hasattr(wcs,'naxis2')) and not
-            (wcs.naxis1 == image.shape[1] and wcs.naxis2 == image.shape[0])):
-        raise Exception("Image shape must match header shape.")
-
-## This function determines the mapping from pixel coordinates in header1 to pixel coordinates in header2 (the
-#  reference header). It takes the following arguments:
-#
-#  - header1:
-#  - header2:
-#
-#  This function returns a NumPy array describing a grid of y,x pixel locations in the input header's pixel units
-#  but the output header's world units. It raises a TypeError if neither header is not a Header or WCS instance, and
-#  a NotImplementedHError if the CTYPE in the header is not recognized.
-#
-def get_pixel_mapping(header1, header2):
-
-    # Get the WCS from the two headers
-    wcs1 = _load_wcs_from_header(header1)
-    wcs2 = _load_wcs_from_header(header2)
-
-    # Convert the coordinates
-    if not all([w1==w2 for w1,w2 in zip(wcs1.wcs.ctype,wcs2.wcs.ctype)]):
-        allowed_coords = ('GLON','GLAT','RA','DEC')
-        if all([(any(word in w1 for word in allowed_coords) and
-                 any(word in w2 for word in allowed_coords))
-                for w1,w2 in zip(wcs1.wcs.ctype,wcs2.wcs.ctype)]):
-            csys1 = _ctype_to_csys(wcs1.wcs)
-            csys2 = _ctype_to_csys(wcs2.wcs)
-            convert_coordinates = True
-        else:
-            # do unit conversions
-            raise NotImplementedError("Unit conversions between {0} and {1} have not yet been implemented.".format(wcs1.wcs.ctype,wcs2.wcs.ctype))
-    else:
-        convert_coordinates = False
-
-    # sigh... why does numpy use matrix convention?  Makes everything so
-    # much harder...
-    # WCS has naxis attributes because it is loaded with
-    # _load_wcs_from_header
-    outshape = [wcs2.naxis2,wcs2.naxis1]
-
-    yy2,xx2 = np.indices(outshape)
-
-    # get the world coordinates of the output image
-    lon2,lat2 = wcs2.wcs_pix2world(xx2, yy2, 0)
-
-    # Alternative
-    #x = np.arange(wcs2.naxis1)
-    #y = np.arange(wcs2.naxis2)
-    #X, Y = np.meshgrid(x, y)
-    #lon2, lat2 = wcs2.wcs_pix2world(X, Y, 0)
-
-    if convert_coordinates:
-
-        # Transform the world coordinates from the output image into the coordinate
-        # system of the input image
-        C2 = coordinates.SkyCoord(lon2,lat2,unit=(u.deg,u.deg),frame=csys2)
-        C1 = C2.transform_to(csys1)
-        lon2,lat2 = C1.spherical.lon.deg,C1.spherical.lat.deg
-
-    xx1,yy1 = wcs1.wcs_world2pix(lon2, lat2, 0)
-    grid = np.array([yy1.reshape(outshape),xx1.reshape(outshape)])
-
-    # Return the grid
-    return grid
-
-## This function ...
-#
-def _ctype_to_csys(wcs):
-
-    ctype = wcs.ctype[0]
-    if 'RA' in ctype or 'DEC' in ctype:
-        if wcs.equinox == 2000:
-            return 'fk5'
-        elif wcs.equinox == 1950:
-            return 'fk4'
-        else:
-            raise NotImplementedError("Non-fk4/fk5 equinoxes are not allowed")
-    elif 'GLON' in ctype or 'GLAT' in ctype:
-        return 'galactic'
-
-## This function is used to zoom in on a FITS image by interpolating using scipy.ndimage.interpolation.zoom
-#  It takes the following arguments:
-#
-#  - fitsfile: the FITS file name
-#  - scalefactor: the zoom factor along all axes
-#  - preserve_bad_pixels: try to set NaN pixels to NaN in the zoomed image. Otherwise, bad pixels will be set to zero.
-#
 def zoom_fits(fitsfile, scalefactor, preserve_bad_pixels=True, **kwargs):
+
+    """
+    This function is used to zoom in on a FITS image by interpolating using scipy.ndimage.interpolation.zoom.
+    It takes the following arguments:
+    :param fitsfile: the FITS file name
+    :param scalefactor: the zoom factor along all axes
+    :param preserve_bad_pixels: try to set NaN pixels to NaN in the zoomed image. Otherwise, bad pixels will be set to
+    zero.
+    :param kwargs:
+    :return:
+    """
 
     # Get the data array and the header of the FITS file
     arr = pyfits.getdata(fitsfile)
@@ -206,18 +109,19 @@ def zoom_fits(fitsfile, scalefactor, preserve_bad_pixels=True, **kwargs):
 
     return up_hdu
 
-## This function is used to align one FITS image to a specified header
-#  It takes the following arguments:
-#
-#  - hdu_in: the HDU to reproject (must have header and data)
-#  - header: the target header to project to
-#  - outname: the filename to write to
-#  - clobber: overwrite the file "outname" if it exists
-#
-#  This function returns the reprojected fits.primaryHDU
-#  Credits: Written by David Berry and adapted to functional form by Adam Ginsburg (adam.g.ginsburg@gmail.com)
-#
-def wcsalign(hdu_in, header, outname=None, clobber=False):
+# *****************************************************************
+
+def wcs_align(hdu_in, header, outname=None, clobber=False):
+
+    """
+    This function is used to align one FITS image to a specified header. It takes the following arguments:
+    :param hdu_in: the HDU to reproject (must have header and data)
+    :param header: the target header to project to
+    :param outname: the filename to write to
+    :param clobber: overwrite the file 'outname' if it exists
+    :return: the reprojected fits.primaryHDU
+    Credits: Written by David Berry and adapted to functional form by Adam Ginsburg (adam.g.ginsburg@gmail.com)
+    """
 
     import starlink.Ast as Ast
     import starlink.Atl as Atl
@@ -367,3 +271,5 @@ def wcsalign(hdu_in, header, outname=None, clobber=False):
         hdu_in.writeto(outname, clobber=clobber)
     
     return hdu_in
+
+# *****************************************************************
