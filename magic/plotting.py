@@ -356,4 +356,6 @@ def plot_difference_model(box, model):
     plt.imshow(box - model_box, origin='lower', interpolation='nearest', vmin=vmin, vmax=vmax)
     plt.title("Residual")
 
+    plt.show()
+
 # *****************************************************************

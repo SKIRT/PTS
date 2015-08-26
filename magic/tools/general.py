@@ -1,7 +1,24 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
 
+# Import standard modules
+import numpy as np
 
-## This function ...
-def split_xyz(data, mask=None):
+# *****************************************************************
+
+def split_xyz(data, mask=None, arrays=False):
+
+    """
+    This function ...
+    :param data:
+    :param mask:
+    :param arrays:
+    :return:
+    """
 
     # Initialize lists to contain the x, y and z values
     x_values = []
@@ -19,10 +36,13 @@ def split_xyz(data, mask=None):
                 y_values.append(y)
                 z_values.append(data[y,x])
 
-    # Return the lists of x, y and z values
-    return x_values, y_values, z_values
+    if arrays: return np.array(x_values), np.array(y_values), np.array(z_values)
+    else: return x_values, y_values, z_values
 
-## This function ...
+# *****************************************************************
+
 def average_stddev(model):
 
     return 0.5*(model.x_stddev.value + model.y_stddev.value)
+
+# *****************************************************************

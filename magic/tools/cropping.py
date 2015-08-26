@@ -48,7 +48,7 @@ def crop_direct(data, x_min, x_max, y_min, y_max):
     box = data[y_min:y_max, x_min:x_max]
 
     # Return the new image, and the coordinates of the origin of the new image with respect to the original image
-    return (box, x_min, x_max, y_min, y_max)
+    return box, x_min, x_max, y_min, y_max
 
 # *****************************************************************
 

@@ -30,7 +30,7 @@ class Region(object):
         """
 
         # Set the internal pyregion object
-        self._region = region
+        self.region = region
 
         # Set as unactive initially
         self.selected = False
@@ -67,7 +67,7 @@ class Region(object):
         :return:
         """
 
-        return len(self._region)
+        return len(self.region)
 
 # *****************************************************************
 
@@ -200,7 +200,7 @@ def expand(region, factor):
     # Create a new region
     region_expanded = pyregion.ShapeList([])
 
-    # ...
+    # Loop over all shapes in the original region
     for shape in region:
 
         # Create a new shape
@@ -242,6 +242,25 @@ def ellipses_from_coordinates(coordinates):
 
     # Return the region
     return region
+
+# *****************************************************************
+
+def one_ellipse(parameters):
+
+    """
+    This function ...
+    :param parameters:
+    :return:
+    """
+
+    # Create a string identifying this ellipse
+    region_string = "# Region file format: DS9 version 3.0\n"
+    region_string += "global color=green\n"
+    region_string += "image\n"
+    region_string += "ellipse(" + str(parameters[0]) + "," + str(parameters[1]) + "," + str(parameters[2]) + "," + str(parameters[3]) + "," + str(parameters[4]) + ")\n"
+
+    # Create a region and return it
+    return pyregion.parse(region_string)
 
 # *****************************************************************
 
