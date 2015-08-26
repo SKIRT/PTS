@@ -11,7 +11,6 @@ import os.path
 import math
 import numpy as np
 from scipy import ndimage
-import logging
 import matplotlib.pyplot as plt
 
 # Import astronomical modules
@@ -21,6 +20,7 @@ import astropy.io.fits as pyfits
 from astropy import wcs
 import astropy.units as u
 from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
+from astropy import log
 
 # Import image modules
 from image.galaxy import GalaxyFinder
@@ -37,17 +37,7 @@ from image.frames import Frame
 from image.masks import Mask
 from image.regions import Region
 
-# Import other relevant PTS modules
-from pts.skirtunits import SkirtUnits
-
 # *****************************************************************
-
-# Set the lowest logging level
-logging.basicConfig(level=logging.INFO)
-
-# Disable astropy logging except for warnings and errors
-from astropy import log
-log.setLevel("WARNING")
 
 # Do not show warnings, to block Canopy's UserWarnings from spoiling the console log
 import warnings
@@ -84,6 +74,7 @@ class Image(object):
         self._load_image(filename)
 
         # Set default values for other attributes
+        self.units = None
         self.fwhm = None
 
     # *****************************************************************
@@ -108,9 +99,9 @@ class Image(object):
         :return:
         """
 
-        logging.info("Name: " + self.name)
-        logging.info("Dimensions of data array: " + str(self.xsize) + " x " + str(self.ysize))
-        logging.info("Type of data: " + str(self.dtype))
+        log.info("Name: " + self.name)
+        log.info("Dimensions of data array: " + str(self.xsize) + " x " + str(self.ysize))
+        log.info("Type of data: " + str(self.dtype))
 
     # *****************************************************************
 
@@ -196,7 +187,7 @@ class Image(object):
         for frame in self.frames.get_selected():
 
             # Inform the user that this frame is being rebinned
-            logging.info("Exporting " + frame + " frame to " + filepath)
+            log.info("Exporting the " + frame + " frame to " + filepath)
 
             # Add this frame to the data cube, if its coordinates match those of the primary frame
             if coordinates == self.frames[frame].coordinates: datacube.append(self.frames[frame].data)
@@ -211,7 +202,7 @@ class Image(object):
         hdu.writeto(filepath, clobber=True)
 
         # Inform the user that the file has been created
-        logging.info("File " + filepath + " created")
+        log.info("File " + filepath + " created")
 
     # *****************************************************************
 
@@ -244,10 +235,10 @@ class Image(object):
         region = self.regions.get_selected(require_single=True)
 
         # Inform the user
-        logging.info("Creating " + path + " from " + region)
+        log.info("Creating " + path + " from the " + region + " region")
 
         # Write the region file
-        self.regions[region]._region.write(path)
+        self.regions[region].region.write(path)
 
     # *****************************************************************
 
@@ -364,7 +355,7 @@ class Image(object):
         for region in self.regions.get_selected():
 
             # Get the shape list
-            shapes = self.regions[region]._region.as_imagecoord(self.header)
+            shapes = self.regions[region].region.as_imagecoord(self.header)
 
             # Add these shapes to the plot
             plot.show_regions(shapes)
@@ -390,7 +381,7 @@ class Image(object):
         for frame_name in self.frames.get_selected(allow_none=False):
 
             # Inform the user
-            logging.info("Multiplying " + frame_name + " frame with a factor of " + str(factor))
+            log.info("Multiplying " + frame_name + " frame with a factor of " + str(factor))
 
             # Multiply this frame with the given factor
             self.frames[frame_name].data = self.frames[frame_name].data * factor
@@ -412,7 +403,7 @@ class Image(object):
         for frame_name in self.frames.get_selected(allow_none=False):
 
             # Inform the user that this frame is being cropped
-            logging.info("Cropping " + frame_name + " frame")
+            log.info("Cropping " + frame_name + " frame")
 
             # Crop this frame
             self.frames[frame_name].data = cropping.crop_check(self.frames[frame_name].data, x_min, x_max, y_min, y_max)
@@ -436,7 +427,7 @@ class Image(object):
         shift_x = self.ysize/2 - (left_x + right_x)/2
         shift_y = self.xsize/2 - (left_y + right_y)/2
 
-        logging.info("Shifted frame to center by " + str(shift_x) + "," + str(shift_y))
+        log.info("Shifted frame to center by " + str(shift_x) + "," + str(shift_y))
 
         shiftframe = ndimage.interpolation.shift(self.frames.primary.data,(shift_x, shift_y))
         angle = math.degrees(math.atan(float(left_y - right_y)/float(left_x - right_x)))
@@ -448,7 +439,7 @@ class Image(object):
         # TODO: rotate the other layers, regions and masks!
 
         # Inform the user of the rotation angle
-        logging.info("Rotated frame over " + str(angle) + " degrees")
+        log.info("Rotated frame over " + str(angle) + " degrees")
 
         # Add the new, rotated layer
         self._add_frame(rotframe, "primary_rotated")
@@ -467,7 +458,7 @@ class Image(object):
         for frame_name in self.frames.get_selected(allow_none=False):
 
             # Inform the user that this frame is being rotated
-            logging.info("Rotating " + frame_name + " frame over " + str(angle) + " degrees")
+            log.info("Rotating " + frame_name + " frame over " + str(angle) + " degrees")
 
             # Rotate this frame
             self.frames[frame_name].data = ndimage.interpolation.rotate(self.frames[frame_name].data, angle)
@@ -523,7 +514,7 @@ class Image(object):
         for frame_name in self.frames.get_selected(allow_none=False):
 
             # Inform the user
-            logging.info("Downsampling " + frame_name + " frame by a factor of " + str(factor))
+            log.info("Downsampling " + frame_name + " frame by a factor of " + str(factor))
 
             # Use the zoom function to resample
             self.frames[frame_name].data = ndimage.interpolation.zoom(self.frames[frame_name].data, zoom=1.0/factor)
@@ -540,8 +531,8 @@ class Image(object):
 
         # TODO: FIX THIS FUNCTION
 
-        # Make a SkirtUnits object
-        self._units = SkirtUnits("extragalactic", "frequency")
+        # Set the units for this image ...
+        self.units = units
 
     # *****************************************************************
 
@@ -556,7 +547,7 @@ class Image(object):
         # TODO: FIX THIS FUNCTION
 
         # Calculate the conversion factor
-        conversionfactor = self._units.convert(1.0, units)
+        conversionfactor = self.units.convert(1.0, units)
 
         # Convert the data
         self.frames.primary.data *= conversionfactor
@@ -576,7 +567,7 @@ class Image(object):
         for frame_name in self.frames.get_selected(allow_none=False):
 
             # Inform the user
-            logging.info("Converting " + frame_name + " frame to magnitude scale")
+            log.info("Converting " + frame_name + " frame to magnitude scale")
 
             # Convert to magnitude scale
             self.frames[frame_name].data = m_0 - 2.5 * np.log10(self.frames[frame_name].data)
@@ -596,7 +587,7 @@ class Image(object):
         for frame_name in self.frames.get_selected(allow_none=False):
 
             # Inform the user
-            logging.info("Converting " + frame_name + " frame to flux scale")
+            log.info("Converting " + frame_name + " frame to flux scale")
 
             # Convert to flux scale
             self.frames[frame_name].data = F_0 * np.power(10.0, - self.frames[frame_name].data / 2.5)
@@ -624,7 +615,7 @@ class Image(object):
         """
 
         # Inform the user
-        logging.info("Setting the FWHM of the PSF for this image to " + str(fwhm) + " pixels")
+        log.info("Setting the FWHM of the PSF for this image to " + str(fwhm) + " pixels")
 
         # Set the FWHM
         self.fwhm = fwhm
@@ -640,7 +631,7 @@ class Image(object):
         """
 
         # Inform the user
-        logging.info("Setting the pixel scale of this image to " + str(pixelscale) + " arcseconds")
+        log.info("Setting the pixel scale of this image to " + str(pixelscale) + " arcseconds")
 
         # Set the pixel scale
         self.pixelscale = pixelscale
@@ -659,6 +650,23 @@ class Image(object):
 
             # Remove this frame from the frames dictionary
             del self.frames[frame_name]
+
+    # *****************************************************************
+
+    def copy_frames(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # For each selected frame
+        for frame_name in self.frames.get_selected(allow_none=False):
+
+            # Copy the data and add it as a new frame
+            data_copy = np.copy(self.frames[frame_name].data)
+            coordinates = self.frames[frame_name].coordinates
+            self._add_frame(data_copy, coordinates, frame_name+"_copy", description="Copy of the "+frame_name+" frame")
 
     # *****************************************************************
 
@@ -704,7 +712,7 @@ class Image(object):
         path = os.path.join(os.getenv("HOME"), "Kernels", name)
 
         # Inform the user that the kernel was found
-        logging.info("Found kernel file at " + path)
+        log.info("Found kernel file at " + path)
 
         # Open the HDU list for the FITS file
         hdulist = pyfits.open(path)
@@ -714,7 +722,7 @@ class Image(object):
         header = hdulist[0].header
 
         # Inform the user
-        logging.info("Rebinning the kernel to the image pixel grid")
+        log.info("Rebinning the kernel to the image pixel grid")
 
         # Get the pixel scale of the kernel
         pixelscale_kernel = header["CD1_1"]*3600
@@ -729,7 +737,7 @@ class Image(object):
         for frame_name in self.frames.get_selected(allow_none=False):
 
             # Inform the user that this frame is being convolved
-            logging.info("Convolving " + frame_name + " frame with the kernel " + os.path.splitext(name)[0])
+            log.info("Convolving " + frame_name + " frame with the kernel " + os.path.splitext(name)[0])
 
             # Do the convolution on this frame
             self.frames[frame_name].data = convolve_fft(self.frames[frame_name].data, kernel, normalize_kernel=True)
@@ -758,7 +766,7 @@ class Image(object):
         for frame_name in self.frames.get_selected():
 
             # Inform the user that this frame is being convolved
-            logging.info("Convolving " + frame_name + " frame with a 1D Gaussian kernel with a FWHM of " + str(fwhm))
+            log.info("Convolving " + frame_name + " frame with a 1D Gaussian kernel with a FWHM of " + str(fwhm))
 
             # Do the convolution on this frame
             self.frames[frame_name].data = convolve(self.frames[frame_name].data, kernel)
@@ -783,7 +791,7 @@ class Image(object):
         for frame_name in self.frames.get_selected(allow_none=False):
 
             # Inform the user that this frame is being rebinned
-            logging.info("Rebinning " + frame_name + " frame to the grid of " + reference)
+            log.info("Rebinning " + frame_name + " frame to the grid of " + reference)
 
             # Do the rebinning based on the header of the reference image
             self.frames[frame_name].data = transformations.align_and_rebin(self.frames[frame_name].data, self.header, refheader)
@@ -801,7 +809,7 @@ class Image(object):
         """
 
         # Inform the user
-        logging.info("Interpolating the image in the areas covered by the currently selected masks")
+        log.info("Interpolating the image in the areas covered by the currently selected masks")
 
         # Combine the active masks
         total_mask = self.combine_masks(return_mask=True)
@@ -831,18 +839,18 @@ class Image(object):
         # Make a mask from the region and invert it (to mask outside of the region)
         region_mask = np.logical_not(regions.create_mask(region, self.header, self.xsize, self.ysize))
 
-        # Loop over all shapes
-        for shape in region:
+        # Loop over all active frames
+        for frame_name in self.frames.get_selected(allow_none=False):
 
-            # Get the extents of the box that encloses this shape
-            x_min, x_max, y_min, y_max = regions.get_enclosing_box(shape)
+            # Inform the user
+            log.info("Interpolating the " + frame_name + " frame within the areas covered by the currently "
+                         "selected masks, if enclosed by any of the currently selected regions")
 
-            # Loop over all active frames
-            for frame_name in self.frames.get_selected(allow_none=False):
+            # Loop over all shapes
+            for shape in region:
 
-                # Inform the user
-                logging.info("Interpolating the " + frame_name + " frame within the areas covered by the currently "
-                             "selected masks, if enclosed by any of the currently selected regions")
+                # Get the extents of the box that encloses this shape
+                x_min, x_max, y_min, y_max = regions.get_enclosing_box(shape)
 
                 # Cut out the box
                 box, x_min, x_max, y_min, y_max = cropping.crop_direct(self.frames[frame_name].data, x_min, x_max, y_min, y_max)
@@ -927,7 +935,7 @@ class Image(object):
         for region_name in self.regions.get_selected(allow_none=allow_none):
 
             # Add all the shapes of this region to the combined region
-            for shape in self.regions[region_name]._region.as_imagecoord(self.header):
+            for shape in self.regions[region_name].region.as_imagecoord(self.header):
 
                 total_region.append(shape)
 
@@ -1002,7 +1010,7 @@ class Image(object):
             # TODO: check if the dimensions of frame and mask match!
 
             # Inform the user
-            logging.info("Applying the total selected mask to the " + frame_name + " frame")
+            log.info("Applying the total selected mask to the " + frame_name + " frame")
 
             # Set the corresponding image pixels to zero for this mask
             self.frames[frame_name].data[total_mask] = fill
@@ -1027,7 +1035,7 @@ class Image(object):
         for region_name in self.regions.get_selected():
 
             # Create the mask
-            total_mask += regions.create_mask(self.regions[region_name]._region, self.header, self.xsize, self.ysize)
+            total_mask += regions.create_mask(self.regions[region_name].region, self.header, self.xsize, self.ysize)
             name += region_name + "_"
 
         # Remove the trailing underscore
@@ -1039,55 +1047,51 @@ class Image(object):
 
     # *****************************************************************
 
-    def find_galaxy(self, plot=False):
+    def find_galaxy(self, galaxy_name, name=None, plot=False, return_region=False):
 
         """
         This function ...
+        :param galaxy_name:
+        :param name:
         :param plot:
+        :param return_region:
         :return:
         """
 
-        # Find the orientation of the galaxy in this iamge
-        self.orientation = GalaxyFinder(self.frames.primary.data[::-1,:], quiet=True)
+        # Get the name of the active frame
+        frame_name = self.frames.get_selected(require_single=True)
 
-        # Plot the ellips onto the image frame
-        if plot: self.orientation.plot()
+        # Get the region with the galaxy position fetched from an online catalog
+        region = self.fetch_galaxy(galaxy_name, return_region=True).as_imagecoord(self.header)
 
-        # The length of the major axis of the ellipse
-        major = 3.0 * self.orientation.majoraxis * 1.7
+        # Find the galaxy
+        galaxy_parameters = analysis.find_galaxy_orientation(self.frames[frame_name].data, region, plot=plot)
 
-        # The width and heigth of the ellips
-        width = major
-        height = major * (1 - self.orientation.eps)
+        # Create a region with one ellipse corresponding to the extent of the galaxy in this frame
+        galaxy_region = regions.one_ellipse(galaxy_parameters)
 
-        # Create a string identifying this ellipse
-        region_string = "image;ellipse(" + str(self.orientation.ypeak) + "," + str(self.orientation.xpeak) + "," + str(width) + "," + str(height) + "," + str(self.orientation.theta) + ")"
+        # Set the name of the new region
+        name = name if name is not None else "galaxy"
 
-        # Create a region consisting of one ellipse
-        region = pyregion.parse(region_string)
-
-        # Add this region
-        self._add_region(region, "galaxy")
+        # Return the region or add it to this image
+        if return_region: return galaxy_region
+        else: self._add_region(galaxy_region, name)
 
     # *****************************************************************
 
     def fetch_galaxy(self, galaxy_name, name=None, radius=100, return_region=False):
 
+        """
+        This function ...
+        :param galaxy_name:
+        :param name:
+        :param radius:
+        :param return_region:
+        :return:
+        """
+
         # Inform the user
-        logging.info("Fetching galaxy positions from an online catalog...")
-
-        # Get the range of RA and DEC of this image
-        #ra_center, dec_center, size_ra_deg, size_dec_deg = self._get_coordinate_range()
-
-        # Search for the galaxy
-        #box = (ra_center, dec_center, size_ra_deg, size_dec_deg)
-
-        # Possible catalogs:
-        # HYPERLEDA
-        # II/262/batc : BATC Data Release One - BATC DR1 (Zhou+ 1995-2005)
-        # VII/1B/catalog : Revised New General Catalogue (Sulentic+, 1973)
-        # ...
-        #region = catalogs.fetch_objects_in_box(box, catalog, [galaxy_name, "galaxies", "optical"], color=color, limit=5)
+        log.info("Fetching galaxy position from an online catalog...")
 
         # Search for the position of the specified galaxy in the image
         region = catalogs.fetch_object_by_name(galaxy_name, radius)
@@ -1107,13 +1111,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def find_galaxy(self):
-
-        pass
-
-    # *****************************************************************
-
-    def fetch_stars(self, name=None, radius=40, return_region=False):
+    def fetch_stars(self, name=None, catalog=None, radius=40, return_region=False):
 
         """
         This function fetches the positions of astrophysical objects in the image
@@ -1125,14 +1123,17 @@ class Image(object):
         """
 
         # Inform the user
-        logging.info("Fetching star positions from an online catalog...")
+        log.info("Fetching star positions from an online catalog...")
 
         # Get the range of RA and DEC of this image
         ra_center, dec_center, size_ra_deg, size_dec_deg = self._get_coordinate_range()
 
+        # Set the catalog list
+        if catalog is None: catalog = ["UCAC", "NOMAD"]
+
         # Search for stars
         box = (ra_center, dec_center, size_ra_deg, size_dec_deg)
-        region = catalogs.fetch_objects_in_box(box, ["UCAC", "NOMAD"], ["optical", "stars"], radius, column_filters={"Vmag":"<19"})
+        region = catalogs.fetch_objects_in_box(box, catalog, ["optical", "stars"], radius, column_filters={"Vmag":"<19"})
 
         # Set the name of the new region
         name = name if name is not None else "stars"
@@ -1183,8 +1184,11 @@ class Image(object):
             # Loop over all active regions
             for region_name in self.regions.get_selected(allow_none=False):
 
+                # Inform the user
+                log.info("Expanding the " + region_name + " region by a factor of " + str(factor))
+
                 # Create expanded region
-                expanded_region = regions.expand(self.regions[region_name]._region, factor)
+                expanded_region = regions.expand(self.regions[region_name].region, factor)
 
                 # Add the expanded region to the list of regions
                 self._add_region(expanded_region, region_name + "_expanded")
@@ -1199,11 +1203,27 @@ class Image(object):
         :return:
         """
 
-        # Get the name of the currently active region
+        # Get the name of the currently selected region
         region_name = self.regions.get_selected(require_single=True)
 
         # Remove the region of the dictionary of regions and re-add it under a different key
         self.regions[name] = self.regions.pop(region_name)
+
+    # *****************************************************************
+
+    def rename_frame(self, name):
+
+        """
+        This function renames a frame
+        :param name:
+        :return:
+        """
+
+        # Get the name of the currently selected frame
+        frame_name = self.frames.get_selected(require_single=True)
+
+        # Remove the frame from the dictionary of frames and re-add it under a different key
+        self.frames[frame_name] = self.frames.pop(frame_name)
 
     # *****************************************************************
 
@@ -1292,16 +1312,16 @@ class Image(object):
 
         # Look for sources
         sources = analysis.find_sources(self.frames[frame_name].data, region, plot=plot_custom)
-        logging.info("Number of sources = " + str(len(sources)))
+        log.info("Number of sources = " + str(len(sources)))
 
         # Remove duplicates
         unique_sources = analysis.remove_duplicate_sources(sources)
-        logging.info("Number of unique sources = " + str(len(unique_sources)))
+        log.info("Number of unique sources = " + str(len(unique_sources)))
 
         # Split the unique sources into stars and unidentified objects
         stars, ufos = statistics.sigma_clip_split(unique_sources, lambda source: general.average_stddev(source))
-        logging.info("Number of stars = " + str(len(stars)))
-        logging.info("Number of unidentified objects = " + str(len(ufos)))
+        log.info("Number of stars = " + str(len(stars)))
+        log.info("Number of unidentified objects = " + str(len(ufos)))
 
         # Convert to region
         stars_region = regions.ellipses_from_coordinates(stars)
@@ -1340,7 +1360,7 @@ class Image(object):
         self._add_region(region, "annulus")
 
         # Create the annulus mask
-        annulusmask = np.logical_not(self.regions["annulus"]._region.get_mask(header=self.header, shape=(self.ysize,self.xsize)))
+        annulusmask = np.logical_not(self.regions["annulus"].region.get_mask(header=self.header, shape=(self.ysize,self.xsize)))
 
         # Get a combination of the currently selected masks
         current_mask = self.combine_masks(return_mask=True)
@@ -1365,12 +1385,12 @@ class Image(object):
 
     # *****************************************************************
 
-    def fit_polynomial(self, plot=False, resample_factor=1.0):
+    def fit_polynomial(self, plot=False, degree=3, sigma_clipping=True):
 
         """
         This function fits a polynomial function to each of the currently active frames
         :param plot:
-        :param resample_factor:
+        :param upsample_factor:
         :return:
         """
 
@@ -1380,8 +1400,14 @@ class Image(object):
         # For each currently active frame
         for frame_name in self.frames.get_selected(allow_none=False):
 
+            # Inform the user
+            log.info("Fitting a polynomial function to the " + frame_name + " frame")
+
+            if sigma_clipping: new_mask = statistics.sigma_clip_mask(self.frames[frame_name].data, mask=total_mask)
+            else: new_mask = total_mask
+
             # Fit the model
-            polynomial = fitting.fit_polynomial(self.frames[frame_name].data, mask=total_mask)
+            polynomial = fitting.fit_polynomial(self.frames[frame_name].data, mask=new_mask, degree=degree)
 
             # Plot the difference between the data and the model, if requested
             if plot: plotting.plot_difference_model(self.frames[frame_name].data, polynomial)
@@ -1390,7 +1416,8 @@ class Image(object):
             evaluated = fitting.evaluate_model(polynomial, 0, self.frames[frame_name].data.shape[1], 0, self.frames[frame_name].data.shape[0])
 
             # Add the evaluated model as a new frame
-            self._add_frame(evaluated, None, frame_name+"_polynomial")
+            description = "A polynomial fit to the " + frame_name + " primary frame"
+            self._add_frame(evaluated, self.frames[frame_name].coordinates, frame_name+"_polynomial", description)
 
     # *****************************************************************
 
@@ -1412,7 +1439,7 @@ class Image(object):
         for frame_name in self.frames.get_selected():
 
             # Inform the user
-            logging.info("Subtracting " + frame_name + " frame from the primary image frame")
+            log.info("Subtracting " + frame_name + " frame from the primary image frame")
 
             # Subtract the data in this frame from the primary image, in the pixels that the mask does not cover
             self.frames.primary.data -= self.frames[frame_name].data*negativetotalmask
@@ -1435,7 +1462,7 @@ class Image(object):
         for region_name in self.regions.get_selected(allow_none=False):
 
             # Loop over all shapes in the region
-            for shape in self.regions[region_name]._region:
+            for shape in self.regions[region_name].region:
 
                 sigma_x = shape.coord_list[2]
                 sigma_y = shape.coord_list[3]
@@ -1457,7 +1484,7 @@ class Image(object):
         """
 
         # Show which image we are importing
-        logging.info("Reading in file: " + filename)
+        log.info("Reading in file: " + filename)
 
         # Open the HDU list for the FITS file
         hdulist = pyfits.open(filename)
@@ -1496,6 +1523,9 @@ class Image(object):
 
         else:
 
+            # Sometimes, the 2D frame is embedded in a 3D array with shape (1, xsize, ysize)
+            if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
+
             # Add the primary image frame
             self._add_frame(hdu.data, coordinates, "primary", "the primary signal map")
 
@@ -1525,7 +1555,7 @@ class Image(object):
         """
 
         # Inform the user
-        logging.info("Adding '" + name + "' to the set of image frames")
+        log.info("Adding '" + name + "' to the set of image frames")
 
         # Add the layer to the layers dictionary
         self.frames[name] = Frame(data, coordinates, description)
@@ -1542,7 +1572,7 @@ class Image(object):
         """
 
         # Inform the user
-        logging.info("Adding '" + name + "' to the set of regions")
+        log.info("Adding '" + name + "' to the set of regions")
 
         # Add the region to the regions dictionary
         self.regions[name] = Region(region)
@@ -1559,7 +1589,7 @@ class Image(object):
         """
 
         # Inform the user
-        logging.info("Adding '" + name + "' to the set of masks")
+        log.info("Adding '" + name + "' to the set of masks")
 
         # Add the mask to the masks dictionary
         self.masks[name] = Mask(data)

@@ -17,7 +17,7 @@ from astroquery.ned import Ned
 
 # *****************************************************************
 
-def fetch_objects_in_box(box, catalogs, keywords, radius, limit=None, column_filters=None):
+def fetch_objects_in_box(box, catalog, keywords, radius, limit=None, column_filters=None):
 
     """
     This function ...
@@ -41,7 +41,7 @@ def fetch_objects_in_box(box, catalogs, keywords, radius, limit=None, column_fil
     viz.ROW_LIMIT = limit if limit is not None else -1
 
     # Query the box of our image frame
-    result = viz.query_region(coordinate, width=box[3]*u.deg, height=box[2]*u.deg, catalog=catalogs)
+    result = viz.query_region(coordinate, width=box[3]*u.deg, height=box[2]*u.deg, catalog=catalog)
 
     region_string = "# Region file format: DS9 version 3.0\n"
     region_string += "global color=green\n"

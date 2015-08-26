@@ -20,7 +20,7 @@ from scipy import optimize
 
 # This function performs a two-dimensional polynomial fit.
 # This function was based on code provided by Joe Kington, see: http://goo.gl/yXYrmo
-def fitpolynomial(x, y, z, order, linear):
+def fit_polynomial(x, y, z, order, linear):
 
     ncols = (order + 1)**2
     G = np.zeros((x.size, ncols))

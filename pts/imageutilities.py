@@ -15,6 +15,7 @@ from image import Image
 
 # Import astronomical modules
 from astropy import units as u
+from astroquery.irsa_dust import IrsaDust
 
 # *****************************************************************
 
@@ -234,7 +235,7 @@ def remove_stars(image, determine_fwhm=False, region_file=None, plot=False, outp
 
     # Create a mask from the 6-sigma contours of unmodeled stars and select it
     image.create_mask()
-    image.masks.unmodeled.select()
+    image.masks.unmodeled_inner.select()
 
     # Select the unmodeled stars region again, now creating 9-sigma contours
     image.regions.deselect_all()
@@ -277,7 +278,7 @@ def remove_stars(image, determine_fwhm=False, region_file=None, plot=False, outp
 
 # *****************************************************************
 
-def subtract_sky(image, plot=False, output_path=None):
+def subtract_sky(image, galaxy_name, plot=False, output_path=None):
 
     """
     This function subtracts the sky in the image
@@ -286,61 +287,73 @@ def subtract_sky(image, plot=False, output_path=None):
     :return:
     """
 
-    # Find the galaxy in the primary image (creates a region called 'galaxy')
-    image.find_galaxy(plot=plot)
-
-    # Select the galaxy region
+    # Find the galaxy in the primary image (creates a region called 'galaxy') and select the resulting region
+    image.find_galaxy(galaxy_name, plot=plot)
     image.regions.galaxy.select()
 
-    # Create a mask covering the galaxy
+    # If an output path is provided, save the galaxy region
+    if output_path is not None: export_region(image, output_path, "galaxy.reg")
+
+    # Expand the galaxy region by a factor of 2.5 and create a mask from this new region
+    image.expand_regions(factor=2.5)
+    image.regions.deselect_all()
+    image.regions.galaxy_expanded.select()
     image.create_mask()
 
-    # Find a map that represents the sky, ignoring pixels covered by
+    # If an output path is provided, save the expanded galaxy region
+    if output_path is not None: export_region(image, output_path, "galaxy_expanded.reg")
+
+    # Make masks that cover the stars and other, unidentified sources (modeled or not)
+    image.regions.deselect_all()
+    image.regions.modeled_stars.select()
+    image.expand_regions(factor=6.0)
+    image.regions.deselect_all()
+    image.regions.modeled_stars_expanded.select()
+    image.create_mask()  # Created masks/modeled_stars_expanded
+    image.regions.deselect_all()
+
+    # Select all masks that cover parts not suitable for fitting the sky (galaxy, stars)
+    image.masks.unmodeled_inner.select()        # unmodeled stars
+    image.masks.modeled_stars_expanded.select() # modeled stars
+    image.masks.galaxy_expanded.select()
     image.masks.total.select()
-    image.masks.leftovers_inner.select()
-    image.masks.ufos.select()
-    image.masks.modeled_stars.select()
 
-    # Find a map that represents the sky, ignoring pixels under either of these 4 masks:
-    #  - 2 masks that are currently selected: the total mask and the stars mask
-    #  - the galaxy mask
-    #  - a mask composed of all pixels outside an annulus around the galaxy
-    # and using sigma-clipping to ignore other pixels with extreme values.
-    image.find_sky()
+    # Make a sky map
+    image.frames.deselect_all()
+    image.frames.primary.select()
+    image.copy_frames()
+    image.frames.deselect_all()
+    image.frames.primary_copy.select()
+    image.rename_frame("sky")
+    image.apply_masks()
 
-    # If requested, save the (sigma-clipped) sky frame as a FITS file
+    # If requested, save the sky map as a FITS file
     if output_path is not None: save(image, output_path, "sky.fits")
 
     # Select the primary image
     image.frames.deselect_all()
+    image.regions.deselect_all()
     image.frames.primary.select()
 
-    # Fit the sky with a 2D polynomial function
-    image.fit_polynomial()
+    # Fit the sky with a polynomial function (ignoring pixels covered by any of the selected masks)
+    image.fit_polynomial(plot=True)
 
-    # Deselect all frames and select the fittedsky frame
+    # Select the new frame and deselect all masks
     image.frames.deselect_all()
     image.frames.primary_polynomial.select()
+    image.masks.deselect_all()
 
-    # Select the total mask
-    image.masks.total.select()
+    # If requested, save the fitted sky map as a FITS file
+    if output_path is not None: save(image, output_path, "sky_polynomial.fits")
 
     # Subtract the fitted sky (this frame is selected) from the primary image (this frame is deselected)
     image.subtract()
 
-    # Select the primary image frame
-    image.frames.deselect_all()
-    image.frames.primary.select()
-
-    # Deselect all masks and regions
-    image.regions.deselect_all()
-    image.masks.deselect_all()
+    # Select the primary image frame and deselect all masks and regions
+    reset_selection(image)
 
     # If requested, plot the sky-subtracted primary image
     if plot: image.plot()
-
-    # Deselect all regions, masks and frames (except the primary frame)
-    reset_selection(image)
 
 # *****************************************************************
 
@@ -461,108 +474,6 @@ def reset_selection(image):
 
 # *****************************************************************
 
-def subtract_sky_FUV(image):
-
-    """
-    This function ...
-    :param image:
-    :return:
-    """
-
-    # Automatically finding the galaxy in the GALEX.FUV image fails!
-    filepath = "data/galaxy/GALEXFUV.reg"
-    image.import_region(filepath, "galaxy")
-
-    # Select the galaxy region
-    image.regions.deselect_all()
-    image.regions.galaxy.select()
-
-    # Create a mask covering the galaxy
-    image.create_mask()
-
-    ####### SPECIAL THINGS TO DEFINE THE ORIENTATION OF THIS IMAGE WITHOUT HAVING TO USE THE FIND_GALAXY FUNCTION
-
-    # Define the orientation of the galaxy
-    class Orientation(object):
-
-        def __init__(self, xpeak, ypeak, major, eps, theta):
-
-            self.xpeak = xpeak
-            self.ypeak = ypeak
-            self.majoraxis = major
-            self.eps = eps
-            self.theta = theta
-
-    ypeak = image.regions["galaxy"]._region[0].coord_list[0]
-    xpeak = image.regions["galaxy"]._region[0].coord_list[1]
-    width = image.regions["galaxy"]._region[0].coord_list[2]
-    height = image.regions["galaxy"]._region[0].coord_list[3]
-    theta = image.regions["galaxy"]._region[0].coord_list[4]
-
-    major = width / (3.0 * 1.5)
-    eps = 1.0 - height / width
-
-    orientation = Orientation(xpeak, ypeak, major, eps, theta)
-    image.set_orientation(orientation)
-
-    ####### END OF SPECIAL THINGS
-
-    # Select the total mask (edges and extra)
-    image.masks.total.select()
-
-    # Find a map that represents the sky, ignoring pixels under either of these 3 masks:
-    #  - the mask that is currently selected
-    #  - the galaxy mask
-    #  - a mask composed of all pixels outside an annulus around the galaxy
-    # and using sigma-clipping to ignore other pixels with extreme values.
-    image.find_sky()
-
-    # Deselect the primary frame and select the primary_masked_sky frame
-    image.frames.deselect_all()
-    image.frames.sky.select()
-
-    preppathFUV = "prep/GALEXFUV"
-
-    # Save the (sigma-clipped) sky as a FITS file
-    path = os.path.join(preppathFUV, "sky.fits")
-    image.export_datacube(path)
-
-    # Select the primary image
-    image.frames.deselect_all()
-    image.frames.primary.select()
-
-    # Fit the sky with a polynomial, using the FHWM
-    #image.fit_sky(fwhmax["GALEXFUV"])
-
-    image.fit_polynomial()
-
-    # Deselect all frames and select the fittedsky_2D frame
-    image.frames.deselect_all()
-    image.frames.primary_polynomial.select()
-
-    # Save the 2D fitted sky
-    path = os.path.join(preppathFUV, "fittedsky.fits")
-    image.export_datacube(path)
-
-    # Select the total mask
-    image.masks.total.select()
-
-    # Subtract the fitted sky (this frame is selected) from the primary image (this frame is deselected)
-    image.subtract()
-
-    # Select the primary image frame
-    image.frames.deselect_all()
-    image.frames.primary.select()
-
-    # Save the sky-subtracted primary image
-    path = os.path.join(preppathFUV, "subtracted.fits")
-    image.export_datacube(path)
-
-    # Deselect all regions, masks and frames (except the primary frame)
-    reset_selection(image)
-
-# *****************************************************************
-
 def conversionfactorFUV(image, attenuation):
 
     """
@@ -680,4 +591,14 @@ def conversionfactorHa(image, attenuation):
     return totalfactor
 
 # *****************************************************************
+
+def get_attenuations(galaxy_name, filter_names):
+
+    # Get the table of extinctions in various bands
+    table = IrsaDust.get_extinction_table(galaxy_name)
+
+    # For each filter
+    for filter_name in filter_names:
+
+        pass
 

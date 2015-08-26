@@ -21,7 +21,7 @@ from pts.imagepreparation import ImagePreparation
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
-parser.add_argument('filter', type=str, help='the filter for which to run the data preparation', nargs='?', default="")
+parser.add_argument('filter', type=str, help='the filter for which to run the data preparation', nargs='?', default=None)
 parser.add_argument('--plot', action='store_true', help='plot the results of intermediate steps')
 parser.add_argument('--save', action='store_true', help='save intermediate results')
 

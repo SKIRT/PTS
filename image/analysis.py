@@ -19,6 +19,7 @@ from tools import coordinates, cropping, interpolation
 
 # Import astronomical modules
 from photutils import find_peaks
+from find_galaxy import FindGalaxy
 
 # *****************************************************************
 
@@ -602,5 +603,64 @@ def make_star_model(shape, data, annuli_mask, fit_mask, background_outer_sigmas,
 
     # Return ...
     return success, shape, evaluated_model, (x_min, x_max, y_min, y_max)
+
+# *****************************************************************
+
+def find_galaxy_orientation(data, region, plot=False):
+
+    """
+    This function ...
+    :param data:
+    :param region:
+    :param plot:
+    :return:
+    """
+
+    # TODO: improve this function, check the documentation of the FindGalaxy class to improve the fit, instead of using cropping to 'solve' fitting problems
+
+    # Verify that the region contains only one shape
+    assert len(region) == 1, "The region can only contain one shape"
+    shape = region[0]
+
+    x_position = shape.coord_list[0]
+    y_position = shape.coord_list[1]
+
+    # Look for the galaxy orientation
+    orientation = FindGalaxy(data[::-1,:], quiet=True, plot=plot)
+
+    # The length of the major axis of the ellipse
+    major = 3.0 * orientation.majoraxis
+
+    # The width and heigth of the ellips
+    width = major
+    height = major * (1 - orientation.eps)
+
+    if not np.isclose(x_position, orientation.ypeak, rtol=0.02) or not np.isclose(y_position, orientation.xpeak, rtol=0.02):
+
+        x_size = data.shape[1]
+        y_size = data.shape[0]
+        size = max(x_size, y_size)
+
+        smaller_data, x_min, x_max, y_min, y_max = cropping.crop(data, x_position, y_position, size/4.0, size/4.0)
+
+        # Again look for the galaxy orientation
+        orientation = FindGalaxy(smaller_data[::-1,:], quiet=True, plot=plot)
+
+        # The length of the major axis of the ellipse
+        major = 3.0 * orientation.majoraxis
+
+        # The width and heigth of the ellips
+        width = major
+        height = major * (1 - orientation.eps)
+
+        # Correct the center coordinate for the cropping
+        orientation.ypeak += x_min
+        orientation.xpeak += y_min
+
+        if not np.isclose(x_position, orientation.ypeak, rtol=0.02) or not np.isclose(y_position, orientation.xpeak, rtol=0.02):
+            logging.warning("Could not find a galaxy at the specified position")
+
+    # Return the parameters of the galaxy
+    return (orientation.ypeak, orientation.xpeak, width, height, orientation.theta)
 
 # *****************************************************************

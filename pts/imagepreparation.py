@@ -51,13 +51,13 @@ extra = {"2MASSH":   True,
          "PACS160":  False}
 
 # Define which images should still be sky-subtracted
-notsubtracted = {"2MASSH":   True,
-                 "GALEXFUV": True,
-                 "Ha":       True,
-                 "IRAC":     False,
-                 "MIPS24":   False,
-                 "PACS70":   True,
-                 "PACS160":  True}
+sky_subtracted = {"2MASSH":   False,
+                 "GALEXFUV": False,
+                 "Ha":       False,
+                 "IRAC":     True,
+                 "MIPS24":   True,
+                 "PACS70":   False,
+                 "PACS160":  False}
 
 # Define the kernel files for the different filters
 kernels = {"2MASSH":    "Kernel_HiRes_Gauss_03.0_to_PACS_160.fits",
@@ -145,6 +145,7 @@ class ImagePreparation(object):
             # If no filtername was specified, add each FITS file found in the data directory to the dictionary
             else:
 
+                print "here"
                 self.image_paths[base_filename] = os.path.join(self.data_path, filename)
 
             # If intermediate results should be saved, create a seperate directory for each filter
@@ -163,7 +164,10 @@ class ImagePreparation(object):
         :return:
         """
 
-        # 1. Prepare the input data
+        # 1. Get galactic extinction coefficients
+        #attenuations = iu.get_attenuations(self.galaxy_name, self.image_paths.keys())
+
+        # 2. Prepare the images
         for filter_name, path in self.image_paths.items():
 
             filter_prep_path = os.path.join(self.prep_path, filter_name)
@@ -183,8 +187,7 @@ class ImagePreparation(object):
             iu.remove_stars(image, determine_fwhm=True, output_path=output_path)
 
             # Subtract the sky
-            if filter_name == 'GALEXFUV': iu.subtract_sky_FUV(image)
-            elif notsubtracted[filter_name]: iu.subtract_sky(image, plot=self.plot, output_path=output_path)
+            if not sky_subtracted[filter_name]: iu.subtract_sky(image, self.galaxy_name, plot=self.plot, output_path=output_path)
 
             # Convert the units to MJy / sr
             iu.convert_units(image, filter_name, attenuations)
