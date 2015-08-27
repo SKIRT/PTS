@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 # Import astronomical modules
 from astropy.visualization import SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
+from photutils import CircularAperture
 
 # *****************************************************************
 
@@ -87,7 +88,7 @@ def plot_peak_model(box, x_peak, y_peak, model):
 
 # *****************************************************************
 
-def plot_peaks(box, x_peaks, y_peaks):
+def plot_peaks(box, x_peaks, y_peaks, radius=None):
 
     """
     This function plots the data with peaks marked ...
@@ -101,10 +102,20 @@ def plot_peaks(box, x_peaks, y_peaks):
     vmax = np.max(box)
     vmin = np.min(box) if vmax <= 0 else 0.0
 
+    # Set the normalization
+    norm = ImageNormalize(stretch=SqrtStretch())
+
     # Make the plot
     plt.figure(figsize=(8,2.5))
-    plt.imshow(box, origin='lower', interpolation='nearest', vmin=vmin, vmax=vmax)
-    plt.plot(x_peaks, y_peaks, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
+    plt.imshow(box, origin='lower', norm=norm, interpolation='nearest', vmin=vmin, vmax=vmax)
+
+    if radius is None: plt.plot(x_peaks, y_peaks, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
+    else:
+
+        positions = (x_peaks, y_peaks)
+        apertures = CircularAperture(positions, r=radius)
+        apertures.plot(color='blue', lw=1.5, alpha=0.5)
+
     plt.xlim(0, box.shape[1]-1)
     plt.ylim(0, box.shape[0]-1)
     plt.title("Data")

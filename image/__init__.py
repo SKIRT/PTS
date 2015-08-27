@@ -648,6 +648,9 @@ class Image(object):
         # For each active frame
         for frame_name in self.frames.get_selected(allow_none=False):
 
+            # Inform the user
+            log.info("Deleting the " + frame_name + " frame")
+
             # Remove this frame from the frames dictionary
             del self.frames[frame_name]
 
@@ -662,6 +665,9 @@ class Image(object):
 
         # For each selected frame
         for frame_name in self.frames.get_selected(allow_none=False):
+
+            # Inform the user
+            log.info("Copying the " + frame_name + " frame as another frame")
 
             # Copy the data and add it as a new frame
             data_copy = np.copy(self.frames[frame_name].data)
@@ -680,6 +686,9 @@ class Image(object):
         # For each active region
         for region_name in self.regions.get_selected(allow_none=False):
 
+            # Inform the user
+            log.info("Deleting the " + region_name + " region")
+
             # Remove this region from the regions dictionary
             del self.regions[region_name]
 
@@ -694,6 +703,9 @@ class Image(object):
 
         # For each active mask
         for mask_name in self.masks.get_selected(allow_none=False):
+
+            # Inform the user
+            log.info("Deleting the " + mask_name + " mask")
 
             # Remove this mask from the masks dictionary
             del self.masks[mask_name]
@@ -766,7 +778,7 @@ class Image(object):
         for frame_name in self.frames.get_selected():
 
             # Inform the user that this frame is being convolved
-            log.info("Convolving " + frame_name + " frame with a 1D Gaussian kernel with a FWHM of " + str(fwhm))
+            log.info("Convolving " + frame_name + " frame with a Gaussian kernel with a FWHM of " + str(fwhm))
 
             # Do the convolution on this frame
             self.frames[frame_name].data = convolve(self.frames[frame_name].data, kernel)
@@ -811,10 +823,10 @@ class Image(object):
         # Inform the user
         log.info("Interpolating the image in the areas covered by the currently selected masks")
 
-        # Combine the active masks
+        # Combine all currently selected masks
         total_mask = self.combine_masks(return_mask=True)
 
-        # Loop over all active frames
+        # Loop over all currently selected frames
         for frame_name in self.frames.get_selected():
 
             # Perform the interpolation on this frame
@@ -844,7 +856,7 @@ class Image(object):
 
             # Inform the user
             log.info("Interpolating the " + frame_name + " frame within the areas covered by the currently "
-                         "selected masks, if enclosed by any of the currently selected regions")
+                     "selected masks, if enclosed by any of the currently selected regions")
 
             # Loop over all shapes
             for shape in region:
@@ -1111,7 +1123,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def fetch_stars(self, name=None, catalog=None, radius=40, return_region=False):
+    def fetch_stars(self, radius, name=None, catalog=None, return_region=False):
 
         """
         This function fetches the positions of astrophysical objects in the image
@@ -1129,7 +1141,7 @@ class Image(object):
         ra_center, dec_center, size_ra_deg, size_dec_deg = self._get_coordinate_range()
 
         # Set the catalog list
-        if catalog is None: catalog = ["UCAC", "NOMAD"]
+        if catalog is None: catalog = ["UCAC4", "NOMAD"] # or PPMXL?
 
         # Search for stars
         box = (ra_center, dec_center, size_ra_deg, size_dec_deg)
@@ -1252,6 +1264,9 @@ class Image(object):
         # Get the name of the active frame
         frame_name = self.frames.get_selected(require_single=True)
 
+        # Inform the user
+        log.info("Modeling stars in the " + frame_name + " frame enclosed by any of the currently selected regions")
+
         # Create a new frame to contain the modeled stars
         stars_frame = np.zeros_like(self.frames[frame_name].data)
 
@@ -1295,7 +1310,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def find_stars(self, plot=False, plot_custom=[False, False, False, False]):
+    def find_stars(self, plot=False, plot_custom=[False, False, False, False], method="peaks", initial_radius=20):
 
         """
         This function searches for stars in the currently selected frame, by fetching star positions from an
@@ -1308,10 +1323,10 @@ class Image(object):
         frame_name = self.frames.get_selected(require_single=True)
 
         # Get the region of objects fetched from the NOMAD stellar catalog and transform it into image coordinates
-        region = self.fetch_stars(catalog="NOMAD", return_region=True).as_imagecoord(self.header)
+        region = self.fetch_stars(initial_radius, catalog="NOMAD", return_region=True).as_imagecoord(self.header)
 
         # Look for sources
-        sources = analysis.find_sources(self.frames[frame_name].data, region, plot=plot_custom)
+        sources = analysis.find_sources_in_region(self.frames[frame_name].data, region, method, plot=plot_custom)
         log.info("Number of sources = " + str(len(sources)))
 
         # Remove duplicates
@@ -1323,13 +1338,21 @@ class Image(object):
         log.info("Number of stars = " + str(len(stars)))
         log.info("Number of unidentified objects = " + str(len(ufos)))
 
-        # Convert to region
-        stars_region = regions.ellipses_from_coordinates(stars)
-        ufos_region = regions.ellipses_from_coordinates(ufos)
+        # Only create a region if any stars were found
+        if len(stars) > 0:
 
-        # Add the stars and ufos regions to the list of regions
-        self._add_region(stars_region, "stars")
-        self._add_region(ufos_region, "ufos")
+            # Convert the list of stars to a region and add it to the list of regions
+            stars_region = regions.ellipses_from_coordinates(stars)
+            self._add_region(stars_region, "stars")
+
+        else: log.warning("No stars could be detected")
+
+        # Only create a region if any unidentified objects were found
+        if len(ufos) > 0:
+
+            # Convert the list of ufos to a region and add it to the list of regions
+            ufos_region = regions.ellipses_from_coordinates(ufos)
+            self._add_region(ufos_region, "ufos")
 
     # *****************************************************************
 
@@ -1382,6 +1405,25 @@ class Image(object):
 
         # Add this frame to the set of frames
         self._add_frame(skyframe, None, "sky")
+
+    # *****************************************************************
+
+    def estimate_background(self, downsample_factor, plot=False):
+
+        # Get the name of the currently selected frame
+        frame_name = self.frames.get_selected(require_single=True)
+
+        # Combine all currently selected masks
+        total_mask = self.combine_masks(return_mask=True)
+
+        # Estimate the background
+        background = interpolation.low_res_interpolation(self.frames[frame_name].data, downsample_factor, mask=total_mask)
+
+        # Plot the difference between the data and the model, if requested
+        if plot: plotting.plot_difference(self.frames[frame_name].data, background)
+
+        # Add the background frame
+        self._add_frame(background, self.frames[frame_name].data, "background")
 
     # *****************************************************************
 

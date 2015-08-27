@@ -16,7 +16,9 @@
 
 # Import standard modules
 import os.path
-import logging
+
+# Import astronomical modules
+from astropy import log
 
 # Import the relevant PTS modules
 import imageutilities as iu
@@ -24,7 +26,7 @@ import imageutilities as iu
 # *****************************************************************
 
 # Define the full-width-half-maxima of the different images (in pixels)
-fwhmax = {"2MASSH":   None, # FIT THIS TO THE STARS!
+fwhmax = {"2MASSH":   None,
           "GALEXFUV": 3.0,
           "Ha":       None,
           "IRAC":     2.5333738673,
@@ -143,10 +145,7 @@ class ImagePreparation(object):
                     break
 
             # If no filtername was specified, add each FITS file found in the data directory to the dictionary
-            else:
-
-                print "here"
-                self.image_paths[base_filename] = os.path.join(self.data_path, filename)
+            else: self.image_paths[base_filename] = os.path.join(self.data_path, filename)
 
             # If intermediate results should be saved, create a seperate directory for each filter
             if self.save:
@@ -187,7 +186,7 @@ class ImagePreparation(object):
             iu.remove_stars(image, determine_fwhm=True, output_path=output_path)
 
             # Subtract the sky
-            if not sky_subtracted[filter_name]: iu.subtract_sky(image, self.galaxy_name, plot=self.plot, output_path=output_path)
+            if not sky_subtracted[filter_name]: iu.subtract_sky(image, self.galaxy_name, plot=self.plot, output_path=output_path, downsample_factor=int(round(2*4*image.fwhm)))
 
             # Convert the units to MJy / sr
             iu.convert_units(image, filter_name, attenuations)

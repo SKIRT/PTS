@@ -8,10 +8,10 @@
 # Import standard modules
 import copy
 import numpy as np
-import logging
 
 # Import astronomical modules
 from astropy.stats import sigma_clip, sigma_clipped_stats
+from astropy import log
 
 # Import image modules
 import tools.general
@@ -121,7 +121,8 @@ def sigma_clip_split(input_list, criterium):
     # Initialize an empty list of widths
     determinants = []
 
-    logging.info("Seperating stars and unidentified objects...")
+    # Inform the user
+    log.info("Seperating stars and unidentified objects...")
 
     # Loop over all the star candidates and calculate their width
     for item in input_list: determinants.append(criterium(item))

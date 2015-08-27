@@ -5,40 +5,40 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.image This module is used for interpolating masked areas in an image
+#  This module is used for interpolating masked areas in an image
 #  It was adapted from the "lib.pyx" module, which can be found at
 #  https://github.com/gasagna/openpiv-python/blob/master/openpiv/src/lib.pyx
 #  written by Davide Lasagna, with slight changes applied described at
 #  http://astrolitterbox.blogspot.be/2012/03/healing-holes-in-arrays-in-python.html
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
 # Import standard modules
 import numpy as np
 
-## This function is used to replace NaN elements in an array using an iterative image inpainting algorithm.
-#  The algorithm is the following:
-#
-#  1) For each element in the input array, replace it by a weighted average
-#     of the neighbouring elements which are not NaN themselves. The weights depends
-#     of the method type. If ``method=localmean`` weight are equal to 1/( (2*kernel_size+1)**2 -1 )
-#
-#  2) Several iterations are needed if there are adjacent NaN elements.
-#     If this is the case, information is "spread" from the edges of the missing
-#     regions iteratively, until the variation is below a certain threshold.
-#
-#  This function takes the following arguments:
-#
-#  - array : 2d np.ndarray
-#            an array containing NaN elements that have to be replaced
-#  - max_iter : int
-#               the number of iterations
-#  - kernel_size : int
-#                  the size of the kernel, default is 1
-#  - method : the method used to replace invalid values. Valid options are "localmean" or
-#             "idw" (inverse distance weighing).
-#
+# *****************************************************************
+
 def replace_nans(array, max_iter, tol, kernel_size=1, method='localmean'):
+
+    """
+    This function is used to replace NaN elements in an array using an iterative image inpainting algorithm.
+    The algorithm is the following:
+    1) For each element in the input array, replace it by a weighted average
+       of the neighbouring elements which are not NaN themselves. The weights depends
+       of the method type. If ``method=localmean`` weight are equal to 1/( (2*kernel_size+1)**2 -1 )
+
+    2) Several iterations are needed if there are adjacent NaN elements.
+      If this is the case, information is "spread" from the edges of the missing
+      regions iteratively, until the variation is below a certain threshold.
+
+    This function takes the following arguments:
+    :param array: 2d np.ndarray; an array containing NaN elements that have to be replaced
+    :param max_iter: int; the number of iterations
+    :param tol:
+    :param kernel_size: int; the size of the kernel, default is 1
+    :param method: the method used to replace invalid values. Valid options are "localmean" or "idw" (inverse distance weighing).
+    :return:
+    """
 
     # Initialize arrays
     filled = np.empty( [array.shape[0], array.shape[1]], dtype=np.float64)
@@ -124,28 +124,24 @@ def replace_nans(array, max_iter, tol, kernel_size=1, method='localmean'):
     
     return filled
 
-## This function re-samples an image at intermediate positions between pixels. It uses a cardinal interpolation
-#  formula which limits the loss of information in the resampling process. It uses a limited number of neighbouring
-#  pixels. The new image \f$im^+\f$ at fractional locations \f$x\f$ and \f$y\f$ is computed as:
-#
-#  \f[
-#  im^+(x,y) = \sum_{i=-\mathtt{kernel\_size}}^{i=\mathtt{kernel\_size}} \sum_{j=-\mathtt{kernel\_size}}^{j=\mathtt{kernel\_size}} \mathtt{image}(i,j)  sin[\pi(i-\mathtt{x})]  sin[\pi(j-\mathtt{y})]  / \pi(i-\mathtt{x}) / \pi(j-\mathtt{y})
-#  \f]
-#
-#  This function takes the following arguments:
-#
-#  - image: np.darray, dtype np.int32, the image array
-#  - x: two dimensions np.ndarray of floats
-#       an array containing fractional pixel row positions at which to interpolate the image
-#  - y: two dimensions np.darray of floats
-#       an array containing fractional pixel column positions at which to interpolate the image
-#  - kernel_size: int, interpolation is performed over a (2*kernel_size+1)*(2*kernel_size+1) submatrix in the
-#                 neighbourhood of each interpolation point.
-#
-#  This function returns im, an np.darray, dtype np.float64: the interpolated value of image at the points specified
-#  by x and y.
-#
+# *****************************************************************
+
 def sincinterp(image, x, y, kernel_size=3 ):
+
+    """
+    This function re-samples an image at intermediate positions between pixels. It uses a cardinal interpolation
+    formula which limits the loss of information in the resampling process. It uses a limited number of neighbouring
+    pixels. The new image \f$im^+\f$ at fractional locations \f$x\f$ and \f$y\f$ is computed as:
+    \f[
+    im^+(x,y) = \sum_{i=-\mathtt{kernel\_size}}^{i=\mathtt{kernel\_size}} \sum_{j=-\mathtt{kernel\_size}}^{j=\mathtt{kernel\_size}} \mathtt{image}(i,j)  sin[\pi(i-\mathtt{x})]  sin[\pi(j-\mathtt{y})]  / \pi(i-\mathtt{x}) / \pi(j-\mathtt{y})
+    \f]
+    This function takes the following arguments:
+    :param image: np.darray, dtype np.int32, the image array
+    :param x: two dimensions np.ndarray of floats; an array containing fractional pixel row positions at which to interpolate the image
+    :param y: two dimensions np.darray of floats; an array containing fractional pixel column positions at which to interpolate the image
+    :param kernel_size: int, interpolation is performed over a (2*kernel_size+1)*(2*kernel_size+1) submatrix in the neighbourhood of each interpolation point.
+    :return: im, an np.darray, dtype np.float64: the interpolated value of image at the points specified by x and y.
+    """
 
     # The output array
     r = np.zeros( [x.shape[0], x.shape[1]], dtype=np.float64)
@@ -173,3 +169,5 @@ def sincinterp(image, x, y, kernel_size=3 ):
 
     # Return the interpolated image
     return r
+
+# *****************************************************************

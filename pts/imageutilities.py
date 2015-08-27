@@ -7,7 +7,6 @@
 
 # Import standard modules
 import os.path
-import logging
 import numpy as np
 
 # Import the Image class
@@ -16,6 +15,7 @@ from image import Image
 # Import astronomical modules
 from astropy import units as u
 from astroquery.irsa_dust import IrsaDust
+from astropy import log
 
 # *****************************************************************
 
@@ -28,7 +28,7 @@ def open(path):
     """
 
     # Inform the user
-    logging.info("Importing image " + path)
+    log.info("Importing image " + path)
 
     # Create the image
     image = Image(path)
@@ -41,7 +41,7 @@ def open(path):
             error_path = os.path.join(os.path.dirname(path), "error", os.path.basename(path))
             image.import_datacube(error_path, "errors")
 
-        except IOError: logging.warning("No error data found for " + path)
+        except IOError: log.warning("No error data found for " + path)
 
     # Return the image
     return image
@@ -81,25 +81,25 @@ def export_region(image, directory, name):
 def print_status(image):
 
     # Print the status of the image frames
-    logging.info("Frames:")
+    log.info("Frames:")
     frames_state = image.frames.get_state()
-    for frame_name, selected in frames_state:
+    for frame_name, selected in frames_state.items():
 
-        logging.info("  " + frame_name + ": " + str(selected))
+        log.info("  " + frame_name + ": " + str(selected))
 
     # Print the status of the image regions
-    logging.info("Regions:")
+    log.info("Regions:")
     regions_state = image.regions.get_state()
-    for region_name, selected in regions_state:
+    for region_name, selected in regions_state.items():
 
-        logging.info("  " + region_name + ": " + str(selected))
+        log.info("  " + region_name + ": " + str(selected))
 
     # Print the status of the image masks
-    logging.info("Masks:")
+    log.info("Masks:")
     masks_state = image.masks.get_state()
-    for mask_name, selected in masks_state:
+    for mask_name, selected in masks_state.items():
 
-        logging.info("  " + region_name + ": " + str(selected))
+        log.info("  " + mask_name + ": " + str(selected))
 
 # *****************************************************************
 
@@ -278,7 +278,7 @@ def remove_stars(image, determine_fwhm=False, region_file=None, plot=False, outp
 
 # *****************************************************************
 
-def subtract_sky(image, galaxy_name, plot=False, output_path=None):
+def subtract_sky(image, galaxy_name, plot=False, output_path=None, downsample_factor=1):
 
     """
     This function subtracts the sky in the image
@@ -336,7 +336,8 @@ def subtract_sky(image, galaxy_name, plot=False, output_path=None):
     image.frames.primary.select()
 
     # Fit the sky with a polynomial function (ignoring pixels covered by any of the selected masks)
-    image.fit_polynomial(plot=True)
+    if downsample_factor == 1: image.fit_polynomial(plot=plot)
+    else: image.estimate_background(downsample_factor=downsample_factor, plot=plot)
 
     # Select the new frame and deselect all masks
     image.frames.deselect_all()
@@ -494,11 +495,11 @@ def conversionfactorFUV(image, attenuation):
     pixelfactor = (206264.806247 / pixelscale)**2
     factor = 1.4e-15 * spectralfactor * 1e17 * pixelfactor
 
-    logging.info("Converting units with factor = " + str(factor))
+    log.info("Converting units with factor = " + str(factor))
 
     factor2 = 10**(0.4*attenuation)
 
-    logging.info("Correcting for galactic extinction with factor = " + str(factor2))
+    log.info("Correcting for galactic extinction with factor = " + str(factor2))
 
     # Calculate the total conversion factor
     totalfactor = factor * factor2
@@ -521,7 +522,7 @@ def conversionfactorP70(image, attenuation):
 
     factor = 1e-6 * pixelfactor
 
-    logging.info("Converting units with factor = " + str(factor))
+    log.info("Converting units with factor = " + str(factor))
 
     return factor
 
@@ -535,11 +536,11 @@ def conversionfactorH(image, attenuation):
 
     factor = 10e-6 * pixelfactor
 
-    logging.info("Converting units with factor = " + str(factor))
+    log.info("Converting units with factor = " + str(factor))
 
     factor2 = 10**(0.4*attenuation)
 
-    logging.info("Correcting for galactic extinction with factor = " + str(factor2))
+    log.info("Correcting for galactic extinction with factor = " + str(factor2))
 
     # Calculate the total conversion factor
     totalfactor = factor * factor2
@@ -556,7 +557,7 @@ def conversionfactorP160(image, attenuation):
 
     factor = 1e-6 * pixelfactor
 
-    logging.info("Converting units with factor = " + str(factor))
+    log.info("Converting units with factor = " + str(factor))
 
     return factor
 
@@ -579,11 +580,11 @@ def conversionfactorHa(image, attenuation):
 
     factor = 1e23 * 1e-6 * pixelfactor / frequency
 
-    logging.info("Converting units with factor = " + str(factor))
+    log.info("Converting units with factor = " + str(factor))
 
     factor2 = 10**(0.4*attenuation)
 
-    logging.info("Correcting for galactic extinction with factor = " + str(factor2))
+    log.info("Correcting for galactic extinction with factor = " + str(factor2))
 
     # Calculate the total conversion factor
     totalfactor = factor * factor2

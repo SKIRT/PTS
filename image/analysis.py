@@ -7,7 +7,6 @@
 
 # Import standard modules
 import numpy as np
-import logging
 from scipy import ndimage
 
 # Import image modules
@@ -20,34 +19,22 @@ from tools import coordinates, cropping, interpolation
 # Import astronomical modules
 from photutils import find_peaks
 from find_galaxy import FindGalaxy
+from astropy import log
+from astropy.convolution import Gaussian2DKernel
+from astropy.stats import gaussian_fwhm_to_sigma
+from photutils import detect_sources
+from photutils import daofind
+from astropy.stats import sigma_clipped_stats
 
 # *****************************************************************
 
-def locate_peaks(data, sigma=3.0):
-
-    """
-    This function looks for peaks in the given frame
-    :param data:
-    :param sigma:
-    :return:
-    """
-
-    # Calculate the sigma-clipped statistics of the frame and find the peaks
-    mean, median, stddev = statistics.sigma_clipped_statistics(data, sigma=3.0)
-    threshold = median + (7.0 * stddev)
-    peaks = find_peaks(data, threshold, box_size=5)
-
-    # Return the list of peaks
-    return peaks, median
-
-# *****************************************************************
-
-def find_sources(data, region, plot):
+def find_sources_in_region(data, region, method, plot=False):
 
     """
     This function searches for sources within a given frame and a region of ellipses
     :param data:
     :param region:
+    :param method: "peaks", "segmentation", "dao", "iraf"
     :param plot:
     :return:
     """
@@ -56,7 +43,7 @@ def find_sources(data, region, plot):
     sources = []
 
     # Inform the user
-    logging.info("Looking for sources...")
+    log.info("Looking for sources...")
 
     # For each object, determine the minimal enclosing box
     for x_min, x_max, y_min, y_max in regions.get_enclosing_boxes(region):
@@ -70,14 +57,105 @@ def find_sources(data, region, plot):
         # If the box is too small, skip this object
         if box.shape[0] < 5 or box.shape[1] < 5: continue
 
-        # Find peaks
-        peaks, median = locate_peaks(box)
+        # Find the location of sources (peaks)
+        if method == "peaks": peaks, median = locate_sources_peaks(box)
+        elif method == "segmentation": peaks, median = locate_sources_segmentation(box)
+        elif method == "dao": peaks, median = locate_sources_daofind(box)
+        elif method == "iraf": peaks, median = locate_sources_iraf(box)
+        elif method == "all":
+
+            peaks, median = locate_sources_peaks(box)
+            peaks1, median1 = locate_sources_daofind(box)
+
+            peaks += peaks1
+            median = np.mean(median, median1)
+
+        else: raise ValueError("Unknown source extraction method")
 
         # Find sources
         sources += find_sources_peaks(box-median, peaks, plot=plot, x_shift=x_min, y_shift=y_min)
 
     # Return the list of sources
     return sources
+
+# *****************************************************************
+
+def locate_sources_peaks(data, threshold_sigmas=7.0):
+
+    """
+    This function looks for peaks in the given frame
+    :param data:
+    :param sigma:
+    :return:
+    """
+
+    # Calculate the sigma-clipped statistics of the frame and find the peaks
+    mean, median, stddev = statistics.sigma_clipped_statistics(data, sigma=3.0)
+    threshold = median + (threshold_sigmas * stddev)
+    peaks = find_peaks(data, threshold, box_size=5)
+
+    # Return the list of peaks
+    return peaks, median
+
+# *****************************************************************
+
+def locate_sources_daofind(data, threshold_sigmas=5.0, plot=False):
+
+    """
+    This function ...
+    :param data:
+    :return:
+    """
+
+    # Calculate the sigma-clipped statistics of the data
+    mean, median, std = sigma_clipped_stats(data, sigma=3.0)
+
+    result_table = daofind(data - median, fwhm=3.0, threshold=threshold_sigmas*std)
+
+    result_table.rename_column('xcentroid', 'x_peak')
+    result_table.rename_column('ycentroid', 'y_peak')
+
+    # If requested, make a plot with the source(s) indicated
+    if plot: plotting.plot_peaks(data, result_table['x_peak'], result_table['y_peak'], radius=4.0)
+
+    # Return the list of source positions
+    return result_table, median
+
+# *****************************************************************
+
+def locate_sources_iraf(data):
+
+    """
+    This function ...
+    :param data:
+    :return:
+    """
+
+    pass
+
+# *****************************************************************
+
+def locate_sources_segmentation(data):
+
+    """
+    This function ...
+    :param data:
+    :return:
+    """
+
+    sigma = 4.0 * gaussian_fwhm_to_sigma
+
+    kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
+
+    frame_name = self.frames.get_selected(require_single=True)
+
+    from photutils import detect_threshold
+
+    total_mask = self.combine_masks(return_mask=True)
+
+    threshold = detect_threshold(self.frames[frame_name].data, snr=3., mask=total_mask)
+
+    segm = detect_sources(self.frames[frame_name].data, threshold, npixels=5, filter_kernel=kernel)
 
 # *****************************************************************
 
@@ -167,13 +245,13 @@ def find_sources_nopeak(box, x_min, y_min, plot=False):
     # Skip non-stars (negative amplitudes)
     if amplitude < 0:
 
-        logging.warning("negative amplitude")
+        log.warning("Source profile has negative amplitude")
         return []
 
     # If the center of the Gaussian falls out of the square, skip this star
     if round(x_mean) < 0 or round(x_mean) >= box.shape[0] - 1 or round(y_mean) < 0 or round(y_mean) >= box.shape[1] - 1:
 
-        logging.warning("out of box")
+        log.warning("Center of source profile lies outside of the region where it was expected")
         return []
 
     # Determine the coordinates of the center pixel of the box
@@ -469,7 +547,7 @@ def remove_duplicate_sources(sources):
     """
 
     # Inform the user
-    logging.info("Removing duplicates...")
+    log.info("Removing duplicates...")
 
     # Initialize a list that only contains unique sources
     unique_sources = []
@@ -558,6 +636,9 @@ def make_star_model(shape, data, annuli_mask, fit_mask, background_outer_sigmas,
 
     # Cut out a box of selected frame around the star
     star, x_min, x_max, y_min, y_max = cropping.crop(data, x_center, y_center, x_radius_fitting, y_radius_fitting)
+
+    # If the cropped region contains only one pixel row or column, a star model cannot be made
+    if star.shape[0] == 1 or star.shape[1] == 1: return False, shape, None, None
 
     # Cut out the mask for fitting
     star_mask = fit_mask[y_min:y_max, x_min:x_max]
@@ -658,7 +739,7 @@ def find_galaxy_orientation(data, region, plot=False):
         orientation.xpeak += y_min
 
         if not np.isclose(x_position, orientation.ypeak, rtol=0.02) or not np.isclose(y_position, orientation.xpeak, rtol=0.02):
-            logging.warning("Could not find a galaxy at the specified position")
+            log.warning("Could not find a galaxy at the specified position")
 
     # Return the parameters of the galaxy
     return (orientation.ypeak, orientation.xpeak, width, height, orientation.theta)
