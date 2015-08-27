@@ -16,6 +16,7 @@ from astropy.modeling import models, fitting
 # Import image modules
 import tools.general
 
+# Import other relevant PTS modules
 from pts import mathematics
 
 # *****************************************************************
@@ -293,7 +294,14 @@ def fit_2D_Gaussian(box, center=None, fixed_center=False, deviation_center=None,
     with warnings.catch_warnings():
 
         warnings.simplefilter('ignore')
-        gaussian = fit_model(gaussian_init, x_values, y_values, z_values)  # What comes out is the model with the parameters set
+        try:
+            gaussian = fit_model(gaussian_init, x_values, y_values, z_values)  # What comes out is the model with the parameters set
+        except TypeError:
+
+            print box.shape
+            print mask.shape
+            import plotting
+            plotting.plot_box(np.ma.masked_array(data=box, mask=mask))
 
     # Fix negative sigmas
     if gaussian.x_stddev.value < 0: gaussian.x_stddev.value = -gaussian.x_stddev.value
