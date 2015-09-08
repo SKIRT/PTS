@@ -1123,7 +1123,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def fetch_stars(self, radius, name=None, catalog=None, return_region=False, column_filters=None):
+    def fetch_stars(self, radius, name=None, catalog=["UCAC4"], return_region=False, column_filters=None):
 
         """
         This function fetches the positions of astrophysical objects in the image
@@ -1134,14 +1134,13 @@ class Image(object):
         :return:
         """
 
+        # Possible catalogs: "UCAC4", "NOMAD", "PPMXL" ? or combinations
+
         # Inform the user
         log.info("Fetching star positions from an online catalog...")
 
         # Get the range of RA and DEC of this image
         ra_center, dec_center, size_ra_deg, size_dec_deg = self._get_coordinate_range()
-
-        # Set the catalog list
-        if catalog is None: catalog = ["UCAC4", "NOMAD"] # or PPMXL?
 
         # Search for stars
         radius_in_arcsec = radius * self.pixelscale
@@ -1315,7 +1314,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def find_stars(self, plot=False, plot_custom=[False, False, False, False], catalog="UCAC4", detection_method="peaks", initial_radius=10.0):
+    def find_stars(self, plot=False, plot_custom=[False, False, False, False], catalog="UCAC4", detection_method="peaks", initial_radius=10.0, in_region=False, split_sigma=None):
 
         """
         This function searches for stars in the currently selected frame, by fetching star positions from an
@@ -1328,7 +1327,8 @@ class Image(object):
         frame_name = self.frames.get_selected(require_single=True)
 
         # Get the region of objects fetched from the NOMAD stellar catalog and transform it into image coordinates
-        region = self.fetch_stars(initial_radius, catalog=catalog, return_region=True).as_imagecoord(self.header)
+        if in_region: region = self.combine_regions(allow_none=False)
+        else: region = self.fetch_stars(initial_radius, catalog=catalog, return_region=True).as_imagecoord(self.header)
 
         # Look for sources
         sources = analysis.find_sources_in_region(self.frames[frame_name].data, region, detection_method, plot=plot, plot_custom=plot_custom)
@@ -1339,9 +1339,16 @@ class Image(object):
         log.info("Number of unique sources = " + str(len(unique_sources)))
 
         # Split the unique sources into stars and unidentified objects
-        stars, ufos = statistics.sigma_clip_split(unique_sources, lambda source: general.average_stddev(source))
-        log.info("Number of stars = " + str(len(stars)))
-        log.info("Number of unidentified objects = " + str(len(ufos)))
+        if split_sigma is None:
+
+            stars = unique_sources
+            ufos = []
+
+        else:
+
+            stars, ufos = statistics.sigma_clip_split(unique_sources, lambda source: general.average_stddev(source), sigma=split_sigma)
+            log.info("Number of stars = " + str(len(stars)))
+            log.info("Number of unidentified objects = " + str(len(ufos)))
 
         # Only create a region if any stars were found
         if len(stars) > 0:
@@ -1428,7 +1435,7 @@ class Image(object):
         if plot: plotting.plot_difference(self.frames[frame_name].data, background)
 
         # Add the background frame
-        self._add_frame(background, self.frames[frame_name].data, "background")
+        self._add_frame(background, self.frames[frame_name].coordinates, "background")
 
     # *****************************************************************
 
@@ -1694,8 +1701,8 @@ class Image(object):
         size_ra_deg = self.xsize * pixelscale_deg
 
         # Check whether the two different ways of calculating the RA width result in approximately the same value
-        assert np.isclose(ra_distance, size_ra_deg, rtol=0.01), "The coordinate system and pixel scale do not match"
-        assert np.isclose(dec_distance, size_dec_deg, rtol=0.01), "The coordinate system and pixel scale do not match"
+        assert np.isclose(ra_distance, size_ra_deg, rtol=0.02), "The coordinate system and pixel scale do not match"
+        assert np.isclose(dec_distance, size_dec_deg, rtol=0.02), "The coordinate system and pixel scale do not match"
 
         # Return ...
         return (ra_center, dec_center, size_ra_deg, size_dec_deg)
