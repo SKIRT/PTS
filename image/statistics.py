@@ -109,7 +109,7 @@ def sigma_clipped_statistics(data, sigma=3.0, mask=None):
 
 # *****************************************************************
 
-def sigma_clip_split(input_list, criterium):
+def sigma_clip_split(input_list, criterium, sigma=3.0):
 
     """
     This function ...
@@ -128,7 +128,7 @@ def sigma_clip_split(input_list, criterium):
     for item in input_list: determinants.append(criterium(item))
 
     # Use sigma clipping to seperate stars and unidentified objects
-    mask = sigma_clip_mask_list(determinants, sigma=3.0)
+    mask = sigma_clip_mask_list(determinants, sigma=sigma)
 
     # Create a seperate list for the stars and for the ufos
     valid_list = []

@@ -101,11 +101,8 @@ def get_enclosing_box(shape):
 
     # TODO: make it work for shapes other than ellipses!
 
-    # Get the parameters of this ellipse
-    x_center = shape.coord_list[0]
-    y_center = shape.coord_list[1]
-    x_radius = shape.coord_list[2]
-    y_radius = shape.coord_list[3]
+    # Get the parameters of this ellipse (or circle)
+    x_center, y_center, x_radius, y_radius = ellipse_parameters(shape)
 
     # Create a box to estimate the background
     x_min = int(round(x_center - x_radius))
@@ -148,7 +145,7 @@ def get_enclosing_boxes(region):
 
 # *****************************************************************
 
-def create_annulus(self, region, outer_factor, inner_factor=1.0):
+def create_annulus(region, outer_factor, inner_factor=1.0):
 
     """
     This function ...
@@ -211,7 +208,7 @@ def expand(region, factor):
 
         # Set the size of the new shape
         expanded_shape.coord_list[2] *= factor
-        expanded_shape.coord_list[3] *= factor
+        if shape.name == "ellipse": expanded_shape.coord_list[3] *= factor
 
         # Add the new shape to the new region
         region_expanded.append(expanded_shape)
