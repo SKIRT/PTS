@@ -16,7 +16,7 @@ from photutils import CircularAperture
 
 # *****************************************************************
 
-def plot_box(box):
+def plot_box(box, title=None):
 
     """
     This function ...
@@ -33,7 +33,8 @@ def plot_box(box):
     plt.imshow(box, origin='lower', interpolation='nearest', vmin=vmin, vmax=vmax)
     plt.xlim(0, box.shape[1]-1)
     plt.ylim(0, box.shape[0]-1)
-    plt.title("Data")
+
+    if title is not None: plt.title(title)
 
     plt.show()
 
@@ -88,7 +89,7 @@ def plot_peak_model(box, x_peak, y_peak, model):
 
 # *****************************************************************
 
-def plot_peaks(box, x_peaks, y_peaks, radius=None):
+def plot_peaks(box, x_peaks, y_peaks, radius=None, title=None):
 
     """
     This function plots the data with peaks marked ...
@@ -114,11 +115,13 @@ def plot_peaks(box, x_peaks, y_peaks, radius=None):
 
         positions = (x_peaks, y_peaks)
         apertures = CircularAperture(positions, r=radius)
-        apertures.plot(color='blue', lw=1.5, alpha=0.5)
+        apertures.plot(color='green', lw=1.5, alpha=0.5)
 
     plt.xlim(0, box.shape[1]-1)
     plt.ylim(0, box.shape[0]-1)
-    plt.title("Data")
+
+    if title is not None: plt.title(title)
+
     plt.show()
 
 # *****************************************************************

@@ -1123,7 +1123,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def fetch_stars(self, radius, name=None, catalog=None, return_region=False):
+    def fetch_stars(self, radius, name=None, catalog=None, return_region=False, column_filters=None):
 
         """
         This function fetches the positions of astrophysical objects in the image
@@ -1144,8 +1144,13 @@ class Image(object):
         if catalog is None: catalog = ["UCAC4", "NOMAD"] # or PPMXL?
 
         # Search for stars
+        radius_in_arcsec = radius * self.pixelscale
         box = (ra_center, dec_center, size_ra_deg, size_dec_deg)
-        region = catalogs.fetch_objects_in_box(box, catalog, ["optical", "stars"], radius, column_filters={"Vmag":"<19"})
+        if column_filters is None: region = catalogs.fetch_objects_in_box(box, catalog, ["stars"], radius_in_arcsec)
+        else: region = catalogs.fetch_objects_in_box(box, catalog, ["optical", "stars"], radius_in_arcsec, column_filters={"Vmag":"<20"})
+
+        # Inform the user
+        log.info("Found " + str(len(region)) + " entries")
 
         # Set the name of the new region
         name = name if name is not None else "stars"
@@ -1310,7 +1315,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def find_stars(self, plot=False, plot_custom=[False, False, False, False], method="peaks", initial_radius=20):
+    def find_stars(self, plot=False, plot_custom=[False, False, False, False], catalog="UCAC4", detection_method="peaks", initial_radius=10.0):
 
         """
         This function searches for stars in the currently selected frame, by fetching star positions from an
@@ -1323,10 +1328,10 @@ class Image(object):
         frame_name = self.frames.get_selected(require_single=True)
 
         # Get the region of objects fetched from the NOMAD stellar catalog and transform it into image coordinates
-        region = self.fetch_stars(initial_radius, catalog="NOMAD", return_region=True).as_imagecoord(self.header)
+        region = self.fetch_stars(initial_radius, catalog=catalog, return_region=True).as_imagecoord(self.header)
 
         # Look for sources
-        sources = analysis.find_sources_in_region(self.frames[frame_name].data, region, method, plot=plot_custom)
+        sources = analysis.find_sources_in_region(self.frames[frame_name].data, region, detection_method, plot=plot, plot_custom=plot_custom)
         log.info("Number of sources = " + str(len(sources)))
 
         # Remove duplicates

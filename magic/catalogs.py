@@ -34,8 +34,10 @@ def fetch_objects_in_box(box, catalog, keywords, radius, limit=None, column_filt
     coordinate = coord.SkyCoord(ra=box[0], dec=box[1], unit=(u.deg, u.deg), frame='fk5') # frame: icrs, fk5... ?
 
     # Make a Vizier object
-    viz = Vizier(columns=['_RAJ2000', '_DEJ2000','B-V', 'Vmag', 'Plx'], column_filters=column_filters, keywords=keywords)
-    #viz = Vizier(columns=['_RAJ2000', '_DEJ2000'], keywords=keywords)
+    if column_filters is None:
+        viz = Vizier(columns=['_RAJ2000', '_DEJ2000','B-V', 'Vmag', 'Plx'], keywords=keywords)
+    else:
+        viz = Vizier(columns=['_RAJ2000', '_DEJ2000','B-V', 'Vmag', 'Plx'], column_filters=column_filters, keywords=keywords)
 
     # No limit on the number of entries
     viz.ROW_LIMIT = limit if limit is not None else -1
@@ -60,6 +62,7 @@ def fetch_objects_in_box(box, catalog, keywords, radius, limit=None, column_filt
 
             # Create a string with the coordinates of the star
             regline = "fk5;circle(%s,%s,%.2f\")\n" % (ra, dec, radius)
+            #regline = "image;circle(%s,%s,%s)\n" % (ra, dec, radius)
 
             # Add the parameters of this star to the region string
             region_string += regline
