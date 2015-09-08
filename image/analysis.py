@@ -8,15 +8,18 @@
 # Import standard modules
 import numpy as np
 from scipy import ndimage
+import copy
 
 # Import image modules
 import fitting
 import plotting
 import regions
 import statistics
+import masks
 from tools import coordinates, cropping, interpolation
 
 # Import astronomical modules
+from astropy.table import Table
 from photutils import find_peaks
 from find_galaxy import FindGalaxy
 from astropy import log
@@ -28,7 +31,7 @@ from astropy.stats import sigma_clipped_stats
 
 # *****************************************************************
 
-def find_sources_in_region(data, region, method, plot=False):
+def find_sources_in_region(data, region, detection_method, plot=False, plot_custom=[False, False, False, False]):
 
     """
     This function searches for sources within a given frame and a region of ellipses
@@ -45,42 +48,161 @@ def find_sources_in_region(data, region, method, plot=False):
     # Inform the user
     log.info("Looking for sources...")
 
-    # For each object, determine the minimal enclosing box
-    for x_min, x_max, y_min, y_max in regions.get_enclosing_boxes(region):
+    # Loop over all objects
+    for shape in region:
 
-        # Cut out a box of the primary image around the star
-        box, x_min, x_max, y_min, y_max = cropping.crop_direct(data, x_min, x_max, y_min, y_max)
+        # Find a source
+        source = find_source_in_shape(data, shape, detection_method, level=0, plot=plot, plot_custom=plot_custom)
 
-        # If the frame is zero in this box, continue to the next object
-        if not np.any(box): continue
-
-        # If the box is too small, skip this object
-        if box.shape[0] < 5 or box.shape[1] < 5: continue
-
-        # Find the location of sources (peaks)
-        if method == "peaks": peaks, median = locate_sources_peaks(box)
-        elif method == "segmentation": peaks, median = locate_sources_segmentation(box)
-        elif method == "dao": peaks, median = locate_sources_daofind(box)
-        elif method == "iraf": peaks, median = locate_sources_iraf(box)
-        elif method == "all":
-
-            peaks, median = locate_sources_peaks(box)
-            peaks1, median1 = locate_sources_daofind(box)
-
-            peaks += peaks1
-            median = np.mean(median, median1)
-
-        else: raise ValueError("Unknown source extraction method")
-
-        # Find sources
-        sources += find_sources_peaks(box-median, peaks, plot=plot, x_shift=x_min, y_shift=y_min)
+        # If a source was found, add it to the list of sources
+        if source is not None: sources.append(source)
 
     # Return the list of sources
     return sources
 
 # *****************************************************************
 
-def locate_sources_peaks(data, threshold_sigmas=7.0):
+def find_source_in_shape(data, shape, detection_method, level, min_level=-2, max_level=2, aid_detection_by_removing_gradient=True, peak_offset_tolerance=3.0, plot=False, plot_custom=[False, False, False, False]):
+
+    """
+    This function ...
+    :param data:
+    :param shape:
+    :param detection_method:
+    :param plot:
+    :return:
+    """
+
+    if level < min_level or level > max_level: return None
+
+    # Find the parameters of this ellipse (or circle)
+    x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
+
+    # Cut out a box of the primary image around the star
+    box, x_min, x_max, y_min, y_max = cropping.crop(data, x_center, y_center, x_radius, y_radius)
+
+    # If the frame is zero in this box, continue to the next object
+    if not np.any(box): return None
+
+    # If the box is too small, skip this object
+    if box.shape[0] < 5 or box.shape[1] < 5: return None
+
+    # Find the location of sources (peaks)
+    # TODO: find peaks only within the shape, instead of the entire box cut around the shape
+    positions = find_source_positions(box, detection_method, x_shift=x_min, y_shift=y_min, plot=False)
+
+    # If no sources could be detected, remove a potential background gradient from the box before detection
+    if len(positions) == 0 and aid_detection_by_removing_gradient:
+
+        if plot_custom[0]: plotting.plot_box(box, title="0 peaks")
+
+        # Create a central mask that covers the expected source
+        central_radius = 5.0
+        central_mask = np.zeros_like(box, dtype=bool)
+        central_mask[int(round(box.shape[0]/2.0-central_radius)):int(round(box.shape[0]/2.0+central_radius)),int(round(box.shape[1]/2.0-central_radius)):int(round(box.shape[1]/2.0+central_radius))] = True
+
+        # Fit a polynomial to the background
+        poly = fitting.fit_polynomial(box, 3, mask=central_mask)
+        polynomial_box = fitting.evaluate_model(poly, 0, box.shape[1], 0, box.shape[0])
+
+        if plot_custom[0]: plotting.plot_difference_model(box, poly)
+
+        # Detect source positions with the background gradient removed
+        positions = find_source_positions(box-polynomial_box, detection_method, x_shift=x_min, y_shift=y_min, plot=False)
+
+        if plot_custom[0]: plotting.plot_peaks(box, positions['x_peak']-x_min, positions['y_peak']-y_min, title=str(len(positions))+" peak(s) found after removing gradient background")
+
+    # If no sources were detected
+    if len(positions) == 0:
+
+        if plot_custom[1]: plotting.plot_box(box, title="0 peaks")
+
+        if level < 0: return None
+
+        new_shape = regions.scale_circle(shape, 2.0)
+        return find_source_in_shape(data, new_shape, detection_method, level=level+1, min_level=min_level, max_level=max_level, plot=plot, plot_custom=[plot_custom[1],plot_custom[1],plot_custom[1],plot_custom[1]])
+
+    # If one source was detected
+    elif len(positions) == 1:
+
+        if plot_custom[2]: plotting.plot_peaks(box, positions['x_peak'], positions['y_peak'], title="1 peak")
+
+        # Create the mask to estimate the background in the box
+        background_inner_factor = 1.0
+        background_outer_factor = 1.5
+        fit_factor = 1.0
+        sigma_clip_background = False
+
+        # Get the x and y coordinate of the peak
+        x_peak = positions['x_peak'][0]
+        y_peak = positions['y_peak'][0]
+
+        # TODO: check that peak position corresponds with center of shape
+        if not (np.isclose(x_peak, x_center, atol=peak_offset_tolerance) and np.isclose(y_peak, y_center, atol=peak_offset_tolerance)):
+
+            log.warning("Peak position and shape center do not match")
+
+            #print x_peak, x_center, (x_peak-x_center), (x_peak-x_center)/x_center
+            #print y_peak, y_center, (y_peak-y_center), (y_peak-y_center)/y_center
+
+            #plotting.plot_peaks(box, positions['x_peak']-x_min, positions['y_peak']-y_min, title="Peak and shape do not match")
+            return None
+
+        # Try to fit a Gaussian model to the data within the shape
+        source = make_gaussian_star_model(shape, data, x_peak, y_peak, background_inner_factor, background_outer_factor,
+                                          fit_factor, "polynomial", peak_offset_tolerance,
+                                          sigma_clip_background=sigma_clip_background, upsample_factor=1.0,
+                                          use_shape_or_peak="peak", plot=plot)
+
+        return source
+
+    # If more than one source was detected
+    elif len(positions) > 1:
+
+        if plot_custom[3]: plotting.plot_peaks(box, positions['x_peak'], positions['y_peak'], title="more peaks")
+
+        if level > 0: return None
+
+        new_shape = regions.scale_circle(shape, 0.5)
+        return find_source_in_shape(data, new_shape, detection_method, level=level-1, min_level=min_level, max_level=max_level, plot=plot, plot_custom=[plot_custom[3],plot_custom[3],plot_custom[3],plot_custom[3]])
+
+# *****************************************************************
+
+def find_source_positions(data, detection_method, x_shift=0.0, y_shift=0.0, plot=False):
+
+    """
+    This function ...
+    :param data:
+    :param detection_method:
+    :param x_shift:
+    :param y_shift:
+    :param plot:
+    :return:
+    """
+
+    if detection_method == "peaks": peaks, median = locate_sources_peaks(data, plot=plot)
+    elif detection_method == "segmentation": peaks, median = locate_sources_segmentation(data)
+    elif detection_method == "dao": peaks, median = locate_sources_daofind(data, plot=plot)
+    elif detection_method == "iraf": peaks, median = locate_sources_iraf(data)
+    elif detection_method == "all":
+
+        peaks, median = locate_sources_peaks(data)
+        peaks1, median1 = locate_sources_daofind(data)
+
+        peaks += peaks1
+        median = np.mean(median, median1)
+
+    #elif detection_method is None: pass
+    else: raise ValueError("Unknown source extraction method")
+
+    peaks['x_peak'] += x_shift
+    peaks['y_peak'] += y_shift
+
+    return peaks
+
+# *****************************************************************
+
+def locate_sources_peaks(data, threshold_sigmas=7.0, plot=False):
 
     """
     This function looks for peaks in the given frame
@@ -93,6 +215,12 @@ def locate_sources_peaks(data, threshold_sigmas=7.0):
     mean, median, stddev = statistics.sigma_clipped_statistics(data, sigma=3.0)
     threshold = median + (threshold_sigmas * stddev)
     peaks = find_peaks(data, threshold, box_size=5)
+
+    # For some reason, once in a while, an ordinary list comes out of the find_peaks routine instead of an Astropy Table instance. We assume we need an empty table in this case
+    if type(peaks) is list: peaks = Table([[], []], names=('x_peak', 'y_peak'))
+
+    # If requested, make a plot with the source(s) indicated
+    if plot and len(peaks) > 0: plotting.plot_peaks(data, peaks['x_peak'], peaks['y_peak'])
 
     # Return the list of peaks
     return peaks, median
@@ -273,7 +401,7 @@ def find_sources_nopeak(box, x_min, y_min, plot=False):
 
 # *****************************************************************
 
-def find_sources_1peak(box, x_peak, y_peak, x_min, y_min, plot=False):
+def find_sources_1peak(box, x_peak, y_peak, x_min, y_min, center_offset_tolerance=None, plot=False):
 
     """
     This function searches for sources ...
@@ -286,6 +414,9 @@ def find_sources_1peak(box, x_peak, y_peak, x_min, y_min, plot=False):
     :return:
     """
 
+    #print x_peak, y_peak
+    #print box.shape
+
     # Initiate an empty list of stars
     sources = []
 
@@ -293,7 +424,7 @@ def find_sources_1peak(box, x_peak, y_peak, x_min, y_min, plot=False):
     if box.shape[0] < 5 or box.shape[1] < 5: return []
 
     # Fit a 2D Gaussian to the data
-    model = fitting.fit_2D_Gaussian(box, center=(x_peak, y_peak))
+    model = fitting.fit_2D_Gaussian(box, center=(x_peak, y_peak), deviation_center=center_offset_tolerance)
 
     # Get the parameters of the Gaussian function
     amplitude = model.amplitude
@@ -303,13 +434,14 @@ def find_sources_1peak(box, x_peak, y_peak, x_min, y_min, plot=False):
     # Skip non-stars (negative amplitudes)
     if amplitude < 0:
 
-        #print "negative amplitude"
+        log.warning("Source profile has negative amplitude")
         return []
 
     # If the center of the Gaussian falls out of the square, skip this star
     if round(x_mean) < 0 or round(x_mean) >= box.shape[0] - 1 or round(y_mean) < 0 or round(y_mean) >= box.shape[1] - 1:
 
-        #print "out of box"
+        log.warning("Center of source profile lies outside of the region where it was expected")
+        #plotting.plot_peak_model(box, x_peak, y_peak, model)
         return []
 
     # Check if the center of the Gaussian corresponds to the position of the detected peak
@@ -317,6 +449,8 @@ def find_sources_1peak(box, x_peak, y_peak, x_min, y_min, plot=False):
     diff_y = y_mean - y_peak
 
     distance = np.sqrt(diff_x**2+diff_y**2)
+
+    plot=True
 
     # Check whether the position of the model and the peak are in agreement
     if distance < 1.5: # Potential star detected!
@@ -594,6 +728,99 @@ def estimate_background(data, mask, interpolate=True, sigma_clip=True):
 
     # Return the background
     return background, mask
+
+# *****************************************************************
+
+def make_gaussian_star_model(shape, data, x_peak, y_peak, background_inner_factor, background_outer_factor, fit_factor,
+                             background_est_method, center_offset_tolerance, sigma_clip_background=True,
+                             upsample_factor=1.0, use_shape_or_peak="peak", plot=False):
+
+    """
+    This function ...
+    :param shape:
+    :param data:
+    :param background_outer_factor:
+    :param fit_factor:
+    :param background_est_method: 'median', 'interpolation' or 'polynomial'
+    :param sigma_clip_background:
+    :param plot:
+    :return:
+    """
+
+    # Find the parameters of this ellipse (or circle)
+    x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
+
+    # Create a mask that
+    annulus_mask = masks.annulus_around(shape, background_inner_factor, background_outer_factor, data.shape[1], data.shape[0])
+
+    # Set the radii for cutting out the background box
+    radius = 0.5*(x_radius + y_radius)
+    x_radius_outer = background_outer_factor*x_radius
+    y_radius_outer = background_outer_factor*y_radius
+
+    # Cut out the background and the background mask
+    background, x_min_back, x_max_back, y_min_back, y_max_back = cropping.crop(data, x_center, y_center, x_radius_outer, y_radius_outer)
+    background_mask = cropping.crop_check(annulus_mask, x_min_back, x_max_back, y_min_back, y_max_back)
+
+    # Estimate the background
+    if background_est_method == "median":
+
+        pass
+
+    elif background_est_method == "mean":
+
+        pass
+
+    if background_est_method == "polynomial":
+
+        #background_mask_beforeclipping = np.copy(background_mask)
+        poly = fitting.fit_polynomial(background, 3, mask=background_mask, sigma_clip_background=sigma_clip_background)
+        est_background = fitting.evaluate_model(poly, 0, background.shape[1], 0, background.shape[0])
+
+    elif background_est_method == "interpolation":
+
+        #background_mask_beforeclipping = np.copy(background_mask)
+        est_background, background_mask = estimate_background(background, background_mask, interpolate=True, sigma_clip=sigma_clip_background)
+
+    else: raise ValueError("Unknown background estimation method")
+
+    # Cut out a box of the primary image around the star
+    box, x_min, x_max, y_min, y_max = cropping.crop(data, x_center, y_center, fit_factor*x_radius, fit_factor*y_radius)
+
+    # Crop the interpolated background to the frame of the box
+    box_background = cropping.crop_check(est_background, x_min-x_min_back, x_max-x_min_back, y_min-y_min_back, y_max-y_min_back)
+
+    # Subtract background from the box
+    box = box - box_background
+
+    # Find source
+    if use_shape_or_peak == "shape":
+        x_center_rel, y_center_rel, = coordinates.relative_coordinate(x_center, y_center, x_min, y_min)
+    elif use_shape_or_peak == "peak":
+        x_center_rel, y_center_rel = coordinates.relative_coordinate(x_peak, y_peak, x_min, y_min)
+    else:
+        raise ValueError("Invalid option (should be 'shape' or 'peak')")
+
+    sources = find_sources_1peak(box, x_center_rel, y_center_rel, x_min, y_min, center_offset_tolerance=center_offset_tolerance, plot=False)
+
+    # If a source was found, return it
+    if sources:
+
+        source = sources[0]
+
+        if plot:
+
+            evaluated_model = fitting.evaluate_model(source, x_min, x_max, y_min, y_max)
+            plotting.plot_star_model(background=np.ma.masked_array(background,mask=background_mask),
+                                     background_clipped=np.ma.masked_array(background,mask=background_mask),
+                                     est_background=est_background,
+                                     star=np.ma.masked_array(box, mask=None),
+                                     est_background_star= box_background,
+                                     fitted_star=evaluated_model)
+
+        return source
+
+    else: return None
 
 # *****************************************************************
 

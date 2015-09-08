@@ -82,7 +82,10 @@ def ellipse_parameters(shape):
     x_center = shape.coord_list[0]
     y_center = shape.coord_list[1]
     x_radius = shape.coord_list[2]
-    y_radius = shape.coord_list[3]
+
+    if shape.name == "ellipse": y_radius = shape.coord_list[3]
+    elif shape.name == "circle": y_radius = shape.coord_list[2]
+    else: raise ValueError("Shape must be either a circle or an ellipse")
     
     return x_center, y_center, x_radius, y_radius
 
@@ -290,5 +293,14 @@ def parse(region_string):
 
     # Parse the region string and create a region
     return pyregion.parse(region_string)
+
+# *****************************************************************
+
+def scale_circle(shape, factor):
+
+    new_shape = copy.deepcopy(shape)
+    new_shape.coord_list[2] *= factor
+
+    return new_shape
 
 # *****************************************************************

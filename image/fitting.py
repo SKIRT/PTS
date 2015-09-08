@@ -89,7 +89,7 @@ def fit_polynomial_evaluate(box, degree, mask=None):
 
 # *****************************************************************
 
-def fit_polynomial(box, degree, x_shift=0.0, y_shift=0.0, mask=None):
+def fit_polynomial(box, degree, x_shift=0.0, y_shift=0.0, mask=None, sigma_clip_background=False):
 
     """
     This function ...
@@ -266,10 +266,14 @@ def fit_2D_Gaussian(box, center=None, fixed_center=False, deviation_center=None,
         bounds['x_mean'] = [init_xmean-deviation_center, init_xmean+deviation_center]
         bounds['y_mean'] = [init_ymean-deviation_center, init_ymean+deviation_center]
 
-    # Define the 'tied' dictionary to specify that the y_stddev should vary along with x_stddev
-    tied = {'y_stddev': (lambda param: param)}
+    def identical(param): return param
 
-    tied = {}
+    # Define the 'tied' dictionary to specify that the y_stddev should vary along with x_stddev
+    #tied = {'y_stddev': (lambda param: param)}
+
+    tied = {'y_stddev': (lambda model: model.x_stddev)}
+
+    #tied = {}
 
     # Fit the data using astropy.modeling
     gaussian_init = models.Gaussian2D(amplitude=1., x_mean=init_xmean, y_mean=init_ymean, x_stddev=init_x_stddev,
@@ -294,14 +298,21 @@ def fit_2D_Gaussian(box, center=None, fixed_center=False, deviation_center=None,
     with warnings.catch_warnings():
 
         warnings.simplefilter('ignore')
-        try:
-            gaussian = fit_model(gaussian_init, x_values, y_values, z_values)  # What comes out is the model with the parameters set
-        except TypeError:
+        #try:
+        gaussian = fit_model(gaussian_init, x_values, y_values, z_values)  # What comes out is the model with the parameters set
+        #except TypeError:
 
-            print box.shape
-            print mask.shape
-            import plotting
-            plotting.plot_box(np.ma.masked_array(data=box, mask=mask))
+            #print x_values
+            #print y_values
+            #print z_values
+            #repr(TypeError.message)
+            #print box.shape
+            #import plotting
+            #if mask is not None:
+            #    print mask.shape
+            #    plotting.plot_box(np.ma.masked_array(data=box, mask=mask))
+            #else:
+            #    plotting.plot_box(box)
 
     # Fix negative sigmas
     if gaussian.x_stddev.value < 0: gaussian.x_stddev.value = -gaussian.x_stddev.value

@@ -10,7 +10,7 @@ import numpy as np
 
 # *****************************************************************
 
-def relative_coordinate(x, y, x_delta, y_delta):
+def relative_coordinate(x, y, x_shift, y_shift):
 
     """
     This function ...
@@ -21,14 +21,14 @@ def relative_coordinate(x, y, x_delta, y_delta):
     :return:
     """
 
-    rel_x = x - x_delta
-    rel_y = y - y_delta
+    rel_x = x - x_shift
+    rel_y = y - y_shift
 
     return (rel_x, rel_y)
 
 # *****************************************************************
 
-def absolute_coordinate(x, y, x_delta, y_delta):
+def absolute_coordinate(x, y, x_shift, y_shift):
 
     """
     This function ...
@@ -39,8 +39,8 @@ def absolute_coordinate(x, y, x_delta, y_delta):
     :return:
     """
 
-    abs_x = x + x_delta
-    abs_y = y + y_delta
+    abs_x = x + x_shift
+    abs_y = y + y_shift
 
     return (abs_x, abs_y)
 
