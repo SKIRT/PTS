@@ -233,6 +233,50 @@ def plot_star_model(background, background_clipped, est_background, star, est_ba
 
 # *****************************************************************
 
+def plot_background_subtraction(background, background_clipped, est_background, star, est_background_star):
+
+    norm = ImageNormalize(stretch=SqrtStretch())
+
+    # Determine the maximum value in the box and the minimum value for plotting
+    vmax = np.max(background)
+    vmin = np.min(background) if vmax <= 0 else 0.0
+
+    # Plot the data with the best-fit model
+    plt.figure(figsize=(20,3))
+    plt.subplot(1,5,1)
+    plt.imshow(background, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.xlim(0, background.shape[1]-1)
+    plt.ylim(0, background.shape[0]-1)
+    plt.title("Background")
+
+    plt.subplot(1,5,2)
+    plt.imshow(background_clipped, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.xlim(0, background_clipped.shape[1]-1)
+    plt.ylim(0, background_clipped.shape[0]-1)
+    plt.title("Sigma-clipped background")
+
+    plt.subplot(1,5,3)
+    plt.imshow(est_background, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.xlim(0, est_background.shape[1]-1)
+    plt.ylim(0, est_background.shape[0]-1)
+    plt.title("Estimated background")
+
+    plt.subplot(1,5,4)
+    plt.imshow(star, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.xlim(0, star.shape[1]-1)
+    plt.ylim(0, star.shape[0]-1)
+    plt.title("Star")
+
+    plt.subplot(1,5,5)
+    plt.imshow(star.data - est_background_star, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.xlim(0, star.shape[1]-1)
+    plt.ylim(0, star.shape[0]-1)
+    plt.title("Star without background")
+
+    plt.show()
+
+# *****************************************************************
+
 def plot_difference(box_a, box_b, share_colorscale=False):
 
     """

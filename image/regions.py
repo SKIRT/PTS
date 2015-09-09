@@ -7,6 +7,7 @@
 
 # Import standard modules
 import copy
+import numpy as np
 
 # Import astronomical modules
 import pyregion
@@ -234,7 +235,14 @@ def ellipses_from_coordinates(coordinates):
     # Loop over the objects in the coordinates list, adding a line for each one
     for object in coordinates:
 
-        line = "ellipse(" + str(object.x_mean.value) + "," + str(object.y_mean.value) + "," + str(object.x_stddev.value) + "," + str(object.y_stddev.value) + ",0.0)\n"
+        if type(object).__name__ == "Gaussian2D": line = "ellipse(" + str(object.x_mean.value) + "," + str(object.y_mean.value) + "," + str(object.x_stddev.value) + "," + str(object.y_stddev.value) + ",0.0)\n"
+        elif type(object).__name__ == "AiryDisk2D":
+            # see https://en.wikipedia.org/wiki/Airy_disk#Approximation_using_a_Gaussian_profile and
+            # http://astropy.readthedocs.org/en/latest/api/astropy.modeling.functional_models.AiryDisk2D.html#astropy.modeling.functional_models.AiryDisk2D
+            sigma = 0.42 * object.radius.value * 0.81989397882
+            line = "ellipse(" + str(object.x_0.value) + "," + str(object.y_0.value) + "," + str(sigma) + "," + str(sigma) + ",0.0)\n"
+        else: raise ValueError("Models other than Gaussian2D and AiryDisk2D are not yet supported")
+
         region_string += line
 
     # Parse the region string into a region object
@@ -295,9 +303,55 @@ def parse(region_string):
 
 def scale_circle(shape, factor):
 
+    """
+    This function ...
+    :param shape:
+    :param factor:
+    :return:
+    """
+
     new_shape = copy.deepcopy(shape)
     new_shape.coord_list[2] *= factor
 
     return new_shape
 
 # *****************************************************************
+
+def subtract(region_a, region_b, center_offset_tolerance, header):
+
+    """
+    This function ...
+    :param region_a:
+    :param region_b:
+    :return:
+    """
+
+    # TODO: fix this function: do not only use the first shape of region b!!
+
+    new_region = region_a.as_imagecoord(header)
+    region_b = region_b.as_imagecoord(header)
+
+    x_b = region_b[0].coord_list[0]
+    y_b = region_b[0].coord_list[1]
+
+    for i in range(len(new_region)):
+
+        x_center = new_region[i].coord_list[0]
+        y_center = new_region[i].coord_list[1]
+
+        diff_x = x_center - x_b
+        diff_y = y_center - y_b
+
+        distance = np.sqrt(diff_x**2 + diff_y**2)
+
+        if distance < center_offset_tolerance:
+
+            del new_region[i]
+            break
+
+    # Return the subtracted region
+    return new_region
+
+# *****************************************************************
+
+

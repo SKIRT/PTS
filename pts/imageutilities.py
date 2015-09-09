@@ -168,7 +168,7 @@ def mask(image, edges=True, extra=None, plot=False):
 
 # *****************************************************************
 
-def remove_stars(image, region_file=None, model_stars=False, plot=False, output_path=None):
+def remove_stars(image, galaxy_name, region_file=None, model_stars=False, plot=False, output_path=None):
 
     """
     This function removes the stars ...
@@ -190,7 +190,7 @@ def remove_stars(image, region_file=None, model_stars=False, plot=False, output_
         sigma = image.fwhm / 2.355
         image.fetch_stars(sigma)
 
-    else: image.find_stars()
+    else: image.find_stars(galaxy_name)
 
     # Select the stars region
     image.regions.stars.select()

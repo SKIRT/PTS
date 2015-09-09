@@ -183,7 +183,7 @@ class ImagePreparation(object):
             iu.mask(image, edges=edges[filter_name], extra=extra_reg)
 
             # Interpolate over the stars indicated by the user (if the FWHM is None; the PSF will be fitted)
-            iu.remove_stars(image, model_stars=False, output_path=output_path)
+            iu.remove_stars(image, self.galaxy_name, model_stars=False, output_path=output_path)
 
             # Subtract the sky
             if not sky_subtracted[filter_name]: iu.subtract_sky(image, self.galaxy_name, plot=self.plot, output_path=output_path, downsample_factor=int(round(2*4*image.fwhm)))

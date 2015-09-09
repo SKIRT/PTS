@@ -31,7 +31,7 @@ from astropy.stats import sigma_clipped_stats
 
 # *****************************************************************
 
-def find_sources_in_region(data, region, detection_method, plot=False, plot_custom=[False, False, False, False]):
+def find_sources_in_region(data, region, model_name, detection_method, plot=False, plot_custom=[False, False, False, False]):
 
     """
     This function searches for sources within a given frame and a region of ellipses
@@ -52,7 +52,7 @@ def find_sources_in_region(data, region, detection_method, plot=False, plot_cust
     for shape in region:
 
         # Find a source
-        source = find_source_in_shape(data, shape, detection_method, level=0, plot=plot, plot_custom=plot_custom)
+        source = find_source_in_shape(data, shape, model_name, detection_method, level=0, plot=plot, plot_custom=plot_custom)
 
         # If a source was found, add it to the list of sources
         if source is not None: sources.append(source)
@@ -62,7 +62,7 @@ def find_sources_in_region(data, region, detection_method, plot=False, plot_cust
 
 # *****************************************************************
 
-def find_source_in_shape(data, shape, detection_method, level, min_level=-2, max_level=2, aid_detection_by_removing_gradient=True, peak_offset_tolerance=3.0, plot=False, plot_custom=[False, False, False, False]):
+def find_source_in_shape(data, shape, model_name, detection_method, level, min_level=-2, max_level=2, aid_detection_by_removing_gradient=True, peak_offset_tolerance=3.0, plot=False, plot_custom=[False, False, False, False]):
 
     """
     This function ...
@@ -120,7 +120,7 @@ def find_source_in_shape(data, shape, detection_method, level, min_level=-2, max
         if level < 0: return None
 
         new_shape = regions.scale_circle(shape, 2.0)
-        return find_source_in_shape(data, new_shape, detection_method, level=level+1, min_level=min_level, max_level=max_level, plot=plot, plot_custom=[plot_custom[1],plot_custom[1],plot_custom[1],plot_custom[1]])
+        return find_source_in_shape(data, new_shape, model_name, detection_method, level=level+1, min_level=min_level, max_level=max_level, plot=plot, plot_custom=[plot_custom[1],plot_custom[1],plot_custom[1],plot_custom[1]])
 
     # If one source was detected
     elif len(positions) == 1:
@@ -131,7 +131,7 @@ def find_source_in_shape(data, shape, detection_method, level, min_level=-2, max
         background_inner_factor = 1.0
         background_outer_factor = 1.5
         fit_factor = 1.0
-        sigma_clip_background = False
+        sigma_clip_background = True
 
         # Get the x and y coordinate of the peak
         x_peak = positions['x_peak'][0]
@@ -149,7 +149,7 @@ def find_source_in_shape(data, shape, detection_method, level, min_level=-2, max
         source = make_gaussian_star_model(shape, data, x_peak, y_peak, background_inner_factor, background_outer_factor,
                                           fit_factor, "polynomial", peak_offset_tolerance,
                                           sigma_clip_background=sigma_clip_background, upsample_factor=1.0,
-                                          use_shape_or_peak="peak", plot=plot)
+                                          use_shape_or_peak="peak", model_name=model_name, plot=plot)
 
         return source
 
@@ -161,7 +161,7 @@ def find_source_in_shape(data, shape, detection_method, level, min_level=-2, max
         if level > 0: return None
 
         new_shape = regions.scale_circle(shape, 0.5)
-        return find_source_in_shape(data, new_shape, detection_method, level=level-1, min_level=min_level, max_level=max_level, plot=plot, plot_custom=[plot_custom[3],plot_custom[3],plot_custom[3],plot_custom[3]])
+        return find_source_in_shape(data, new_shape, model_name, detection_method, level=level-1, min_level=min_level, max_level=max_level, plot=plot, plot_custom=[plot_custom[3],plot_custom[3],plot_custom[3],plot_custom[3]])
 
 # *****************************************************************
 
@@ -398,7 +398,7 @@ def find_sources_nopeak(box, x_min, y_min, plot=False):
 
 # *****************************************************************
 
-def find_sources_1peak(box, x_peak, y_peak, x_min, y_min, center_offset_tolerance=None, plot=False):
+def find_sources_1peak(box, x_peak, y_peak, x_min, y_min, model_name="Gaussian", initial_radius=None, center_offset_tolerance=None, plot=False):
 
     """
     This function searches for sources ...
@@ -417,23 +417,30 @@ def find_sources_1peak(box, x_peak, y_peak, x_min, y_min, center_offset_toleranc
     # If the box is too small, don't bother looking for stars (anymore)
     if box.shape[0] < 5 or box.shape[1] < 5: return []
 
-    # Fit a 2D Gaussian to the data
-    #model = fitting.fit_2D_Gaussian(box, center=(x_peak, y_peak), deviation_center=center_offset_tolerance)
-    model = fitting.fit_2D_Gaussian(box, center=(x_peak, y_peak))
+    #if initial_radius is None: initial_radius = 0.2*box.shape[0]
 
-    # Get the parameters of the Gaussian function
+    # Fit a 2D Gaussian to the data
+    if model_name == "Gaussian":
+
+        model = fitting.fit_2D_Gaussian(box, center=(x_peak, y_peak), radius=initial_radius)
+        x_mean = model.x_mean.value
+        y_mean = model.y_mean.value
+
+    elif model_name == "Airy":
+
+        model = fitting.fit_2D_Airy(box, center=(x_peak, y_peak))
+        x_mean = model.x_0.value
+        y_mean = model.y_0.value
+
+    else: raise ValueError("Other models are not supported yet")
+
     amplitude = model.amplitude
-    x_mean = model.x_mean.value
-    y_mean = model.y_mean.value
 
     # Skip non-stars (negative amplitudes)
     if amplitude < 0:
 
         log.warning("Source profile has negative amplitude")
         return []
-
-    # If the center of the Gaussian falls out of the box, ...
-    #center_in_box = (x_mean >= 0 and x_mean < box.shape[1]) and (y_mean >= 0 and y_mean < box.shape[0])
 
     # Check if the center of the Gaussian corresponds to the position of the detected peak
     diff_x = x_mean - x_peak
@@ -443,9 +450,9 @@ def find_sources_1peak(box, x_peak, y_peak, x_min, y_min, center_offset_toleranc
 
     if distance > center_offset_tolerance:
 
-        log.warning("Center of source profile lies outside of the region where it was expected")
+        log.warning("Center of source profile lies outside of the region where it was expected (distance = "+str(distance))
 
-        #plotting.plot_peak_model(box, x_peak, y_peak, model)
+        if plot: plotting.plot_peak_model(box, x_peak, y_peak, model)
 
         # Calculate the size of the smaller box
         smaller_box_ysize = int(round(box.shape[0] / 4.0))
@@ -462,7 +469,7 @@ def find_sources_1peak(box, x_peak, y_peak, x_min, y_min, center_offset_toleranc
         rel_xpeak, rel_ypeak = coordinates.relative_coordinate(x_peak, y_peak, smaller_xmin, smaller_ymin)
 
         # Try again (iterative procedure of zooming in, stops if the size of the box becomes too small)
-        sources += find_sources_1peak(smaller_box, rel_xpeak, rel_ypeak, x_delta, y_delta, center_offset_tolerance=center_offset_tolerance, plot=plot)
+        sources += find_sources_1peak(smaller_box, rel_xpeak, rel_ypeak, x_delta, y_delta, initial_radius=initial_radius, center_offset_tolerance=center_offset_tolerance, plot=plot)
 
     # Potential star detected!
     else:
@@ -471,8 +478,15 @@ def find_sources_1peak(box, x_peak, y_peak, x_min, y_min, center_offset_toleranc
         if plot: plotting.plot_peak_model(box, x_peak, y_peak, model)
 
         # Change the coordinates of the model to absolute coordinates
-        model.x_mean.value = model.x_mean.value + x_min
-        model.y_mean.value = model.y_mean.value + y_min
+        if model_name == "Gaussian":
+
+            model.x_mean.value = model.x_mean.value + x_min
+            model.y_mean.value = model.y_mean.value + y_min
+
+        elif model_name == "Airy":
+
+            model.x_0.value = model.x_0.value + x_min
+            model.y_0.value = model.y_0.value + y_min
 
         # Add the model for this source to the list of sources
         sources.append(model)
@@ -725,7 +739,7 @@ def estimate_background(data, mask, interpolate=True, sigma_clip=True):
 
 def make_gaussian_star_model(shape, data, x_peak, y_peak, background_inner_factor, background_outer_factor, fit_factor,
                              background_est_method, center_offset_tolerance, sigma_clip_background=True,
-                             upsample_factor=1.0, use_shape_or_peak="peak", plot=False):
+                             upsample_factor=1.0, use_shape_or_peak="peak", model_name="Gaussian", plot=False):
 
     """
     This function ...
@@ -765,13 +779,13 @@ def make_gaussian_star_model(shape, data, x_peak, y_peak, background_inner_facto
 
     if background_est_method == "polynomial":
 
-        #background_mask_beforeclipping = np.copy(background_mask)
-        poly = fitting.fit_polynomial(background, 3, mask=background_mask, sigma_clip_background=sigma_clip_background)
+        background_mask_beforeclipping = np.copy(background_mask)
+        poly, background_mask = fitting.fit_polynomial(background, 3, mask=background_mask, sigma_clip_background=sigma_clip_background)
         est_background = fitting.evaluate_model(poly, 0, background.shape[1], 0, background.shape[0])
 
     elif background_est_method == "interpolation":
 
-        #background_mask_beforeclipping = np.copy(background_mask)
+        background_mask_beforeclipping = np.copy(background_mask)
         est_background, background_mask = estimate_background(background, background_mask, interpolate=True, sigma_clip=sigma_clip_background)
 
     else: raise ValueError("Unknown background estimation method")
@@ -793,7 +807,10 @@ def make_gaussian_star_model(shape, data, x_peak, y_peak, background_inner_facto
     else:
         raise ValueError("Invalid option (should be 'shape' or 'peak')")
 
-    sources = find_sources_1peak(box, x_center_rel, y_center_rel, x_min, y_min, center_offset_tolerance=center_offset_tolerance, plot=plot)
+    sources = find_sources_1peak(box, x_center_rel, y_center_rel, x_min, y_min, model_name=model_name, center_offset_tolerance=center_offset_tolerance, plot=plot)
+
+    # Search again, with an Airy model
+    if not sources: sources = find_sources_1peak(box, x_center_rel, y_center_rel, x_min, y_min, model_name="Airy", center_offset_tolerance=center_offset_tolerance, plot=plot)
 
     # If a source was found, return it
     if sources:
@@ -803,7 +820,7 @@ def make_gaussian_star_model(shape, data, x_peak, y_peak, background_inner_facto
         if plot:
 
             evaluated_model = fitting.evaluate_model(source, x_min, x_max, y_min, y_max)
-            plotting.plot_star_model(background=np.ma.masked_array(background,mask=background_mask),
+            plotting.plot_star_model(background=np.ma.masked_array(background,mask=background_mask_beforeclipping),
                                      background_clipped=np.ma.masked_array(background,mask=background_mask),
                                      est_background=est_background,
                                      star=np.ma.masked_array(box, mask=None),
@@ -812,7 +829,16 @@ def make_gaussian_star_model(shape, data, x_peak, y_peak, background_inner_facto
 
         return source
 
-    else: return None
+    else:
+
+        if plot:
+
+            plotting.plot_background_subtraction(background=np.ma.masked_array(background,mask=background_mask_beforeclipping),
+                                                 background_clipped=np.ma.masked_array(background,mask=background_mask),
+                                                 est_background=est_background,
+                                                 star=np.ma.masked_array(box, mask=None), est_background_star= box_background)
+
+        return None
 
 # *****************************************************************
 
