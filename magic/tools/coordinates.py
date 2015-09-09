@@ -87,7 +87,29 @@ def distance_models(model_a, model_b):
     :return:
     """
 
-    return distance_points(model_a.x_mean.value, model_a.y_mean.value, model_b.x_mean.value, model_b.y_mean.value)
+    if type(model_a).__name__ == "Gaussian2D":
+
+        x_mean_a = model_a.x_mean.value
+        y_mean_a = model_a.y_mean.value
+
+    elif type(model_a).__name__ == "AiryDisk2D":
+
+        x_mean_a = model_a.x_0.value
+        y_mean_a = model_a.y_0.value
+
+    else: raise ValueError("Models other than Gaussian2D or AiryDisk2D are not yet supported")
+
+    if type(model_b).__name__ == "Gaussian2D":
+
+        x_mean_b = model_b.x_mean.value
+        y_mean_b = model_b.y_mean.value
+
+    elif type(model_b).__name__ == "AiryDisk2D":
+
+        x_mean_b = model_b.x_0.value
+        y_mean_b = model_b.y_0.value
+
+    return distance_points(x_mean_a, y_mean_a, x_mean_b, y_mean_b)
 
 # *****************************************************************
 

@@ -849,7 +849,7 @@ class Image(object):
         region = self.combine_regions(allow_none=False)
 
         # Make a mask from the region and invert it (to mask outside of the region)
-        region_mask = np.logical_not(regions.create_mask(region, self.header, self.xsize, self.ysize))
+        #region_mask = np.logical_not(regions.create_mask(region, self.header, self.xsize, self.ysize))
 
         # Loop over all active frames
         for frame_name in self.frames.get_selected(allow_none=False):
@@ -871,10 +871,12 @@ class Image(object):
                 box_mask = cropping.crop_check(total_mask, x_min, x_max, y_min, y_max)
 
                 # Cut out the region mask
-                box_region_mask = cropping.crop_check(region_mask, x_min, x_max, y_min, y_max)
+                #box_region_mask = cropping.crop_check(region_mask, x_min, x_max, y_min, y_max)
 
                 # Make a combined mask for the interpolation
-                interpolation_mask = box_mask | box_region_mask
+                #interpolation_mask = box_mask | box_region_mask
+
+                interpolation_mask = box_mask
 
                 # If sigma clipping is enabled, mask additional pixels if they are outliers
                 if sigma_clipping: interpolation_mask = statistics.sigma_clip_mask(box, mask=interpolation_mask)
@@ -1123,7 +1125,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def fetch_stars(self, radius, name=None, catalog=["UCAC4"], return_region=False, column_filters=None):
+    def fetch_stars(self, radius, catalog=["UCAC4"], galaxy_name=None, return_region=False, column_filters=None):
 
         """
         This function fetches the positions of astrophysical objects in the image
@@ -1148,15 +1150,18 @@ class Image(object):
         if column_filters is None: region = catalogs.fetch_objects_in_box(box, catalog, ["stars"], radius_in_arcsec)
         else: region = catalogs.fetch_objects_in_box(box, catalog, ["optical", "stars"], radius_in_arcsec, column_filters={"Vmag":"<20"})
 
+        if galaxy_name is not None:
+
+            # Search for the position of the specified galaxy in the image
+            galaxy_region = catalogs.fetch_object_by_name(galaxy_name, radius)
+            region = regions.subtract(region, galaxy_region, 3.0, self.header)
+
         # Inform the user
         log.info("Found " + str(len(region)) + " entries")
 
-        # Set the name of the new region
-        name = name if name is not None else "stars"
-
         # Return the region or add it to this image
         if return_region: return region
-        else: self._add_region(region, name)
+        else: self._add_region(region, "stars")
 
     # *****************************************************************
 
@@ -1314,7 +1319,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def find_stars(self, plot=False, plot_custom=[False, False, False, False], catalog="UCAC4", detection_method="peaks", initial_radius=10.0, in_region=False, split_sigma=None):
+    def find_stars(self, galaxy_name=None, plot=False, plot_custom=[False, False, False, False], catalog=["UCAC4"], detection_method="peaks", initial_radius=10.0, in_region=False, split_sigma=None, model="Gaussian"):
 
         """
         This function searches for stars in the currently selected frame, by fetching star positions from an
@@ -1328,10 +1333,10 @@ class Image(object):
 
         # Get the region of objects fetched from the NOMAD stellar catalog and transform it into image coordinates
         if in_region: region = self.combine_regions(allow_none=False)
-        else: region = self.fetch_stars(initial_radius, catalog=catalog, return_region=True).as_imagecoord(self.header)
+        else: region = self.fetch_stars(initial_radius, catalog=catalog, galaxy_name=galaxy_name, return_region=True).as_imagecoord(self.header)
 
         # Look for sources
-        sources = analysis.find_sources_in_region(self.frames[frame_name].data, region, detection_method, plot=plot, plot_custom=plot_custom)
+        sources = analysis.find_sources_in_region(self.frames[frame_name].data, region, model, detection_method, plot=plot, plot_custom=plot_custom)
         log.info("Number of sources = " + str(len(sources)))
 
         # Remove duplicates

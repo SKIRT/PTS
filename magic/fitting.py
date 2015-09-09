@@ -15,6 +15,7 @@ from astropy.modeling import models, fitting
 
 # Import image modules
 import tools.general
+import statistics
 
 # Import other relevant PTS modules
 from pts import mathematics
@@ -73,6 +74,14 @@ def fit_2D_model(data, mask, background, model='Gaussian', x_center=None, y_cent
 
 def fit_polynomial_evaluate(box, degree, mask=None):
 
+    """
+    This function ...
+    :param box:
+    :param degree:
+    :param mask:
+    :return:
+    """
+
     # Split x, y and z values that are not masked
     x_values, y_values, z_values = tools.general.split_xyz(box, mask=mask)
 
@@ -101,6 +110,10 @@ def fit_polynomial(box, degree, x_shift=0.0, y_shift=0.0, mask=None, sigma_clip_
     :return:
     """
 
+    # TODO: use x_shift and y_shift
+
+    if sigma_clip_background: mask = statistics.sigma_clip_mask(box, sigma=3.0, mask=mask)
+
     # Fit the data using astropy.modeling
     poly_init = models.Polynomial2D(degree=degree)
     fit_model = fitting.LevMarLSQFitter()
@@ -114,8 +127,11 @@ def fit_polynomial(box, degree, x_shift=0.0, y_shift=0.0, mask=None, sigma_clip_
         warnings.simplefilter('ignore')
         poly = fit_model(poly_init, x_values, y_values, z_values)  # What comes out is the model with the parameters set
 
+    # Return the polynomial model and the new mask
+    if sigma_clip_background: return poly, mask
+
     # Return the polynomial model
-    return poly
+    else: return poly
 
 # *****************************************************************
 
@@ -266,14 +282,8 @@ def fit_2D_Gaussian(box, center=None, fixed_center=False, deviation_center=None,
         bounds['x_mean'] = [init_xmean-deviation_center, init_xmean+deviation_center]
         bounds['y_mean'] = [init_ymean-deviation_center, init_ymean+deviation_center]
 
-    def identical(param): return param
-
     # Define the 'tied' dictionary to specify that the y_stddev should vary along with x_stddev
-    #tied = {'y_stddev': (lambda param: param)}
-
     tied = {'y_stddev': (lambda model: model.x_stddev)}
-
-    #tied = {}
 
     # Fit the data using astropy.modeling
     gaussian_init = models.Gaussian2D(amplitude=1., x_mean=init_xmean, y_mean=init_ymean, x_stddev=init_x_stddev,
@@ -298,21 +308,7 @@ def fit_2D_Gaussian(box, center=None, fixed_center=False, deviation_center=None,
     with warnings.catch_warnings():
 
         warnings.simplefilter('ignore')
-        #try:
         gaussian = fit_model(gaussian_init, x_values, y_values, z_values)  # What comes out is the model with the parameters set
-        #except TypeError:
-
-            #print x_values
-            #print y_values
-            #print z_values
-            #repr(TypeError.message)
-            #print box.shape
-            #import plotting
-            #if mask is not None:
-            #    print mask.shape
-            #    plotting.plot_box(np.ma.masked_array(data=box, mask=mask))
-            #else:
-            #    plotting.plot_box(box)
 
     # Fix negative sigmas
     if gaussian.x_stddev.value < 0: gaussian.x_stddev.value = -gaussian.x_stddev.value
