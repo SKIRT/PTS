@@ -21,7 +21,7 @@ import os.path
 from astropy import log
 
 # Import the relevant PTS modules
-import imageutilities as iu
+import astromagic.utilities as iu
 
 # *****************************************************************
 
@@ -39,6 +39,14 @@ stars = {"2MASSH": True,
          "GALEXFUV": True,
          "Ha": True,
          "IRAC": True,
+         "MIPS24": False,
+         "PACS70": False,
+         "PACS160": False}
+
+remove_saturation = {"2MASSH": True,
+         "GALEXFUV": False,
+         "Ha": False,
+         "IRAC": False,
          "MIPS24": False,
          "PACS70": False,
          "PACS160": False}
@@ -175,7 +183,20 @@ class ImagePreparation(object):
         # 1. Get galactic extinction coefficients
         #attenuations = iu.get_attenuations(self.galaxy_name, self.image_paths.keys())
 
-        # 2. Prepare the images
+        # 2. Prepare
+        self.prepare()
+
+        # 3. Make maps
+        self.make_maps()
+
+    # *****************************************************************
+
+    def prepare(self):
+
+        """
+        This function prepares the images
+        """
+
         for filter_name, path in self.image_paths.items():
 
             filter_prep_path = os.path.join(self.prep_path, filter_name)
@@ -192,7 +213,7 @@ class ImagePreparation(object):
             iu.mask(image, edges=edges[filter_name], extra=extra_reg)
 
             # Interpolate over the stars indicated by the user (if the FWHM is None; the PSF will be fitted)
-            if stars[filter_name]: iu.remove_stars(image, self.galaxy_name, model_stars=False, output_path=output_path)
+            if stars[filter_name]: iu.remove_stars(image, self.galaxy_name, model_stars=False, remove_saturation=remove_saturation[filter_name], output_path=output_path)
 
             # Subtract the sky
             if not sky_subtracted[filter_name]: iu.subtract_sky(image, self.galaxy_name, plot=self.plot, output_path=output_path, downsample_factor=int(round(2*4*image.fwhm)))
@@ -209,7 +230,35 @@ class ImagePreparation(object):
             # If requested, save the result
             if self.save: iu.save(image, filter_prep_path, 'final.fits')
 
-        # 2. Make maps of stars and dust
+    # *****************************************************************
 
+    def make_maps(self):
+
+        """
+        This function makes the maps of dust and stars ...
+        """
+
+        pass
+
+        ## a. FUV - H map
+
+        #FUV_H = -2.5*(alog10(imaFUV_rebin) - alog10(imaH_rebin))
+
+        ## b. Total infrared map
+
+        #zet alles om van MJy/sr naar Lsun
+        #factor24 = (2*alog10(2.85/206264.806247)) - 20 + alog10(3e8/24e-6) + alog10(4*!pi) + (2*alog10(D_M81*3.08567758e22)) - alog10(3.846e26)
+        #factor70 = (2*alog10(2.85/206264.806247)) - 20 + alog10(3e8/70e-6) + alog10(4*!pi) + (2*alog10(D_M81*3.08567758e22)) - alog10(3.846e26)
+        #factor160 = (2*alog10(2.85/206264.806247)) - 20 + alog10(3e8/160e-6) + alog10(4*!pi) + (2*alog10(D_M81*3.08567758e22)) - alog10(3.846e26)
+        #ima24_rebin = ima24_rebin*(10^factor24)
+        #ima70_rebin = ima70_rebin*(10^factor70)
+        #ima160_rebin = ima160_rebin*(10^factor160)
+        #ima160err_rebin = ima160err_rebin*(10^factor160)
+
+        #Galametz+2013 formula for Lsun units
+        #LTIR = fltarr(376,526)
+        #LTIR = (2.133*ima24_rebin) + (0.681*ima70_rebin) + (1.125*ima160_rebin)
+
+        ## c.
 
 # *****************************************************************
