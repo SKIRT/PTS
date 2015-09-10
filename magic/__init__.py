@@ -882,6 +882,13 @@ class Image(object):
                 # Calculate the interpolated background
                 interpolated_box = interpolation.in_paint(box, interpolation_mask)
 
+                # If the interpolated box contains nans, do not fill in the corresponding pixels of the data with these nans,
+                # therefore set the pixels that are nan to False in the box_mask (take the difference between the box_mask
+                # and the np.isnan(interpolated_box) mask). Then, set the nans to zero in the interpolated_box because
+                # False * nan would otherwise still equal to nan.
+                box_mask = masks.subtract(box_mask, np.isnan(interpolated_box))
+                interpolated_box[np.isnan(interpolated_box)] = 0.0
+
                 # Insert the interpolated values, for the pixels that are masked by the total currently selected mask
                 self.frames[frame_name].data[y_min:y_max,x_min:x_max] = interpolated_box*box_mask + self.frames[frame_name].data[y_min:y_max,x_min:x_max]*np.logical_not(box_mask)
 

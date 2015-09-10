@@ -163,3 +163,42 @@ def create_disk_mask(x_size, y_size, x_center, y_center, radius):
     return mask
 
 # *****************************************************************
+
+def intersection(mask_a, mask_b):
+
+    """
+    This function ...
+    :param mask_a:
+    :param mask_b:
+    :return:
+    """
+
+    return mask_a * mask_b
+
+# *****************************************************************
+
+def subtract(mask_a, mask_b):
+
+    """
+    This function ...
+    :param mask_a:
+    :param mask_b:
+    :return:
+    """
+
+    return intersection(mask_a, np.logical_not(mask_b))
+
+# *****************************************************************
+
+def union(mask_a, mask_b):
+
+    """
+    This function ...
+    :param mask_a:
+    :param mask_b:
+    :return:
+    """
+
+    return mask_a + mask_b
+
+# *****************************************************************
