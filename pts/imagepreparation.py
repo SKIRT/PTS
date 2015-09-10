@@ -34,6 +34,15 @@ fwhmax = {"2MASSH":   None,
           "PACS70":   4.05,
           "PACS160":  3.9228070175}
 
+# Define whether there are stars present in the different images
+stars = {"2MASSH": True,
+         "GALEXFUV": True,
+         "Ha": True,
+         "IRAC": True,
+         "MIPS24": False,
+         "PACS70": False,
+         "PACS160": False}
+
 # Define whether the edges should be masked or not
 edges = {"2MASSH":   True,
          "GALEXFUV": True,
@@ -183,7 +192,7 @@ class ImagePreparation(object):
             iu.mask(image, edges=edges[filter_name], extra=extra_reg)
 
             # Interpolate over the stars indicated by the user (if the FWHM is None; the PSF will be fitted)
-            iu.remove_stars(image, self.galaxy_name, model_stars=False, output_path=output_path)
+            if stars[filter_name]: iu.remove_stars(image, self.galaxy_name, model_stars=False, output_path=output_path)
 
             # Subtract the sky
             if not sky_subtracted[filter_name]: iu.subtract_sky(image, self.galaxy_name, plot=self.plot, output_path=output_path, downsample_factor=int(round(2*4*image.fwhm)))

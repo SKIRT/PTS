@@ -101,6 +101,8 @@ def find_source_in_shape(data, shape, model_name, detection_method, level, min_l
         central_mask = np.zeros_like(box, dtype=bool)
         central_mask[int(round(box.shape[0]/2.0-central_radius)):int(round(box.shape[0]/2.0+central_radius)),int(round(box.shape[1]/2.0-central_radius)):int(round(box.shape[1]/2.0+central_radius))] = True
 
+        if np.all(central_mask): return None
+
         # Fit a polynomial to the background
         poly = fitting.fit_polynomial(box, 3, mask=central_mask)
         polynomial_box = fitting.evaluate_model(poly, 0, box.shape[1], 0, box.shape[0])
