@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       PTS -- Python Toolkit for working with SKIRT          **
-# **       © Astronomical Observatory, Ghent University          **
+# **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
 # Import standard modules
@@ -23,19 +22,18 @@ from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
 from astropy import log
 
 # Import image modules
-from image.galaxy import GalaxyFinder
-from image.tools import general, headers, cropping, interpolation, coordinates
-import image.transformations
-import image.fitting
-import image.plotting
-import image.analysis
-import image.regions
-import image.statistics
-import image.catalogs
-from image.layers import Layers
-from image.frames import Frame
-from image.masks import Mask
-from image.regions import Region
+from tools import general, headers, cropping, interpolation, coordinates
+import transformations
+import fitting
+import plotting
+import analysis
+import regions
+import statistics
+import catalogs
+from layers import Layers
+from frames import Frame
+from masks import Mask
+from regions import Region
 
 # *****************************************************************
 

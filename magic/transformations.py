@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       PTS -- Python Toolkit for working with SKIRT          **
-# **       © Astronomical Observatory, Ghent University          **
+# **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
 # This module was adapted from the FITS_Tools package written by Adam Ginsburg
