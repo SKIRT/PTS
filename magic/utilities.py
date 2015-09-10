@@ -292,9 +292,9 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove
         # Deselect all regions, masks and frames except for the primary frame
         reset_selection(image)
 
-        # Create a region of 15-sigma contours around the brightest stars and select it
+        # Create a region of 20-sigma contours around the brightest stars and select it
         image.regions.brightest.select()
-        image.expand_regions(factor=15.0)
+        image.expand_regions(factor=20.0)
         image.regions.deselect_all()
         image.regions.brightest_expanded.select()
 

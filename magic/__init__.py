@@ -1395,7 +1395,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def create_segmentation_mask(self, kernel_fwhm, kernel_size):
+    def create_segmentation_mask(self, kernel_fwhm, kernel_size, plot=True):
 
         """
         This function ...
@@ -1425,8 +1425,16 @@ class Image(object):
 
             # TODO: only keep center segment!
 
+            label = segments[y_center-y_min, x_center-x_min]
+
+            box_mask = (segments == label)
+
+            # box_mask = segments.astype(bool)
+
             # Adapt the mask
-            mask[y_min:y_max,x_min:x_max] = segments.astype(bool)
+            mask[y_min:y_max,x_min:x_max] = box_mask
+
+            if plot: plotting.plot_box(np.ma.masked_array(box, mask=mask[y_min:y_max,x_min:x_max]), title="Masked segment")
 
         # Add the new mask
         self._add_mask(mask, "segments")
