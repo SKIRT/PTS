@@ -1159,7 +1159,11 @@ class Image(object):
 
             # Search for the position of the specified galaxy in the image
             galaxy_region = catalogs.fetch_object_by_name(galaxy_name, radius)
+            original_len = len(region)
             region = regions.subtract(region, galaxy_region, 3.0, self.header)
+
+            if len(region) == original_len - 1: log.info("Removed star position that matches the galaxy center")
+            elif len(region) < original_len - 1: log.warning("Removed multiple star positions")
 
         # Inform the user
         log.info("Found " + str(len(region)) + " entries")
@@ -1324,7 +1328,9 @@ class Image(object):
 
     # *****************************************************************
 
-    def find_stars(self, galaxy_name=None, plot=False, plot_custom=[False, False, False, False], catalog=["UCAC4"], detection_method="peaks", initial_radius=10.0, in_region=False, split_sigma=None, model="Gaussian"):
+    def find_stars(self, galaxy_name=None, plot=False, plot_custom=[False, False, False, False], catalog=["UCAC4"],
+                   detection_method="peaks", initial_radius=10.0, in_region=False, split_sigma=None, model="Gaussian",
+                   split_brightness=False, brightness_sigma=5.0):
 
         """
         This function searches for stars in the currently selected frame, by fetching star positions from an
@@ -1363,6 +1369,17 @@ class Image(object):
         # Only create a region if any stars were found
         if len(stars) > 0:
 
+            if split_brightness:
+
+                # Find saturated stars
+                stars, brightest = statistics.sigma_clip_split(stars, lambda source: source.amplitude, sigma=brightness_sigma, only_high=True)
+
+                if len(brightest) > 0:
+
+                    # Convert the list of saturated stars to a region and add it to the list of regions
+                    brightest_region = regions.ellipses_from_coordinates(brightest)
+                    self._add_region(brightest_region, "brightest")
+
             # Convert the list of stars to a region and add it to the list of regions
             stars_region = regions.ellipses_from_coordinates(stars)
             self._add_region(stars_region, "stars")
@@ -1375,6 +1392,44 @@ class Image(object):
             # Convert the list of ufos to a region and add it to the list of regions
             ufos_region = regions.ellipses_from_coordinates(ufos)
             self._add_region(ufos_region, "ufos")
+
+    # *****************************************************************
+
+    def create_segmentation_mask(self, kernel_fwhm, kernel_size):
+
+        """
+        This function ...
+        :return:
+        """
+
+        region = self.combine_regions()
+
+        if len(region) == 0: pass # Use whole frame
+
+        # Get the name of the currently selected frame
+        frame_name = self.frames.get_selected(require_single=True)
+
+        mask = np.zeros_like(self.frames[frame_name].data, dtype=bool)
+
+        # Loop over all shapes
+        for shape in region:
+
+            # Get the parameters of this shape
+            x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
+
+            # Crop
+            box, x_min, x_max, y_min, y_max = cropping.crop(self.frames[frame_name].data, x_center, y_center, x_radius, y_radius)
+
+            # Find segments
+            segments = analysis.find_segments(box, kernel_fwhm=kernel_fwhm, kernel_size=kernel_size)
+
+            # TODO: only keep center segment!
+
+            # Adapt the mask
+            mask[y_min:y_max,x_min:x_max] = segments.astype(bool)
+
+        # Add the new mask
+        self._add_mask(mask, "segments")
 
     # *****************************************************************
 

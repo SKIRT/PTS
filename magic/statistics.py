@@ -108,7 +108,7 @@ def sigma_clipped_statistics(data, sigma=3.0, mask=None):
 
 # *****************************************************************
 
-def sigma_clip_split(input_list, criterium, sigma=3.0):
+def sigma_clip_split(input_list, criterium, sigma=3.0, only_high=False, only_low=False):
 
     """
     This function ...
@@ -129,15 +129,32 @@ def sigma_clip_split(input_list, criterium, sigma=3.0):
     # Use sigma clipping to seperate stars and unidentified objects
     mask = sigma_clip_mask_list(determinants, sigma=sigma)
 
+    # Calculate the mean value of the determinants that are not masked
+    mean = np.ma.mean(np.ma.masked_array(determinants, mask=mask))
+
     # Create a seperate list for the stars and for the ufos
     valid_list = []
     invalid_list = []
 
     # Loop over all items in the input list, putting them in either the valid or invalid list
-    for index, src in enumerate(input_list):
+    for index, item in enumerate(input_list):
 
-        if mask[index]: invalid_list.append(src)
-        else: valid_list.append(src)
+        value = criterium(item)
+
+        if only_high:
+
+            if mask[index] and value > mean: invalid_list.append(item)
+            else: valid_list.append(item)
+
+        elif only_low:
+
+            if mask[index] and value < mean: invalid_list.append(item)
+            else: valid_list.append(item)
+
+        else:
+
+            if mask[index]: invalid_list.append(item)
+            else: valid_list.append(item)
 
     # Return the valid and invalid lists
     return valid_list, invalid_list

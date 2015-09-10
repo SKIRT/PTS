@@ -167,7 +167,7 @@ def mask(image, edges=True, extra=None, plot=False):
 
 # *****************************************************************
 
-def remove_stars(image, galaxy_name, region_file=None, model_stars=False, plot=False, output_path=None):
+def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove_saturation=False, plot=False, output_path=None):
 
     """
     This function removes the stars ...
@@ -187,9 +187,9 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, plot=F
     elif image.fwhm is not None:
 
         sigma = image.fwhm / 2.355
-        image.fetch_stars(sigma)
+        image.fetch_stars(sigma, galaxy_name=galaxy_name)
 
-    else: image.find_stars(galaxy_name)
+    else: image.find_stars(galaxy_name, split_brightness=remove_saturation)
 
     # Select the stars region
     image.regions.stars.select()
@@ -272,9 +272,6 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, plot=F
     image.masks.inner.select()
     image.interpolate_in_regions()
 
-    # If requested, save the star-subtracted image
-    if output_path is not None: save(image, output_path, "removed_stars.fits")
-
     # Obtain and set the FWHM of the PSF for the image
     if image.fwhm is None:
 
@@ -288,6 +285,30 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, plot=F
 
         # Set the fwhm
         image.set_fwhm(fwhm)
+
+    # Remove saturated stars
+    if remove_saturation and image.regions.brightest is not None:
+
+        # Deselect all regions, masks and frames except for the primary frame
+        reset_selection(image)
+
+        # Create a region of 15-sigma contours around the brightest stars and select it
+        image.regions.brightest.select()
+        image.expand_regions(factor=15.0)
+        image.regions.deselect_all()
+        image.regions.brightest_expanded.select()
+
+        # Create a mask for all segments found within the ellipses of that region and select it
+        image.create_segmentation_mask(image.fwhm, int(image.fwhm*2.0))
+        image.regions.deselect_all()
+        image.masks.segments.select()
+
+        # Interpolate the primary frame within the masked pixels
+        image.interpolate()
+        image.masks.deselect_all()
+
+    # If requested, save the star-subtracted image
+    if output_path is not None: save(image, output_path, "removed_stars.fits")
 
     # Deselect all regions, masks and frames (except the primary frame)
     reset_selection(image)

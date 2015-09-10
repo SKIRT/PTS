@@ -27,6 +27,27 @@ from astropy.stats import gaussian_fwhm_to_sigma
 from photutils import detect_sources
 from photutils import daofind
 from astropy.stats import sigma_clipped_stats
+from photutils import detect_threshold
+
+# *****************************************************************
+
+def find_segments(data, kernel_fwhm=2.0, kernel_size=3.0):
+
+    """
+    This function ...
+    :param data:
+    :param shape:
+    :return:
+    """
+
+    threshold = detect_threshold(data, snr=3.)
+
+    sigma = kernel_fwhm * gaussian_fwhm_to_sigma    # FWHM = 2.
+    kernel = Gaussian2DKernel(sigma, x_size=kernel_size, y_size=kernel_size)
+
+    segments = detect_sources(data, threshold, npixels=5, filter_kernel=kernel)
+
+    return segments
 
 # *****************************************************************
 
