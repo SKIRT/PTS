@@ -8,7 +8,7 @@
 import numpy as np
 
 # Import image modules
-from image.inpaint import replace_nans
+from astromagic.inpaint import replace_nans
 
 # Import astronomical modules
 from photutils.background import Background

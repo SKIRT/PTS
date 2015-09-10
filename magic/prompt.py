@@ -5,7 +5,7 @@
 # *****************************************************************
 
 # Import image modules
-from image import Image
+from . import Image
 
 # Import standard modules
 from cmd import Cmd
