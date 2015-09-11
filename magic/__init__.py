@@ -406,6 +406,8 @@ class Image(object):
             # Crop this frame
             self.frames[frame_name].data = cropping.crop_check(self.frames[frame_name].data, x_min, x_max, y_min, y_max)
 
+            # TODO: adjust coordinates!
+
     # *****************************************************************
 
     def rotate_and_center(self, left_x, left_y, right_x, right_y, flip=False):

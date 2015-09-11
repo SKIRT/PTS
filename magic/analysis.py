@@ -964,7 +964,7 @@ def find_galaxy_orientation(data, region, plot=False):
     :return:
     """
 
-    # TODO: improve this function, check the documentation of the FindGalaxy class to improve the fit, instead of using cropping to 'solve' fitting problems
+    # TODO: improve this function, check the documentation of the find_galaxy class to improve the fit, instead of using cropping to 'solve' fitting problems
 
     # Verify that the region contains only one shape
     assert len(region) == 1, "The region can only contain one shape"
@@ -978,7 +978,6 @@ def find_galaxy_orientation(data, region, plot=False):
     if plot: plt.show()
 
     # The length of the major axis of the ellipse
-    #major = 3.0 * orientation.majoraxis
     major = orientation.majoraxis
 
     # The width and heigth of the ellips
@@ -994,10 +993,11 @@ def find_galaxy_orientation(data, region, plot=False):
         smaller_data, x_min, x_max, y_min, y_max = cropping.crop(data, x_position, y_position, size/4.0, size/4.0)
 
         # Again look for the galaxy orientation
-        orientation = FindGalaxy(smaller_data[::-1,:], quiet=True, plot=plot)
+        orientation = find_galaxy(smaller_data[::-1,:], quiet=True, plot=plot)
+        if plot: plt.show()
 
         # The length of the major axis of the ellipse
-        major = 3.0 * orientation.majoraxis
+        major = orientation.majoraxis
 
         # The width and heigth of the ellips
         width = major

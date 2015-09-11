@@ -334,8 +334,8 @@ def subtract_sky(image, galaxy_name, plot=False, output_path=None, downsample_fa
     # If an output path is provided, save the galaxy region
     if output_path is not None: export_region(image, output_path, "galaxy.reg")
 
-    # Expand the galaxy region by a factor of 2.5 and create a mask from this new region
-    image.expand_regions(factor=7.0)
+    # Expand the galaxy region by a factor of 5.0 and create a mask from this new region
+    image.expand_regions(factor=5.0)
     image.regions.deselect_all()
     image.regions.galaxy_expanded.select()
     image.create_mask()
@@ -461,21 +461,7 @@ def convolve(image, kernel, plot=False):
     """
 
     # Convolve to the PACS 160 resolution
-    image.convolve(kernel)
-
-    # If requested, save the new kernel
-    #if save:
-
-        # Select the kernel frame
-        #image.frames.deselect_all()
-        #image.frames.kernel.select()
-
-        #path = os.path.join(self.preppath, image.name, "newkernel.fits")
-        #image.export_datacube(path)
-
-        # Select the primary frame again
-        #image.frames.deselect_all()
-        #image.frames.primary.select()
+    image.convolve_fits(kernel)
 
     # Deselect all masks and regions
     image.regions.deselect_all()
