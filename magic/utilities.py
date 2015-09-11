@@ -276,7 +276,7 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove
     if image.fwhm is None:
 
         # Select the modeled stars region
-        image.deselect_all()
+        reset_selection(image)
         image.regions[region_for_fwhm].select()
 
         # Calculate the fwhm
@@ -335,7 +335,7 @@ def subtract_sky(image, galaxy_name, plot=False, output_path=None, downsample_fa
     if output_path is not None: export_region(image, output_path, "galaxy.reg")
 
     # Expand the galaxy region by a factor of 2.5 and create a mask from this new region
-    image.expand_regions(factor=2.5)
+    image.expand_regions(factor=7.0)
     image.regions.deselect_all()
     image.regions.galaxy_expanded.select()
     image.create_mask()

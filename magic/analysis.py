@@ -7,7 +7,7 @@
 # Import standard modules
 import numpy as np
 from scipy import ndimage
-import copy
+import matplotlib.pyplot as plt
 
 # Import image modules
 import fitting
@@ -20,7 +20,7 @@ from tools import coordinates, cropping, interpolation
 # Import astronomical modules
 from astropy.table import Table
 from photutils import find_peaks
-from find_galaxy import FindGalaxy
+from find_galaxy import find_galaxy
 from astropy import log
 from astropy.convolution import Gaussian2DKernel
 from astropy.stats import gaussian_fwhm_to_sigma
@@ -974,10 +974,12 @@ def find_galaxy_orientation(data, region, plot=False):
     y_position = shape.coord_list[1]
 
     # Look for the galaxy orientation
-    orientation = FindGalaxy(data[::-1,:], quiet=True, plot=plot)
+    orientation = find_galaxy(data[::-1,:], quiet=True, plot=plot)
+    if plot: plt.show()
 
     # The length of the major axis of the ellipse
-    major = 3.0 * orientation.majoraxis
+    #major = 3.0 * orientation.majoraxis
+    major = orientation.majoraxis
 
     # The width and heigth of the ellips
     width = major
