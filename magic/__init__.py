@@ -360,8 +360,9 @@ class Image(object):
 
         if path is None:
 
-            plt.show()
-            plt.close('all')
+            #plt.draw()
+            #plt.close('all') # redundant
+            plt.show(block=False)
 
         else: plot.save(path)
 
@@ -1397,7 +1398,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def create_segmentation_mask(self, kernel_fwhm, kernel_size, plot=True):
+    def create_segmentation_mask(self, kernel_fwhm, kernel_size, plot=False):
 
         """
         This function ...
