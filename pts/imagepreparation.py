@@ -224,10 +224,10 @@ class ImagePreparation(object):
             iu.convert_units(image, filter_name, attenuations)
 
             # Convolve this image to the PACS 160 micron resolution
-            if filter != "PACS160": iu.convolve(image, kernels[filter_name])
+            if filter_name != "PACS160": iu.convolve(image, kernels[filter_name])
 
             # Rebin this image to the PACS 160 micron pixel grid
-            if filter != 'PACS160': iu.rebin(image, self.data_path, 'PACS160.fits')
+            if filter_name != 'PACS160': iu.rebin(image, self.data_path, 'PACS160.fits')
 
             # NIET voor 2MASSH
             # Determine background noise in the convolved image
