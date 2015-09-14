@@ -40,21 +40,23 @@ axistypes = {
     'taumax': ( r"$\tau_\mathrm{V,max}$", lambda: setup_optical_depth_maximum ),
     'tau90': ( r"$\tau_\mathrm{V,90}$", lambda: setup_optical_depth_percentile90 ),
     'dusterror': ( r"$\mathrm{1-(M_\mathrm{grid}/M_\mathrm{dust})\,[\%]}$",
-                    lambda: 100*(setup_mass_dust-setup_mass_dust_grid)/setup_mass_dust ),
+        lambda: 100*(setup_mass_dust-setup_mass_dust_grid)/setup_mass_dust ),
 
     # intrinsic properties
     'logMstar': ( r"$\log_{10}(M_*)\,[M_\odot]$", lambda: np.log10(original_mass_stars) ),
-    'logMdust': ( r"$\log_{10}(M_\mathrm{dust})\,[M_\odot])$", lambda: np.log10(setup_mass_dust) ),
+    'logMdust': ( r"$\log_{10}(M_\mathrm{dust})\,[M_\odot]$", lambda: np.log10(setup_mass_dust) ),
     'logMdust/Mstar': ( r"$\log_{10}(M_\mathrm{dust}/M_*)$", lambda: np.log10(setup_mass_dust/original_mass_stars) ),
     'logLtot': ( r"$\log_{10}(L_\mathrm{tot})\,[L_\odot]$", lambda: np.log10(setup_luminosity_stars+setup_luminosity_hii_regions) ),
     'logLhii': ( r"$\log_{10}(L_\mathrm{hii})\,[L_\odot]$", lambda: np.log10(setup_luminosity_hii_regions[setup_luminosity_hii_regions>0]) ),
-    'Zgas': ( r"$Z_\mathrm{gas}$", lambda: setup_mass_metallic_gas/setup_mass_cold_gas ),
-    'logZgas': ( r"$\log_{10}(Z_\mathrm{gas})\,[Z_\odot]$", lambda: np.log10(setup_mass_metallic_gas/setup_mass_cold_gas/Zsun) ),
+    'Zgas': ( r"$Z_\mathrm{gas}$", lambda: divide_if_positive(setup_mass_metallic_gas,setup_mass_cold_gas) ),
     'fdust': ( r"$f_\mathrm{dust}$", lambda: setup_mass_dust/setup_mass_metallic_gas ),
     'Mgas/Mdust': ( r"$M_\mathrm{gas}/M_\mathrm{dust}$", lambda: setup_mass_cold_gas/setup_mass_dust ),
     'fracMgas': ( r"$M_\mathrm{gas}/(M_*+M_\mathrm{gas})$", lambda: setup_mass_cold_gas/(original_mass_stars+setup_mass_cold_gas) ),
     'logM/L': ( r"$\log_{10}(M_*/L_\mathrm{tot})\,[M_\odot/L_\odot]$",
         lambda: np.log10(original_mass_stars/(setup_luminosity_stars+setup_luminosity_hii_regions)) ),
+
+    # observationally derived mass properties
+    'logMstar.Zibetti': ( r"$\log_{10}(M_{*,\mathrm{Zibetti}})\,[M_\odot]$", lambda: log_stellarmass_Zabetti() ),
 
     # magnitudes and colors
     'g': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g ),
@@ -69,17 +71,18 @@ axistypes = {
         lambda: np.maximum(instr_xy_fluxdensity_maximum,instr_xz_fluxdensity_maximum,instr_yz_fluxdensity_maximum)/1e3 ),
 
     # ratios of flux densities (Jy/Jy)
-    'logf250/f500': ( r"$\log_{10}(f_{250}/f_{500})$", lambda: np.log10(instr_fluxdensity_spire_psw / instr_fluxdensity_spire_plw) ),
+    'logf250/f500': ( r"$\log_{10}(f_{250}/f_{500})$",
+        lambda: log_divide_if_positive(instr_fluxdensity_spire_psw,instr_fluxdensity_spire_plw) ),
 
     # luminosities in specific bands
     'logLk': ( r"$\log_{10}(L_\mathrm{K})\,[L_{\odot,\mathrm{K}}]$",
-        lambda: np.log10(units.luminosityforflux(instr_yz_fluxdensity_ukidss_k,setup_distance_instrument,'W/Hz')/LsunK) ),
+        lambda: np.log10(units.luminosityforflux(instr_fluxdensity_ukidss_k,setup_distance_instrument,'W/Hz')/LsunK) ),
     'logM/Lh': ( r"$\log_{10}(M_*/L_\mathrm{H})\,[M_\odot/L_{\odot,\mathrm{H}}]$",
-        lambda: np.log10(original_mass_stars/units.luminosityforflux(instr_yz_fluxdensity_ukidss_h,setup_distance_instrument,'W/Hz')*LsunH) ),
+        lambda: np.log10(original_mass_stars/units.luminosityforflux(instr_fluxdensity_ukidss_h,setup_distance_instrument,'W/Hz')*LsunH) ),
 
     # other ratios
     'logMdust/f350/D2' : ( r"$\log_{10}(M_{dust}/(f_{350}D^2))\,[\mathrm{kg}\,\mathrm{W}^{-1}\,\mathrm{Hz}]$",
-                        lambda: np.log10((setup_mass_dust*Msun)/(instr_fluxdensity_spire_pmw*1e-26)/(setup_distance_instrument*pc)**2) ),
+        lambda: log_divide_if_positive(setup_mass_dust*Msun,instr_fluxdensity_spire_pmw*1e-26*(setup_distance_instrument*pc)**2) ),
 }
 
 # -----------------------------------------------------------------
@@ -92,6 +95,37 @@ Lsun = units.convert(1., from_unit='Lsun', to_unit='W')
 LsunK = 10**((34.1-5.19)/2.5)  # solar luminosity in K band expressed in W/Hz  (AB magnitude is 5.19)
 LsunH = 10**((34.1-4.71)/2.5)  # solar luminosity in H band expressed in W/Hz  (AB magnitude is 4.71)
 Zsun = 0.0127
+
+# -----------------------------------------------------------------
+
+# some generic functions used in the axis type definitions
+
+# return x/y, or zero for y=0
+def divide_if_positive(x,y):
+    result = np.zeros_like(x)
+    result[y>0] = x[y>0] / y[y>0]
+    return result
+
+# return log10(x/y), or smallest other result for x=0 or y=0
+def log_divide_if_positive(x,y):
+    result = np.zeros_like(x)
+    result[y>0] = x[y>0] / y[y>0]
+    positive = result>0
+    result[positive] = np.log10(result[positive])
+    result[~positive] = result[positive].min()
+    return result
+
+# -----------------------------------------------------------------
+
+# functions used in the axis type definitions to derive mass properties from observations
+
+# stellar mass according to Zabetti et al 2009, table B1, using color g-i and H-band luminosity
+# returns log10 of stellar mass in solar units
+def log_stellarmass_Zabetti():
+    color = instr_magnitude_sdss_g - instr_magnitude_sdss_i   # AB color g - i
+    logGamma = -1.222 + 0.780*color    # gamma in solar units (coefficients a_H and b_H for color g-i in table B1)
+    logLH = (4.71 - instr_magnitude_ukidss_h) / 2.5   # solor AB magnitude in H band is 4.71
+    return logGamma + logLH
 
 # -----------------------------------------------------------------
 
@@ -252,8 +286,8 @@ def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,1
         ax.set_aspect(1./ax.get_data_ratio())
 
         # include instrument names in axis labels if relevant
-        if xinstr != 'any': xlabel += r"$\;\mathrm{'"+xinstr+"'}$"
-        if yinstr != 'any': ylabel += r"$\;\mathrm{'"+yinstr+"'}$"
+        if xinstr != 'any': xlabel += r"$\;\triangleright\mathrm{"+xinstr+"}$"
+        if yinstr != 'any': ylabel += r"$\;\triangleright\mathrm{"+yinstr+"}$"
 
         # add axis labels
         plt.xlabel(xlabel, fontsize='medium')
