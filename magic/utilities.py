@@ -356,7 +356,7 @@ def subtract_sky(image, galaxy_name, plot=False, output_path=None, downsample_fa
         image.masks.modeled_stars_expanded.select() # Select the new mask
 
     # Select all other masks that cover parts not suitable for fitting the sky (galaxy, stars)
-    image.masks.inner.select()                  # (unmodeled) stars
+    if image.masks.inner is not None: image.masks.inner.select()                  # (unmodeled) stars
     image.masks.galaxy_expanded.select()
     image.masks.total.select()
 
