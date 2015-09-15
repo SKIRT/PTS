@@ -229,28 +229,8 @@ class ImagePreparation(object):
             # Rebin this image to the PACS 160 micron pixel grid
             if filter_name != 'PACS160': iu.rebin(image, self.data_path, 'PACS160.fits')
 
-            # NIET voor 2MASSH
-            # Determine background noise in the convolved image
-            # Determine mean pixel value and sigma in different apertures of the background
-            # => list means = [] and sigmas = []
-            # a = robust_sigma(means) = standard deviation of mean background derived for different background regions
-            # b = median(sigmas) = mean of the standard deviation of pixel-by-pixel variations in different background regions
-            #
-            # background_uncertainty = sqrt(a^2 + b^2)
-            #
-            # Construct error maps
-            # ima3_6err_rebin[i,j] = (ima3_6_rebin[i,j]/ima3_6_rebin[i,j])*backunc_3_6
-            # imaFUVerr_rebin[i,j] = (imaFUV_rebin[i,j]/imaFUV_rebin[i,j])*backunc_FUV
-            # ima24err_rebin[i,j] = sqrt((ima24err_rebin[i,j]*ima24err_rebin[i,j])+((ima24_rebin[i,j]/ima24_rebin[i,j])*backunc_24*backunc_24))
-            # ima70err_rebin[i,j] = sqrt((ima70err_rebin[i,j]*ima70err_rebin[i,j])+((ima70_rebin[i,j]/ima70_rebin[i,j])*backunc_70*backunc_70))
-            # ima160err[i,j] = sqrt((ima160err[i,j]*ima160err[i,j])+((ima160[i,j]/ima160[i,j])*backunc_160*backunc_160))
-            # NIET: imaHerr_rebin[i,j] = (imaH_rebin[i,j]/imaH_rebin[i,j])*backunc_H
-            # imaHaerr_rebin[i,j] = (imaHa_rebin[i,j]/imaHa_rebin[i,j])*backunc_Ha
-
-            # TODO: add calibration uncertainty!
-
-            # hextract, ima160, hima160, ima160_rebin, hima160_rebin, 350, 725, 300, 825
-            # hextract, ima160err, hima160, ima160err_rebin, hima160_rebin, 350, 725, 300, 825
+            # Set the uncertainties
+            if filter_name != "2MASSH": iu.set_uncertainty(image, self.prep_path, "noise.reg")
 
             # If requested, save the result
             if self.save: iu.save(image, filter_prep_path, 'convolved_rebinned.fits')
