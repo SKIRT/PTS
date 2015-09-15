@@ -55,9 +55,6 @@ axistypes = {
     'logM/L': ( r"$\log_{10}(M_*/L_\mathrm{tot})\,[M_\odot/L_\odot]$",
         lambda: np.log10(original_mass_stars/(setup_luminosity_stars+setup_luminosity_hii_regions)) ),
 
-    # observationally derived mass properties
-    'logMstar.Zibetti': ( r"$\log_{10}(M_{*,\mathrm{Zibetti}})\,[M_\odot]$", lambda: log_stellarmass_Zabetti() ),
-
     # magnitudes and colors
     'g': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g ),
     'r': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_r ),
@@ -81,8 +78,19 @@ axistypes = {
         lambda: np.log10(original_mass_stars/units.luminosityforflux(instr_fluxdensity_ukidss_h,setup_distance_instrument,'W/Hz')*LsunH) ),
 
     # other ratios
-    'logMdust/f350/D2' : ( r"$\log_{10}(M_{dust}/(f_{350}D^2))\,[\mathrm{kg}\,\mathrm{W}^{-1}\,\mathrm{Hz}]$",
+    'logMdust/f350/D2' : ( r"$\log_{10}(M_\mathrm{dust}/(f_{350}D^2))\,[\mathrm{kg}\,\mathrm{W}^{-1}\,\mathrm{Hz}]$",
         lambda: log_divide_if_positive(setup_mass_dust*Msun,instr_fluxdensity_spire_pmw*1e-26*(setup_distance_instrument*pc)**2) ),
+
+    # observationally derived "intrinsic" properties
+    'logMstar.obs': ( r"$\log_{10}(M_{*,\mathrm{obs}})\,[M_\odot]$", lambda: log_stellarmass_observed() ),
+    'logMdust.obs': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{obs}})\,[M_\odot]$", lambda: log_dustmass_observed() ),
+    'logMdust.obs/Mstar.obs': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{obs}}/M_{*,\mathrm{obs}})$",
+        lambda: log_dustmass_observed() - log_stellarmass_observed() ),
+
+    'logMdust.obs/f350/D2' : ( r"$\log_{10}(M_\mathrm{dust}/(f_{350}D^2))\,[\mathrm{kg}\,\mathrm{W}^{-1}\,\mathrm{Hz}]$",
+        lambda: log_divide_if_positive((10**log_dustmass_observed())*Msun,
+            instr_fluxdensity_spire_pmw*1e-26*(setup_distance_instrument*pc)**2) ),
+
 }
 
 # -----------------------------------------------------------------
@@ -119,13 +127,24 @@ def log_divide_if_positive(x,y):
 
 # functions used in the axis type definitions to derive mass properties from observations
 
-# stellar mass according to Zabetti et al 2009, table B1, using color g-i and H-band luminosity
+# stellar mass according to Zibetti et al 2009, table B1, using color g-i and i-band luminosity
 # returns log10 of stellar mass in solar units
-def log_stellarmass_Zabetti():
+def log_stellarmass_observed():
     color = instr_magnitude_sdss_g - instr_magnitude_sdss_i   # AB color g - i
-    logGamma = -1.222 + 0.780*color    # gamma in solar units (coefficients a_H and b_H for color g-i in table B1)
-    logLH = (4.71 - instr_magnitude_ukidss_h) / 2.5   # solor AB magnitude in H band is 4.71
-    return logGamma + logLH
+    logGamma = -0.963 + 1.032*color    # gamma in solar units (coefficients a_i and b_i for color g-i in table B1)
+    logLi = (4.54 - instr_magnitude_sdss_i) / 2.5   # solor AB magnitude in i band is 4.54
+    return logGamma + logLi
+
+# dust mass according to Cortese et al 2012, appendix B, using beta=2 for extended sources
+# returns log10 of dust mass in solar units
+def log_dustmass_observed():
+    x = log_divide_if_positive(instr_fluxdensity_spire_psw,instr_fluxdensity_spire_plw)
+    logMFD = 16.880 - 1.559*x + 0.160*x**2 - 0.079*x**3 - 0.363*x**4
+    logD = np.log10(setup_distance_instrument/1e6)
+    logF = log_divide_if_positive(instr_fluxdensity_spire_pmw,np.ones_like(instr_fluxdensity_spire_pmw))
+    logDust = logMFD + 2*logD + logF - 11.32
+    #logDust += np.log10( 0.192 / 0.330 )     # kappa at 350 micron assumed in Cortese vs actual for Zubko
+    return logDust
 
 # -----------------------------------------------------------------
 
@@ -234,12 +253,20 @@ def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,1
                 plt.scatter(x, y, marker='o', s=10, alpha=0.5, edgecolors='k', linewidths=(1,), facecolors=color)
 
                 # fit a line through the data and plot it
-                rico, y0 = np.polyfit(x, y, 1)
-                x1 = x.min()
-                x2 = x.max()
-                y1 = y0 + rico*x1
-                y2 = y0 + rico*x2
-                plt.plot([x1,x2], [y1,y2], color=color, label=collection.name)
+                xmin = plotdef.get('xmin', x.min())
+                xmax = plotdef.get('xmax', x.max())
+                if xmin>xmax: xmin,xmax = xmax,xmin
+                ymin = plotdef.get('ymin', y.min())
+                ymax = plotdef.get('ymax', y.max())
+                if ymin>ymax: ymin,ymax = ymax,ymin
+                mask = (x>=xmin) & (x<=xmax) & (y>=ymin) & (y<=ymax)
+                if np.any(mask):
+                    rico, y0 = np.polyfit(x[mask], y[mask], 1)
+                    x1 = xmin
+                    x2 = xmax
+                    y1 = y0 + rico*x1
+                    y2 = y0 + rico*x2
+                    plt.plot([x1,x2], [y1,y2], color=color, label=collection.name)
 
         # for a histogram...
         else:
@@ -299,6 +326,7 @@ def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,1
 
         # add a legend
         plt.legend(loc='best', prop={'size':'small'})
+        plt.grid(True)
 
     # save and close the figure
     plotfilepath = os.path.join(config.plots_path, plotname+".pdf")
