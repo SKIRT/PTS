@@ -518,6 +518,9 @@ def rebin(image, directory, name, plot=False):
     # If requested, plot the rebinned primary image
     if plot: image.plot()
 
+    # Deselect all regions, masks and frames (except the primary frame)
+    reset_selection(image)
+
 # *****************************************************************
 
 def set_uncertainty(image, directory, name):
