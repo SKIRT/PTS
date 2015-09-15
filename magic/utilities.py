@@ -556,7 +556,7 @@ def set_uncertainty(image, directory, name):
 
     else:
 
-        image.frames.errors.data = np.sqrt(np.pow(image.frames.errors.data, 2)+uncertainty**2)
+        image.frames.errors.data = np.sqrt(np.power(image.frames.errors.data, 2)+uncertainty**2)
 
     # Deselect ...
     reset_selection(image)
