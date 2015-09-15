@@ -31,7 +31,7 @@ from photutils import detect_threshold
 
 # *****************************************************************
 
-def find_segments(data, kernel_fwhm=2.0, kernel_size=3.0, signal_to_noise=2.0):
+def find_segments(data, kernel_fwhm=2.0, kernel_size=3.0, threshold=None, signal_to_noise=2.0):
 
     """
     This function ...
@@ -40,7 +40,7 @@ def find_segments(data, kernel_fwhm=2.0, kernel_size=3.0, signal_to_noise=2.0):
     :return:
     """
 
-    threshold = detect_threshold(data, snr=signal_to_noise)
+    if threshold is None: threshold = detect_threshold(data, snr=signal_to_noise)
 
     sigma = kernel_fwhm * gaussian_fwhm_to_sigma    # FWHM = 2.
     kernel = Gaussian2DKernel(sigma, x_size=kernel_size, y_size=kernel_size)
@@ -1012,5 +1012,27 @@ def find_galaxy_orientation(data, region, plot=False):
 
     # Return the parameters of the galaxy
     return (orientation.ypeak, orientation.xpeak, width, height, orientation.theta)
+
+# *****************************************************************
+
+def crop_and_mask_for_background(data, shape, inner_factor, outer_factor):
+
+    # Find the parameters of this ellipse (or circle)
+    x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
+
+    # Set the radii for cutting out the background box
+    x_radius_outer = outer_factor*x_radius
+    y_radius_outer = outer_factor*y_radius
+
+    # Cut out the background and the background mask
+    background, x_min, x_max, y_min, y_max = cropping.crop(data, x_center, y_center, x_radius_outer, y_radius_outer)
+
+    x_center_rel = x_center - x_min
+    y_center_rel = y_center - y_min
+
+    # Create the mask
+    mask = masks.create_disk_mask(background.shape[1], background.shape[0], x_center_rel, y_center_rel, x_radius)
+
+    return np.ma.masked_array(background, mask=mask), x_min, x_max, y_min, y_max
 
 # *****************************************************************

@@ -1333,7 +1333,7 @@ class Image(object):
 
     def find_stars(self, galaxy_name=None, plot=False, plot_custom=[False, False, False, False], catalog=["UCAC4"],
                    detection_method="peaks", initial_radius=10.0, in_region=False, split_sigma=None, model="Gaussian",
-                   split_brightness=False, brightness_sigma=5.0):
+                   split_brightness=False, brightness_sigma=6.0):
 
         """
         This function searches for stars in the currently selected frame, by fetching star positions from an
@@ -1398,7 +1398,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def create_segmentation_mask(self, kernel_fwhm, kernel_size, plot=False):
+    def create_segmentation_mask(self, kernel_fwhm, kernel_size, threshold_sigmas=2.0, plot=False):
 
         """
         This function ...
@@ -1423,10 +1423,32 @@ class Image(object):
             # Crop
             box, x_min, x_max, y_min, y_max = cropping.crop(self.frames[frame_name].data, x_center, y_center, x_radius, y_radius)
 
-            # Find segments
-            segments = analysis.find_segments(box, kernel_fwhm=kernel_fwhm, kernel_size=kernel_size)
+            background, x_min_back, x_max_back, y_min_back, y_max_back = analysis.crop_and_mask_for_background(self.frames[frame_name].data,
+                                                                                                                   shape, 1.0, 1.2)
 
-            # TODO: only keep center segment!
+            #plotting.plot_box(box_background, title="Box for background estimation")
+
+            # Remove gradient
+            poly = fitting.fit_polynomial(background.data, 3, mask=background.mask)
+            polynomial = fitting.evaluate_model(poly, 0, background.shape[1], 0, background.shape[0])
+
+            #plotting.plot_difference(background, polynomial)
+
+            background = background - polynomial
+
+            mean, median, stddev = statistics.sigma_clipped_statistics(background.data, mask=background.mask)
+
+            #print mean, median, stddev
+
+            threshold = mean + threshold_sigmas*stddev
+
+            #oldbox = box
+            box = box - polynomial[x_min-x_min_back:x_max-x_min_back, y_min-y_min_back:y_max-y_min_back]
+
+            #plotting.plot_difference(oldbox, box)
+
+            # Find segments
+            segments = analysis.find_segments(box, kernel_fwhm=kernel_fwhm, kernel_size=kernel_size, threshold=threshold)
 
             label = segments[y_center-y_min, x_center-x_min]
 
@@ -1435,7 +1457,7 @@ class Image(object):
             # box_mask = segments.astype(bool)
 
             # Adapt the mask
-            mask[y_min:y_max,x_min:x_max] = box_mask
+            mask[y_min:y_max, x_min:x_max] = masks.union(mask[y_min:y_max, x_min:x_max], box_mask)
 
             if plot: plotting.plot_box(np.ma.masked_array(box, mask=mask[y_min:y_max,x_min:x_max]), title="Masked segment")
 

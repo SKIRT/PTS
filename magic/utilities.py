@@ -298,6 +298,8 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove
         image.regions.deselect_all()
         image.regions.brightest_expanded.select()
 
+        if output_path is not None: export_region(image, output_path, "brightest.reg")
+
         # Create a mask for all segments found within the ellipses of that region and select it
         image.create_segmentation_mask(image.fwhm, int(image.fwhm*2.0))
         image.regions.deselect_all()
