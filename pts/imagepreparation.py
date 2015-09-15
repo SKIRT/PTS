@@ -259,7 +259,7 @@ class ImagePreparation(object):
             image.crop(350, 725, 300, 825)
 
             # If requested, save the result
-            if self.save: iu.save(image, filter_prep_path, 'final.fits')
+            iu.save(image, filter_prep_path, 'final.fits')
 
     # *****************************************************************
 
