@@ -713,6 +713,36 @@ class Image(object):
 
     # *****************************************************************
 
+    def uncertainty_from_regions(self):
+
+        region = self.combine_regions(allow_none=False)
+
+        frame_name = self.frames.get_selected(require_single=True)
+
+        means = []
+        stddevs = []
+
+        for shape in region:
+
+            x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
+
+            box, x_min, x_max, y_min, y_max = cropping.crop(self.frames[frame_name].data, x_center, y_center, x_radius, y_radius)
+
+            mean = np.mean(box)
+            stddev = np.std(box)
+
+            means.append(mean)
+            stddevs.append(stddev)
+
+        means = np.array(means)
+        stddevs = np.array(stddevs)
+
+        uncertainty = np.sqrt(np.std(means)**2 + np.median(stddevs))
+
+        return uncertainty
+
+    # *****************************************************************
+
     def convolve_fits(self, name):
 
         """

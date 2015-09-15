@@ -57,8 +57,27 @@ def save(image, directory, name):
     :return:
     """
 
+    # Select the errors frame is there is one
+    if image.frames.errors is not None: image.frames.errors.select()
+
+    # Write to file
     path = os.path.join(directory, name)
     image.export_datacube(path)
+
+# *****************************************************************
+
+def import_region(image, directory, name, region_name):
+
+    """
+    This function ...
+    :param image:
+    :param directory:
+    :param name:
+    :return:
+    """
+
+    path = os.path.join(directory, name)
+    image.import_region(path, region_name)
 
 # *****************************************************************
 
@@ -439,12 +458,11 @@ def convert_units(image, filter_name, attenuations):
     if filter_name == "PACS160": factor = conversionfactorP160(image, attenuation)
     if filter_name == "Ha": factor = conversionfactorHa(image, attenuation)
 
-    # Multiply the primary frame by the conversion factor
-    image.multiply(factor)
+    # Select the errors frame if present
+    if image.frames.errors is not None: image.frames.errors.select()
 
-    # Deselect all masks and regions
-    image.regions.deselect_all()
-    image.masks.deselect_all()
+    # Multiply the primary frame (and the errors frame) by the conversion factor
+    image.multiply(factor)
 
     # Deselect all regions, masks and frames (except the primary frame)
     reset_selection(image)
@@ -461,6 +479,9 @@ def convolve(image, kernel, plot=False):
     :param save:
     :return:
     """
+
+    # Select the errors frame if present
+    if image.frames.errors is not None: image.frames.errors.select()
 
     # Convolve to the PACS 160 resolution
     image.convolve_fits(kernel)
@@ -483,6 +504,9 @@ def rebin(image, directory, name, plot=False):
     This function rebins the image to the resolution of the PACS 160 micron image
     """
 
+    # Select the errors frame if present
+    if image.frames.errors is not None: image.frames.errors.select()
+
     # Do the rebinning
     ref_image_path = os.path.join(directory, name)
     image.rebin(ref_image_path)
@@ -493,6 +517,46 @@ def rebin(image, directory, name, plot=False):
 
     # If requested, plot the rebinned primary image
     if plot: image.plot()
+
+# *****************************************************************
+
+def set_uncertainty(image, directory, name):
+
+    """
+    This function ...
+    :param image:
+    :param directory:
+    :param name:
+    :return:
+    """
+
+    # NIET voor 2MASSH
+    # Determine background noise in the convolved image
+    # Determine mean pixel value and sigma in different apertures of the background
+    # => list means = [] and sigmas = []
+    # a = robust_sigma(means) = standard deviation of mean background derived for different background regions
+    # b = median(sigmas) = mean of the standard deviation of pixel-by-pixel variations in different background regions
+    #
+    # background_uncertainty = sqrt(a^2 + b^2)
+
+    # TODO: add calibration uncertainty!
+
+    import_region(image, directory, name, "noise")
+
+    image.regions.noise.select()
+
+    uncertainty = image.uncertainty_from_regions()
+
+    if image.frames.errors is None:
+
+        image._add_frame(np.full(image.frames.primary.data.shape, uncertainty), image.frames.primary.coordinates, "errors")
+
+    else:
+
+        image.frames.errors.data = np.sqrt(np.pow(image.frames.errors.data, 2)+uncertainty**2)
+
+    # Deselect ...
+    reset_selection(image)
 
 # *****************************************************************
 
