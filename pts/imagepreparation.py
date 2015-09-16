@@ -16,6 +16,7 @@
 
 # Import standard modules
 import os.path
+import numpy as np
 
 # Import the relevant PTS modules
 import astromagic.utilities as iu
@@ -236,6 +237,7 @@ class ImagePreparation(object):
             if self.save: iu.save(image, filter_prep_path, 'convolved_rebinned.fits')
 
             # Crop the interesting part of the image
+            if image.frames.errors is not None: image.frames.errors.select()
             image.crop(350, 725, 300, 825)
 
             # If requested, save the result
@@ -297,109 +299,170 @@ class ImagePreparation(object):
         This function makes the maps of dust and stars ...
         """
 
+        # Make the specific star formation rate map
+        self.make_ssfr_map()
 
+        # Make the total infrared map
+        self.make_tir_map()
 
-        ## a. Old stars = IRAC3.6 - bulge
-        #     From the IRAC 3.6 micron map, we must subtract the bulge component to only retain the disk emission
+        # Make the FUV attenuation map
+        self.make_attenuation_map()
 
-        IRAC_path = os.path.join(self.prep_path, "IRAC", "final.fits")
-        IRAC_image = iu.open(IRAC_path)
+        # Make the old stars map
+        self.make_oldstars_map()
 
-        bulge_path = os.path.join(self.prep_path, "bulge", "M81_bulge_i59_total.fits")
-        IRAC_image.import_datacube(bulge_path, "bulge")
+        # Make FUV and MIPS 24 emission maps
+        self.make_fuv_and_24_maps()
 
-        IRAC_image.frames.bulge.select()
+        # Make ionizing stars map
+        self.make_ionizing_stars_map()
 
-        totalbulge = IRAC_image.frames.bulge.sum
-        flux3_6 = 60541.038
-        factor = 0.54 * flux3_6 / totalbulge
+    # *****************************************************************
 
-        # Multiply the bulge frame with the factor
-        IRAC_image.multiply(factor)
+    def make_ssfr_map(self):
 
-        # Do the subtraction
-        IRAC_image.subtract()
+        """
+        This function ...
+        :return:
+        """
 
-        # TODO:
+        # Young non-ionizing stars = GALEXFUV - H (sSFR)
 
-        # for pixels where IRAC3.6 >= 10 * IRAC3.6_ERROR && oldstars > 0: OK
-        # other pixels: oldstars = 0.0
+        fuv_path = os.path.join(self.prep_path, "GALEXFUV", "final.fits")
+        h_path = os.path.join(self.prep_path, "2MASSH", "final.fits")
 
-        # Select the primary frame (= now the old stars map)
-        iu.reset_selection(IRAC_image)
+        fuv_image = iu.open(fuv_path)
+        fuv_image.import_datacube(h_path, "H")
 
-        # Save old stars map as FITS file
-        iu.save(IRAC_image, self.in_path, "old_stars.fits")
+        fuv_h_data = -2.5*(np.log10(fuv_image.frames.primary.data) - np.log10(fuv_image.frames.H.data))
 
+        fuv_image._add_frame(fuv_h_data, fuv_image.frames.primary.coordinates, "ssfr")
 
+        fuv_image.deselect_all()
 
+        fuv_image.frames.ssfr.select()
 
-        ## b. Young non-ionizing stars = GALEXFUV - H (sSFR)
+        fuv_image.mask_nans()
 
-        FUV_path = os.path.join(self.prep_path, "GALEXFUV", "final.fits")
-        H_path = os.path.join(self.prep_path, "2MASSH", "final.fits")
+        fuv_image.masks.nans.select()
 
-        FUV_image = iu.open(FUV_path)
-        FUV_image.import_datacube(H_path, "2MASSH")
+        fuv_image.apply_masks(0.0)
 
-        #FUV_H = -2.5*(alog10(imaFUV_rebin) - alog10(imaH_rebin))
-
-        # TODO: put nans = 0
-        # TODO:
+        iu.reset_selection(fuv_image)
 
         #maak alles 0 waar PACS160 SN<5
         #FUV_H_SN5 = fltarr(376,526)
         #for i=0,375 do begin
-        #for j=0,525 do begin
-            #if ((imaH_rebin[i,j] GT 0) && (imaFUV_rebin[i,j] GE (10*imaFUVerr_rebin[i,j]))) then begin
-                #FUV_H_SN5[i,j] = FUV_H[i,j]
-            #endif else begin
-                #FUV_H_SN5[i,j] = 0
-            #endelse
-        #endfor
+           #for j=0,525 do begin
+              #if ((imaH_rebin[i,j] GT 0) && (imaFUV_rebin[i,j] GE (10*imaFUVerr_rebin[i,j]))) then begin
+                 #FUV_H_SN5[i,j] = FUV_H[i,j]
+              #endif else begin
+                 #FUV_H_SN5[i,j] = 0
+              #endelse
+           #endfor
         #endfor
         #fits_write,'M81_FUV_H_StoN_new.fits',FUV_H_SN5,himaFUV_rebin
 
+    # *****************************************************************
 
+    def make_tir_map(self):
 
+        """
+        This function ...
+        :return:
+        """
 
+        D_M81 = 3.6
 
-        ## c. Young ionizing stars = Ha + 0.031 x MIPS24
+        factor24 = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/24e-6) + np.log10(4*np.pi) + (2*np.log10(D_M81*3.08567758e22)) - np.log10(3.846e26)
+        factor70 = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/70e-6) + np.log10(4*np.pi) + (2*np.log10(D_M81*3.08567758e22)) - np.log10(3.846e26)
+        factor160 = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/160e-6) + np.log10(4*np.pi) + (2*np.log10(D_M81*3.08567758e22)) - np.log10(3.846e26)
 
+        mips24_path = os.path.join(self.prep_path, "MIPS24", "final.fits")
+        pacs70_path = os.path.join(self.prep_path, "PACS70", "final.fits")
+        pacs160_path = os.path.join(self.prep_path, "PACS160", "final.fits")
 
-        ## Compute TIR map
+        # Open the images
+        mips24_image = iu.open(mips24_path)
+        pacs70_image = iu.open(pacs70_path)
+        pacs160_image = iu.open(pacs160_path)
 
+        # Convert from MJy/sr to L_sun
+        mips24_image.multiply(10.0**factor24)
+        pacs70_image.multiply(10.0**factor70)
+        pacs160_image.frames.errors.select()
+        pacs160_image.multiply(10.0**factor160)
 
-        ## Compute FUV-attenuation map
+        # Galametz+2013 formula for Lsun units
+        tir_data = (2.133*mips24_image.frames.primary.data) + \
+                   (0.681*pacs70_image.frames.primary.data) + \
+                   (1.125*pacs160_image.frames.primary.data)
 
+        # Convert TIR from Lsun to W/m2
+        factor =  np.log10(3.846e26) - np.log10(4*np.pi) - (2*np.log10(D_M81*3.08567758e22))
+        tir_data = tir_data*(10.0**factor)
 
+    # *****************************************************************
 
-        ## d. Dust = FUV attenuation = ratio of TIR and FUV luminosity
-        ##    where TIR = 24, 70 and 160 micron
+    def make_attenuation_map(self):
 
-        MIPS24_path = os.path.join(self.prep_path, "MIPS24", "final.fits")
-        PACS70_path = os.path.join(self.prep_path, "PACS70", "final.fits")
-        PACS160_path = os.path.join(self.prep_path, "PACS160", "final.fits")
+        # Dust = FUV attenuation = ratio of TIR and FUV luminosity
+        # where TIR = 24, 70 and 160 micron
 
-        MIPS24_image = iu.open(MIPS24_path)
-        MIPS24_image.import_datacube(PACS70_path, "PACS70")
-        MIPS24_image.import_datacube(PACS160_path, "PACS160")
+        pass
 
-        #zet alles om van MJy/sr naar Lsun
-        #factor24 = (2*alog10(2.85/206264.806247)) - 20 + alog10(3e8/24e-6) + alog10(4*!pi) + (2*alog10(D_M81*3.08567758e22)) - alog10(3.846e26)
-        #factor70 = (2*alog10(2.85/206264.806247)) - 20 + alog10(3e8/70e-6) + alog10(4*!pi) + (2*alog10(D_M81*3.08567758e22)) - alog10(3.846e26)
-        #factor160 = (2*alog10(2.85/206264.806247)) - 20 + alog10(3e8/160e-6) + alog10(4*!pi) + (2*alog10(D_M81*3.08567758e22)) - alog10(3.846e26)
-        #ima24_rebin = ima24_rebin*(10^factor24)
-        #ima70_rebin = ima70_rebin*(10^factor70)
-        #ima160_rebin = ima160_rebin*(10^factor160)
-        #ima160err_rebin = ima160err_rebin*(10^factor160)
+    # *****************************************************************
 
-        #Galametz+2013 formula for Lsun units
-        #LTIR = fltarr(376,526)
-        #LTIR = (2.133*ima24_rebin) + (0.681*ima70_rebin) + (1.125*ima160_rebin)
+    def make_oldstars_map(self):
 
+        # Old stars = IRAC3.6 - bulge
+        # From the IRAC 3.6 micron map, we must subtract the bulge component to only retain the disk emission
 
+        irac_path = os.path.join(self.prep_path, "IRAC", "final.fits")
+        irac_image = iu.open(irac_path)
 
+        bulge_path = os.path.join(self.prep_path, "bulge", "M81_bulge_i59_total.fits")
+        irac_image.import_datacube(bulge_path, "bulge")
+
+        irac_image.frames.bulge.select()
+
+        totalbulge = irac_image.frames.bulge.sum
+        flux3_6 = 60541.038
+        factor = 0.54 * flux3_6 / totalbulge
+
+        # Multiply the bulge frame with the factor
+        #irac_image.multiply(factor)
+
+        # Do the subtraction
+        #irac_image.subtract()
+
+        oldstars_data = irac_image.frames.primary.data - factor*irac_image.frames.bulge.data
+
+        for x in range(oldstars_data.shape[1]):
+            for y in range(oldstars_data.shape[0]):
+
+                if irac_image.frames.primary.data[y,x] < 10.0*irac_image.frames.errors.data[y,x] or oldstars_data[y,x] < 0.0:
+
+                    oldstars_data[y,x] = 0.0
+
+        # Add old stars frame
+        irac_image._add_frame(oldstars_data, irac_image.frames.primary.coordinates, "oldstars")
+
+        irac_image.deselect_all()
+
+        irac_image.frames.oldstars.select()
+
+        # Save old stars map as FITS file
+        iu.save(irac_image, self.in_path, "old_stars.fits")
+
+    # *****************************************************************
+
+    def make_fuv_and_24_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         ## Subtract old stellar contribution from FUV and MIPS 24 emission
 
@@ -407,79 +470,97 @@ class ImagePreparation(object):
         #     for this we typically use an exponential disk
         #     (scale length detemermined by GALFIT)
 
-        #totaldisk = total(ima_disk_rebin)
-        #compute total stellar emission in IRAC 3.6 image
-        #fluxFUV = 855.503
-        #flux24 = 27790.448
+        disk_path = os.path.join(self.prep_path, "disk", "M81_disk_i59_total.fits")
+
+        disk_image = iu.open(disk_path)
+
+        totaldisk = disk_image.frames.primary.sum
+
+        fluxFUV = 855.503
+        flux24 = 27790.448
+
         #typisch 20% en 35% respectievelijk
         #48% voor MIPS 24 komt van Lu et al. 2014
-        #factorFUV = 0.2*fluxFUV/totaldisk
-        #factor24 = 0.48*flux24/totaldisk
-        #M81_FUV_stars = imaFUV_rebin - (factorFUV*ima_disk_rebin) ;no subtraction!!!
-        #M81_24_stars = ima24_rebin - (factor24*ima_disk_rebin)
-        #fits_write,'M51_stellarmass_10000_0Myr_minusbulge.fits',Mstar_10000_0Myr_minusbulge,hima_SDSS
 
-        # TODO:
+        factorFUV = 0.2*fluxFUV/totaldisk
+        factor24 = 0.48*flux24/totaldisk
 
-        #for i=0,375 do begin
-           #for j=0,525 do begin
-              #if ((imaFUV_rebin[i,j] GE (10*imaFUVerr_rebin[i,j])) && (M81_FUV_stars[i,j] GE 0)) then begin
-                 #M81_FUV_stars[i,j] =  M81_FUV_stars[i,j]
-              #endif else begin
-                 #M81_FUV_stars[i,j] = 0
-              #endelse
-           #endfor
-        #endfor
+        fuv_path = os.path.join(self.prep_path, "GALEXFUV", "final.fits")
+        fuv_image = iu.open(fuv_path)
 
-        #for i=0,375 do begin
-           #for j=0,525 do begin
-              #if ((ima24_rebin[i,j] GE (10*ima24err_rebin[i,j])) && (M81_24_stars[i,j] GE 0)) then begin
-                 #M81_24_stars[i,j] =  M81_24_stars[i,j]
-              #endif else begin
-                 #M81_24_stars[i,j] = 0
-              #endelse
-           #endfor
-        #endfor
+        mips_path = os.path.join(self.prep_path, "MIPS24", "final.fits")
+        mips_image = iu.open(mips_path)
 
-        #fits_write,'M81_FUV_inputSKIRT.fits', M81_FUV_stars, hima3_6_rebin
-        #fits_write,'M81_24_inputSKIRT.fits', M81_24_stars, hima3_6_rebin
+        new_fuv_data = fuv_image.frames.primary.data - factorFUV*disk_image.frames.primary.data
+        new_mips_data = mips_image.frames.primary.data - factor24*disk_image.frames.primary.data
 
+        # Set zero where negative
+        new_fuv_data[new_fuv_data < 0.0] = 0.0
 
+        # Set zero where low signal-to-noise ratio
+        new_fuv_data[fuv_image.frames.primary.data < 10.0*fuv_image.frames.errors.data] = 0.0
 
+        # Set zero where negative
+        new_mips_data[new_mips_data < 0.0] = 0.0
 
-        # Combineer Ha+24micron tracers
+        # Set zero where low signal-to-noise ratio
+        new_mips_data[mips_image.frames.primary.data < 10.0*mips_image.frames.errors.data] = 0.0
 
+        new_fuv_image = iu.new("fuv")
+        new_mips_image = iu.new("mips")
 
-        #omzetten nr Lsun
-        #factorHa = (2*alog10(2.85/206264.806247)) - 20 + alog10(3e8/0.657894736e-6) + alog10(4*!pi) + (2*alog10(D_M81*3.08567758e22)) - alog10(3.846e26)
-        #imaHa_rebin = imaHa_rebin*(10^factorHa)
-        #M81_ionizingstars = imaHa_rebin + (0.031*M81_24_stars)
-        #M81_ionizingstars_StoN = fltarr(376,526)
-        #M81_ionizingstars_ratio = fltarr(376,526)
+        new_fuv_image._add_frame(new_fuv_data, None, "primary")
+        new_mips_image._add_frame(new_mips_data, None, "primary")
 
-        #for i=0,375 do begin
-           #for j=0,525 do begin
-              #if ((imaHa_rebin[i,j] GE (10*imaHaerr_rebin[i,j])) && (ima24_rebin[i,j] GE (10*ima24err_rebin[i,j]))) then begin
-                 #M81_ionizingstars_StoN[i,j] = M81_ionizingstars[i,j]
-                 #M81_ionizingstars_ratio[i,j] = imaHa_rebin[i,j] / (0.031*M81_24_stars[i,j])
-              #endif else begin
-                 #M81_ionizingstars_StoN[i,j] = 0
-                 #M81_ionizingstars_ratio[i,j] = 0
-              #endelse
-           #endfor
-        #endfor
+        new_fuv_image.frames.primary.select()
+        new_mips_image.frames.primary.select()
 
-        #controleer nog eens dat alles groter dan 0 is
-        #for i=0,375 do begin
-           #for j=0,525 do begin
-              #if (M81_ionizingstars_StoN[i,j] LT 0) then begin
-                 #M81_ionizingstars_StoN[i,j] = 0
-                 #M81_ionizingstars_ratio[i,j] = 0
-              #endif
-           #endfor
-        #endfor
+        # Save the new images
+        iu.save(new_fuv_image, self.in_path, "fuv.fits")
+        iu.save(new_mips_image, self.in_path, "mips.fits")
 
-        #fits_write,'M81_ionizingstars_inputSKIRT.fits', M81_ionizingstars_StoN, hima160_rebin
-        #fits_write,'M81_ionizingstars_ratio.fits', M81_ionizingstars_ratio, hima160_rebin
+    # *****************************************************************
+
+    def make_ionizing_stars_map(self):
+
+        #Young ionizing stars = Ha + 0.031 x MIPS24
+
+        D_M81 = 3.6
+
+        # Convert to Lsun
+        factorHa = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/0.657894736e-6) + np.log10(4*np.pi) + (2*np.log10(D_M81*3.08567758e22)) - np.log10(3.846e26)
+
+        ha_path = os.path.join(self.prep_path, "Ha", "final.fits")
+        ha_image = iu.open(ha_path)
+
+        ha_image.multiply(10**factorHa)
+
+        new_mips_path = os.path.join(self.in_path, "mips.fits")
+        new_mips_image = iu.open(new_mips_path)
+
+        ionizing_stars_data = ha_image.frames.primary.data + 0.031*new_mips_image.frames.primary.data
+        ionizing_stars_ratio = ha_image.frames.primary.data / (0.031*new_mips_image.frames.primary.data)
+
+        low_snr = ha_image.frames.primary.data < 10.0*ha_image.frames.errors.data or new_mips_image.frames.primary.data < 10.0*new_mips_image.frames.errors.data
+
+        ionizing_stars_data[low_snr] = 0.0
+        ionizing_stars_ratio[low_snr] = 0.0
+
+        ionizing_stars_data[ionizing_stars_data < 0.0] = 0.0
+        ionizing_stars_ratio[ionizing_stars_data < 0.0] = 0.0
+
+        ionizing_stars_image = iu.new("ionizingstars")
+
+        ionizing_stars_image._add_frame(ionizing_stars_data, None, "primary")
+        ionizing_stars_image._add_frame(ionizing_stars_ratio, None, "ratio")
+
+        ionizing_stars_image.frames.primary.select()
+        ionizing_stars_image.frames.ratio.select()
+
+        # Save the new image
+        iu.save(ionizing_stars_image, self.in_path, "ionizingstars.fits")
 
 # *****************************************************************
+
+
+
