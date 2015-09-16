@@ -47,6 +47,16 @@ def open(path):
 
 # *****************************************************************
 
+def new(name):
+
+    # Create the image
+    image = Image(name)
+
+    # Return the image
+    return image
+
+# *****************************************************************
+
 def save(image, directory, name):
 
     """
@@ -63,6 +73,9 @@ def save(image, directory, name):
     # Write to file
     path = os.path.join(directory, name)
     image.export_datacube(path)
+
+    # Deselect all regions, masks and frames (except the primary frame)
+    reset_selection(image)
 
 # *****************************************************************
 

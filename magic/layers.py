@@ -42,6 +42,12 @@ class Layers(dict):
         if require_single and len(names) > 1: raise RuntimeError('More than one layer is selected')
         if not allow_none and len(names) == 0: raise RuntimeError('There is no layer selected')
 
+        # TODO: do not use this hack, we should adopt an ordering for the frames, regions and masks (orderedDict?)
+        if 'primary' in names:
+
+            names.remove('primary')
+            names.insert(0, 'primary')
+
         # Return the name(s) of the currently selected layers
         return names[0] if require_single else names
 

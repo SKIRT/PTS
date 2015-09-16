@@ -49,6 +49,24 @@ class Image(object):
     This class ...
     """
 
+    # *****************************************************************
+
+    def __init__(self, name):
+
+        # Initialize a set of layers to represent image frames, masks and regions
+        self.frames = Layers()
+        self.masks = Layers()
+        self.regions = Layers()
+
+        # Set the image name
+        self.name = name
+
+        # Set default values for other attributes
+        self.units = None
+        self.fwhm = None
+
+    # *****************************************************************
+
     def __init__(self, filename):
 
         """
