@@ -97,6 +97,10 @@ axistypes = {
     'logMdust.obs': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{obs}})\,[M_\odot]$", lambda: log_dustmass_observed() ),
     'logMdust.obs/Mstar.obs': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{obs}}/M_{*,\mathrm{obs}})$",
         lambda: log_dustmass_observed() - log_stellarmass_observed() ),
+
+    # dust temperature
+    'Tavg': ( r"$\left<T_\mathrm{dust}\right>\,[\mathrm{K}]$", lambda: probe_average_temperature_dust ),
+    'Tstd': ( r"$\sigma(T_\mathrm{dust})\,[\mathrm{K}]$", lambda: probe_stddev_temperature_dust ),
 }
 
 # -----------------------------------------------------------------
