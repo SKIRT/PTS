@@ -70,6 +70,7 @@ def makeinfofile(skirtrun):
 
     # the info dict that will be saved at the end
     info = { }
+    info["skirt_run_id"] = skirtrun.runid()
 
     # load statistics on the EAGLE data from the info file in the input folder
     inpath = skirtrun.inpath()
@@ -97,6 +98,8 @@ def makeinfofile(skirtrun):
     # load filters and wavelength grid
     _loadfilters()
     wavelengths = simulation.wavelengths()
+    # create a mask that removes the CI line emission peaks from the dust continuum emission
+    cimask = (np.abs(wavelengths-360)>20) & (np.abs(wavelengths-600)>20)
 
     # gather statistics on fluxes received by each instrument
     for name in simulation.instrumentnames():
@@ -118,6 +121,18 @@ def makeinfofile(skirtrun):
             info["instr_"+name+"_fluxdensity_"+filtername] = fluxdensity
             info["instr_"+name+"_magnitude_"+filtername] = magnitude
 
+        # for the SPIRE filters, calculate flux and magnitude excluding the CI line emission peaks
+        for filterspec in ("SPIRE.PSW","SPIRE.PMW","SPIRE.PLW"):
+            filter = _filters[filterspec]
+            fluxdensity = filter.convolve(wavelengths[cimask], fluxdensities[cimask])
+            fluxdensity = simulation.convert(fluxdensity, from_unit='W/m2/micron', to_unit='Jy',
+                                             wavelength=filter.pivotwavelength())
+            magnitude = simulation.absolutemagnitude(fluxdensity, distance,
+                                                     fluxdensity_unit='Jy', distance_unit='pc')
+            filtername = filterspec.replace(".","_").lower()
+            info["instr_"+name+"_fluxdensity_"+filtername+"_continuum"] = fluxdensity
+            info["instr_"+name+"_magnitude_"+filtername+"_continuum"] = magnitude
+
     # estimate a representative temperature and corresponding standard deviation
     info["probe_average_temperature_dust"], info["probe_stddev_temperature_dust"] = dusttemperature(simulation)
 
@@ -135,7 +150,7 @@ def makeinfofile(skirtrun):
     infofile.write('# magnitude : dex\n')
     maxkeylen = max(map(len,info.keys()))
     for key in sorted(info.keys()):
-        valueformat = ".0f" if "_particles_" in key or "_cells_" in key else ".9e"
+        valueformat = ".0f" if "_particles_" in key or "_cells_" in key or "run_id" in key else ".9e"
         infofile.write( ("{0:"+str(maxkeylen)+"} = {1:16"+valueformat+"}\n").format(key, info[key]) )
     infofile.close()
 

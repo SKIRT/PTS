@@ -69,19 +69,19 @@ axistypes = {
 
     # ratios of flux densities (Jy/Jy)
     'logf250/f500': ( r"$\log_{10}(f_{250}/f_{500})$",
-        lambda: log_divide_if_positive(instr_fluxdensity_spire_psw,instr_fluxdensity_spire_plw) ),
+        lambda: log_divide_if_positive(instr_fluxdensity_spire_psw_continuum,instr_fluxdensity_spire_plw_continuum) ),
     'f350/f500': ( r"$f_{350}/f_{500}$",
-        lambda: divide_if_positive(instr_fluxdensity_spire_pmw,instr_fluxdensity_spire_plw) ),
+        lambda: divide_if_positive(instr_fluxdensity_spire_pmw_continuum,instr_fluxdensity_spire_plw_continuum) ),
     'f250/f350': ( r"$f_{250}/f_{350}$",
-        lambda: divide_if_positive(instr_fluxdensity_spire_psw,instr_fluxdensity_spire_pmw) ),
+        lambda: divide_if_positive(instr_fluxdensity_spire_psw_continuum,instr_fluxdensity_spire_pmw_continuum) ),
     'logf250/fNUV': ( r"$f_{250}/f_\mathrm{NUV}$",
-        lambda: log_divide_if_positive(instr_fluxdensity_spire_psw,instr_fluxdensity_galex_nuv) ),
+        lambda: log_divide_if_positive(instr_fluxdensity_spire_psw_continuum,instr_fluxdensity_galex_nuv) ),
 
     # luminosities in specific bands
     'logLk': ( r"$\log_{10}(L_\mathrm{K})\,[L_{\odot,\mathrm{K}}]$",
         lambda: np.log10(units.luminosityforflux(instr_fluxdensity_ukidss_k,setup_distance_instrument,'W/Hz')/LsunK) ),
     'logL250': ( r"$\log_{10}(L_{250})\,[\mathrm{W}/\mathrm{Hz}]$",
-        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_spire_psw,setup_distance_instrument,'W/Hz')) ),
+        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_spire_psw_continuum,setup_distance_instrument,'W/Hz')) ),
     'logLdust': ( r"$\log_{10}(L_{dust})\,[L_\odot]$",
         lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_uniform_8_1000,setup_distance_instrument,'W/micron',
                                                         wavelength=np.sqrt(8*1000))*(1000-8)/Lsun) ),
@@ -90,7 +90,7 @@ axistypes = {
 
     # other ratios
     'logMdust/f350/D2' : ( r"$\log_{10}(M_\mathrm{dust}/(f_{350}D^2))\,[\mathrm{kg}\,\mathrm{W}^{-1}\,\mathrm{Hz}]$",
-        lambda: log_divide_if_positive(setup_mass_dust*Msun,instr_fluxdensity_spire_pmw*1e-26*(setup_distance_instrument*pc)**2) ),
+        lambda: log_divide_if_positive(setup_mass_dust*Msun,instr_fluxdensity_spire_pmw_continuum*1e-26*(setup_distance_instrument*pc)**2) ),
 
     # observationally derived "intrinsic" properties
     'logMstar.obs': ( r"$\log_{10}(M_{*,\mathrm{obs}})\,[M_\odot]$", lambda: log_stellarmass_observed() ),
@@ -156,10 +156,10 @@ def log_stellarmass_observed():
 # dust mass according to Cortese et al 2012, appendix B, using beta=2 for extended sources
 # returns log10 of dust mass in solar units
 def log_dustmass_observed():
-    x = log_divide_if_positive(instr_fluxdensity_spire_psw,instr_fluxdensity_spire_plw)
+    x = log_divide_if_positive(instr_fluxdensity_spire_psw_continuum,instr_fluxdensity_spire_plw_continuum)
     logMFD = 16.880 - 1.559*x + 0.160*x**2 - 0.079*x**3 - 0.363*x**4
     logD = np.log10(setup_distance_instrument/1e6)
-    logF = log_if_positive(instr_fluxdensity_spire_pmw)
+    logF = log_if_positive(instr_fluxdensity_spire_pmw_continuum)
     logDust = logMFD + 2*logD + logF - 11.32
     #logDust += np.log10( 0.192 / 0.330 )     # kappa at 350 micron assumed in Cortese vs actual for Zubko
     return logDust
