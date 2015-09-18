@@ -44,8 +44,14 @@ axistypes = {
 
     # intrinsic properties
     'logMstar': ( r"$\log_{10}(M_*)\,[M_\odot]$", lambda: np.log10(original_mass_stars) ),
-    'logMdust': ( r"$\log_{10}(M_\mathrm{dust})\,[M_\odot]$", lambda: np.log10(setup_mass_dust) ),
+    'logMdust': ( r"$\log_{10}(M_\mathrm{dust})\,[M_\odot]$", lambda: log_if_positive(setup_mass_dust) ),
     'logMdust/Mstar': ( r"$\log_{10}(M_\mathrm{dust}/M_*)$", lambda: np.log10(setup_mass_dust/original_mass_stars) ),
+    'logMhii': ( r"$\log_{10}(M_\mathrm{HII})\,[M_\odot]$", lambda: log_if_positive(setup_mass_hii_regions) ),
+    'fracMhii.fromgas': ( r"$M_{\mathrm{HII},\mathrm{from gas}}/M_{\mathrm{HII},\mathrm{total}}$",
+        lambda: divide_if_positive(exported_mass_hii_regions_from_gas,exported_mass_hii_regions) ),
+    'logMdust+hii': ( r"$\log_{10}(M_\mathrm{dust}+\frac{1}{100}M_\mathrm{HII})\,[M_\odot]$",
+        lambda: log_if_positive(setup_mass_dust+0.01*setup_mass_hii_regions) ),
+
     'logLtot': ( r"$\log_{10}(L_\mathrm{tot})\,[L_\odot]$", lambda: np.log10(setup_luminosity_stars+setup_luminosity_hii_regions) ),
     'logLhii': ( r"$\log_{10}(L_\mathrm{hii})\,[L_\odot]$", lambda: np.log10(setup_luminosity_hii_regions[setup_luminosity_hii_regions>0]) ),
     'Zgas': ( r"$Z_\mathrm{gas}$", lambda: divide_if_positive(setup_mass_metallic_gas,setup_mass_cold_gas) ),
@@ -97,6 +103,7 @@ axistypes = {
     'logMdust.obs': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{obs}})\,[M_\odot]$", lambda: log_dustmass_observed() ),
     'logMdust.obs/Mstar.obs': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{obs}}/M_{*,\mathrm{obs}})$",
         lambda: log_dustmass_observed() - log_stellarmass_observed() ),
+    'logMdust.tmp': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{tmp}})\,[M_\odot]$", lambda: log_dustmass_from_temperature() ),
 
     # dust temperature
     'Tavg': ( r"$\left<T_\mathrm{dust}\right>\,[\mathrm{K}]$", lambda: probe_average_temperature_dust ),
@@ -113,6 +120,10 @@ Lsun = units.convert(1., from_unit='Lsun', to_unit='W')
 LsunK = 10**((34.1-5.19)/2.5)  # solar luminosity in K band expressed in W/Hz  (AB magnitude is 5.19)
 LsunH = 10**((34.1-4.71)/2.5)  # solar luminosity in H band expressed in W/Hz  (AB magnitude is 4.71)
 Zsun = 0.0127
+
+c = 2.99792458e8;
+h = 6.62606957e-34;
+k = 1.3806488e-23;
 
 # -----------------------------------------------------------------
 
@@ -163,6 +174,22 @@ def log_dustmass_observed():
     logDust = logMFD + 2*logD + logF - 11.32
     #logDust += np.log10( 0.192 / 0.330 )     # kappa at 350 micron assumed in Cortese vs actual for Zubko
     return logDust
+
+# black body emission B_nu(nu,T)
+def Bnu(nu,T):
+    return (2*h*nu**3/c**2) / (np.exp(h*nu/k/T) - 1)
+
+# dust mass based on dust temperature and 350 micron flux
+# returns log10 of dust mass in solar units
+def log_dustmass_from_temperature():
+    nu350 = c / 350e-6                                      # Hz
+    kappa350 = 0.192                                        # m2/kg (Cortese)
+    #kappa350 = 0.330                                        # m2/kg  (Zubko)
+    f350 = instr_fluxdensity_spire_pmw_continuum * 1e-26    # W/m2
+    D = setup_distance_instrument * pc                      # m
+    T = probe_average_temperature_dust                      # K
+    T[T<1] = 1
+    return log_divide_if_positive(f350*D*D, kappa350 * Bnu(nu350,T) * Msun)
 
 # -----------------------------------------------------------------
 
