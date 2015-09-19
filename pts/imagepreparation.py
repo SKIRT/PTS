@@ -302,9 +302,6 @@ class ImagePreparation(object):
         # Make the specific star formation rate map
         self.make_ssfr_map()
 
-        # Make the total infrared map
-        self.make_tir_map()
-
         # Make the FUV attenuation map
         self.make_attenuation_map()
 
@@ -332,9 +329,9 @@ class ImagePreparation(object):
         h_path = os.path.join(self.prep_path, "2MASSH", "final.fits")
 
         fuv_image = iu.open(fuv_path)
-        fuv_image.import_datacube(h_path, "H")
+        fuv_image.import_datacube(h_path, "h")
 
-        fuv_h_data = -2.5*(np.log10(fuv_image.frames.primary.data) - np.log10(fuv_image.frames.H.data))
+        fuv_h_data = -2.5*(np.log10(fuv_image.frames.primary.data) - np.log10(fuv_image.frames.h.data))
 
         fuv_image._add_frame(fuv_h_data, fuv_image.frames.primary.coordinates, "ssfr")
 
@@ -350,18 +347,14 @@ class ImagePreparation(object):
 
         iu.reset_selection(fuv_image)
 
-        #maak alles 0 waar PACS160 SN<5
-        #FUV_H_SN5 = fltarr(376,526)
-        #for i=0,375 do begin
-           #for j=0,525 do begin
-              #if ((imaH_rebin[i,j] GT 0) && (imaFUV_rebin[i,j] GE (10*imaFUVerr_rebin[i,j]))) then begin
-                 #FUV_H_SN5[i,j] = FUV_H[i,j]
-              #endif else begin
-                 #FUV_H_SN5[i,j] = 0
-              #endelse
-           #endfor
-        #endfor
-        #fits_write,'M81_FUV_H_StoN_new.fits',FUV_H_SN5,himaFUV_rebin
+        fuv_image.frames.primary.deselect()
+        fuv_image.frames.ssfr.select()
+
+
+        fuv_image.frames.ssfr.data[fuv_image.frames.h.data < 0.0 or fuv_image.frames.primary.data < 10.0*fuv_image.frames.errors.data] = 0.0
+
+        # Save sSFR map as FITS file
+        iu.save(fuv_image, self.in_path, "ssfr.fits")
 
     # *****************************************************************
 
@@ -399,17 +392,86 @@ class ImagePreparation(object):
                    (1.125*pacs160_image.frames.primary.data)
 
         # Convert TIR from Lsun to W/m2
-        factor =  np.log10(3.846e26) - np.log10(4*np.pi) - (2*np.log10(D_M81*3.08567758e22))
-        tir_data = tir_data*(10.0**factor)
+        factor = np.log10(3.846e26) - np.log10(4*np.pi) - (2*np.log10(D_M81*3.08567758e22))
+        tir_data *= 10.0**factor
+
+        return tir_data
 
     # *****************************************************************
 
     def make_attenuation_map(self):
 
+        """
+        This function ...
+        :return:
+        """
+
         # Dust = FUV attenuation = ratio of TIR and FUV luminosity
         # where TIR = 24, 70 and 160 micron
 
-        pass
+        fuv_path = os.path.join(self.prep_path, "GALEXFUV", "final.fits")
+
+        fuv_image = iu.open(fuv_path)
+
+
+        factor = - 20 + np.log10(3e8) - np.log10(0.153e-6) + (2*np.log10(2.85/206264.806247))
+        fuv_converted_data = fuv_image.frames.primary.data * 10**factor
+
+        tir_data = self.make_tir_map()
+
+        tir_fuv_ratio_data = np.log10(tir_data/fuv_converted_data)
+
+        x = tir_fuv_ratio_data
+        x2 = np.power(tir_fuv_ratio_data, 2.0)
+        x3 = np.power(tir_fuv_ratio_data, 3.0)
+        x4 = np.power(tir_fuv_ratio_data, 4.0)
+
+        #a_fuv_buat = (-0.0333*x3) + (0.3522*x2) + (1.1960*x) + 0.4967
+
+        # Create an empty image
+        a_fuv_cortese = np.zeros_like(tir_data)
+
+        ssfr_path = os.path.join(self.in_path, "ssfr.fits")
+
+        ssfr_image = iu.open(ssfr_path)
+
+        ssfr_data = ssfr_image.frames.primary.data
+
+        a_fuv_cortese[ssfr_data < 4.0] = 0.50994 + (0.88311*x) + (0.53315*x2) + (0.04004*x3) - (0.04883*x4)
+        a_fuv_cortese[ssfr_data >= 4.0 and ssfr_data < 4.2] = 0.49867 + (0.86377*x) + (0.51952*x2) + (0.04038*x3) - (0.04624*x4)
+        a_fuv_cortese[ssfr_data >= 4.2 and ssfr_data < 4.6] = 0.49167 + (0.85201*x) + (0.51152*x2) + (0.04060*x3) - (0.04475*x4)
+        a_fuv_cortese[ssfr_data >= 4.6 and ssfr_data < 5.0] = 0.48223 + (0.83642*x) + (0.50127*x2) + (0.04092*x3) - (0.04288*x4)
+        a_fuv_cortese[ssfr_data >= 5.0 and ssfr_data < 5.4] = 0.46909 + (0.81520*x) + (0.48787*x2) + (0.04138*x3) - (0.04050*x4)
+        a_fuv_cortese[ssfr_data >= 5.4 and ssfr_data < 5.8] = 0.45013 + (0.78536*x) + (0.47009*x2) + (0.04210*x3) - (0.03745*x4)
+        a_fuv_cortese[ssfr_data >= 5.8 and ssfr_data < 6.3] = 0.42168 + (0.74191*x) + (0.44624*x2) + (0.04332*x3) - (0.03362*x4)
+        a_fuv_cortese[ssfr_data >= 6.3 and ssfr_data < 6.6] = 0.40210 + (0.71272*x) + (0.43139*x2) + (0.04426*x3) - (0.03140*x4)
+        a_fuv_cortese[ssfr_data >= 6.6 and ssfr_data < 6.9] = 0.37760 + (0.67674*x) + (0.41420*x2) + (0.04555*x3) - (0.02900*x4)
+        a_fuv_cortese[ssfr_data >= 6.9 and ssfr_data < 7.2] = 0.34695 + (0.63224*x) + (0.39438*x2) + (0.04739*x3) - (0.02650*x4)
+        a_fuv_cortese[ssfr_data >= 7.2 and ssfr_data < 7.5] = 0.30899 + (0.57732*x) + (0.37157*x2) + (0.05000*x3) - (0.02399*x4)
+        a_fuv_cortese[ssfr_data >= 7.5 and ssfr_data < 7.8] = 0.26302 + (0.51013*x) + (0.34522*x2) + (0.05377*x3) - (0.02164*x4)
+        a_fuv_cortese[ssfr_data >= 7.8 and ssfr_data < 8.1] = 0.20982 + (0.42980*x) + (0.31431*x2) + (0.05909*x3) - (0.01957*x4)
+        a_fuv_cortese[ssfr_data >= 8.1 and ssfr_data < 8.4] = 0.15293 + (0.33799*x) + (0.27713*x2) + (0.06638*x3) - (0.01792*x4)
+        a_fuv_cortese[ssfr_data >= 8.4 and ssfr_data < 8.8] = 0.09944 + (0.24160*x) + (0.23161*x2) + (0.07580*x3) - (0.01671*x4)
+        a_fuv_cortese[ssfr_data >= 8.8 and ssfr_data < 9.2] = 0.05822 + (0.15524*x) + (0.17801*x2) + (0.08664*x3) - (0.01593*x4)
+        a_fuv_cortese[ssfr_data >= 9.2 and ssfr_data < 9.6] = 0.03404 + (0.09645*x) + (0.12452*x2) + (0.09679*x3) - (0.01548*x4)
+        a_fuv_cortese[ssfr_data >= 9.6 and ssfr_data < 10.0] = 0.02355 + (0.06934*x) + (0.08725*x2) + (0.10339*x3) - (0.01526*x4)
+        a_fuv_cortese[ssfr_data >= 9.6 and ssfr_data < 10.0] = 0.02025 + (0.06107*x) + (0.07212*x2) + (0.10588*x3) - (0.01517*x4)
+
+        pacs160_path = os.path.join(self.prep_path, "PACS160", "final.fits")
+        pacs160_image = iu.open(pacs160_path)
+
+        # Set pixels to zero in some cases
+        a_fuv_cortese[ssfr_data < 0 or ssfr_data > 10.5 or fuv_image.frames.primary.data <= 0 or pacs160_image.frames.primary.data < 5.0*pacs160_image.frames.errors.data] = 0.0
+
+        # Make sure all pixels are larger or equal to zero
+        a_fuv_cortese[a_fuv_cortese < 0.0] = 0.0
+
+        attenuation_image = iu.new("attenuation")
+        attenuation_image._add_frame(a_fuv_cortese, None, "primary")
+        attenuation_image.frames.primary.select()
+
+        # Save FUV attenuation map as FITS file
+        iu.save(attenuation_image, self.in_path, "fuv_attenuation.fits")
 
     # *****************************************************************
 
@@ -438,12 +500,7 @@ class ImagePreparation(object):
 
         oldstars_data = irac_image.frames.primary.data - factor*irac_image.frames.bulge.data
 
-        for x in range(oldstars_data.shape[1]):
-            for y in range(oldstars_data.shape[0]):
-
-                if irac_image.frames.primary.data[y,x] < 10.0*irac_image.frames.errors.data[y,x] or oldstars_data[y,x] < 0.0:
-
-                    oldstars_data[y,x] = 0.0
+        oldstars_data[irac_image.frames.primary.data[y,x] < 10.0*irac_image.frames.errors.data[y,x] or oldstars_data[y,x] < 0.0] = 0.0
 
         # Add old stars frame
         irac_image._add_frame(oldstars_data, irac_image.frames.primary.coordinates, "oldstars")
@@ -528,12 +585,12 @@ class ImagePreparation(object):
         D_M81 = 3.6
 
         # Convert to Lsun
-        factorHa = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/0.657894736e-6) + np.log10(4*np.pi) + (2*np.log10(D_M81*3.08567758e22)) - np.log10(3.846e26)
+        factor_ha = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/0.657894736e-6) + np.log10(4*np.pi) + (2*np.log10(D_M81*3.08567758e22)) - np.log10(3.846e26)
 
         ha_path = os.path.join(self.prep_path, "Ha", "final.fits")
         ha_image = iu.open(ha_path)
 
-        ha_image.multiply(10**factorHa)
+        ha_image.multiply(10**factor_ha)
 
         new_mips_path = os.path.join(self.in_path, "mips.fits")
         new_mips_image = iu.open(new_mips_path)
