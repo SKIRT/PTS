@@ -1017,6 +1017,15 @@ def find_galaxy_orientation(data, region, plot=False):
 
 def crop_and_mask_for_background(data, shape, inner_factor, outer_factor):
 
+    """
+    This function ...
+    :param data:
+    :param shape:
+    :param inner_factor:
+    :param outer_factor:
+    :return:
+    """
+
     # Find the parameters of this ellipse (or circle)
     x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
 
@@ -1033,6 +1042,129 @@ def crop_and_mask_for_background(data, shape, inner_factor, outer_factor):
     # Create the mask
     mask = masks.create_disk_mask(background.shape[1], background.shape[0], x_center_rel, y_center_rel, x_radius)
 
+    try:
+
+        background[1,2]
+
+    except IndexError:
+
+        print outer_factor
+        print x_radius_outer
+        print y_radius_outer
+        print background.shape
+        print x_min
+        print x_max
+        print y_min
+        print y_max
+
     return np.ma.masked_array(background, mask=mask), x_min, x_max, y_min, y_max
+
+# *****************************************************************
+
+def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshold_sigmas, expand=True, expansion_factor=1.5, expansion_level=1, max_expansion_level=4, plot=False):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Get the parameters of this shape
+    x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
+
+    # Crop
+    box, x_min, x_max, y_min, y_max = cropping.crop(data, x_center, y_center, x_radius, y_radius)
+
+    background, x_min_back, x_max_back, y_min_back, y_max_back = crop_and_mask_for_background(data, shape, 1.0, 1.2)
+
+    #plotting.plot_box(box_background, title="Box for background estimation")
+
+    # Remove gradient
+    poly = fitting.fit_polynomial(background.data, 3, mask=background.mask)
+    polynomial = fitting.evaluate_model(poly, 0, background.shape[1], 0, background.shape[0])
+
+    #plotting.plot_difference(background, polynomial)
+
+    background = background - polynomial
+
+    mean, median, stddev = statistics.sigma_clipped_statistics(background.data, mask=background.mask)
+
+    #print mean, median, stddev
+
+    threshold = mean + threshold_sigmas*stddev
+
+    #print y_min-y_min_back >= 0, y_max-y_min_back >= 0, x_min-x_min_back >= 0, x_max-x_min_back >= 0
+
+    evaluated_poly = polynomial[y_min-y_min_back:y_max-y_min_back, x_min-x_min_back:x_max-x_min_back]
+
+    #print box.shape, evaluated_poly.shape
+
+    plotting.plot_difference(box, evaluated_poly)
+
+    #oldbox = box
+    box = box - evaluated_poly
+
+    #plotting.plot_difference(oldbox, box)
+
+    # Find segments
+    segments = find_segments(box, kernel_fwhm=kernel_fwhm, kernel_size=kernel_size, threshold=threshold)
+
+    #label_im, nb_labels = ndimage.label(mask)
+
+    label = segments[y_center-y_min, x_center-x_min]
+
+    box_mask = (segments == label)
+
+    # Test whether the mask reaches the boundaries
+    hits_boundary = False
+    for x in range(box_mask.shape[1]):
+
+        if box_mask[0, x] or box_mask[box_mask.shape[0]-1, x]:
+
+            # If this already happened with another pixel, break the loop
+            if hits_boundary:
+
+                hits_boundary = True
+                break
+
+            # If this is the first pixel for which this occurs, continue (one masked pixel on the edge is tolerated)
+            else: hits_boundary = True
+
+    for y in range(1, box_mask.shape[0]-1):
+
+        if box_mask[y, 0] or box_mask[y, box_mask.shape[1]-1]:
+
+            # If this already happened with another pixel, break the loop
+            if hits_boundary:
+
+                hits_boundary = True
+                break
+
+            # If this is the first pixel for which this occurs, continue (one masked pixel on the edge is tolerated)
+            else: hits_boundary = True
+
+    if hits_boundary and expand:
+
+        #plot=True
+        plot=False
+        if plot: plotting.plot_box(np.ma.masked_array(box, mask=box_mask), title="Masked segment hits boundary")
+
+        if expansion_level == max_expansion_level: box_mask.fill(False)
+        else:
+
+            shape = regions.scale_circle(shape, expansion_factor)
+            box_mask, x_min, x_max, y_min, y_max = find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size,
+                                                                                threshold_sigmas, expand=expand,
+                                                                                expansion_factor=expansion_factor,
+                                                                                expansion_level=expansion_level+1,
+                                                                                max_expansion_level=max_expansion_level,
+                                                                                plot=plot)
+    else:
+
+        plot=True
+        #plot=False
+        if plot: plotting.plot_box(np.ma.masked_array(box, mask=box_mask), title="Masked segment doesn't hit boundary")
+
+    # Return the mask
+    return box_mask, x_min, x_max, y_min, y_max
 
 # *****************************************************************

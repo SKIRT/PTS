@@ -221,9 +221,22 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove
         sigma = image.fwhm / 2.355
         image.fetch_stars(sigma, galaxy_name=galaxy_name)
 
+        if remove_saturation:
+
+            image.regions.stars.select()
+            image.split_region(criterium="flux", method="percentage", percentage=0.08)
+
+            image.regions.stars.deselect()
+            image.regions.bright.select()
+
+            image.rename_region("bright_stars")
+
+            image.plot()
+
     else: image.find_stars(galaxy_name, split_brightness=remove_saturation)
 
     # Select the stars region
+    image.regions.deselect_all()
     image.regions.stars.select()
 
     # If requested, save the stars region
@@ -319,18 +332,21 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove
         image.set_fwhm(fwhm)
 
     # Remove saturated stars
-    if remove_saturation and image.regions.brightest is not None:
+    if remove_saturation and image.regions.bright_stars is not None:
 
         # Deselect all regions, masks and frames except for the primary frame
         reset_selection(image)
 
+        # If requested, save the star-subtracted image
+        if output_path is not None: save(image, output_path, "removed_with_saturation.fits")
+
         # Create a region of 20-sigma contours around the brightest stars and select it
-        image.regions.brightest.select()
+        image.regions.bright_stars.select()
         image.expand_regions(factor=20.0)
         image.regions.deselect_all()
-        image.regions.brightest_expanded.select()
+        image.regions.bright_stars_expanded.select()
 
-        if output_path is not None: export_region(image, output_path, "brightest.reg")
+        if output_path is not None: export_region(image, output_path, "bright_stars.reg")
 
         # Create a mask for all segments found within the ellipses of that region and select it
         image.create_segmentation_mask(image.fwhm, int(image.fwhm*2.0))

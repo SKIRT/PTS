@@ -353,4 +353,23 @@ def subtract(region_a, region_b, center_offset_tolerance, header):
 
 # *****************************************************************
 
+def in_box(shape, dimensions, require_completely=False):
 
+    """
+    This function ...
+    :param shape:
+    :param dimensions:
+    :param require_completely:
+    :return:
+    """
+
+    # TODO: use require_completely (require the shape to completely fall within the box)
+
+    x_min, x_max, y_min, y_max = get_enclosing_box(shape)
+
+    if x_min >= dimensions[1] or y_min >= dimensions[0]: return False
+    if x_max < 0 or y_max < 0: return False
+
+    return True
+
+# *****************************************************************
