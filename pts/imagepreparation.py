@@ -250,11 +250,11 @@ class ImagePreparation(object):
         # TODO: do the bulge/disk fitting here
 
         # Set path of bulge and disk images
-        bulge_path = os.path.join(self.prep_path, "bulge", "M81_bulge_i59_total.fits")
-        disk_path = os.path.join(self.prep_path, "disk", "M81_disk_i59_total.fits")
+        bulge_path = os.path.join(self.prep_path, "Bulge", "M81_bulge_i59_total.fits")
+        disk_path = os.path.join(self.prep_path, "Disk", "M81_disk_i59_total.fits")
 
         # Create list
-        paths = {"bulge": bulge_path, "disk": disk_path}
+        paths = {"Bulge": bulge_path, "Disk": disk_path}
 
         # For bulge and disk ...
         for name, path in paths.items():
