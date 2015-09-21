@@ -1229,6 +1229,16 @@ class Image(object):
 
     # *****************************************************************
 
+    def get_galactic_extinction(self, galaxy_name):
+
+        """
+        This function ...
+        """
+
+        return catalogs.fetch_galactic_extinction(galaxy_name, self.filter)
+
+    # *****************************************************************
+
     def fetch_stars(self, radius, catalog=["UCAC4"], galaxy_name=None, return_region=False, column_filters=None):
 
         """

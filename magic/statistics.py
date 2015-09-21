@@ -185,7 +185,7 @@ def split_percentage(input_list, criterium, percentage, nans="low"):
     new_list.sort(key=criterium)
 
     # Determine the splitting point
-    split = len(new_list) - percentage * len(new_list)
+    split = int(round(len(new_list) - percentage * len(new_list)))
 
     # Return the two splitted lists
     if type(input_list).__name__ == "ShapeList":
