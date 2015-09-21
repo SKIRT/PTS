@@ -36,9 +36,13 @@ def align_and_rebin(image, header1, header2, preserve_bad_pixels=True, **kwargs)
     header1's naxis1 and naxis2.
     """
 
+    #print header2
+
     # Remove the third axis of the reference header
     header2["NAXIS"] = 2
     header2.pop("NAXIS3", None)
+
+    #print header2
 
     # Check whether the passed image matches the information in header1
     headers.check_header_matches_image(image, header1)

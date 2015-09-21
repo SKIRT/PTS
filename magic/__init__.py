@@ -21,9 +21,6 @@ import astropy.units as u
 from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
 from astropy import log
 
-from photutils import CircularAperture
-from photutils import aperture_photometry
-
 # Import image modules
 from tools import general, headers, cropping, interpolation, coordinates
 import transformations
@@ -52,31 +49,27 @@ class Image(object):
     This class ...
     """
 
-    # *****************************************************************
-
-    def __init__(self, name):
-
-        # Initialize a set of layers to represent image frames, masks and regions
-        self.frames = Layers()
-        self.masks = Layers()
-        self.regions = Layers()
-
-        # Set the image name
-        self.name = name
-
-        # Set default values for other attributes
-        self.units = None
-        self.fwhm = None
-
-    # *****************************************************************
-
-    def __init__(self, filename):
+    def __init__(self, filename=None):
 
         """
         The constructor ...
         :param filename:
         :return:
         """
+
+        if filename is None:
+            
+            # Initialize a set of layers to represent image frames, masks and regions
+            self.frames = Layers()
+            self.masks = Layers()
+            self.regions = Layers()
+
+            # Set default values for other attributes
+            self.units = None
+            self.fwhm = None
+            self.header = None
+            
+            return
 
         # Check if the specified file exists, otherwise exit with an error
         if not os.path.isfile(filename): raise IOError("No such file: " + filename)
@@ -88,7 +81,7 @@ class Image(object):
         self.frames = Layers()
         self.masks = Layers()
         self.regions = Layers()
-
+        
         # Read in the image
         self._load_image(filename)
 
@@ -178,10 +171,36 @@ class Image(object):
 
         # Get the primary data
         hdu = hdulist[0]
+        
+        header = hdu.header
+
+        # Check whether multiple planes are present in the FITS image
+        nframes = headers.get_number_of_frames(header)
+        if nframes > 1:
+
+            # For each frame
+            for i in range(nframes):
+
+                # Get the name of this frame, but the first frame always gets the name 'primary'
+                description = headers.get_frame_description(header, i)
+                frame_name = name + "_" + headers.get_frame_name(description) if i else name
+
+                # Add this frame to the frames dictionary
+                #self._add_frame(hdu.data[i], coordinates, frame_name, description)
+                self._add_frame(hdu.data[i], None, frame_name, description)
+
+        else:
+
+            # Sometimes, the 2D frame is embedded in a 3D array with shape (1, xsize, ysize)
+            if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
+
+            # Add the primary image frame
+            #self._add_frame(hdu.data, coordinates, "primary", "the primary signal map")
+            self._add_frame(hdu.data, None, name)
 
         # Add the error frame
         # TODO: add coordinates !
-        self._add_frame(hdu.data, None, name)
+        #self._add_frame(hdu.data, None, name)
 
         # Close the fits file
         hdulist.close()
@@ -201,18 +220,28 @@ class Image(object):
 
         # Get the coordinates of the primary frame
         coordinates = self.frames["primary"].coordinates
+        
+        # Construct a header for the image based on the coordinates of the primary frame
+        header = coordinates.to_header() if coordinates is not None else None
+        
+        if header is None and self.header: header = self.header
+        if header is None: header = pyfits.Header()
+
+        plane_index = 1
 
         # Export all active frames to the specified file
-        for frame in self.frames.get_selected():
+        for frame_name in self.frames.get_selected():
 
             # Inform the user that this frame is being rebinned
-            log.info("Exporting the " + frame + " frame to " + filepath)
+            log.info("Exporting the " + frame_name + " frame to " + filepath)
 
             # Add this frame to the data cube, if its coordinates match those of the primary frame
-            if coordinates == self.frames[frame].coordinates: datacube.append(self.frames[frame].data)
-
-        # Construct a header for the image based on the coordinates of the primary frame
-        header = coordinates.to_header()
+            if coordinates == self.frames[frame_name].coordinates: datacube.append(self.frames[frame_name].data)
+            
+            # Add the name of the frame to the header
+            header["PLANE"+str(plane_index)] = frame_name
+            
+            plane_index += 1
 
         # Create the HDU from the data array and the header
         hdu = pyfits.PrimaryHDU(np.array(datacube), header)
@@ -306,7 +335,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def plot(self, path=None, color=True, grid=False, blacknan=False, publication=False):
+    def plot(self, path = None, color=True, grid=False, blacknan=False, publication=False):
 
         """
         This function shows a plot of the currently selected frame, combined with the active regions and masks
@@ -383,8 +412,7 @@ class Image(object):
 
             #plt.draw()
             #plt.close('all') # redundant
-            #plt.show(block=False)
-            plt.show()
+            plt.show(block=False)
 
         else: plot.save(path)
 
@@ -792,11 +820,21 @@ class Image(object):
         # Get the pixel scale of the kernel
         pixelscale_kernel = header["CD1_1"]*3600
 
+        print self.pixelscale
+
+        self.pixelscale = headers.get_pixelscale(header)
+
+        print self.pixelscale
+
         # Calculate the zooming factor
         factor = self.pixelscale / pixelscale_kernel
 
         # Rebin the kernel to the same grid of the image
         kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
+
+        print kernel
+
+        #print kernel[kernel.shape[0]/2.0,kernel.shape[1]/2.0]
 
         # For all active frames, do the convolution
         for frame_name in self.frames.get_selected(allow_none=False):
@@ -1035,6 +1073,8 @@ class Image(object):
 
         # For each active mask
         for mask_name in self.masks.get_selected(allow_none=allow_none):
+
+            print self.masks[mask_name].data.shape
 
             # Add this mask to the total
             total_mask += self.masks[mask_name].data
@@ -1427,9 +1467,7 @@ class Image(object):
             if split_brightness:
 
                 # Find saturated stars
-                stars, brightest = statistics.split_percentage(stars, lambda source: source.amplitude, percentage=0.05)
-
-                #stars, brightest = statistics.sigma_clip_split(stars, lambda source: source.amplitude, sigma=brightness_sigma, only_high=True)
+                stars, brightest = statistics.sigma_clip_split(stars, lambda source: source.amplitude, sigma=brightness_sigma, only_high=True)
 
                 if len(brightest) > 0:
 
@@ -1452,79 +1490,13 @@ class Image(object):
 
     # *****************************************************************
 
-    def split_region(self, criterium, method, percentage=None, sigma=None):
-
-        """
-        This function ...
-        """
-
-        #criterium = "flux", "center_brightness", "radius" ...
-
-        # method = "sigma_clip" or "percentage"
-
-        # Get the total selected region
-        region = self.combine_regions(allow_none=False)
-
-        frame_name = self.frames.get_selected(require_single=True)
-
-        def center_brightness(shape):
-
-            x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
-
-            print self.frames[frame_name].data.shape
-
-            x = int(round(x_center))
-            y = int(round(y_center))
-
-            if x < self.frames[frame_name].data.shape[1] and x >= 0 and y < self.frames[frame_name].data.shape[0] and y >= 0:
-
-                return self.frames[frame_name].data[y, x]
-
-            else: return 0.0
-
-        def flux(shape):
-
-            x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
-
-            aperture = CircularAperture((x_center, y_center), r=x_radius)
-
-            phot_table = aperture_photometry(self.frames[frame_name].data, aperture, mask=np.isnan(self.frames[frame_name].data))
-
-            return phot_table[0]["aperture_sum"]
-
-        if criterium == "flux": key = flux
-        elif criterium == "center_brightness": key = center_brightness
-        elif criterium == "radius": key = lambda shape: shape.coord_list[2]
-        else: raise ValueError("Not a valid criterium")
-
-        if method == "sigma_clip":
-
-            dim_region, bright_region = statistics.sigma_clip_split(region, key, sigma=sigma, only_high=True, nans="high")
-
-        elif method == "percentage":
-
-            dim_region, bright_region = statistics.split_percentage(region, key, percentage=percentage, nans="high")
-
-        else: raise ValueError("Not a valid splitting method")
-
-        self._add_region(dim_region, "dim")
-
-        if len(bright_region) > 0:
-
-            print len(bright_region)
-
-            self._add_region(bright_region, "bright")
-
-    # *****************************************************************
-
-    def create_segmentation_mask(self, kernel_fwhm, kernel_size, threshold_sigmas=2.0, expand=True, plot=False):
+    def create_segmentation_mask(self, kernel_fwhm, kernel_size, threshold_sigmas=2.0, plot=False):
 
         """
         This function ...
         :return:
         """
 
-        # Get the total selected region
         region = self.combine_regions()
 
         if len(region) == 0: pass # Use whole frame
@@ -1537,17 +1509,49 @@ class Image(object):
         # Loop over all shapes
         for shape in region:
 
-            if not regions.in_box(shape, self.frames[frame_name].data.shape): break
+            # Get the parameters of this shape
+            x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
 
-            box_mask, x_min, x_max, y_min, y_max = analysis.find_center_segment_in_shape(self.frames[frame_name].data,
-                                                                                         shape, kernel_fwhm, kernel_size,
-                                                                                         threshold_sigmas, expand=expand,
-                                                                                         expansion_level=1,
-                                                                                         max_expansion_level=5,
-                                                                                         plot=plot)
+            # Crop
+            box, x_min, x_max, y_min, y_max = cropping.crop(self.frames[frame_name].data, x_center, y_center, x_radius, y_radius)
+
+            background, x_min_back, x_max_back, y_min_back, y_max_back = analysis.crop_and_mask_for_background(self.frames[frame_name].data,
+                                                                                                                   shape, 1.0, 1.2)
+
+            #plotting.plot_box(box_background, title="Box for background estimation")
+
+            # Remove gradient
+            poly = fitting.fit_polynomial(background.data, 3, mask=background.mask)
+            polynomial = fitting.evaluate_model(poly, 0, background.shape[1], 0, background.shape[0])
+
+            #plotting.plot_difference(background, polynomial)
+
+            background = background - polynomial
+
+            mean, median, stddev = statistics.sigma_clipped_statistics(background.data, mask=background.mask)
+
+            #print mean, median, stddev
+
+            threshold = mean + threshold_sigmas*stddev
+
+            #oldbox = box
+            box = box - polynomial[x_min-x_min_back:x_max-x_min_back, y_min-y_min_back:y_max-y_min_back]
+
+            #plotting.plot_difference(oldbox, box)
+
+            # Find segments
+            segments = analysis.find_segments(box, kernel_fwhm=kernel_fwhm, kernel_size=kernel_size, threshold=threshold)
+
+            label = segments[y_center-y_min, x_center-x_min]
+
+            box_mask = (segments == label)
+
+            # box_mask = segments.astype(bool)
 
             # Adapt the mask
             mask[y_min:y_max, x_min:x_max] = masks.union(mask[y_min:y_max, x_min:x_max], box_mask)
+
+            if plot: plotting.plot_box(np.ma.masked_array(box, mask=mask[y_min:y_max,x_min:x_max]), title="Masked segment")
 
         # Add the new mask
         self._add_mask(mask, "segments")

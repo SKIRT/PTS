@@ -102,5 +102,10 @@ class Frame(object):
 
         # Return the standard deviation of the data
         return np.std(self.data, ddof=ddof)
+        
+    @property
+    def sum(self):
+        
+        return np.sum(self.data)
 
 # *****************************************************************
