@@ -278,18 +278,26 @@ class ImagePreparation(object):
             image.header["CROTA1"] = 0.0
             image.header["CROTA2"] = 0.0
             image.header["CTYPE1"] = 'RA---TAN'
-            image.header["CTYPE1"] = 'DEC--TAN'
+            image.header["CTYPE2"] = 'DEC--TAN'
+
+            #del image.header["CDELT1"]
+            #del image.header["CDELT2"]
+            #del image.header["BUNIT"]
+            #del image.header["CRPIX1"]
+            #del image.header["CRPIX2"]
 
             # Convolve the bulge image to the PACS 160 resolution
             iu.convolve(image, "Kernel_HiRes_Moffet_00.5_to_PACS_160.fits")
 
             # Rebin the convolved bulge image to the frame of the prepared images (does not matter which one)
-            IRAC_dir = os.path.join(self.prep_path, "IRAC")
-            iu.rebin(image, IRAC_dir, "convolved_rebinned.fits")
+            #IRAC_dir = os.path.join(self.prep_path, "IRAC")
+            #iu.rebin(image, IRAC_dir, "convolved_rebinned.fits")
+            
+            iu.rebin(image, self.data_path, 'PACS160.fits')
             image.crop(350, 725, 300, 825)
 
             # Save the convolved, rebinned and cropped bulge or disk image
-            iu.save(image, os.path.join(self.prep_path, 'name'), 'final.fits')
+            iu.save(image, os.path.join(self.prep_path, name), 'final.fits')
 
     # *****************************************************************
 
@@ -351,7 +359,7 @@ class ImagePreparation(object):
         fuv_image.frames.ssfr.select()
 
 
-        fuv_image.frames.ssfr.data[fuv_image.frames.h.data < 0.0 or fuv_image.frames.primary.data < 10.0*fuv_image.frames.errors.data] = 0.0
+        fuv_image.frames.ssfr.data[(fuv_image.frames.h.data < 0.0) + (fuv_image.frames.primary.data < 10.0*fuv_image.frames.errors.data)] = 0.0
 
         # Save sSFR map as FITS file
         iu.save(fuv_image, self.in_path, "ssfr.fits")
@@ -437,31 +445,72 @@ class ImagePreparation(object):
 
         ssfr_data = ssfr_image.frames.primary.data
 
-        a_fuv_cortese[ssfr_data < 4.0] = 0.50994 + (0.88311*x) + (0.53315*x2) + (0.04004*x3) - (0.04883*x4)
-        a_fuv_cortese[ssfr_data >= 4.0 and ssfr_data < 4.2] = 0.49867 + (0.86377*x) + (0.51952*x2) + (0.04038*x3) - (0.04624*x4)
-        a_fuv_cortese[ssfr_data >= 4.2 and ssfr_data < 4.6] = 0.49167 + (0.85201*x) + (0.51152*x2) + (0.04060*x3) - (0.04475*x4)
-        a_fuv_cortese[ssfr_data >= 4.6 and ssfr_data < 5.0] = 0.48223 + (0.83642*x) + (0.50127*x2) + (0.04092*x3) - (0.04288*x4)
-        a_fuv_cortese[ssfr_data >= 5.0 and ssfr_data < 5.4] = 0.46909 + (0.81520*x) + (0.48787*x2) + (0.04138*x3) - (0.04050*x4)
-        a_fuv_cortese[ssfr_data >= 5.4 and ssfr_data < 5.8] = 0.45013 + (0.78536*x) + (0.47009*x2) + (0.04210*x3) - (0.03745*x4)
-        a_fuv_cortese[ssfr_data >= 5.8 and ssfr_data < 6.3] = 0.42168 + (0.74191*x) + (0.44624*x2) + (0.04332*x3) - (0.03362*x4)
-        a_fuv_cortese[ssfr_data >= 6.3 and ssfr_data < 6.6] = 0.40210 + (0.71272*x) + (0.43139*x2) + (0.04426*x3) - (0.03140*x4)
-        a_fuv_cortese[ssfr_data >= 6.6 and ssfr_data < 6.9] = 0.37760 + (0.67674*x) + (0.41420*x2) + (0.04555*x3) - (0.02900*x4)
-        a_fuv_cortese[ssfr_data >= 6.9 and ssfr_data < 7.2] = 0.34695 + (0.63224*x) + (0.39438*x2) + (0.04739*x3) - (0.02650*x4)
-        a_fuv_cortese[ssfr_data >= 7.2 and ssfr_data < 7.5] = 0.30899 + (0.57732*x) + (0.37157*x2) + (0.05000*x3) - (0.02399*x4)
-        a_fuv_cortese[ssfr_data >= 7.5 and ssfr_data < 7.8] = 0.26302 + (0.51013*x) + (0.34522*x2) + (0.05377*x3) - (0.02164*x4)
-        a_fuv_cortese[ssfr_data >= 7.8 and ssfr_data < 8.1] = 0.20982 + (0.42980*x) + (0.31431*x2) + (0.05909*x3) - (0.01957*x4)
-        a_fuv_cortese[ssfr_data >= 8.1 and ssfr_data < 8.4] = 0.15293 + (0.33799*x) + (0.27713*x2) + (0.06638*x3) - (0.01792*x4)
-        a_fuv_cortese[ssfr_data >= 8.4 and ssfr_data < 8.8] = 0.09944 + (0.24160*x) + (0.23161*x2) + (0.07580*x3) - (0.01671*x4)
-        a_fuv_cortese[ssfr_data >= 8.8 and ssfr_data < 9.2] = 0.05822 + (0.15524*x) + (0.17801*x2) + (0.08664*x3) - (0.01593*x4)
-        a_fuv_cortese[ssfr_data >= 9.2 and ssfr_data < 9.6] = 0.03404 + (0.09645*x) + (0.12452*x2) + (0.09679*x3) - (0.01548*x4)
-        a_fuv_cortese[ssfr_data >= 9.6 and ssfr_data < 10.0] = 0.02355 + (0.06934*x) + (0.08725*x2) + (0.10339*x3) - (0.01526*x4)
-        a_fuv_cortese[ssfr_data >= 9.6 and ssfr_data < 10.0] = 0.02025 + (0.06107*x) + (0.07212*x2) + (0.10588*x3) - (0.01517*x4)
+        #print (ssfr_data < 4.0).shape
+        #print a_fuv_cortese.shape
+        #print a_fuv_cortese[ssfr_data < 4.0]
+
+        cnd = ssfr_data < 4.0
+        a_fuv_cortese[cnd] = 0.50994 + (0.88311*x[cnd]) + (0.53315*x2[cnd]) + (0.04004*x3[cnd]) - (0.04883*x4[cnd])
+        
+        cnd = (ssfr_data >= 4.0) * (ssfr_data < 4.2)
+        a_fuv_cortese[cnd] = 0.49867 + (0.86377*x[cnd]) + (0.51952*x2[cnd]) + (0.04038*x3[cnd]) - (0.04624*x4[cnd])
+        
+        cnd = (ssfr_data >= 4.2) * (ssfr_data < 4.6)
+        a_fuv_cortese[cnd] = 0.49167 + (0.85201*x[cnd]) + (0.51152*x2[cnd]) + (0.04060*x3[cnd]) - (0.04475*x4[cnd])
+        
+        cnd = (ssfr_data >= 4.6) * (ssfr_data < 5.0)
+        a_fuv_cortese[cnd] = 0.48223 + (0.83642*x[cnd]) + (0.50127*x2[cnd]) + (0.04092*x3[cnd]) - (0.04288*x4[cnd])
+        
+        cnd = (ssfr_data >= 5.0) * (ssfr_data < 5.4)
+        a_fuv_cortese[cnd] = 0.46909 + (0.81520*x[cnd]) + (0.48787*x2[cnd]) + (0.04138*x3[cnd]) - (0.04050*x4[cnd])
+        
+        cnd = (ssfr_data >= 5.4) * (ssfr_data < 5.8)
+        a_fuv_cortese[cnd] = 0.45013 + (0.78536*x[cnd]) + (0.47009*x2[cnd]) + (0.04210*x3[cnd]) - (0.03745*x4[cnd])
+        
+        cnd = (ssfr_data >= 5.8) * (ssfr_data < 6.3)
+        a_fuv_cortese[cnd] = 0.42168 + (0.74191*x[cnd]) + (0.44624*x2[cnd]) + (0.04332*x3[cnd]) - (0.03362*x4[cnd])
+        
+        cnd = (ssfr_data >= 6.3) * (ssfr_data < 6.6)
+        a_fuv_cortese[cnd] = 0.40210 + (0.71272*x[cnd]) + (0.43139*x2[cnd]) + (0.04426*x3[cnd]) - (0.03140*x4[cnd])
+        
+        cnd = (ssfr_data >= 6.6) * (ssfr_data < 6.9)
+        a_fuv_cortese[cnd] = 0.37760 + (0.67674*x[cnd]) + (0.41420*x2[cnd]) + (0.04555*x3[cnd]) - (0.02900*x4[cnd])
+        
+        cnd = (ssfr_data >= 6.9) * (ssfr_data < 7.2)
+        a_fuv_cortese[cnd] = 0.34695 + (0.63224*x[cnd]) + (0.39438*x2[cnd]) + (0.04739*x3[cnd]) - (0.02650*x4[cnd])
+        
+        cnd = (ssfr_data >= 7.2) * (ssfr_data < 7.5)
+        a_fuv_cortese[cnd] = 0.30899 + (0.57732*x[cnd]) + (0.37157*x2[cnd]) + (0.05000*x3[cnd]) - (0.02399*x4[cnd])
+        
+        cnd = (ssfr_data >= 7.5) * (ssfr_data < 7.8)
+        a_fuv_cortese[cnd] = 0.26302 + (0.51013*x[cnd]) + (0.34522*x2[cnd]) + (0.05377*x3[cnd]) - (0.02164*x4[cnd])
+        
+        cnd = (ssfr_data >= 7.8) * (ssfr_data < 8.1)
+        a_fuv_cortese[cnd] = 0.20982 + (0.42980*x[cnd]) + (0.31431*x2[cnd]) + (0.05909*x3[cnd]) - (0.01957*x4[cnd])
+        
+        cnd = (ssfr_data >= 8.1) * (ssfr_data < 8.4)
+        a_fuv_cortese[cnd] = 0.15293 + (0.33799*x[cnd]) + (0.27713*x2[cnd]) + (0.06638*x3[cnd]) - (0.01792*x4[cnd])
+        
+        cnd = (ssfr_data >= 8.4) * (ssfr_data < 8.8)
+        a_fuv_cortese[cnd] = 0.09944 + (0.24160*x[cnd]) + (0.23161*x2[cnd]) + (0.07580*x3[cnd]) - (0.01671*x4[cnd])
+        
+        cnd = (ssfr_data >= 8.8) * (ssfr_data < 9.2)
+        a_fuv_cortese[cnd] = 0.05822 + (0.15524*x[cnd]) + (0.17801*x2[cnd]) + (0.08664*x3[cnd]) - (0.01593*x4[cnd])
+        
+        cnd = (ssfr_data >= 9.2) * (ssfr_data < 9.6)
+        a_fuv_cortese[cnd] = 0.03404 + (0.09645*x[cnd]) + (0.12452*x2[cnd]) + (0.09679*x3[cnd]) - (0.01548*x4[cnd])
+        
+        cnd = (ssfr_data >= 9.6) * (ssfr_data < 10.0)
+        a_fuv_cortese[cnd] = 0.02355 + (0.06934*x[cnd]) + (0.08725*x2[cnd]) + (0.10339*x3[cnd]) - (0.01526*x4[cnd])
+        
+        cnd = (ssfr_data >= 9.6) * (ssfr_data < 10.0)
+        a_fuv_cortese[cnd] = 0.02025 + (0.06107*x[cnd]) + (0.07212*x2[cnd]) + (0.10588*x3[cnd]) - (0.01517*x4[cnd])
 
         pacs160_path = os.path.join(self.prep_path, "PACS160", "final.fits")
         pacs160_image = iu.open(pacs160_path)
 
         # Set pixels to zero in some cases
-        a_fuv_cortese[ssfr_data < 0 or ssfr_data > 10.5 or fuv_image.frames.primary.data <= 0 or pacs160_image.frames.primary.data < 5.0*pacs160_image.frames.errors.data] = 0.0
+        a_fuv_cortese[(ssfr_data < 0) + (ssfr_data > 10.5) + (fuv_image.frames.primary.data <= 0) + (pacs160_image.frames.primary.data < 5.0*pacs160_image.frames.errors.data)] = 0.0
 
         # Make sure all pixels are larger or equal to zero
         a_fuv_cortese[a_fuv_cortese < 0.0] = 0.0
@@ -483,7 +532,8 @@ class ImagePreparation(object):
         irac_path = os.path.join(self.prep_path, "IRAC", "final.fits")
         irac_image = iu.open(irac_path)
 
-        bulge_path = os.path.join(self.prep_path, "bulge", "M81_bulge_i59_total.fits")
+        #bulge_path = os.path.join(self.prep_path, "Bulge", "M81_bulge_i59_total.fits")
+        bulge_path = os.path.join(self.prep_path, "Bulge", "final.fits")
         irac_image.import_datacube(bulge_path, "bulge")
 
         irac_image.frames.bulge.select()
@@ -500,7 +550,7 @@ class ImagePreparation(object):
 
         oldstars_data = irac_image.frames.primary.data - factor*irac_image.frames.bulge.data
 
-        oldstars_data[irac_image.frames.primary.data[y,x] < 10.0*irac_image.frames.errors.data[y,x] or oldstars_data[y,x] < 0.0] = 0.0
+        oldstars_data[(irac_image.frames.primary.data < 10.0*irac_image.frames.errors.data) + (oldstars_data < 0.0)] = 0.0
 
         # Add old stars frame
         irac_image._add_frame(oldstars_data, irac_image.frames.primary.coordinates, "oldstars")
@@ -527,7 +577,8 @@ class ImagePreparation(object):
         #     for this we typically use an exponential disk
         #     (scale length detemermined by GALFIT)
 
-        disk_path = os.path.join(self.prep_path, "disk", "M81_disk_i59_total.fits")
+        #disk_path = os.path.join(self.prep_path, "Disk", "M81_disk_i59_total.fits")
+        disk_path = os.path.join(self.prep_path, "Disk", "final.fits")
 
         disk_image = iu.open(disk_path)
 
@@ -568,9 +619,11 @@ class ImagePreparation(object):
 
         new_fuv_image._add_frame(new_fuv_data, None, "primary")
         new_mips_image._add_frame(new_mips_data, None, "primary")
+        new_mips_image._add_frame(mips_image.frames.errors.data, None, "errors")
 
         new_fuv_image.frames.primary.select()
         new_mips_image.frames.primary.select()
+        new_mips_image.frames.errors.select()
 
         # Save the new images
         iu.save(new_fuv_image, self.in_path, "fuv.fits")
@@ -598,7 +651,10 @@ class ImagePreparation(object):
         ionizing_stars_data = ha_image.frames.primary.data + 0.031*new_mips_image.frames.primary.data
         ionizing_stars_ratio = ha_image.frames.primary.data / (0.031*new_mips_image.frames.primary.data)
 
-        low_snr = ha_image.frames.primary.data < 10.0*ha_image.frames.errors.data or new_mips_image.frames.primary.data < 10.0*new_mips_image.frames.errors.data
+        print ha_image.frames.errors.data
+        print new_mips_image.frames.errors.data
+
+        low_snr = (ha_image.frames.primary.data < 10.0*ha_image.frames.errors.data) + (new_mips_image.frames.primary.data < 10.0*new_mips_image.frames.errors.data)
 
         ionizing_stars_data[low_snr] = 0.0
         ionizing_stars_ratio[low_snr] = 0.0
