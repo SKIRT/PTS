@@ -1075,8 +1075,6 @@ class Image(object):
         # For each active mask
         for mask_name in self.masks.get_selected(allow_none=allow_none):
 
-            print self.masks[mask_name].data.shape
-
             # Add this mask to the total
             total_mask += self.masks[mask_name].data
 
@@ -1522,8 +1520,6 @@ class Image(object):
 
             x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
 
-            print self.frames[frame_name].data.shape
-
             x = int(round(x_center))
             y = int(round(y_center))
 
@@ -1561,8 +1557,6 @@ class Image(object):
         self._add_region(dim_region, "dim")
 
         if len(bright_region) > 0:
-
-            print len(bright_region)
 
             self._add_region(bright_region, "bright")
 
