@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.prepareimages Prepare images for SKIRT radiative transfer simulations
+## \package do.modelgalaxy Model a galaxy with Astromagic and SKIRT
 #
 
 # *****************************************************************
@@ -15,14 +15,14 @@ import os.path
 import argparse
 
 # Import relevant PTS modules
-from pts.imagepreparation import ImagePreparation
+from pts.galaxymodeler import GalaxyModeler
 
 # *****************************************************************
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
-parser.add_argument('filter', type=str, help='the filter for which to run the data preparation', nargs='?', default=None)
-parser.add_argument("--stage", type=str, help="the preparation stage")
+parser.add_argument('--image', type=str, help='provide this argument to only prepare one specific image')
+parser.add_argument('--stage', type=str, help='the preparation stage')
 parser.add_argument('--plot', action='store_true', help='plot the results of intermediate steps')
 parser.add_argument('--save', action='store_true', help='save intermediate results')
 
@@ -30,7 +30,7 @@ parser.add_argument('--save', action='store_true', help='save intermediate resul
 args = parser.parse_args()
 
 # Set the command-line options
-filter = args.filter
+filter_name = args.filter
 stage = args.stage
 plot = args.plot
 save = args.save
@@ -42,14 +42,15 @@ working_directory = os.getcwd()
 
 # *****************************************************************
 
-# Create a ImagePreparation object
-preparation = ImagePreparation(working_directory, filter, plot, save)
+# Create a GalaxyModeler object
+modeler = GalaxyModeler(working_directory, filter_name, plot, save)
 
-# Run the image preparation
-if stage is None: preparation.run()
-elif stage == "prepare": preparation.prepare()
-elif stage == "galfit": preparation.bulge_and_disk()
-elif stage == "maps": preparation.make_maps()
+# Run the modeling procedure
+if stage is None: modeler.run()
+elif stage == "prepare": modeler.prepare_images()
+elif stage == "galfit": modeler.fit_bulge_and_disk()
+elif stage == "maps": modeler.make_maps()
+elif stage == "fit": modeler.fit_sed()
 else: raise ValueError("Unkown stage")
 
 # *****************************************************************

@@ -5,12 +5,12 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.imagepreparation Preparing astronomical images as input for
-#  SKIRT radiative transfer simulations
+## \package pts.galaxymodeler Model a galaxy by fitting using Astromagic and SKIRT
 #
-# An instance of the ImagePreparation class in this module is responsible for taking reduced astronomical image data
+# An instance of the GalaxyModeler class in this module is responsible for taking reduced astronomical image data
 # of a certain galaxy in different photometric filters and creating maps that represent the 2D distribution of
-# dust, star formation and old stars.
+# dust, star formation and old stars. Then, it uses these maps as input for SKIRT radiative transfer simulations
+# and fits the output to the observed galaxy SED.
 
 # *****************************************************************
 
@@ -106,13 +106,13 @@ extinction = {"2MASSH":   True,
 
 # *****************************************************************
 
-class ImagePreparation(object):
+class GalaxyModeler(object):
 
     """
-    An instance of the ImagePreparation class in this module is responsible for taking reduced astronomical image data
+    An instance of the GalaxyModeler class in this module is responsible for taking reduced astronomical image data
     of a certain galaxy in different photometric filters and creating maps that represent the 2D distribution of
-    dust, star formation and old stars.
-    OLD STARS: IRAC, YOUNG NI STARS: FUV, YOUNG I STARS: Ha + 24micron, DUST: H + PACS70 + PACS160
+    dust, star formation and old stars. Then, it uses these maps as input for SKIRT radiative transfer simulations
+    and fits the output to the observed galaxy SED.
     """
 
     # *****************************************************************
@@ -188,21 +188,21 @@ class ImagePreparation(object):
         :return:
         """
 
-        # 1. Get galactic extinction coefficients
-        #attenuations = iu.get_attenuations(self.galaxy_name, self.image_paths.keys())
+        # 1. Prepare
+        self.prepare_images()
 
-        # 2. Prepare
-        self.prepare()
+        # 2. Fit bulge and disk
+        self.fit_bulge_and_disk()
 
-        # 3. Fit bulge and disk
-        self.bulge_and_disk()
-
-        # 3. Make maps
+        # 4. Make maps
         self.make_maps()
+
+        # 5. Run SKIRT simulations, fit the SED
+        self.fit_sed()
 
     # *****************************************************************
 
-    def prepare(self):
+    def prepare_images(self):
 
         """
         This function prepares the images
@@ -254,7 +254,7 @@ class ImagePreparation(object):
 
     # *****************************************************************
 
-    def bulge_and_disk(self):
+    def fit_bulge_and_disk(self):
 
         # TODO: do the bulge/disk fitting here
 
@@ -676,6 +676,12 @@ class ImagePreparation(object):
         # Save the new image
         iu.save(ionizing_stars_image, self.in_path, "ionizingstars.fits")
 
+    # *****************************************************************
+    
+    def fit_sed(self):
+        
+        pass
+        
 # *****************************************************************
 
 
