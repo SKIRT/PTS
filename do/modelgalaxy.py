@@ -30,7 +30,7 @@ parser.add_argument('--save', action='store_true', help='save intermediate resul
 args = parser.parse_args()
 
 # Set the command-line options
-filter_name = args.filter
+image = args.image
 stage = args.stage
 plot = args.plot
 save = args.save
@@ -43,7 +43,7 @@ working_directory = os.getcwd()
 # *****************************************************************
 
 # Create a GalaxyModeler object
-modeler = GalaxyModeler(working_directory, filter_name, plot, save)
+modeler = GalaxyModeler(working_directory, image, plot, save)
 
 # Run the modeling procedure
 if stage is None: modeler.run()
