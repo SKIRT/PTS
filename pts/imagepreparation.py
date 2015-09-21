@@ -68,7 +68,7 @@ extra = {"2MASSH":   True,
          "PACS70":   False,
          "PACS160":  False}
 
-# Define which images should still be sky-subtracted
+# Define which images are already sky-subtracted
 sky_subtracted = {"2MASSH":   False,
                  "GALEXFUV": False,
                  "Ha":       False,
@@ -94,6 +94,15 @@ attenuations = {"2MASSH":   0.036,
                 "MIPS24":   0.0,
                 "PACS70":   0.0,
                 "PACS160":  0.0}
+
+# Define whether galactic extinction should be taken into account for the different bands
+extinction = {"2MASSH":   True,
+              "GALEXFUV": True,
+              "Ha":       True,
+              "IRAC":     False,
+              "MIPS24":   False,
+              "PACS70":   False,
+              "PACS160":  False}
 
 # *****************************************************************
 
@@ -280,19 +289,14 @@ class ImagePreparation(object):
             image.header["CTYPE1"] = 'RA---TAN'
             image.header["CTYPE2"] = 'DEC--TAN'
 
-            #del image.header["CDELT1"]
-            #del image.header["CDELT2"]
-            #del image.header["BUNIT"]
-            #del image.header["CRPIX1"]
-            #del image.header["CRPIX2"]
-
             # Convolve the bulge image to the PACS 160 resolution
             iu.convolve(image, "Kernel_HiRes_Moffet_00.5_to_PACS_160.fits")
 
             # Rebin the convolved bulge image to the frame of the prepared images (does not matter which one)
             #IRAC_dir = os.path.join(self.prep_path, "IRAC")
             #iu.rebin(image, IRAC_dir, "convolved_rebinned.fits")
-            
+
+            # Rebin the convolved image to the frame of the PACS 160 image (just as we did with the other images)
             iu.rebin(image, self.data_path, 'PACS160.fits')
             image.crop(350, 725, 300, 825)
 
@@ -357,7 +361,6 @@ class ImagePreparation(object):
 
         fuv_image.frames.primary.deselect()
         fuv_image.frames.ssfr.select()
-
 
         fuv_image.frames.ssfr.data[(fuv_image.frames.h.data < 0.0) + (fuv_image.frames.primary.data < 10.0*fuv_image.frames.errors.data)] = 0.0
 
