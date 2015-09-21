@@ -159,7 +159,7 @@ def get_frame_description(header, i):
     :return:
     """
 
-    planeX = "PLANE" + str(i)
+    planeX = "PLANE" + str(i+1)
 
     # Get the description
     description = header[planeX]
@@ -201,10 +201,10 @@ def load_wcs_from_header(header):
     if issubclass(pywcs.WCS, header.__class__):
         wcs = header
     else:
-        #try:
-        wcs = pywcs.WCS(header)
-        #except:
-            #raise TypeError("header must either be a pyfits.Header or pywcs.WCS instance")
+        try:
+            wcs = pywcs.WCS(header)
+        except:
+            raise TypeError("header must either be a pyfits.Header or pywcs.WCS instance")
 
         if not hasattr(wcs,'naxis1'):
             wcs.naxis1 = header['NAXIS1']

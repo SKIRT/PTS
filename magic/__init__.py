@@ -1806,7 +1806,7 @@ class Image(object):
             for i in range(nframes):
 
                 # Get the name of this frame, but the first frame always gets the name 'primary'
-                description = headers.get_frame_description(header, i) if i else "the primary signal map"
+                description = headers.get_frame_description(header, i) if i else "the primary signal map"    
                 name = headers.get_frame_name(description) if i else "primary"
 
                 # Add this frame to the frames dictionary
