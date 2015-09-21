@@ -1484,7 +1484,7 @@ class Image(object):
 
                     # Convert the list of saturated stars to a region and add it to the list of regions
                     brightest_region = regions.ellipses_from_coordinates(brightest)
-                    self._add_region(brightest_region, "brightest")
+                    self._add_region(brightest_region, "bright_stars")
 
             # Convert the list of stars to a region and add it to the list of regions
             stars_region = regions.ellipses_from_coordinates(stars)
