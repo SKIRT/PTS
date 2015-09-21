@@ -230,8 +230,6 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove
 
             image.rename_region("bright_stars")
 
-            image.plot()
-
     else: image.find_stars(galaxy_name, split_brightness=remove_saturation)
 
     # Select the stars region

@@ -1144,8 +1144,6 @@ def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshol
 
     if hits_boundary and expand:
 
-        #plot=True
-        plot=False
         if plot: plotting.plot_box(np.ma.masked_array(box, mask=box_mask), title="Masked segment hits boundary")
 
         if expansion_level == max_expansion_level: box_mask.fill(False)
@@ -1160,8 +1158,6 @@ def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshol
                                                                                 plot=plot)
     else:
 
-        plot=True
-        #plot=False
         if plot: plotting.plot_box(np.ma.masked_array(box, mask=box_mask), title="Masked segment doesn't hit boundary")
 
     # Return the mask
