@@ -194,8 +194,8 @@ class GalaxyModeler(object):
             if fwhmax[filter_name] is not None: image.set_fwhm(fwhmax[filter_name])
 
             # Mask NaNs, edges and extra user-defined regions
-            extra_reg = os.path.join(self.data_path, 'extra', image.name + '.reg')
-            extra = os.path.isfile(extra_reg)
+            extra_path = os.path.join(self.data_path, 'extra', image.name + '.reg')
+            extra = extra_path if os.path.isfile(extra_path) else None
             iu.mask(image, edges=edges[filter_name], extra=extra)
 
             # Interpolate over the stars indicated by the user (if the FWHM is None; the PSF will be fitted)
@@ -511,6 +511,11 @@ class GalaxyModeler(object):
 
     def make_oldstars_map(self):
 
+        """
+        This function ...
+        :return:
+        """
+
         # Old stars = IRAC3.6 - bulge
         # From the IRAC 3.6 micron map, we must subtract the bulge component to only retain the disk emission
 
@@ -618,6 +623,11 @@ class GalaxyModeler(object):
 
     def make_ionizing_stars_map(self):
 
+        """
+        This function ...
+        :return:
+        """
+
         #Young ionizing stars = Ha + 0.031 x MIPS24
 
         D_M81 = 3.6
@@ -635,9 +645,6 @@ class GalaxyModeler(object):
 
         ionizing_stars_data = ha_image.frames.primary.data + 0.031*new_mips_image.frames.primary.data
         ionizing_stars_ratio = ha_image.frames.primary.data / (0.031*new_mips_image.frames.primary.data)
-
-        print ha_image.frames.errors.data
-        print new_mips_image.frames.errors.data
 
         low_snr = (ha_image.frames.primary.data < 10.0*ha_image.frames.errors.data) + (new_mips_image.frames.primary.data < 10.0*new_mips_image.frames.errors.data)
 
