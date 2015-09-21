@@ -169,6 +169,8 @@ class Image(object):
         :return:
         """
 
+        # TODO: add coordinates !
+
         # Open the HDU list for the FITS file
         hdulist = pyfits.open(path)
 
@@ -198,12 +200,7 @@ class Image(object):
             if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
 
             # Add the primary image frame
-            #self._add_frame(hdu.data, coordinates, "primary", "the primary signal map")
             self._add_frame(hdu.data, None, name)
-
-        # Add the error frame
-        # TODO: add coordinates !
-        #self._add_frame(hdu.data, None, name)
 
         # Close the fits file
         hdulist.close()
