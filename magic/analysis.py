@@ -1042,21 +1042,6 @@ def crop_and_mask_for_background(data, shape, inner_factor, outer_factor):
     # Create the mask
     mask = masks.create_disk_mask(background.shape[1], background.shape[0], x_center_rel, y_center_rel, x_radius)
 
-    try:
-
-        background[1,2]
-
-    except IndexError:
-
-        print outer_factor
-        print x_radius_outer
-        print y_radius_outer
-        print background.shape
-        print x_min
-        print x_max
-        print y_min
-        print y_max
-
     return np.ma.masked_array(background, mask=mask), x_min, x_max, y_min, y_max
 
 # *****************************************************************
@@ -1098,7 +1083,7 @@ def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshol
 
     #print box.shape, evaluated_poly.shape
 
-    plotting.plot_difference(box, evaluated_poly)
+    #plotting.plot_difference(box, evaluated_poly)
 
     #oldbox = box
     box = box - evaluated_poly
