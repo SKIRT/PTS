@@ -32,15 +32,6 @@ fwhmax = {"2MASSH":   None,
           "PACS70":   4.05,
           "PACS160":  3.9228070175}
 
-# Define whether there are stars present in the different images
-stars = {"2MASSH": True,
-         "GALEXFUV": True,
-         "Ha": True,
-         "IRAC": True,
-         "MIPS24": False,
-         "PACS70": False,
-         "PACS160": False}
-
 # Define whether saturated stars should be recognized and removed in the image
 remove_saturation = {"2MASSH": True,
                      "GALEXFUV": False,
@@ -58,15 +49,6 @@ edges = {"2MASSH":   True,
          "MIPS24":   True,
          "PACS70":   True,
          "PACS160":  True}
-
-# Define whether we have extra regions to be masked for the different filters
-extra = {"2MASSH":   True,
-         "GALEXFUV": True,
-         "Ha":       True,
-         "IRAC":     False,
-         "MIPS24":   False,
-         "PACS70":   False,
-         "PACS160":  False}
 
 # Define which images are already sky-subtracted
 sky_subtracted = {"2MASSH":   False,
@@ -94,15 +76,6 @@ attenuations = {"2MASSH":   0.036,
                 "MIPS24":   0.0,
                 "PACS70":   0.0,
                 "PACS160":  0.0}
-
-# Define whether galactic extinction should be taken into account for the different bands
-extinction = {"2MASSH":   True,
-              "GALEXFUV": True,
-              "Ha":       True,
-              "IRAC":     False,
-              "MIPS24":   False,
-              "PACS70":   False,
-              "PACS160":  False}
 
 # *****************************************************************
 
@@ -221,14 +194,19 @@ class GalaxyModeler(object):
             if fwhmax[filter_name] is not None: image.set_fwhm(fwhmax[filter_name])
 
             # Mask NaNs, edges and extra user-defined regions
-            extra_reg = os.path.join(self.data_path, 'extra', image.name + '.reg') if extra[filter_name] else None
-            iu.mask(image, edges=edges[filter_name], extra=extra_reg)
+            extra_reg = os.path.join(self.data_path, 'extra', image.name + '.reg')
+            extra = os.path.isfile(extra_reg)
+            iu.mask(image, edges=edges[filter_name], extra=extra)
 
             # Interpolate over the stars indicated by the user (if the FWHM is None; the PSF will be fitted)
-            if stars[filter_name]: iu.remove_stars(image, self.galaxy_name, model_stars=False, remove_saturation=remove_saturation[filter_name], output_path=output_path)
+            if image.filter.pivotwavelength() < 10.0: iu.remove_stars(image, self.galaxy_name, model_stars=False, remove_saturation=remove_saturation[filter_name], output_path=output_path)
 
             # Subtract the sky
             if not sky_subtracted[filter_name]: iu.subtract_sky(image, self.galaxy_name, plot=self.plot, output_path=output_path, downsample_factor=int(round(2*4*image.fwhm)))
+
+            # Determine whether galactic extinction should be taken into account
+            # If the wavelength is smaller than 1 micron, such extinction is expected
+            extinction = image.filter.pivotwavelength() < 1.0
 
             # Convert the units to MJy / sr
             iu.convert_units(image, filter_name, attenuations)
@@ -335,36 +313,40 @@ class GalaxyModeler(object):
         :return:
         """
 
-        # Young non-ionizing stars = GALEXFUV - H (sSFR)
-
+        # Determine the path to the prepared FUV and H images
         fuv_path = os.path.join(self.prep_path, "GALEXFUV", "final.fits")
         h_path = os.path.join(self.prep_path, "2MASSH", "final.fits")
 
+        # Open the FUV image and import the H image
         fuv_image = iu.open(fuv_path)
         fuv_image.import_datacube(h_path, "h")
 
+        # Young non-ionizing stars (specific star formation rate) = GALEXFUV - H
         fuv_h_data = -2.5*(np.log10(fuv_image.frames.primary.data) - np.log10(fuv_image.frames.h.data))
 
+        # Add the sSFR map to the FUV image
         fuv_image._add_frame(fuv_h_data, fuv_image.frames.primary.coordinates, "ssfr")
 
+        # Deselect all masks, regions and frames
         fuv_image.deselect_all()
 
+        # Select the sSFR map
         fuv_image.frames.ssfr.select()
 
+        # Mask nans in the sSFR map
         fuv_image.mask_nans()
-
         fuv_image.masks.nans.select()
-
         fuv_image.apply_masks(0.0)
 
+        # Deselect all masks, regions and frames except for the sSFR frame
         iu.reset_selection(fuv_image)
-
         fuv_image.frames.primary.deselect()
         fuv_image.frames.ssfr.select()
 
+        # Set the sSFR to zero in low signal-to-noise pixels
         fuv_image.frames.ssfr.data[(fuv_image.frames.h.data < 0.0) + (fuv_image.frames.primary.data < 10.0*fuv_image.frames.errors.data)] = 0.0
 
-        # Save sSFR map as FITS file
+        # Save the sSFR map as FITS file
         iu.save(fuv_image, self.in_path, "ssfr.fits")
 
     # *****************************************************************
@@ -406,6 +388,7 @@ class GalaxyModeler(object):
         factor = np.log10(3.846e26) - np.log10(4*np.pi) - (2*np.log10(D_M81*3.08567758e22))
         tir_data *= 10.0**factor
 
+        # Return the TIR map
         return tir_data
 
     # *****************************************************************
@@ -418,13 +401,12 @@ class GalaxyModeler(object):
         """
 
         # Dust = FUV attenuation = ratio of TIR and FUV luminosity
-        # where TIR = 24, 70 and 160 micron
 
         fuv_path = os.path.join(self.prep_path, "GALEXFUV", "final.fits")
 
         fuv_image = iu.open(fuv_path)
 
-
+        # Convert the FUV map
         factor = - 20 + np.log10(3e8) - np.log10(0.153e-6) + (2*np.log10(2.85/206264.806247))
         fuv_converted_data = fuv_image.frames.primary.data * 10**factor
 
@@ -442,10 +424,9 @@ class GalaxyModeler(object):
         # Create an empty image
         a_fuv_cortese = np.zeros_like(tir_data)
 
+        # Open the sSFR image
         ssfr_path = os.path.join(self.in_path, "ssfr.fits")
-
         ssfr_image = iu.open(ssfr_path)
-
         ssfr_data = ssfr_image.frames.primary.data
 
         #print (ssfr_data < 4.0).shape
@@ -509,6 +490,7 @@ class GalaxyModeler(object):
         cnd = (ssfr_data >= 9.6) * (ssfr_data < 10.0)
         a_fuv_cortese[cnd] = 0.02025 + (0.06107*x[cnd]) + (0.07212*x2[cnd]) + (0.10588*x3[cnd]) - (0.01517*x4[cnd])
 
+        # Open the PACS160 image
         pacs160_path = os.path.join(self.prep_path, "PACS160", "final.fits")
         pacs160_image = iu.open(pacs160_path)
 
