@@ -112,4 +112,59 @@ class StarFetcher(object):
         # Set the region
         self.region = region
 
+# *****************************************************************
+
+class SkyRemover(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, config=None):
+
+        pass
+
     # *****************************************************************
+
+    def run(self):
+
+        pass
+
+# *****************************************************************
+
+class SaturationRemover(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, config=None):
+
+        pass
+
+    # *****************************************************************
+
+    def run(self):
+
+        pass
+
+# *****************************************************************
+
+class GalaxyFinder(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, config=None):
+
+        pass
+
+    # *****************************************************************
+
+    def run(self):
+
+        pass
+
+# *****************************************************************
+
