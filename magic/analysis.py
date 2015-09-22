@@ -1151,7 +1151,7 @@ def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshol
         if expansion_level == max_expansion_level: box_mask.fill(False)
         else:
 
-            shape = regions.scale_circle(shape, expansion_factor)
+            shape = regions.scale(shape, expansion_factor)
             box_mask, x_min, x_max, y_min, y_max = find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size,
                                                                                 threshold_sigmas, expand=expand,
                                                                                 expansion_factor=expansion_factor,

@@ -220,7 +220,11 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove
         sigma = image.fwhm / 2.355
         image.fetch_stars(sigma, galaxy_name=galaxy_name)
 
-        if remove_saturation:
+    else:
+
+        image.find_stars(galaxy_name, failed_stars_method="mean")
+
+    if remove_saturation:
 
             image.regions.stars.select()
             image.split_region(criterium="flux", method="percentage", percentage=0.08)
@@ -229,8 +233,6 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove
             image.regions.bright.select()
 
             image.rename_region("bright_stars")
-
-    else: image.find_stars(galaxy_name, split_brightness=remove_saturation, failed_stars_method="mean")
 
     # Select the stars region
     image.regions.deselect_all()
@@ -241,51 +243,51 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove
     image.regions.stars.deselect()
 
     # If requested and present, save the ufos region
-    if image.regions.ufos is not None:
+    #if image.regions.ufos is not None:
 
-        image.regions.ufos.select()
-        if output_path is not None: export_region(image, output_path, "ufos.reg")
-        image.regions.deselect_all()
+        #image.regions.ufos.select()
+        #if output_path is not None: export_region(image, output_path, "ufos.reg")
+        #image.regions.deselect_all()
 
     # If requested, model the stars
-    if model_stars:
+    #if model_stars:
 
-        image.regions.stars.select()
-        image.model_stars(plot=False, upsample_factor=2.0)
+        #image.regions.stars.select()
+        #image.model_stars(plot=False, upsample_factor=2.0)
 
         # If requested, save the modeled and unmodeled stars regions
-        image.regions.deselect_all()
-        image.regions.modeled_stars.select()
-        if output_path is not None: export_region(image, output_path, "modeled_stars.reg")
-        image.regions.modeled_stars.deselect()
-        image.regions.unmodeled_stars.select()
-        if output_path is not None: export_region(image, output_path, "unmodeled_stars.reg")
-        image.regions.deselect_all()
+        #image.regions.deselect_all()
+        #image.regions.modeled_stars.select()
+        #if output_path is not None: export_region(image, output_path, "modeled_stars.reg")
+        #image.regions.modeled_stars.deselect()
+        #image.regions.unmodeled_stars.select()
+        #if output_path is not None: export_region(image, output_path, "unmodeled_stars.reg")
+        #image.regions.deselect_all()
 
         # Select the stars frame
-        image.frames.primary.deselect()
-        image.frames.stars.select()
+        #image.frames.primary.deselect()
+        #image.frames.stars.select()
 
         # If requested, save the stars frame
-        if output_path is not None: save(image, output_path, "stars.fits")
+        #if output_path is not None: save(image, output_path, "stars.fits")
 
         # Subtract the stars frame from the primary frame
-        image.subtract()
+        #image.subtract()
 
         # Deselect all regions, masks and frames except for the primary frame
-        reset_selection(image)
+        #reset_selection(image)
 
         # If requested, save the star-subtracted image
-        if output_path is not None: save(image, output_path, "subtracted_stars.fits")
+        #if output_path is not None: save(image, output_path, "subtracted_stars.fits")
 
         # Set the name of the region within which we are going to interpolate
-        region_for_interpolation = "unmodeled_stars"
-        region_for_fwhm = "modeled_stars"
+        #region_for_interpolation = "unmodeled_stars"
+        #region_for_fwhm = "modeled_stars"
 
-    else:
+    #else:
 
-        region_for_interpolation = "stars"
-        region_for_fwhm = "stars"
+    region_for_interpolation = "stars"
+    region_for_fwhm = "stars"
 
     # From the region of (unmodeled) stars, create a new region that represents the 6-sigma contours of these objects
     image.regions[region_for_interpolation].select()
@@ -349,6 +351,7 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove
         image.create_segmentation_mask(image.fwhm, int(image.fwhm*2.0))
         image.regions.deselect_all()
         image.masks.segments.select()
+        image.rename_mask("saturation")
 
         # Interpolate the primary frame within the masked pixels
         image.interpolate()
@@ -379,7 +382,7 @@ def subtract_sky(image, galaxy_name, plot=False, output_path=None, downsample_fa
     image.regions.galaxy.select()
 
     # If an output path is provided, save the galaxy region
-    if output_path is not None: export_region(image, output_path, "galaxy.reg")
+    #if output_path is not None: export_region(image, output_path, "galaxy.reg")
 
     # Expand the galaxy region by a factor of 5.0 and create a mask from this new region
     image.expand_regions(factor=5.0)
@@ -391,20 +394,21 @@ def subtract_sky(image, galaxy_name, plot=False, output_path=None, downsample_fa
     if output_path is not None: export_region(image, output_path, "galaxy_expanded.reg")
 
     # If present, create a mask from the modeled stars region and select this mask
-    if image.regions.modeled_stars is not None:
+    #if image.regions.modeled_stars is not None:
 
-        image.regions.deselect_all()
-        image.regions.modeled_stars.select()
-        image.expand_regions(factor=6.0)
-        image.regions.deselect_all()
-        image.regions.modeled_stars_expanded.select()
-        image.create_mask()     # Created masks/modeled_stars_expanded
-        image.regions.deselect_all()
-        image.masks.modeled_stars_expanded.select() # Select the new mask
+        #image.regions.deselect_all()
+        #image.regions.modeled_stars.select()
+        #image.expand_regions(factor=6.0)
+        #image.regions.deselect_all()
+        #image.regions.modeled_stars_expanded.select()
+        #image.create_mask()     # Created masks/modeled_stars_expanded
+        #image.regions.deselect_all()
+        #image.masks.modeled_stars_expanded.select() # Select the new mask
 
     # Select all other masks that cover parts not suitable for fitting the sky (galaxy, stars)
-    if image.masks.inner is not None: image.masks.inner.select()                  # (unmodeled) stars
-    image.masks.galaxy_expanded.select()
+    if image.masks.inner is not None: image.masks.inner.select()                  # stars
+    image.masks.galaxy_expanded.select() # galaxy
+    image.masks.saturation.select() # saturation
     image.masks.total.select()
 
     # Make a sky map
@@ -426,10 +430,12 @@ def subtract_sky(image, galaxy_name, plot=False, output_path=None, downsample_fa
 
     # Fit the sky with a polynomial function (ignoring pixels covered by any of the selected masks)
     if downsample_factor == 1:
+
         image.fit_polynomial(plot=plot)
         image.frames.deselect_all()
         image.frames.primary_polynomial.select()
         image.rename_frame("background")
+
     else: image.estimate_background(downsample_factor=downsample_factor, plot=plot)
 
     # Select the new frame and deselect all masks

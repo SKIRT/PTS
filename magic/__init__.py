@@ -1418,7 +1418,7 @@ class Image(object):
 
     def find_stars(self, galaxy_name=None, plot=False, plot_custom=[False, False, False, False], catalog=["UCAC4"],
                    detection_method="peaks", initial_radius=10.0, in_region=False, split_sigma=None, model="Gaussian",
-                   split_brightness=False, brightness_sigma=6.0, failed_stars_method="max"):
+                   failed_stars_method="max"):
 
         """
         This function searches for stars in the currently selected frame, by fetching star positions from an
@@ -1457,18 +1457,18 @@ class Image(object):
         # Only create a region if any stars were found
         if len(stars) > 0:
 
-            if split_brightness:
+            #if split_brightness:
 
                 # Find saturated stars
-                stars, brightest = statistics.split_percentage(stars, lambda source: source.amplitude, percentage=0.05)
+                #stars, brightest = statistics.split_percentage(stars, lambda source: source.amplitude, percentage=0.05)
 
                 #stars, brightest = statistics.sigma_clip_split(stars, lambda source: source.amplitude, sigma=brightness_sigma, only_high=True)
 
-                if len(brightest) > 0:
+                #if len(brightest) > 0:
 
                     # Convert the list of saturated stars to a region and add it to the list of regions
-                    brightest_region = regions.ellipses_from_coordinates(brightest)
-                    self._add_region(brightest_region, "bright_stars")
+                    #brightest_region = regions.ellipses_from_coordinates(brightest)
+                    #self._add_region(brightest_region, "bright_stars")
 
             # Convert the list of stars to a region and add it to the list of regions
             stars_region = regions.ellipses_from_coordinates(stars)
@@ -1481,7 +1481,7 @@ class Image(object):
 
             for shape in failed:
 
-                #assert shape.name == "ellipse"
+                assert shape.name == "circle"
 
                 shape.coord_list[2] = sigma
                 #shape.coord_list[3] = max_sigma
@@ -1558,6 +1558,10 @@ class Image(object):
 
         if len(bright_region) > 0:
 
+            for shape in bright_region:
+
+                assert shape.coord_list[2] == shape.coord_list[3], str(shape.coord_list[2]) + " " + str(shape.coord_list[3])
+
             self._add_region(bright_region, "bright")
 
     # *****************************************************************
@@ -1583,6 +1587,8 @@ class Image(object):
         for shape in region:
 
             if not regions.in_box(shape, self.frames[frame_name].data.shape): break
+
+            assert shape.coord_list[2] == shape.coord_list[3]
 
             box_mask, x_min, x_max, y_min, y_max = analysis.find_center_segment_in_shape(self.frames[frame_name].data,
                                                                                          shape, kernel_fwhm, kernel_size,

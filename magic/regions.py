@@ -300,6 +300,24 @@ def parse(region_string):
 
 # *****************************************************************
 
+def scale(shape, factor):
+
+    """
+    This function ...
+    :param shape:
+    :param factor:
+    :return:
+    """
+
+    new_shape = copy.deepcopy(shape)
+    new_shape.coord_list[2] *= factor
+
+    if new_shape.name == "ellipse": new_shape.coord_list[3] *= factor
+
+    return new_shape
+
+# *****************************************************************
+
 def scale_circle(shape, factor):
 
     """
