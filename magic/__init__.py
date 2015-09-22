@@ -33,6 +33,7 @@ import analysis
 import regions
 import statistics
 import catalogs
+import units
 from layers import Layers
 from frames import Frame
 from masks import Mask
@@ -68,7 +69,7 @@ class Image(object):
             self.regions = Layers()
 
             # Set default values for other attributes
-            self.units = None
+            self.unit = None
             self.fwhm = None
             self.header = None
             
@@ -89,7 +90,7 @@ class Image(object):
         self._load_image(filename)
 
         # Set default values for other attributes
-        self.units = None
+        self.unit = None
         self.fwhm = None
 
     # *****************************************************************
@@ -227,7 +228,7 @@ class Image(object):
         if header is None and self.header: header = self.header
         if header is None: header = pyfits.Header()
 
-        plane_index = 1
+        plane_index = 0
 
         # Export all active frames to the specified file
         for frame_name in self.frames.get_selected():
@@ -573,7 +574,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def set_units(self, units):
+    def set_unit(self, unit):
 
         """
         This function sets the units for this image
@@ -581,10 +582,8 @@ class Image(object):
         :return:
         """
 
-        # TODO: FIX THIS FUNCTION
-
         # Set the units for this image ...
-        self.units = units
+        self.unit = units.parse(unit)
 
     # *****************************************************************
 
@@ -599,7 +598,7 @@ class Image(object):
         # TODO: FIX THIS FUNCTION
 
         # Calculate the conversion factor
-        conversionfactor = self.units.convert(1.0, units)
+        conversionfactor = self.unit.convert(1.0, units)
 
         # Convert the data
         self.frames.primary.data *= conversionfactor
@@ -823,7 +822,7 @@ class Image(object):
 
         print self.pixelscale
 
-        self.pixelscale = headers.get_pixelscale(header)
+        self.pixelscale = headers.get_pixelscale(self.header)
 
         print self.pixelscale
 
@@ -1790,7 +1789,12 @@ class Image(object):
         self.filter = headers.get_filter(self.name, header)
 
         # Obtain the units of this image
-        self.units = headers.get_units(header)
+        self.unit = headers.get_units(header)
+
+        self.wavelength = None
+        if self.filter is not None: self.wavelength = self.filter.pivotwavelength()
+        elif "ha" in self.name.lower(): self.wavelength = 0.65628
+        else: log.warning("Could not determine the wavelength for this image")
 
         # Check whether multiple planes are present in the FITS image
         nframes = headers.get_number_of_frames(header)

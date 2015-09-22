@@ -102,7 +102,11 @@ def get_units(header):
 
     if 'BUNIT' in header:
 
-        units = header['BUNIT']
+        units = u.Unit(header['BUNIT'])
+
+    elif 'ZUNITS' in header:
+
+        units = u.Unit(header['ZUNITS'])
 
     # Return the units
     return units
@@ -159,7 +163,7 @@ def get_frame_description(header, i):
     :return:
     """
 
-    planeX = "PLANE" + str(i+1)
+    planeX = "PLANE" + str(i)
 
     # Get the description
     description = header[planeX]
