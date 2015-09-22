@@ -1435,7 +1435,7 @@ class Image(object):
         else: region = self.fetch_stars(initial_radius, catalog=catalog, galaxy_name=galaxy_name, return_region=True).as_imagecoord(self.header)
 
         # Look for sources
-        sources = analysis.find_sources_in_region(self.frames[frame_name].data, region, model, detection_method, plot=plot, plot_custom=plot_custom)
+        sources, failed = analysis.find_sources_in_region(self.frames[frame_name].data, region, model, detection_method, plot=plot, plot_custom=plot_custom)
         log.info("Number of sources = " + str(len(sources)))
 
         # Remove duplicates
@@ -1472,6 +1472,20 @@ class Image(object):
 
             # Convert the list of stars to a region and add it to the list of regions
             stars_region = regions.ellipses_from_coordinates(stars)
+
+            # ADD THE STARS WHERE FITTING FAILED !
+
+            max_sigma = regions.max_radius(stars_region)
+
+            for shape in failed:
+
+                #assert shape.name == "ellipse"
+
+                shape.coord_list[2] = max_sigma
+                #shape.coord_list[3] = max_sigma
+
+                stars_region.append(shape)
+
             self._add_region(stars_region, "stars")
 
         else: log.warning("No stars could be detected")
@@ -1722,25 +1736,13 @@ class Image(object):
         :return:
         """
 
-        # TODO: fix for regions that do not only contain ellipses
+        # Get the total selected region
+        total_region = self.combine_regions(allow_none=False)
 
-        # Initialize an empty list to contain the different sigma values
-        sigmas = []
-
-        # Loop over all currently selected regions
-        for region_name in self.regions.get_selected(allow_none=False):
-
-            # Loop over all shapes in the region
-            for shape in self.regions[region_name].region:
-
-                sigma_x = shape.coord_list[2]
-                sigma_y = shape.coord_list[3]
-
-                # Add the sigma, averaged over the x and y directions, to the list of sigmas
-                sigmas.append(0.5*(sigma_x + sigma_y))
+        mean = regions.mean_radius(total_region)
 
         # Return the mean value of the sigmas
-        return np.mean(sigmas)
+        return mean
 
     # *****************************************************************
 

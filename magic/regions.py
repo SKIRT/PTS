@@ -373,3 +373,39 @@ def in_box(shape, dimensions, require_completely=False):
     return True
 
 # *****************************************************************
+
+def mean_radius(region):
+
+    # Initialize an empty list to contain the different sigma values
+    sigmas = []
+
+    # Loop over all shapes in the region
+    for shape in region:
+
+        sigma_x = shape.coord_list[2]
+        sigma_y = shape.coord_list[3]
+
+        # Add the sigma, averaged over the x and y directions, to the list of sigmas
+        sigmas.append(0.5*(sigma_x + sigma_y))
+
+    return np.mean(sigmas)
+
+# *****************************************************************
+
+def max_radius(region):
+
+    # Initialize an empty list to contain the different sigma values
+    sigmas = []
+
+    # Loop over all shapes in the region
+    for shape in region:
+
+        sigma_x = shape.coord_list[2]
+        sigma_y = shape.coord_list[3]
+
+        # Add the sigma, averaged over the x and y directions, to the list of sigmas
+        sigmas.append(0.5*(sigma_x + sigma_y))
+
+    return max(sigmas)
+
+# *****************************************************************

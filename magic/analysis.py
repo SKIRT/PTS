@@ -65,6 +65,8 @@ def find_sources_in_region(data, region, model_name, detection_method, plot=Fals
     # Initialize an empty list of sources
     sources = []
 
+    failed = []
+
     # Inform the user
     log.info("Looking for sources...")
 
@@ -74,11 +76,18 @@ def find_sources_in_region(data, region, model_name, detection_method, plot=Fals
         # Find a source
         source = find_source_in_shape(data, shape, model_name, detection_method, level=0, plot=plot, plot_custom=plot_custom)
 
+        if source is None:
+            #x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
+            #box, x_min, x_max, y_min, y_max = cropping.crop(data, x_center, y_center, x_radius, y_radius)
+            #plotting.plot_box(box)
+
+            failed.append(shape)
+
         # If a source was found, add it to the list of sources
         if source is not None: sources.append(source)
 
     # Return the list of sources
-    return sources
+    return sources, failed
 
 # *****************************************************************
 
@@ -1094,6 +1103,14 @@ def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshol
     segments = find_segments(box, kernel_fwhm=kernel_fwhm, kernel_size=kernel_size, threshold=threshold)
 
     #label_im, nb_labels = ndimage.label(mask)
+
+    #print segments.shape
+
+    #print y_center, x_center
+    #print y_min, x_min
+    #print y_max, x_max
+
+    assert (x_center >= x_min and x_center < x_max and y_center >= y_min and y_center < y_max)
 
     label = segments[y_center-y_min, x_center-x_min]
 
