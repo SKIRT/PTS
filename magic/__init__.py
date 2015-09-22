@@ -1418,7 +1418,7 @@ class Image(object):
 
     def find_stars(self, galaxy_name=None, plot=False, plot_custom=[False, False, False, False], catalog=["UCAC4"],
                    detection_method="peaks", initial_radius=10.0, in_region=False, split_sigma=None, model="Gaussian",
-                   split_brightness=False, brightness_sigma=6.0):
+                   split_brightness=False, brightness_sigma=6.0, failed_stars_method="max"):
 
         """
         This function searches for stars in the currently selected frame, by fetching star positions from an
@@ -1475,13 +1475,15 @@ class Image(object):
 
             # ADD THE STARS WHERE FITTING FAILED !
 
-            max_sigma = regions.max_radius(stars_region)
+            if failed_stars_method == "max": sigma = regions.max_radius(stars_region)
+            elif failed_stars_method == "mean": sigma = regions.mean_radius(stars_region)
+            else: raise ValueError("Unkown failed stars method (max or mean)")
 
             for shape in failed:
 
                 #assert shape.name == "ellipse"
 
-                shape.coord_list[2] = max_sigma
+                shape.coord_list[2] = sigma
                 #shape.coord_list[3] = max_sigma
 
                 stars_region.append(shape)
