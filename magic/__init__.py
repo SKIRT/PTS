@@ -1345,6 +1345,22 @@ class Image(object):
 
     # *****************************************************************
 
+    def rename_mask(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the name of the currently selected mask
+        mask_name = self.masks.get_selected(require_single=True)
+
+        # Remove the mask from the dictionary of masks and re-add it under a different key
+        self.masks[mask_name] = self.masks.pop(mask_name)
+
+    # *****************************************************************
+
     def model_stars(self, model_name='Gaussian', background_inner_sigmas=5.0, background_outer_sigmas=10.0, fit_sigmas=5.0,
                     upsample_factor=1.0, interpolate_background=True, sigma_clip_background=True, plot=False):
 
