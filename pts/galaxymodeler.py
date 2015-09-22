@@ -534,7 +534,7 @@ class GalaxyModeler(object):
         # Old stars = IRAC3.6 - bulge
         # From the IRAC 3.6 micron map, we must subtract the bulge component to only retain the disk emission
 
-        irac_path = os.path.join(self.prep_path, "IRAC", "final.fits")
+        irac_path = os.path.join(self.prep_path, "IRACI1", "final.fits")
         irac_image = iu.open(irac_path)
 
         #bulge_path = os.path.join(self.prep_path, "Bulge", "M81_bulge_i59_total.fits")
