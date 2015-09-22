@@ -1277,21 +1277,6 @@ class Image(object):
 
     # *****************************************************************
 
-    def create_annulus(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pass
-
-        # Circle --> annulus
-        # Ellipse --> ellipse annulus
-        # Box --> box annulus
-
-    # *****************************************************************
-
     def expand_regions(self, factor, combine=False):
 
         """
