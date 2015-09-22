@@ -98,8 +98,8 @@ def makeinfofile(skirtrun):
     # load filters and wavelength grid
     _loadfilters()
     wavelengths = simulation.wavelengths()
-    # create a mask that removes the CI line emission peaks from the dust continuum emission
-    cimask = (np.abs(wavelengths-360)>20) & (np.abs(wavelengths-600)>20)
+    # create a mask that removes the carbon line emission peaks from the dust continuum emission
+    cmask = (np.abs(wavelengths-157.5)>3) & (np.abs(wavelengths-360)>20) & (np.abs(wavelengths-600)>20)
 
     # gather statistics on fluxes received by each instrument
     for name in simulation.instrumentnames():
@@ -121,10 +121,10 @@ def makeinfofile(skirtrun):
             info["instr_"+name+"_fluxdensity_"+filtername] = fluxdensity
             info["instr_"+name+"_magnitude_"+filtername] = magnitude
 
-        # for the SPIRE filters, calculate flux and magnitude excluding the CI line emission peaks
-        for filterspec in ("SPIRE.PSW","SPIRE.PMW","SPIRE.PLW"):
+        # for the Herschel filters, calculate flux and magnitude excluding the carbon line emission peaks
+        for filterspec in ("Pacs.blue","Pacs.green","Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW"):
             filter = _filters[filterspec]
-            fluxdensity = filter.convolve(wavelengths[cimask], fluxdensities[cimask])
+            fluxdensity = filter.convolve(wavelengths[cmask], fluxdensities[cmask])
             fluxdensity = simulation.convert(fluxdensity, from_unit='W/m2/micron', to_unit='Jy',
                                              wavelength=filter.pivotwavelength())
             magnitude = simulation.absolutemagnitude(fluxdensity, distance,
