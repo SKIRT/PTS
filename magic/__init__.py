@@ -1792,8 +1792,8 @@ class Image(object):
         self.unit = headers.get_units(header)
 
         self.wavelength = None
-        if self.filter is not None: self.wavelength = self.filter.pivotwavelength()
-        elif "ha" in self.name.lower(): self.wavelength = 0.65628
+        if self.filter is not None: self.wavelength = self.filter.pivotwavelength() * u.Unit("micron")
+        elif "ha" in self.name.lower(): self.wavelength = 0.65628 * u.Unit("micron")
         else: log.warning("Could not determine the wavelength for this image")
 
         # Check whether multiple planes are present in the FITS image
