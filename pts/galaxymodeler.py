@@ -18,6 +18,9 @@
 import os.path
 import numpy as np
 
+# Import astronomical modules
+from astropy import units as u
+
 # Import the relevant PTS modules
 import astromagic.utilities as iu
 
@@ -27,7 +30,7 @@ import astromagic.utilities as iu
 fwhmax = {"2MASSH":   None,
           "GALEXFUV": 3.0,
           "Ha":       None,
-          "IRAC":     2.5333738673,
+          "IRACI1":     2.5333738673,
           "MIPS24":   4.28666,
           "PACS70":   4.05,
           "PACS160":  3.9228070175}
@@ -36,7 +39,7 @@ fwhmax = {"2MASSH":   None,
 remove_saturation = {"2MASSH": True,
                      "GALEXFUV": False,
                      "Ha": False,
-                     "IRAC": True,
+                     "IRACI1": True,
                      "MIPS24": False,
                      "PACS70": False,
                      "PACS160": False}
@@ -45,7 +48,7 @@ remove_saturation = {"2MASSH": True,
 edges = {"2MASSH":   True,
          "GALEXFUV": True,
          "Ha":       True,
-         "IRAC":     False,
+         "IRACI1":     False,
          "MIPS24":   True,
          "PACS70":   True,
          "PACS160":  True}
@@ -54,7 +57,7 @@ edges = {"2MASSH":   True,
 sky_subtracted = {"2MASSH":   False,
                  "GALEXFUV": False,
                  "Ha":       False,
-                 "IRAC":     True,
+                 "IRACI1":     True,
                  "MIPS24":   True,
                  "PACS70":   False,
                  "PACS160":  False}
@@ -63,7 +66,7 @@ sky_subtracted = {"2MASSH":   False,
 kernels = {"2MASSH":    "Kernel_HiRes_Gauss_03.0_to_PACS_160.fits",
            "GALEXFUV":  "Kernel_HiRes_GALEX_FUV_to_PACS_160.fits",
            "Ha":        "Kernel_HiRes_Gauss_03.0_to_PACS_160.fits",
-           "IRAC":      "Kernel_HiRes_IRAC_3.6_to_PACS_160.fits",
+           "IRACI1":      "Kernel_HiRes_IRAC_3.6_to_PACS_160.fits",
            "MIPS24":    "Kernel_HiRes_MIPS_24_to_PACS_160.fits",
            "PACS70":    "Kernel_HiRes_PACS_70_to_PACS_160.fits",
            "PACS160":   None}
@@ -72,10 +75,19 @@ kernels = {"2MASSH":    "Kernel_HiRes_Gauss_03.0_to_PACS_160.fits",
 attenuations = {"2MASSH":   0.036,
                 "GALEXFUV": 0.5606,
                 "Ha":       0.174,
-                "IRAC":     0.0,
+                "IRACI1":     0.0,
                 "MIPS24":   0.0,
                 "PACS70":   0.0,
                 "PACS160":  0.0}
+
+# Define the units
+units = {"2MASSH":   "",  # dimensionless flux
+         "GALEXFUV": "count/s",
+         "Ha":       "erg/s/cm**2",
+         "IRACI1":     "MJy/sr",
+         "MIPS24":   "MJy/sr",
+         "PACS70":   "Jy/pix",
+         "PACS160":  "Jy/pix"}
 
 # *****************************************************************
 
@@ -190,6 +202,9 @@ class GalaxyModeler(object):
             # Open the image
             image = iu.open(path)
 
+            # Set the unit
+            image.set_unit(units[filter_name])
+
             # Set the fwhm of the image, if it is not None
             if fwhmax[filter_name] is not None: image.set_fwhm(fwhmax[filter_name])
 
@@ -199,14 +214,14 @@ class GalaxyModeler(object):
             iu.mask(image, edges=edges[filter_name], extra=extra)
 
             # Interpolate over the stars indicated by the user (if the FWHM is None; the PSF will be fitted)
-            if image.filter.pivotwavelength() < 10.0: iu.remove_stars(image, self.galaxy_name, model_stars=False, remove_saturation=remove_saturation[filter_name], output_path=output_path)
+            if image.wavelength < 10.0 * u.micron: iu.remove_stars(image, self.galaxy_name, model_stars=False, remove_saturation=remove_saturation[filter_name], output_path=output_path)
 
             # Subtract the sky
             if not sky_subtracted[filter_name]: iu.subtract_sky(image, self.galaxy_name, plot=self.plot, output_path=output_path, downsample_factor=int(round(2*4*image.fwhm)))
 
             # Determine whether galactic extinction should be taken into account
             # If the wavelength is smaller than 1 micron, such extinction is expected
-            extinction = image.filter.pivotwavelength() < 1.0
+            extinction = image.wavelength < 1.0 * u.micron
 
             # Convert the units to MJy / sr
             iu.convert_units(image, filter_name, attenuations)
