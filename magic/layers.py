@@ -73,7 +73,11 @@ class Layers(dict):
         """
 
         # Deselect each layer
-        for name in self.keys(): self[name].deselect()
+        for name in self.keys():
+            try:
+                self[name].deselect()
+            except AttributeError:
+                print name
 
     # *****************************************************************
 

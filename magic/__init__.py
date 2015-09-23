@@ -11,6 +11,7 @@ import math
 import numpy as np
 from scipy import ndimage
 import matplotlib.pyplot as plt
+import copy
 
 # Import astronomical modules
 import aplpy
@@ -118,46 +119,6 @@ class Image(object):
         log.info("Name: " + self.name)
         log.info("Dimensions of data array: " + str(self.xsize) + " x " + str(self.ysize))
         log.info("Type of data: " + str(self.dtype))
-
-    # *****************************************************************
-
-    @property
-    def dtype(self): return self.frames.primary.dtype
-
-    # *****************************************************************
-
-    @property
-    def xsize(self): return self.frames.primary.xsize
-
-    # *****************************************************************
-
-    @property
-    def ysize(self): return self.frames.primary.ysize
-
-    # *****************************************************************
-
-    @property
-    def mean(self): return self.frames.primary.mean
-
-    # *****************************************************************
-
-    @property
-    def median(self): return self.frames.primary.median
-
-    # *****************************************************************
-
-    @property
-    def min(self): return self.frames.primary.min
-
-    # *****************************************************************
-
-    @property
-    def max(self): return self.frames.primary.max
-
-    # *****************************************************************
-
-    @property
-    def stddev(self): return self.frames.primary.stddev
 
     # *****************************************************************
 
@@ -721,7 +682,7 @@ class Image(object):
             log.info("Copying the " + frame_name + " frame as another frame")
 
             # Copy the data and add it as a new frame
-            data_copy = np.copy(self.frames[frame_name])
+            data_copy = copy.deepcopy(self.frames[frame_name])
             #coordinates = self.frames[frame_name].coordinates
 
             data_copy.description = "Copy of the "+frame_name+" frame"
@@ -900,10 +861,10 @@ class Image(object):
             log.info("Rebinning " + frame_name + " frame to the grid of " + reference)
 
             # Do the rebinning based on the header of the reference image
-            self.frames[frame_name] = transformations.align_and_rebin(self.frames[frame_name], self.header, refheader)
+            self.frames[frame_name] = Frame(transformations.align_and_rebin(self.frames[frame_name], self.header, refheader), coordinates, self.frames[frame_name].description, True)
 
             # Set the new coordinate system for this frame
-            self.frames[frame_name].coordinates = coordinates
+            #self.frames[frame_name].coordinates = coordinates
 
     # *****************************************************************
 
@@ -923,8 +884,12 @@ class Image(object):
         # Loop over all currently selected frames
         for frame_name in self.frames.get_selected():
 
+            framenll = interpolation.in_paint(self.frames[frame_name], total_mask)
+
+            #print type(framenll)
+
             # Perform the interpolation on this frame
-            self.frames[frame_name] = interpolation.in_paint(self.frames[frame_name], total_mask)
+            self.frames[frame_name] = Frame(framenll, self.frames[frame_name].coordinates, self.frames[frame_name].description, True)
 
     # *****************************************************************
 
@@ -1150,7 +1115,7 @@ class Image(object):
         for region_name in self.regions.get_selected():
 
             # Create the mask
-            total_mask += regions.create_mask(self.regions[region_name].region, self.header, self.xsize, self.ysize)
+            total_mask += regions.create_mask(self.regions[region_name].region, self.header, self.frames.primary.xsize, self.frames.primary.ysize)
             name += region_name + "_"
 
         # Remove the trailing underscore
@@ -1679,6 +1644,10 @@ class Image(object):
 
     def estimate_background(self, downsample_factor, plot=False):
 
+        """
+        This function ...
+        """
+
         # Get the name of the currently selected frame
         frame_name = self.frames.get_selected(require_single=True)
 
@@ -1692,7 +1661,7 @@ class Image(object):
         if plot: plotting.plot_difference(self.frames[frame_name], background)
 
         # Add the background frame
-        self.add_frame(background, "background")
+        self.add_frame(Frame(background, self.frames[frame_name].coordinates, "the estimated background"), "background")
 
     # *****************************************************************
 
@@ -1836,8 +1805,8 @@ class Image(object):
         # Set the basic header for this image
         self.header = header.copy(strip=True)
         self.header["NAXIS"] = 2
-        self.header["NAXIS1"] = self.xsize
-        self.header["NAXIS2"] = self.ysize
+        self.header["NAXIS1"] = self.frames.primary.xsize
+        self.header["NAXIS2"] = self.frames.primary.ysize
 
         # Select the primary image frame
         self.frames.primary.select()
@@ -1910,7 +1879,7 @@ class Image(object):
         w = wcs.WCS(self.header)
 
         # Some pixel coordinates of interest.
-        pixels = np.array([[0,0],[self.xsize-1,self.ysize-1]], dtype=float)
+        pixels = np.array([[0,0],[self.frames.primary.xsize-1,self.frames.primary.ysize-1]], dtype=float)
 
         world = w.wcs_pix2world(pixels, 0)  # Convert pixel coordinates to world coordinates (RA and DEC in degrees)
         coordinate1 = world[0]
@@ -1947,8 +1916,8 @@ class Image(object):
         ref_world = w.wcs.crval
 
         # Get the number of pixels
-        size_dec_deg = self.ysize * pixelscale_deg
-        size_ra_deg = self.xsize * pixelscale_deg
+        size_dec_deg = self.frames.primary.ysize * pixelscale_deg
+        size_ra_deg = self.frames.primary.xsize * pixelscale_deg
 
         # Check whether the two different ways of calculating the RA width result in approximately the same value
         assert np.isclose(ra_distance, size_ra_deg, rtol=0.02), "The coordinate system and pixel scale do not match"

@@ -17,7 +17,7 @@ class Frame(np.ndarray):
 
     # *****************************************************************
 
-    def __new__(cls, input_array, coordinates=None, description=None):
+    def __new__(cls, input_array, coordinates=None, description=None, selected=False):
 
         """
         This function ...
@@ -30,7 +30,7 @@ class Frame(np.ndarray):
         obj = np.asarray(input_array).view(cls)
         obj.coordinates = coordinates
         obj.description = description
-        obj.selected = False
+        obj.selected = selected
 
         return obj
 
@@ -50,12 +50,12 @@ class Frame(np.ndarray):
 
     # *****************************************************************
 
-    def __init__(self, input_array, coordinates=None, description=None):
+    def __init__(self, input_array, coordinates=None, description=None, selected=False):
 
         self = np.asarray(input_array).view(self.__class__)
         self.coordinates = coordinates
         self.description = description
-        self.selected = False
+        self.selected = selected
 
     # *****************************************************************
 

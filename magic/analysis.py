@@ -1062,6 +1062,12 @@ def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshol
     :return:
     """
 
+    #print "data = " + str(type(data))
+
+    data = np.asarray(data)
+
+    #print "data = " + str(type(data))
+
     # Get the parameters of this shape
     x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
 
@@ -1082,23 +1088,31 @@ def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshol
 
     background = background - polynomial
 
-    background2 = np.zeros(background.shape, dtype=background.dtype)
-    mask = np.zeros(background.shape, dtype=bool)
+    #background2 = np.zeros(background.shape, dtype=background.dtype)
+    #mask = np.zeros(background.shape, dtype=bool)
 
-    for x in range(background.shape[1]):
+    #for x in range(background.shape[1]):
 
-        for y in range(background.shape[0]):
+        #for y in range(background.shape[0]):
 
-            background2[y,x] = background[y,x]
-            mask[y,x] = background.mask[y,x]
+            #background2[y,x] = background[y,x]
+            #mask[y,x] = background.mask[y,x]
 
-    print "background = " + str(type(background2))
+    #print "background = " + str(type(background2))
 
     #mean, median, stddev = statistics.sigma_clipped_statistics(background.data, mask=background.mask)
 
-    from astropy.stats import sigma_clipped_stats
+    mean, median, stddev = statistics.sigma_clipped_statistics(background.data)
 
-    mean, median, stddev = sigma_clipped_stats(background2, mask=mask)
+    #from astropy.stats import sigma_clipped_stats
+
+    #print "mask = " + str(type(mask))
+
+    #mean, median, stddev = sigma_clipped_stats(background2, mask=mask)
+    #except:
+        #print mask.shape
+        #print background2.shape
+        #print mask
 
     #print mean, median, stddev
 

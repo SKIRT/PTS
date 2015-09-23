@@ -354,7 +354,7 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove
         image.masks.segments.select()
         image.rename_mask("saturation")
 
-        print image.masks.get_state()
+        #print image.masks.get_state()
 
         # Interpolate the primary frame within the masked pixels
         image.interpolate()
