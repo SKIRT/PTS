@@ -1605,7 +1605,7 @@ class Image(object):
 
             if not regions.in_box(shape, self.frames[frame_name].data.shape): break
 
-            assert shape.coord_list[2] == shape.coord_list[3]
+            if shape.name == "ellipse": assert shape.coord_list[2] == shape.coord_list[3]
 
             box_mask, x_min, x_max, y_min, y_max = analysis.find_center_segment_in_shape(self.frames[frame_name].data,
                                                                                          shape, kernel_fwhm, kernel_size,
