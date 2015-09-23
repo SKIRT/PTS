@@ -9,7 +9,7 @@ import numpy as np
 
 # *****************************************************************
 
-class Frame(object):
+class Frame(np.ndarray):
 
     """
     This class ...
@@ -17,23 +17,45 @@ class Frame(object):
 
     # *****************************************************************
 
-    def __init__(self, data, coordinates, description):
+    def __new__(cls, input_array, coordinates=None, description=None):
 
         """
-        The constructor ...
+        This function ...
+        :param cls:
+        :param input_array:
+        :param info:
+        :return:
         """
 
-        # Copy the data
-        self.data = data
+        obj = np.asarray(input_array).view(cls)
+        obj.coordinates = coordinates
+        obj.description = description
+        obj.selected = False
 
-        # Copy the coordinate system
+        return obj
+
+    # *****************************************************************
+
+    def __array_finalize__(self, obj):
+
+        """
+        This function ...
+        :param obj:
+        :return:
+        """
+
+        if obj is None: return
+        self.coordinates = getattr(obj, 'coordinates', None)
+        self.description = getattr(obj, 'description', None)
+
+    # *****************************************************************
+
+    def __init__(self, input_array, coordinates=None, description=None):
+
+        self = np.asarray(input_array).view(self.__class__)
         self.coordinates = coordinates
-
-        # Set as unactive initially
-        self.selected = False
-
-        # Set the description
         self.description = description
+        self.selected = False
 
     # *****************************************************************
 
@@ -60,52 +82,11 @@ class Frame(object):
     # *****************************************************************
 
     @property
-    def xsize(self): return self.data.shape[1]
+    def xsize(self): return self.shape[1]
 
     # *****************************************************************
 
     @property
-    def ysize(self): return self.data.shape[0]
-
-    # *****************************************************************
-
-    @property
-    def dtype(self): return self.data.dtype.name
-
-    # *****************************************************************
-
-    @property
-    def mean(self): return np.mean(self.data)
-
-    # *****************************************************************
-
-    @property
-    def median(self): return np.median(self.data)
-
-    # *****************************************************************
-
-    @property
-    def min(self): return np.min(self.data)
-
-    # *****************************************************************
-
-    @property
-    def max(self): return np.max(self.data)
-
-    # *****************************************************************
-
-    @property
-    def stddev(self):
-
-        # Set the delta degrees of freedom
-        ddof = 1
-
-        # Return the standard deviation of the data
-        return np.std(self.data, ddof=ddof)
-        
-    @property
-    def sum(self):
-        
-        return np.sum(self.data)
+    def ysize(self): return self.shape[0]
 
 # *****************************************************************

@@ -25,10 +25,12 @@ def in_paint(data, mask):
     """
 
     # Fill the data with nans according to the mask
-    data_ma = np.ma.array(data.astype(float), mask=mask)
-    data_nans = data_ma.filled(np.NaN)
+    #data_ma = np.ma.array(data.astype(float), mask=mask)
+    #data_nans = data_ma.filled(np.NaN)
 
-    interpolated = replace_nans(data_nans, 5, 0.5, 2, "localmean")
+    data[mask] = np.NaN
+
+    interpolated = replace_nans(data, 5, 0.5, 2, "localmean")
 
     return interpolated
 

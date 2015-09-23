@@ -1078,9 +1078,27 @@ def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshol
 
     #plotting.plot_difference(background, polynomial)
 
+    #print "background = " + str(type(background))
+
     background = background - polynomial
 
-    mean, median, stddev = statistics.sigma_clipped_statistics(background.data, mask=background.mask)
+    background2 = np.zeros(background.shape, dtype=background.dtype)
+    mask = np.zeros(background.shape, dtype=bool)
+
+    for x in range(background.shape[1]):
+
+        for y in range(background.shape[0]):
+
+            background2[y,x] = background[y,x]
+            mask[y,x] = background.mask[y,x]
+
+    print "background = " + str(type(background2))
+
+    #mean, median, stddev = statistics.sigma_clipped_statistics(background.data, mask=background.mask)
+
+    from astropy.stats import sigma_clipped_stats
+
+    mean, median, stddev = sigma_clipped_stats(background2, mask=mask)
 
     #print mean, median, stddev
 

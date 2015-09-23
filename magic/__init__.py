@@ -192,8 +192,8 @@ class Image(object):
                 frame_name = name + "_" + headers.get_frame_name(description) if i else name
 
                 # Add this frame to the frames dictionary
-                #self._add_frame(hdu.data[i], coordinates, frame_name, description)
-                self._add_frame(hdu.data[i], None, frame_name, description)
+                #self.add_frame(hdu.data[i], coordinates, frame_name, description)
+                self.add_frame(Frame(hdu.data[i], None, description), frame_name)
 
         else:
 
@@ -201,7 +201,7 @@ class Image(object):
             if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
 
             # Add the primary image frame
-            self._add_frame(hdu.data, None, name)
+            self.add_frame(Frame(hdu.data, None, None), name)
 
         # Close the fits file
         hdulist.close()
@@ -237,7 +237,7 @@ class Image(object):
             log.info("Exporting the " + frame_name + " frame to " + filepath)
 
             # Add this frame to the data cube, if its coordinates match those of the primary frame
-            if coordinates == self.frames[frame_name].coordinates: datacube.append(self.frames[frame_name].data)
+            if coordinates == self.frames[frame_name].coordinates: datacube.append(self.frames[frame_name])
             
             # Add the name of the frame to the header
             header["PLANE"+str(plane_index)] = frame_name
@@ -355,7 +355,7 @@ class Image(object):
         total_mask = self.combine_masks(return_mask=True)
 
         # Mask the frame with nans
-        maskedimage = np.ma.array(self.frames[frame].data, mask = total_mask)
+        maskedimage = np.ma.array(self.frames[frame], mask = total_mask)
         image_with_nans =  maskedimage.filled(np.NaN)
 
         # Create a HDU from this frame with the image header
@@ -435,7 +435,7 @@ class Image(object):
             log.info("Multiplying " + frame_name + " frame with a factor of " + str(factor))
 
             # Multiply this frame with the given factor
-            self.frames[frame_name].data = self.frames[frame_name].data * factor
+            self.frames[frame_name] = self.frames[frame_name] * factor
 
     # *****************************************************************
 
@@ -457,7 +457,7 @@ class Image(object):
             log.info("Cropping " + frame_name + " frame")
 
             # Crop this frame
-            self.frames[frame_name].data = cropping.crop_check(self.frames[frame_name].data, x_min, x_max, y_min, y_max)
+            self.frames[frame_name] = cropping.crop_check(self.frames[frame_name], x_min, x_max, y_min, y_max)
 
             # TODO: adjust coordinates!
 
@@ -482,7 +482,7 @@ class Image(object):
 
         log.info("Shifted frame to center by " + str(shift_x) + "," + str(shift_y))
 
-        shiftframe = ndimage.interpolation.shift(self.frames.primary.data,(shift_x, shift_y))
+        shiftframe = ndimage.interpolation.shift(self.frames.primary,(shift_x, shift_y))
         angle = math.degrees(math.atan(float(left_y - right_y)/float(left_x - right_x)))
         angle += 180.0 if flip else 0.0
 
@@ -495,7 +495,7 @@ class Image(object):
         log.info("Rotated frame over " + str(angle) + " degrees")
 
         # Add the new, rotated layer
-        self._add_frame(rotframe, "primary_rotated")
+        self.add_frame(rotframe, "primary_rotated")
 
     # *****************************************************************
 
@@ -514,7 +514,7 @@ class Image(object):
             log.info("Rotating " + frame_name + " frame over " + str(angle) + " degrees")
 
             # Rotate this frame
-            self.frames[frame_name].data = ndimage.interpolation.rotate(self.frames[frame_name].data, angle)
+            self.frames[frame_name] = ndimage.interpolation.rotate(self.frames[frame_name], angle)
 
     # *****************************************************************
 
@@ -546,12 +546,12 @@ class Image(object):
         shift_y = imagecenter_y - self.orientation.ypeak
 
         # Create a centered frame
-        centered = ndimage.interpolation.shift(self.frames.primary.data,(shift_y, shift_x))
+        centered = ndimage.interpolation.shift(self.frames.primary,(shift_y, shift_x))
 
         # TODO: center the other layers, regions and masks!
 
         # Add the new, centered layer
-        self._add_frame(centered, "primary_centered")
+        self.add_frame(centered, "primary_centered")
 
     # *****************************************************************
 
@@ -570,7 +570,7 @@ class Image(object):
             log.info("Downsampling " + frame_name + " frame by a factor of " + str(factor))
 
             # Use the zoom function to resample
-            self.frames[frame_name].data = ndimage.interpolation.zoom(self.frames[frame_name].data, zoom=1.0/factor)
+            self.frames[frame_name] = ndimage.interpolation.zoom(self.frames[frame_name], zoom=1.0/factor)
 
     # *****************************************************************
 
@@ -601,7 +601,7 @@ class Image(object):
         conversionfactor = self.unit.convert(1.0, units)
 
         # Convert the data
-        self.frames.primary.data *= conversionfactor
+        self.frames.primary *= conversionfactor
 
     # *****************************************************************
 
@@ -621,7 +621,7 @@ class Image(object):
             log.info("Converting " + frame_name + " frame to magnitude scale")
 
             # Convert to magnitude scale
-            self.frames[frame_name].data = m_0 - 2.5 * np.log10(self.frames[frame_name].data)
+            self.frames[frame_name] = m_0 - 2.5 * np.log10(self.frames[frame_name])
 
     # *****************************************************************
 
@@ -641,7 +641,7 @@ class Image(object):
             log.info("Converting " + frame_name + " frame to flux scale")
 
             # Convert to flux scale
-            self.frames[frame_name].data = F_0 * np.power(10.0, - self.frames[frame_name].data / 2.5)
+            self.frames[frame_name] = F_0 * np.power(10.0, - self.frames[frame_name] / 2.5)
 
     # *****************************************************************
 
@@ -721,9 +721,12 @@ class Image(object):
             log.info("Copying the " + frame_name + " frame as another frame")
 
             # Copy the data and add it as a new frame
-            data_copy = np.copy(self.frames[frame_name].data)
-            coordinates = self.frames[frame_name].coordinates
-            self._add_frame(data_copy, coordinates, frame_name+"_copy", description="Copy of the "+frame_name+" frame")
+            data_copy = np.copy(self.frames[frame_name])
+            #coordinates = self.frames[frame_name].coordinates
+
+            data_copy.description = "Copy of the "+frame_name+" frame"
+
+            self.add_frame(data_copy, frame_name+"_copy")
 
     # *****************************************************************
 
@@ -776,7 +779,7 @@ class Image(object):
 
             x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
 
-            box, x_min, x_max, y_min, y_max = cropping.crop(self.frames[frame_name].data, x_center, y_center, x_radius, y_radius)
+            box, x_min, x_max, y_min, y_max = cropping.crop(self.frames[frame_name], x_center, y_center, x_radius, y_radius)
 
             mean = np.mean(box)
             stddev = np.std(box)
@@ -832,7 +835,7 @@ class Image(object):
         # Rebin the kernel to the same grid of the image
         kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
 
-        print kernel
+        #print kernel
 
         #print kernel[kernel.shape[0]/2.0,kernel.shape[1]/2.0]
 
@@ -843,7 +846,7 @@ class Image(object):
             log.info("Convolving " + frame_name + " frame with the kernel " + os.path.splitext(name)[0])
 
             # Do the convolution on this frame
-            self.frames[frame_name].data = convolve_fft(self.frames[frame_name].data, kernel, normalize_kernel=True)
+            self.frames[frame_name] = convolve_fft(self.frames[frame_name], kernel, normalize_kernel=True)
 
         # Close the FITS file
         hdulist.close()
@@ -872,7 +875,7 @@ class Image(object):
             log.info("Convolving " + frame_name + " frame with a Gaussian kernel with a FWHM of " + str(fwhm))
 
             # Do the convolution on this frame
-            self.frames[frame_name].data = convolve(self.frames[frame_name].data, kernel)
+            self.frames[frame_name] = convolve(self.frames[frame_name], kernel)
 
     # *****************************************************************
 
@@ -897,7 +900,7 @@ class Image(object):
             log.info("Rebinning " + frame_name + " frame to the grid of " + reference)
 
             # Do the rebinning based on the header of the reference image
-            self.frames[frame_name].data = transformations.align_and_rebin(self.frames[frame_name].data, self.header, refheader)
+            self.frames[frame_name] = transformations.align_and_rebin(self.frames[frame_name], self.header, refheader)
 
             # Set the new coordinate system for this frame
             self.frames[frame_name].coordinates = coordinates
@@ -921,7 +924,7 @@ class Image(object):
         for frame_name in self.frames.get_selected():
 
             # Perform the interpolation on this frame
-            self.frames[frame_name].data = interpolation.in_paint(self.frames[frame_name].data, total_mask)
+            self.frames[frame_name] = interpolation.in_paint(self.frames[frame_name], total_mask)
 
     # *****************************************************************
 
@@ -956,7 +959,7 @@ class Image(object):
                 x_min, x_max, y_min, y_max = regions.get_enclosing_box(shape)
 
                 # Cut out the box
-                box, x_min, x_max, y_min, y_max = cropping.crop_direct(self.frames[frame_name].data, x_min, x_max, y_min, y_max)
+                box, x_min, x_max, y_min, y_max = cropping.crop_direct(self.frames[frame_name], x_min, x_max, y_min, y_max)
 
                 # Cut out the mask
                 box_mask = cropping.crop_check(total_mask, x_min, x_max, y_min, y_max)
@@ -983,7 +986,7 @@ class Image(object):
                 interpolated_box[np.isnan(interpolated_box)] = 0.0
 
                 # Insert the interpolated values, for the pixels that are masked by the total currently selected mask
-                self.frames[frame_name].data[y_min:y_max,x_min:x_max] = interpolated_box*box_mask + self.frames[frame_name].data[y_min:y_max,x_min:x_max]*np.logical_not(box_mask)
+                self.frames[frame_name][y_min:y_max,x_min:x_max] = interpolated_box*box_mask + self.frames[frame_name][y_min:y_max,x_min:x_max]*np.logical_not(box_mask)
 
     # *****************************************************************
 
@@ -998,7 +1001,7 @@ class Image(object):
         frame_name = self.frames.get_selected(require_single=True)
 
         # Get a map of all the NaNs in the primary image
-        mask = np.isnan(self.frames[frame_name].data)
+        mask = np.isnan(self.frames[frame_name])
 
         # Make a nans mask layer
         self._add_mask(mask, "nans")
@@ -1069,7 +1072,7 @@ class Image(object):
         """
 
         # Initialize an boolean array for the total mask
-        total_mask = np.zeros_like(self.frames.primary.data, dtype=bool)
+        total_mask = np.zeros_like(self.frames.primary, dtype=bool)
 
         # For each active mask
         for mask_name in self.masks.get_selected(allow_none=allow_none):
@@ -1125,7 +1128,7 @@ class Image(object):
             log.info("Applying the total selected mask to the " + frame_name + " frame")
 
             # Set the corresponding image pixels to zero for this mask
-            self.frames[frame_name].data[total_mask] = fill
+            self.frames[frame_name][total_mask] = fill
 
     # *****************************************************************
 
@@ -1139,7 +1142,7 @@ class Image(object):
         # TODO: use combine_regions and regions.create_mask() !!
 
         # Initialize an boolean array for the total mask
-        total_mask = np.zeros_like(self.frames.primary.data, dtype=bool)
+        total_mask = np.zeros_like(self.frames.primary, dtype=bool)
 
         name = ""
 
@@ -1177,7 +1180,7 @@ class Image(object):
         region = self.fetch_galaxy(galaxy_name, return_region=True).as_imagecoord(self.header)
 
         # Find the galaxy
-        galaxy_parameters = analysis.find_galaxy_orientation(self.frames[frame_name].data, region, plot=plot)
+        galaxy_parameters = analysis.find_galaxy_orientation(self.frames[frame_name], region, plot=plot)
 
         # Create a region with one ellipse corresponding to the extent of the galaxy in this frame
         galaxy_region = regions.one_ellipse(galaxy_parameters)
@@ -1390,7 +1393,7 @@ class Image(object):
         log.info("Modeling stars in the " + frame_name + " frame enclosed by any of the currently selected regions")
 
         # Create a new frame to contain the modeled stars
-        stars_frame = np.zeros_like(self.frames[frame_name].data)
+        stars_frame = np.zeros_like(self.frames[frame_name])
 
         # Combine all the active regions
         total_region = self.combine_regions(allow_none=False)
@@ -1405,7 +1408,7 @@ class Image(object):
         for shape in total_region:
 
             # Try to make an analytical model for the star enclosed by this shape
-            success, shape, model, extents = analysis.make_star_model(shape, self.frames[frame_name].data,
+            success, shape, model, extents = analysis.make_star_model(shape, self.frames[frame_name],
                                                                       annuli_mask, fit_mask, background_outer_sigmas,
                                                                       fit_sigmas, model_name,
                                                                       upsample_factor=upsample_factor,
@@ -1424,7 +1427,7 @@ class Image(object):
             else: unmodeled.append(shape)
 
         # Add the modelled stars frame to the list of frames
-        self._add_frame(stars_frame, self.frames[frame_name].coordinates, "stars")
+        self.add_frame(stars_frame, "stars")
 
         # Add the successfully modeled stars and the unmodeled stars to the corresponding regions
         self._add_region(modeled, "modeled_stars")
@@ -1451,7 +1454,7 @@ class Image(object):
         else: region = self.fetch_stars(initial_radius, catalog=catalog, galaxy_name=galaxy_name, return_region=True).as_imagecoord(self.header)
 
         # Look for sources
-        sources, failed = analysis.find_sources_in_region(self.frames[frame_name].data, region, model, detection_method, plot=plot, plot_custom=plot_custom)
+        sources, failed = analysis.find_sources_in_region(self.frames[frame_name], region, model, detection_method, plot=plot, plot_custom=plot_custom)
         log.info("Number of sources = " + str(len(sources)))
 
         # Remove duplicates
@@ -1539,9 +1542,9 @@ class Image(object):
             x = int(round(x_center))
             y = int(round(y_center))
 
-            if x < self.frames[frame_name].data.shape[1] and x >= 0 and y < self.frames[frame_name].data.shape[0] and y >= 0:
+            if x < self.frames[frame_name].xsize and x >= 0 and y < self.frames[frame_name].ysize and y >= 0:
 
-                return self.frames[frame_name].data[y, x]
+                return self.frames[frame_name][y, x]
 
             else: return 0.0
 
@@ -1551,7 +1554,7 @@ class Image(object):
 
             aperture = CircularAperture((x_center, y_center), r=x_radius)
 
-            phot_table = aperture_photometry(self.frames[frame_name].data, aperture, mask=np.isnan(self.frames[frame_name].data))
+            phot_table = aperture_photometry(self.frames[frame_name], aperture, mask=np.isnan(self.frames[frame_name]))
 
             return phot_table[0]["aperture_sum"]
 
@@ -1598,16 +1601,16 @@ class Image(object):
         # Get the name of the currently selected frame
         frame_name = self.frames.get_selected(require_single=True)
 
-        mask = np.zeros_like(self.frames[frame_name].data, dtype=bool)
+        mask = np.zeros_like(self.frames[frame_name], dtype=bool)
 
         # Loop over all shapes
         for shape in region:
 
-            if not regions.in_box(shape, self.frames[frame_name].data.shape): break
+            if not regions.in_box(shape, self.frames[frame_name].shape): break
 
             if shape.name == "ellipse": assert shape.coord_list[2] == shape.coord_list[3]
 
-            box_mask, x_min, x_max, y_min, y_max = analysis.find_center_segment_in_shape(self.frames[frame_name].data,
+            box_mask, x_min, x_max, y_min, y_max = analysis.find_center_segment_in_shape(self.frames[frame_name],
                                                                                          shape, kernel_fwhm, kernel_size,
                                                                                          threshold_sigmas, expand=expand,
                                                                                          expansion_level=1,
@@ -1658,19 +1661,19 @@ class Image(object):
         sky_mask = (current_mask + self.masks.galaxy.data + annulusmask).astype(bool)
 
         # Make a mask of > 3 sigma regions
-        new_mask = statistics.sigma_clip_mask(self.frames[frame_name].data, sigma=3.0, mask=sky_mask)
+        new_mask = statistics.sigma_clip_mask(self.frames[frame_name], sigma=3.0, mask=sky_mask)
 
         # Add the mask
         self._add_mask(new_mask, "sky")
 
         # Make a masked frame, the (sigma-clipped) sky
-        skyframe = np.copy(self.frames.primary.data)
+        skyframe = np.copy(self.frames.primary)
 
         # Set the sky frame to zero in the pixels masked by the new 'sky' mask
-        skyframe[self.masks.sky.data] = 0
+        skyframe[self.masks.sky.data] = 0.0
 
         # Add this frame to the set of frames
-        self._add_frame(skyframe, None, "sky")
+        self.add_frame(skyframe, "sky")
 
     # *****************************************************************
 
@@ -1683,13 +1686,13 @@ class Image(object):
         total_mask = self.combine_masks(return_mask=True)
 
         # Estimate the background
-        background = interpolation.low_res_interpolation(self.frames[frame_name].data, downsample_factor, mask=total_mask)
+        background = interpolation.low_res_interpolation(self.frames[frame_name], downsample_factor, mask=total_mask)
 
         # Plot the difference between the data and the model, if requested
-        if plot: plotting.plot_difference(self.frames[frame_name].data, background)
+        if plot: plotting.plot_difference(self.frames[frame_name], background)
 
         # Add the background frame
-        self._add_frame(background, self.frames[frame_name].coordinates, "background")
+        self.add_frame(background, "background")
 
     # *****************************************************************
 
@@ -1711,21 +1714,21 @@ class Image(object):
             # Inform the user
             log.info("Fitting a polynomial function to the " + frame_name + " frame")
 
-            if sigma_clipping: new_mask = statistics.sigma_clip_mask(self.frames[frame_name].data, mask=total_mask)
+            if sigma_clipping: new_mask = statistics.sigma_clip_mask(self.frames[frame_name], mask=total_mask)
             else: new_mask = total_mask
 
             # Fit the model
-            polynomial = fitting.fit_polynomial(self.frames[frame_name].data, mask=new_mask, degree=degree)
+            polynomial = fitting.fit_polynomial(self.frames[frame_name], mask=new_mask, degree=degree)
 
             # Plot the difference between the data and the model, if requested
-            if plot: plotting.plot_difference_model(self.frames[frame_name].data, polynomial)
+            if plot: plotting.plot_difference_model(self.frames[frame_name], polynomial)
 
             # Evaluate the model
-            evaluated = fitting.evaluate_model(polynomial, 0, self.frames[frame_name].data.shape[1], 0, self.frames[frame_name].data.shape[0])
+            evaluated = fitting.evaluate_model(polynomial, 0, self.frames[frame_name].xsize, 0, self.frames[frame_name].ysize)
 
             # Add the evaluated model as a new frame
             description = "A polynomial fit to the " + frame_name + " primary frame"
-            self._add_frame(evaluated, self.frames[frame_name].coordinates, frame_name+"_polynomial", description)
+            self.add_frame(Frame(evaluated, self.frames[frame_name].coordinates, description), frame_name+"_polynomial")
 
     # *****************************************************************
 
@@ -1750,7 +1753,7 @@ class Image(object):
             log.info("Subtracting " + frame_name + " frame from the primary image frame")
 
             # Subtract the data in this frame from the primary image, in the pixels that the mask does not cover
-            self.frames.primary.data -= self.frames[frame_name].data*negativetotalmask
+            self.frames.primary -= self.frames[frame_name]*negativetotalmask
 
     # *****************************************************************
 
@@ -1820,7 +1823,7 @@ class Image(object):
                 name = headers.get_frame_name(description) if i else "primary"
 
                 # Add this frame to the frames dictionary
-                self._add_frame(hdu.data[i], coordinates, name, description)
+                self.add_frame(Frame(hdu.data[i], coordinates, description), name)
 
         else:
 
@@ -1828,7 +1831,7 @@ class Image(object):
             if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
 
             # Add the primary image frame
-            self._add_frame(hdu.data, coordinates, "primary", "the primary signal map")
+            self.add_frame(Frame(hdu.data, coordinates, "the primary signal map"), "primary")
 
         # Set the basic header for this image
         self.header = header.copy(strip=True)
@@ -1844,7 +1847,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def _add_frame(self, data, coordinates, name, description=None):
+    def add_frame(self, frame, name):
 
         """
         This function ...
@@ -1859,7 +1862,7 @@ class Image(object):
         log.info("Adding '" + name + "' to the set of image frames")
 
         # Add the layer to the layers dictionary
-        self.frames[name] = Frame(data, coordinates, description)
+        self.frames[name] = frame
 
     # *****************************************************************
 

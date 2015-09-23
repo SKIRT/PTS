@@ -10,6 +10,7 @@ import numpy as np
 
 # Import the Image class
 from . import Image
+from frames import Frame
 
 # Import astronomical modules
 from astropy import units as u
@@ -226,13 +227,13 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove
 
     if remove_saturation:
 
-            image.regions.stars.select()
-            image.split_region(criterium="flux", method="percentage", percentage=0.08)
+        image.regions.stars.select()
+        image.split_region(criterium="flux", method="percentage", percentage=0.08)
 
-            image.regions.stars.deselect()
-            image.regions.bright.select()
+        image.regions.stars.deselect()
+        image.regions.bright.select()
 
-            image.rename_region("bright_stars")
+        image.rename_region("bright_stars")
 
     # Select the stars region
     image.regions.deselect_all()
@@ -587,11 +588,11 @@ def set_uncertainty(image, directory, name):
 
     if image.frames.errors is None:
 
-        image._add_frame(np.full(image.frames.primary.data.shape, uncertainty), image.frames.primary.coordinates, "errors")
+        image.add_frame(Frame(np.full(image.frames.primary.shape, uncertainty), image.frames.primary.coordinates), "errors")
 
     else:
 
-        image.frames.errors.data = np.sqrt(np.power(image.frames.errors.data, 2)+uncertainty**2)
+        image.frames.errors = np.sqrt(np.power(image.frames.errors, 2)+uncertainty**2)
 
     # Deselect ...
     reset_selection(image)

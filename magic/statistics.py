@@ -101,6 +101,10 @@ def sigma_clipped_statistics(data, sigma=3.0, mask=None):
     :return:
     """
 
+    #data = np.asarray(data).view(np.ndarray)
+
+    #print type(data), type(mask), sigma
+
     # Calculate the sigma-clipped mean and median
     mean, median, stddev = sigma_clipped_stats(data, mask=mask, sigma=sigma)
 

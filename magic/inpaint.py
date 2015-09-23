@@ -40,7 +40,9 @@ def replace_nans(array, max_iter, tol, kernel_size=1, method='localmean'):
     """
 
     # Initialize arrays
-    filled = np.empty( [array.shape[0], array.shape[1]], dtype=np.float64)
+    #filled = np.empty( [array.shape[0], array.shape[1]], dtype=np.float64)
+
+    filled = np.zeros_like(array)
     kernel = np.empty( (2*kernel_size+1, 2*kernel_size+1), dtype=np.float64)
 
     # Indices where array is NaN
