@@ -353,6 +353,8 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove
         image.masks.segments.select()
         image.rename_mask("saturation")
 
+        print image.masks.get_state()
+
         # Interpolate the primary frame within the masked pixels
         image.interpolate()
         image.masks.deselect_all()
@@ -408,7 +410,8 @@ def subtract_sky(image, galaxy_name, plot=False, output_path=None, downsample_fa
     # Select all other masks that cover parts not suitable for fitting the sky (galaxy, stars)
     if image.masks.inner is not None: image.masks.inner.select()                  # stars
     image.masks.galaxy_expanded.select() # galaxy
-    image.masks.saturation.select() # saturation
+
+    if image.masks.saturation is not None: image.masks.saturation.select() # saturation
     image.masks.total.select()
 
     # Make a sky map

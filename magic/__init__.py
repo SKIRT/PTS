@@ -1341,7 +1341,7 @@ class Image(object):
         frame_name = self.frames.get_selected(require_single=True)
 
         # Remove the frame from the dictionary of frames and re-add it under a different key
-        self.frames[frame_name] = self.frames.pop(frame_name)
+        self.frames[name] = self.frames.pop(frame_name)
 
     # *****************************************************************
 
@@ -1357,7 +1357,7 @@ class Image(object):
         mask_name = self.masks.get_selected(require_single=True)
 
         # Remove the mask from the dictionary of masks and re-add it under a different key
-        self.masks[mask_name] = self.masks.pop(mask_name)
+        self.masks[name] = self.masks.pop(mask_name)
 
     # *****************************************************************
 
@@ -1576,7 +1576,8 @@ class Image(object):
 
             for shape in bright_region:
 
-                assert shape.coord_list[2] == shape.coord_list[3], str(shape.coord_list[2]) + " " + str(shape.coord_list[3])
+                if shape.name == "ellipse":
+                    assert shape.coord_list[2] == shape.coord_list[3], str(shape.coord_list[2]) + " " + str(shape.coord_list[3])
 
             self._add_region(bright_region, "bright")
 
