@@ -124,9 +124,7 @@ def is_sky_subtracted(header):
     # Initially, set the boolean to False
     subtracted = False
 
-    if 'BACK_SUB' in header:
-
-        subtracted = header['BACK_SUB']
+    if 'BACK_SUB' in header: subtracted = header['BACK_SUB']
 
     # Return the boolean value
     return subtracted

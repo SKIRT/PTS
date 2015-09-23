@@ -218,8 +218,8 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove
     if region_file is not None: image.import_region(region_file, "stars")
     elif image.fwhm is not None:
 
-        sigma = image.fwhm / 2.355
-        image.fetch_stars(sigma, galaxy_name=galaxy_name)
+        sigma = image.fwhm / 2.355 # in arcseconds
+        image.fetch_stars(sigma/image.pixelscale, galaxy_name=galaxy_name)
 
     else:
 
@@ -326,10 +326,10 @@ def remove_stars(image, galaxy_name, region_file=None, model_stars=False, remove
 
         # Calculate the fwhm
         sigma = image.mean_radius()
-        fwhm = 2.355 * sigma
+        fwhm = 2.355 * sigma # in pixels
 
         # Set the fwhm
-        image.set_fwhm(fwhm)
+        image.set_fwhm(fwhm*image.pixelscale)
 
     # Remove saturated stars
     if remove_saturation and image.regions.bright_stars is not None:

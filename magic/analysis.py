@@ -1051,7 +1051,9 @@ def crop_and_mask_for_background(data, shape, inner_factor, outer_factor):
     # Create the mask
     mask = masks.create_disk_mask(background.shape[1], background.shape[0], x_center_rel, y_center_rel, x_radius)
 
-    return np.ma.masked_array(background, mask=mask), x_min, x_max, y_min, y_max
+    #return np.ma.masked_array(background, mask=mask), x_min, x_max, y_min, y_max
+
+    return background, mask, x_min, x_max, y_min, y_max
 
 # *****************************************************************
 
@@ -1064,7 +1066,7 @@ def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshol
 
     #print "data = " + str(type(data))
 
-    data = np.asarray(data)
+    #data = np.asarray(data)
 
     #print "data = " + str(type(data))
 
@@ -1074,47 +1076,46 @@ def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshol
     # Crop
     box, x_min, x_max, y_min, y_max = cropping.crop(data, x_center, y_center, x_radius, y_radius)
 
-    background, x_min_back, x_max_back, y_min_back, y_max_back = crop_and_mask_for_background(data, shape, 1.0, 1.2)
+    #print type(box)
+    #plotting.plot_box(box)
 
-    #plotting.plot_box(box_background, title="Box for background estimation")
+    background, mask, x_min_back, x_max_back, y_min_back, y_max_back = crop_and_mask_for_background(data, shape, 1.0, 1.2)
+
+    #print type(background), type(mask)
+
+    #plotting.plot_box(background, title="Box for background estimation")
 
     # Remove gradient
-    poly = fitting.fit_polynomial(background.data, 3, mask=background.mask)
+    poly = fitting.fit_polynomial(background, 3, mask=mask)
     polynomial = fitting.evaluate_model(poly, 0, background.shape[1], 0, background.shape[0])
 
     #plotting.plot_difference(background, polynomial)
 
     #print "background = " + str(type(background))
 
+    # REMOVE GRADIENT
     background = background - polynomial
 
     #background2 = np.zeros(background.shape, dtype=background.dtype)
-    #mask = np.zeros(background.shape, dtype=bool)
+
+    #mask2 = np.zeros(background.shape, dtype=bool)
 
     #for x in range(background.shape[1]):
 
         #for y in range(background.shape[0]):
 
             #background2[y,x] = background[y,x]
-            #mask[y,x] = background.mask[y,x]
+            #mask2[y,x] = background.mask[y,x]
 
     #print "background = " + str(type(background2))
 
-    #mean, median, stddev = statistics.sigma_clipped_statistics(background.data, mask=background.mask)
+    #newmask = statistics.sigma_clip_mask(background, mask=mask)
+    #maskedarray = np.ma.masked_array(background, mask=newmask)
+    #mean = np.ma.mean(maskedarray)
+    #stddev = np.ma.std(maskedarray)
 
-    mean, median, stddev = statistics.sigma_clipped_statistics(background.data)
-
-    #from astropy.stats import sigma_clipped_stats
-
-    #print "mask = " + str(type(mask))
-
-    #mean, median, stddev = sigma_clipped_stats(background2, mask=mask)
-    #except:
-        #print mask.shape
-        #print background2.shape
-        #print mask
-
-    #print mean, median, stddev
+    # WHY OH WHY DOESN'T THIS WORK ???!
+    mean, median, stddev = statistics.sigma_clipped_statistics(background, mask=mask)
 
     threshold = mean + threshold_sigmas*stddev
 
@@ -1126,13 +1127,26 @@ def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshol
 
     #plotting.plot_difference(box, evaluated_poly)
 
-    #oldbox = box
+    oldbox = np.copy(box)
     box = box - evaluated_poly
 
-    #plotting.plot_difference(oldbox, box)
+    plotting.plot_difference(oldbox, box)
+
+    #print box.ndim
+
+    boxarray = np.zeros((box.shape[0],box.shape[1]))
+    for x in range(box.shape[1]):
+        for y in range(box.shape[0]):
+            boxarray[y,x] = box[y,x]
+
+    #print np.asarray(box).ndim
+
+    #print boxarray.shape
+
+    #plotting.plot_box(boxarray)
 
     # Find segments
-    segments = find_segments(box, kernel_fwhm=kernel_fwhm, kernel_size=kernel_size, threshold=threshold)
+    segments = find_segments(boxarray, kernel_fwhm=kernel_fwhm, kernel_size=kernel_size, threshold=threshold)
 
     #label_im, nb_labels = ndimage.label(mask)
 
@@ -1192,6 +1206,7 @@ def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshol
                                                                                 plot=plot)
     else:
 
+        plot=True
         if plot: plotting.plot_box(np.ma.masked_array(box, mask=box_mask), title="Masked segment doesn't hit boundary")
 
     # Return the mask
