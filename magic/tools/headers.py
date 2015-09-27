@@ -48,7 +48,7 @@ def get_pixelscale(header):
     elif 'CDELT1' in header: pixelscale = abs(header['CDELT1']) * 3600.0
 
     # Return the pixel scale (in arcseconds)
-    return pixelscale
+    return pixelscale*u.arcsec
 
 # *****************************************************************
 

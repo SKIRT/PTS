@@ -17,7 +17,7 @@ class Frame(np.ndarray):
 
     # *****************************************************************
 
-    def __new__(cls, input_array, coordinates=None, description=None, selected=False):
+    def __new__(cls, input_array, wcs=None, pixelscale=None, description=None, selected=False):
 
         """
         This function ...
@@ -28,7 +28,8 @@ class Frame(np.ndarray):
         """
 
         obj = np.asarray(input_array).view(cls)
-        obj.coordinates = coordinates
+        obj.wcs = wcs
+        obj.pixelscale = pixelscale
         obj.description = description
         obj.selected = selected
 
@@ -45,17 +46,18 @@ class Frame(np.ndarray):
         """
 
         if obj is None: return
-        self.coordinates = getattr(obj, 'coordinates', None)
+        self.wcs = getattr(obj, 'wcs', None)
         self.description = getattr(obj, 'description', None)
+        self.selected = getattr(obj, 'selected', False)
 
     # *****************************************************************
 
-    def __init__(self, input_array, coordinates=None, description=None, selected=False):
+    #def __init__(self, input_array, coordinates=None, description=None, selected=False):
 
-        self = np.asarray(input_array).view(self.__class__)
-        self.coordinates = coordinates
-        self.description = description
-        self.selected = selected
+        #self = np.asarray(input_array).view(self.__class__)
+        #self.coordinates = coordinates
+        #self.description = description
+        #self.selected = selected
 
     # *****************************************************************
 

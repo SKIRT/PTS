@@ -4,6 +4,9 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
+# Import Python 3 functionality
+from __future__ import (absolute_import, division, print_function)
+
 # Import standard modules
 import numpy as np
 import matplotlib.pyplot as plt
@@ -125,6 +128,20 @@ def plot_peaks(box, x_peaks, y_peaks, radius=None, title=None):
 
 # *****************************************************************
 
+def plot_peak(box, x_peak, y_peak, radius=None, title=None):
+
+    """
+    This function plots the data with peaks marked ...
+    :param box:
+    :param x_peaks:
+    :param y_peaks:
+    :return:
+    """
+
+    plot_peaks(box, [x_peak], [y_peak], radius=radius, title=title)
+
+# *****************************************************************
+
 def plot_peaks_models(box, x_peaks, y_peaks, models):
 
     """
@@ -231,6 +248,74 @@ def plot_star_model(background, background_clipped, est_background, star, est_ba
     plt.show()
 
 # *****************************************************************
+
+def plot_source(x_center_rel, y_center_rel, x_center_back, y_center_back, background, background_mask, background_fit,
+                cutout, cutout_background, source_mask, removed):
+
+    """
+    This function ...
+    :param background:
+    :return:
+    """
+
+    norm = ImageNormalize(stretch=SqrtStretch())
+
+    # Determine the maximum value in the box and the minimum value for plotting
+    vmax = np.max(background)
+    vmin = np.min(background) if vmax <= 0 else 0.0
+
+    number = 7 if removed is not None else 6
+
+    # Plot the data with the best-fit model
+    plt.figure(figsize=(20,3))
+    plt.subplot(1,number,1)
+    plt.imshow(background, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.plot(x_center_back, y_center_back, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
+    plt.xlim(0, background.shape[1]-1)
+    plt.ylim(0, background.shape[0]-1)
+    plt.title("Background")
+
+    plt.subplot(1,number,2)
+    plt.imshow(np.ma.masked_array(background, mask=background_mask), origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.xlim(0, background.shape[1]-1)
+    plt.ylim(0, background.shape[0]-1)
+    plt.title("Masked background")
+
+    plt.subplot(1,number,3)
+    plt.imshow(background_fit, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.xlim(0, background_fit.shape[1]-1)
+    plt.ylim(0, background_fit.shape[0]-1)
+    plt.title("Estimated background")
+
+    plt.subplot(1,number,4)
+    plt.imshow(cutout, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.plot(x_center_rel, y_center_rel, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
+    plt.xlim(0, cutout.shape[1]-1)
+    plt.ylim(0, cutout.shape[0]-1)
+    plt.title("Cutout")
+
+    plt.subplot(1,number,5)
+    plt.imshow(cutout-cutout_background, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.xlim(0, cutout.shape[1]-1)
+    plt.ylim(0, cutout.shape[0]-1)
+    plt.title("Cutout without background")
+
+    plt.subplot(1,number,6)
+    plt.imshow(np.ma.masked_array(cutout, mask=source_mask), origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.xlim(0, cutout.shape[1]-1)
+    plt.ylim(0, cutout.shape[0]-1)
+    plt.title("Source")
+
+    if removed is not None:
+
+        plt.subplot(1,number,7)
+        plt.imshow(removed, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+        plt.xlim(0, removed.shape[1]-1)
+        plt.ylim(0, removed.shape[0]-1)
+        plt.title("Removed source")
+
+    plt.show()
+
 
 def plot_background_subtraction(background, background_clipped, est_background, star, est_background_star):
 

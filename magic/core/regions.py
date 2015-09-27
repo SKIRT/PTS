@@ -218,6 +218,44 @@ def expand(region, factor):
 
 # *****************************************************************
 
+def ellipses(ra_list, dec_list, height_list, width_list, angle_list):
+
+    # Initialize the region string
+    region_string = "# Region file format: DS9 version 3.0\n"
+    region_string += "global color=green\n"
+    region_string += "fk5\n"
+
+    for ra, dec, height, width, angle in zip(ra_list, dec_list, height_list, width_list, angle_list):
+
+        line = "fk5;ellipse(%s,%s,%.2f\",%.2f\",%s)\n" % (ra, dec, height, width, angle)
+        region_string += line
+
+    region = pyregion.parse(region_string)
+
+    # Return the region
+    return region
+
+# *****************************************************************
+
+def circles(ra_list, dec_list, radius_list):
+
+    # Initialize the region string
+    region_string = "# Region file format: DS9 version 3.0\n"
+    region_string += "global color=green\n"
+    region_string += "fk5\n"
+
+    for ra, dec, radius in zip(ra_list, dec_list, radius_list):
+
+        line = "fk5;circle(%s,%s,%.2f\")\n" % (ra, dec, radius)
+        region_string += line
+
+    region = pyregion.parse(region_string)
+
+    # Return the region
+    return region
+
+# *****************************************************************
+
 def ellipses_from_coordinates(coordinates):
 
     """

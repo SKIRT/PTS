@@ -164,6 +164,31 @@ def create_disk_mask(x_size, y_size, x_center, y_center, radius):
 
 # *****************************************************************
 
+def create_ellipse_mask(x_size, y_size, center, radius, angle):
+
+    """
+    This function ...
+    :param x_size:
+    :param y_size:
+    :param x_center:
+    :param y_center:
+    :param x_radius:
+    :param y_radius:
+    :param angle:
+    :return:
+    """
+
+    # Create a region consisting of one ellipse
+    region = regions.one_ellipse([center.x, center.y, radius.x, radius.y, angle])
+
+    # Create the mask
+    mask = region.get_mask(shape=(y_size, x_size))
+
+    # Return the mask
+    return mask
+
+# *****************************************************************
+
 def intersection(mask_a, mask_b):
 
     """
@@ -202,3 +227,42 @@ def union(mask_a, mask_b):
     return mask_a + mask_b
 
 # *****************************************************************
+
+def hits_boundary(mask):
+
+    """
+    This function ...
+    :param mask:
+    :return:
+    """
+
+    # Test whether the mask reaches the boundaries
+    hits_boundary = False
+
+    for x in range(mask.shape[1]):
+
+        if mask[0, x] or mask[mask.shape[0]-1, x]:
+
+            # If this already happened with another pixel, break the loop
+            if hits_boundary:
+
+                hits_boundary = True
+                break
+
+            # If this is the first pixel for which this occurs, continue (one masked pixel on the edge is tolerated)
+            else: hits_boundary = True
+
+    for y in range(1, mask.shape[0]-1):
+
+        if mask[y, 0] or mask[y, mask.shape[1]-1]:
+
+            # If this already happened with another pixel, break the loop
+            if hits_boundary:
+
+                hits_boundary = True
+                break
+
+            # If this is the first pixel for which this occurs, continue (one masked pixel on the edge is tolerated)
+            else: hits_boundary = True
+
+    return hits_boundary

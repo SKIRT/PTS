@@ -4,6 +4,9 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
+# Import Python 3 functionality
+from __future__ import (absolute_import, division, print_function)
+
 # Import standard modules
 import os
 import os.path
@@ -21,24 +24,27 @@ from astropy import wcs
 import astropy.units as u
 from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
 from astropy import log
-
 from photutils import CircularAperture
 from photutils import aperture_photometry
 
-# Import image modules
-from tools import general, headers, cropping, interpolation, coordinates
-import transformations
-import fitting
-import plotting
-import analysis
-import regions
-import statistics
-import catalogs
-import units
-from layers import Layers
-from frames import Frame
-from masks import Mask
-from regions import Region
+# Import Astromagic modules
+from .tools import general
+from .tools import headers
+from .tools import cropping
+from .tools import interpolation
+from .tools import coordinates
+from .tools import transformations
+from .tools import fitting
+from .tools import plotting
+from .tools import analysis
+from .core import regions
+from .tools import statistics
+from .tools import catalogs
+from .tools import units
+from .core.layers import Layers
+from .core.frames import Frame
+from .core.masks import Mask
+from .core.regions import Region
 
 # *****************************************************************
 
@@ -154,7 +160,7 @@ class Image(object):
 
                 # Add this frame to the frames dictionary
                 #self.add_frame(hdu.data[i], coordinates, frame_name, description)
-                self.add_frame(Frame(hdu.data[i], None, description), frame_name)
+                self.add_frame(Frame(hdu.data[i], None, None, description), frame_name)
 
         else:
 
@@ -162,7 +168,7 @@ class Image(object):
             if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
 
             # Add the primary image frame
-            self.add_frame(Frame(hdu.data, None, None), name)
+            self.add_frame(Frame(hdu.data, None, None, None), name)
 
         # Close the fits file
         hdulist.close()
@@ -418,7 +424,7 @@ class Image(object):
             log.info("Cropping " + frame_name + " frame")
 
             # Crop this frame
-            self.frames[frame_name] = Frame(cropping.crop_check(self.frames[frame_name], x_min, x_max, y_min, y_max), None, self.frames[frame_name].description, True)
+            self.frames[frame_name] = Frame(cropping.crop_check(self.frames[frame_name], x_min, x_max, y_min, y_max), None, None, self.frames[frame_name].description, True)
 
             # TODO: adjust coordinates!
 
@@ -784,11 +790,11 @@ class Image(object):
         # Get the pixel scale of the kernel
         pixelscale_kernel = header["CD1_1"]*3600
 
-        print self.pixelscale
+        print(self.pixelscale)
 
         self.pixelscale = headers.get_pixelscale(self.header)
 
-        print self.pixelscale
+        print(self.pixelscale)
 
         # Calculate the zooming factor
         factor = self.pixelscale / pixelscale_kernel
@@ -861,7 +867,7 @@ class Image(object):
             log.info("Rebinning " + frame_name + " frame to the grid of " + reference)
 
             # Do the rebinning based on the header of the reference image
-            self.frames[frame_name] = Frame(transformations.align_and_rebin(self.frames[frame_name], self.header, refheader), coordinates, self.frames[frame_name].description, True)
+            self.frames[frame_name] = Frame(transformations.align_and_rebin(self.frames[frame_name], self.header, refheader), coordinates, self.pixelscale, self.frames[frame_name].description, True)
 
             # Set the new coordinate system for this frame
             #self.frames[frame_name].coordinates = coordinates
@@ -889,7 +895,7 @@ class Image(object):
             #print type(framenll)
 
             # Perform the interpolation on this frame
-            self.frames[frame_name] = Frame(framenll, self.frames[frame_name].coordinates, self.frames[frame_name].description, True)
+            self.frames[frame_name] = Frame(framenll, self.frames[frame_name].coordinates, self.pixelscale, self.frames[frame_name].description, True)
 
     # *****************************************************************
 
@@ -1689,7 +1695,7 @@ class Image(object):
         if plot: plotting.plot_difference(self.frames[frame_name], background)
 
         # Add the background frame
-        self.add_frame(Frame(background, self.frames[frame_name].coordinates, "the estimated background"), "background")
+        self.add_frame(Frame(background, self.frames[frame_name].coordinates, self.pixelscale, "the estimated background"), "background")
 
     # *****************************************************************
 
@@ -1725,7 +1731,7 @@ class Image(object):
 
             # Add the evaluated model as a new frame
             description = "A polynomial fit to the " + frame_name + " primary frame"
-            self.add_frame(Frame(evaluated, self.frames[frame_name].coordinates, description), frame_name+"_polynomial")
+            self.add_frame(Frame(evaluated, self.frames[frame_name].coordinates, self.pixelscale, description), frame_name+"_polynomial")
 
     # *****************************************************************
 
@@ -1823,7 +1829,7 @@ class Image(object):
                 name = headers.get_frame_name(description) if i else "primary"
 
                 # Add this frame to the frames dictionary
-                self.add_frame(Frame(hdu.data[i], coordinates, description), name)
+                self.add_frame(Frame(hdu.data[i], coordinates, self.pixelscale, description), name)
 
         else:
 
@@ -1831,7 +1837,7 @@ class Image(object):
             if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
 
             # Add the primary image frame
-            self.add_frame(Frame(hdu.data, coordinates, "the primary signal map"), "primary")
+            self.add_frame(Frame(hdu.data, coordinates, self.pixelscale, "the primary signal map"), "primary")
 
         # Set the basic header for this image
         self.header = header.copy(strip=True)
@@ -1939,7 +1945,7 @@ class Image(object):
         dec_distance = dec_end - dec_begin
 
         # Calculate the pixel scale of this image in degrees
-        pixelscale = self.pixelscale * u.arcsec
+        pixelscale = self.pixelscale
         pixelscale_deg = pixelscale.to("deg").value
 
         # Get the center pixel

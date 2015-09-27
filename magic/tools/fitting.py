@@ -4,6 +4,9 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
+# Import Python 3 functionality
+from __future__ import (absolute_import, division, print_function)
+
 # Import standard modules
 import warnings
 import numpy as np
@@ -12,11 +15,11 @@ from scipy import ndimage
 # Import astronomical modules
 from astropy.modeling import models, fitting
 
-# Import image modules
-import tools.general
-import statistics
+# Import Astromagic modules
+from . import general
+from . import statistics
 
-# Import other relevant PTS modules
+# Import PTS modules
 from pts import mathematics
 
 # *****************************************************************
@@ -87,7 +90,7 @@ def fit_polynomial_evaluate(box, degree, mask=None):
     # Do the fitting
     model = mathematics.fit_polynomial(np.array(x_values), np.array(y_values), np.array(z_values), degree, True)
 
-    print model
+    print(model)
 
     # Create x and y meshgrid for evaluating the model
     y_plotvalues, x_plotvalues = np.mgrid[:box.shape[0], :box.shape[1]]

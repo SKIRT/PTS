@@ -4,6 +4,9 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
+# Import Python 3 functionality
+from __future__ import (absolute_import, division, print_function)
+
 # Import standard modules
 import copy
 import numpy as np
@@ -13,8 +16,8 @@ from astropy.stats import sigma_clip, sigma_clipped_stats
 from astropy import log
 import pyregion
 
-# Import image modules
-import tools.general
+# Import Astromagic modules
+from . import general
 
 # *****************************************************************
 

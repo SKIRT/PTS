@@ -4,18 +4,25 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
+# Import Python 3 functionality
+from __future__ import (absolute_import, division, print_function)
+
 # Import standard modules
 import numpy as np
 from scipy import ndimage
 import matplotlib.pyplot as plt
 
-# Import image modules
-import fitting
-import plotting
-import regions
-import statistics
-import masks
-from tools import coordinates, cropping, interpolation
+# Import Astromagic modules
+from . import fitting
+from . import plotting
+from ..core import regions
+from . import statistics
+from ..core import masks
+from . import coordinates
+from . import cropping
+from . import interpolation
+from ..core.box import Box
+from ..core.source import Source
 
 # Import astronomical modules
 from astropy.table import Table
@@ -768,8 +775,8 @@ def estimate_background(data, mask, interpolate=True, sigma_clip=True):
 
 # *****************************************************************
 
-def make_gaussian_star_model(shape, data, x_peak, y_peak, background_inner_factor, background_outer_factor, fit_factor,
-                             background_est_method, center_offset_tolerance, sigma_clip_background=True,
+def make_gaussian_star_model(box, x_center, y_center, x_peak, y_peak, radius, background_inner_factor, background_outer_factor,
+                             fit_factor, background_est_method, center_offset_tolerance, sigma_clip_background=True,
                              upsample_factor=1.0, use_shape_or_peak="peak", model_name="Gaussian", plot=False):
 
     """
@@ -784,16 +791,13 @@ def make_gaussian_star_model(shape, data, x_peak, y_peak, background_inner_facto
     :return:
     """
 
-    # Find the parameters of this ellipse (or circle)
-    x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
-
     # Create a mask that
     annulus_mask = masks.annulus_around(shape, background_inner_factor, background_outer_factor, data.shape[1], data.shape[0])
 
     # Set the radii for cutting out the background box
-    radius = 0.5*(x_radius + y_radius)
-    x_radius_outer = background_outer_factor*x_radius
-    y_radius_outer = background_outer_factor*y_radius
+    #radius = 0.5*(x_radius + y_radius)
+    x_radius_outer = background_outer_factor*radius
+    y_radius_outer = background_outer_factor*radius
 
     # Cut out the background and the background mask
     background, x_min_back, x_max_back, y_min_back, y_max_back = cropping.crop(data, x_center, y_center, x_radius_outer, y_radius_outer)
@@ -1073,8 +1077,12 @@ def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshol
     # Get the parameters of this shape
     x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
 
+    print(x_radius, y_radius)
+
     # Crop
     box, x_min, x_max, y_min, y_max = cropping.crop(data, x_center, y_center, x_radius, y_radius)
+
+    #print x_min, x_max, y_min, y_max
 
     #print type(box)
     #plotting.plot_box(box)
@@ -1211,5 +1219,254 @@ def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshol
 
     # Return the mask
     return box_mask, x_min, x_max, y_min, y_max
+
+# *****************************************************************
+
+def find_source(frame, center, radius, angle, config):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Segmentation method
+    if config.extraction_method == "segmentation": return find_source_segmentation(frame, center, radius, angle, config)
+
+    # Peaks method
+    elif config.extraction_method == "peaks": return find_source_peaks(frame, center, radius, angle, config)
+
+    # Unknown extraction method
+    else: raise ValueError("Unknown source extraction method")
+
+# *****************************************************************
+
+def find_source_segmentation(frame, center, radius, angle, config, expansion_level=1):
+
+    """
+    This function ...
+    :return:
+    """
+
+    debug = True
+
+    threshold_sigmas = config.threshold_sigmas
+    kernel_fwhm = config.kernel_fwhm
+    kernel_size = config.kernel_size
+    expand = config.expand
+    max_expansion_level = config.max_expansion_level
+
+    # Create the cutout and background boxes
+    outer_radius = radius * config.background_outer_factor
+    cutout = Box(frame, center, radius, angle=angle)
+    background = Box(frame, center, outer_radius, angle=angle)
+
+    # Calculate the relative coordinate of the center for the cutout and background boxes
+    rel_center = cutout.rel_position(center)
+    rel_center_background = background.rel_position(center)
+
+    # Create the background mask
+    background_mask = masks.create_ellipse_mask(background.xsize, background.ysize, rel_center_background, radius, angle)
+
+    # Fit a polynomial to the background
+    poly, background_mask = fitting.fit_polynomial(background, 3, mask=background_mask, sigma_clip_background=True)
+    polynomial = fitting.evaluate_model(poly, 0, background.xsize, 0, background.ysize)
+    fit = polynomial[cutout.y_min-background.y_min:cutout.y_max-background.y_min, cutout.x_min-background.x_min:cutout.x_max-background.x_min]
+
+    # Subtract the fitted background from the box
+    cutout = cutout - fit
+
+    # Calculate threshold for segmentation
+    mean, median, stddev = statistics.sigma_clipped_statistics(background, mask=background_mask)
+    threshold = mean + threshold_sigmas*stddev
+
+    # Perform the segmentation
+    segments = find_segments(cutout, kernel_fwhm=kernel_fwhm, kernel_size=kernel_size, threshold=threshold)
+
+    # Get the label of the center segment
+    label = segments[rel_center.y, rel_center.x]
+
+    # Create a mask of the center segment
+    cutout_mask = (segments == label)
+
+    # If the mask extents to the boundary of the cutout box and if enabled, expand the ellipse and repeat the procedure
+    if masks.hits_boundary(cutout_mask) and expand:
+
+        # DEBUG
+        if debug: plotting.plot_box(np.ma.masked_array(cutout, mask=cutout_mask), title="Masked segment hits boundary")
+
+        # If the maximum expansion level has been reached, no source could be found
+        if expansion_level >= max_expansion_level: return None
+
+        else:
+
+            # Calculate the expanded parameters
+            radius *= config.expansion_factor
+            expansion_level += 1
+
+            # Repeat the procedure for the expanded ellipse
+            return find_source_segmentation(frame, center, radius, angle, config, expansion_level)
+
+    else:
+
+        if debug: plotting.plot_box(np.ma.masked_array(cutout, mask=cutout_mask), title="Masked segment doesn't hit boundary")
+
+    # Return a source object
+    return Source(center, radius, angle, cutout=cutout, background=background,
+                  background_mask=background_mask, background_fit=polynomial, source_mask=box_mask)
+
+# *****************************************************************
+
+def find_source_peaks(frame, center, radius, angle, config, level=0):
+
+    """
+    This function ...
+    :param frame:
+    :param center:
+    :param radius:
+    :param angle:
+    :param config:
+    :param level:
+    :return:
+    """
+
+    debug = True
+
+    # If the maximum or minimum level is reached, return without source
+    if level < config.min_level or level > config.max_level: return None
+
+    # Create the cutout and background boxes
+    outer_radius = radius * config.background_outer_factor
+    cutout = Box(frame, center, radius, angle=angle)
+    background = Box(frame, center, outer_radius, angle=angle)
+
+    # If the frame is zero in this box, continue to the next object
+    if not np.any(cutout): return None
+
+    # If the box is too small, skip this object
+    if cutout.xsize < config.minimum_pixels or cutout.ysize < config.minimum_pixels: return None
+
+    # Find the location of peaks in the box (do not remove gradient yet for performance reasons)
+    peaks = cutout.locate_peaks(config.threshold_sigmas, remove_gradient=False)
+
+    # If no peaks could be detected, remove a potential background gradient from the box before detection
+    if len(peaks) == 0 and config.aid_detection_by_removing_gradient:
+
+        # DEBUG
+        if debug: plotting.plot_box(cutout, title="0 peaks, gradient will be removed")
+
+        # Calculate the relative coordinate of the center for the cutout and background boxes
+        rel_center = cutout.rel_position(center)
+        rel_center_background = background.rel_position(center)
+
+        # Create the background mask
+        inner_radius = radius * config.background_inner_factor
+        background_mask = masks.create_ellipse_mask(background.xsize, background.ysize, rel_center_background, inner_radius, angle)
+
+        # Create a central mask that covers the expected source
+        central_radius = config.central_mask_radius_for_gradient
+
+        # Find the location of peaks in the box (do remove the background gradient)
+        positions = cutout.locate_peaks(config.threshold_sigmas, remove_gradient=True, central_radius=central_radius)
+
+        # DEBUG
+        if debug:
+            x_positions = []
+            y_positions = []
+            for peak in peaks:
+                x_positions.append(peak.x - cutout.x_min)
+                y_positions.append(peak.y - cutout.y_min)
+            plotting.plot_peaks(cutout, x_positions, y_positions, title=str(len(positions)) + " peak(s) found after removing gradient background")
+
+    # If no sources were detected
+    if len(peaks) == 0:
+
+        # DEBUG
+        if debug: plotting.plot_box(cutout, title="0 peaks")
+
+        # If the level was negative, no source can be found
+        if level < 0: return None
+
+        # Scale the ellipse in which to look for a source
+        radius *= config.scale_factor
+
+        # Find a source in the zoomed-out region
+        return find_source_peaks(frame, center, radius, angle, config, level=level+1)
+
+    # If more than one source was detected
+    elif len(peaks) > 1:
+
+        if debug:
+            x_positions = []
+            y_positions = []
+            for peak in peaks:
+                x_positions.append(peak.x - cutout.x_min)
+                y_positions.append(peak.y - cutout.y_min)
+            plotting.plot_peaks(cutout, x_positions, y_positions, title="more peaks")
+
+        # If the level was positive, no source can be found
+        if level > 0: return None
+
+        # Scale the ellipse in which to look for a source
+        radius /= config.scale_factor
+
+        # Find a source in the zoomed-in region
+        return find_source_peaks(frame, center, radius, angle, config, level=level-1)
+
+    # If one source was detected
+    elif len(peaks) == 1:
+
+        # Get the x and y coordinate of the peak
+        x_peak = peaks[0].x
+        y_peak = peaks[0].y
+
+        # DEBUG
+        if debug: plotting.plot_peak(cutout, x_peak - cutout.x_min, y_peak - cutout.y_min, title="1 peak")
+
+        # Create the mask to estimate the background in the box
+        background_inner_factor = config.background_inner_factor
+        background_outer_factor = config.background_outer_factor
+        fit_factor = config.fit_factor
+        sigma_clip_background = config.sigma_clip_background
+        peak_offset_tolerance = config.peak_offset_tolerance
+        model_name = config.model_name
+
+        # TODO: check that peak position corresponds with center of shape
+        if not (np.isclose(x_peak, center.x, atol=config.peak_offset_tolerance) and np.isclose(y_peak, center.y, atol=config.peak_offset_tolerance)):
+
+            #log.warning("Peak position and shape center do not match")
+            if debug: plotting.plot_peak(cutout, x_peak - cutout.x_min, y_peak - cutout.y_min, title="Peak and shape do not match")
+
+            # No source was found
+            return None
+
+        # Create the source
+        #source = Source(center=center, radius=radius, cutout=cutout, background=background, background_mask=,
+        #                background_fit=, source_mask=, x_peak=x_peak, y_peak=y_peak)
+
+        # Return the source
+        #return source
+
+# *****************************************************************
+
+def fit_model_to_source():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # DIRTY
+    #radius = x_radius
+
+    # Try to fit a Gaussian model to the data
+    model = make_gaussian_star_model(box, x_center, y_center, x_peak, y_peak, radius, background_inner_factor,
+                                     background_outer_factor, fit_factor, "polynomial", peak_offset_tolerance,
+                                     sigma_clip_background=sigma_clip_background, upsample_factor=1.0,
+                                     use_shape_or_peak="peak", model_name=model_name)
+
+    # Get the center position and radius of the (Gaussian) model
+    x_center = model.x_mean
+    y_center = model.y_mean
+    radius = model.x_stddev  # OR 3.0*X_STDDEV ???
 
 # *****************************************************************
