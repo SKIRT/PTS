@@ -64,7 +64,7 @@ class StarExtractor(object):
         self.find_sources(image)
 
         # Fit ...
-        self.fit_stars(image)
+        self.fit_stars()
 
         # If requested, add a frame to the image with the stars
         #if self.config.make_star_frame: self.make_star_frame(image)
@@ -84,17 +84,15 @@ class StarExtractor(object):
         """
 
         # Get the range of right ascension and declination of this image
-        ra_center, dec_center, size_ra_deg, size_dec_deg = image._get_coordinate_range()
-
-        # Create a coordinate
-        coordinate = coord.SkyCoord(ra=ra_center, dec=dec_center, unit=(u.deg, u.deg), frame='fk5') # frame: icrs, fk5... ?
+        center, ra_span, dec_span = image.frames.selected(require_single=True).coordinate_range()
 
         # Create a new Vizier object and set the row limit to -1 (unlimited)
         viz = Vizier(keywords=["stars", "optical"])
         viz.ROW_LIMIT = -1
 
         # Query Vizier and obtain the resulting table
-        result = viz.query_region(coordinate, width=size_ra_deg*u.deg, height=size_dec_deg*u.deg, catalog=["UCAC4"])
+        # Other possible catalogs: "UCAC4", "NOMAD", "PPMXL" or combinations
+        result = viz.query_region(center, width=ra_span, height=dec_span, catalog=["UCAC4"])
         table = result[0]
 
         # Loop over all stars in the table
@@ -105,6 +103,9 @@ class StarExtractor(object):
 
             # Get the right ascension and the declination
             position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
+
+            # If this star does not lie within the frame, skip it
+            if not image.frames.selected(require_single=True).contains(position): continue
 
             # Get the mean error on the right ascension and declination
             position_error = entry["ePos"]*u.mas
@@ -129,6 +130,10 @@ class StarExtractor(object):
 
     def find_sources(self, image):
 
+        """
+        This function ...
+        """
+
         # Get the name of the currently selected frame
         frame_name = image.frames.get_selected(require_single=True)
         frame = image.frames[frame_name]
@@ -141,7 +146,7 @@ class StarExtractor(object):
 
     # *****************************************************************
 
-    def fit_stars(self, image):
+    def fit_stars(self):
 
         """
         This function ...

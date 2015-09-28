@@ -21,6 +21,30 @@ class Layers(dict):
 
     # *****************************************************************
 
+    def selected(self, require_single=False, allow_none=True):
+
+        """
+        This function ...
+        :param require_single:
+        :param allow_none:
+        :return:
+        """
+
+        # Initialize a list to contain the selected frames
+        layers = []
+
+        # Loop over all layers, add them to the list if selected
+        for name, layer in self.items(): layers.append(layer)
+
+        # Check options
+        if require_single and len(layers) > 1: raise RuntimeError("More than one layer is selected")
+        if not allow_none and len(layers) == 0: raise RuntimeError("No layer is selected")
+
+        # Return the list of layers (or the single selected layer if requested)
+        return layers[0] if require_single else layers
+
+    # *****************************************************************
+
     def get_selected(self, require_single=False, allow_none=True):
 
         """

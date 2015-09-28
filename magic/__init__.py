@@ -22,6 +22,7 @@ import pyregion
 import astropy.io.fits as pyfits
 from astropy import wcs
 import astropy.units as u
+import astropy.coordinates as coord
 from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
 from astropy import log
 from photutils import CircularAperture
@@ -1244,13 +1245,13 @@ class Image(object):
         :return:
         """
 
-        # Possible catalogs: "UCAC4", "NOMAD", "PPMXL" ? or combinations
+        # Possible catalogs: "UCAC4", "NOMAD", "PPMXL" or combinations
 
         # Inform the user
         log.info("Fetching star positions from an online catalog...")
 
         # Get the range of RA and DEC of this image
-        ra_center, dec_center, size_ra_deg, size_dec_deg = self._get_coordinate_range()
+        ra_center, dec_center, size_ra_deg, size_dec_deg = self.get_coordinate_range()
 
         # Search for stars
         radius_in_arcsec = radius * self.pixelscale
@@ -1906,7 +1907,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def _get_coordinate_range(self):
+    def get_coordinate_range(self):
 
         """
         This function ...
@@ -1960,7 +1961,11 @@ class Image(object):
         assert np.isclose(ra_distance, size_ra_deg, rtol=0.02), "The coordinate system and pixel scale do not match"
         assert np.isclose(dec_distance, size_dec_deg, rtol=0.02), "The coordinate system and pixel scale do not match"
 
-        # Return ...
-        return (ra_center, dec_center, size_ra_deg, size_dec_deg)
+        center = coord.SkyCoord(ra=ra_center, dec=dec_center, unit=(u.deg, u.deg), frame='fk5')
+        ra_span = size_ra_deg * u.deg
+        dec_span = size_dec_deg * u.deg
+
+        # Return the center coordinate and the RA and DEC span
+        return center, ra_span, dec_span
 
     # *****************************************************************

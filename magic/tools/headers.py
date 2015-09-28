@@ -4,11 +4,14 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
+# Import Python 3 functionality
+from __future__ import (absolute_import, division, print_function)
+
 # Import standard modules
 import numpy as np
 import math
 
-# Import other relevant PTS modules
+# Import PTS modules
 from pts.filter import Filter
 
 # Import astronomical modules

@@ -249,8 +249,7 @@ def plot_star_model(background, background_clipped, est_background, star, est_ba
 
 # *****************************************************************
 
-def plot_source(x_center_rel, y_center_rel, x_center_back, y_center_back, background, background_mask, background_fit,
-                cutout, cutout_background, source_mask, removed):
+def plot_source(background, background_mask, background_fit, cutout, cutout_background, source_mask, peaks=None, title=None):
 
     """
     This function ...
@@ -264,13 +263,12 @@ def plot_source(x_center_rel, y_center_rel, x_center_back, y_center_back, backgr
     vmax = np.max(background)
     vmin = np.min(background) if vmax <= 0 else 0.0
 
-    number = 7 if removed is not None else 6
+    number = 6 if source_mask is not None else 5
 
     # Plot the data with the best-fit model
     plt.figure(figsize=(20,3))
     plt.subplot(1,number,1)
     plt.imshow(background, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
-    plt.plot(x_center_back, y_center_back, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
     plt.xlim(0, background.shape[1]-1)
     plt.ylim(0, background.shape[0]-1)
     plt.title("Background")
@@ -289,35 +287,45 @@ def plot_source(x_center_rel, y_center_rel, x_center_back, y_center_back, backgr
 
     plt.subplot(1,number,4)
     plt.imshow(cutout, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
-    plt.plot(x_center_rel, y_center_rel, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
     plt.xlim(0, cutout.shape[1]-1)
     plt.ylim(0, cutout.shape[0]-1)
     plt.title("Cutout")
 
     plt.subplot(1,number,5)
     plt.imshow(cutout-cutout_background, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    if peaks is not None: plt.plot(peaks[0], peaks[1], ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
     plt.xlim(0, cutout.shape[1]-1)
     plt.ylim(0, cutout.shape[0]-1)
     plt.title("Cutout without background")
 
-    plt.subplot(1,number,6)
-    plt.imshow(np.ma.masked_array(cutout, mask=source_mask), origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
-    plt.xlim(0, cutout.shape[1]-1)
-    plt.ylim(0, cutout.shape[0]-1)
-    plt.title("Source")
+    if source_mask is not None:
 
-    if removed is not None:
+        plt.subplot(1,number,6)
+        plt.imshow(np.ma.masked_array(cutout-cutout_background, mask=source_mask), origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+        plt.xlim(0, cutout.shape[1]-1)
+        plt.ylim(0, cutout.shape[0]-1)
+        plt.title("Masked source")
 
-        plt.subplot(1,number,7)
-        plt.imshow(removed, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
-        plt.xlim(0, removed.shape[1]-1)
-        plt.ylim(0, removed.shape[0]-1)
-        plt.title("Removed source")
+    # Set the main title
+    if title is not None: plt.suptitle(title, size=16)
 
+    # Show the plot
     plt.show()
 
+# *****************************************************************
 
 def plot_background_subtraction(background, background_clipped, est_background, star, est_background_star):
+
+    """
+    This function ...
+    :param background:
+    :param background_clipped:
+    :param est_background:
+    :param star:
+    :param est_background_star:
+    :param peaks:
+    :return:
+    """
 
     norm = ImageNormalize(stretch=SqrtStretch())
 
@@ -357,6 +365,55 @@ def plot_background_subtraction(background, background_clipped, est_background, 
     plt.ylim(0, star.shape[0]-1)
     plt.title("Star without background")
 
+    plt.show()
+
+# *****************************************************************
+
+def plot_background_center(background, background_mask, cutout, peaks=None, title=None):
+
+    """
+    This function ...
+    :param x_center_rel:
+    :param y_center_rel:
+    :param x_center_back:
+    :param y_center_back:
+    :param background:
+    :param background_mask:
+    :param cutout:
+    :return:
+    """
+
+    norm = ImageNormalize(stretch=SqrtStretch())
+
+    # Determine the maximum value in the box and the minimum value for plotting
+    vmax = np.max(background)
+    vmin = np.min(background) if vmax <= 0 else 0.0
+
+    # Plot the data with the best-fit model
+    plt.figure(figsize=(10,4))
+    plt.subplot(1,3,1)
+    plt.imshow(background, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.xlim(0, background.shape[1]-1)
+    plt.ylim(0, background.shape[0]-1)
+    plt.title("Background")
+
+    plt.subplot(1,3,2)
+    plt.imshow(np.ma.masked_array(background, mask=background_mask), origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.xlim(0, background.shape[1]-1)
+    plt.ylim(0, background.shape[0]-1)
+    plt.title("Masked background")
+
+    plt.subplot(1,3,3)
+    plt.imshow(cutout, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    if peaks is not None: plt.plot(peaks[0], peaks[1], ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
+    plt.xlim(0, cutout.shape[1]-1)
+    plt.ylim(0, cutout.shape[0]-1)
+    plt.title("Cutout")
+
+    # Set the main title
+    if title is not None: plt.suptitle(title, size=16)
+
+    # Show the plot
     plt.show()
 
 # *****************************************************************

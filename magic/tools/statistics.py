@@ -55,7 +55,7 @@ def sigma_clip_mask(data, sigma=3.0, mask=None):
     """
 
     # Split the x, y and z values of the data, without the masked values
-    x_values, y_values, z_values = tools.general.split_xyz(data, mask=mask)
+    x_values, y_values, z_values = general.split_xyz(data, mask=mask)
 
     # Sigma-clip z-values that are outliers
     masked_z_values = sigma_clip(z_values, sig=sigma, iters=None, copy=False)

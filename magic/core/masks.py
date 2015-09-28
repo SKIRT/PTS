@@ -4,11 +4,15 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
+# Import Python 3 functionality
+from __future__ import (absolute_import, division, print_function)
+
 # Import standard modules
 import numpy as np
 
-# Import image modules
-import regions
+# Import Astromagic modules
+from . import regions
+from .box import Extent
 
 # *****************************************************************
 
@@ -178,8 +182,11 @@ def create_ellipse_mask(x_size, y_size, center, radius, angle):
     :return:
     """
 
+    x_radius = radius.x if isinstance(radius, Extent) else radius
+    y_radius = radius.y if isinstance(radius, Extent) else radius
+
     # Create a region consisting of one ellipse
-    region = regions.one_ellipse([center.x, center.y, radius.x, radius.y, angle])
+    region = regions.one_ellipse([center.x, center.y, x_radius, y_radius, angle])
 
     # Create the mask
     mask = region.get_mask(shape=(y_size, x_size))
@@ -266,3 +273,5 @@ def hits_boundary(mask):
             else: hits_boundary = True
 
     return hits_boundary
+
+# *****************************************************************

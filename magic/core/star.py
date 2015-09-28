@@ -52,6 +52,9 @@ class Star(object):
         # Set the model attribute to None initially
         self.model = None
 
+        # Initialize a list for the track record of sources
+        self.track_record = []
+
     # *****************************************************************
 
     def circle_parameters(self, wcs, pixelscale, default_radius):
@@ -83,7 +86,7 @@ class Star(object):
         center, radius = self.circle_parameters(frame.wcs, frame.pixelscale, config.initial_radius)
 
         # Find a source
-        self.source = analysis.find_source(frame, center, radius, 0.0, config)
+        self.source = analysis.find_source(frame, center, radius, 0.0, config, self.track_record)
 
     # *****************************************************************
 

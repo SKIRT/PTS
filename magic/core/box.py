@@ -13,12 +13,7 @@ import numpy as np
 # Import Astromagic modules
 from ..tools import cropping
 from ..tools import fitting
-from ..tools import statistics
-from .vector import Position
-
-# Import astronomical modules
-from astropy.table import Table
-from photutils import find_peaks
+from .vector import Position, Extent
 
 # *****************************************************************
 
@@ -28,7 +23,7 @@ class Box(np.ndarray):
     This class ...
     """
 
-    def __new__(cls, frame, center, radius, angle):
+    def __new__(cls, data, x_min, x_max, y_min, y_max):
 
         """
         This function ...
@@ -38,17 +33,8 @@ class Box(np.ndarray):
         :return:
         """
 
-        x_extent = np.abs(np.sin(angle)*radius.x + np.cos(angle)*radius.y)
-        y_extent = np.abs(np.cos(angle)*radius.x - np.sin(angle)*radius.y)
-
-        # Crop the frame
-        cropped, x_min, x_max, y_min, y_max = cropping.crop(frame, center.x, center.y, x_extent, y_extent)
-
-        # Check that the center position lies within the box
-        assert (x_min <= center.x < x_max and y_min <= center.y < y_max)
-
         # Create an object of the Box class
-        obj = np.asarray(cropped).view(cls)
+        obj = np.asarray(data).view(cls)
 
         # Set attributes of the object
         obj.x_min = x_min
@@ -61,7 +47,84 @@ class Box(np.ndarray):
 
     # *****************************************************************
 
+    @classmethod
+    def cutout(cls, frame, center, x_radius, y_radius):
+
+        """
+        This class method ...
+        :param frame:
+        :param center:
+        :param x_radius:
+        :param y_radius:
+        :return:
+        """
+
+        # Crop the frame
+        cropped, x_min, x_max, y_min, y_max = cropping.crop(frame, center.x, center.y, x_radius, y_radius)
+
+        # Check that the center position lies within the box
+        try:
+            assert (x_min <= center.x < x_max and y_min <= center.y < y_max)
+        except AssertionError:
+            print(x_min, x_max, center.x)
+            print(y_min, y_max, center.y)
+
+        # Return a new box
+        return cls(cropped, x_min, x_max, y_min, y_max)
+
+    # *****************************************************************
+
+    @classmethod
+    def from_ellipse(cls, frame, center, radius, angle):
+
+        """
+        This function ...
+        :param frame:
+        :param center:
+        :param radius:
+        :param angle:
+        :return:
+        """
+
+        # Set the x and y radius
+        if isinstance(radius, Extent):
+
+            x_radius = np.abs(np.sin(angle)*radius.x + np.cos(angle)*radius.y)
+            y_radius = np.abs(np.cos(angle)*radius.x - np.sin(angle)*radius.y)
+
+        else:
+
+            x_radius = radius
+            y_radius = radius
+
+        # Return a new box
+        return cls.cutout(frame, center, x_radius, y_radius)
+
+    # *****************************************************************
+
+    def box_like(self, box):
+
+        """
+        This function ...
+        :param box:
+        :return:
+        """
+
+        data = self[box.y_min - self.y_min:box.y_max - self.y_min,
+                    box.x_min - self.x_min:box.x_max - self.x_min]
+
+        # Create the new box
+        return Box(data, box.x_min, box.x_max, box.y_min, box.y_max)
+
+    # *****************************************************************
+
     def __array_finalize__(self, obj):
+
+        """
+        This function ...
+        :param obj:
+        :return:
+        """
 
         # see InfoArray.__array_finalize__ for comments
         if obj is None: return
@@ -73,9 +136,17 @@ class Box(np.ndarray):
 
     # *****************************************************************
 
-    def plot(self):
-        
+    def plot(self, frame=None):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
         pass
+
+        # If frame is not None, plot 'zoom' plot
 
     # *****************************************************************
 
@@ -119,54 +190,20 @@ class Box(np.ndarray):
 
     # *****************************************************************
 
-    def locate_peaks(self, threshold_sigmas, remove_gradient=False, central_radius=5.0):
+    def fit_polynomial(self, order, mask=None):
 
         """
         This function ...
         :return:
         """
 
-        # If requested, remove the gradient background before peak detection
-        if remove_gradient:
+        # Do the fitting
+        polynomial = fitting.fit_polynomial(self, order, mask=mask)
 
-            # Create a central mask
-            central_mask = np.zeros_like(self, dtype=bool)
-            central_mask[int(round(self.ysize/2.0-central_radius)):int(round(self.ysize/2.0+central_radius)), int(round(self.xsize/2.0-central_radius)):int(round(self.xsize/2.0+central_radius))] = True
+        # Evaluate the polynomial
+        data = fitting.evaluate_model(polynomial, 0, self.xsize, 0, self.ysize)
 
-            if np.all(central_mask): return []
-
-            # Fit a polynomial to the background
-            poly = fitting.fit_polynomial(self, 3, mask=central_mask)
-            polynomial_box = fitting.evaluate_model(poly, 0, self.xsize, 0, self.ysize)
-
-            #if debug: plotting.plot_difference_model(box, poly)
-
-            # Subtract the gradient from the box
-            self -= polynomial_box
-
-        # Calculate the sigma-clipped statistics of the frame and find the peaks
-        mean, median, stddev = statistics.sigma_clipped_statistics(self, sigma=3.0)
-        threshold = median + (threshold_sigmas * stddev)
-        peaks = find_peaks(self, threshold, box_size=5)
-
-        # For some reason, once in a while, an ordinary list comes out of the find_peaks routine instead of an
-        # Astropy Table instance. We assume we need an empty table in this case
-        if type(peaks) is list: peaks = Table([[], []], names=('x_peak', 'y_peak'))
-
-        # Initialize a list to contain the peak positions
-        positions = []
-
-        # Loop over the peaks
-        for peak in peaks:
-
-            # Calculate the absolute x and y coordinate of the peak
-            x = peak['x_peak'] + self.x_min
-            y = peak['y_peak'] + self.y_min
-
-            # Add the coordinates to the positions list
-            positions.append(Position(x=x,y=y))
-
-        # Return the list of peak positions
-        return positions
+        # Return a new box
+        return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
 # *****************************************************************

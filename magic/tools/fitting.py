@@ -121,7 +121,7 @@ def fit_polynomial(box, degree, x_shift=0.0, y_shift=0.0, mask=None, sigma_clip_
     fit_model = fitting.LevMarLSQFitter()
 
     # Split x, y and z values that are not masked
-    x_values, y_values, z_values = tools.general.split_xyz(box, mask=mask, arrays=True)
+    x_values, y_values, z_values = general.split_xyz(box, mask=mask, arrays=True)
 
     # Ignore model linearity warning from the fitter
     with warnings.catch_warnings():

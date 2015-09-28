@@ -11,6 +11,7 @@ from __future__ import (absolute_import, division, print_function)
 import numpy as np
 from scipy import ndimage
 import matplotlib.pyplot as plt
+import copy
 
 # Import Astromagic modules
 from . import fitting
@@ -262,7 +263,7 @@ def locate_sources_peaks(data, threshold_sigmas=7.0, plot=False):
 
 # *****************************************************************
 
-def locate_sources_daofind(data, threshold_sigmas=5.0, plot=False):
+def find_sources_daofind(data, threshold_sigmas=5.0, plot=False):
 
     """
     This function ...
@@ -282,7 +283,12 @@ def locate_sources_daofind(data, threshold_sigmas=5.0, plot=False):
     if plot: plotting.plot_peaks(data, result_table['x_peak'], result_table['y_peak'], radius=4.0)
 
     # Return the list of source positions
-    return result_table, median
+    #return result_table, median
+
+    # TODO: FIX THIS FUNCTION
+
+    source = []
+    return source
 
 # *****************************************************************
 
@@ -294,31 +300,7 @@ def locate_sources_iraf(data):
     :return:
     """
 
-    pass
-
-# *****************************************************************
-
-def locate_sources_segmentation(data):
-
-    """
-    This function ...
-    :param data:
-    :return:
-    """
-
-    sigma = 4.0 * gaussian_fwhm_to_sigma
-
-    kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
-
-    frame_name = self.frames.get_selected(require_single=True)
-
-    from photutils import detect_threshold
-
-    total_mask = self.combine_masks(return_mask=True)
-
-    threshold = detect_threshold(self.frames[frame_name].data, snr=3., mask=total_mask)
-
-    segm = detect_sources(self.frames[frame_name].data, threshold, npixels=5, filter_kernel=kernel)
+    # TODO: FIX THIS FUNCTION
 
 # *****************************************************************
 
@@ -1061,168 +1043,7 @@ def crop_and_mask_for_background(data, shape, inner_factor, outer_factor):
 
 # *****************************************************************
 
-def find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size, threshold_sigmas, expand=True, expansion_factor=1.5, expansion_level=1, max_expansion_level=4, plot=False):
-
-    """
-    This function ...
-    :return:
-    """
-
-    #print "data = " + str(type(data))
-
-    #data = np.asarray(data)
-
-    #print "data = " + str(type(data))
-
-    # Get the parameters of this shape
-    x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
-
-    print(x_radius, y_radius)
-
-    # Crop
-    box, x_min, x_max, y_min, y_max = cropping.crop(data, x_center, y_center, x_radius, y_radius)
-
-    #print x_min, x_max, y_min, y_max
-
-    #print type(box)
-    #plotting.plot_box(box)
-
-    background, mask, x_min_back, x_max_back, y_min_back, y_max_back = crop_and_mask_for_background(data, shape, 1.0, 1.2)
-
-    #print type(background), type(mask)
-
-    #plotting.plot_box(background, title="Box for background estimation")
-
-    # Remove gradient
-    poly = fitting.fit_polynomial(background, 3, mask=mask)
-    polynomial = fitting.evaluate_model(poly, 0, background.shape[1], 0, background.shape[0])
-
-    #plotting.plot_difference(background, polynomial)
-
-    #print "background = " + str(type(background))
-
-    # REMOVE GRADIENT
-    background = background - polynomial
-
-    #background2 = np.zeros(background.shape, dtype=background.dtype)
-
-    #mask2 = np.zeros(background.shape, dtype=bool)
-
-    #for x in range(background.shape[1]):
-
-        #for y in range(background.shape[0]):
-
-            #background2[y,x] = background[y,x]
-            #mask2[y,x] = background.mask[y,x]
-
-    #print "background = " + str(type(background2))
-
-    #newmask = statistics.sigma_clip_mask(background, mask=mask)
-    #maskedarray = np.ma.masked_array(background, mask=newmask)
-    #mean = np.ma.mean(maskedarray)
-    #stddev = np.ma.std(maskedarray)
-
-    # WHY OH WHY DOESN'T THIS WORK ???!
-    mean, median, stddev = statistics.sigma_clipped_statistics(background, mask=mask)
-
-    threshold = mean + threshold_sigmas*stddev
-
-    #print y_min-y_min_back >= 0, y_max-y_min_back >= 0, x_min-x_min_back >= 0, x_max-x_min_back >= 0
-
-    evaluated_poly = polynomial[y_min-y_min_back:y_max-y_min_back, x_min-x_min_back:x_max-x_min_back]
-
-    #print box.shape, evaluated_poly.shape
-
-    #plotting.plot_difference(box, evaluated_poly)
-
-    oldbox = np.copy(box)
-    box = box - evaluated_poly
-
-    plotting.plot_difference(oldbox, box)
-
-    #print box.ndim
-
-    boxarray = np.zeros((box.shape[0],box.shape[1]))
-    for x in range(box.shape[1]):
-        for y in range(box.shape[0]):
-            boxarray[y,x] = box[y,x]
-
-    #print np.asarray(box).ndim
-
-    #print boxarray.shape
-
-    #plotting.plot_box(boxarray)
-
-    # Find segments
-    segments = find_segments(boxarray, kernel_fwhm=kernel_fwhm, kernel_size=kernel_size, threshold=threshold)
-
-    #label_im, nb_labels = ndimage.label(mask)
-
-    #print segments.shape
-
-    #print y_center, x_center
-    #print y_min, x_min
-    #print y_max, x_max
-
-    assert (x_center >= x_min and x_center < x_max and y_center >= y_min and y_center < y_max)
-
-    label = segments[y_center-y_min, x_center-x_min]
-
-    box_mask = (segments == label)
-
-    # Test whether the mask reaches the boundaries
-    hits_boundary = False
-    for x in range(box_mask.shape[1]):
-
-        if box_mask[0, x] or box_mask[box_mask.shape[0]-1, x]:
-
-            # If this already happened with another pixel, break the loop
-            if hits_boundary:
-
-                hits_boundary = True
-                break
-
-            # If this is the first pixel for which this occurs, continue (one masked pixel on the edge is tolerated)
-            else: hits_boundary = True
-
-    for y in range(1, box_mask.shape[0]-1):
-
-        if box_mask[y, 0] or box_mask[y, box_mask.shape[1]-1]:
-
-            # If this already happened with another pixel, break the loop
-            if hits_boundary:
-
-                hits_boundary = True
-                break
-
-            # If this is the first pixel for which this occurs, continue (one masked pixel on the edge is tolerated)
-            else: hits_boundary = True
-
-    if hits_boundary and expand:
-
-        if plot: plotting.plot_box(np.ma.masked_array(box, mask=box_mask), title="Masked segment hits boundary")
-
-        if expansion_level == max_expansion_level: box_mask.fill(False)
-        else:
-
-            shape = regions.scale(shape, expansion_factor)
-            box_mask, x_min, x_max, y_min, y_max = find_center_segment_in_shape(data, shape, kernel_fwhm, kernel_size,
-                                                                                threshold_sigmas, expand=expand,
-                                                                                expansion_factor=expansion_factor,
-                                                                                expansion_level=expansion_level+1,
-                                                                                max_expansion_level=max_expansion_level,
-                                                                                plot=plot)
-    else:
-
-        plot=True
-        if plot: plotting.plot_box(np.ma.masked_array(box, mask=box_mask), title="Masked segment doesn't hit boundary")
-
-    # Return the mask
-    return box_mask, x_min, x_max, y_min, y_max
-
-# *****************************************************************
-
-def find_source(frame, center, radius, angle, config):
+def find_source(frame, center, radius, angle, config, track_record=None):
 
     """
     This function ...
@@ -1230,24 +1051,28 @@ def find_source(frame, center, radius, angle, config):
     """
 
     # Segmentation method
-    if config.extraction_method == "segmentation": return find_source_segmentation(frame, center, radius, angle, config)
+    if config.extraction_method == "segmentation": return find_source_segmentation(frame, center, radius, angle, config, track_record=track_record)
 
     # Peaks method
-    elif config.extraction_method == "peaks": return find_source_peaks(frame, center, radius, angle, config)
+    elif config.extraction_method == "peaks": return find_source_peaks(frame, center, radius, angle, config, track_record=track_record)
+
+    # DAOFIND source detection
+    elif config.extraction_method == "daofind": return locate_sources_daofind(data, plot=plot)
+
+    # IRAF's starfind algorithm
+    elif config.extraction_method == "iraf": return locate_sources_iraf(data)
 
     # Unknown extraction method
     else: raise ValueError("Unknown source extraction method")
 
 # *****************************************************************
 
-def find_source_segmentation(frame, center, radius, angle, config, expansion_level=1):
+def find_source_segmentation(frame, center, radius, angle, config, track_record=None, expansion_level=1):
 
     """
     This function ...
     :return:
     """
-
-    debug = True
 
     threshold_sigmas = config.threshold_sigmas
     kernel_fwhm = config.kernel_fwhm
@@ -1292,7 +1117,7 @@ def find_source_segmentation(frame, center, radius, angle, config, expansion_lev
     if masks.hits_boundary(cutout_mask) and expand:
 
         # DEBUG
-        if debug: plotting.plot_box(np.ma.masked_array(cutout, mask=cutout_mask), title="Masked segment hits boundary")
+        if config.debug.expand: plotting.plot_box(np.ma.masked_array(cutout, mask=cutout_mask), title="Masked segment hits boundary")
 
         # If the maximum expansion level has been reached, no source could be found
         if expansion_level >= max_expansion_level: return None
@@ -1304,11 +1129,11 @@ def find_source_segmentation(frame, center, radius, angle, config, expansion_lev
             expansion_level += 1
 
             # Repeat the procedure for the expanded ellipse
-            return find_source_segmentation(frame, center, radius, angle, config, expansion_level)
+            return find_source_segmentation(frame, center, radius, angle, config, track_record=track_record, expansion_level=expansion_level)
 
     else:
 
-        if debug: plotting.plot_box(np.ma.masked_array(cutout, mask=cutout_mask), title="Masked segment doesn't hit boundary")
+        if config.debug.success: plotting.plot_box(np.ma.masked_array(cutout, mask=cutout_mask), title="Masked segment doesn't hit boundary")
 
     # Return a source object
     return Source(center, radius, angle, cutout=cutout, background=background,
@@ -1316,7 +1141,7 @@ def find_source_segmentation(frame, center, radius, angle, config, expansion_lev
 
 # *****************************************************************
 
-def find_source_peaks(frame, center, radius, angle, config, level=0):
+def find_source_peaks(frame, center, radius, angle, config, track_record=None, level=0):
 
     """
     This function ...
@@ -1329,59 +1154,57 @@ def find_source_peaks(frame, center, radius, angle, config, level=0):
     :return:
     """
 
-    debug = True
-
     # If the maximum or minimum level is reached, return without source
     if level < config.min_level or level > config.max_level: return None
 
-    # Create the cutout and background boxes
-    outer_radius = radius * config.background_outer_factor
-    cutout = Box(frame, center, radius, angle=angle)
-    background = Box(frame, center, outer_radius, angle=angle)
+    # Create a source object
+    source = Source(frame, center, radius, angle, config.background_inner_factor, config.background_outer_factor)
 
     # If the frame is zero in this box, continue to the next object
-    if not np.any(cutout): return None
+    if not np.any(source.cutout): return None
 
     # If the box is too small, skip this object
-    if cutout.xsize < config.minimum_pixels or cutout.ysize < config.minimum_pixels: return None
+    if source.cutout.xsize < config.minimum_pixels or source.cutout.ysize < config.minimum_pixels: return None
+
+    # If always subtract background is enabled
+    if config.always_subtract_background:
+
+        source.estimate_background(sigma_clip=config.sigma_clip_background)
+        source.subtract_background()
 
     # Find the location of peaks in the box (do not remove gradient yet for performance reasons)
-    peaks = cutout.locate_peaks(config.threshold_sigmas, remove_gradient=False)
+    peaks = source.locate_peaks(config.threshold_sigmas)
 
     # If no peaks could be detected, remove a potential background gradient from the box before detection
-    if len(peaks) == 0 and config.aid_detection_by_removing_gradient:
+    if len(peaks) == 0 and not config.always_subtract_background:
 
-        # DEBUG
-        if debug: plotting.plot_box(cutout, title="0 peaks, gradient will be removed")
+        # Add a snapshot of the source to the track record for debugging
+        if config.debug.track_record: track_record.append(copy.deepcopy(source))
 
-        # Calculate the relative coordinate of the center for the cutout and background boxes
-        rel_center = cutout.rel_position(center)
-        rel_center_background = background.rel_position(center)
+        # Show a plot for debugging
+        if config.debug.zero_peaks_before: source.plot(title="0 peaks, gradient background will be removed")
 
-        # Create the background mask
-        inner_radius = radius * config.background_inner_factor
-        background_mask = masks.create_ellipse_mask(background.xsize, background.ysize, rel_center_background, inner_radius, angle)
+        # Estimate and subtract the background (remove the background gradient)
+        source.estimate_background(sigma_clip=config.sigma_clip_background)
+        source.subtract_background()
 
-        # Create a central mask that covers the expected source
-        central_radius = config.central_mask_radius_for_gradient
+        # Find the location of peaks in the box
+        peaks = source.locate_peaks(config.threshold_sigmas)
 
-        # Find the location of peaks in the box (do remove the background gradient)
-        positions = cutout.locate_peaks(config.threshold_sigmas, remove_gradient=True, central_radius=central_radius)
+        # Add a snapshot of the source to the track record for debugging
+        if config.debug.track_record: track_record.append(copy.deepcopy(source))
 
-        # DEBUG
-        if debug:
-            x_positions = []
-            y_positions = []
-            for peak in peaks:
-                x_positions.append(peak.x - cutout.x_min)
-                y_positions.append(peak.y - cutout.y_min)
-            plotting.plot_peaks(cutout, x_positions, y_positions, title=str(len(positions)) + " peak(s) found after removing gradient background")
+        # Show a plot for debugging
+        if config.debug.zero_peaks_after: source.plot(title=str(len(peaks)) + " peak(s) found after removing gradient background", peaks=peaks)
 
     # If no sources were detected
     if len(peaks) == 0:
 
-        # DEBUG
-        if debug: plotting.plot_box(cutout, title="0 peaks")
+        # Add a snapshot of the source to the track record for debugging
+        if config.debug.track_record: track_record.append(copy.deepcopy(source))
+
+        # Show a plot for debugging
+        if config.debug.zero_peaks: source.plot(title="0 peaks")
 
         # If the level was negative, no source can be found
         if level < 0: return None
@@ -1390,18 +1213,16 @@ def find_source_peaks(frame, center, radius, angle, config, level=0):
         radius *= config.scale_factor
 
         # Find a source in the zoomed-out region
-        return find_source_peaks(frame, center, radius, angle, config, level=level+1)
+        return find_source_peaks(frame, center, radius, angle, config, track_record=track_record, level=level+1)
 
     # If more than one source was detected
     elif len(peaks) > 1:
 
-        if debug:
-            x_positions = []
-            y_positions = []
-            for peak in peaks:
-                x_positions.append(peak.x - cutout.x_min)
-                y_positions.append(peak.y - cutout.y_min)
-            plotting.plot_peaks(cutout, x_positions, y_positions, title="more peaks")
+        # Add a snapshot of the source to the track record for debugging
+        if config.debug.track_record: track_record.append(copy.deepcopy(source))
+
+        # Show a plot for debugging
+        if config.debug.more_peaks: source.plot(title="More peaks", peaks=peaks)
 
         # If the level was positive, no source can be found
         if level > 0: return None
@@ -1410,50 +1231,49 @@ def find_source_peaks(frame, center, radius, angle, config, level=0):
         radius /= config.scale_factor
 
         # Find a source in the zoomed-in region
-        return find_source_peaks(frame, center, radius, angle, config, level=level-1)
+        return find_source_peaks(frame, center, radius, angle, config, track_record=track_record, level=level-1)
 
     # If one source was detected
     elif len(peaks) == 1:
+
+        # Add a snapshot of the source to the track record for debugging
+        if config.debug.track_record: track_record.append(copy.deepcopy(source))
+
+        # Show a plot for debugging
+        if config.debug.one_peak: source.plot(title="1 peak")
 
         # Get the x and y coordinate of the peak
         x_peak = peaks[0].x
         y_peak = peaks[0].y
 
-        # DEBUG
-        if debug: plotting.plot_peak(cutout, x_peak - cutout.x_min, y_peak - cutout.y_min, title="1 peak")
-
-        # Create the mask to estimate the background in the box
-        background_inner_factor = config.background_inner_factor
-        background_outer_factor = config.background_outer_factor
-        fit_factor = config.fit_factor
-        sigma_clip_background = config.sigma_clip_background
-        peak_offset_tolerance = config.peak_offset_tolerance
-        model_name = config.model_name
-
-        # TODO: check that peak position corresponds with center of shape
+        # Check whether peak position corresponds to the center of the cutout
         if not (np.isclose(x_peak, center.x, atol=config.peak_offset_tolerance) and np.isclose(y_peak, center.y, atol=config.peak_offset_tolerance)):
 
-            #log.warning("Peak position and shape center do not match")
-            if debug: plotting.plot_peak(cutout, x_peak - cutout.x_min, y_peak - cutout.y_min, title="Peak and shape do not match")
+            # Show a plot for debugging
+            if config.debug.off_center: source.plot(title="Peak and center position do not match")
 
             # No source was found
             return None
 
-        # Create the source
-        #source = Source(center=center, radius=radius, cutout=cutout, background=background, background_mask=,
-        #                background_fit=, source_mask=, x_peak=x_peak, y_peak=y_peak)
-
-        # Return the source
-        #return source
+        # Else, return the source
+        else: return source
 
 # *****************************************************************
 
-def fit_model_to_source():
+def fit_model_to_source(source, config):
 
     """
     This function ...
     :return:
     """
+
+    return
+
+    # Create the mask to estimate the background in the box
+    fit_factor = config.fit_factor
+    sigma_clip_background = config.sigma_clip_background
+    peak_offset_tolerance = config.peak_offset_tolerance
+    model_name = config.model_name
 
     # DIRTY
     #radius = x_radius

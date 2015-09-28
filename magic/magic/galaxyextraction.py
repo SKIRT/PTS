@@ -72,12 +72,6 @@ class GalaxyExtractor(object):
 
     # *****************************************************************
 
-    def table(self):
-
-        pass
-
-    # *****************************************************************
-
     def fetch_galaxies(self, image):
 
         """
@@ -88,17 +82,14 @@ class GalaxyExtractor(object):
         """
 
         # Get the range of right ascension and declination of the image
-        ra_center, dec_center, size_ra_deg, size_dec_deg = image._get_coordinate_range()
-
-        # Create a coordinate
-        coordinate = coord.SkyCoord(ra=ra_center, dec=dec_center, unit=(u.deg, u.deg), frame='fk5') # frame: icrs, fk5... ?
+        center, ra_span, dec_span = image.frames.selected(require_single=True).coordinate_range()
 
         # Create a new Vizier object and set the row limit to -1 (unlimited)
         viz = Vizier(keywords=["galaxies", "optical"])
         viz.ROW_LIMIT = -1
 
         # Query Vizier and obtain the resulting table
-        result = viz.query_region(coordinate, width=size_dec_deg*u.deg, height=size_ra_deg*u.deg, catalog=["VII/237"])
+        result = viz.query_region(center, width=ra_span, height=dec_span, catalog=["VII/237"])
         table = result[0]
 
         # Loop over all galaxies in the table
@@ -228,5 +219,16 @@ class GalaxyExtractor(object):
 
         # Add the region
         image._add_region(region, "galaxies")
+
+    # *****************************************************************
+
+    def table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
 # *****************************************************************
