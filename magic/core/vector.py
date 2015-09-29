@@ -78,6 +78,16 @@ class Position(Vector):
         # Call the constructor of the Vector base class
         super(Position, self).__init__(x, y)
 
+    # *****************************************************************
+
+    def __sub__(self, position):
+
+        """
+        This function subtracts two positions to obtain an Extent
+        """
+
+        return Extent(self.x - position.x, self.y - position.y)
+
 # *****************************************************************
 
 class Extent(Vector):
@@ -97,6 +107,30 @@ class Extent(Vector):
 
         # Call the constructor of the Vector base class
         super(Extent, self).__init__(x, y)
+
+    # *****************************************************************
+
+    def __add__(self, extent):
+
+        """
+        This function ...
+        :param y:
+        :return:
+        """
+
+        return Extent(self.x + extent.x, self.y + extent.y)
+
+    # *****************************************************************
+
+    def __sub__(self, extent):
+
+        """
+        This function ...
+        :param extent:
+        :return:
+        """
+
+        return Extent(self.x - extent.x, self.y - extent.y)
 
     # *****************************************************************
 

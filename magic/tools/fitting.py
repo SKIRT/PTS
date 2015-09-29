@@ -18,6 +18,7 @@ from astropy.modeling import models, fitting
 # Import Astromagic modules
 from . import general
 from . import statistics
+from ..core.vector import Position
 
 # Import PTS modules
 from pts import mathematics
@@ -239,8 +240,7 @@ def fit_two_2D_Gaussians(box, x_shift=0.0, y_shift=0.0, zoom_factor=1.0, mask=No
 
 # *****************************************************************
 
-def fit_2D_Gaussian(box, center=None, fixed_center=False, deviation_center=None, radius=None, x_shift=0.0, y_shift=0.0,
-                    zoom_factor=1.0, mask=None):
+def fit_2D_Gaussian(box, center=None, fixed_center=False, max_center_offset=None, sigma=None, zoom_factor=1.0, mask=None, amplitude=None):
 
     """
     This function ...
@@ -257,16 +257,16 @@ def fit_2D_Gaussian(box, center=None, fixed_center=False, deviation_center=None,
     """
 
     # Get the dimensions of the box
-    box_ysize = box.shape[0]
-    box_xsize = box.shape[1]
+    box_xsize = box.xsize
+    box_ysize = box.ysize
 
     # Set the initial guess for the center of the model (the one that is specified, otherwise the center of the box)
-    init_xmean = center[0] if center is not None else 0.5*(box_xsize-1)
-    init_ymean = center[1] if center is not None else 0.5*(box_ysize-1)
+    init_xmean = center.x if center is not None else 0.5*(box.xsize-1)
+    init_ymean = center.y if center is not None else 0.5*(box.ysize-1)
 
     # Set the initial guess for the width of the model (the one that is specified, otherwise one tenth of the size of the box)
-    init_x_stddev = radius if radius is not None else 0.1*box_xsize
-    init_y_stddev = radius if radius is not None else 0.1*box_ysize
+    init_x_stddev = sigma if sigma is not None else 0.1*box.xsize
+    init_y_stddev = sigma if sigma is not None else 0.1*box.ysize
 
     # Initialize an empty dictionary to specify fixed parameters
     fixed_parameters = {'theta': 0.0}
@@ -279,10 +279,10 @@ def fit_2D_Gaussian(box, center=None, fixed_center=False, deviation_center=None,
     # Initialize an empty dictionary to specify bounds
     bounds = {}
 
-    if deviation_center is not None:
+    if max_center_offset is not None:
 
-        bounds['x_mean'] = [init_xmean-deviation_center, init_xmean+deviation_center]
-        bounds['y_mean'] = [init_ymean-deviation_center, init_ymean+deviation_center]
+        bounds['x_mean'] = [init_xmean-max_center_offset, init_xmean+max_center_offset]
+        bounds['y_mean'] = [init_ymean-max_center_offset, init_ymean+max_center_offset]
 
     # Define the 'tied' dictionary to specify that the y_stddev should vary along with x_stddev
     tied = {'y_stddev': (lambda model: model.x_stddev)}
@@ -316,31 +316,20 @@ def fit_2D_Gaussian(box, center=None, fixed_center=False, deviation_center=None,
     if gaussian.x_stddev.value < 0: gaussian.x_stddev.value = -gaussian.x_stddev.value
     if gaussian.y_stddev.value < 0: gaussian.y_stddev.value = -gaussian.y_stddev.value
 
-    # Skip invalid parameter values, the fitting failed
-    #if np.isnan(width_x) or np.isnan(width_y):
-    #    failed += 1
-    #    continue
-
     # Adjust the position of the model to a different coordinate frame
     if zoom_factor > 1.0:
 
-        gaussian.x_mean.value = gaussian.x_mean.value/zoom_factor + x_shift
-        gaussian.y_mean.value = gaussian.y_mean.value/zoom_factor + y_shift
+        gaussian.x_mean.value = gaussian.x_mean.value/zoom_factor
+        gaussian.y_mean.value = gaussian.y_mean.value/zoom_factor
         gaussian.x_stddev.value /= zoom_factor
         gaussian.y_stddev.value /= zoom_factor
-
-    else:
-
-        gaussian.x_mean.value += x_shift
-        gaussian.y_mean.value += y_shift
 
     # Return the Gaussian model
     return gaussian
 
 # *****************************************************************
 
-def fit_2D_Airy(box, center=None, fixed_center=False, deviation_center=None, radius=None, x_shift=0.0, y_shift=0.0,
-                zoom_factor=1.0, mask=None):
+def fit_2D_Airy(box, center=None, fixed_center=False, max_center_offset=None, radius=None, zoom_factor=1.0, mask=None, amplitude=None):
 
     """
     This function ...
@@ -361,8 +350,8 @@ def fit_2D_Airy(box, center=None, fixed_center=False, deviation_center=None, rad
     box_xsize = box.shape[1]
 
     # Set the initial guess for the center of the model (the one that is specified, otherwise the center of the box)
-    init_x0 = center[0] if center is not None else 0.5*(box_xsize-1)
-    init_y0 = center[1] if center is not None else 0.5*(box_ysize-1)
+    init_x0 = center.x if center is not None else 0.5*(box_xsize-1)
+    init_y0 = center.y if center is not None else 0.5*(box_ysize-1)
 
     # Set the initial radius for the model (the one that is specified, otherwise one tenth of the width of the box)
     init_radius = radius if radius is not None else 0.1*box_xsize
@@ -378,10 +367,10 @@ def fit_2D_Airy(box, center=None, fixed_center=False, deviation_center=None, rad
     # Initialize an empty dictionary to specify bounds
     bounds = {}
 
-    if deviation_center is not None:
+    if max_center_offset is not None:
 
-        bounds['x_mean'] = [init_x0-deviation_center, init_x0+deviation_center]
-        bounds['y_mean'] = [init_y0-deviation_center, init_y0+deviation_center]
+        bounds['x_mean'] = [init_x0-max_center_offset, init_x0+max_center_offset]
+        bounds['y_mean'] = [init_y0-max_center_offset, init_y0+max_center_offset]
 
     # Fit the data using astropy.modeling
     airy_init = models.AiryDisk2D(amplitude=1., x_0=init_x0, y_0=init_y0, radius=init_radius, fixed=fixed_parameters, bounds=bounds)
@@ -410,14 +399,9 @@ def fit_2D_Airy(box, center=None, fixed_center=False, deviation_center=None, rad
     # Adjust the position of the model to a different coordinate frame
     if zoom_factor > 1.0:
 
-        airy.x_0.value = airy.x_0.value/zoom_factor + x_shift
-        airy.y_0.value = airy.y_0.value/zoom_factor + y_shift
+        airy.x_0.value = airy.x_0.value/zoom_factor
+        airy.y_0.value = airy.y_0.value/zoom_factor
         airy.radius /= zoom_factor
-
-    else:
-
-        airy.x_0.value += x_shift
-        airy.y_0.value += y_shift
 
     # Return the fitted two-dimensional Airy Disk model
     return airy
@@ -586,5 +570,19 @@ def fit_2D_MexicanHat(box, center=None, fixed_center=False, deviation_center=Non
 
     # Return the fitted two-dimensional Mexican Hat model
     return mexicanhat
+
+# *****************************************************************
+
+def center(model):
+
+    """
+    This function ...
+    :param model:
+    :return:
+    """
+
+    if isinstance(model, models.Gaussian2D): return Position(x=model.x_mean.value, y=model.y_mean.value)
+    elif isinstance(model, models.AiryDisk2D): return Position(x=model.x_0.value, y=model.y_0.value)
+    else: raise ValueError("Unsupported model type")
 
 # *****************************************************************

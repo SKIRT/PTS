@@ -17,6 +17,7 @@ from astropy import units as u
 from .source import Source
 from ..tools import analysis
 from .vector import Position
+from .trackrecord import TrackRecord
 
 # *****************************************************************
 
@@ -52,8 +53,56 @@ class Star(object):
         # Set the model attribute to None initially
         self.model = None
 
-        # Initialize a list for the track record of sources
-        self.track_record = []
+        # Initialize a track record of sources
+        self.track_record = None
+
+    # *****************************************************************
+
+    @property
+    def has_source(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.source is not None
+
+    # *****************************************************************
+
+    @property
+    def has_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model is not None
+
+    # *****************************************************************
+
+    @property
+    def fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # *****************************************************************
+
+    def enable_track_record(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a new track record
+        self.track_record = TrackRecord()
 
     # *****************************************************************
 
@@ -99,7 +148,29 @@ class Star(object):
         :return:
         """
 
-        # Fit a model
-        self.model = analysis.fit_model_to_source(self.source, config)
+        # Fit model to the source, in a loop over different analytical forms for the model
+        for level in range(len(config.model_names)):
+
+            # Do the fitting
+            source, model = analysis.fit_model_to_source(self.source, config, self.track_record, level=level)
+
+            # If a model was found, set the attributes of the star object and exit the loop
+            if model is not None:
+
+                self.source = source
+                self.model = model
+                break
+
+    # *****************************************************************
+
+    def remove(self, frame):
+
+        """
+        This function removes the star from a given frame
+        :param frame:
+        :return:
+        """
+
+        pass
 
 # *****************************************************************

@@ -9,11 +9,16 @@ from __future__ import (absolute_import, division, print_function)
 
 # Import standard modules
 import numpy as np
+import copy
 
 # Import astronomical modules
 from astropy import units as u
 from astropy.table import Table
 from photutils import find_peaks
+from astropy.convolution import Gaussian2DKernel
+from astropy.stats import gaussian_fwhm_to_sigma
+from photutils import detect_sources
+#from photutils import detect_threshold
 
 # Import Astromagic modules
 from .box import Box
@@ -68,12 +73,28 @@ class Source(object):
 
     # *****************************************************************
 
-    def estimate_background(self, sigma_clip=True, sigma=3.0):
+    @property
+    def is_subtracted(self):
 
         """
         This function ...
         :return:
         """
+
+        return self.subtracted is not None
+
+    # *****************************************************************
+
+    def estimate_background(self, method, sigma_clip=True, sigma=3.0):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Interpolation method
+        #background_mask_beforeclipping = np.copy(background_mask)
+        #est_background, background_mask = estimate_background(background, background_mask, interpolate=True, sigma_clip=sigma_clip_background)
 
         # Perform sigma-clipping on the background if requested
         if sigma_clip: mask = statistics.sigma_clip_mask(self.background, sigma=sigma, mask=self.background_mask)
@@ -96,6 +117,35 @@ class Source(object):
 
         # Subtract the background from the box
         self.subtracted = self.cutout - self.estimated_background_cutout
+
+    # *****************************************************************
+
+    def find_center_segment(self, threshold_sigmas, kernel_fwhm, kernel_size, min_pixels=5):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate threshold for segmentation
+        mean, median, stddev = statistics.sigma_clipped_statistics(self.background, mask=self.background_mask)
+        threshold = mean + stddev * threshold_sigmas
+
+        #if threshold is None: threshold = detect_threshold(data, snr=signal_to_noise) #snr=2.0
+
+        # Create a kernel
+        sigma = kernel_fwhm * gaussian_fwhm_to_sigma
+        kernel = Gaussian2DKernel(sigma, x_size=kernel_size, y_size=kernel_size)
+
+        # Perform the segmentation
+        segments = detect_sources(self.cutout, threshold, npixels=min_pixels, filter_kernel=kernel)
+
+        # Get the label of the center segment
+        rel_center = self.cutout.rel_position(self.center)
+        label = segments[rel_center.y, rel_center.x]
+
+        # Create a mask of the center segment
+        self.mask = (segments == label)
 
     # *****************************************************************
 
@@ -138,6 +188,33 @@ class Source(object):
 
         # Return the list of peak positions
         return positions
+
+    # *****************************************************************
+
+    def zoom(self, factor):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a copy of this object
+        source = copy.deepcopy(self)
+
+        # Zoom in on the cutout
+        source.cutout = self.cutout.zoom(self.center, factor)
+
+        # Zoom in on the background
+        source.background = self.background.zoom(self.center, factor)
+
+        # Set derived properties to None
+        source.estimated_background = None
+        source.estimated_background_cutout = None
+        source.subtracted = None
+        source.removed = None
+
+        # Return the new source
+        return source
 
     # *****************************************************************
 

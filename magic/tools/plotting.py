@@ -60,15 +60,31 @@ def plot_peak_model(box, x_peak, y_peak, model):
     # Create x and y meshgrid for plotting
     y_plotvalues, x_plotvalues = np.mgrid[:box.shape[0], :box.shape[1]]
 
-    # Calcualte the pixel value at the peak for the data, model and residual
+    # Calculate the pixel value at the peak for the data, model and residual
     x_peak_pixel = int(round(x_peak))
     y_peak_pixel = int(round(y_peak))
     peak_data_value = box[y_peak_pixel,x_peak_pixel]
     peak_model_value = model(x_plotvalues, y_plotvalues)[y_peak_pixel,x_peak_pixel]
     peak_residual_value = peak_data_value - peak_model_value
 
+    import copy
+
+    model = copy.deepcopy(model)
+
+    from astropy.modeling import models
+
+    if isinstance(model, models.Gaussian2D):
+
+        model.x_mean -= box.x_min
+        model.y_mean -= box.y_min
+
+    elif isinstance(model, models.AiryDisk2D):
+
+        model.x_0 -= box.x_min
+        model.y_0 -= box.y_min
+
     # Plot the data with the best-fit model
-    plt.figure(figsize=(8,2.5))
+    plt.figure(figsize=(10,3))
     plt.subplot(1,3,1)
     plt.imshow(box, origin='lower', interpolation='nearest', vmin=vmin, vmax=vmax)
     plt.plot(x_peak, y_peak, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)

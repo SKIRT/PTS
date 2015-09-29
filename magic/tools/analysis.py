@@ -24,38 +24,15 @@ from . import cropping
 from . import interpolation
 from ..core.box import Box
 from ..core.source import Source
+from ..core.vector import Position
 
 # Import astronomical modules
 from astropy.table import Table
 from photutils import find_peaks
 from find_galaxy import find_galaxy
 from astropy import log
-from astropy.convolution import Gaussian2DKernel
-from astropy.stats import gaussian_fwhm_to_sigma
-from photutils import detect_sources
 from photutils import daofind
 from astropy.stats import sigma_clipped_stats
-from photutils import detect_threshold
-
-# *****************************************************************
-
-def find_segments(data, kernel_fwhm=2.0, kernel_size=3.0, threshold=None, signal_to_noise=2.0):
-
-    """
-    This function ...
-    :param data:
-    :param shape:
-    :return:
-    """
-
-    if threshold is None: threshold = detect_threshold(data, snr=signal_to_noise)
-
-    sigma = kernel_fwhm * gaussian_fwhm_to_sigma    # FWHM = 2.
-    kernel = Gaussian2DKernel(sigma, x_size=kernel_size, y_size=kernel_size)
-
-    segments = detect_sources(data, threshold, npixels=5, filter_kernel=kernel)
-
-    return segments
 
 # *****************************************************************
 
@@ -204,40 +181,6 @@ def find_source_in_shape(data, shape, model_name, detection_method, level, min_l
 
 # *****************************************************************
 
-def find_source_positions(data, detection_method, x_shift=0.0, y_shift=0.0, plot=False):
-
-    """
-    This function ...
-    :param data:
-    :param detection_method:
-    :param x_shift:
-    :param y_shift:
-    :param plot:
-    :return:
-    """
-
-    if detection_method == "peaks": peaks, median = locate_sources_peaks(data, plot=plot)
-    elif detection_method == "segmentation": peaks, median = locate_sources_segmentation(data)
-    elif detection_method == "dao": peaks, median = locate_sources_daofind(data, plot=plot)
-    elif detection_method == "iraf": peaks, median = locate_sources_iraf(data)
-    elif detection_method == "all":
-
-        peaks, median = locate_sources_peaks(data)
-        peaks1, median1 = locate_sources_daofind(data)
-
-        peaks += peaks1
-        median = np.mean(median, median1)
-
-    #elif detection_method is None: pass
-    else: raise ValueError("Unknown source extraction method")
-
-    peaks['x_peak'] += x_shift
-    peaks['y_peak'] += y_shift
-
-    return peaks
-
-# *****************************************************************
-
 def locate_sources_peaks(data, threshold_sigmas=7.0, plot=False):
 
     """
@@ -263,13 +206,17 @@ def locate_sources_peaks(data, threshold_sigmas=7.0, plot=False):
 
 # *****************************************************************
 
-def find_sources_daofind(data, threshold_sigmas=5.0, plot=False):
+def find_source_daofind(frame, center, radius, angle, config, track_record):
 
     """
     This function ...
     :param data:
     :return:
     """
+
+    # TODO: FIX THIS FUNCTION
+
+    threshold_sigmas = 5.0
 
     # Calculate the sigma-clipped statistics of the data
     mean, median, std = sigma_clipped_stats(data, sigma=3.0)
@@ -285,14 +232,12 @@ def find_sources_daofind(data, threshold_sigmas=5.0, plot=False):
     # Return the list of source positions
     #return result_table, median
 
-    # TODO: FIX THIS FUNCTION
-
     source = []
     return source
 
 # *****************************************************************
 
-def locate_sources_iraf(data):
+def find_source_iraf(frame, center, radius, angle, config, track_record):
 
     """
     This function ...
@@ -304,121 +249,7 @@ def locate_sources_iraf(data):
 
 # *****************************************************************
 
-def find_sources_peaks(data, peaks, plot=None, x_shift=0.0, y_shift=0.0):
-
-    """
-    This function searches for sources in the given frame, based on a list of peaks detected in this frame
-    :param data: the frame
-    :param peaks: the list of peaks
-    :param plot: optional, specific plotting flags
-    :param x_shift: the shift in the x direction that is required to ...
-    :param y_shift: the shift in the y direction that is required to ...
-    :return:
-    """
-
-    # Initialize an empty list of sources
-    sources = []
-
-    if plot is None: plot=[False, False, False, False]
-
-    # No peaks are found above the threshold
-    if len(peaks) == 0:
-
-        # Plot the data
-        if plot[0]: plotting.plot_box(data)
-
-        # Look for a star
-        sources += find_sources_nopeak(data, x_shift, y_shift, plot=plot[0])
-
-    # Exactly one peak is found
-    elif len(peaks) == 1:
-
-        x_peak = peaks['x_peak'][0]
-        y_peak = peaks['y_peak'][0]
-
-        # Look for a star corresponding to this peak
-        sources += find_sources_1peak(data, x_peak, y_peak, x_shift, y_shift, plot=plot[1])
-
-    # Two peaks are found in the box
-    elif len(peaks) == 2:
-
-        x_peak1 = peaks['x_peak'][0]
-        y_peak1 = peaks['y_peak'][0]
-
-        x_peak2 = peaks['x_peak'][1]
-        y_peak2 = peaks['y_peak'][1]
-
-        # Look for stars corresponding to the two found peaks
-        sources += find_sources_2peaks(data, x_peak1, y_peak1, x_peak2, y_peak2, x_shift, y_shift, plot=plot[2])
-
-    # More than two peaks are found
-    elif len(peaks) > 2:
-
-        # Look for multiple stars
-        sources += find_sources_multiplepeaks(data, peaks['x_peak'], peaks['y_peak'], x_shift, y_shift, plot=plot[3])
-
-    # Return the list of sources
-    return sources
-
-# *****************************************************************
-
-def find_sources_nopeak(box, x_min, y_min, plot=False):
-
-    """
-    This function ...
-    :param box:
-    :param x_min:
-    :param y_min:
-    :param plot:
-    :return:
-    """
-
-    # Initiate an empty list of stars
-    sources = []
-
-    # If the box is too small, don't bother looking for stars (anymore)
-    if box.shape[0] < 5 or box.shape[1] < 5: return []
-
-    # Fit a 2D Gaussian to the data
-    model = fitting.fit_2D_Gaussian(box)
-
-    # Get the parameters of the Gaussian function
-    amplitude = model.amplitude
-    x_mean = model.x_mean.value
-    y_mean = model.y_mean.value
-
-    # Skip non-stars (negative amplitudes)
-    if amplitude < 0:
-
-        log.warning("Source profile has negative amplitude")
-        return []
-
-    # If the center of the Gaussian falls out of the square, skip this star
-    if round(x_mean) < 0 or round(x_mean) >= box.shape[0] - 1 or round(y_mean) < 0 or round(y_mean) >= box.shape[1] - 1:
-
-        log.warning("Center of source profile lies outside of the region where it was expected")
-        return []
-
-    # Determine the coordinates of the center pixel of the box
-    x_center = 0.5*box.shape[1]
-    y_center = 0.5*box.shape[0]
-
-    # Plot if requested
-    if plot: plotting.plot_peak_model(box, x_center, y_center, model)
-
-    # Change the coordinates of the model to absolute coordinates
-    model.x_mean.value = model.x_mean.value + x_min
-    model.y_mean.value = model.y_mean.value + y_min
-
-    # Add the model for this source to the list of sources
-    sources.append(model)
-
-    # Return the list of sources (containing only one source in this case)
-    return sources
-
-# *****************************************************************
-
-def find_sources_1peak(box, x_peak, y_peak, x_min, y_min, model_name="Gaussian", initial_radius=None, center_offset_tolerance=None, plot=False):
+def fit_model_to_source(source, config, track_record=None, level=0):
 
     """
     This function searches for sources ...
@@ -431,301 +262,69 @@ def find_sources_1peak(box, x_peak, y_peak, x_min, y_min, model_name="Gaussian",
     :return:
     """
 
-    # Initiate an empty list of stars
-    sources = []
+    # Find source
+    if config.use_center_or_peak == "center": position = source.center
+    elif config.use_center_or_peak == "peak": position = source.peak
+    else: raise ValueError("Invalid option (should be 'center' or 'peak')")
 
     # If the box is too small, don't bother looking for stars (anymore)
-    if box.shape[0] < 5 or box.shape[1] < 5: return []
+    if source.cutout.xsize < config.minimum_pixels or source.cutout.ysize < config.minimum_pixels: return None, None
 
-    #if initial_radius is None: initial_radius = 0.2*box.shape[0]
+    # Estimate and subtract the background of the source
+    if not source.is_subtracted:
 
-    # Fit a 2D Gaussian to the data
-    if model_name == "Gaussian":
+        # median, mean, polynomial or interpolation
+        source.estimate_background(config.background_est_method, config.sigma_clip_background)
+        source.subtract_background()
 
-        model = fitting.fit_2D_Gaussian(box, center=(x_peak, y_peak), radius=initial_radius)
-        x_mean = model.x_mean.value
-        y_mean = model.y_mean.value
+    # Get the model name
+    model_name = config.model_names[level]
 
-    elif model_name == "Airy":
+    # Fit the model to the background-subtracted box
+    model = source.subtracted.fit_model(position, model_name, amplitude=source.cutout.value(source.peak))
 
-        model = fitting.fit_2D_Airy(box, center=(x_peak, y_peak))
-        x_mean = model.x_0.value
-        y_mean = model.y_0.value
-
-    else: raise ValueError("Other models are not supported yet")
-
-    amplitude = model.amplitude
-
-    # Skip non-stars (negative amplitudes)
-    if amplitude < 0:
+    # If the amplitude is negative, the model is invalid
+    if model.amplitude < 0:
 
         log.warning("Source profile has negative amplitude")
-        return []
+        return None, None
 
-    # Check if the center of the Gaussian corresponds to the position of the detected peak
-    diff_x = x_mean - x_peak
-    diff_y = y_mean - y_peak
+    # Calculate the difference between the mean position of the model and the position of the center / peak
+    difference = fitting.center(model) - position
 
-    distance = np.sqrt(diff_x**2+diff_y**2)
+    # If ...
+    if difference.norm > config.max_model_offset:
 
-    if distance > center_offset_tolerance:
+        #log.warning("Center of source profile lies outside of the region where it was expected (distance = "+str(difference.norm))
 
-        log.warning("Center of source profile lies outside of the region where it was expected (distance = "+str(distance))
+        # Show a plot for debugging
+        if config.debug.model_offset:
+            rel_peak = source.cutout.rel_position(source.peak)
+            plotting.plot_peak_model(source.cutout, rel_peak.x, rel_peak.y, model)
 
-        if plot: plotting.plot_peak_model(box, x_peak, y_peak, model)
+        # Create a new zoomed-in source
+        source = source.zoom(config.zoom_factor)
 
-        # Calculate the size of the smaller box
-        smaller_box_ysize = int(round(box.shape[0] / 4.0))
-        smaller_box_xsize = int(round(box.shape[1] / 4.0))
+        # Estimate and subtract the background
+        source.estimate_background(config.background_est_method, config.sigma_clip_background)
+        source.subtract_background()
 
-        # Create a smaller box
-        smaller_box, smaller_xmin, smaller_xmax, smaller_ymin, smaller_ymax = cropping.crop(box, x_peak, y_peak, smaller_box_xsize, smaller_box_ysize)
+        # Add a snapshot of the source to the track record for debugging
+        if track_record is not None: track_record.append(copy.deepcopy(source))
 
-        # Calculate x and y delta
-        x_delta = x_min + smaller_xmin
-        y_delta = y_min + smaller_ymin
+        # Try again (iterative procedure of zooming in, stops if the size of the cutout becomes too small)
+        return fit_model_to_source(source, config, track_record, level)
 
-        # Find relative coordinate of peak
-        rel_xpeak, rel_ypeak = coordinates.relative_coordinate(x_peak, y_peak, smaller_xmin, smaller_ymin)
-
-        # Try again (iterative procedure of zooming in, stops if the size of the box becomes too small)
-        sources += find_sources_1peak(smaller_box, rel_xpeak, rel_ypeak, x_delta, y_delta, initial_radius=initial_radius, center_offset_tolerance=center_offset_tolerance, plot=plot)
-
-    # Potential star detected!
+    # The fit succeeded
     else:
 
-        # Plot if requested
-        if plot: plotting.plot_peak_model(box, x_peak, y_peak, model)
-
-        # Change the coordinates of the model to absolute coordinates
-        if model_name == "Gaussian":
-
-            model.x_mean.value = model.x_mean.value + x_min
-            model.y_mean.value = model.y_mean.value + y_min
-
-        elif model_name == "Airy":
-
-            model.x_0.value = model.x_0.value + x_min
-            model.y_0.value = model.y_0.value + y_min
-
-        # Add the model for this source to the list of sources
-        sources.append(model)
-
-    # Return the list of sources (containing only one source in this case)
-    return sources
-
-# *****************************************************************
-
-def find_sources_2peaks(box, x_peak1, y_peak1, x_peak2, y_peak2, x_min, y_min, plot=False):
-
-    """
-    This function searches for sources ...
-    :param box:
-    :param x_peak1:
-    :param y_peak1:
-    :param x_peak2:
-    :param y_peak2:
-    :param x_min:
-    :param y_min:
-    :param plot:
-    :return:
-    """
-
-    # Initiate an empty list of stars
-    sources = []
-
-    # Calculate the distance between the two peaks
-    diff_x = x_peak1 - x_peak2
-    diff_y = y_peak1 - y_peak2
-    distance = np.sqrt(diff_x**2 + diff_y**2)
-
-    # Calculate the midpoint between the two peaks
-    mid_x = 0.5*(x_peak1 + x_peak2)
-    mid_y = 0.5*(y_peak1 + y_peak2)
-
-    # The peaks are probably part of the same object
-    # So, perform a fit with a Gaussian
-    if distance < 4:
-
-        # Do the fit
-        model = fitting.fit_2D_Gaussian(box, center=(mid_x, mid_y))
-
-        # Plot if requested
-        if plot: plotting.plot_peaks_models(box, [x_peak1, x_peak2], [y_peak1, y_peak2], [model])
-
-        # Change the coordinates of the model to absolute coordinates
-        model.x_mean.value = model.x_mean.value + x_min
-        model.y_mean.value = model.y_mean.value + y_min
-
-        # Add the model for this source to the list of sources
-        sources.append(model)
-
-    # Split the box
-    else:
-
-        # Calculate the absolute distance between the two peaks
-        delta_x = np.abs(diff_x)
-        delta_y = np.abs(diff_y)
-
-        # Cut along the axis where the distance is largest
-        if delta_x > delta_y:
-
-            # Create the boxes
-            smaller_box_1 = box[:][0:mid_x]
-            smaller_box_2 = box[:][mid_x:]
-
-            # Determine the relative positions of the found peaks
-            rel_peak1_x, rel_peak1_y = coordinates.relative_coordinate(x_peak1, y_peak1, 0, 0)
-            rel_peak2_x, rel_peak2_y = coordinates.relative_coordinate(x_peak2, y_peak2, mid_x, 0)
-
-            # Determine the translation needed for the second cut
-            rel_xmin2 = x_min + mid_x
-            rel_ymin2 = y_min
-
-        else:
-
-            # Create the boxes
-            smaller_box_1 = box[0:mid_y][:]
-            smaller_box_2 = box[mid_y:][:]
-
-            # Determine the relative positions of the found peaks
-            rel_peak1_x, rel_peak1_y = coordinates.relative_coordinate(x_peak1, y_peak1, 0, 0)
-            rel_peak2_x, rel_peak2_y = coordinates.relative_coordinate(x_peak2, y_peak2, 0, mid_y)
-
-            # Determine the translation needed for the second cut
-            rel_xmin2 = x_min
-            rel_ymin2 = y_min + mid_y
-
-        # Find stars in both of the cuts
-        sources += find_sources_1peak(smaller_box_1, rel_peak1_x, rel_peak1_y, x_min, y_min, plot=plot)
-        sources += find_sources_1peak(smaller_box_2, rel_peak2_x, rel_peak2_y, rel_xmin2, rel_ymin2, plot=plot)
-
-    # Return the list of sources
-    return sources
-
-# *****************************************************************
-
-def find_sources_multiplepeaks(box, x_peaks, y_peaks, x_min, y_min, plot=False):
-
-    """
-    This function searches for sources ...
-    :param box:
-    :param x_peaks:
-    :param y_peaks:
-    :param x_min:
-    :param y_min:
-    :param plot:
-    :return:
-    """
-
-    # Initialize an empty list of stars
-    sources = []
-
-    # Calculate the new x and y size of the smaller boxes
-    smaller_ysize = int(round(box.shape[0] / 2.0))
-    smaller_xsize = int(round(box.shape[1] / 2.0))
-
-    # Define the boundaries of 4 new boxes
-    boundaries_list = []
-    boundaries_list.append((0,smaller_ysize, 0,smaller_xsize))
-    boundaries_list.append((0,smaller_ysize, smaller_xsize,box.shape[1]))
-    boundaries_list.append((smaller_ysize,box.shape[0], 0,smaller_xsize))
-    boundaries_list.append((smaller_ysize,box.shape[0], smaller_xsize,box.shape[1]))
-
-    # For each new box
-    for boundaries in boundaries_list:
-
-        # Create the box
-        smaller_box = box[boundaries[0]:boundaries[1],boundaries[2]:boundaries[3]]
-
-        # Initialize empty lists to contain the coordinates of the peaks that fall within the current box
-        x_peaks_inside = []
-        y_peaks_inside = []
-
-        # Calculate the translation needed for this smaller box
-        abs_x_min = x_min + boundaries[2]
-        abs_y_min = y_min + boundaries[0]
-
-        # Check how many peaks fall within this box
-        for x_peak, y_peak in zip(x_peaks, y_peaks):
-
-            if x_peak >= boundaries[2] and x_peak < boundaries[3] and y_peak >= boundaries[0] and y_peak < boundaries[1]:
-
-                x_peaks_inside.append(x_peak)
-                y_peaks_inside.append(y_peak)
-
-        # No peaks in this box
-        if len(x_peaks_inside) == 0: continue
-
-        # One peak in this box
-        if len(x_peaks_inside) == 1:
-
-            # Determine the relative coordinate of the peak
-            x_peak_rel, y_peak_rel = coordinates.relative_coordinate(x_peaks_inside[0], y_peaks_inside[0], boundaries[2], boundaries[0])
-
-            # Find the source
-            sources += find_sources_1peak(smaller_box, x_peak_rel, y_peak_rel, abs_x_min, abs_y_min, plot=plot)
-
-        # Two peaks in this box
-        elif len(x_peaks_inside) == 2:
-
-            # Determine the relative coordinates of the peaks
-            x_peak1_rel, y_peak1_rel = coordinates.relative_coordinate(x_peaks_inside[0], y_peaks_inside[0], boundaries[2], boundaries[0])
-            x_peak2_rel, y_peak2_rel = coordinates.relative_coordinate(x_peaks_inside[1], y_peaks_inside[1], boundaries[2], boundaries[0])
-
-            # Find sources
-            sources += find_sources_2peaks(smaller_box, x_peak1_rel, y_peak1_rel, x_peak2_rel, y_peak2_rel, abs_x_min, abs_y_min, plot=plot)
-
-        # More than 2 peaks
-        else:
-
-            # Initialize empty lists for the relative coordinates of the peaks within this smaller box
-            x_peaks_rel = []
-            y_peaks_rel = []
-
-            # Calculate these relative coordinates
-            for x_peak_inside, y_peak_inside in zip(x_peaks_inside, y_peaks_inside):
-
-                x_peak_rel, y_peak_rel = coordinates.relative_coordinate(x_peak_inside, y_peak_inside, boundaries[2], boundaries[0])
-                x_peaks_rel.append(x_peak_rel)
-                y_peaks_rel.append(y_peaks_rel)
-
-            # Find sources
-            sources += find_sources_multiplepeaks(smaller_box, x_peaks_rel, y_peaks_rel, abs_x_min, abs_y_min, plot=plot)
-
-    # Return the parameters of the found stars
-    return sources
-
-# *****************************************************************
-
-def remove_duplicate_sources(sources):
-
-    """
-    This function ...
-    :param sources:
-    :return:
-    """
-
-    # Inform the user
-    log.info("Removing duplicates...")
-
-    # Initialize a list that only contains unique sources
-    unique_sources = []
-
-    # Loop over all sources, adding them to the list of unique sources if not yet present
-    for source in sources:
-
-        # Check if another source on the same location is already present in the unique_sources list
-        for unique_source in unique_sources:
-
-            distance = coordinates.distance_models(source, unique_source)
-            if distance < 1.0: break
-
-        # No break statement was encountered; add the source to the unique_sources list
-        else: unique_sources.append(source)
-
-    # Return the list of unique sources
-    return unique_sources
+        # Show a plot for debugging
+        if config.debug.success:
+            rel_peak = source.cutout.rel_position(source.peak)
+            plotting.plot_peak_model(source.cutout, rel_peak.x, rel_peak.y, model)
+
+        # Return the model
+        return source, model
 
 # *****************************************************************
 
@@ -754,108 +353,6 @@ def estimate_background(data, mask, interpolate=True, sigma_clip=True):
 
     # Return the background
     return background, mask
-
-# *****************************************************************
-
-def make_gaussian_star_model(box, x_center, y_center, x_peak, y_peak, radius, background_inner_factor, background_outer_factor,
-                             fit_factor, background_est_method, center_offset_tolerance, sigma_clip_background=True,
-                             upsample_factor=1.0, use_shape_or_peak="peak", model_name="Gaussian", plot=False):
-
-    """
-    This function ...
-    :param shape:
-    :param data:
-    :param background_outer_factor:
-    :param fit_factor:
-    :param background_est_method: 'median', 'interpolation' or 'polynomial'
-    :param sigma_clip_background:
-    :param plot:
-    :return:
-    """
-
-    # Create a mask that
-    annulus_mask = masks.annulus_around(shape, background_inner_factor, background_outer_factor, data.shape[1], data.shape[0])
-
-    # Set the radii for cutting out the background box
-    #radius = 0.5*(x_radius + y_radius)
-    x_radius_outer = background_outer_factor*radius
-    y_radius_outer = background_outer_factor*radius
-
-    # Cut out the background and the background mask
-    background, x_min_back, x_max_back, y_min_back, y_max_back = cropping.crop(data, x_center, y_center, x_radius_outer, y_radius_outer)
-    background_mask = cropping.crop_check(annulus_mask, x_min_back, x_max_back, y_min_back, y_max_back)
-
-    # Estimate the background
-    if background_est_method == "median":
-
-        pass
-
-    elif background_est_method == "mean":
-
-        pass
-
-    if background_est_method == "polynomial":
-
-        background_mask_beforeclipping = np.copy(background_mask)
-        poly, background_mask = fitting.fit_polynomial(background, 3, mask=background_mask, sigma_clip_background=sigma_clip_background)
-        est_background = fitting.evaluate_model(poly, 0, background.shape[1], 0, background.shape[0])
-
-    elif background_est_method == "interpolation":
-
-        background_mask_beforeclipping = np.copy(background_mask)
-        est_background, background_mask = estimate_background(background, background_mask, interpolate=True, sigma_clip=sigma_clip_background)
-
-    else: raise ValueError("Unknown background estimation method")
-
-    # Cut out a box of the primary image around the star
-    box, x_min, x_max, y_min, y_max = cropping.crop(data, x_center, y_center, fit_factor*x_radius, fit_factor*y_radius)
-
-    # Crop the interpolated background to the frame of the box
-    box_background = cropping.crop_check(est_background, x_min-x_min_back, x_max-x_min_back, y_min-y_min_back, y_max-y_min_back)
-
-    # Subtract background from the box
-    box = box - box_background
-
-    # Find source
-    if use_shape_or_peak == "shape":
-        x_center_rel, y_center_rel, = coordinates.relative_coordinate(x_center, y_center, x_min, y_min)
-    elif use_shape_or_peak == "peak":
-        x_center_rel, y_center_rel = coordinates.relative_coordinate(x_peak, y_peak, x_min, y_min)
-    else:
-        raise ValueError("Invalid option (should be 'shape' or 'peak')")
-
-    sources = find_sources_1peak(box, x_center_rel, y_center_rel, x_min, y_min, model_name=model_name, center_offset_tolerance=center_offset_tolerance, plot=plot)
-
-    # Search again, with an Airy model
-    if not sources: sources = find_sources_1peak(box, x_center_rel, y_center_rel, x_min, y_min, model_name="Airy", center_offset_tolerance=center_offset_tolerance, plot=plot)
-
-    # If a source was found, return it
-    if sources:
-
-        source = sources[0]
-
-        if plot:
-
-            evaluated_model = fitting.evaluate_model(source, x_min, x_max, y_min, y_max)
-            plotting.plot_star_model(background=np.ma.masked_array(background,mask=background_mask_beforeclipping),
-                                     background_clipped=np.ma.masked_array(background,mask=background_mask),
-                                     est_background=est_background,
-                                     star=np.ma.masked_array(box, mask=None),
-                                     est_background_star= box_background,
-                                     fitted_star=evaluated_model)
-
-        return source
-
-    else:
-
-        if plot:
-
-            plotting.plot_background_subtraction(background=np.ma.masked_array(background,mask=background_mask_beforeclipping),
-                                                 background_clipped=np.ma.masked_array(background,mask=background_mask),
-                                                 est_background=est_background,
-                                                 star=np.ma.masked_array(box, mask=None), est_background_star= box_background)
-
-        return None
 
 # *****************************************************************
 
@@ -1010,39 +507,6 @@ def find_galaxy_orientation(data, region, plot=False):
 
 # *****************************************************************
 
-def crop_and_mask_for_background(data, shape, inner_factor, outer_factor):
-
-    """
-    This function ...
-    :param data:
-    :param shape:
-    :param inner_factor:
-    :param outer_factor:
-    :return:
-    """
-
-    # Find the parameters of this ellipse (or circle)
-    x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
-
-    # Set the radii for cutting out the background box
-    x_radius_outer = outer_factor*x_radius
-    y_radius_outer = outer_factor*y_radius
-
-    # Cut out the background and the background mask
-    background, x_min, x_max, y_min, y_max = cropping.crop(data, x_center, y_center, x_radius_outer, y_radius_outer)
-
-    x_center_rel = x_center - x_min
-    y_center_rel = y_center - y_min
-
-    # Create the mask
-    mask = masks.create_disk_mask(background.shape[1], background.shape[0], x_center_rel, y_center_rel, x_radius)
-
-    #return np.ma.masked_array(background, mask=mask), x_min, x_max, y_min, y_max
-
-    return background, mask, x_min, x_max, y_min, y_max
-
-# *****************************************************************
-
 def find_source(frame, center, radius, angle, config, track_record=None):
 
     """
@@ -1051,19 +515,19 @@ def find_source(frame, center, radius, angle, config, track_record=None):
     """
 
     # Segmentation method
-    if config.extraction_method == "segmentation": return find_source_segmentation(frame, center, radius, angle, config, track_record=track_record)
+    if config.detection_method == "segmentation": return find_source_segmentation(frame, center, radius, angle, config, track_record)
 
     # Peaks method
-    elif config.extraction_method == "peaks": return find_source_peaks(frame, center, radius, angle, config, track_record=track_record)
+    elif config.detection_method == "peaks": return find_source_peaks(frame, center, radius, angle, config, track_record)
 
     # DAOFIND source detection
-    elif config.extraction_method == "daofind": return locate_sources_daofind(data, plot=plot)
+    elif config.detection_method == "daofind": return find_source_daofind(frame, center, radius, angle, config, track_record)
 
     # IRAF's starfind algorithm
-    elif config.extraction_method == "iraf": return locate_sources_iraf(data)
+    elif config.detection_method == "iraf": return find_source_iraf(frame, center, radius, angle, config, track_record)
 
-    # Unknown extraction method
-    else: raise ValueError("Unknown source extraction method")
+    # Unknown detection method
+    else: raise ValueError("Unknown source detection method")
 
 # *****************************************************************
 
@@ -1074,53 +538,27 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
     :return:
     """
 
-    threshold_sigmas = config.threshold_sigmas
-    kernel_fwhm = config.kernel_fwhm
-    kernel_size = config.kernel_size
-    expand = config.expand
-    max_expansion_level = config.max_expansion_level
+    # Create a source object
+    source = Source(frame, center, radius, angle, config.background_inner_factor, config.background_outer_factor)
 
-    # Create the cutout and background boxes
-    outer_radius = radius * config.background_outer_factor
-    cutout = Box(frame, center, radius, angle=angle)
-    background = Box(frame, center, outer_radius, angle=angle)
+    # Subtract the background from the source
+    source.estimate_background(sigma_clip=config.sigma_clip_background)
+    source.subtract_background()
 
-    # Calculate the relative coordinate of the center for the cutout and background boxes
-    rel_center = cutout.rel_position(center)
-    rel_center_background = background.rel_position(center)
-
-    # Create the background mask
-    background_mask = masks.create_ellipse_mask(background.xsize, background.ysize, rel_center_background, radius, angle)
-
-    # Fit a polynomial to the background
-    poly, background_mask = fitting.fit_polynomial(background, 3, mask=background_mask, sigma_clip_background=True)
-    polynomial = fitting.evaluate_model(poly, 0, background.xsize, 0, background.ysize)
-    fit = polynomial[cutout.y_min-background.y_min:cutout.y_max-background.y_min, cutout.x_min-background.x_min:cutout.x_max-background.x_min]
-
-    # Subtract the fitted background from the box
-    cutout = cutout - fit
-
-    # Calculate threshold for segmentation
-    mean, median, stddev = statistics.sigma_clipped_statistics(background, mask=background_mask)
-    threshold = mean + threshold_sigmas*stddev
-
-    # Perform the segmentation
-    segments = find_segments(cutout, kernel_fwhm=kernel_fwhm, kernel_size=kernel_size, threshold=threshold)
-
-    # Get the label of the center segment
-    label = segments[rel_center.y, rel_center.x]
-
-    # Create a mask of the center segment
-    cutout_mask = (segments == label)
+    # Create a mask for the center segment found for the source
+    source.find_center_segment(config.threshold_sigmas, config.kernel_fwhm, config.kernel_size)
 
     # If the mask extents to the boundary of the cutout box and if enabled, expand the ellipse and repeat the procedure
-    if masks.hits_boundary(cutout_mask) and expand:
+    if masks.hits_boundary(source.mask) and config.expand:
 
-        # DEBUG
-        if config.debug.expand: plotting.plot_box(np.ma.masked_array(cutout, mask=cutout_mask), title="Masked segment hits boundary")
+        # Add a snapshot of the source to the track record for debugging
+        if track_record is not None: track_record.append(copy.deepcopy(source))
+
+        # Show a plot for debugging
+        if config.debug.expand: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Masked segment hits boundary")
 
         # If the maximum expansion level has been reached, no source could be found
-        if expansion_level >= max_expansion_level: return None
+        if expansion_level >= config.max_expansion_level: return None
 
         else:
 
@@ -1133,11 +571,14 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
 
     else:
 
-        if config.debug.success: plotting.plot_box(np.ma.masked_array(cutout, mask=cutout_mask), title="Masked segment doesn't hit boundary")
+        # Add a snapshot of the source to the track record for debugging
+        if track_record is not None: track_record.append(copy.deepcopy(source))
 
-    # Return a source object
-    return Source(center, radius, angle, cutout=cutout, background=background,
-                  background_mask=background_mask, background_fit=polynomial, source_mask=box_mask)
+        # Show a plot for debugging
+        if config.debug.success: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Masked segment doesn't hit boundary")
+
+        # Return the source
+        return source
 
 # *****************************************************************
 
@@ -1169,7 +610,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
     # If always subtract background is enabled
     if config.always_subtract_background:
 
-        source.estimate_background(sigma_clip=config.sigma_clip_background)
+        source.estimate_background(config.background_est_method, config.sigma_clip_background)
         source.subtract_background()
 
     # Find the location of peaks in the box (do not remove gradient yet for performance reasons)
@@ -1179,20 +620,20 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
     if len(peaks) == 0 and not config.always_subtract_background:
 
         # Add a snapshot of the source to the track record for debugging
-        if config.debug.track_record: track_record.append(copy.deepcopy(source))
+        if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
         if config.debug.zero_peaks_before: source.plot(title="0 peaks, gradient background will be removed")
 
         # Estimate and subtract the background (remove the background gradient)
-        source.estimate_background(sigma_clip=config.sigma_clip_background)
+        source.estimate_background(config.background_est_method, config.sigma_clip_background)
         source.subtract_background()
 
         # Find the location of peaks in the box
         peaks = source.locate_peaks(config.threshold_sigmas)
 
         # Add a snapshot of the source to the track record for debugging
-        if config.debug.track_record: track_record.append(copy.deepcopy(source))
+        if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
         if config.debug.zero_peaks_after: source.plot(title=str(len(peaks)) + " peak(s) found after removing gradient background", peaks=peaks)
@@ -1200,8 +641,8 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
     # If no sources were detected
     if len(peaks) == 0:
 
-        # Add a snapshot of the source to the track record for debugging
-        if config.debug.track_record: track_record.append(copy.deepcopy(source))
+        # Add a snapshot of the source to the track record
+        if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
         if config.debug.zero_peaks: source.plot(title="0 peaks")
@@ -1218,8 +659,8 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
     # If more than one source was detected
     elif len(peaks) > 1:
 
-        # Add a snapshot of the source to the track record for debugging
-        if config.debug.track_record: track_record.append(copy.deepcopy(source))
+        # Add a snapshot of the source to the track record
+        if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
         if config.debug.more_peaks: source.plot(title="More peaks", peaks=peaks)
@@ -1237,7 +678,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
     elif len(peaks) == 1:
 
         # Add a snapshot of the source to the track record for debugging
-        if config.debug.track_record: track_record.append(copy.deepcopy(source))
+        if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
         if config.debug.one_peak: source.plot(title="1 peak")
@@ -1257,36 +698,5 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
 
         # Else, return the source
         else: return source
-
-# *****************************************************************
-
-def fit_model_to_source(source, config):
-
-    """
-    This function ...
-    :return:
-    """
-
-    return
-
-    # Create the mask to estimate the background in the box
-    fit_factor = config.fit_factor
-    sigma_clip_background = config.sigma_clip_background
-    peak_offset_tolerance = config.peak_offset_tolerance
-    model_name = config.model_name
-
-    # DIRTY
-    #radius = x_radius
-
-    # Try to fit a Gaussian model to the data
-    model = make_gaussian_star_model(box, x_center, y_center, x_peak, y_peak, radius, background_inner_factor,
-                                     background_outer_factor, fit_factor, "polynomial", peak_offset_tolerance,
-                                     sigma_clip_background=sigma_clip_background, upsample_factor=1.0,
-                                     use_shape_or_peak="peak", model_name=model_name)
-
-    # Get the center position and radius of the (Gaussian) model
-    x_center = model.x_mean
-    y_center = model.y_mean
-    radius = model.x_stddev  # OR 3.0*X_STDDEV ???
 
 # *****************************************************************

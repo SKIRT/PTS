@@ -118,6 +118,29 @@ class Box(np.ndarray):
 
     # *****************************************************************
 
+    def zoom(self, center, factor):
+
+        """
+        This function ...
+        :param factor:
+        :return:
+        """
+
+        # Calculate the size of the smaller box
+        new_xsize = int(round(0.5 * self.xsize / factor))
+        new_ysize = int(round(0.5 * self.ysize / factor))
+
+        # Calculate the relative coordinate of the center
+        rel_center = self.rel_position(center)
+
+        # Create a smaller box
+        data, rel_x_min, rel_x_max, rel_y_min, rel_y_max = cropping.crop(self, rel_center.x, rel_center.y, new_xsize, new_ysize)
+
+        # Create the new box
+        return Box(data, rel_x_min+self.x_min, rel_x_max+self.x_min, rel_y_min+self.y_min, rel_y_max+self.y_min)
+
+    # *****************************************************************
+
     def __array_finalize__(self, obj):
 
         """
@@ -205,5 +228,66 @@ class Box(np.ndarray):
 
         # Return a new box
         return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
+
+    # *****************************************************************
+
+    def fit_model(self, center, model_name, sigma=None, max_center_offset=None, amplitude=None):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate the relative coordinate of the center
+        rel_center = self.rel_position(center)
+
+        # Fit a 2D Gaussian to the data
+        if model_name == "Gaussian":
+
+            # Do the fitting
+            model = fitting.fit_2D_Gaussian(self, rel_center, sigma=sigma, max_center_offset=max_center_offset, amplitude=amplitude)
+
+            # Adapt the coordinate of the center
+            model.x_mean.value = model.x_mean.value + self.x_min
+            model.y_mean.value = model.y_mean.value + self.y_min
+
+        # Fit an Airy Disk model to the data
+        elif model_name == "Airy":
+
+            # See https://en.wikipedia.org/wiki/Airy_disk#Approximation_using_a_Gaussian_profile and
+            # http://astropy.readthedocs.org/en/latest/api/astropy.modeling.functional_models.AiryDisk2D.html#astropy.modeling.functional_models.AiryDisk2D
+            #sigma = 0.42 * airy.radius * 0.81989397882
+            radius = sigma / (0.42 * 0.81989397882) if sigma is not None else None
+
+            # Do the fitting
+            model = fitting.fit_2D_Airy(self, rel_center, radius=radius, max_center_offset=max_center_offset, amplitude=amplitude)
+
+            # Adapt the coordinate of the center
+            model.x_0.value = model.x_0.value + self.x_min
+            model.y_0.value = model.y_0.value + self.y_min
+
+        # Unknown model name
+        else: raise ValueError("Model name should be 'Gaussian' or 'Airy'")
+
+        # Return the model
+        return model
+
+    # *****************************************************************
+
+    def value(self, position, interpolate=False):
+
+        """
+        This function ...
+        :param position:
+        :param interpolate:
+        :return:
+        """
+
+        # Get the x and y coordinate of the corresponding pixel
+        x = int(round(position.x - self.x_min))
+        y = int(round(position.y - self.y_min))
+
+        # Return the pixel value
+        return self[y, x]
 
 # *****************************************************************
