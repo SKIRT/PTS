@@ -48,27 +48,30 @@ axistypes = {
     'logMstar': ( r"$\log_{10}(M_*)\,[M_\odot]$", lambda: np.log10(original_mass_stars) ),
     'logMdust': ( r"$\log_{10}(M_\mathrm{dust})\,[M_\odot]$", lambda: log_if_positive(setup_mass_dust) ),
     'logMdust/Mstar': ( r"$\log_{10}(M_\mathrm{dust}/M_*)$", lambda: np.log10(setup_mass_dust/original_mass_stars) ),
-    'logMhii': ( r"$\log_{10}(M_\mathrm{HII})\,[M_\odot]$", lambda: log_if_positive(setup_mass_hii_regions) ),
-    'fracMhii.fromgas': ( r"$M_{\mathrm{HII},\mathrm{from gas}}/M_{\mathrm{HII},\mathrm{total}}$",
+    'logMhii': ( r"$\log_{10}(M_\mathrm{SFR})\,[M_\odot]$", lambda: log_if_positive(setup_mass_hii_regions) ),
+    'fracMhii.fromgas': ( r"$M_{\mathrm{SFR},\mathrm{from gas}}/M_{\mathrm{SFR},\mathrm{total}}$",
         lambda: divide_if_positive(exported_mass_hii_regions_from_gas,exported_mass_hii_regions) ),
-    'logMdust+hii': ( r"$\log_{10}(M_\mathrm{dust}+\frac{1}{100}M_\mathrm{HII})\,[M_\odot]$",
+    'logMdust+hii': ( r"$\log_{10}(M_\mathrm{dust}+\frac{1}{100}M_\mathrm{SFR})\,[M_\odot]$",
         lambda: log_if_positive(setup_mass_dust+0.01*setup_mass_hii_regions) ),
 
     'logLtot': ( r"$\log_{10}(L_\mathrm{tot})\,[L_\odot]$", lambda: np.log10(setup_luminosity_stars+setup_luminosity_hii_regions) ),
-    'logLhii': ( r"$\log_{10}(L_\mathrm{hii})\,[L_\odot]$", lambda: np.log10(setup_luminosity_hii_regions[setup_luminosity_hii_regions>0]) ),
+    'logLhii': ( r"$\log_{10}(L_\mathrm{SFR})\,[L_\odot]$", lambda: np.log10(setup_luminosity_hii_regions[setup_luminosity_hii_regions>0]) ),
     'Zgas': ( r"$Z_\mathrm{gas}$", lambda: divide_if_positive(setup_mass_metallic_gas,setup_mass_cold_gas) ),
     'fdust': ( r"$f_\mathrm{dust}$", lambda: setup_mass_dust/setup_mass_metallic_gas ),
     'Mgas/Mdust': ( r"$M_\mathrm{gas}/M_\mathrm{dust}$", lambda: setup_mass_cold_gas/setup_mass_dust ),
     'fracMgas': ( r"$M_\mathrm{gas}/(M_*+M_\mathrm{gas})$", lambda: setup_mass_cold_gas/(original_mass_stars+setup_mass_cold_gas) ),
     'logM/L': ( r"$\log_{10}(M_*/L_\mathrm{tot})\,[M_\odot/L_\odot]$",
         lambda: np.log10(original_mass_stars/(setup_luminosity_stars+setup_luminosity_hii_regions)) ),
+    'Mgas/Mhii': ( r"$M_\mathrm{SFR}/M_\mathrm{gas}$", lambda: divide_if_positive(setup_mass_cold_gas,setup_mass_hii_regions) ),
 
     # magnitudes and colors
     'g': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g ),
     'r': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_r ),
+    'i': ( r"$M_\mathrm{i}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_i ),
     'g-r': ( r"$\mathrm{g}-\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g - instr_magnitude_sdss_r ),
     'g-i': ( r"$\mathrm{g}-\mathrm{i}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g - instr_magnitude_sdss_i ),
     'i-H': ( r"$\mathrm{i}-\mathrm{H}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_i - instr_magnitude_ukidss_h ),
+    'i-H.zib': ( r"$\mathrm{i}-\mathrm{H}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_i - instr_magnitude_2mass_h + 1.39 ),
     'NUV-r': ( r"$\mathrm{NUV}-\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_galex_nuv - instr_magnitude_sdss_r ),
 
     # flux densities (Jy)
@@ -297,9 +300,10 @@ class Collection:
 #| bins | optional, used only if y=='hist' | the number of bins in a histogram; defaults to 10
 #| log | optional, used only if y=='hist' | True for histogram on log scale, False for linear scale (the default)
 #| xmin | optional | the minimum x value shown; default is smallest x value
-#| xmax| optional | the maximum x value shown; default is largest x value
+#| xmax | optional | the maximum x value shown; default is largest x value
 #| ymin | optional | the minimum y value shown; default is smallest y value
-#| ymax| optional | the maximum y value shown; default is largest y value
+#| ymax | optional | the maximum y value shown; default is largest y value
+#| diag | optional | if present and True, a dashed diagonal is drawn from (xmin,ymin) to (xmax,ymax)
 #
 def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,11.693), title=None):
 
@@ -361,6 +365,10 @@ def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,1
                     y1 = y0 + rico*x1
                     y2 = y0 + rico*x2
                     plt.plot([x1,x2], [y1,y2], color=color, label=collection.name)
+
+            # if requested, plot a dashed diagonal
+            if plotdef.get('diag', False):
+                plt.plot([xmin,xmax], [ymin,ymax], color='k', ls='dashed', alpha=0.7)
 
         # for a histogram...
         else:
@@ -424,6 +432,7 @@ def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,1
 
     # save and close the figure
     plotfilepath = os.path.join(config.plots_path, plotname+".pdf")
+    #plt.savefig(plotfilepath, bbox_inches='tight', pad_inches=0.2)
     plt.savefig(plotfilepath)
     plt.close()
     print "Created results plot file", plotfilepath
