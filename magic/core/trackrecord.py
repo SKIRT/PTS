@@ -31,7 +31,8 @@ class TrackRecord(object):
         """
         This function ...
         """
-        
-        pass
+
+        # Loop over all snapshots
+        for snapshot in self.snapshots: snapshot.plot()
     
 # *****************************************************************

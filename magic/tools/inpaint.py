@@ -73,7 +73,7 @@ def replace_nans(array, max_iter, tol, kernel_size=1, method='localmean'):
         #print kernel, 'kernel'
 
     else:
-        raise ValueError( 'method not valid. Should be one of `localmean`.')
+        raise ValueError("Method not valid. Should be one of 'localmean' and 'idw'")
     
     # Fill new array with input elements
     for i in range(array.shape[0]):

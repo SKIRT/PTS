@@ -18,7 +18,7 @@ from astropy.modeling import models, fitting
 # Import Astromagic modules
 from . import general
 from . import statistics
-from ..core.vector import Position
+from ..core.vector import Position, Extent
 
 # Import PTS modules
 from pts import mathematics
@@ -584,5 +584,31 @@ def center(model):
     if isinstance(model, models.Gaussian2D): return Position(x=model.x_mean.value, y=model.y_mean.value)
     elif isinstance(model, models.AiryDisk2D): return Position(x=model.x_0.value, y=model.y_0.value)
     else: raise ValueError("Unsupported model type")
+
+# *****************************************************************
+
+def sigma(model):
+
+    """
+    This function ...
+    :param model:
+    :return:
+    """
+
+    if isinstance(model, models.Gaussian2D): return Extent(x=model.x_stddev.value, y=model.y_stddev.value).norm
+    elif isinstance(model, models.AiryDisk2D): return 0.42 * model.radius * 0.81989397882
+    else: raise ValueError("Unsupported model type")
+
+# *****************************************************************
+
+def fwhm(model):
+
+    """
+    This function ...
+    :param model:
+    :return:
+    """
+
+    return 2.355 * sigma(model)
 
 # *****************************************************************

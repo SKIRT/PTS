@@ -52,12 +52,16 @@ class Source(object):
         self.background = Box.from_ellipse(frame, center, outer_radius, angle=angle)
 
         # Calculate the relative coordinate of the center for the cutout and background boxes
-        #rel_center = self.cutout.rel_position(center)
+        rel_center = self.cutout.rel_position(center)
         rel_center_background = self.background.rel_position(center)
 
-        # Create the masks that cover the source
+        # Create the masks that cover the given ellipse
         inner_radius = radius * inner_factor
         self.background_mask = masks.create_ellipse_mask(self.background.xsize, self.background.ysize, rel_center_background, inner_radius, angle)
+        self.cutout_mask = masks.create_ellipse_mask(self.cutout.xsize, self.cutout.ysize, rel_center, inner_radius, angle)
+
+        # Create annulus mask for the background
+        self.background_annulus = masks.create_annulus_mask(self.background.xsize, self.background.ysize, rel_center_background, inner_radius, outer_radius, angle)
 
         # Set mask for the source (e.g. segmentation) to None
         self.mask = None
@@ -85,6 +89,39 @@ class Source(object):
 
     # *****************************************************************
 
+    @property
+    def is_estimated(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.estimated_background is not None
+
+    # *****************************************************************
+
+    @property
+    def flux(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate the relative coordinate of the center in the background box
+        #rel_center = self.background.rel_position(self.center)
+
+        # Method with photutils:
+        #aperture = CircularAperture((x_center, y_center), r=x_radius)
+        #phot_table = aperture_photometry(self.frames[frame_name], aperture, mask=np.isnan(self.frames[frame_name]))
+        #flux = phot_table[0]["aperture_sum"]
+
+        # Sum the pixel values
+        return np.ma.sum(np.ma.masked_array(self.subtracted, mask=self.cutout_mask))
+
+    # *****************************************************************
+
     def estimate_background(self, method, sigma_clip=True, sigma=3.0):
 
         """
@@ -92,16 +129,31 @@ class Source(object):
         :return:
         """
 
-        # Interpolation method
-        #background_mask_beforeclipping = np.copy(background_mask)
-        #est_background, background_mask = estimate_background(background, background_mask, interpolate=True, sigma_clip=sigma_clip_background)
-
         # Perform sigma-clipping on the background if requested
         if sigma_clip: mask = statistics.sigma_clip_mask(self.background, sigma=sigma, mask=self.background_mask)
         else: mask = self.background_mask
 
-        # Estimate the background
-        self.estimated_background = self.background.fit_polynomial(3, mask=mask)
+        if method == "polynomial":
+
+            # Estimate the background
+            self.estimated_background = self.background.fit_polynomial(3, mask=mask)
+
+        elif method == "interpolation":
+
+            # Interpolate over the mask
+            self.estimated_background = self.background.interpolate(mask)
+
+        elif method == "mean":
+
+            mean = np.ma.mean(np.ma.masked_array(self.background, mask=mask))
+            self.estimated_background = self.background.fill(mean)
+
+        elif method == "median":
+
+            median = np.ma.median(np.ma.masked_array(self.background, mask=mask))
+            self.estimated_background = self.background.fill(median)
+
+        else: raise ValueError("Unknown background estimation method")
 
         # Create an estimated background box for the cutout
         self.estimated_background_cutout = self.estimated_background.box_like(self.cutout)
@@ -144,8 +196,13 @@ class Source(object):
         rel_center = self.cutout.rel_position(self.center)
         label = segments[rel_center.y, rel_center.x]
 
-        # Create a mask of the center segment
-        self.mask = (segments == label)
+        # If the center pixel is identified as being part of the background, create an empty mask (the center does not
+        # correspond to a segment)
+        if label == 0: self.mask = np.zeros_like(self.cutout, dtype=bool)
+        else:
+
+            # Create a mask of the center segment
+            self.mask = (segments == label)
 
     # *****************************************************************
 

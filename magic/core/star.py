@@ -17,6 +17,7 @@ from astropy import units as u
 from .source import Source
 from ..tools import analysis
 from .vector import Position
+from ..tools import fitting
 from .trackrecord import TrackRecord
 
 # *****************************************************************
@@ -83,6 +84,18 @@ class Star(object):
     # *****************************************************************
 
     @property
+    def has_track_record(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.track_record is not None
+
+    # *****************************************************************
+
+    @property
     def fwhm(self):
 
         """
@@ -90,7 +103,21 @@ class Star(object):
         :return:
         """
 
-        pass
+        # Return the fwhm value of the model
+        return fitting.fwhm(self.model)
+
+    # *****************************************************************
+
+    @property
+    def flux(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the flux of the source
+        return self.source.flux
 
     # *****************************************************************
 
@@ -163,7 +190,7 @@ class Star(object):
 
     # *****************************************************************
 
-    def remove(self, frame):
+    def remove(self, frame, config, default_fwhm):
 
         """
         This function removes the star from a given frame
@@ -171,6 +198,60 @@ class Star(object):
         :return:
         """
 
-        pass
+        # Convert FWHM to sigma
+        default_sigma = default_fwhm / 2.35
+
+        radius = fitting.sigma(self.model) * config.remove_sigmas if self.model is not None else default_sigma * config.remove_sigmas
+        outer_factor = config.outer_sigmas / config.remove_sigmas
+
+        # Determine the center position of the source (center of model if present, otherwise position of the star)
+        if self.source is not None:
+
+            # If the star has been modeled succesfully, use the center position of the model
+            # Otherwise, use the source's peak
+            if self.model is not None: center = fitting.center(self.model)
+            else: center = self.source.peak
+
+        else:
+
+            # Calculate the pixel coordinate of the star's position
+            position_x, position_y = self.position.to_pixel(frame.wcs, origin=0)
+            center = Position(x=position_x, y=position_y)
+
+        # Create a source
+        source = Source(frame, center, radius, 0.0, 1.0, outer_factor)
+
+        # Estimate the background
+        source.estimate_background(config.method, config.sigma_clip)
+
+        # Add the source to the track record
+        if self.has_track_record: self.track_record.append(source)
+
+        # Replace the frame with the estimated background
+        source.estimated_background.replace(frame, mask=source.background_mask)
+
+        # Use the new source
+        self.source = source
+
+    # *****************************************************************
+
+    def remove_saturation(self, frame, config):
+
+        """
+        This function ...
+        """
+
+        # Replace the source by a source that covers the saturation
+        self.source = analysis.find_source_segmentation(frame, self.source.center, self.source.radius, 0.0, config, track_record=self.track_record)
+
+        # If a segment was found that can be identified with a source
+        if self.has_source:
+
+            # Estimate the background
+            self.source.estimate_background(config.remove_method, config.sigma_clip)
+
+            # Replace the frame with the estimated background
+            self.source.estimated_background.replace(frame)
+            #self.source.estimated_background.replace(frame, where=mask)
 
 # *****************************************************************

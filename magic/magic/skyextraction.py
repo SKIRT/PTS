@@ -40,7 +40,7 @@ class SkyExtractor(object):
 
     # *****************************************************************
 
-    def run(self):
+    def run(self, image):
 
         """
         This function ...

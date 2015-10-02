@@ -36,46 +36,6 @@ from astropy.stats import sigma_clipped_stats
 
 # *****************************************************************
 
-def find_sources_in_region(data, region, model_name, detection_method, plot=False, plot_custom=[False, False, False, False]):
-
-    """
-    This function searches for sources within a given frame and a region of ellipses
-    :param data:
-    :param region:
-    :param method: "peaks", "segmentation", "dao", "iraf"
-    :param plot:
-    :return:
-    """
-
-    # Initialize an empty list of sources
-    sources = []
-
-    failed = []
-
-    # Inform the user
-    log.info("Looking for sources...")
-
-    # Loop over all objects
-    for shape in region:
-
-        # Find a source
-        source = find_source_in_shape(data, shape, model_name, detection_method, level=0, plot=plot, plot_custom=plot_custom)
-
-        if source is None:
-            #x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
-            #box, x_min, x_max, y_min, y_max = cropping.crop(data, x_center, y_center, x_radius, y_radius)
-            #plotting.plot_box(box)
-
-            failed.append(shape)
-
-        # If a source was found, add it to the list of sources
-        if source is not None: sources.append(source)
-
-    # Return the list of sources
-    return sources, failed
-
-# *****************************************************************
-
 def find_source_in_shape(data, shape, model_name, detection_method, level, min_level=-2, max_level=2, aid_detection_by_removing_gradient=True, peak_offset_tolerance=3.0, plot=False, plot_custom=[False, False, False, False]):
 
     """
@@ -178,31 +138,6 @@ def find_source_in_shape(data, shape, model_name, detection_method, level, min_l
 
         new_shape = regions.scale_circle(shape, 0.5)
         return find_source_in_shape(data, new_shape, model_name, detection_method, level=level-1, min_level=min_level, max_level=max_level, plot=plot, plot_custom=[plot_custom[3],plot_custom[3],plot_custom[3],plot_custom[3]])
-
-# *****************************************************************
-
-def locate_sources_peaks(data, threshold_sigmas=7.0, plot=False):
-
-    """
-    This function looks for peaks in the given frame
-    :param data:
-    :param sigma:
-    :return:
-    """
-
-    # Calculate the sigma-clipped statistics of the frame and find the peaks
-    mean, median, stddev = statistics.sigma_clipped_statistics(data, sigma=3.0)
-    threshold = median + (threshold_sigmas * stddev)
-    peaks = find_peaks(data, threshold, box_size=5)
-
-    # For some reason, once in a while, an ordinary list comes out of the find_peaks routine instead of an Astropy Table instance. We assume we need an empty table in this case
-    if type(peaks) is list: peaks = Table([[], []], names=('x_peak', 'y_peak'))
-
-    # If requested, make a plot with the source(s) indicated
-    if plot and len(peaks) > 0: plotting.plot_peaks(data, peaks['x_peak'], peaks['y_peak'])
-
-    # Return the list of peaks
-    return peaks, median
 
 # *****************************************************************
 
@@ -541,12 +476,36 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
     # Create a source object
     source = Source(frame, center, radius, angle, config.background_inner_factor, config.background_outer_factor)
 
-    # Subtract the background from the source
-    source.estimate_background(sigma_clip=config.sigma_clip_background)
-    source.subtract_background()
+    # If always subtract background is enabled
+    if config.always_subtract_background:
+
+        # Subtract the background from the source
+        source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
+        source.subtract_background()
 
     # Create a mask for the center segment found for the source
     source.find_center_segment(config.threshold_sigmas, config.kernel_fwhm, config.kernel_size)
+
+    # If no center segment was found, subtract the background first
+    if not np.any(source.mask) and not config.always_subtract_background:
+
+        # Show a plot for debugging
+        if config.debug.no_segment_before: source.plot(title="No segment found, gradient background will be removed")
+
+        # Subtract the background from the source
+        source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
+        source.subtract_background()
+
+        # Show a plot for debugging
+        if config.debug.no_segment_after: source.plot(title="After removing gradient background")
+
+    # If still no center segment was found, return without source
+    if not np.any(source.mask):
+
+        # Show a plot for debugging
+        if config.debug.no_segment: source.plot(title="No center segment was found")
+
+        return None
 
     # If the mask extents to the boundary of the cutout box and if enabled, expand the ellipse and repeat the procedure
     if masks.hits_boundary(source.mask) and config.expand:

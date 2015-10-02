@@ -9,14 +9,15 @@ from __future__ import (absolute_import, division, print_function)
 
 # Import standard modules
 import numpy as np
+from scipy import ndimage
 
 # Import Astromagic modules
 from . import regions
-from .box import Extent
+from .vector import Extent
 
 # *****************************************************************
 
-class Mask(object):
+class Mask(np.ndarray):
 
     """
     This class ...
@@ -24,19 +25,36 @@ class Mask(object):
 
     # *****************************************************************
 
-    def __init__(self, data):
+    def __new__(cls, data, selected=False, description=None):
 
         """
-        The constructor ...
+        This function ...
+        :param cls:
         :param data:
+        :param selected:
+        :param description:
         :return:
         """
 
-        # Set the data array
-        self.data = data
+        obj = np.asarray(data, dtype=bool).view(cls)
+        obj.selected = selected
+        obj.description = description
 
-        # Set as unactive initially
-        self.selected = False
+        return obj
+
+    # *****************************************************************
+
+    def __array_finalize__(self, obj):
+
+        """
+        This function ...
+        :param obj:
+        :return:
+        """
+
+        if obj is None: return
+        self.selected = getattr(obj, 'selected', False)
+        self.description = getattr(obj, 'description', None)
 
     # *****************************************************************
 
@@ -60,6 +78,139 @@ class Mask(object):
 
         self.selected = False
 
+    # *****************************************************************
+
+    @property
+    def xsize(self): return self.shape[1]
+
+    # *****************************************************************
+
+    @property
+    def ysize(self): return self.shape[0]
+
+    # *****************************************************************
+
+    def expand(self, structure_size=2, iterations=100):
+
+        """
+        This function ...
+        """
+
+        # Define the structure for the expansion
+        structure = ndimage.generate_binary_structure(structure_size, structure_size)
+
+        # Make the new mask, made from 100 iterations with the structure array
+        self = ndimage.binary_dilation(self, structure, iterations)
+
+        # Check whether this object remains of type Mask
+        assert isinstance(self, Mask)
+
+    # *****************************************************************
+
+    def apply(self, frame, fill=0.0):
+
+        """
+        This function ...
+        """
+
+        # Replace the masked pixel values with the given fill value
+        frame[self] = fill
+
+    # *****************************************************************
+
+    def inverse(self):
+
+        """
+        This function ...
+        """
+
+        # Check whether the new mask will still be an instance of Mask
+        assert isinstance(np.logical_not(self), Mask)
+
+        # Return the inverse of this mask
+        return np.logical_not(self)
+
+    # *****************************************************************
+
+    def intersection(self, mask):
+
+        """
+        This function ...
+        :param mask_a:
+        :param mask_b:
+        :return:
+        """
+
+        assert isinstance(self * mask, Mask)
+
+        return self * mask
+
+    # *****************************************************************
+
+    def subtract(self, mask):
+
+        """
+        This function ...
+        :param mask_a:
+        :param mask_b:
+        :return:
+        """
+
+        assert isinstance(mask.inverse(), Mask)
+
+        # Return ...
+        return self.intersection(mask.inverse())
+
+    # *****************************************************************
+
+    def union(self, mask):
+
+        """
+        This function ...
+        :param mask_a:
+        :param mask_b:
+        :return:
+        """
+
+        assert isinstance(self + mask, Mask)
+
+        # Return ...
+        return self + mask
+
+    # *****************************************************************
+
+    def hits_boundary(self, min_pixels=2):
+
+        """
+        This function ...
+        """
+
+        # Set the number of hits (pixels hitting the boundary) to zero initially
+        hits = 0
+
+        for x in range(self.xsize):
+
+            if self[0, x] or self[self.ysize-1, x]:
+
+                # Add one hit
+                hits += 1
+
+                # Break the loop, avoid performing unnecessary checks
+                if hits >= min_pixels: break
+
+        for y in range(1, self.ysize-1):
+
+            if self[y, 0] or self[y, self.xsize-1]:
+
+                # Add one hit
+                hits += 1
+
+                # Break the loop, avoid performing unnecessary checks
+                if hits >= min_pixels: break
+
+        # Return whether ...
+        return hits >= min_pixels
+
 # *****************************************************************
 
 def annuli_around(region, inner_factor, outer_factor, header, x_size, y_size):
@@ -82,39 +233,6 @@ def annuli_around(region, inner_factor, outer_factor, header, x_size, y_size):
     # Create inner and outer masks
     inner_mask = regions.create_mask(inner_region, header, x_size, y_size)
     outer_mask = regions.create_mask(outer_region, header, x_size, y_size)
-
-    # Create the mask
-    mask = inner_mask | np.logical_not(outer_mask)
-
-    # Return the mask
-    return mask
-
-# *****************************************************************
-
-def annulus_around(shape, inner_factor, outer_factor, x_size, y_size):
-
-    # TODO: fix this for ellipses
-
-    # Create new regions for the background estimation around the stars
-    inner_shape = regions.scale_circle(shape, inner_factor)
-    outer_shape = regions.scale_circle(shape, outer_factor)
-
-    # Determine ...
-    #x_center = outer_shape.coord_list[0]
-    #y_center = outer_shape.coord_list[1]
-    #outer_radius = outer_shape.coord_list[2]
-
-    #y_min = int(round(y_center - outer_radius))
-    #y_max = int(round(y_center + outer_radius))
-    #x_min = int(round(x_center - outer_radius))
-    #x_max = int(round(x_center + outer_radius))
-
-    #smaller_x_size = x_max - x_min
-    #smaller_y_size = y_max - y_min
-
-    # Create inner and outer masks
-    inner_mask = create_disk_mask(x_size, y_size, inner_shape.coord_list[0], inner_shape.coord_list[1], inner_shape.coord_list[2])
-    outer_mask = create_disk_mask(x_size, y_size, outer_shape.coord_list[0], outer_shape.coord_list[1], outer_shape.coord_list[2])
 
     # Create the mask
     mask = inner_mask | np.logical_not(outer_mask)
@@ -189,89 +307,30 @@ def create_ellipse_mask(x_size, y_size, center, radius, angle):
     region = regions.one_ellipse([center.x, center.y, x_radius, y_radius, angle])
 
     # Create the mask
-    mask = region.get_mask(shape=(y_size, x_size))
+    data = region.get_mask(shape=(y_size, x_size))
 
     # Return the mask
-    return mask
+    return Mask(data)
 
 # *****************************************************************
 
-def intersection(mask_a, mask_b):
+def create_annulus_mask(xsize, ysize, center, inner_radius, outer_radius, angle):
 
     """
     This function ...
-    :param mask_a:
-    :param mask_b:
+    :param xsize:
+    :param ysize:
+    :param center:
+    :param radius:
+    :param angle:
     :return:
     """
 
-    return mask_a * mask_b
+    inner_mask = create_ellipse_mask(xsize, ysize, center, inner_radius, angle)
+    outer_mask = create_ellipse_mask(xsize, ysize, center, outer_radius, angle)
+
+    # Return the annulus mask
+    return inner_mask.union(outer_mask.inverse())
 
 # *****************************************************************
 
-def subtract(mask_a, mask_b):
-
-    """
-    This function ...
-    :param mask_a:
-    :param mask_b:
-    :return:
-    """
-
-    return intersection(mask_a, np.logical_not(mask_b))
-
-# *****************************************************************
-
-def union(mask_a, mask_b):
-
-    """
-    This function ...
-    :param mask_a:
-    :param mask_b:
-    :return:
-    """
-
-    return mask_a + mask_b
-
-# *****************************************************************
-
-def hits_boundary(mask):
-
-    """
-    This function ...
-    :param mask:
-    :return:
-    """
-
-    # Test whether the mask reaches the boundaries
-    hits_boundary = False
-
-    for x in range(mask.shape[1]):
-
-        if mask[0, x] or mask[mask.shape[0]-1, x]:
-
-            # If this already happened with another pixel, break the loop
-            if hits_boundary:
-
-                hits_boundary = True
-                break
-
-            # If this is the first pixel for which this occurs, continue (one masked pixel on the edge is tolerated)
-            else: hits_boundary = True
-
-    for y in range(1, mask.shape[0]-1):
-
-        if mask[y, 0] or mask[y, mask.shape[1]-1]:
-
-            # If this already happened with another pixel, break the loop
-            if hits_boundary:
-
-                hits_boundary = True
-                break
-
-            # If this is the first pixel for which this occurs, continue (one masked pixel on the edge is tolerated)
-            else: hits_boundary = True
-
-    return hits_boundary
-
-# *****************************************************************

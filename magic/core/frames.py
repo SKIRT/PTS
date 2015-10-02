@@ -9,13 +9,21 @@ from __future__ import (absolute_import, division, print_function)
 
 # Import standard modules
 import numpy as np
+from scipy import ndimage
+import matplotlib.pyplot as plt
 
 # Import Astromagic modules
 from ..tools import coordinates
+from ..tools import cropping
+from ..tools import transformations
+from .vector import Position, Extent
 
 # Import astronomical modules
+import aplpy
+import astropy.io.fits as pyfits
 import astropy.units as u
 import astropy.coordinates as coord
+from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
 
 # *****************************************************************
 
@@ -27,7 +35,7 @@ class Frame(np.ndarray):
 
     # *****************************************************************
 
-    def __new__(cls, data, wcs=None, pixelscale=None, description=None, selected=False):
+    def __new__(cls, data, wcs=None, pixelscale=None, description=None, selected=False, unit=None):
 
         """
         This function ...
@@ -42,6 +50,7 @@ class Frame(np.ndarray):
         obj.pixelscale = pixelscale
         obj.description = description
         obj.selected = selected
+        obj.unit = unit
 
         return obj
 
@@ -60,6 +69,7 @@ class Frame(np.ndarray):
         self.pixelscale = getattr(obj, 'wcs', None)
         self.description = getattr(obj, 'description', None)
         self.selected = getattr(obj, 'selected', False)
+        self.unit = getattr(obj, 'unit', None)
 
     # *****************************************************************
 
@@ -92,6 +102,211 @@ class Frame(np.ndarray):
 
     @property
     def ysize(self): return self.shape[0]
+
+    # *****************************************************************
+
+    def set_unit(self, unit):
+
+        """
+        This function ...
+        :param unit:
+        :return:
+        """
+
+        self.unit = unit
+
+    # *****************************************************************
+
+    def set_fwhm(self, fwhm):
+
+        """
+        This function ...
+        :param fwhm:
+        :return:
+        """
+
+        self.fwhm = fwhm
+
+    # *****************************************************************
+
+    def convert_to(self, unit):
+
+        """
+        This function ...
+        :param unit:
+        :return:
+        """
+
+        conversion_factor = self.unit / unit
+        self *= conversion_factor
+
+        self.unit = unit
+
+    # *****************************************************************
+
+    def to_magnitude(self, m_0):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Do the conversion
+        self = m_0 - 2.5 * np.log10(self)
+
+        # TODO: adapt the unit
+
+        # Check whether this object remains of type Frame
+        assert isinstance(self, Frame)
+
+    # *****************************************************************
+
+    def to_flux(self, f_0):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Do the conversion
+        self = f_0 * np.power(10.0, - self / 2.5)
+
+        # TODO: adapt the unit
+
+        # Check whether this object remains of type Frame
+        assert isinstance(self, Frame)
+
+     # *****************************************************************
+
+    def convolve(self, kernel):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        # Get the pixel scale of the kernel
+        pixelscale_kernel = kernel.pixelscale
+
+        # Calculate the zooming factor
+        factor = self.pixelscale / pixelscale_kernel
+
+        # Rebin the kernel to the same grid of the image
+        kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
+
+        # Do the convolution on this frame
+        self = convolve_fft(self, kernel, normalize_kernel=True)
+
+        # Check whether this object remains of type Frame
+        assert isinstance(self, Frame)
+
+    # *****************************************************************
+
+    def rebin(self, ref_frame):
+
+        """
+        This function ...
+        :param ref_frame:
+        :return:
+        """
+
+        # Create headers
+        header = self.wcs.to_header()
+        ref_header = ref_frame.wcs.to_header()
+
+        # Do the rebinning
+        self = transformations.align_and_rebin(self, header, ref_header)
+
+        # Check whether this object remains of type Frame
+        assert isinstance(self, Frame)
+
+    # *****************************************************************
+
+    def crop(self, x_min, x_max, y_min, y_max):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :param y_min:
+        :param y_max:
+        :return:
+        """
+
+        # Crop the frame
+        self = cropping.crop_check(self, x_min, x_max, y_min, y_max)
+
+        # Check whether this object remains of type Frame
+        assert isinstance(self, Frame)
+
+        # TODO: Adapt the wcs!
+
+    # *****************************************************************
+
+    def downsample(self, factor):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self = ndimage.interpolation.zoom(self, zoom=1.0/factor)
+
+        # TODO: Adapt the wcs!
+
+        # Check whether this object remains of type Frame
+        assert isinstance(self, Frame)
+
+    # *****************************************************************
+
+    def rotate(self, angle):
+
+        """
+        This function ...
+        :param angle:
+        :return:
+        """
+
+        # Do the rotation
+        ndimage.interpolation.rotate(self, angle)
+
+        # TODO: Adapt the wcs!
+
+        # Check whether this object remains of type Frame
+        assert isinstance(self, Frame)
+
+    # *****************************************************************
+
+    def shift(self, extent):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Transform the data
+        self = ndimage.interpolation.shift(self, (extent.y, extent.x))
+
+        # TODO: Adapt the wcs!
+
+        # Check whether this object remains of type Frame
+        assert isinstance(self, Frame)
+
+    # *****************************************************************
+
+    def center_around(self, position):
+
+        """
+        This function ...
+        :param position:
+        :return:
+        """
+
+        center = Position(x=0.5*self.xsize, y=0.5*self.ysize)
+        shift = position - center
+
+        self.shift(shift)
 
     # *****************************************************************
 
@@ -173,5 +388,57 @@ class Frame(np.ndarray):
         y = pixel_coordinate[0][1]
 
         return 0.0 <= x < self.xsize and 0.0 <= y < self.ysize
+
+    # *****************************************************************
+
+    def replace_nans(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set all NaN pixels to the specified value
+        self[np.isnan(self)] = value
+
+    # *****************************************************************
+
+    def plot(self, mask=None, color=True, nan_color='black', grid=False):
+
+        """
+        This function ...
+        :param mask:
+        :return:
+        """
+
+        # Mask the frame with nans
+        maskedimage = np.ma.array(self, mask=mask)
+        frame_with_nans = maskedimage.filled(np.NaN)
+
+        # Create a HDU from this frame with the image header
+        hdu = pyfits.PrimaryHDU(frame_with_nans, self.wcs.to_header())
+
+        # Create a figure canvas
+        figure = plt.figure(figsize=(12, 12))
+
+        # Create a figure from this frame
+        plot = aplpy.FITSFigure(hdu, figure=figure)
+
+        # Set color scale
+        if color: plot.show_colorscale()
+        else: plot.show_grayscale()
+
+        # Add a color bar
+        plot.add_colorbar()
+
+        # Set color for NaN values
+        plot.set_nan_color(nan_color)
+
+        # Set grid
+        if grid: plot.add_grid()
+
+        # Show the plot on screen
+        plt.show()
 
 # *****************************************************************

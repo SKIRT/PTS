@@ -13,6 +13,7 @@ import numpy as np
 # Import Astromagic modules
 from ..tools import cropping
 from ..tools import fitting
+from ..tools import interpolation
 from .vector import Position, Extent
 
 # *****************************************************************
@@ -274,6 +275,21 @@ class Box(np.ndarray):
 
     # *****************************************************************
 
+    def interpolate(self, mask=None):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate the interpolated data
+        data = interpolation.in_paint(self, mask)
+
+        # Return a new box
+        return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
+
+    # *****************************************************************
+
     def value(self, position, interpolate=False):
 
         """
@@ -289,5 +305,18 @@ class Box(np.ndarray):
 
         # Return the pixel value
         return self[y, x]
+
+    # *****************************************************************
+
+    def replace(self, frame, mask=None):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        # Replace the pixel values in the frame
+        frame[self.y_min:self.y_max, self.x_min:self.x_max] = self
 
 # *****************************************************************

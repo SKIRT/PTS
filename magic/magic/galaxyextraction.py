@@ -149,7 +149,7 @@ class GalaxyExtractor(object):
             if galaxy.principal: continue
 
             # Find a source
-            galaxy.find_source(frame, self.config)
+            galaxy.find_source(frame, self.config.detection)
 
     # *****************************************************************
 
@@ -171,7 +171,7 @@ class GalaxyExtractor(object):
         for galaxy in self.galaxies:
 
             # Remove the galaxy from the frame
-            if galaxy.source is not None: galaxy.remove(frame, self.config)
+            if galaxy.source is not None: galaxy.remove(frame, self.config.removal)
 
     # *****************************************************************
 

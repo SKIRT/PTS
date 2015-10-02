@@ -74,8 +74,6 @@ class Galaxy(object):
 
         elif self.minor is None or self.pa == 0.0:
 
-            print(pixelscale)
-
             x_radius = self.major.to("arcsec") / pixelscale
             y_radius = x_radius
 

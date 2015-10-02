@@ -222,3 +222,35 @@ def split_percentage(input_list, criterium, percentage, nans="low"):
         else: raise ValueError("Invalid option for nan")
 
 # *****************************************************************
+
+def cutoff(values, method, limit):
+
+    """
+    This function ...
+    """
+
+    # Percentage method
+    if method == "percentage":
+
+        # Create a sorted list for the input values
+        sorted_values = sorted(values)
+
+        # Determine the splitting point
+        split = (1.0-limit) * len(sorted_values)
+        index = int(round(split))
+
+        # Return the corresponding value in the sorted list
+        return sorted_values[index]
+
+    # Sigma-clipping method
+    elif method == "sigma_clip":
+
+        # Perform sigma clipping on the input list
+        masked_values = sigma_clip(np.array(values), sig=limit, iters=None, copy=False)
+
+        # Calculate the maximum of the masked array
+        return np.ma.max(masked_values)
+
+    else: raise ValueError("Invalid cutoff method (must be 'percentage' or 'sigma_clip'")
+
+# *****************************************************************

@@ -31,7 +31,7 @@ def plot_box(box, title=None):
     vmin = np.min(box) if vmax <= 0 else 0.0
 
     # Make the plot
-    plt.figure(figsize=(8,2.5))
+    plt.figure(figsize=(6,6))
     plt.imshow(box, origin='lower', interpolation='nearest', vmin=vmin, vmax=vmax)
     plt.xlim(0, box.shape[1]-1)
     plt.ylim(0, box.shape[0]-1)
