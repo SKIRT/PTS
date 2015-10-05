@@ -7,6 +7,9 @@
 # Import Python 3 functionality
 from __future__ import (absolute_import, division, print_function)
 
+# Import standard modules
+from collections import defaultdict
+
 # *****************************************************************
 
 class TrackRecord(object):
@@ -15,14 +18,35 @@ class TrackRecord(object):
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, initial_stage):
 
         """
         The constructor ...
         :return:
         """
 
-        self.snapshots = []
+        self.stage = initial_stage
+        self.snapshots = defaultdict(list)
+
+    # *****************************************************************
+
+    def set_stage(self, stage):
+
+        """
+        This function ...
+        """
+
+        self.stage = stage
+
+    # *****************************************************************
+
+    def append(self, source):
+
+        """
+        This function ...
+        """
+
+        self.snapshots[self.stage].append(source)
 
     # *****************************************************************
 
@@ -33,6 +57,9 @@ class TrackRecord(object):
         """
 
         # Loop over all snapshots
-        for snapshot in self.snapshots: snapshot.plot()
+        for title, stage in self.snapshots.items():
+
+            # Plot ...
+            for snapshot in stage: snapshot.plot(title=title)
     
 # *****************************************************************

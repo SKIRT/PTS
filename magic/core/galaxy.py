@@ -53,6 +53,18 @@ class Galaxy(object):
 
     # *****************************************************************
 
+    @property
+    def has_source(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.source is not None
+
+    # *****************************************************************
+
     def ellipse_parameters(self, wcs, pixelscale, default_radius):
 
         """
@@ -124,30 +136,31 @@ class Galaxy(object):
         :return:
         """
 
-        subtraction_method = config.subtraction_method
-        subtract_if_undetected = config.subtract_if_undetected
-
-        if self.source is None and subtract_if_undetected:
+        if self.source is None and config.subtract_if_undetected:
 
             # Get the parameters of the ellipse
-            x_center, y_center, x_radius, y_radius, angle = self.ellipse_parameters(frame.wcs, frame.pixelscale, config.initial_radius)
+            center, radius, angle = self.ellipse_parameters(frame.wcs, frame.pixelscale, config.default_radius)
 
-            #self.source = Source(x_center, y_center, x_radius, y_radius, angle, cutout=box, background=background_box, background_mask=background_mask,
-            #                     background_fit=polynomial, source_mask=box_mask)
+            pass
 
-        elif self.source is not None:
+        # If a segment was found that can be identified with a source
+        if self.has_source:
 
-            # Calculate the interpolated background
-            interpolated_cutout = interpolation.in_paint(self.source.cutout, self.source.source_mask)
+            # Estimate the background
+            self.source.estimate_background(config.remove_method, config.sigma_clip)
 
-            self.source.removed = interpolated_cutout
-
-            frame[self.source.cutout.y_min:self.source.cutout.y_max,self.source.cutout.x_min:self.source.cutout.x_max] = interpolated_cutout
+            # Replace the frame with the estimated background
+            self.source.estimated_background_cutout.replace(frame, where=self.source.mask)
 
     # *****************************************************************
 
     def plot(self):
-        
+
+        """
+        This function ...
+        :return:
+        """
+
         pass
         
 # *****************************************************************

@@ -21,6 +21,7 @@ from photutils import detect_sources
 #from photutils import detect_threshold
 
 # Import Astromagic modules
+from .masks import Mask
 from .box import Box
 from ..tools import plotting
 from ..core import masks
@@ -35,7 +36,7 @@ class Source(object):
     This class...
     """
 
-    def __init__(self, frame, center, radius, angle, inner_factor, outer_factor):
+    def __init__(self, frame, center, radius, angle, outer_factor):
 
         """
         The constructor ...
@@ -55,16 +56,12 @@ class Source(object):
         rel_center = self.cutout.rel_position(center)
         rel_center_background = self.background.rel_position(center)
 
-        # Create the masks that cover the given ellipse
-        inner_radius = radius * inner_factor
-        self.background_mask = masks.create_ellipse_mask(self.background.xsize, self.background.ysize, rel_center_background, inner_radius, angle)
-        self.cutout_mask = masks.create_ellipse_mask(self.cutout.xsize, self.cutout.ysize, rel_center, inner_radius, angle)
+        # Create masks for the background box that cover the given ellipse and
+        #self.background_mask = masks.create_ellipse_mask(self.background.xsize, self.background.ysize, rel_center_background, radius, angle)
+        self.background_mask = masks.create_annulus_mask(self.background.xsize, self.background.ysize, rel_center_background, radius, outer_radius, angle)
 
-        # Create annulus mask for the background
-        self.background_annulus = masks.create_annulus_mask(self.background.xsize, self.background.ysize, rel_center_background, inner_radius, outer_radius, angle)
-
-        # Set mask for the source (e.g. segmentation) to None
-        self.mask = None
+        # Create a mask that covers the given ellipse in the cutout box (can be overwritten by a mask for the center segment)
+        self.mask = masks.create_ellipse_mask(self.cutout.xsize, self.cutout.ysize, rel_center, radius, angle)
 
         # Set subtracted box to None
         self.estimated_background = None
@@ -118,11 +115,14 @@ class Source(object):
         #flux = phot_table[0]["aperture_sum"]
 
         # Sum the pixel values
-        return np.ma.sum(np.ma.masked_array(self.subtracted, mask=self.cutout_mask))
+
+        #plotting.plot_box(np.ma.masked_array(np.asarray(self.subtracted), mask=self.cutout_mask.inverse()))
+
+        return np.ma.sum(np.ma.masked_array(np.asarray(self.subtracted), mask=self.mask.inverse()))
 
     # *****************************************************************
 
-    def estimate_background(self, method, sigma_clip=True, sigma=3.0):
+    def estimate_background(self, method, sigma_clip=True, sigma_level=3.0):
 
         """
         This function ...
@@ -130,7 +130,7 @@ class Source(object):
         """
 
         # Perform sigma-clipping on the background if requested
-        if sigma_clip: mask = statistics.sigma_clip_mask(self.background, sigma=sigma, mask=self.background_mask)
+        if sigma_clip: mask = statistics.sigma_clip_mask(self.background, sigma_level=sigma_level, mask=self.background_mask)
         else: mask = self.background_mask
 
         if method == "polynomial":
@@ -198,11 +198,11 @@ class Source(object):
 
         # If the center pixel is identified as being part of the background, create an empty mask (the center does not
         # correspond to a segment)
-        if label == 0: self.mask = np.zeros_like(self.cutout, dtype=bool)
+        if label == 0: self.mask = Mask(np.zeros_like(self.cutout, dtype=bool))
         else:
 
             # Create a mask of the center segment
-            self.mask = (segments == label)
+            self.mask = Mask((segments == label))
 
     # *****************************************************************
 

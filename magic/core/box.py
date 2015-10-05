@@ -308,7 +308,7 @@ class Box(np.ndarray):
 
     # *****************************************************************
 
-    def replace(self, frame, mask=None):
+    def replace(self, frame, where=None):
 
         """
         This function ...
@@ -317,6 +317,7 @@ class Box(np.ndarray):
         """
 
         # Replace the pixel values in the frame
-        frame[self.y_min:self.y_max, self.x_min:self.x_max] = self
+        if where is None: frame[self.y_min:self.y_max, self.x_min:self.x_max] = self
+        else: frame[self.y_min:self.y_max, self.x_min:self.x_max][where] = self[where]
 
 # *****************************************************************

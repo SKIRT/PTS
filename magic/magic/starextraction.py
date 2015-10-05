@@ -14,13 +14,16 @@ import inspect
 from config import Config
 
 # Import Astromagic modules
+from ..core.masks import Mask
 from ..core.star import Star
 from ..tools import statistics
+from ..core.vector import Position
 
 # Import astronomical modules
 from astropy import log
 import astropy.units as u
 import astropy.coordinates as coord
+from astropy.table import Table
 from astroquery.vizier import Vizier
 
 # *****************************************************************
@@ -55,36 +58,42 @@ class StarExtractor(object):
 
     # *****************************************************************
 
-    def run(self, image):
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Clear the stars list
+        self.stars = []
+
+    # *****************************************************************
+
+    def run(self, frame, galaxyextractor=None):
 
         """
         This function ...
         """
 
         # Create a list of stars based on online catalogs
-        self.fetch_stars(image)
+        self.fetch_stars(frame, galaxyextractor)
 
         # For each star, find a corresponding source in the image
-        self.find_sources(image)
+        self.find_sources(frame)
 
         # Fit analytical models to the stars
         self.fit_stars()
 
-        # If requested, add a frame to the image with the stars
-        #if self.config.make_star_frame: self.create_frame(image)
-
         # If requested, remove the stars
-        if self.config.remove: self.remove_stars(image)
+        if self.config.remove: self.remove_stars(frame)
 
         # If requested, remove saturation in the image
-        if self.config.remove_saturation: self.remove_saturation(image)
-
-        # If requested, add the stars region
-        if self.config.add_region: self.create_region(image)
+        if self.config.remove_saturation: self.remove_saturation(frame)
 
     # *****************************************************************
 
-    def fetch_stars(self, image):
+    def fetch_stars(self, frame, galaxyextractor=None):
 
         """
         This function ...
@@ -94,7 +103,7 @@ class StarExtractor(object):
         log.info("Fetching star positions from an online catalog")
 
         # Get the range of right ascension and declination of this image
-        center, ra_span, dec_span = image.frames.selected(require_single=True).coordinate_range()
+        center, ra_span, dec_span = frame.coordinate_range()
 
         # Create a new Vizier object and set the row limit to -1 (unlimited)
         viz = Vizier(keywords=["stars", "optical"])
@@ -104,7 +113,12 @@ class StarExtractor(object):
         result = viz.query_region(center, width=ra_span, height=dec_span, catalog=self.config.fetching.catalogs)
         table = result[0]
 
+        # If a galaxyextractor is passed, get the positions of the galaxies in the frame
+        if galaxyextractor is not None: galaxies = galaxyextractor.position_list(frame)
+        else: galaxies = []
+
         # Loop over all stars in the table
+        norms = []
         for entry in table:
 
             # Get the PGC number
@@ -114,45 +128,56 @@ class StarExtractor(object):
             position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
 
             # If this star does not lie within the frame, skip it
-            if not image.frames.selected(require_single=True).contains(position): continue
+            if not frame.contains(position): continue
 
             # Get the mean error on the right ascension and declination
             position_error = entry["ePos"]*u.mas
             ra_error = entry["e_RAJ2000"]*u.mas
             dec_error = entry["e_DEJ2000"]*u.mas
 
-            # TODO: make sure the principal galaxy is not identified as a star (or at least not removed)
-            # Search for the position of the specified galaxy in the image
-            #galaxy_region = catalogs.fetch_object_by_name(galaxy_name, radius)
-            #original_len = len(region)
-            #region = regions.subtract(region, galaxy_region, 3.0, self.header)
+            # Loop over all galaxy positions in the list
+            for galaxy in galaxies:
 
-            #if len(region) == original_len - 1: log.info("Removed star position that matches the galaxy center")
-            #elif len(region) < original_len - 1: log.warning("Removed multiple star positions")
+                # Calculate the distance between the star's position and the galaxy's center
+                x_center, y_center = position.to_pixel(frame.wcs)
+                difference = galaxy - Position(x=x_center, y=y_center)
 
-            # Get the magnitude in different bands
-            k_mag = entry["Kmag"]*u.mag
-            b_mag = entry["Bmag"]*u.mag
-            v_mag = entry["Vmag"]*u.mag
-            r_mag = entry["rmag"]*u.mag
-            i_mag = entry["imag"]*u.mag
+                norms.append(difference.norm)
 
-            # Create a star object
-            star = Star(ucac_id=ucac_id, position=position, position_error=position_error, ra_error=ra_error,
-                        dec_error=dec_error, k_mag=k_mag, b_mag=b_mag, v_mag=v_mag, r_mag=r_mag, i_mag=i_mag)
+                if difference.norm <= self.config.fetching.min_difference_from_galaxy:
 
-            # If requested, enable track record
-            if self.config.track_record: star.enable_track_record()
+                    # Remove the position of this galaxy from the list
+                    galaxies.remove(galaxy)
+                    break
 
-            # Add the star to the list of stars
-            self.stars.append(star)
+            else:
+
+                # Get the magnitude in different bands
+                k_mag = entry["Kmag"]*u.mag
+                b_mag = entry["Bmag"]*u.mag
+                v_mag = entry["Vmag"]*u.mag
+                r_mag = entry["rmag"]*u.mag
+                i_mag = entry["imag"]*u.mag
+
+                # Create a star object
+                star = Star(ucac_id=ucac_id, position=position, position_error=position_error, ra_error=ra_error,
+                            dec_error=dec_error, k_mag=k_mag, b_mag=b_mag, v_mag=v_mag, r_mag=r_mag, i_mag=i_mag)
+
+                # If requested, enable track record
+                if self.config.track_record: star.enable_track_record()
+
+                # Add the star to the list of stars
+                self.stars.append(star)
+
+        # Inform the user
+        if galaxyextractor is not None: log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(norm) for norm in sorted(norms)[:10]))
 
         # Inform the user
         log.debug("Number of stars: " + str(len(self.stars)))
 
     # *****************************************************************
 
-    def find_sources(self, image):
+    def find_sources(self, frame):
 
         """
         This function ...
@@ -160,10 +185,6 @@ class StarExtractor(object):
 
         # Inform the user
         log.info("Looking for sources near the star positions")
-
-        # Get the currently selected frame
-        frame_name = image.frames.get_selected(require_single=True)
-        frame = image.frames[frame_name]
 
         # Loop over all stars in the list
         for star in self.stars:
@@ -196,7 +217,7 @@ class StarExtractor(object):
 
     # *****************************************************************
 
-    def remove_stars(self, image):
+    def remove_stars(self, frame):
 
         """
         This function ...
@@ -204,10 +225,6 @@ class StarExtractor(object):
 
         # Inform the user
         log.info("Removing the stars from the frame")
-
-        # Get the currently selected frame
-        frame_name = image.frames.get_selected(require_single=True)
-        frame = image.frames[frame_name]
 
         # Get a list of the fwhm of all the stars that were fitted
         fwhm_list = self.fwhm_list
@@ -219,7 +236,7 @@ class StarExtractor(object):
         else: raise ValueError("Unkown measure for determining the fwhm of stars without detected source")
 
         # Inform the user
-        log.debug("Default FWHM used when star could not be fitted: " + str(default_fwhm))
+        log.debug("Default FWHM used when star could not be fitted: {0:.2f} pixels".format(default_fwhm))
 
         # Loop over all stars in the list
         for star in self.stars:
@@ -229,7 +246,7 @@ class StarExtractor(object):
 
     # *****************************************************************
 
-    def remove_saturation(self, image):
+    def remove_saturation(self, frame):
 
         """
         This function ...
@@ -240,11 +257,16 @@ class StarExtractor(object):
         # Inform the user
         log.info("Removing saturation from the frame")
 
-        # Get the currently selected frame
-        frame_name = image.frames.get_selected(require_single=True)
-        frame = image.frames[frame_name]
-
         # TODO: allow "central_brightness" as config.saturation.criterion
+
+        # Get a list of the fwhm of all the stars that were fitted
+        fwhm_list = self.fwhm_list
+
+        # Determine the fwhm for the stars that were not fitted
+        if self.config.saturation.no_source_fwhm == "max": default_fwhm = max(fwhm_list)
+        elif self.config.saturation.no_source_fwhm == "mean": default_fwhm = np.mean(fwhm_list)
+        elif self.config.saturation.no_source_fwhm == "median": default_fwhm = np.median(fwhm_list)
+        else: raise ValueError("Unkown measure for determining the fwhm of stars without detected source")
 
         # Get a list of the fluxes of the stars
         flux_list = self.flux_list
@@ -254,9 +276,14 @@ class StarExtractor(object):
 
         # Inform the user
         quantity = "flux" if self.config.saturation.criterion == "flux" else "central brightness"
-        log.debug("Minimum value of the " + quantity + " for saturation removal: " + str(minimum))
+        log.debug("Minimum value of the " + quantity + " for saturation removal: {0:.2f}".format(minimum))
+
+        # Inform the user
+        eligible = len([flux for flux in flux_list if flux >= minimum])
+        log.debug("Number of stars eligible for saturation removal: " + str(eligible) + " ({0:.2f}%)".format(eligible/len(self.stars)*100.0))
 
         # Loop over all stars in the list
+        removed = 0
         for star in self.stars:
 
             # If a source was not found for this star, skip it
@@ -266,27 +293,58 @@ class StarExtractor(object):
             value = star.flux
 
             # Remove the saturation
-            if value >= minimum: star.remove_saturation(frame, self.config.saturation)
+            if value >= minimum:
+
+                star.remove_saturation(frame, self.config.saturation, default_fwhm)
+                if star.has_source: removed += 1
+
+        # Inform the user
+        log.debug("Removed saturation in " + str(removed) + " out of " + str(eligible) + " stars ({0:.2f}%)".format(removed/eligible*100.0))
 
     # *****************************************************************
 
-    def create_frame(self, image):
+    def create_frame(self, frame):
 
         """
         This function ...
         """
 
-        pass
+        return None
 
     # *****************************************************************
 
-    def create_region(self, image):
+    def create_region(self, frame):
 
         """
         This function ...
         """
 
-        pass
+        return None
+
+    # *****************************************************************
+
+    def create_mask(self, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        # Initialize a mask with the dimensions of the frame
+        mask = Mask(np.zeros_like(frame))
+
+        # Loop over all stars
+        for star in self.stars:
+
+            # If no source was found for the galaxy, skip it
+            if not star.has_source: continue
+
+            # Add this galaxy to the mask
+            mask[star.source.cutout.y_min:star.source.cutout.y_max, star.source.cutout.x_min:star.source.cutout.x_max] = star.source.mask
+
+        # Return the mask
+        return mask
 
     # *****************************************************************
 
@@ -387,5 +445,35 @@ class StarExtractor(object):
 
         # Return the mean of the fwhm for all fitted stars
         return np.mean(fwhm_list)
+
+    # *****************************************************************
+
+    def table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        ids = []
+        ascensions = []
+        declinations = []
+        sources = []
+        models = []
+        fwhms = []
+
+        # Loop over all stars
+        for star in self.stars:
+
+            ids.append(star.ucac_id)
+            ascensions.append(star.position.ra.value)
+            declinations.append(star.position.dec.value)
+            sources.append(star.has_source)
+            models.append(star.has_model)
+            if star.has_model: fwhms.append(star.fwhm)
+            else: fwhms.append(None)
+
+        # Create and return the table
+        return Table([ids, ascensions, declinations, sources, models, fwhms], names=('UCAC-ID', 'RA', 'DEC', 'Source', 'Model', 'FWHM'), meta={'name': 'stars'})
 
 # *****************************************************************

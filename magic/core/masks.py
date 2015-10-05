@@ -334,3 +334,16 @@ def create_annulus_mask(xsize, ysize, center, inner_radius, outer_radius, angle)
 
 # *****************************************************************
 
+def union(mask_a, mask_b):
+
+    """
+    This function ...
+    :param mask_a:
+    :param mask_b:
+    :return:
+    """
+
+    # Return the unified mask
+    return mask_a + mask_b
+
+# *****************************************************************

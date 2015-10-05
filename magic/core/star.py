@@ -129,7 +129,7 @@ class Star(object):
         """
 
         # Create a new track record
-        self.track_record = TrackRecord()
+        self.track_record = TrackRecord("Start")
 
     # *****************************************************************
 
@@ -158,11 +158,14 @@ class Star(object):
         :return:
         """
 
+        # Add a new stage to the track record
+        if self.has_track_record: self.track_record.set_stage("detection")
+
         # Get the parameters of the circle
         center, radius = self.circle_parameters(frame.wcs, frame.pixelscale, config.initial_radius)
 
         # Find a source
-        self.source = analysis.find_source(frame, center, radius, 0.0, config, self.track_record)
+        self.source = analysis.find_source(frame, center, radius, 0.0, config, self.track_record, special=False)
 
     # *****************************************************************
 
@@ -174,6 +177,9 @@ class Star(object):
         :param config:
         :return:
         """
+
+        # Add a new stage to the track record
+        if self.has_track_record: self.track_record.set_stage("fitting")
 
         # Fit model to the source, in a loop over different analytical forms for the model
         for level in range(len(config.model_names)):
@@ -198,6 +204,9 @@ class Star(object):
         :return:
         """
 
+        # Add a new stage to the track record
+        if self.has_track_record: self.track_record.set_stage("removal")
+
         # Convert FWHM to sigma
         default_sigma = default_fwhm / 2.35
 
@@ -219,7 +228,7 @@ class Star(object):
             center = Position(x=position_x, y=position_y)
 
         # Create a source
-        source = Source(frame, center, radius, 0.0, 1.0, outer_factor)
+        source = Source(frame, center, radius, 0.0, outer_factor)
 
         # Estimate the background
         source.estimate_background(config.method, config.sigma_clip)
@@ -228,30 +237,42 @@ class Star(object):
         if self.has_track_record: self.track_record.append(source)
 
         # Replace the frame with the estimated background
-        source.estimated_background.replace(frame, mask=source.background_mask)
+        source.estimated_background.replace(frame, where=source.background_mask)
 
         # Use the new source
         self.source = source
 
     # *****************************************************************
 
-    def remove_saturation(self, frame, config):
+    def remove_saturation(self, frame, config, default_fwhm):
 
         """
         This function ...
         """
 
-        # Replace the source by a source that covers the saturation
-        self.source = analysis.find_source_segmentation(frame, self.source.center, self.source.radius, 0.0, config, track_record=self.track_record)
+        # Convert FWHM to sigma
+        default_sigma = default_fwhm / 2.35
 
-        # If a segment was found that can be identified with a source
-        if self.has_source:
+        # Determine the radius for the saturation detection
+        model = self.model
+        radius = fitting.sigma(model) * config.sigmas if model is not None else default_sigma * config.sigmas
+
+        # Add a new stage to the track record
+        if self.has_track_record: self.track_record.set_stage("saturation")
+
+        # Look for a center segment corresponding to a 'saturation' source
+        source = analysis.find_source_segmentation(frame, self.source.center, radius, 0.0, config, track_record=self.track_record)
+
+        # If a 'saturation' source was found
+        if source is not None:
+
+            # Replace the source by a source that covers the saturation
+            self.source = source
 
             # Estimate the background
             self.source.estimate_background(config.remove_method, config.sigma_clip)
 
             # Replace the frame with the estimated background
-            self.source.estimated_background.replace(frame)
-            #self.source.estimated_background.replace(frame, where=mask)
+            self.source.estimated_background_cutout.replace(frame, where=self.source.mask)
 
 # *****************************************************************

@@ -979,3 +979,23 @@ class Image(object):
         self.masks[name] = Mask(data)
 
     # *****************************************************************
+
+    def add_mask(self, mask, name, overwrite=False):
+
+        """
+        This function ...
+        :param mask:
+        :param name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding '" + name + "' to the set of masks")
+
+        # Check whether a mask with this name already exists
+        if name in self.masks and not overwrite: raise RuntimeError("A mask with this name already exists")
+
+        # Add the mask to the set of masks
+        self.masks[name] = mask
+
+# *****************************************************************

@@ -13,7 +13,7 @@ import pyregion
 
 # *****************************************************************
 
-class Region(object):
+class Region(pyregion.ShapeList):
 
     """
     This class ...
@@ -21,7 +21,7 @@ class Region(object):
 
     # *****************************************************************
 
-    def __init__(self, region):
+    def __init__(self):
 
         """
         The constructor ...
@@ -29,10 +29,10 @@ class Region(object):
         :return:
         """
 
-        # Set the internal pyregion object
-        self.region = region
+        # Call the ShapeList constructor
+        super(Region, self).__init__()
 
-        # Set as unactive initially
+        # Set as unselected initially
         self.selected = False
 
     # *****************************************************************
@@ -56,18 +56,6 @@ class Region(object):
         """
 
         self.selected = False
-
-    # *****************************************************************
-
-    @property
-    def number_of_shapes(self):
-
-        """
-        This function returns the number of shapes in this region
-        :return:
-        """
-
-        return len(self.region)
 
 # *****************************************************************
 

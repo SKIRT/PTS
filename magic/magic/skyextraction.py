@@ -12,6 +12,10 @@ import os.path
 import inspect
 from config import Config
 
+# Import Astromagic modules
+from ..core import masks
+from ..tools import statistics
+
 # *****************************************************************
 
 class SkyExtractor(object):
@@ -38,15 +42,36 @@ class SkyExtractor(object):
 
         else: self.config = config
 
+        # Set the mask to None initialy
+        self.mask = None
+
     # *****************************************************************
 
-    def run(self, image):
+    def run(self, frame, galaxyextractor, starextractor):
 
         """
         This function ...
         :return:
         """
 
-        pass
+        # Create a mask that covers the galaxies and stars (including saturation)
+        self.mask = masks.union(galaxyextractor.create_mask(frame), starextractor.create_mask(frame))
+
+        print(type(self.mask))
+
+        # Sigma-clipping
+        if self.config.sigma_clip: self.mask = statistics.sigma_clip_mask(frame, self.config.sigma_level, self.mask)
+
+    # *****************************************************************
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set the mask to None
+        self.mask = None
 
 # *****************************************************************

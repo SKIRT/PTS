@@ -15,7 +15,9 @@ import inspect
 
 # Import Astromagic modules
 from ..core import regions
+from ..core.masks import Mask
 from ..core.galaxy import Galaxy
+from ..core.vector import Position
 
 # Import astromagic modules
 from astropy import log
@@ -52,27 +54,36 @@ class GalaxyExtractor(object):
 
     # *****************************************************************
 
-    def run(self, image):
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Clear the list of galaxies
+        self.galaxies = []
+
+    # *****************************************************************
+
+    def run(self, frame):
 
         """
         This function ...
         """
 
         # Get list of galaxies
-        self.fetch_galaxies(image)
+        self.fetch_galaxies(frame)
 
         # Find the sources
-        self.find_sources(image)
+        self.find_sources(frame)
 
         # If requested, remove
-        if self.config.remove: self.remove_galaxies(image)
-
-        # If requested, add the galaxies region
-        if self.config.add_region: self.make_galaxy_region(image)
+        if self.config.remove: self.remove_galaxies(frame)
 
     # *****************************************************************
 
-    def fetch_galaxies(self, image):
+    def fetch_galaxies(self, frame):
 
         """
         This function ...
@@ -81,8 +92,11 @@ class GalaxyExtractor(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Fetching galaxy positions from an online catalog")
+
         # Get the range of right ascension and declination of the image
-        center, ra_span, dec_span = image.frames.selected(require_single=True).coordinate_range()
+        center, ra_span, dec_span = frame.coordinate_range()
 
         # Create a new Vizier object and set the row limit to -1 (unlimited)
         viz = Vizier(keywords=["galaxies", "optical"])
@@ -128,9 +142,12 @@ class GalaxyExtractor(object):
         galaxy = max(self.galaxies, key=major_axis)
         galaxy.principal = True
 
+        # Inform the user
+        log.debug("Number of galaxies: " + str(len(self.galaxies)))
+
     # *****************************************************************
 
-    def find_sources(self, image):
+    def find_sources(self, frame):
 
         """
         This function ...
@@ -138,9 +155,8 @@ class GalaxyExtractor(object):
         :return:
         """
 
-        # Get the name of the currently selected frame
-        frame_name = image.frames.get_selected(require_single=True)
-        frame = image.frames[frame_name]
+        # Inform the user
+        log.info("Looking for sources near the galaxy positions")
 
         # Loop over all galaxies
         for galaxy in self.galaxies:
@@ -151,9 +167,12 @@ class GalaxyExtractor(object):
             # Find a source
             galaxy.find_source(frame, self.config.detection)
 
+        # Inform the user
+        log.debug("Success ratio: {0:.2f}%".format(self.have_source/len(self.galaxies)*100.0))
+
     # *****************************************************************
 
-    def remove_galaxies(self, image):
+    def remove_galaxies(self, frame):
 
         """
         This function ...
@@ -163,9 +182,8 @@ class GalaxyExtractor(object):
         :return:
         """
 
-        # Get the name of the currently selected frame
-        frame_name = image.frames.get_selected(require_single=True)
-        frame = image.frames[frame_name]
+        # Inform the user
+        log.info("Removing the galaxies from the frame (except for the principal galaxy)")
 
         # Loop over all galaxies
         for galaxy in self.galaxies:
@@ -175,7 +193,7 @@ class GalaxyExtractor(object):
 
     # *****************************************************************
 
-    def make_galaxy_region(self, image):
+    def create_region(self, frame):
 
         """
         This function ...
@@ -191,6 +209,7 @@ class GalaxyExtractor(object):
         width_list = []
         angle_list = []
 
+        # Loop over all galaxies
         for galaxy in self.galaxies:
 
             ra_list.append(galaxy.center.ra.value)
@@ -205,8 +224,8 @@ class GalaxyExtractor(object):
 
             else:
 
-                width = self.config.initial_radius * image.pixelscale.value
-                height = self.config.initial_radius * image.pixelscale.value
+                width = self.config.region.default_radius * frame.pixelscale.value
+                height = self.config.region.default_radius * frame.pixelscale.value
 
             angle = galaxy.pa.value if galaxy.pa is not None else 0.0
 
@@ -214,11 +233,68 @@ class GalaxyExtractor(object):
             width_list.append(width)
             angle_list.append(angle)
 
-        # Create a shape and add it
-        region = regions.ellipses(ra_list, dec_list, height_list, width_list, angle_list)
+        # Create a region and return it
+        return regions.ellipses(ra_list, dec_list, height_list, width_list, angle_list)
 
-        # Add the region
-        image._add_region(region, "galaxies")
+    # *****************************************************************
+
+    def create_mask(self, frame, principal=False):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a mask with the dimensions of the frame
+        mask = Mask(np.zeros_like(frame))
+
+        # Loop over all galaxies
+        for galaxy in self.galaxies:
+
+            # If no source was found for the galaxy, skip it
+            if not galaxy.has_source: continue
+
+            # Add this galaxy to the mask
+            mask[galaxy.source.cutout.y_min:galaxy.source.cutout.y_max, galaxy.source.cutout.x_min:galaxy.source.cutout.x_max] = galaxy.source.mask
+
+        # Return the mask
+        return mask
+
+    # *****************************************************************
+
+    @property
+    def have_source(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        count = 0
+        for galaxy in self.galaxies: count += galaxy.has_source
+        return count
+
+    # *****************************************************************
+
+    def position_list(self, frame):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list to contain the galaxy positions
+        position_list = []
+
+        # Loop over the galaxies
+        for galaxy in self.galaxies:
+
+            # Calculate the pixel coordinate in the frame and add it to the list
+            x_center, y_center = galaxy.center.to_pixel(frame.wcs)
+            position_list.append(Position(x=x_center, y=y_center))
+
+        # Return the list
+        return position_list
 
     # *****************************************************************
 

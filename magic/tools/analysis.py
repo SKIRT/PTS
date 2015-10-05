@@ -18,7 +18,6 @@ from . import fitting
 from . import plotting
 from ..core import regions
 from . import statistics
-from ..core import masks
 from . import coordinates
 from . import cropping
 from . import interpolation
@@ -273,7 +272,7 @@ def estimate_background(data, mask, interpolate=True, sigma_clip=True):
     """
 
     # Sigma clipping
-    if sigma_clip: mask = statistics.sigma_clip_mask(data, sigma=3.0, mask=mask)
+    if sigma_clip: mask = statistics.sigma_clip_mask(data, sigma_level=3.0, mask=mask)
 
     # Decide whether to interpolate the background or to calculate a single median background value
     if interpolate: background = interpolation.in_paint(data, mask)
@@ -442,7 +441,7 @@ def find_galaxy_orientation(data, region, plot=False):
 
 # *****************************************************************
 
-def find_source(frame, center, radius, angle, config, track_record=None):
+def find_source(frame, center, radius, angle, config, track_record=None, special=False):
 
     """
     This function ...
@@ -450,10 +449,10 @@ def find_source(frame, center, radius, angle, config, track_record=None):
     """
 
     # Segmentation method
-    if config.detection_method == "segmentation": return find_source_segmentation(frame, center, radius, angle, config, track_record)
+    if config.detection_method == "segmentation": return find_source_segmentation(frame, center, radius, angle, config, track_record, special=special)
 
     # Peaks method
-    elif config.detection_method == "peaks": return find_source_peaks(frame, center, radius, angle, config, track_record)
+    elif config.detection_method == "peaks": return find_source_peaks(frame, center, radius, angle, config, track_record, special=special)
 
     # DAOFIND source detection
     elif config.detection_method == "daofind": return find_source_daofind(frame, center, radius, angle, config, track_record)
@@ -466,7 +465,7 @@ def find_source(frame, center, radius, angle, config, track_record=None):
 
 # *****************************************************************
 
-def find_source_segmentation(frame, center, radius, angle, config, track_record=None, expansion_level=1):
+def find_source_segmentation(frame, center, radius, angle, config, track_record=None, expansion_level=1, special=False):
 
     """
     This function ...
@@ -474,7 +473,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
     """
 
     # Create a source object
-    source = Source(frame, center, radius, angle, config.background_inner_factor, config.background_outer_factor)
+    source = Source(frame, center, radius, angle, config.background_outer_factor)
 
     # If always subtract background is enabled
     if config.always_subtract_background:
@@ -489,12 +488,18 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
     # If no center segment was found, subtract the background first
     if not np.any(source.mask) and not config.always_subtract_background:
 
+        # Add a snapshot of the source to the track record for debugging
+        if track_record is not None: track_record.append(copy.deepcopy(source))
+
         # Show a plot for debugging
         if config.debug.no_segment_before: source.plot(title="No segment found, gradient background will be removed")
 
         # Subtract the background from the source
         source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
         source.subtract_background()
+
+        # Add a snapshot of the source to the track record for debugging
+        if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
         if config.debug.no_segment_after: source.plot(title="After removing gradient background")
@@ -508,7 +513,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         return None
 
     # If the mask extents to the boundary of the cutout box and if enabled, expand the ellipse and repeat the procedure
-    if masks.hits_boundary(source.mask) and config.expand:
+    if source.mask.hits_boundary() and config.expand:
 
         # Add a snapshot of the source to the track record for debugging
         if track_record is not None: track_record.append(copy.deepcopy(source))
@@ -541,7 +546,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
 
 # *****************************************************************
 
-def find_source_peaks(frame, center, radius, angle, config, track_record=None, level=0):
+def find_source_peaks(frame, center, radius, angle, config, track_record=None, level=0, special=False):
 
     """
     This function ...
@@ -554,11 +559,13 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
     :return:
     """
 
+    if special: print("Hoera!")
+
     # If the maximum or minimum level is reached, return without source
     if level < config.min_level or level > config.max_level: return None
 
     # Create a source object
-    source = Source(frame, center, radius, angle, config.background_inner_factor, config.background_outer_factor)
+    source = Source(frame, center, radius, angle, config.background_outer_factor)
 
     # If the frame is zero in this box, continue to the next object
     if not np.any(source.cutout): return None
@@ -582,7 +589,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
-        if config.debug.zero_peaks_before: source.plot(title="0 peaks, gradient background will be removed")
+        if config.debug.zero_peaks_before or special: source.plot(title="0 peaks, gradient background will be removed")
 
         # Estimate and subtract the background (remove the background gradient)
         source.estimate_background(config.background_est_method, config.sigma_clip_background)
@@ -595,7 +602,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
-        if config.debug.zero_peaks_after: source.plot(title=str(len(peaks)) + " peak(s) found after removing gradient background", peaks=peaks)
+        if config.debug.zero_peaks_after or special: source.plot(title=str(len(peaks)) + " peak(s) found after removing gradient background", peaks=peaks)
 
     # If no sources were detected
     if len(peaks) == 0:
@@ -604,7 +611,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
-        if config.debug.zero_peaks: source.plot(title="0 peaks")
+        if config.debug.zero_peaks or special: source.plot(title="0 peaks")
 
         # If the level was negative, no source can be found
         if level < 0: return None
@@ -622,7 +629,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
-        if config.debug.more_peaks: source.plot(title="More peaks", peaks=peaks)
+        if config.debug.more_peaks or special: source.plot(title="More peaks", peaks=peaks)
 
         # If the level was positive, no source can be found
         if level > 0: return None
@@ -640,7 +647,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
-        if config.debug.one_peak: source.plot(title="1 peak")
+        if config.debug.one_peak or special: source.plot(title="1 peak")
 
         # Get the x and y coordinate of the peak
         x_peak = peaks[0].x
@@ -650,7 +657,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
         if not (np.isclose(x_peak, center.x, atol=config.peak_offset_tolerance) and np.isclose(y_peak, center.y, atol=config.peak_offset_tolerance)):
 
             # Show a plot for debugging
-            if config.debug.off_center: source.plot(title="Peak and center position do not match")
+            if config.debug.off_center or special: source.plot(title="Peak and center position do not match")
 
             # No source was found
             return None

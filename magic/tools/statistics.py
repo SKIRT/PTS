@@ -18,6 +18,7 @@ import pyregion
 
 # Import Astromagic modules
 from . import general
+from ..core.masks import Mask
 
 # *****************************************************************
 
@@ -44,7 +45,7 @@ def sigma_clip_mask_list(data, sigma=3.0, mask=None):
 
 # *****************************************************************
 
-def sigma_clip_mask(data, sigma=3.0, mask=None):
+def sigma_clip_mask(data, sigma_level=3.0, mask=None):
 
     """
     This function ...
@@ -58,10 +59,10 @@ def sigma_clip_mask(data, sigma=3.0, mask=None):
     x_values, y_values, z_values = general.split_xyz(data, mask=mask)
 
     # Sigma-clip z-values that are outliers
-    masked_z_values = sigma_clip(z_values, sig=sigma, iters=None, copy=False)
+    masked_z_values = sigma_clip(z_values, sig=sigma_level, iters=None, copy=False)
 
     # Copy the mask or create a new one if none was provided
-    new_mask = np.copy(mask) if mask is not None else np.zeros_like(data, dtype=np.bool)
+    new_mask = copy.deepcopy(mask) if mask is not None else Mask(np.zeros_like(data))
 
     for i, masked in enumerate(masked_z_values.mask):
 
@@ -70,6 +71,9 @@ def sigma_clip_mask(data, sigma=3.0, mask=None):
             x = x_values[i]
             y = y_values[i]
             new_mask[y,x] = True
+
+    # Assert the mask is of type 'Mask'
+    assert isinstance(new_mask, Mask)
 
     # Return the new or updated mask
     return new_mask

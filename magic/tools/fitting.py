@@ -115,7 +115,7 @@ def fit_polynomial(box, degree, x_shift=0.0, y_shift=0.0, mask=None, sigma_clip_
 
     # TODO: use x_shift and y_shift
 
-    if sigma_clip_background: mask = statistics.sigma_clip_mask(box, sigma=3.0, mask=mask)
+    if sigma_clip_background: mask = statistics.sigma_clip_mask(box, sigma_level=3.0, mask=mask)
 
     # Fit the data using astropy.modeling
     poly_init = models.Polynomial2D(degree=degree)
