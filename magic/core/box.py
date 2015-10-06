@@ -8,10 +8,12 @@
 from __future__ import (absolute_import, division, print_function)
 
 # Import standard modules
+import math
 import numpy as np
 from scipy import ndimage
 
 # Import Astromagic modules
+from .regions import Region
 from ..tools import cropping
 from ..tools import fitting
 from ..tools import interpolation
@@ -65,11 +67,23 @@ class Box(np.ndarray):
         cropped, x_min, x_max, y_min, y_max = cropping.crop(frame, center.x, center.y, x_radius, y_radius)
 
         # Check that the center position lies within the box
-        try:
-            assert (x_min <= center.x < x_max and y_min <= center.y < y_max)
-        except AssertionError:
-            print(x_min, x_max, center.x)
-            print(y_min, y_max, center.y)
+        assert (x_min <= center.x < x_max and y_min <= center.y < y_max)
+
+        # Return a new box
+        return cls(cropped, x_min, x_max, y_min, y_max)
+
+    # *****************************************************************
+
+    @classmethod
+    def cutout_limits(cls, frame, x_min, x_max, y_min, y_max):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Crop the frame
+        cropped, x_min, x_max, y_min, y_max = cropping.crop_direct(frame, x_min, x_max, y_min, y_max)
 
         # Return a new box
         return cls(cropped, x_min, x_max, y_min, y_max)
@@ -88,19 +102,32 @@ class Box(np.ndarray):
         :return:
         """
 
-        # Set the x and y radius
-        if isinstance(radius, Extent):
+        # TODO: improve this function ...
 
-            x_radius = np.abs(np.sin(angle)*radius.x + np.cos(angle)*radius.y)
-            y_radius = np.abs(np.cos(angle)*radius.x - np.sin(angle)*radius.y)
+        # Create a region consisting of one ellipse
+        region = Region.ellipse(center, radius, angle)
 
-        else:
+        # This is a hack to use mpl to determine the outer bounds of the regions
+        # (but it's a legit hack - pyregion needs a major internal refactor before
+        # we can approach this any other way)
+        mpl_objects = region.get_mpl_patches_texts(origin=0)[0]
 
-            x_radius = radius
-            y_radius = radius
+        # The object list should only contain one ellipse
+        # Find the minimal enclosing box containing the ellipse
+        extent = mpl_objects[0].get_extents()
+
+        # Get the minimum and maximum x and y values
+        x_min, y_min = extent.min
+        x_max, y_max = extent.max
+
+        # Convert into integers
+        x_min = int(round(x_min))
+        x_max = int(round(x_max))
+        y_min = int(round(y_min))
+        y_max = int(round(y_max))
 
         # Return a new box
-        return cls.cutout(frame, center, x_radius, y_radius)
+        return cls.cutout_limits(frame, x_min, x_max, y_min, y_max)
 
     # *****************************************************************
 
@@ -112,8 +139,13 @@ class Box(np.ndarray):
         :return:
         """
 
-        data = self[box.y_min - self.y_min:box.y_max - self.y_min,
-                    box.x_min - self.x_min:box.x_max - self.x_min]
+        rel_y_min = box.y_min - self.y_min
+        rel_y_max = box.y_max - self.y_min
+
+        rel_x_min = box.x_min - self.x_min
+        rel_x_max = box.x_max - self.x_min
+
+        data = self[rel_y_min:rel_y_max, rel_x_min:rel_x_max]
 
         # Create the new box
         return Box(data, box.x_min, box.x_max, box.y_min, box.y_max)

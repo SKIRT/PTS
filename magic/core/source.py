@@ -44,11 +44,12 @@ class Source(object):
         self.center = center
         self.radius = radius
         self.angle = angle
+        self.outer_factor = outer_factor
 
         # Create the cutout and background
         outer_radius = radius * outer_factor
-        self.cutout = Box.from_ellipse(frame, center, radius, angle=angle)
-        self.background = Box.from_ellipse(frame, center, outer_radius, angle=angle)
+        self.cutout = Box.from_ellipse(frame, center, radius, angle=self.angle)
+        self.background = Box.from_ellipse(frame, center, outer_radius, angle=self.angle)
 
         # Calculate the relative coordinate of the center for the cutout and background boxes
         rel_center = self.cutout.rel_position(center)
@@ -56,10 +57,10 @@ class Source(object):
 
         # Create masks for the background box that cover the given ellipse and
         #self.background_mask = masks.create_ellipse_mask(self.background.xsize, self.background.ysize, rel_center_background, radius, angle)
-        self.background_mask = masks.create_annulus_mask(self.background.xsize, self.background.ysize, rel_center_background, radius, outer_radius, angle)
+        self.background_mask = masks.create_annulus_mask(self.background.xsize, self.background.ysize, rel_center_background, radius, outer_radius, self.angle)
 
         # Create a mask that covers the given ellipse in the cutout box (can be overwritten by a mask for the center segment)
-        self.mask = masks.create_ellipse_mask(self.cutout.xsize, self.cutout.ysize, rel_center, radius, angle)
+        self.mask = masks.create_ellipse_mask(self.cutout.xsize, self.cutout.ysize, rel_center, radius, self.angle)
 
         # Set subtracted box to None
         self.estimated_background = None
@@ -126,6 +127,8 @@ class Source(object):
         This function ...
         :return:
         """
+
+        print(self.background.shape, self.background_mask.shape)
 
         # Perform sigma-clipping on the background if requested
         if sigma_clip: mask = statistics.sigma_clip_mask(self.background, sigma_level=sigma_level, mask=self.background_mask)
@@ -204,10 +207,6 @@ class Source(object):
 
     # *****************************************************************
 
-
-
-    # *****************************************************************
-
     def locate_peaks(self, threshold_sigmas):
 
         """
@@ -265,6 +264,18 @@ class Source(object):
 
         # Zoom in on the background
         source.background = self.background.zoom(self.center, factor)
+
+        # Calculate the relative coordinate of the center for the cutout and background boxes
+        rel_center = source.cutout.rel_position(self.center)
+        rel_center_background = source.background.rel_position(self.center)
+
+        # Decrease the radius
+        radius = self.radius / factor
+        outer_radius = radius * self.outer_factor
+
+        # Zoom in on the masks
+        source.background_mask = masks.create_annulus_mask(source.background.xsize, source.background.ysize, rel_center_background, radius, outer_radius, self.angle)
+        source.mask = masks.create_ellipse_mask(source.cutout.xsize, source.cutout.ysize, rel_center, radius, self.angle)
 
         # Set derived properties to None
         source.estimated_background = None

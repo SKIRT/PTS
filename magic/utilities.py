@@ -588,11 +588,11 @@ def set_uncertainty(image, directory, name):
 
     if image.frames.errors is None:
 
-        image.add_frame(Frame(np.full(image.frames.primary.shape, uncertainty), image.frames.primary.coordinates), "errors")
+        image.add_frame(Frame(np.full(image.frames.primary.shape, uncertainty), image.frames.primary.wcs), "errors")
 
     else:
 
-        image.frames.errors = np.sqrt(np.power(image.frames.errors, 2)+uncertainty**2)
+        image.frames.errors = np.sqrt(np.power(image.frames.errors, 2) + uncertainty**2)
 
     # Deselect ...
     reset_selection(image)

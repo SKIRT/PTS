@@ -11,6 +11,9 @@ import numpy as np
 # Import astronomical modules
 import pyregion
 
+# Import Astromagic modules
+from ..core.vector import Extent
+
 # *****************************************************************
 
 class Region(pyregion.ShapeList):
@@ -34,6 +37,61 @@ class Region(pyregion.ShapeList):
 
         # Set as unselected initially
         self.selected = False
+
+    # *****************************************************************
+
+    @classmethod
+    def ellipse(cls, center, radius, angle):
+
+        """
+        This function ...
+        :param center:
+        :param radius:
+        :param angle:
+        :return:
+        """
+
+        x_radius = radius.x if isinstance(radius, Extent) else radius
+        y_radius = radius.y if isinstance(radius, Extent) else radius
+
+        # Create a string identifying this ellipse
+        region_string = "# Region file format: DS9 version 3.0\n"
+        region_string += "global color=green\n"
+        region_string += "image\n"
+        region_string += "ellipse(" + str(center.x) + "," + str(center.y) + "," + str(x_radius) + "," + str(y_radius) + "," + str(angle.degree) + ")\n"
+
+        # TODO: FIX THIS!! DOES RETURN A PYREGION OBJECT BUT WE WANT A ASTROMAGIC REGION OBJECT RETURNED !!
+
+        # Create a region and return it
+        return pyregion.parse(region_string)
+
+    # *****************************************************************
+
+    @classmethod
+    def ellipses(cls, centers, radii, angles):
+
+        """
+        This function ...
+        :param centers:
+        :param radii:
+        :param angles:
+        :return:
+        """
+
+        # Create a string identifying this ellipse
+        region_string = "# Region file format: DS9 version 3.0\n"
+        region_string += "global color=green\n"
+        region_string += "image\n"
+
+        # Loop over the parameter sets
+        for center, radius, angle in zip(centers, radii, angles):
+
+            x_radius = radius.x if isinstance(radius, Extent) else radius
+            y_radius = radius.y if isinstance(radius, Extent) else radius
+            region_string += "ellipse(" + str(center.x) + "," + str(center.y) + "," + str(x_radius) + "," + str(y_radius) + "," + str(angle.degree) + ")\n"
+
+        # Create a region and return it
+        return pyregion.parse(region_string)
 
     # *****************************************************************
 

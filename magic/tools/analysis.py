@@ -461,8 +461,6 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
     :return:
     """
 
-    if special: print("Hoera!")
-
     # If the maximum or minimum level is reached, return without source
     if level < config.min_level or level > config.max_level: return None
 

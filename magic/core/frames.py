@@ -137,9 +137,11 @@ class Frame(np.ndarray):
         :return:
         """
 
+        # Convert the data
         conversion_factor = self.unit / unit
         self *= conversion_factor
 
+        # Set the new unit
         self.unit = unit
 
     # *****************************************************************

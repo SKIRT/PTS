@@ -19,6 +19,7 @@ from photutils import EllipticalAperture
 from ..tools import analysis
 from .vector import Position, Extent
 from ..tools import interpolation
+from astropy.coordinates import Angle
 
 # *****************************************************************
 
@@ -54,8 +55,8 @@ class Galaxy(object):
         # Set the source attribute to None initially
         self.source = None
 
-        # Set the model attribute to None initially
-        self.model = None
+        # Set the aperture attribute to None initially
+        self.aperture = None
 
     # *****************************************************************
 
@@ -71,6 +72,18 @@ class Galaxy(object):
 
     # *****************************************************************
 
+    @property
+    def has_aperture(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.aperture is not None
+
+    # *****************************************************************
+
     def ellipse_parameters(self, wcs, pixelscale, default_radius):
 
         """
@@ -82,15 +95,15 @@ class Galaxy(object):
         # Get the center of the galaxy in pixel coordinates
         x_center, y_center = self.center.to_pixel(wcs, origin=0)
 
-        if self.pa is None: angle = 0.0
-        else: angle = self.pa.value
+        if self.pa is None: angle = Angle(0.0, u.deg)
+        else: angle = self.pa
 
         if self.major is None:
 
             x_radius = default_radius
             y_radius = default_radius
 
-        elif self.minor is None or self.pa == 0.0:
+        elif self.minor is None or angle == 0.0:
 
             x_radius = self.major.to("arcsec") / pixelscale
             y_radius = x_radius

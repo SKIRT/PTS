@@ -12,6 +12,7 @@ import numpy as np
 
 # Import astronomical units
 from astropy import units as u
+from astropy.coordinates import Angle
 
 # Import Astromagic modules
 from .source import Source
@@ -165,7 +166,7 @@ class Star(object):
         center, radius = self.circle_parameters(frame.wcs, frame.pixelscale, config.initial_radius)
 
         # Find a source
-        self.source = analysis.find_source(frame, center, radius, 0.0, config, self.track_record, special=False)
+        self.source = analysis.find_source(frame, center, radius, Angle(0.0, u.deg), config, self.track_record, special=False)
 
     # *****************************************************************
 

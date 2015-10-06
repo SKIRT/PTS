@@ -19,6 +19,11 @@ class Vector(object):
     This class ...
     """
 
+    # Define the symbol for displaying as string
+    symbol = "V"
+
+    # *****************************************************************
+
     def __init__(self, x, y):
 
         """
@@ -61,6 +66,26 @@ class Vector(object):
 
         return self.norm, self.angle
 
+    # *****************************************************************
+
+    def __str__(self):
+
+        """
+        This function ...
+        """
+
+        return self.symbol + '(x={0}, y={1})'.format(self.x, self.y)
+
+     # *****************************************************************
+
+    def __repr__(self):
+
+        """
+        This function
+        """
+
+        return '<' + self.__class__.__name__ + ' x={0}, y={1}>'.format(self.x, self.y)
+
 # *****************************************************************
 
 class Position(Vector):
@@ -68,6 +93,11 @@ class Position(Vector):
     """
     This class ...
     """
+
+    # Define the symbol for displaying as string
+    symbol = "P"
+
+    # *****************************************************************
 
     def __init__(self, x, y):
 
@@ -95,6 +125,11 @@ class Extent(Vector):
     """
     This class ...
     """
+
+    # Define the symbol for displaying as string
+    symbol = "E"
+
+    # *****************************************************************
 
     def __init__(self, x, y):
 

@@ -8,12 +8,18 @@
 from __future__ import (absolute_import, division, print_function)
 
 # Import standard modules
+import math
 import numpy as np
 from scipy import ndimage
 
 # Import Astromagic modules
 from . import regions
-from .vector import Extent
+from .regions import Region
+from .vector import Position, Extent
+
+# Import astronomical modules
+import astropy.units as u
+from astropy.coordinates import Angle
 
 # *****************************************************************
 
@@ -87,6 +93,58 @@ class Mask(np.ndarray):
 
     @property
     def ysize(self): return self.shape[0]
+
+    # *****************************************************************
+
+    @classmethod
+    def from_ellipse(cls, x_size, y_size, center, radius, angle):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :param center:
+        :param radius:
+        :param angle:
+        :return:
+        """
+
+        # Create a region consisting of one ellipse
+        region = Region.ellipse(center, radius, angle)
+
+        # Create the mask
+        data = region.get_mask(shape=(y_size, x_size))
+
+        # Return a new Mask object
+        return cls(data)
+
+    # *****************************************************************
+
+    @classmethod
+    def from_aperture(cls, x_size, y_size, aperture):
+
+        """
+        This function ...
+        :param aperture:
+        :return:
+        """
+
+        # TODO: make this work with apertures other than EllipticalAperture
+
+        # Get the parameters of the elliptical aperture
+        x_center, y_center = aperture.positions[0]
+        center = Position(x=x_center, y=y_center)
+
+        major = aperture.a
+        minor = aperture.b
+
+        radius = Extent(x=major, y=minor)
+
+        # theta is in radians
+        angle = Angle(aperture.theta, u.rad)
+
+        # Return a new Mask object
+        return cls.from_ellipse(x_size, y_size, center, radius, angle)
 
     # *****************************************************************
 
@@ -303,11 +361,8 @@ def create_ellipse_mask(x_size, y_size, center, radius, angle):
     :return:
     """
 
-    x_radius = radius.x if isinstance(radius, Extent) else radius
-    y_radius = radius.y if isinstance(radius, Extent) else radius
-
     # Create a region consisting of one ellipse
-    region = regions.one_ellipse([center.x, center.y, x_radius, y_radius, angle])
+    region = Region.ellipse(center, radius, angle)
 
     # Create the mask
     data = region.get_mask(shape=(y_size, x_size))

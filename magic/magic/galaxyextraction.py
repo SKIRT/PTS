@@ -28,6 +28,7 @@ from astropy.table import Table
 from astroquery.vizier import Vizier
 from astroquery.ned import Ned
 import astroquery.exceptions
+from astropy.coordinates import Angle
 
 # *****************************************************************
 
@@ -81,6 +82,9 @@ class GalaxyExtractor(object):
 
         # Find the sources
         self.find_sources(frame)
+
+        # Find apertures
+        if self.config.find_apertures: self.find_apertures()
 
         # If requested, remove
         if self.config.remove: self.remove_galaxies(frame)
@@ -157,7 +161,7 @@ class GalaxyExtractor(object):
             minor = diameter / ratio if diameter is not None and ratio is not None else None
 
             # Get the position angle of the galaxy
-            pa = entry["PA"]*u.deg if entry["PA"] else None
+            pa = Angle(entry["PA"]-90, u.deg) if entry["PA"] else None
 
             # Add a new galaxy to the list
             self.galaxies.append(Galaxy(pgc_id=pgc_id, name=name, type=type, redshift=redshift, center=center, names=names, major=major, minor=minor, pa=pa, satellite=satellite))
@@ -174,6 +178,7 @@ class GalaxyExtractor(object):
 
         # Inform the user
         log.debug("Number of galaxies: " + str(len(self.galaxies)))
+        log.debug(galaxy.name + " is the principal galaxy in the frame")
 
     # *****************************************************************
 
@@ -226,7 +231,7 @@ class GalaxyExtractor(object):
         """
 
         # Inform the user
-        log.info("Removing the galaxies from the frame (except for the principal galaxy)")
+        log.info("Removing the galaxies from the frame (except for the principal galaxy and its satellites)")
 
         # Loop over all galaxies
         for galaxy in self.galaxies:
@@ -270,7 +275,7 @@ class GalaxyExtractor(object):
                 width = self.config.region.default_radius * frame.pixelscale.value
                 height = self.config.region.default_radius * frame.pixelscale.value
 
-            angle = galaxy.pa.value if galaxy.pa is not None else 0.0
+            angle = galaxy.pa.degrees if galaxy.pa is not None else 0.0
 
             height_list.append(height)
             width_list.append(width)
@@ -298,8 +303,22 @@ class GalaxyExtractor(object):
             if not galaxy.has_source: continue
 
             # Add this galaxy to the mask
-            mask[galaxy.source.cutout.y_min:galaxy.source.cutout.y_max, galaxy.source.cutout.x_min:galaxy.source.cutout.x_max] = galaxy.source.mask
+            if self.config.mask.use_aperture and galaxy.has_aperture:
 
+                galaxy_mask_frame = Mask.from_aperture(frame.xsize, frame.ysize, galaxy.aperture)
+                galaxy_mask = galaxy_mask_frame[galaxy.source.background.y_min:galaxy.source.background.y_max, galaxy.source.background.x_min:galaxy.source.background.x_max]
+
+                # Add this galaxy to the total mask
+                mask[galaxy.source.background.y_min:galaxy.source.background.y_max, galaxy.source.background.x_min:galaxy.source.background.x_max] += galaxy_mask
+
+            else:
+
+                galaxy_mask = galaxy.source.mask
+
+                # Add this galaxy to the total mask
+                mask[galaxy.source.cutout.y_min:galaxy.source.cutout.y_max, galaxy.source.cutout.x_min:galaxy.source.cutout.x_max] += galaxy_mask
+
+        # Expand the mask
         if self.config.mask.expand: mask.expand(self.config.mask.connectivity, self.config.mask.iterations)
 
         # Return the mask
@@ -356,7 +375,9 @@ class GalaxyExtractor(object):
         ascensions = []
         declinations = []
         majors = []
+        position_angles = []
         principal_flags = []
+        satellite_flags = []
         sources = []
         other_names = []
 
@@ -370,13 +391,15 @@ class GalaxyExtractor(object):
             declinations.append(galaxy.center.dec.value)
             if galaxy.major is not None: majors.append(galaxy.major)
             else: majors.append(None)
+            position_angles.append(galaxy.pa)
             principal_flags.append(galaxy.principal)
+            satellite_flags.append(galaxy.satellite)
             sources.append(galaxy.has_source)
             other_names.append(galaxy.names)
 
         # Create and return the table
-        return Table([names, types, redshifts, ascensions, declinations, majors, principal_flags, sources, other_names],
-                     names=('Name', 'Type', 'Redshift', 'RA', 'DEC', 'Major axis', 'Principal', 'Source', 'Other names'),
+        return Table([names, types, redshifts, ascensions, declinations, majors, position_angles, principal_flags, satellite_flags, sources, other_names],
+                     names=('Name', 'Type', 'Redshift', 'RA', 'DEC', 'Major axis', 'Position angle', 'Principal', 'Satellite', 'Source', 'Other names'),
                      meta={'name': 'galaxies'})
 
     # *****************************************************************
@@ -388,7 +411,7 @@ class GalaxyExtractor(object):
         :return:
         """
 
-        from astropy.visualization import SqrtStretch
+        from astropy.visualization import SqrtStretch, LogStretch
         from astropy.visualization.mpl_normalize import ImageNormalize
 
         x_centers = []
@@ -399,16 +422,15 @@ class GalaxyExtractor(object):
         for galaxy in self.galaxies:
 
             x_center, y_center = galaxy.center.to_pixel(frame.wcs)
-
-            print(x_center, y_center)
-
             x_centers.append(x_center)
             y_centers.append(y_center)
 
             # If the galaxy does not have a source, continue
             if galaxy.has_aperture: apertures.append(galaxy.aperture)
 
-        norm = ImageNormalize(stretch=SqrtStretch())
+        # Initialize the plot
+        #norm = ImageNormalize(stretch=SqrtStretch())
+        norm = ImageNormalize(stretch=LogStretch())
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
         # Determine the maximum value in the box and the mimimum value for plotting
