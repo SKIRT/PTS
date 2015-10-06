@@ -9,6 +9,7 @@ from __future__ import (absolute_import, division, print_function)
 
 # Import standard modules
 import numpy as np
+from scipy import ndimage
 
 # Import Astromagic modules
 from ..tools import cropping
@@ -226,6 +227,21 @@ class Box(np.ndarray):
 
         # Evaluate the polynomial
         data = fitting.evaluate_model(polynomial, 0, self.xsize, 0, self.ysize)
+
+        # Return a new box
+        return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
+
+    # *****************************************************************
+
+    def gaussian_filter(self, sigma):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Apply the filter
+        data = ndimage.filters.gaussian_filter(self, sigma=sigma)
 
         # Return a new box
         return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)

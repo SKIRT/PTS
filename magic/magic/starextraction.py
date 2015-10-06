@@ -343,6 +343,8 @@ class StarExtractor(object):
             # Add this galaxy to the mask
             mask[star.source.cutout.y_min:star.source.cutout.y_max, star.source.cutout.x_min:star.source.cutout.x_max] = star.source.mask
 
+
+
         # Return the mask
         return mask
 

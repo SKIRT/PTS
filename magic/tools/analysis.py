@@ -23,120 +23,17 @@ from . import cropping
 from . import interpolation
 from ..core.box import Box
 from ..core.source import Source
-from ..core.vector import Position
+from ..core.vector import Position, Extent
 
 # Import astronomical modules
+from astropy.convolution import Gaussian2DKernel
+from astropy.stats import gaussian_fwhm_to_sigma
 from astropy.table import Table
 from photutils import find_peaks
 from find_galaxy import find_galaxy
 from astropy import log
 from photutils import daofind
 from astropy.stats import sigma_clipped_stats
-
-# *****************************************************************
-
-def find_source_in_shape(data, shape, model_name, detection_method, level, min_level=-2, max_level=2, aid_detection_by_removing_gradient=True, peak_offset_tolerance=3.0, plot=False, plot_custom=[False, False, False, False]):
-
-    """
-    This function ...
-    :param data:
-    :param shape:
-    :param detection_method:
-    :param plot:
-    :return:
-    """
-
-    if level < min_level or level > max_level: return None
-
-    # Find the parameters of this ellipse (or circle)
-    x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
-
-    # Cut out a box of the primary image around the star
-    box, x_min, x_max, y_min, y_max = cropping.crop(data, x_center, y_center, x_radius, y_radius)
-
-    # If the frame is zero in this box, continue to the next object
-    if not np.any(box): return None
-
-    # If the box is too small, skip this object
-    if box.shape[0] < 5 or box.shape[1] < 5: return None
-
-    # Find the location of sources (peaks)
-    # TODO: find peaks only within the shape, instead of the entire box cut around the shape
-    positions = find_source_positions(box, detection_method, x_shift=x_min, y_shift=y_min, plot=False)
-
-    # If no sources could be detected, remove a potential background gradient from the box before detection
-    if len(positions) == 0 and aid_detection_by_removing_gradient:
-
-        if plot_custom[0]: plotting.plot_box(box, title="0 peaks")
-
-        # Create a central mask that covers the expected source
-        central_radius = 5.0
-        central_mask = np.zeros_like(box, dtype=bool)
-        central_mask[int(round(box.shape[0]/2.0-central_radius)):int(round(box.shape[0]/2.0+central_radius)),int(round(box.shape[1]/2.0-central_radius)):int(round(box.shape[1]/2.0+central_radius))] = True
-
-        if np.all(central_mask): return None
-
-        # Fit a polynomial to the background
-        poly = fitting.fit_polynomial(box, 3, mask=central_mask)
-        polynomial_box = fitting.evaluate_model(poly, 0, box.shape[1], 0, box.shape[0])
-
-        if plot_custom[0]: plotting.plot_difference_model(box, poly)
-
-        # Detect source positions with the background gradient removed
-        positions = find_source_positions(box-polynomial_box, detection_method, x_shift=x_min, y_shift=y_min, plot=False)
-
-        if plot_custom[0]: plotting.plot_peaks(box, positions['x_peak']-x_min, positions['y_peak']-y_min, title=str(len(positions))+" peak(s) found after removing gradient background")
-
-    # If no sources were detected
-    if len(positions) == 0:
-
-        if plot_custom[1]: plotting.plot_box(box, title="0 peaks")
-
-        if level < 0: return None
-
-        new_shape = regions.scale_circle(shape, 2.0)
-        return find_source_in_shape(data, new_shape, model_name, detection_method, level=level+1, min_level=min_level, max_level=max_level, plot=plot, plot_custom=[plot_custom[1],plot_custom[1],plot_custom[1],plot_custom[1]])
-
-    # If one source was detected
-    elif len(positions) == 1:
-
-        if plot_custom[2]: plotting.plot_peaks(box, positions['x_peak']-x_min, positions['y_peak']-y_min, title="1 peak")
-
-        # Create the mask to estimate the background in the box
-        background_inner_factor = 1.0
-        background_outer_factor = 1.5
-        fit_factor = 1.0
-        sigma_clip_background = True
-
-        # Get the x and y coordinate of the peak
-        x_peak = positions['x_peak'][0]
-        y_peak = positions['y_peak'][0]
-
-        # TODO: check that peak position corresponds with center of shape
-        if not (np.isclose(x_peak, x_center, atol=peak_offset_tolerance) and np.isclose(y_peak, y_center, atol=peak_offset_tolerance)):
-
-            log.warning("Peak position and shape center do not match")
-
-            #plotting.plot_peaks(box, positions['x_peak']-x_min, positions['y_peak']-y_min, title="Peak and shape do not match")
-            return None
-
-        # Try to fit a Gaussian model to the data within the shape
-        source = make_gaussian_star_model(shape, data, x_peak, y_peak, background_inner_factor, background_outer_factor,
-                                          fit_factor, "polynomial", peak_offset_tolerance,
-                                          sigma_clip_background=sigma_clip_background, upsample_factor=1.0,
-                                          use_shape_or_peak="peak", model_name=model_name, plot=plot)
-
-        return source
-
-    # If more than one source was detected
-    elif len(positions) > 1:
-
-        if plot_custom[3]: plotting.plot_peaks(box, positions['x_peak']-x_min, positions['y_peak']-y_min, title="more peaks")
-
-        if level > 0: return None
-
-        new_shape = regions.scale_circle(shape, 0.5)
-        return find_source_in_shape(data, new_shape, model_name, detection_method, level=level-1, min_level=min_level, max_level=max_level, plot=plot, plot_custom=[plot_custom[3],plot_custom[3],plot_custom[3],plot_custom[3]])
 
 # *****************************************************************
 
@@ -482,8 +379,13 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
         source.subtract_background()
 
+    # Create a kernel
+    sigma = config.kernel.fwhm * gaussian_fwhm_to_sigma
+    kernel_size = int(round(4.0 * config.kernel.cutoff_level))
+    kernel = Gaussian2DKernel(sigma, x_size=kernel_size, y_size=kernel_size)
+
     # Create a mask for the center segment found for the source
-    source.find_center_segment(config.threshold_sigmas, config.kernel_fwhm, config.kernel_size)
+    source.find_center_segment(config.threshold_sigmas, kernel=kernel, min_pixels=config.min_pixels)
 
     # If no center segment was found, subtract the background first
     if not np.any(source.mask) and not config.always_subtract_background:

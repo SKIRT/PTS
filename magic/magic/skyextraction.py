@@ -15,6 +15,7 @@ from config import Config
 # Import Astromagic modules
 from ..core import masks
 from ..tools import statistics
+from ..tools import interpolation
 
 # *****************************************************************
 
@@ -45,6 +46,9 @@ class SkyExtractor(object):
         # Set the mask to None initialy
         self.mask = None
 
+        # Set the sky frame to None intially
+        self.sky = None
+
     # *****************************************************************
 
     def run(self, frame, galaxyextractor, starextractor):
@@ -57,10 +61,13 @@ class SkyExtractor(object):
         # Create a mask that covers the galaxies and stars (including saturation)
         self.mask = masks.union(galaxyextractor.create_mask(frame), starextractor.create_mask(frame))
 
-        print(type(self.mask))
-
         # Sigma-clipping
         if self.config.sigma_clip: self.mask = statistics.sigma_clip_mask(frame, self.config.sigma_level, self.mask)
+
+        # TODO: allow different estimation methods
+
+        # Estimate the sky
+        self.sky = interpolation.low_res_interpolation(frame, self.config.downsample_factor, self.mask)
 
     # *****************************************************************
 

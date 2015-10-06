@@ -15,10 +15,8 @@ import copy
 from astropy import units as u
 from astropy.table import Table
 from photutils import find_peaks
-from astropy.convolution import Gaussian2DKernel
-from astropy.stats import gaussian_fwhm_to_sigma
 from photutils import detect_sources
-#from photutils import detect_threshold
+from photutils import detect_threshold
 
 # Import Astromagic modules
 from .masks import Mask
@@ -172,22 +170,22 @@ class Source(object):
 
     # *****************************************************************
 
-    def find_center_segment(self, threshold_sigmas, kernel_fwhm, kernel_size, min_pixels=5):
+    def find_center_segment(self, threshold_sigmas, kernel=None, min_pixels=5):
 
         """
         This function ...
         :return:
         """
 
-        # Calculate threshold for segmentation
-        mean, median, stddev = statistics.sigma_clipped_statistics(self.background, mask=self.background_mask)
-        threshold = mean + stddev * threshold_sigmas
+        if not np.all(self.background_mask):
 
-        #if threshold is None: threshold = detect_threshold(data, snr=signal_to_noise) #snr=2.0
+            # Calculate threshold for segmentation
+            mean, median, stddev = statistics.sigma_clipped_statistics(self.background, mask=self.background_mask)
+            threshold = mean + stddev * threshold_sigmas
 
-        # Create a kernel
-        sigma = kernel_fwhm * gaussian_fwhm_to_sigma
-        kernel = Gaussian2DKernel(sigma, x_size=kernel_size, y_size=kernel_size)
+        else:
+
+            threshold = detect_threshold(self.cutout, snr=2.0) #snr=2.0
 
         # Perform the segmentation
         segments = detect_sources(self.cutout, threshold, npixels=min_pixels, filter_kernel=kernel)
@@ -203,6 +201,10 @@ class Source(object):
 
             # Create a mask of the center segment
             self.mask = Mask((segments == label))
+
+    # *****************************************************************
+
+
 
     # *****************************************************************
 

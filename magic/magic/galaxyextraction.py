@@ -12,6 +12,7 @@ import os.path
 import numpy as np
 from config import Config
 import inspect
+import matplotlib.pylab as plt
 
 # Import Astromagic modules
 from ..core import regions
@@ -23,7 +24,10 @@ from ..core.vector import Position
 from astropy import log
 import astropy.units as u
 import astropy.coordinates as coord
+from astropy.table import Table
 from astroquery.vizier import Vizier
+from astroquery.ned import Ned
+import astroquery.exceptions
 
 # *****************************************************************
 
@@ -112,6 +116,32 @@ class GalaxyExtractor(object):
             # Get the PGC number
             pgc_id = entry["PGC"]
 
+            # Obtain more information about this galaxy
+            try:
+                ned_result = Ned.query_object("PGC " + str(pgc_id))
+                ned_entry = ned_result[0]
+
+                #notes = Ned.get_table("PGC " + str(pgc_id), table='objectnotes')
+
+                # Get the NGC number
+                name = ned_entry["Object Name"]
+
+                # Get the redshift
+                redshift = ned_entry["Redshift"]
+
+                # Get the type (G=galaxy, HII ...)
+                type = ned_entry["Type"]
+
+            except astroquery.exceptions.RemoteServiceError:
+
+                # Set attributes
+                name = "PGC " + str(pgc_id)
+                redshift = None
+                type = None
+
+            satellite = False
+            if type == "HII": satellite = True
+
             # Get the right ascension and the declination
             center = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
 
@@ -130,7 +160,7 @@ class GalaxyExtractor(object):
             pa = entry["PA"]*u.deg if entry["PA"] else None
 
             # Add a new galaxy to the list
-            self.galaxies.append(Galaxy(pgc_id=pgc_id, center=center, names=names, major=major, minor=minor, pa=pa))
+            self.galaxies.append(Galaxy(pgc_id=pgc_id, name=name, type=type, redshift=redshift, center=center, names=names, major=major, minor=minor, pa=pa, satellite=satellite))
 
         # Define a function that returns the length of the major axis of the galaxy
         def major_axis(galaxy):
@@ -161,14 +191,27 @@ class GalaxyExtractor(object):
         # Loop over all galaxies
         for galaxy in self.galaxies:
 
-            # Do not perform the procedure for the principal galaxy
-            if galaxy.principal: continue
-
             # Find a source
             galaxy.find_source(frame, self.config.detection)
 
         # Inform the user
         log.debug("Success ratio: {0:.2f}%".format(self.have_source/len(self.galaxies)*100.0))
+
+    # *****************************************************************
+
+    def find_apertures(self):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        # Loop over all galaxies
+        for galaxy in self.galaxies:
+
+            # If the galaxy does not have a source, continue
+            if galaxy.has_source: galaxy.find_aperture(sigma_level=self.config.apertures.sigma_level)
 
     # *****************************************************************
 
@@ -189,7 +232,7 @@ class GalaxyExtractor(object):
         for galaxy in self.galaxies:
 
             # Remove the galaxy from the frame
-            if galaxy.source is not None: galaxy.remove(frame, self.config.removal)
+            if not galaxy.principal and not galaxy.satellite: galaxy.remove(frame, self.config.removal)
 
     # *****************************************************************
 
@@ -238,7 +281,7 @@ class GalaxyExtractor(object):
 
     # *****************************************************************
 
-    def create_mask(self, frame, principal=False):
+    def create_mask(self, frame):
 
         """
         This function ...
@@ -256,6 +299,8 @@ class GalaxyExtractor(object):
 
             # Add this galaxy to the mask
             mask[galaxy.source.cutout.y_min:galaxy.source.cutout.y_max, galaxy.source.cutout.x_min:galaxy.source.cutout.x_max] = galaxy.source.mask
+
+        if self.config.mask.expand: mask.expand(self.config.mask.connectivity, self.config.mask.iterations)
 
         # Return the mask
         return mask
@@ -305,6 +350,89 @@ class GalaxyExtractor(object):
         :return:
         """
 
-        pass
+        names = []
+        types = []
+        redshifts = []
+        ascensions = []
+        declinations = []
+        majors = []
+        principal_flags = []
+        sources = []
+        other_names = []
+
+        # Loop over all stars
+        for galaxy in self.galaxies:
+
+            names.append(galaxy.name)
+            types.append(galaxy.type)
+            redshifts.append(galaxy.redshift)
+            ascensions.append(galaxy.center.ra.value)
+            declinations.append(galaxy.center.dec.value)
+            if galaxy.major is not None: majors.append(galaxy.major)
+            else: majors.append(None)
+            principal_flags.append(galaxy.principal)
+            sources.append(galaxy.has_source)
+            other_names.append(galaxy.names)
+
+        # Create and return the table
+        return Table([names, types, redshifts, ascensions, declinations, majors, principal_flags, sources, other_names],
+                     names=('Name', 'Type', 'Redshift', 'RA', 'DEC', 'Major axis', 'Principal', 'Source', 'Other names'),
+                     meta={'name': 'galaxies'})
+
+    # *****************************************************************
+
+    def plot(self, frame):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from astropy.visualization import SqrtStretch
+        from astropy.visualization.mpl_normalize import ImageNormalize
+
+        x_centers = []
+        y_centers = []
+        apertures = []
+
+        # Loop over all galaxies
+        for galaxy in self.galaxies:
+
+            x_center, y_center = galaxy.center.to_pixel(frame.wcs)
+
+            print(x_center, y_center)
+
+            x_centers.append(x_center)
+            y_centers.append(y_center)
+
+            # If the galaxy does not have a source, continue
+            if galaxy.has_aperture: apertures.append(galaxy.aperture)
+
+        norm = ImageNormalize(stretch=SqrtStretch())
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+
+        # Determine the maximum value in the box and the mimimum value for plotting
+        vmax = np.max(frame)
+        vmin = np.min(frame) if vmax <= 0 else 0.0
+
+        # Plot the frame and the segments mask
+        ax1.imshow(frame, origin='lower', interpolation='nearest', norm=norm, vmin=vmin, vmax=vmax)
+        ax2.imshow(self.create_mask(frame), origin='lower', cmap='jet')
+
+        # Set axes limits
+        plt.xlim(0, frame.xsize-1)
+        plt.ylim(0, frame.ysize-1)
+
+        # Plot the apertures
+        for aperture in apertures:
+
+            aperture.plot(color='white', lw=1.5, alpha=0.5, ax=ax1)
+            aperture.plot(color='white', lw=1.5, alpha=1.0, ax=ax2)
+
+        # Plot centers of the galaxies
+        plt.plot(x_centers, y_centers, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
+
+        # Show the plot
+        plt.show()
 
 # *****************************************************************

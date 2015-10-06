@@ -10,8 +10,10 @@ from __future__ import (absolute_import, division, print_function)
 # Import standard modules
 import numpy as np
 
-# Import astronomical units
+# Import astronomical modules
 from astropy import units as u
+from photutils import segment_properties, properties_table
+from photutils import EllipticalAperture
 
 # Import Astromagic modules
 from ..tools import analysis
@@ -26,7 +28,7 @@ class Galaxy(object):
     This class ...
     """
 
-    def __init__(self, pgc_id=None, center=None, names=None, major=None, minor=None, pa=None):
+    def __init__(self, pgc_id=None, name=None, type=type, redshift=None, center=None, names=None, major=None, minor=None, pa=None, satellite=False):
 
         """
         The constructor ...
@@ -38,11 +40,15 @@ class Galaxy(object):
 
         # Set the attributes
         self.pgc_id = pgc_id
+        self.name = name
+        self.type = type
+        self.redshift = redshift
         self.center = center
         self.names = names
         self.major = major
         self.minor = minor
         self.pa = pa
+        self.satellite = satellite
         self.principal = False
 
         # Set the source attribute to None initially
@@ -151,6 +157,34 @@ class Galaxy(object):
 
             # Replace the frame with the estimated background
             self.source.estimated_background_cutout.replace(frame, where=self.source.mask)
+
+    # *****************************************************************
+
+    def find_aperture(self, sigma_level=3.0):
+
+        """
+        This function ...
+        :return:
+        """
+
+        props = segment_properties(self.source.cutout, self.source.mask)
+        #tbl = properties_table(props)
+
+        x_shift = self.source.cutout.x_min
+        y_shift = self.source.cutout.y_min
+
+        # Since there is only one segment in the self.source.mask (the center segment), the props
+        # list contains only one entry (one galaxy)
+        properties = props[0]
+
+        # Obtain the position, orientation and extent
+        position = (properties.xcentroid.value + x_shift, properties.ycentroid.value + y_shift)
+        a = properties.semimajor_axis_sigma.value * sigma_level
+        b = properties.semiminor_axis_sigma.value * sigma_level
+        theta = properties.orientation.value
+
+        # Create the aperture
+        self.aperture = EllipticalAperture(position, a, b, theta=theta)
 
     # *****************************************************************
 

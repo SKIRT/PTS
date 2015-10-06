@@ -443,6 +443,25 @@ class Image(object):
 
     # *****************************************************************
 
+    def apply_masks(self, fill=0.0):
+
+        """
+        This function ...
+        :param fill:
+        :return:
+        """
+
+        # Loop over all selected frames
+        for frame in self.frames.selected(allow_none=False):
+
+            # Loop over all selected masks
+            for mask in self.masks.selected(allow_none=False):
+
+                # Apply the mask
+                mask.apply(frame, fill)
+
+    # *****************************************************************
+
     def combine_regions(self, name=None, allow_none=True):
 
         """
@@ -764,29 +783,6 @@ class Image(object):
 
         # Add this frame to the set of frames
         self.add_frame(skyframe, "sky")
-
-    # *****************************************************************
-
-    def estimate_background(self, downsample_factor, plot=False):
-
-        """
-        This function ...
-        """
-
-        # Get the name of the currently selected frame
-        frame_name = self.frames.get_selected(require_single=True)
-
-        # Combine all currently selected masks
-        total_mask = self.combine_masks(return_mask=True)
-
-        # Estimate the background
-        background = interpolation.low_res_interpolation(self.frames[frame_name], downsample_factor, mask=total_mask)
-
-        # Plot the difference between the data and the model, if requested
-        if plot: plotting.plot_difference(self.frames[frame_name], background)
-
-        # Add the background frame
-        self.add_frame(Frame(background, self.frames[frame_name].coordinates, self.pixelscale, "the estimated background"), "background")
 
     # *****************************************************************
 

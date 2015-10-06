@@ -90,17 +90,20 @@ class Mask(np.ndarray):
 
     # *****************************************************************
 
-    def expand(self, structure_size=2, iterations=100):
+    def expand(self, connectivity=2, iterations=100):
 
         """
         This function ...
         """
 
         # Define the structure for the expansion
-        structure = ndimage.generate_binary_structure(structure_size, structure_size)
+        structure = ndimage.generate_binary_structure(2, connectivity=connectivity)
 
         # Make the new mask, made from 100 iterations with the structure array
-        self = ndimage.binary_dilation(self, structure, iterations)
+        data = ndimage.binary_dilation(self, structure, iterations)
+
+        # Reassign this object
+        self = Mask(data, self.selected, self.description)
 
         # Check whether this object remains of type Mask
         assert isinstance(self, Mask)
