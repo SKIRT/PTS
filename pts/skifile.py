@@ -381,16 +381,16 @@ class SkiFile:
     ## This function sets the filename attribute of the SPHStellarComp element to the specified value.
     def setstarfile(self, filename):
         # get the SPHStellarComp element
-        elems = self.tree.xpath("//SPHStellarComp")
-        if len(elems) != 1: raise ValueError("No SPHStellarComp in ski file")
+        elems = self.tree.xpath("//SPHStellarComp[./sedFamily/BruzualCharlotSEDFamily]")
+        if len(elems) != 1: raise ValueError("No SPHStellarComp with BruzualCharlotSEDFamily in ski file")
         # set the attribute value
         elems[0].set("filename", filename)
 
     ## This function sets the filename attribute of the SPHStarburstComp element to the specified value.
     def sethiifile(self, filename):
         # get the SPHStarburstComp element
-        elems = self.tree.xpath("//SPHStarburstComp")
-        if len(elems) != 1: raise ValueError("No SPHStarburstComp in ski file")
+        elems = self.tree.xpath("//SPHStellarComp[./sedFamily/MappingsSEDFamily]")
+        if len(elems) != 1: raise ValueError("No SPHStellarComp with MappingsSEDFamily in ski file")
         # set the attribute value
         elems[0].set("filename", filename)
 
