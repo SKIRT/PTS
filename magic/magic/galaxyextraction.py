@@ -319,7 +319,7 @@ class GalaxyExtractor(object):
                 mask[galaxy.source.cutout.y_min:galaxy.source.cutout.y_max, galaxy.source.cutout.x_min:galaxy.source.cutout.x_max] += galaxy_mask
 
         # Expand the mask
-        if self.config.mask.expand: mask.expand(self.config.mask.connectivity, self.config.mask.iterations)
+        #if self.config.mask.dilate: mask.dilate(self.config.mask.connectivity, self.config.mask.iterations)
 
         # Return the mask
         return mask

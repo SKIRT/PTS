@@ -443,6 +443,12 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         # Show a plot for debugging
         if config.debug.success: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Masked segment doesn't hit boundary")
 
+        # Dilate the mask if requested
+        if config.dilate: source.mask = source.mask.dilated(config.connectivity, config.iterations)
+
+        # Show a plot for debugging
+        if config.debug.dilated: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="With dilated mask")
+
         # Return the source
         return source
 

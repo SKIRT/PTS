@@ -148,7 +148,47 @@ class Mask(np.ndarray):
 
     # *****************************************************************
 
-    def expand(self, connectivity=2, iterations=100):
+    def dilated(self, connectivity=2, iterations=100):
+
+        """
+        This function ...
+        :param connectivity:
+        :param iterations:
+        :return:
+        """
+
+        # Define the structure for the expansion
+        structure = ndimage.generate_binary_structure(2, connectivity=connectivity)
+
+        # Make the new mask, made from 100 iterations with the structure array
+        data = ndimage.binary_dilation(self, structure, iterations)
+
+        # Reassign this object
+        return Mask(data, self.selected, self.description)
+
+    # *****************************************************************
+
+    def eroded(self, connectivity=2, iterations=100):
+
+        """
+        This function ...
+        :param connectivity:
+        :param iterations:
+        :return:
+        """
+
+        # Define the structure for the expansion
+        structure = ndimage.generate_binary_structure(2, connectivity=connectivity)
+
+        # Make the new mask, made from 100 iterations with the structure array
+        data = ndimage.binary_erosion(self, structure, iterations)
+
+        # Reassign this object
+        return Mask(data, self.selected, self.description)
+
+    # *****************************************************************
+
+    def dilate(self, connectivity=2, iterations=100):
 
         """
         This function ...
@@ -159,6 +199,27 @@ class Mask(np.ndarray):
 
         # Make the new mask, made from 100 iterations with the structure array
         data = ndimage.binary_dilation(self, structure, iterations)
+
+        # Reassign this object
+        self = Mask(data, self.selected, self.description)
+
+        # Check whether this object remains of type Mask
+        assert isinstance(self, Mask)
+
+    # *****************************************************************
+
+    def erode(self, connectivity=2, iterations=100):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Define the structure for the expansion
+        structure = ndimage.generate_binary_structure(2, connectivity=connectivity)
+
+        # Make the new mask, made from 100 iterations with the structure array
+        data = ndimage.binary_erosion(self, structure, iterations)
 
         # Reassign this object
         self = Mask(data, self.selected, self.description)

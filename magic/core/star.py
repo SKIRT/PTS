@@ -211,8 +211,7 @@ class Star(object):
         # Convert FWHM to sigma
         default_sigma = default_fwhm / 2.35
 
-        radius = fitting.sigma(self.model) * config.remove_sigmas if self.model is not None else default_sigma * config.remove_sigmas
-        outer_factor = config.outer_sigmas / config.remove_sigmas
+        radius = fitting.sigma(self.model) * config.sigma_level if self.model is not None else default_sigma * config.sigma_level
 
         # Determine the center position of the source (center of model if present, otherwise position of the star)
         if self.source is not None:
@@ -229,7 +228,7 @@ class Star(object):
             center = Position(x=position_x, y=position_y)
 
         # Create a source
-        source = Source(frame, center, radius, Angle(0.0, u.deg), outer_factor)
+        source = Source(frame, center, radius, Angle(0.0, u.deg), config.outer_factor)
 
         # Estimate the background
         source.estimate_background(config.method, config.sigma_clip)
