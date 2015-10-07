@@ -70,7 +70,7 @@ axistypes = {
     'i': ( r"$M_\mathrm{i}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_i ),
     'g-r': ( r"$\mathrm{g}-\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g - instr_magnitude_sdss_r ),
     'g-i': ( r"$\mathrm{g}-\mathrm{i}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g - instr_magnitude_sdss_i ),
-    'i-H': ( r"$\mathrm{i}-\mathrm{H}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_i - instr_magnitude_ukidss_h ),
+    'i-H': ( r"$\mathrm{i}-\mathrm{H}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_i - instr_magnitude_2mass_h ),
     'i-H.zib': ( r"$\mathrm{i}-\mathrm{H}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_i - instr_magnitude_2mass_h + 1.39 ),
     'NUV-r': ( r"$\mathrm{NUV}-\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_galex_nuv - instr_magnitude_sdss_r ),
 
@@ -92,14 +92,14 @@ axistypes = {
 
     # luminosities in specific bands
     'logLk': ( r"$\log_{10}(L_\mathrm{K})\,[L_{\odot,\mathrm{K}}]$",
-        lambda: np.log10(units.luminosityforflux(instr_fluxdensity_ukidss_k,setup_distance_instrument,'W/Hz')/LsunK) ),
+        lambda: np.log10(units.luminosityforflux(instr_fluxdensity_2mass_k,setup_distance_instrument,'W/Hz')/LsunK) ),
     'logL250': ( r"$\log_{10}(L_{250})\,[\mathrm{W}/\mathrm{Hz}]$",
         lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_spire_psw_continuum,setup_distance_instrument,'W/Hz')) ),
     'logLdust': ( r"$\log_{10}(L_{dust})\,[L_\odot]$",
         lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_uniform_8_1000,setup_distance_instrument,'W/micron',
                                                         wavelength=np.sqrt(8*1000))*(1000-8)/Lsun) ),
     'logM/Lh': ( r"$\log_{10}(M_*/L_\mathrm{H})\,[M_\odot/L_{\odot,\mathrm{H}}]$",
-        lambda: np.log10(original_mass_stars/units.luminosityforflux(instr_fluxdensity_ukidss_h,setup_distance_instrument,'W/Hz')*LsunH) ),
+        lambda: np.log10(original_mass_stars/units.luminosityforflux(instr_fluxdensity_2mass_h,setup_distance_instrument,'W/Hz')*LsunH) ),
 
     # other ratios
     'logMdust/f350/D2' : ( r"$\log_{10}(M_\mathrm{dust}/(f_{350}D^2))\,[\mathrm{kg}\,\mathrm{W}^{-1}\,\mathrm{Hz}]$",
