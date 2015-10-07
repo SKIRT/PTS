@@ -229,7 +229,7 @@ class Star(object):
             center = Position(x=position_x, y=position_y)
 
         # Create a source
-        source = Source(frame, center, radius, 0.0, outer_factor)
+        source = Source(frame, center, radius, Angle(0.0, u.deg), outer_factor)
 
         # Estimate the background
         source.estimate_background(config.method, config.sigma_clip)
@@ -262,7 +262,7 @@ class Star(object):
         if self.has_track_record: self.track_record.set_stage("saturation")
 
         # Look for a center segment corresponding to a 'saturation' source
-        source = analysis.find_source_segmentation(frame, self.source.center, radius, 0.0, config, track_record=self.track_record)
+        source = analysis.find_source_segmentation(frame, self.source.center, radius, Angle(0.0, u.deg), config, track_record=self.track_record)
 
         # If a 'saturation' source was found
         if source is not None:

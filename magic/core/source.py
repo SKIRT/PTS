@@ -56,8 +56,8 @@ class Source(object):
         rel_center_background = self.background.rel_position(center)
 
         # Create masks for the background box that cover the given ellipse and
-        #self.background_mask = masks.create_ellipse_mask(self.background.xsize, self.background.ysize, rel_center_background, radius, angle)
-        self.background_mask = masks.create_annulus_mask(self.background.xsize, self.background.ysize, rel_center_background, radius, outer_radius, self.angle)
+        #self.background_mask = masks.create_annulus_mask(self.background.xsize, self.background.ysize, rel_center_background, radius, outer_radius, self.angle)
+        self.background_mask = masks.create_ellipse_mask(self.background.xsize, self.background.ysize, rel_center_background, radius, self.angle)
 
         # Create a mask that covers the given ellipse in the cutout box (can be overwritten by a mask for the center segment)
         self.mask = masks.create_ellipse_mask(self.cutout.xsize, self.cutout.ysize, rel_center, radius, self.angle)
@@ -127,8 +127,6 @@ class Source(object):
         This function ...
         :return:
         """
-
-        print(self.background.shape, self.background_mask.shape)
 
         # Perform sigma-clipping on the background if requested
         if sigma_clip: mask = statistics.sigma_clip_mask(self.background, sigma_level=sigma_level, mask=self.background_mask)
@@ -270,12 +268,13 @@ class Source(object):
         rel_center_background = source.background.rel_position(self.center)
 
         # Decrease the radius
-        radius = self.radius / factor
-        outer_radius = radius * self.outer_factor
+        source.radius = self.radius / factor
+        outer_radius = source.radius * self.outer_factor
 
         # Zoom in on the masks
-        source.background_mask = masks.create_annulus_mask(source.background.xsize, source.background.ysize, rel_center_background, radius, outer_radius, self.angle)
-        source.mask = masks.create_ellipse_mask(source.cutout.xsize, source.cutout.ysize, rel_center, radius, self.angle)
+        #source.background_mask = masks.create_annulus_mask(source.background.xsize, source.background.ysize, rel_center_background, source.radius, outer_radius, self.angle)
+        source.background_mask = masks.create_ellipse_mask(source.background.xsize, source.background.ysize, rel_center_background, source.radius, self.angle)
+        source.mask = masks.create_ellipse_mask(source.cutout.xsize, source.cutout.ysize, rel_center, source.radius, self.angle)
 
         # Set derived properties to None
         source.estimated_background = None

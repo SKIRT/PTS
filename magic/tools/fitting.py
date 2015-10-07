@@ -101,7 +101,7 @@ def fit_polynomial_evaluate(box, degree, mask=None):
 
 # *****************************************************************
 
-def fit_polynomial(box, degree, x_shift=0.0, y_shift=0.0, mask=None, sigma_clip_background=False):
+def fit_polynomial(data, degree, mask=None, sigma_clip_background=False):
 
     """
     This function ...
@@ -113,16 +113,14 @@ def fit_polynomial(box, degree, x_shift=0.0, y_shift=0.0, mask=None, sigma_clip_
     :return:
     """
 
-    # TODO: use x_shift and y_shift
-
-    if sigma_clip_background: mask = statistics.sigma_clip_mask(box, sigma_level=3.0, mask=mask)
+    if sigma_clip_background: mask = statistics.sigma_clip_mask(data, sigma_level=3.0, mask=mask)
 
     # Fit the data using astropy.modeling
     poly_init = models.Polynomial2D(degree=degree)
     fit_model = fitting.LevMarLSQFitter()
 
     # Split x, y and z values that are not masked
-    x_values, y_values, z_values = general.split_xyz(box, mask=mask, arrays=True)
+    x_values, y_values, z_values = general.split_xyz(data, mask=mask, arrays=True)
 
     # Ignore model linearity warning from the fitter
     with warnings.catch_warnings():
