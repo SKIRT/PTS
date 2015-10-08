@@ -447,7 +447,10 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         source.mask = mask
 
         # Show a plot for debugging
-        if config.debug.dilated: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="With dilated mask")
+        if config.debug.dilated: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Dilated mask")
+
+        # Inform the user
+        #log.debug("Final expansion level: " + str(expansion_level))
 
         # Return the source
         return source

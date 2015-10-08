@@ -10,6 +10,7 @@ import numpy as np
 
 # Import astronomical modules
 import pyregion
+import astropy.coordinates as coord
 
 # Import Astromagic modules
 from ..core.vector import Extent
@@ -78,9 +79,10 @@ class Region(pyregion.ShapeList):
         :return:
         """
 
+        # TODO: accept input in fk5 and create a region in sky coordinates
+
         # Create a string identifying this ellipse
         region_string = "# Region file format: DS9 version 3.0\n"
-        region_string += "global color=green\n"
         region_string += "image\n"
 
         # Loop over the parameter sets
@@ -89,6 +91,44 @@ class Region(pyregion.ShapeList):
             x_radius = radius.x if isinstance(radius, Extent) else radius
             y_radius = radius.y if isinstance(radius, Extent) else radius
             region_string += "ellipse(" + str(center.x) + "," + str(center.y) + "," + str(x_radius) + "," + str(y_radius) + "," + str(angle.degree) + ")\n"
+
+        # Create a region and return it
+        return pyregion.parse(region_string)
+
+    # *****************************************************************
+
+    @classmethod
+    def circles(cls, centers, radii, colors=None):
+
+        """
+        This function ...
+        :param centers:
+        :param radii:
+        :return:
+        """
+
+        # Check type of input
+        if isinstance(centers[0], coord.SkyCoord): fk5 = True
+        else: fk5 = False
+
+        # Create a string identifying this ellipse
+        region_string = "# Region file format: DS9 version 3.0\n"
+
+        if fk5: region_string += "fk5\n"
+        else: region_string += "image\n"
+
+        if colors is None: colors = [colors] * len(centers)
+
+        # Loop over the parameter sets
+        for center, radius, color in zip(centers, radii, colors):
+
+            if color is None: suffix = " # color = " + color
+            else: suffix = ""
+
+            if fk5: line = "circle(%s,%s,%.2f\")" % (center.ra.value, center.dec.value, radius.value) + suffix + "\n"
+            else: line = "circle(" + str(center.x) + "," + str(center.y) + "," + str(radius) + ")" + suffix + "\n"
+
+            region_string += line
 
         # Create a region and return it
         return pyregion.parse(region_string)

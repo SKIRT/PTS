@@ -10,9 +10,7 @@ from __future__ import (absolute_import, division, print_function)
 # Import standard modules
 import os
 import os.path
-import math
 import numpy as np
-from scipy import ndimage
 import matplotlib.pyplot as plt
 import copy
 
@@ -26,7 +24,6 @@ from astropy import log
 
 # Import Astromagic modules
 from .tools import headers
-from .tools import interpolation
 from .tools import fitting
 from .tools import plotting
 from .tools import analysis

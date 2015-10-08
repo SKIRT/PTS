@@ -155,13 +155,6 @@ class Galaxy(object):
         :return:
         """
 
-        if self.source is None and config.subtract_if_undetected:
-
-            # Get the parameters of the ellipse
-            center, radius, angle = self.ellipse_parameters(frame.wcs, frame.pixelscale, config.default_radius)
-
-            pass
-
         # If a segment was found that can be identified with a source
         if self.has_source:
 
@@ -204,13 +197,63 @@ class Galaxy(object):
 
     # *****************************************************************
 
-    def plot(self):
+    def plot(self, frame):
 
         """
         This function ...
         :return:
         """
 
-        pass
+        if self.has_source:
+
+            pass
+
+        else:
+
+            from astropy.visualization import SqrtStretch, LogStretch
+            from astropy.visualization.mpl_normalize import ImageNormalize
+
+            x_centers = []
+            y_centers = []
+            apertures = []
+
+            # Loop over all galaxies
+            for galaxy in self.galaxies:
+
+                x_center, y_center = galaxy.center.to_pixel(frame.wcs)
+                x_centers.append(x_center)
+                y_centers.append(y_center)
+
+                # If the galaxy does not have a source, continue
+                if galaxy.has_aperture: apertures.append(galaxy.aperture)
+
+            # Initialize the plot
+            #norm = ImageNormalize(stretch=SqrtStretch())
+            norm = ImageNormalize(stretch=LogStretch())
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+
+        # Determine the maximum value in the box and the mimimum value for plotting
+        vmax = np.max(frame)
+        vmin = np.min(frame) if vmax <= 0 else 0.0
+
+        # Plot the frame and the segments mask
+        ax1.imshow(frame, origin='lower', interpolation='nearest', norm=norm, vmin=vmin, vmax=vmax)
+        ax2.imshow(self.create_mask(frame), origin='lower', cmap='jet')
+
+        # Set axes limits
+        plt.xlim(0, frame.xsize-1)
+        plt.ylim(0, frame.ysize-1)
+
+        # Plot the apertures
+        for aperture in apertures:
+
+            aperture.plot(color='white', lw=1.5, alpha=0.5, ax=ax1)
+            aperture.plot(color='white', lw=1.5, alpha=1.0, ax=ax2)
+
+        # Plot centers of the galaxies
+        plt.plot(x_centers, y_centers, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
+
+        # Show the plot
+        plt.show()
         
 # *****************************************************************

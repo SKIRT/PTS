@@ -275,4 +275,8 @@ class Star(object):
             # Replace the frame with the estimated background
             self.source.background.replace(frame, where=self.source.mask)
 
+            return True
+
+        else: return False
+
 # *****************************************************************

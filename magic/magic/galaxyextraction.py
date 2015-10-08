@@ -374,7 +374,7 @@ class GalaxyExtractor(object):
         principal_flags = []
         satellite_flags = []
         sources = []
-        other_names = []
+        #other_names = []
 
         # Loop over all stars
         for galaxy in self.galaxies:
@@ -390,11 +390,15 @@ class GalaxyExtractor(object):
             principal_flags.append(galaxy.principal)
             satellite_flags.append(galaxy.satellite)
             sources.append(galaxy.has_source)
-            other_names.append(galaxy.names)
+            #other_names.append(galaxy.names)
+
+        print(len(names), len(types), len(redshifts), len(ascensions), len(declinations), len(majors), len(position_angles), len(principal_flags), len(satellite_flags), len(sources))
+
+        print(redshifts[3], type(redshifts[3]))
 
         # Create and return the table
-        return Table([names, types, redshifts, ascensions, declinations, majors, position_angles, principal_flags, satellite_flags, sources, other_names],
-                     names=('Name', 'Type', 'Redshift', 'RA', 'DEC', 'Major axis', 'Position angle', 'Principal', 'Satellite', 'Source', 'Other names'),
+        return Table([names, types, redshifts, ascensions, declinations, majors, position_angles, principal_flags, satellite_flags, sources],
+                     names=('Name', 'Type', 'Redshift', 'RA', 'DEC', 'Major axis', 'Position angle', 'Principal', 'Satellite', 'Source'),
                      meta={'name': 'galaxies'})
 
     # *****************************************************************

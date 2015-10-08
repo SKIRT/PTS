@@ -11,6 +11,7 @@ from __future__ import (absolute_import, division, print_function)
 import numpy as np
 import os.path
 import inspect
+import matplotlib.pyplot as plt
 from config import Config
 
 # Import Astromagic modules
@@ -18,8 +19,11 @@ from ..core.masks import Mask
 from ..core.star import Star
 from ..tools import statistics
 from ..core.vector import Position
+from ..core.regions import Region
 
 # Import astronomical modules
+import aplpy
+import astropy.io.fits as pyfits
 from astropy import log
 import astropy.units as u
 import astropy.coordinates as coord
@@ -295,8 +299,8 @@ class StarExtractor(object):
             # Remove the saturation
             if value >= minimum:
 
-                star.remove_saturation(frame, self.config.saturation, default_fwhm)
-                if star.has_source: removed += 1
+                success = star.remove_saturation(frame, self.config.saturation, default_fwhm)
+                if star.has_source: removed += success
 
         # Inform the user
         log.debug("Removed saturation in " + str(removed) + " out of " + str(eligible) + " stars ({0:.2f}%)".format(removed/eligible*100.0))
@@ -313,13 +317,49 @@ class StarExtractor(object):
 
     # *****************************************************************
 
-    def create_region(self, frame):
+    def create_region(self, frame, type="sky"):
 
         """
         This function ...
+        :return:
         """
 
-        return None
+        # Initialize lists
+        position_list = []
+        radius_list = []
+        color_list = []
+
+        # Calculate the default FWHM (calculated based on fitted stars)
+        default_fwhm = self.fwhm
+
+        # Loop over all galaxies
+        for star in self.stars:
+
+            position_list.append(star.position)
+
+            if star.has_model:
+
+                fwhm = star.fwhm
+                color = "green"
+
+            else:
+
+                fwhm = default_fwhm
+                color = "red"
+
+            # Calculate the radius in pixels
+            radius = fwhm * statistics.fwhm_to_sigma * self.config.region.sigma_level
+
+            # Add the radius (in arcseconds) and the color the appropriate list
+            radius_list.append(radius * frame.pixelscale)
+            color_list.append(color)
+
+        # Create a region
+        region = Region.circles(position_list, radius_list, color_list)
+
+        if type == "sky": return region
+        elif type == "image": return region.as_imagecoord(frame.wcs.to_header())
+        else: raise ValueError("Type should be either 'sky' or 'image'")
 
     # *****************************************************************
 
@@ -472,5 +512,36 @@ class StarExtractor(object):
 
         # Create and return the table
         return Table([ids, ascensions, declinations, sources, models, fwhms], names=('UCAC-ID', 'RA', 'DEC', 'Source', 'Model', 'FWHM'), meta={'name': 'stars'})
+
+    # *****************************************************************
+
+    def plot(self, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        # Create a HDU from this frame with the image header
+        hdu = pyfits.PrimaryHDU(frame, frame.wcs.to_header())
+
+        # Create a figure canvas
+        figure = plt.figure(figsize=(20, 20))
+
+        # Create a figure from this frame
+        plot = aplpy.FITSFigure(hdu, figure=figure)
+
+        # Plot in color scale
+        plot.show_colorscale()
+
+        # Add a color bar if requested
+        if self.config.plotting.show_colorbar: plot.add_colorbar()
+
+        # Add these shapes to the plot
+        plot.show_regions(self.create_region(frame, type="image"))
+
+        # Show the plot
+        plt.show()
 
 # *****************************************************************

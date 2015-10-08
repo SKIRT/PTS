@@ -69,6 +69,8 @@ class SkyExtractor(object):
         # Estimate the sky
         self.sky = interpolation.low_res_interpolation(frame, self.config.downsample_factor, self.mask)
 
+        self.filtered_sky = self.sky
+
     # *****************************************************************
 
     def clear(self):
