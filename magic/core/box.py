@@ -338,7 +338,7 @@ class Box(np.ndarray):
 
     # *****************************************************************
 
-    def value(self, position, interpolate=False):
+    def value(self, position):
 
         """
         This function ...
@@ -367,5 +367,9 @@ class Box(np.ndarray):
         # Replace the pixel values in the frame
         if where is None: frame[self.y_min:self.y_max, self.x_min:self.x_max] = self
         else: frame[self.y_min:self.y_max, self.x_min:self.x_max][where] = self[where]
+
+        #from ..tools import plotting
+        #plotting.plot_box(frame[self.y_min:self.y_max, self.x_min:self.x_max])
+        #plotting.plot_box(np.ma.masked_array(frame[self.y_min:self.y_max, self.x_min:self.x_max], mask=where))
 
 # *****************************************************************

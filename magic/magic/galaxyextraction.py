@@ -306,17 +306,12 @@ class GalaxyExtractor(object):
             if self.config.mask.use_aperture and galaxy.has_aperture:
 
                 galaxy_mask_frame = Mask.from_aperture(frame.xsize, frame.ysize, galaxy.aperture)
-                galaxy_mask = galaxy_mask_frame[galaxy.source.background.y_min:galaxy.source.background.y_max, galaxy.source.background.x_min:galaxy.source.background.x_max]
+                galaxy_mask = galaxy_mask_frame[galaxy.source.cutout.y_min:galaxy.source.cutout.y_max, galaxy.source.cutout.x_min:galaxy.source.cutout.x_max]
 
-                # Add this galaxy to the total mask
-                mask[galaxy.source.background.y_min:galaxy.source.background.y_max, galaxy.source.background.x_min:galaxy.source.background.x_max] += galaxy_mask
+            else: galaxy_mask = galaxy.source.mask
 
-            else:
-
-                galaxy_mask = galaxy.source.mask
-
-                # Add this galaxy to the total mask
-                mask[galaxy.source.cutout.y_min:galaxy.source.cutout.y_max, galaxy.source.cutout.x_min:galaxy.source.cutout.x_max] += galaxy_mask
+            # Add this galaxy to the total mask
+            mask[galaxy.source.cutout.y_min:galaxy.source.cutout.y_max, galaxy.source.cutout.x_min:galaxy.source.cutout.x_max] += galaxy_mask
 
         # Expand the mask
         #if self.config.mask.dilate: mask.dilate(self.config.mask.connectivity, self.config.mask.iterations)

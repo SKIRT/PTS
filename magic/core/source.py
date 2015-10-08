@@ -34,7 +34,7 @@ class Source(object):
     This class...
     """
 
-    def __init__(self, frame, center, radius, angle, outer_factor):
+    def __init__(self, frame, center, radius, angle, factor):
 
         """
         The constructor ...
@@ -44,28 +44,19 @@ class Source(object):
         self.center = center
         self.radius = radius
         self.angle = angle
-        self.outer_factor = outer_factor
+        self.factor = factor
 
-        # Create the cutout and background
-        outer_radius = radius * outer_factor
-        self.cutout = Box.from_ellipse(frame, center, radius, angle=self.angle)
-        self.background = Box.from_ellipse(frame, center, outer_radius, angle=self.angle)
+        # Create the cutout box
+        self.cutout = Box.from_ellipse(frame, center, self.radius*self.factor, self.angle)
 
-        # Calculate the relative coordinate of the center for the cutout and background boxes
+        # Calculate the relative coordinate of the center for the cutout box
         rel_center = self.cutout.rel_position(center)
-        rel_center_background = self.background.rel_position(center)
 
-        # Create masks for the background box that cover the given ellipse and
-        #self.background_mask = masks.create_annulus_mask(self.background.xsize, self.background.ysize, rel_center_background, radius, outer_radius, self.angle)
-        self.background_mask = masks.create_ellipse_mask(self.background.xsize, self.background.ysize, rel_center_background, radius, self.angle)
-
-        # Create a mask that covers the given ellipse in the cutout box (can be overwritten by a mask for the center segment)
+        # Create masks
         self.mask = masks.create_ellipse_mask(self.cutout.xsize, self.cutout.ysize, rel_center, radius, self.angle)
 
-        # Set subtracted box to None
-        self.estimated_background = None
-        self.estimated_background_cutout = None
-        self.subtracted = None
+        # Set (estimated) background and removed to None
+        self.background = None
         self.removed = None
 
         # Set peak position to None initially
@@ -74,26 +65,39 @@ class Source(object):
     # *****************************************************************
 
     @property
-    def is_subtracted(self):
+    def background_mask(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.subtracted is not None
+        return self.mask.inverse()
 
     # *****************************************************************
 
     @property
-    def is_estimated(self):
+    def subtracted(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.estimated_background is not None
+        # Return the box with the background subtracted
+        return self.cutout - self.background
+
+    # *****************************************************************
+
+    @property
+    def has_background(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.background is not None
 
     # *****************************************************************
 
@@ -117,7 +121,7 @@ class Source(object):
 
         #plotting.plot_box(np.ma.masked_array(np.asarray(self.subtracted), mask=self.cutout_mask.inverse()))
 
-        return np.ma.sum(np.ma.masked_array(np.asarray(self.subtracted), mask=self.mask.inverse()))
+        return np.ma.sum(np.ma.masked_array(np.asarray(self.subtracted), mask=self.background_mask))
 
     # *****************************************************************
 
@@ -129,45 +133,35 @@ class Source(object):
         """
 
         # Perform sigma-clipping on the background if requested
-        if sigma_clip: mask = statistics.sigma_clip_mask(self.background, sigma_level=sigma_level, mask=self.background_mask)
-        else: mask = self.background_mask
+        if sigma_clip: mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
+        else: mask = self.mask
 
+        # Fit a polynomial ...
         if method == "polynomial":
+            try:
+                self.background = self.cutout.fit_polynomial(3, mask=mask)
+            except TypeError:
+                plotting.plot_box(np.ma.masked_array(self.cutout, mask=mask))
+                mask = mask.eroded(2, 1)
+                plotting.plot_box(np.ma.masked_array(self.cutout, mask=mask))
+                self.background = self.cutout.fit_polynomial(3, mask=mask)
 
-            # Estimate the background
-            self.estimated_background = self.background.fit_polynomial(3, mask=mask)
+        # Interpolate ...
+        elif method == "interpolation": self.background = self.cutout.interpolate(mask)
 
-        elif method == "interpolation":
-
-            # Interpolate over the mask
-            self.estimated_background = self.background.interpolate(mask)
-
+        # Calculate the mean
         elif method == "mean":
 
-            mean = np.ma.mean(np.ma.masked_array(self.background, mask=mask))
-            self.estimated_background = self.background.fill(mean)
+            mean = np.ma.mean(np.ma.masked_array(self.cutout, mask=mask))
+            self.background = self.cutout.full(mean)
 
+        # Calculate the median
         elif method == "median":
 
-            median = np.ma.median(np.ma.masked_array(self.background, mask=mask))
-            self.estimated_background = self.background.fill(median)
+            median = np.ma.median(np.ma.masked_array(self.cutout, mask=mask))
+            self.background = self.cutout.full(median)
 
         else: raise ValueError("Unknown background estimation method")
-
-        # Create an estimated background box for the cutout
-        self.estimated_background_cutout = self.estimated_background.box_like(self.cutout)
-
-    # *****************************************************************
-
-    def subtract_background(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Subtract the background from the box
-        self.subtracted = self.cutout - self.estimated_background_cutout
 
     # *****************************************************************
 
@@ -178,18 +172,21 @@ class Source(object):
         :return:
         """
 
-        if not np.all(self.background_mask):
+        # If a subtracted box is present, use it to find the center segment
+        box = self.subtracted if self.has_background else self.cutout
+
+        if not np.all(self.mask):
 
             # Calculate threshold for segmentation
-            mean, median, stddev = statistics.sigma_clipped_statistics(self.background, mask=self.background_mask)
+            mean, median, stddev = statistics.sigma_clipped_statistics(box, mask=self.mask)
             threshold = mean + stddev * threshold_sigmas
 
         else:
 
-            threshold = detect_threshold(self.cutout, snr=2.0) #snr=2.0
+            threshold = detect_threshold(box, snr=2.0) #snr=2.0
 
         # Perform the segmentation
-        segments = detect_sources(self.cutout, threshold, npixels=min_pixels, filter_kernel=kernel)
+        segments = detect_sources(box, threshold, npixels=min_pixels, filter_kernel=kernel)
 
         # Get the label of the center segment
         rel_center = self.cutout.rel_position(self.center)
@@ -197,11 +194,10 @@ class Source(object):
 
         # If the center pixel is identified as being part of the background, create an empty mask (the center does not
         # correspond to a segment)
-        if label == 0: self.mask = Mask(np.zeros_like(self.cutout, dtype=bool))
-        else:
+        if label == 0: return Mask(np.zeros_like(self.cutout, dtype=bool))
 
-            # Create a mask of the center segment
-            self.mask = Mask((segments == label))
+        # Create a mask of the center segment
+        else: return Mask((segments == label))
 
     # *****************************************************************
 
@@ -213,7 +209,7 @@ class Source(object):
         """
 
         # If a subtracted box is present, use it to locate the peaks
-        box = self.subtracted if self.subtracted is not None else self.cutout
+        box = self.subtracted if self.has_background else self.cutout
 
         # Calculate the sigma-clipped statistics of the frame and find the peaks
         mean, median, stddev = statistics.sigma_clipped_statistics(box, sigma=3.0)
@@ -260,26 +256,17 @@ class Source(object):
         # Zoom in on the cutout
         source.cutout = self.cutout.zoom(self.center, factor)
 
-        # Zoom in on the background
-        source.background = self.background.zoom(self.center, factor)
-
         # Calculate the relative coordinate of the center for the cutout and background boxes
         rel_center = source.cutout.rel_position(self.center)
-        rel_center_background = source.background.rel_position(self.center)
 
         # Decrease the radius
         source.radius = self.radius / factor
-        outer_radius = source.radius * self.outer_factor
 
-        # Zoom in on the masks
-        #source.background_mask = masks.create_annulus_mask(source.background.xsize, source.background.ysize, rel_center_background, source.radius, outer_radius, self.angle)
-        source.background_mask = masks.create_ellipse_mask(source.background.xsize, source.background.ysize, rel_center_background, source.radius, self.angle)
-        source.mask = masks.create_ellipse_mask(source.cutout.xsize, source.cutout.ysize, rel_center, source.radius, self.angle)
+        # Create smaller mask
+        source.mask = masks.create_ellipse_mask(source.cutout.xsize, source.cutout.ysize, rel_center, source.radius, source.angle)
 
-        # Set derived properties to None
-        source.estimated_background = None
-        source.estimated_background_cutout = None
-        source.subtracted = None
+        # Set other properties to None
+        source.background = None
         source.removed = None
 
         # Return the new source
@@ -316,16 +303,15 @@ class Source(object):
         else: peak_coordinates = None
 
         # If the background has been estimated for this source
-        if self.estimated_background_cutout is not None:
+        if self.has_background:
 
             # Do the plotting
-            plotting.plot_source(self.background, self.background_mask, self.estimated_background, self.cutout,
-                                 self.estimated_background_cutout, self.mask, peaks=peak_coordinates, title=title)
+            plotting.plot_source(self.cutout, self.mask, self.background, peaks=peak_coordinates, title=title)
 
         # Else, we just have a background and cutout box
         else:
 
             # Do the plotting
-            plotting.plot_background_center(self.background, self.background_mask, self.cutout, peaks=peak_coordinates, title=title)
+            plotting.plot_background_center(self.cutout, self.mask, peaks=peak_coordinates, title=title)
 
 # *****************************************************************

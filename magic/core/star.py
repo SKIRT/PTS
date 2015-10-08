@@ -237,7 +237,7 @@ class Star(object):
         if self.has_track_record: self.track_record.append(source)
 
         # Replace the frame with the estimated background
-        source.estimated_background.replace(frame, where=source.background_mask)
+        source.background.replace(frame, where=source.mask)
 
         # Use the new source
         self.source = source
@@ -273,6 +273,6 @@ class Star(object):
             self.source.estimate_background(config.remove_method, config.sigma_clip)
 
             # Replace the frame with the estimated background
-            self.source.estimated_background_cutout.replace(frame, where=self.source.mask)
+            self.source.background.replace(frame, where=self.source.mask)
 
 # *****************************************************************

@@ -168,8 +168,11 @@ class Galaxy(object):
             # Estimate the background
             self.source.estimate_background(config.remove_method, config.sigma_clip)
 
+            #from ..tools import plotting
+            #plotting.plot_box(np.ma.masked_array(self.source.background, mask=self.source.mask))
+
             # Replace the frame with the estimated background
-            self.source.estimated_background_cutout.replace(frame, where=self.source.mask)
+            self.source.background.replace(frame, where=self.source.mask)
 
     # *****************************************************************
 

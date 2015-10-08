@@ -343,8 +343,6 @@ class StarExtractor(object):
             # Add this galaxy to the mask
             mask[star.source.cutout.y_min:star.source.cutout.y_max, star.source.cutout.x_min:star.source.cutout.x_max] = star.source.mask
 
-
-
         # Return the mask
         return mask
 
@@ -415,10 +413,7 @@ class StarExtractor(object):
         for star in self.stars:
 
             # If the star contains a source and the background of this source has been subtracted, calculate the flux
-            if star.has_source and star.source.is_estimated:
-
-                # Subtract the background if necessary
-                if not star.source.is_subtracted: star.source.subtract_background()
+            if star.has_source and star.source.has_background:
 
                 # Add the flux to the list
                 flux_list.append(star.flux)

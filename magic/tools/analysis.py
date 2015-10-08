@@ -24,6 +24,7 @@ from . import interpolation
 from ..core.box import Box
 from ..core.source import Source
 from ..core.vector import Position, Extent
+from ..core import masks
 
 # Import astronomical modules
 from astropy.convolution import Gaussian2DKernel
@@ -102,11 +103,7 @@ def fit_model_to_source(source, config, track_record=None, level=0):
     if source.cutout.xsize < config.minimum_pixels or source.cutout.ysize < config.minimum_pixels: return None, None
 
     # Estimate and subtract the background of the source
-    if not source.is_subtracted:
-
-        # median, mean, polynomial or interpolation
-        source.estimate_background(config.background_est_method, config.sigma_clip_background)
-        source.subtract_background()
+    if not source.has_background: source.estimate_background(config.background_est_method, config.sigma_clip_background)
 
     # Get the model name
     model_name = config.model_names[level]
@@ -138,7 +135,6 @@ def fit_model_to_source(source, config, track_record=None, level=0):
 
         # Estimate and subtract the background
         source.estimate_background(config.background_est_method, config.sigma_clip_background)
-        source.subtract_background()
 
         # Add a snapshot of the source to the track record for debugging
         if track_record is not None: track_record.append(copy.deepcopy(source))
@@ -377,7 +373,6 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
 
         # Subtract the background from the source
         source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
-        source.subtract_background()
 
     # Create a kernel
     sigma = config.kernel.fwhm * gaussian_fwhm_to_sigma
@@ -385,10 +380,10 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
     kernel = Gaussian2DKernel(sigma, x_size=kernel_size, y_size=kernel_size)
 
     # Create a mask for the center segment found for the source
-    source.find_center_segment(config.threshold_sigmas, kernel=kernel, min_pixels=config.min_pixels)
+    mask = source.find_center_segment(config.threshold_sigmas, kernel=kernel, min_pixels=config.min_pixels)
 
     # If no center segment was found, subtract the background first
-    if not np.any(source.mask) and not config.always_subtract_background:
+    if not np.any(mask) and not config.always_subtract_background:
 
         # Add a snapshot of the source to the track record for debugging
         if track_record is not None: track_record.append(copy.deepcopy(source))
@@ -398,7 +393,9 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
 
         # Subtract the background from the source
         source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
-        source.subtract_background()
+
+        # Search for a center segment again
+        mask = source.find_center_segment(config.threshold_sigmas, kernel=kernel, min_pixels=config.min_pixels)
 
         # Add a snapshot of the source to the track record for debugging
         if track_record is not None: track_record.append(copy.deepcopy(source))
@@ -407,7 +404,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         if config.debug.no_segment_after: source.plot(title="After removing gradient background")
 
     # If still no center segment was found, return without source
-    if not np.any(source.mask):
+    if not np.any(mask):
 
         # Show a plot for debugging
         if config.debug.no_segment: source.plot(title="No center segment was found")
@@ -415,13 +412,13 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         return None
 
     # If the mask extents to the boundary of the cutout box and if enabled, expand the ellipse and repeat the procedure
-    if source.mask.hits_boundary() and config.expand:
+    if masks.overlap(source.background_mask, mask) and config.expand:
 
         # Add a snapshot of the source to the track record for debugging
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
-        if config.debug.expand: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Masked segment hits boundary")
+        if config.debug.expand: plotting.plot_box(np.ma.masked_array(source.cutout, mask=masks.union(mask, source.background_mask)), title="Masked segment hits boundary")
 
         # If the maximum expansion level has been reached, no source could be found
         if expansion_level >= config.max_expansion_level: return None
@@ -441,10 +438,13 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
-        if config.debug.success: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Masked segment doesn't hit boundary")
+        if config.debug.success: plotting.plot_box(np.ma.masked_array(source.cutout, mask=masks.union(mask, source.background_mask)), title="Masked segment doesn't hit boundary")
 
         # Dilate the mask if requested
-        if config.dilate: source.mask = source.mask.dilated(config.connectivity, config.iterations)
+        if config.dilate: mask = mask.dilated(config.connectivity, config.iterations)
+
+        # Set the source mask
+        source.mask = mask
 
         # Show a plot for debugging
         if config.debug.dilated: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="With dilated mask")
@@ -480,10 +480,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
     if source.cutout.xsize < config.minimum_pixels or source.cutout.ysize < config.minimum_pixels: return None
 
     # If always subtract background is enabled
-    if config.always_subtract_background:
-
-        source.estimate_background(config.background_est_method, config.sigma_clip_background)
-        source.subtract_background()
+    if config.always_subtract_background: source.estimate_background(config.background_est_method, config.sigma_clip_background)
 
     # Find the location of peaks in the box (do not remove gradient yet for performance reasons)
     peaks = source.locate_peaks(config.threshold_sigmas)
@@ -499,7 +496,6 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
 
         # Estimate and subtract the background (remove the background gradient)
         source.estimate_background(config.background_est_method, config.sigma_clip_background)
-        source.subtract_background()
 
         # Find the location of peaks in the box
         peaks = source.locate_peaks(config.threshold_sigmas)

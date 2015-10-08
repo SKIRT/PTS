@@ -466,3 +466,30 @@ def union(mask_a, mask_b):
     return mask_a + mask_b
 
 # *****************************************************************
+
+def intersection(mask_a, mask_b):
+
+    """
+    This function ...
+    :param mask_a:
+    :param mask_b:
+    :return:
+    """
+
+    # Return the intersection
+    return mask_a * mask_b
+
+# *****************************************************************
+
+def overlap(mask_a, mask_b):
+
+    """
+    This function ...
+    :param mask_a:
+    :param mask_b:
+    :return:
+    """
+
+    return np.any(intersection(mask_a, mask_b))
+
+# *****************************************************************
