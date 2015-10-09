@@ -10,16 +10,21 @@ from __future__ import (absolute_import, division, print_function)
 # Import standard modules
 import numpy as np
 
-# Import astronomical modules
-from astropy import units as u
-from photutils import segment_properties, properties_table
-from photutils import EllipticalAperture
-
 # Import Astromagic modules
 from ..tools import analysis
 from .vector import Position, Extent
 from ..tools import interpolation
 from astropy.coordinates import Angle
+
+# Import astronomical modules
+from astropy import units as u
+from photutils import segment_properties, properties_table
+from photutils import EllipticalAperture
+from astroquery.ned import Ned
+import astroquery.exceptions
+from astropy.coordinates import Angle
+import astropy.coordinates as coord
+from astroquery.vizier import Vizier
 
 # *****************************************************************
 
@@ -29,7 +34,7 @@ class Galaxy(object):
     This class ...
     """
 
-    def __init__(self, pgc_id=None, name=None, type=type, redshift=None, center=None, names=None, major=None, minor=None, pa=None, satellite=False):
+    def __init__(self, name):
 
         """
         The constructor ...
@@ -39,18 +44,79 @@ class Galaxy(object):
         :return:
         """
 
-        # Set the attributes
-        self.pgc_id = pgc_id
-        self.name = name
-        self.type = type
-        self.redshift = redshift
-        self.center = center
-        self.names = names
-        self.major = major
-        self.minor = minor
-        self.pa = pa
-        self.satellite = satellite
+        # Obtain more information about this galaxy
+        try:
+
+            ned_result = Ned.query_object(name)
+            ned_entry = ned_result[0]
+
+            # Get the NGC number
+            self.name = ned_entry["Object Name"]
+
+            # Get the redshift
+            self.redshift = ned_entry["Redshift"]
+
+            # Get the type (G=galaxy, HII ...)
+            self.type = ned_entry["Type"]
+
+        except astroquery.exceptions.RemoteServiceError:
+
+            # Set attributes
+            self.name = name
+            self.redshift = None
+            self.type = None
+
+        print(self.name)
+        print("  type = ", self.type)
+
+        # Create a new Vizier object and set the row limit to -1 (unlimited)
+        viz = Vizier(keywords=["galaxies", "optical"])
+        viz.ROW_LIMIT = -1
+
+        # Query Vizier and obtain the resulting table
+        result = viz.query_object(name, catalog=["VII/237"])
+        entry = result[0][0]
+
+        # Get the right ascension and the declination
+        self.center = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
+
+        # Get the names given to this galaxy
+        self.names = entry["ANames"].split() if entry["ANames"] else None
+
+        # Get the size of the galaxy
+        ratio = np.power(10.0, entry["logR25"]) if entry["logR25"] else None
+        diameter = np.power(10.0, entry["logD25"])*0.1*u.arcmin if entry["logD25"] else None
+
+        print("  D25_diameter = ", diameter)
+
+        radial_profiles_result = viz.query_object(name, catalog="J/ApJ/658/1006")
+
+        if len(radial_profiles_result) > 0:
+
+            radial_profiles_entry = radial_profiles_result[0][0]
+
+            distance = radial_profiles_entry["Dist"] * u.Unit("Mpc")
+            inclination = Angle(radial_profiles_entry["i"], u.deg)
+            d25 = radial_profiles_entry["D25"] * u.arcmin
+
+            print("  Distance = ", distance)
+            print("  Inclination = ", inclination)
+            print("  D25 = ", d25)
+
+        # Get the size of major and minor axes
+        self.major = diameter
+        self.minor = diameter / ratio if diameter is not None and ratio is not None else None
+
+        # Get the position angle of the galaxy
+        self.pa = Angle(entry["PA"]-90, u.deg) if entry["PA"] else None
+
+        # Set the principal and companion flags to False initially
         self.principal = False
+        self.companion = False
+
+        # Initialize a list for the names of companion galaxies
+        self.companions = []
+        self.parent = None
 
         # Set the source attribute to None initially
         self.source = None
@@ -105,13 +171,13 @@ class Galaxy(object):
 
         elif self.minor is None or angle == 0.0:
 
-            x_radius = self.major.to("arcsec") / pixelscale
+            x_radius = 0.5 * self.major.to("arcsec") / pixelscale
             y_radius = x_radius
 
         else:
 
-            x_radius = self.major.to("arcsec") / pixelscale
-            y_radius = self.minor.to("arcsec") / pixelscale
+            x_radius = 0.5 * self.major.to("arcsec") / pixelscale
+            y_radius = 0.5 * self.minor.to("arcsec") / pixelscale
 
         # Return the parameters
         return Position(x=x_center, y=y_center), Extent(x=x_radius, y=y_radius), angle
@@ -206,54 +272,46 @@ class Galaxy(object):
 
         if self.has_source:
 
-            pass
+            # Create a HDU from this frame with the image header
+            hdu = pyfits.PrimaryHDU(self.source.cutout)
+
+            # Create a figure canvas
+            figure = plt.figure(figsize=(15, 15))
+
+            # Create a figure from this frame
+            plot = aplpy.FITSFigure(hdu, figure=figure)
+
+            # Plot in color scale
+            plot.show_colorscale()
+
+            # Add a color bar if requested
+            plot.add_colorbar()
+
+            if self.has_aperture: self.aperture.plot(color='white', lw=1.5, alpha=0.5, ax=plt.gca())
+
+            # Show the plot
+            plt.show()
 
         else:
 
-            from astropy.visualization import SqrtStretch, LogStretch
-            from astropy.visualization.mpl_normalize import ImageNormalize
+            # Create a HDU from this frame with the image header
+            hdu = pyfits.PrimaryHDU(frame, frame.wcs.to_header())
 
-            x_centers = []
-            y_centers = []
-            apertures = []
+            # Create a figure canvas
+            figure = plt.figure(figsize=(20, 20))
 
-            # Loop over all galaxies
-            for galaxy in self.galaxies:
+            # Create a figure from this frame
+            plot = aplpy.FITSFigure(hdu, figure=figure)
 
-                x_center, y_center = galaxy.center.to_pixel(frame.wcs)
-                x_centers.append(x_center)
-                y_centers.append(y_center)
+            # Plot in color scale
+            plot.show_colorscale()
 
-                # If the galaxy does not have a source, continue
-                if galaxy.has_aperture: apertures.append(galaxy.aperture)
+            # Add a color bar if requested
+            plot.add_colorbar()
 
-            # Initialize the plot
-            #norm = ImageNormalize(stretch=SqrtStretch())
-            norm = ImageNormalize(stretch=LogStretch())
-            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+            if self.has_aperture: self.aperture.plot(color='white', lw=1.5, alpha=0.5, ax=plt.gca())
 
-        # Determine the maximum value in the box and the mimimum value for plotting
-        vmax = np.max(frame)
-        vmin = np.min(frame) if vmax <= 0 else 0.0
+            # Show the plot
+            plt.show()
 
-        # Plot the frame and the segments mask
-        ax1.imshow(frame, origin='lower', interpolation='nearest', norm=norm, vmin=vmin, vmax=vmax)
-        ax2.imshow(self.create_mask(frame), origin='lower', cmap='jet')
-
-        # Set axes limits
-        plt.xlim(0, frame.xsize-1)
-        plt.ylim(0, frame.ysize-1)
-
-        # Plot the apertures
-        for aperture in apertures:
-
-            aperture.plot(color='white', lw=1.5, alpha=0.5, ax=ax1)
-            aperture.plot(color='white', lw=1.5, alpha=1.0, ax=ax2)
-
-        # Plot centers of the galaxies
-        plt.plot(x_centers, y_centers, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
-
-        # Show the plot
-        plt.show()
-        
 # *****************************************************************

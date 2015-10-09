@@ -261,8 +261,6 @@ class StarExtractor(object):
         # Inform the user
         log.info("Removing saturation from the frame")
 
-        # TODO: allow "central_brightness" as config.saturation.criterion
-
         # Get a list of the fwhm of all the stars that were fitted
         fwhm_list = self.fwhm_list
 
@@ -272,38 +270,93 @@ class StarExtractor(object):
         elif self.config.saturation.no_source_fwhm == "median": default_fwhm = np.median(fwhm_list)
         else: raise ValueError("Unkown measure for determining the fwhm of stars without detected source")
 
-        # Get a list of the fluxes of the stars
-        flux_list = self.flux_list
-
-        # Calculate the minimal flux/central brightness
-        minimum = statistics.cutoff(flux_list, self.config.saturation.brightest_method, self.config.saturation.limit)
-
-        # Inform the user
-        quantity = "flux" if self.config.saturation.criterion == "flux" else "central brightness"
-        log.debug("Minimum value of the " + quantity + " for saturation removal: {0:.2f}".format(minimum))
-
-        # Inform the user
-        eligible = len([flux for flux in flux_list if flux >= minimum])
-        log.debug("Number of stars eligible for saturation removal: " + str(eligible) + " ({0:.2f}%)".format(eligible/len(self.stars)*100.0))
-
-        # Loop over all stars in the list
+        # Set the number of stars where saturation was removed to zero initially
         removed = 0
-        for star in self.stars:
 
-            # If a source was not found for this star, skip it
-            if not star.has_source: continue
+        # Detect and remove saturation for all stars
+        if self.config.saturation.method == "all":
 
-            # Calculate the value (flux or brightness) for this star
-            value = star.flux
+            # Inform the user on the number of stars that have a source
+            log.debug("Number of stars with source = " + str(self.have_source))
 
-            # Remove the saturation
-            if value >= minimum:
+            # Loop over all stars
+            for star in self.stars:
+
+                # If a source was not found for this star, skip it
+                if not star.has_source: continue
 
                 success = star.remove_saturation(frame, self.config.saturation, default_fwhm)
-                if star.has_source: removed += success
+                removed += success
 
-        # Inform the user
-        log.debug("Removed saturation in " + str(removed) + " out of " + str(eligible) + " stars ({0:.2f}%)".format(removed/eligible*100.0))
+            # Inform the user
+            log.debug("Removed saturation in " + str(removed) + " out of " + str(self.have_source) + " stars with source ({0:.2f}%)".format(removed/self.have_source*100.0))
+
+        # Detect and remove saturation for the brightest stars
+        elif self.config.saturation.method == "brightest":
+
+            # TODO: allow "central_brightness" as config.saturation.criterion
+
+            # Get a list of the fluxes of the stars
+            flux_list = self.flux_list
+
+            # Calculate the minimal flux/central brightness
+            minimum = statistics.cutoff(flux_list, self.config.saturation.brightest_method, self.config.saturation.limit)
+
+            # Inform the user
+            quantity = "flux" if self.config.saturation.criterion == "flux" else "central brightness"
+            log.debug("Minimum value of the " + quantity + " for saturation removal: {0:.2f}".format(minimum))
+
+            # Inform the user
+            eligible = len([flux for flux in flux_list if flux >= minimum])
+            log.debug("Number of stars eligible for saturation removal: " + str(eligible) + " ({0:.2f}%)".format(eligible/len(self.stars)*100.0))
+
+            # Inform the user on the number of stars that have a source
+            log.debug("Number of stars with source = " + str(self.have_source))
+
+            # Loop over all stars
+            for star in self.stars:
+
+                # If a source was not found for this star, skip it
+                if not star.has_source: continue
+
+                # Calculate the value (flux or brightness) for this star
+                value = star.flux
+
+                # Remove the saturation
+                if value >= minimum:
+
+                    success = star.remove_saturation(frame, self.config.saturation, default_fwhm)
+                    removed += success
+
+            # Inform the user
+            log.debug("Removed saturation in " + str(removed) + " out of " + str(eligible) + " stars ({0:.2f}%)".format(removed/eligible*100.0))
+
+        # Unkown saturation
+        else: raise ValueError("Unknown method (should be 'brightest' or 'all'")
+
+
+            # If a source was not found for this star, skip it
+            #if not star.has_source: continue
+
+                #if self.config.remove_saturation.remove_if_no_source:
+
+                    # Look for a center segment corresponding to a 'saturation' source
+                    #source = analysis.find_source_segmentation(frame, self.source.center, radius, Angle(0.0, u.deg), config, track_record=self.track_record)
+
+                    # If a 'saturation' source was found
+                    #if source is not None:
+
+                        # Replace the source by a source that covers the saturation
+                        #self.source = source
+
+                        # Estimate the background
+                        #self.source.estimate_background(config.remove_method, config.sigma_clip)
+
+                        # Replace the frame with the estimated background
+                        #self.source.background.replace(frame, where=self.source.mask)
+
+                    # Else, skip this star
+                    #else: continue
 
     # *****************************************************************
 

@@ -10,12 +10,41 @@ from __future__ import (absolute_import, division, print_function)
 # Import image modules
 from ..core import regions
 
+# Import Astromagic modules
+from ..core.galaxy import Galaxy
+
 # Import astronomical modules
 import astropy.units as u
 import astropy.coordinates as coord
 from astroquery.vizier import Vizier
 from astroquery.ned import Ned
 from astroquery.irsa_dust import IrsaDust
+
+# *****************************************************************
+
+def galaxies_in_box(center, ra_span, dec_span):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Initialize a list to contain the galaxies
+    names = []
+
+    # Create a new Vizier object and set the row limit to -1 (unlimited)
+    viz = Vizier(keywords=["galaxies", "optical"])
+    viz.ROW_LIMIT = -1
+
+    # Query Vizier and obtain the resulting table
+    result = viz.query_region(center, width=ra_span, height=dec_span, catalog=["VII/237"])
+    table = result[0]
+
+    # Loop over the rows in the table
+    for entry in table: names.append("PGC " + str(entry["PGC"]))
+
+    # Return the list of galaxies
+    return names
 
 # *****************************************************************
 

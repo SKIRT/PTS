@@ -48,12 +48,12 @@ def find_source_daofind(frame, center, radius, angle, config, track_record):
 
     # TODO: FIX THIS FUNCTION
 
-    threshold_sigmas = 5.0
+    sigma_level = 5.0
 
     # Calculate the sigma-clipped statistics of the data
     mean, median, std = sigma_clipped_stats(data, sigma=3.0)
 
-    result_table = daofind(data - median, fwhm=3.0, threshold=threshold_sigmas*std)
+    result_table = daofind(data - median, fwhm=3.0, threshold=sigma_level*std)
 
     result_table.rename_column('xcentroid', 'x_peak')
     result_table.rename_column('ycentroid', 'y_peak')
@@ -380,7 +380,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
     kernel = Gaussian2DKernel(sigma, x_size=kernel_size, y_size=kernel_size)
 
     # Create a mask for the center segment found for the source
-    mask = source.find_center_segment(config.threshold_sigmas, kernel=kernel, min_pixels=config.min_pixels)
+    mask = source.find_center_segment(config.sigma_level, kernel=kernel, min_pixels=config.min_pixels)
 
     # If no center segment was found, subtract the background first
     if not np.any(mask) and not config.always_subtract_background:
@@ -395,7 +395,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
 
         # Search for a center segment again
-        mask = source.find_center_segment(config.threshold_sigmas, kernel=kernel, min_pixels=config.min_pixels)
+        mask = source.find_center_segment(config.sigma_level, kernel=kernel, min_pixels=config.min_pixels)
 
         # Add a snapshot of the source to the track record for debugging
         if track_record is not None: track_record.append(copy.deepcopy(source))
@@ -486,7 +486,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
     if config.always_subtract_background: source.estimate_background(config.background_est_method, config.sigma_clip_background)
 
     # Find the location of peaks in the box (do not remove gradient yet for performance reasons)
-    peaks = source.locate_peaks(config.threshold_sigmas)
+    peaks = source.locate_peaks(config.sigma_level)
 
     # If no peaks could be detected, remove a potential background gradient from the box before detection
     if len(peaks) == 0 and not config.always_subtract_background:
@@ -501,7 +501,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
         source.estimate_background(config.background_est_method, config.sigma_clip_background)
 
         # Find the location of peaks in the box
-        peaks = source.locate_peaks(config.threshold_sigmas)
+        peaks = source.locate_peaks(config.sigma_level)
 
         # Add a snapshot of the source to the track record for debugging
         if track_record is not None: track_record.append(copy.deepcopy(source))

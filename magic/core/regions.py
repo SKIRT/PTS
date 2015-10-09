@@ -113,6 +113,7 @@ class Region(pyregion.ShapeList):
 
         # Create a string identifying this ellipse
         region_string = "# Region file format: DS9 version 3.0\n"
+        region_string += "global color=green\n"
 
         if fk5: region_string += "fk5\n"
         else: region_string += "image\n"
@@ -125,8 +126,10 @@ class Region(pyregion.ShapeList):
             if color is None: suffix = " # color = " + color
             else: suffix = ""
 
-            if fk5: line = "circle(%s,%s,%.2f\")" % (center.ra.value, center.dec.value, radius.value) + suffix + "\n"
+            if fk5: line = "fk5;circle({0},{1},{2:.2f}\")".format(center.ra.value, center.dec.value, radius.value) + suffix + "\n"
             else: line = "circle(" + str(center.x) + "," + str(center.y) + "," + str(radius) + ")" + suffix + "\n"
+
+            #print(line)
 
             region_string += line
 

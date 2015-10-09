@@ -8,6 +8,7 @@
 from __future__ import (absolute_import, division, print_function)
 
 # Import standard modules
+import math
 import os.path
 import numpy as np
 from config import Config
@@ -15,6 +16,7 @@ import inspect
 import matplotlib.pylab as plt
 
 # Import Astromagic modules
+from ..tools import catalogs
 from ..core import regions
 from ..core.masks import Mask
 from ..core.galaxy import Galaxy
@@ -23,12 +25,7 @@ from ..core.vector import Position
 # Import astromagic modules
 from astropy import log
 import astropy.units as u
-import astropy.coordinates as coord
 from astropy.table import Table
-from astroquery.vizier import Vizier
-from astroquery.ned import Ned
-import astroquery.exceptions
-from astropy.coordinates import Angle
 
 # *****************************************************************
 
@@ -91,6 +88,22 @@ class GalaxyExtractor(object):
 
     # *****************************************************************
 
+    @property
+    def principal(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the list of galaxies
+        for galaxy in self.galaxies:
+
+            # Check if it is the principal galaxy; if so, return it
+            if galaxy.principal: return galaxy
+
+    # *****************************************************************
+
     def fetch_galaxies(self, frame):
 
         """
@@ -106,65 +119,11 @@ class GalaxyExtractor(object):
         # Get the range of right ascension and declination of the image
         center, ra_span, dec_span = frame.coordinate_range()
 
-        # Create a new Vizier object and set the row limit to -1 (unlimited)
-        viz = Vizier(keywords=["galaxies", "optical"])
-        viz.ROW_LIMIT = -1
+        # Find galaxies in the box defined by the center and RA/DEC ranges
+        for galaxy_name in catalogs.galaxies_in_box(center, ra_span, dec_span):
 
-        # Query Vizier and obtain the resulting table
-        result = viz.query_region(center, width=ra_span, height=dec_span, catalog=["VII/237"])
-        table = result[0]
-
-        # Loop over all galaxies in the table
-        for entry in table:
-
-            # Get the PGC number
-            pgc_id = entry["PGC"]
-
-            # Obtain more information about this galaxy
-            try:
-                ned_result = Ned.query_object("PGC " + str(pgc_id))
-                ned_entry = ned_result[0]
-
-                #notes = Ned.get_table("PGC " + str(pgc_id), table='objectnotes')
-
-                # Get the NGC number
-                name = ned_entry["Object Name"]
-
-                # Get the redshift
-                redshift = ned_entry["Redshift"]
-
-                # Get the type (G=galaxy, HII ...)
-                type = ned_entry["Type"]
-
-            except astroquery.exceptions.RemoteServiceError:
-
-                # Set attributes
-                name = "PGC " + str(pgc_id)
-                redshift = None
-                type = None
-
-            satellite = False
-            if type == "HII": satellite = True
-
-            # Get the right ascension and the declination
-            center = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
-
-            # Get the names given to this galaxy
-            names = entry["ANames"].split() if entry["ANames"] else None
-
-            # Get the size of the galaxy
-            ratio = np.power(10.0, entry["logR25"]) if entry["logR25"] else None
-            diameter = np.power(10.0, entry["logD25"])*0.1*u.arcmin if entry["logD25"] else None
-
-            # Get the size of major and minor axes
-            major = diameter
-            minor = diameter / ratio if diameter is not None and ratio is not None else None
-
-            # Get the position angle of the galaxy
-            pa = Angle(entry["PA"]-90, u.deg) if entry["PA"] else None
-
-            # Add a new galaxy to the list
-            self.galaxies.append(Galaxy(pgc_id=pgc_id, name=name, type=type, redshift=redshift, center=center, names=names, major=major, minor=minor, pa=pa, satellite=satellite))
+            # Create a Galaxy object and add it to the list
+            self.galaxies.append(Galaxy(galaxy_name))
 
         # Define a function that returns the length of the major axis of the galaxy
         def major_axis(galaxy):
@@ -173,12 +132,26 @@ class GalaxyExtractor(object):
             else: return galaxy.major
 
         # Indicate which galaxy is the principal galaxy
-        galaxy = max(self.galaxies, key=major_axis)
-        galaxy.principal = True
+        principal_galaxy = max(self.galaxies, key=major_axis)
+        principal_galaxy.principal = True
+
+        # Loop over the galaxies, check if they are companion galaxies
+        for galaxy in self.galaxies:
+
+            # Skip the principal galaxy
+            if galaxy.principal: continue
+
+            if galaxy.type == "HII": galaxy.companion = True
+            if galaxy.name[:-1].lower() == principal_galaxy.name[:-1].lower(): galaxy.companion = True
+
+            if galaxy.companion:
+                principal_galaxy.companions.append(galaxy.name)
+                galaxy.parent = principal_galaxy.name
 
         # Inform the user
         log.debug("Number of galaxies: " + str(len(self.galaxies)))
-        log.debug(galaxy.name + " is the principal galaxy in the frame")
+        log.debug(self.principal.name + " is the principal galaxy in the frame")
+        log.debug("The following galaxies are its companions: " + str(self.principal.companions))
 
     # *****************************************************************
 
@@ -231,13 +204,13 @@ class GalaxyExtractor(object):
         """
 
         # Inform the user
-        log.info("Removing the galaxies from the frame (except for the principal galaxy and its satellites)")
+        log.info("Removing the galaxies from the frame (except for the principal galaxy and its companions)")
 
         # Loop over all galaxies
         for galaxy in self.galaxies:
 
             # Remove the galaxy from the frame
-            if not galaxy.principal and not galaxy.satellite: galaxy.remove(frame, self.config.removal)
+            if not galaxy.principal and not galaxy.companion: galaxy.remove(frame, self.config.removal)
 
     # *****************************************************************
 
@@ -275,7 +248,7 @@ class GalaxyExtractor(object):
                 width = self.config.region.default_radius * frame.pixelscale.value
                 height = self.config.region.default_radius * frame.pixelscale.value
 
-            angle = galaxy.pa.degrees if galaxy.pa is not None else 0.0
+            angle = galaxy.pa.degree if galaxy.pa is not None else 0.0
 
             height_list.append(height)
             width_list.append(width)
@@ -283,6 +256,51 @@ class GalaxyExtractor(object):
 
         # Create a region and return it
         return regions.ellipses(ra_list, dec_list, height_list, width_list, angle_list)
+
+    # *****************************************************************
+
+    def write_region(self, frame, path):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        # Create a file
+        f = open(path,'w')
+
+        # Initialize the region string
+        print("# Region file format: DS9 version 3.0", file=f)
+        print("fk5", file=f)
+
+        # Loop over all galaxies
+        for galaxy in self.galaxies:
+
+            name = galaxy.name
+
+            ra = galaxy.center.ra.value
+            dec = galaxy.center.dec.value
+
+            if galaxy.major is not None:
+
+                width = galaxy.major.to("arcsec").value
+
+                if galaxy.minor is not None: height = galaxy.minor.to("arcsec").value
+                else: height = width
+
+            else:
+
+                width = self.config.region.default_radius * frame.pixelscale.value
+                height = self.config.region.default_radius * frame.pixelscale.value
+
+            angle = galaxy.pa.degree if galaxy.pa is not None else 0.0
+
+            print("fk5;")
+            print("fk5;ellipse({},{},{.2f}\",{.2f}\",{}) # '{}'\n".format(ra, dec, height, width, angle, name), file=f)
+
+        # Close the file
+        f.close()
 
     # *****************************************************************
 
@@ -372,9 +390,8 @@ class GalaxyExtractor(object):
         majors = []
         position_angles = []
         principal_flags = []
-        satellite_flags = []
+        companion_flags = []
         sources = []
-        #other_names = []
 
         # Loop over all stars
         for galaxy in self.galaxies:
@@ -384,22 +401,30 @@ class GalaxyExtractor(object):
             redshifts.append(galaxy.redshift)
             ascensions.append(galaxy.center.ra.value)
             declinations.append(galaxy.center.dec.value)
-            if galaxy.major is not None: majors.append(galaxy.major)
+            if galaxy.major is not None: majors.append(galaxy.major.to(u.arcmin).value)
             else: majors.append(None)
-            position_angles.append(galaxy.pa)
+            if galaxy.pa is not None: position_angles.append(galaxy.pa.degree)
+            else: position_angles.append(None)
             principal_flags.append(galaxy.principal)
-            satellite_flags.append(galaxy.satellite)
+            companion_flags.append(galaxy.companion)
             sources.append(galaxy.has_source)
-            #other_names.append(galaxy.names)
 
-        print(len(names), len(types), len(redshifts), len(ascensions), len(declinations), len(majors), len(position_angles), len(principal_flags), len(satellite_flags), len(sources))
+        print(names)
+        print(types)
+        print(majors)
+        print(position_angles)
 
-        print(redshifts[3], type(redshifts[3]))
-
-        # Create and return the table
-        return Table([names, types, redshifts, ascensions, declinations, majors, position_angles, principal_flags, satellite_flags, sources],
-                     names=('Name', 'Type', 'Redshift', 'RA', 'DEC', 'Major axis', 'Position angle', 'Principal', 'Satellite', 'Source'),
+        # Create the table
+        table = Table([names, types, redshifts, ascensions, declinations, majors, position_angles, principal_flags, companion_flags, sources],
+                     names=('Name', 'Type', 'Redshift', 'RA', 'DEC', 'Major axis length', 'Position angle', 'Principal', 'Companion', 'Source'),
                      meta={'name': 'galaxies'})
+
+        # Set units for columns
+        table['Major axis length'].unit = u.arcmin
+        table['Position angle'].unit = u.deg
+
+        # Return the table
+        return table
 
     # *****************************************************************
 

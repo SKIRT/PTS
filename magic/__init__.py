@@ -517,25 +517,6 @@ class Image(object):
 
     # *****************************************************************
 
-    def invert_mask(self, name):
-
-        """
-        This function makes a new mask which is the inverse (logical NOT) of the total currently selected mask
-        :param name:
-        :return:
-        """
-
-        # Get the total selected mask
-        currentmask = self.combine_masks(return_mask=True)
-
-        # Calculate the inverse of the this total mask
-        newmask = np.logical_not(currentmask)
-
-        # Add the new, inverted mask
-        self._add_mask(newmask, name)
-
-    # *****************************************************************
-
     def create_mask(self, return_mask=False):
 
         """
