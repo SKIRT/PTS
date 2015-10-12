@@ -350,7 +350,9 @@ class GalaxyExtractor(ObjectExtractor):
         ascensions = []
         declinations = []
         majors = []
+        d25s = []
         position_angles = []
+        inclinations = []
         principal_flags = []
         companion_flags = []
         sources = []
@@ -366,21 +368,27 @@ class GalaxyExtractor(ObjectExtractor):
             declinations.append(galaxy.position.dec.value)
             if galaxy.major is not None: majors.append(galaxy.major.to(u.arcmin).value)
             else: majors.append(None)
+            if galaxy.d25 is not None: d25s.append(galaxy.d25.to(u.arcmin).value)
+            else: d25s.append(None)
             if galaxy.pa is not None: position_angles.append(galaxy.pa.degree)
             else: position_angles.append(None)
+            if galaxy.inclination is not None: inclinations.append(galaxy.inclination.degree)
+            else: inclinations.append(None)
             principal_flags.append(galaxy.principal)
             companion_flags.append(galaxy.companion)
             sources.append(galaxy.has_source)
 
         # Create the table
-        table = Table([names, types, distances, ascensions, declinations, majors, position_angles, principal_flags, companion_flags, sources],
-                     names=('Name', 'Type', 'Distance', 'RA', 'DEC', 'Major axis length', 'Position angle', 'Principal', 'Companion', 'Source'),
+        table = Table([names, types, distances, ascensions, declinations, majors, d25s, position_angles, inclinations, principal_flags, companion_flags, sources],
+                     names=('Name', 'Type', 'Distance', 'RA', 'DEC', 'Major axis length', 'D25', 'Position angle', 'Inclination', 'Principal', 'Companion', 'Source'),
                      meta={'name': 'galaxies'})
 
         # Set units for columns
         table['Distance'].unit = u.Mpc
+        table['D25'].unit = u.arcmin
         table['Major axis length'].unit = u.arcmin
         table['Position angle'].unit = u.deg
+        table['Inclination'].unit = u.deg
 
         # Return the table
         return table

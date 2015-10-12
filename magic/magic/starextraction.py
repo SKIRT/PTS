@@ -260,7 +260,7 @@ class StarExtractor(ObjectExtractor):
             for star in self.objects:
 
                 # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
-                if not star.has_source and not self.config.remove_saturation.remove_if_undetected: continue
+                if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
                 # Find a saturation source and remove it from the frame
                 success = star.remove_saturation(frame, self.config.saturation, default_fwhm)
@@ -296,14 +296,14 @@ class StarExtractor(ObjectExtractor):
             for star in self.objects:
 
                 # If a source was not found for this star, skip it
-                if not star.has_source and not self.config.remove_if_undetected: continue
+                if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
                 # Calculate the value (flux or brightness) for this star
                 try: value = star.flux
                 except AttributeError: value = 0.0
 
                 # Remove the saturation if the value is greater than the minimum value or the star has no source and 'remove_if_undetected' is enabled
-                if value >= minimum or (self.config.remove_if_undetected and not star.has_source):
+                if value >= minimum or (self.config.saturation.remove_if_undetected and not star.has_source):
 
                     # Find a saturation source and remove it from the frame
                     success = star.remove_saturation(frame, self.config.saturation, default_fwhm)
@@ -443,7 +443,8 @@ class StarExtractor(ObjectExtractor):
 
             elif annotation == "has_background":
 
-                text = "text = {" + str(star.source.has_background) + "}"
+                if star.has_source: text = "text = {" + str(star.source.has_background) + "}"
+                else: text = ""
 
             elif annotation is None: text = ""
             else: raise ValueError("Invalid option for annotation")
