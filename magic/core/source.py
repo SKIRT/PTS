@@ -102,6 +102,18 @@ class Source(object):
     # *****************************************************************
 
     @property
+    def has_peak(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.peak is not None
+
+    # *****************************************************************
+
+    @property
     def flux(self):
 
         """

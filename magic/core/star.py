@@ -15,15 +15,15 @@ from astropy import units as u
 from astropy.coordinates import Angle
 
 # Import Astromagic modules
+from .skyobject import SkyObject
 from .source import Source
 from ..tools import analysis
 from .vector import Position
 from ..tools import fitting
-from .trackrecord import TrackRecord
 
 # *****************************************************************
 
-class Star(object):
+class Star(SkyObject):
 
     """
     This class ...
@@ -49,26 +49,14 @@ class Star(object):
         self.r_mag = r_mag
         self.i_mag = i_mag
 
-        # Set the source attribute to None initially
-        self.source = None
-
         # Set the model attribute to None initially
         self.model = None
 
-        # Initialize a track record of sources
-        self.track_record = None
+        # Set the has_saturation flag to False initially
+        self.has_saturation = False
 
-    # *****************************************************************
-
-    @property
-    def has_source(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.source is not None
+        # Call the constructor of the base class
+        super(Star, self).__init__()
 
     # *****************************************************************
 
@@ -81,18 +69,6 @@ class Star(object):
         """
 
         return self.model is not None
-
-    # *****************************************************************
-
-    @property
-    def has_track_record(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.track_record is not None
 
     # *****************************************************************
 
@@ -122,19 +98,7 @@ class Star(object):
 
     # *****************************************************************
 
-    def enable_track_record(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create a new track record
-        self.track_record = TrackRecord("Start")
-
-    # *****************************************************************
-
-    def circle_parameters(self, wcs, pixelscale, default_radius):
+    def ellipse_parameters(self, wcs, pixelscale, default_radius):
 
         """
         This function ...
@@ -148,25 +112,7 @@ class Star(object):
         x_center, y_center = self.position.to_pixel(wcs, origin=0)
 
         # Return the parameters
-        return Position(x=x_center, y=y_center), default_radius
-
-    # *****************************************************************
-
-    def find_source(self, frame, config):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Add a new stage to the track record
-        if self.has_track_record: self.track_record.set_stage("detection")
-
-        # Get the parameters of the circle
-        center, radius = self.circle_parameters(frame.wcs, frame.pixelscale, config.initial_radius)
-
-        # Find a source
-        self.source = analysis.find_source(frame, center, radius, Angle(0.0, u.deg), config, self.track_record, special=False)
+        return Position(x=x_center, y=y_center), default_radius, Angle(0.0, u.deg)
 
     # *****************************************************************
 
@@ -205,42 +151,42 @@ class Star(object):
         :return:
         """
 
-        # Add a new stage to the track record
-        if self.has_track_record: self.track_record.set_stage("removal")
+        # If a segment was found that can be identified with a source
+        if self.has_source or config.remove_if_undetected:
 
-        # Convert FWHM to sigma
-        default_sigma = default_fwhm / 2.35
+            # Add a new stage to the track record
+            if self.has_track_record: self.track_record.set_stage("removal")
 
-        radius = fitting.sigma(self.model) * config.sigma_level if self.model is not None else default_sigma * config.sigma_level
+            # Convert FWHM to sigma
+            default_sigma = default_fwhm / 2.35
 
-        # Determine the center position of the source (center of model if present, otherwise position of the star)
-        if self.source is not None:
+            radius = fitting.sigma(self.model) * config.sigma_level if self.model is not None else default_sigma * config.sigma_level
 
-            # If the star has been modeled succesfully, use the center position of the model
-            # Otherwise, use the source's peak
-            if self.model is not None: center = fitting.center(self.model)
-            else: center = self.source.peak
+            # Determine the center position of the source (center of model if present, otherwise position of the star)
+            if self.source is not None:
 
-        else:
+                # If the star has been modeled succesfully, use the center position of the model
+                # Otherwise, use the source's peak
+                if self.model is not None: center = fitting.center(self.model)
+                else: center = self.source.peak
 
-            # Calculate the pixel coordinate of the star's position
-            position_x, position_y = self.position.to_pixel(frame.wcs, origin=0)
-            center = Position(x=position_x, y=position_y)
+            else:
 
-        # Create a source
-        source = Source(frame, center, radius, Angle(0.0, u.deg), config.outer_factor)
+                # Calculate the pixel coordinate of the star's position
+                position_x, position_y = self.position.to_pixel(frame.wcs, origin=0)
+                center = Position(x=position_x, y=position_y)
 
-        # Estimate the background
-        source.estimate_background(config.method, config.sigma_clip)
+            # Create a source
+            source = Source(frame, center, radius, Angle(0.0, u.deg), config.outer_factor)
 
-        # Add the source to the track record
-        if self.has_track_record: self.track_record.append(source)
+            # Estimate the background
+            source.estimate_background(config.method, config.sigma_clip)
 
-        # Replace the frame with the estimated background
-        source.background.replace(frame, where=source.mask)
+            # Add the source to the track record
+            if self.has_track_record: self.track_record.append(source)
 
-        # Use the new source
-        self.source = source
+            # Replace the frame with the estimated background
+            source.background.replace(frame, where=source.mask)
 
     # *****************************************************************
 
@@ -261,7 +207,7 @@ class Star(object):
         if self.has_track_record: self.track_record.set_stage("saturation")
 
         # Look for a center segment corresponding to a 'saturation' source
-        source = analysis.find_source_segmentation(frame, self.source.center, radius, Angle(0.0, u.deg), config, track_record=self.track_record)
+        source = analysis.find_source_segmentation(frame, self.source.center, radius, Angle(0.0, u.deg), config, track_record=self.track_record, special=self.special)
 
         # If a 'saturation' source was found
         if source is not None:
@@ -275,8 +221,10 @@ class Star(object):
             # Replace the frame with the estimated background
             self.source.background.replace(frame, where=self.source.mask)
 
+            # Indicate that a saturation source was found
             return True
 
+        # Otherwise, return False
         else: return False
 
 # *****************************************************************

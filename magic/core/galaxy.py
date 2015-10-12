@@ -9,17 +9,19 @@ from __future__ import (absolute_import, division, print_function)
 
 # Import standard modules
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Import Astromagic modules
+from .skyobject import SkyObject
 from ..tools import analysis
 from .vector import Position, Extent
 from ..tools import interpolation
 from astropy.coordinates import Angle
 
 # Import astronomical modules
+import astropy.io.fits as pyfits
+import aplpy
 from astropy import units as u
-from photutils import segment_properties, properties_table
-from photutils import EllipticalAperture
 from astroquery.ned import Ned
 import astroquery.exceptions
 from astropy.coordinates import Angle
@@ -28,7 +30,7 @@ from astroquery.vizier import Vizier
 
 # *****************************************************************
 
-class Galaxy(object):
+class Galaxy(SkyObject):
 
     """
     This class ...
@@ -66,8 +68,8 @@ class Galaxy(object):
             self.redshift = None
             self.type = None
 
-        print(self.name)
-        print("  type = ", self.type)
+        #print(self.name)
+        #print("  type = ", self.type)
 
         # Create a new Vizier object and set the row limit to -1 (unlimited)
         viz = Vizier(keywords=["galaxies", "optical"])
@@ -78,7 +80,7 @@ class Galaxy(object):
         entry = result[0][0]
 
         # Get the right ascension and the declination
-        self.center = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
+        self.position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
 
         # Get the names given to this galaxy
         self.names = entry["ANames"].split() if entry["ANames"] else None
@@ -87,7 +89,7 @@ class Galaxy(object):
         ratio = np.power(10.0, entry["logR25"]) if entry["logR25"] else None
         diameter = np.power(10.0, entry["logD25"])*0.1*u.arcmin if entry["logD25"] else None
 
-        print("  D25_diameter = ", diameter)
+        #print("  D25_diameter = ", diameter)
 
         radial_profiles_result = viz.query_object(name, catalog="J/ApJ/658/1006")
 
@@ -95,13 +97,15 @@ class Galaxy(object):
 
             radial_profiles_entry = radial_profiles_result[0][0]
 
-            distance = radial_profiles_entry["Dist"] * u.Unit("Mpc")
-            inclination = Angle(radial_profiles_entry["i"], u.deg)
-            d25 = radial_profiles_entry["D25"] * u.arcmin
+            self.distance = radial_profiles_entry["Dist"] * u.Unit("Mpc")
+            self.inclination = Angle(radial_profiles_entry["i"], u.deg)
+            self.d25 = radial_profiles_entry["D25"] * u.arcmin
 
-            print("  Distance = ", distance)
-            print("  Inclination = ", inclination)
-            print("  D25 = ", d25)
+        else:
+
+            self.distance = None
+            self.inclination = None
+            self.d25 = None
 
         # Get the size of major and minor axes
         self.major = diameter
@@ -118,35 +122,8 @@ class Galaxy(object):
         self.companions = []
         self.parent = None
 
-        # Set the source attribute to None initially
-        self.source = None
-
-        # Set the aperture attribute to None initially
-        self.aperture = None
-
-    # *****************************************************************
-
-    @property
-    def has_source(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.source is not None
-
-    # *****************************************************************
-
-    @property
-    def has_aperture(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.aperture is not None
+        # Call the constructor of the base class
+        super(Galaxy, self).__init__()
 
     # *****************************************************************
 
@@ -159,7 +136,7 @@ class Galaxy(object):
         """
 
         # Get the center of the galaxy in pixel coordinates
-        x_center, y_center = self.center.to_pixel(wcs, origin=0)
+        x_center, y_center = self.position.to_pixel(wcs, origin=0)
 
         if self.pa is None: angle = Angle(0.0, u.deg)
         else: angle = self.pa
@@ -181,21 +158,6 @@ class Galaxy(object):
 
         # Return the parameters
         return Position(x=x_center, y=y_center), Extent(x=x_radius, y=y_radius), angle
-
-    # *****************************************************************
-
-    def find_source(self, frame, config):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the parameters of the ellipse
-        center, radius, angle = self.ellipse_parameters(frame.wcs, frame.pixelscale, config.initial_radius)
-
-        # Find a source
-        self.source = analysis.find_source(frame, center, radius, angle, config)
 
     # *****************************************************************
 
@@ -222,44 +184,13 @@ class Galaxy(object):
         """
 
         # If a segment was found that can be identified with a source
-        if self.has_source:
+        if self.has_source or config.remove_if_undetected:
 
             # Estimate the background
             self.source.estimate_background(config.remove_method, config.sigma_clip)
 
-            #from ..tools import plotting
-            #plotting.plot_box(np.ma.masked_array(self.source.background, mask=self.source.mask))
-
             # Replace the frame with the estimated background
             self.source.background.replace(frame, where=self.source.mask)
-
-    # *****************************************************************
-
-    def find_aperture(self, sigma_level=3.0):
-
-        """
-        This function ...
-        :return:
-        """
-
-        props = segment_properties(self.source.cutout, self.source.mask)
-        #tbl = properties_table(props)
-
-        x_shift = self.source.cutout.x_min
-        y_shift = self.source.cutout.y_min
-
-        # Since there is only one segment in the self.source.mask (the center segment), the props
-        # list contains only one entry (one galaxy)
-        properties = props[0]
-
-        # Obtain the position, orientation and extent
-        position = (properties.xcentroid.value + x_shift, properties.ycentroid.value + y_shift)
-        a = properties.semimajor_axis_sigma.value * sigma_level
-        b = properties.semiminor_axis_sigma.value * sigma_level
-        theta = properties.orientation.value
-
-        # Create the aperture
-        self.aperture = EllipticalAperture(position, a, b, theta=theta)
 
     # *****************************************************************
 

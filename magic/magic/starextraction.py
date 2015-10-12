@@ -8,6 +8,7 @@
 from __future__ import (absolute_import, division, print_function)
 
 # Import standard modules
+import math
 import numpy as np
 import os.path
 import inspect
@@ -15,7 +16,7 @@ import matplotlib.pyplot as plt
 from config import Config
 
 # Import Astromagic modules
-from ..core.masks import Mask
+from .objectextraction import ObjectExtractor
 from ..core.star import Star
 from ..tools import statistics
 from ..core.vector import Position
@@ -32,7 +33,7 @@ from astroquery.vizier import Vizier
 
 # *****************************************************************
 
-class StarExtractor(object):
+class StarExtractor(ObjectExtractor):
 
     """
     This class ...
@@ -44,37 +45,21 @@ class StarExtractor(object):
         The constructor ...
         """
 
+        # If no configuration is given, use the default configuration
         if config is None:
 
             directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
 
             # Load the default configurations for the star remover
             config_path = os.path.join(directory, "config", "starextractor.cfg")
-            self.config = Config(file(config_path))
+            config = Config(file(config_path))
 
-        else: self.config = config
-
-        # Set the log level
-        log.setLevel(self.config.log_level)
-
-        # Initialize an empty list for the stars
-        self.stars = []
+        # Call the constructor of the base class
+        super(StarExtractor, self).__init__(config)
 
     # *****************************************************************
 
-    def clear(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Clear the stars list
-        self.stars = []
-
-    # *****************************************************************
-
-    def run(self, frame, galaxyextractor=None):
+    def run(self, frame, galaxyextractor=None, regionpath=None):
 
         """
         This function ...
@@ -83,17 +68,29 @@ class StarExtractor(object):
         # Create a list of stars based on online catalogs
         self.fetch_stars(frame, galaxyextractor)
 
+        # Set special stars
+        if self.config.special_region is not None: self.set_special(frame)
+
         # For each star, find a corresponding source in the image
         self.find_sources(frame)
 
         # Fit analytical models to the stars
         self.fit_stars()
 
+        self.write_region(frame, regionpath[:-4]+"_0.reg", annotation="has_background")
+
         # If requested, remove the stars
         if self.config.remove: self.remove_stars(frame)
 
+        self.write_region(frame, regionpath[:-4]+"_1.reg", annotation="has_background")
+
         # If requested, remove saturation in the image
         if self.config.remove_saturation: self.remove_saturation(frame)
+
+        self.write_region(frame, regionpath[:-4]+"_2.reg", annotation="has_background")
+
+        # If requested, find apertures
+        if self.config.find_apertures: self.find_apertures()
 
     # *****************************************************************
 
@@ -171,33 +168,13 @@ class StarExtractor(object):
                 if self.config.track_record: star.enable_track_record()
 
                 # Add the star to the list of stars
-                self.stars.append(star)
+                self.objects.append(star)
 
         # Inform the user
         if galaxyextractor is not None: log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(norm) for norm in sorted(norms)[:10]))
 
         # Inform the user
-        log.debug("Number of stars: " + str(len(self.stars)))
-
-    # *****************************************************************
-
-    def find_sources(self, frame):
-
-        """
-        This function ...
-        """
-
-        # Inform the user
-        log.info("Looking for sources near the star positions")
-
-        # Loop over all stars in the list
-        for star in self.stars:
-
-            # Find a source
-            star.find_source(frame, self.config.detection)
-
-        # Inform the user
-        log.debug("Success ratio: {0:.2f}%".format(self.have_source/len(self.stars)*100.0))
+        log.debug("Number of stars: " + str(len(self.objects)))
 
     # *****************************************************************
 
@@ -211,7 +188,7 @@ class StarExtractor(object):
         log.info("Fitting analytical profiles to the sources")
 
         # Loop over all stars in the list
-        for star in self.stars:
+        for star in self.objects:
 
             # Find a source
             if star.has_source: star.fit_model(self.config.fitting)
@@ -243,7 +220,7 @@ class StarExtractor(object):
         log.debug("Default FWHM used when star could not be fitted: {0:.2f} pixels".format(default_fwhm))
 
         # Loop over all stars in the list
-        for star in self.stars:
+        for star in self.objects:
 
             # Remove the star in the frame
             star.remove(frame, self.config.removal, default_fwhm)
@@ -280,12 +257,14 @@ class StarExtractor(object):
             log.debug("Number of stars with source = " + str(self.have_source))
 
             # Loop over all stars
-            for star in self.stars:
+            for star in self.objects:
 
-                # If a source was not found for this star, skip it
-                if not star.has_source: continue
+                # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
+                if not star.has_source and not self.config.remove_saturation.remove_if_undetected: continue
 
+                # Find a saturation source and remove it from the frame
                 success = star.remove_saturation(frame, self.config.saturation, default_fwhm)
+                if success: star.has_saturation = True
                 removed += success
 
             # Inform the user
@@ -308,23 +287,25 @@ class StarExtractor(object):
 
             # Inform the user
             eligible = len([flux for flux in flux_list if flux >= minimum])
-            log.debug("Number of stars eligible for saturation removal: " + str(eligible) + " ({0:.2f}%)".format(eligible/len(self.stars)*100.0))
+            log.debug("Number of stars eligible for saturation removal: " + str(eligible) + " ({0:.2f}%)".format(eligible/len(self.objects)*100.0))
 
             # Inform the user on the number of stars that have a source
             log.debug("Number of stars with source = " + str(self.have_source))
 
             # Loop over all stars
-            for star in self.stars:
+            for star in self.objects:
 
                 # If a source was not found for this star, skip it
-                if not star.has_source: continue
+                if not star.has_source and not self.config.remove_if_undetected: continue
 
                 # Calculate the value (flux or brightness) for this star
-                value = star.flux
+                try: value = star.flux
+                except AttributeError: value = 0.0
 
-                # Remove the saturation
-                if value >= minimum:
+                # Remove the saturation if the value is greater than the minimum value or the star has no source and 'remove_if_undetected' is enabled
+                if value >= minimum or (self.config.remove_if_undetected and not star.has_source):
 
+                    # Find a saturation source and remove it from the frame
                     success = star.remove_saturation(frame, self.config.saturation, default_fwhm)
                     removed += success
 
@@ -334,29 +315,21 @@ class StarExtractor(object):
         # Unkown saturation
         else: raise ValueError("Unknown method (should be 'brightest' or 'all'")
 
+    # *****************************************************************
 
-            # If a source was not found for this star, skip it
-            #if not star.has_source: continue
+    def find_apertures(self):
 
-                #if self.config.remove_saturation.remove_if_no_source:
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
 
-                    # Look for a center segment corresponding to a 'saturation' source
-                    #source = analysis.find_source_segmentation(frame, self.source.center, radius, Angle(0.0, u.deg), config, track_record=self.track_record)
+        # Loop over all stars
+        for star in self.objects:
 
-                    # If a 'saturation' source was found
-                    #if source is not None:
-
-                        # Replace the source by a source that covers the saturation
-                        #self.source = source
-
-                        # Estimate the background
-                        #self.source.estimate_background(config.remove_method, config.sigma_clip)
-
-                        # Replace the frame with the estimated background
-                        #self.source.background.replace(frame, where=self.source.mask)
-
-                    # Else, skip this star
-                    #else: continue
+            # If the galaxy does not have a source, continue
+            if star.has_saturation: star.find_aperture(sigma_level=self.config.apertures.sigma_level)
 
     # *****************************************************************
 
@@ -386,7 +359,7 @@ class StarExtractor(object):
         default_fwhm = self.fwhm
 
         # Loop over all galaxies
-        for star in self.stars:
+        for star in self.objects:
 
             position_list.append(star.position)
 
@@ -416,7 +389,7 @@ class StarExtractor(object):
 
     # *****************************************************************
 
-    def create_mask(self, frame):
+    def write_region(self, frame, path, annotation=None):
 
         """
         This function ...
@@ -424,34 +397,87 @@ class StarExtractor(object):
         :return:
         """
 
-        # Initialize a mask with the dimensions of the frame
-        mask = Mask(np.zeros_like(frame))
+        # Create a file
+        f = open(path,'w')
 
-        # Loop over all stars
-        for star in self.stars:
+        # Initialize the region string
+        print("# Region file format: DS9 version 4.0", file=f)
 
-            # If no source was found for the galaxy, skip it
-            if not star.has_source: continue
+        # Calculate the default FWHM (calculated based on fitted stars)
+        default_fwhm = self.fwhm
 
-            # Add this galaxy to the mask
-            mask[star.source.cutout.y_min:star.source.cutout.y_max, star.source.cutout.x_min:star.source.cutout.x_max] = star.source.mask
+        # Loop over all galaxies
+        for star in self.objects:
 
-        # Return the mask
-        return mask
+            # Get the center in pixel coordinates
+            x_center, y_center = star.position.to_pixel(frame.wcs, origin=0)
 
-    # *****************************************************************
+            if star.has_source:
 
-    @property
-    def have_source(self):
+                if star.has_model:
 
-        """
-        This function ...
-        :return:
-        """
+                    fwhm = star.fwhm
+                    color = "blue"
 
-        count = 0
-        for star in self.stars: count += star.has_source
-        return count
+                else:
+
+                    fwhm = default_fwhm
+                    color = "green"
+
+            else:
+
+                fwhm = default_fwhm
+                color = "red"
+
+            if annotation == "flux":
+
+                if star.has_source and star.source.has_background:
+
+                    text = "text = {" + str(int(round(star.flux))) + "}"
+
+                else: text = ""
+
+            elif annotation == "has_source":
+
+                text = "text = {" + str(star.has_source) + "}"
+
+            elif annotation == "has_background":
+
+                text = "text = {" + str(star.source.has_background) + "}"
+
+            elif annotation is None: text = ""
+            else: raise ValueError("Invalid option for annotation")
+
+            color_suffix = " # color = " + color
+
+            point_suffix = " # point = x " + text
+
+            # Calculate the radius in pixels
+            radius = fwhm * statistics.fwhm_to_sigma * self.config.region.sigma_level
+
+            if star.has_source:
+
+                if star.source.has_peak:
+
+                    print("image;point({},{})".format(star.source.peak.x, star.source.peak.y) + point_suffix, file=f)
+
+            # Show a circle for the star
+            print("image;circle({},{},{})".format(x_center, y_center, radius) + color_suffix, file=f)
+
+            # Aperture created from saturation mask
+            if star.has_aperture:
+
+                ap_x_center, ap_y_center = star.aperture.positions[0]
+                major = star.aperture.a
+                minor = star.aperture.b
+                angle = star.aperture.theta * math.pi / 180
+
+                aperture_suffix = " # color = white"
+
+                print("image;ellipse({},{},{},{},{})".format(ap_x_center, ap_y_center, major, minor, angle) + aperture_suffix, file=f)
+
+        # Close the file
+        f.close()
 
     # *****************************************************************
 
@@ -464,7 +490,7 @@ class StarExtractor(object):
         """
 
         count = 0
-        for star in self.stars: count += star.has_model
+        for star in self.objects: count += star.has_model
         return count
 
     # *****************************************************************
@@ -481,7 +507,7 @@ class StarExtractor(object):
         fwhm_list = []
 
         # Loop over all stars
-        for star in self.stars:
+        for star in self.objects:
 
             # If the star contains a model, add the fwhm of that model to the list
             if star.has_model: fwhm_list.append(star.fwhm)
@@ -503,7 +529,7 @@ class StarExtractor(object):
         flux_list = []
 
         # Loop over all stars
-        for star in self.stars:
+        for star in self.objects:
 
             # If the star contains a source and the background of this source has been subtracted, calculate the flux
             if star.has_source and star.source.has_background:
@@ -528,7 +554,7 @@ class StarExtractor(object):
         fwhm_list = []
 
         # Loop over all stars
-        for star in self.stars:
+        for star in self.objects:
 
             # If the star contains a model, add the fwhm of that model to the list
             if star.has_model: fwhm_list.append(star.fwhm)
@@ -553,7 +579,7 @@ class StarExtractor(object):
         fwhms = []
 
         # Loop over all stars
-        for star in self.stars:
+        for star in self.objects:
 
             ids.append(star.ucac_id)
             ascensions.append(star.position.ra.value)

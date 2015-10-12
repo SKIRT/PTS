@@ -42,7 +42,7 @@ def plot_box(box, title=None):
 
 # *****************************************************************
 
-def plot_peak_model(box, x_peak, y_peak, model):
+def plot_peak_model(box, x_peak, y_peak, model, title=None):
 
     """
     This function ...
@@ -99,11 +99,8 @@ def plot_peak_model(box, x_peak, y_peak, model):
     plt.title("Residual " + str(peak_residual_value))
     plt.show()
 
-    # Grey-scale plot:
-    #from astropy.visualization import SqrtStretch
-    #from astropy.visualization.mpl_normalize import ImageNormalize
-    #norm = ImageNormalize(stretch=SqrtStretch())
-    #plt.imshow(square, cmap='Greys_r', origin='lower', norm=norm)
+    # Set the main title
+    if title is not None: plt.suptitle(title, size=16)
 
 # *****************************************************************
 

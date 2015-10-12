@@ -81,7 +81,7 @@ def find_source_iraf(frame, center, radius, angle, config, track_record):
 
 # *****************************************************************
 
-def fit_model_to_source(source, config, track_record=None, level=0):
+def fit_model_to_source(source, config, track_record=None, level=0, special=False):
 
     """
     This function searches for sources ...
@@ -123,12 +123,11 @@ def fit_model_to_source(source, config, track_record=None, level=0):
     # If ...
     if difference.norm > config.max_model_offset:
 
-        #log.warning("Center of source profile lies outside of the region where it was expected (distance = "+str(difference.norm))
-
         # Show a plot for debugging
-        if config.debug.model_offset:
+        if config.debug.model_offset or special:
+
             rel_peak = source.cutout.rel_position(source.peak)
-            plotting.plot_peak_model(source.cutout, rel_peak.x, rel_peak.y, model)
+            plotting.plot_peak_model(source.cutout, rel_peak.x, rel_peak.y, model, title="Center of source and peak do not match")
 
         # Create a new zoomed-in source
         source = source.zoom(config.zoom_factor)
@@ -146,9 +145,10 @@ def fit_model_to_source(source, config, track_record=None, level=0):
     else:
 
         # Show a plot for debugging
-        if config.debug.success:
+        if config.debug.success or special:
+
             rel_peak = source.cutout.rel_position(source.peak)
-            plotting.plot_peak_model(source.cutout, rel_peak.x, rel_peak.y, model)
+            plotting.plot_peak_model(source.cutout, rel_peak.x, rel_peak.y, model, title="Found a model that corresponds to the peak position")
 
         # Return the model
         return source, model
@@ -348,10 +348,10 @@ def find_source(frame, center, radius, angle, config, track_record=None, special
     elif config.detection_method == "peaks": return find_source_peaks(frame, center, radius, angle, config, track_record, special=special)
 
     # DAOFIND source detection
-    elif config.detection_method == "daofind": return find_source_daofind(frame, center, radius, angle, config, track_record)
+    elif config.detection_method == "daofind": return find_source_daofind(frame, center, radius, angle, config, track_record, special=special)
 
     # IRAF's starfind algorithm
-    elif config.detection_method == "iraf": return find_source_iraf(frame, center, radius, angle, config, track_record)
+    elif config.detection_method == "iraf": return find_source_iraf(frame, center, radius, angle, config, track_record, special=special)
 
     # Unknown detection method
     else: raise ValueError("Unknown source detection method")
@@ -389,7 +389,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
-        if config.debug.no_segment_before: source.plot(title="No segment found, gradient background will be removed")
+        if config.debug.no_segment_before or special: source.plot(title="No segment found, gradient background will be removed")
 
         # Subtract the background from the source
         source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
@@ -401,13 +401,13 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
-        if config.debug.no_segment_after: source.plot(title="After removing gradient background")
+        if config.debug.no_segment_after or special: source.plot(title="After removing gradient background")
 
     # If still no center segment was found, return without source
     if not np.any(mask):
 
         # Show a plot for debugging
-        if config.debug.no_segment: source.plot(title="No center segment was found")
+        if config.debug.no_segment or special: source.plot(title="No center segment was found")
 
         return None
 
@@ -418,7 +418,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
-        if config.debug.expand: plotting.plot_box(np.ma.masked_array(source.cutout, mask=masks.union(mask, source.background_mask)), title="Masked segment hits boundary")
+        if config.debug.expand or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=masks.union(mask, source.background_mask)), title="Masked segment hits boundary")
 
         # If the maximum expansion level has been reached, no source could be found
         if expansion_level >= config.max_expansion_level: return None
@@ -438,7 +438,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
-        if config.debug.success: plotting.plot_box(np.ma.masked_array(source.cutout, mask=masks.union(mask, source.background_mask)), title="Masked segment doesn't hit boundary")
+        if config.debug.success or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=masks.union(mask, source.background_mask)), title="Masked segment doesn't hit boundary")
 
         # Dilate the mask if requested
         if config.dilate: mask = mask.dilated(config.connectivity, config.iterations)
@@ -447,7 +447,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         source.mask = mask
 
         # Show a plot for debugging
-        if config.debug.dilated: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Dilated mask")
+        if config.debug.dilated or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Dilated mask")
 
         # Inform the user
         #log.debug("Final expansion level: " + str(expansion_level))

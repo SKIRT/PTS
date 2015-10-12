@@ -16,20 +16,23 @@ import inspect
 import matplotlib.pylab as plt
 
 # Import Astromagic modules
+from .objectextraction import ObjectExtractor
 from ..tools import catalogs
 from ..core import regions
 from ..core.masks import Mask
 from ..core.galaxy import Galaxy
 from ..core.vector import Position
 
-# Import astromagic modules
+# Import astronomical modules
 from astropy import log
 import astropy.units as u
 from astropy.table import Table
+from astropy.visualization import SqrtStretch, LogStretch
+from astropy.visualization.mpl_normalize import ImageNormalize
 
 # *****************************************************************
 
-class GalaxyExtractor(object):
+class GalaxyExtractor(ObjectExtractor):
 
     """
     This class
@@ -41,30 +44,17 @@ class GalaxyExtractor(object):
         The constructor ...
         """
 
+        # If no configuration is given, use the default configuration
         if config is None:
 
             directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
 
-            # Load the default configurations for the star remover
+            # Load the default configurations for the galaxy extractor
             config_path = os.path.join(directory, "config", "galaxyextractor.cfg")
-            self.config = Config(file(config_path))
+            config = Config(file(config_path))
 
-        else: self.config = config
-
-        # Initialize an empty list for the galaxies
-        self.galaxies = []
-
-    # *****************************************************************
-
-    def clear(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Clear the list of galaxies
-        self.galaxies = []
+        # Call the constructor of the base class
+        super(GalaxyExtractor, self).__init__(config)
 
     # *****************************************************************
 
@@ -76,6 +66,9 @@ class GalaxyExtractor(object):
 
         # Get list of galaxies
         self.fetch_galaxies(frame)
+
+        # Set special galaxies
+        if self.config.special_region is not None: self.set_special(frame)
 
         # Find the sources
         self.find_sources(frame)
@@ -97,7 +90,7 @@ class GalaxyExtractor(object):
         """
 
         # Loop over the list of galaxies
-        for galaxy in self.galaxies:
+        for galaxy in self.objects:
 
             # Check if it is the principal galaxy; if so, return it
             if galaxy.principal: return galaxy
@@ -123,7 +116,7 @@ class GalaxyExtractor(object):
         for galaxy_name in catalogs.galaxies_in_box(center, ra_span, dec_span):
 
             # Create a Galaxy object and add it to the list
-            self.galaxies.append(Galaxy(galaxy_name))
+            self.objects.append(Galaxy(galaxy_name))
 
         # Define a function that returns the length of the major axis of the galaxy
         def major_axis(galaxy):
@@ -132,11 +125,11 @@ class GalaxyExtractor(object):
             else: return galaxy.major
 
         # Indicate which galaxy is the principal galaxy
-        principal_galaxy = max(self.galaxies, key=major_axis)
+        principal_galaxy = max(self.objects, key=major_axis)
         principal_galaxy.principal = True
 
         # Loop over the galaxies, check if they are companion galaxies
-        for galaxy in self.galaxies:
+        for galaxy in self.objects:
 
             # Skip the principal galaxy
             if galaxy.principal: continue
@@ -149,31 +142,9 @@ class GalaxyExtractor(object):
                 galaxy.parent = principal_galaxy.name
 
         # Inform the user
-        log.debug("Number of galaxies: " + str(len(self.galaxies)))
+        log.debug("Number of galaxies: " + str(len(self.objects)))
         log.debug(self.principal.name + " is the principal galaxy in the frame")
         log.debug("The following galaxies are its companions: " + str(self.principal.companions))
-
-    # *****************************************************************
-
-    def find_sources(self, frame):
-
-        """
-        This function ...
-        :param image:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Looking for sources near the galaxy positions")
-
-        # Loop over all galaxies
-        for galaxy in self.galaxies:
-
-            # Find a source
-            galaxy.find_source(frame, self.config.detection)
-
-        # Inform the user
-        log.debug("Success ratio: {0:.2f}%".format(self.have_source/len(self.galaxies)*100.0))
 
     # *****************************************************************
 
@@ -186,7 +157,7 @@ class GalaxyExtractor(object):
         """
 
         # Loop over all galaxies
-        for galaxy in self.galaxies:
+        for galaxy in self.objects:
 
             # If the galaxy does not have a source, continue
             if galaxy.has_source: galaxy.find_aperture(sigma_level=self.config.apertures.sigma_level)
@@ -207,7 +178,7 @@ class GalaxyExtractor(object):
         log.info("Removing the galaxies from the frame (except for the principal galaxy and its companions)")
 
         # Loop over all galaxies
-        for galaxy in self.galaxies:
+        for galaxy in self.objects:
 
             # Remove the galaxy from the frame
             if not galaxy.principal and not galaxy.companion: galaxy.remove(frame, self.config.removal)
@@ -231,10 +202,10 @@ class GalaxyExtractor(object):
         angle_list = []
 
         # Loop over all galaxies
-        for galaxy in self.galaxies:
+        for galaxy in self.objects:
 
-            ra_list.append(galaxy.center.ra.value)
-            dec_list.append(galaxy.center.dec.value)
+            ra_list.append(galaxy.position.ra.value)
+            dec_list.append(galaxy.position.dec.value)
 
             if galaxy.major is not None:
 
@@ -259,7 +230,7 @@ class GalaxyExtractor(object):
 
     # *****************************************************************
 
-    def write_region(self, frame, path):
+    def write_region(self, frame, path, annotation="name"):
 
         """
         This function ...
@@ -272,84 +243,65 @@ class GalaxyExtractor(object):
 
         # Initialize the region string
         print("# Region file format: DS9 version 3.0", file=f)
-        print("fk5", file=f)
 
         # Loop over all galaxies
-        for galaxy in self.galaxies:
+        for galaxy in self.objects:
 
-            name = galaxy.name
+            # Get the center in pixel coordinates
+            x_center, y_center = galaxy.position.to_pixel(frame.wcs, origin=0)
 
-            ra = galaxy.center.ra.value
-            dec = galaxy.center.dec.value
+            # Set the angle
+            angle = galaxy.pa.degree if galaxy.pa is not None else 0.0
 
-            if galaxy.major is not None:
+            if galaxy.major is None:
 
-                width = galaxy.major.to("arcsec").value
+                color = "red"
 
-                if galaxy.minor is not None: height = galaxy.minor.to("arcsec").value
-                else: height = width
+                x_radius = self.config.region.default_radius
+                y_radius = self.config.region.default_radius
+
+            elif galaxy.minor is None or galaxy.pa is None:
+
+                color = "green"
+
+                x_radius = 0.5 * galaxy.major.to("arcsec").value / frame.pixelscale.value
+                y_radius = x_radius
 
             else:
 
-                width = self.config.region.default_radius * frame.pixelscale.value
-                height = self.config.region.default_radius * frame.pixelscale.value
+                color = "green"
 
-            angle = galaxy.pa.degree if galaxy.pa is not None else 0.0
+                x_radius = 0.5 * galaxy.major.to("arcsec").value / frame.pixelscale.value
+                y_radius = 0.5 * galaxy.minor.to("arcsec").value / frame.pixelscale.value
 
-            print("fk5;")
-            print("fk5;ellipse({},{},{.2f}\",{.2f}\",{}) # '{}'\n".format(ra, dec, height, width, angle, name), file=f)
+            # Annotation
+            if annotation == "name": text = "text = {" + galaxy.name + "}"
+            elif annotation == "redshift": text = "text = {" + str(galaxy.redshift) + "}"
+            elif annotation == "type": text = "text = {" + str(galaxy.type) + "}"
+            elif annotation is None: text = ""
+            else: raise ValueError("Invalid option for annotation")
+
+            color_suffix = " # color = " + color
+            point_suffix = " # point = x " + text
+
+            # Add point for the center
+            print("image;point({},{})".format(x_center, y_center) + point_suffix, file=f)
+            print("image;ellipse({},{},{},{},{})".format(x_center, y_center, x_radius, y_radius, angle) + color_suffix, file=f)
+
+            # Add aperture
+            if galaxy.has_aperture:
+
+                ap_x_center, ap_y_center = galaxy.aperture.positions[0]
+                major = galaxy.aperture.a
+                minor = galaxy.aperture.b
+                angle = galaxy.aperture.theta / math.pi * 180
+
+                aperture_suffix = " # color = white"
+
+                print("image;ellipse({},{},{},{},{})".format(ap_x_center, ap_y_center, major, minor, angle) + aperture_suffix, file=f)
 
         # Close the file
         f.close()
-
-    # *****************************************************************
-
-    def create_mask(self, frame):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Initialize a mask with the dimensions of the frame
-        mask = Mask(np.zeros_like(frame))
-
-        # Loop over all galaxies
-        for galaxy in self.galaxies:
-
-            # If no source was found for the galaxy, skip it
-            if not galaxy.has_source: continue
-
-            # Add this galaxy to the mask
-            if self.config.mask.use_aperture and galaxy.has_aperture:
-
-                galaxy_mask_frame = Mask.from_aperture(frame.xsize, frame.ysize, galaxy.aperture)
-                galaxy_mask = galaxy_mask_frame[galaxy.source.cutout.y_min:galaxy.source.cutout.y_max, galaxy.source.cutout.x_min:galaxy.source.cutout.x_max]
-
-            else: galaxy_mask = galaxy.source.mask
-
-            # Add this galaxy to the total mask
-            mask[galaxy.source.cutout.y_min:galaxy.source.cutout.y_max, galaxy.source.cutout.x_min:galaxy.source.cutout.x_max] += galaxy_mask
-
-        # Expand the mask
-        #if self.config.mask.dilate: mask.dilate(self.config.mask.connectivity, self.config.mask.iterations)
-
-        # Return the mask
-        return mask
-
-    # *****************************************************************
-
-    @property
-    def have_source(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        count = 0
-        for galaxy in self.galaxies: count += galaxy.has_source
-        return count
 
     # *****************************************************************
 
@@ -364,10 +316,10 @@ class GalaxyExtractor(object):
         position_list = []
 
         # Loop over the galaxies
-        for galaxy in self.galaxies:
+        for galaxy in self.objects:
 
             # Calculate the pixel coordinate in the frame and add it to the list
-            x_center, y_center = galaxy.center.to_pixel(frame.wcs)
+            x_center, y_center = galaxy.position.to_pixel(frame.wcs)
             position_list.append(Position(x=x_center, y=y_center))
 
         # Return the list
@@ -382,9 +334,19 @@ class GalaxyExtractor(object):
         :return:
         """
 
+        names = ["name", "type", "distance", ""]
+        values = [[] for i in range(len(names))]
+
+        #for galaxy in self.objects:
+
+            #for index, name in enumerate(names):
+
+                #value = getattr(galaxy, name)
+                #values[index].append(value)
+
         names = []
         types = []
-        redshifts = []
+        distances = []
         ascensions = []
         declinations = []
         majors = []
@@ -394,13 +356,14 @@ class GalaxyExtractor(object):
         sources = []
 
         # Loop over all stars
-        for galaxy in self.galaxies:
+        for galaxy in self.objects:
 
             names.append(galaxy.name)
             types.append(galaxy.type)
-            redshifts.append(galaxy.redshift)
-            ascensions.append(galaxy.center.ra.value)
-            declinations.append(galaxy.center.dec.value)
+            if galaxy.distance is not None: distances.append(galaxy.distance.to(u.Mpc).value)
+            else: distances.append(None)
+            ascensions.append(galaxy.position.ra.value)
+            declinations.append(galaxy.position.dec.value)
             if galaxy.major is not None: majors.append(galaxy.major.to(u.arcmin).value)
             else: majors.append(None)
             if galaxy.pa is not None: position_angles.append(galaxy.pa.degree)
@@ -409,17 +372,13 @@ class GalaxyExtractor(object):
             companion_flags.append(galaxy.companion)
             sources.append(galaxy.has_source)
 
-        print(names)
-        print(types)
-        print(majors)
-        print(position_angles)
-
         # Create the table
-        table = Table([names, types, redshifts, ascensions, declinations, majors, position_angles, principal_flags, companion_flags, sources],
-                     names=('Name', 'Type', 'Redshift', 'RA', 'DEC', 'Major axis length', 'Position angle', 'Principal', 'Companion', 'Source'),
+        table = Table([names, types, distances, ascensions, declinations, majors, position_angles, principal_flags, companion_flags, sources],
+                     names=('Name', 'Type', 'Distance', 'RA', 'DEC', 'Major axis length', 'Position angle', 'Principal', 'Companion', 'Source'),
                      meta={'name': 'galaxies'})
 
         # Set units for columns
+        table['Distance'].unit = u.Mpc
         table['Major axis length'].unit = u.arcmin
         table['Position angle'].unit = u.deg
 
@@ -435,17 +394,14 @@ class GalaxyExtractor(object):
         :return:
         """
 
-        from astropy.visualization import SqrtStretch, LogStretch
-        from astropy.visualization.mpl_normalize import ImageNormalize
-
         x_centers = []
         y_centers = []
         apertures = []
 
         # Loop over all galaxies
-        for galaxy in self.galaxies:
+        for galaxy in self.objects:
 
-            x_center, y_center = galaxy.center.to_pixel(frame.wcs)
+            x_center, y_center = galaxy.position.to_pixel(frame.wcs)
             x_centers.append(x_center)
             y_centers.append(y_center)
 
