@@ -38,7 +38,7 @@ from astropy.stats import sigma_clipped_stats
 
 # *****************************************************************
 
-def find_source_daofind(frame, center, radius, angle, config, track_record):
+def find_source_daofind(frame, center, radius, angle, config, track_record, special=False):
 
     """
     This function ...
@@ -69,7 +69,7 @@ def find_source_daofind(frame, center, radius, angle, config, track_record):
 
 # *****************************************************************
 
-def find_source_iraf(frame, center, radius, angle, config, track_record):
+def find_source_iraf(frame, center, radius, angle, config, track_record, special=False):
 
     """
     This function ...
@@ -139,7 +139,7 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Try again (iterative procedure of zooming in, stops if the size of the cutout becomes too small)
-        return fit_model_to_source(source, config, track_record, level)
+        return fit_model_to_source(source, config, track_record, level, special=special)
 
     # The fit succeeded
     else:
@@ -430,7 +430,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
             expansion_level += 1
 
             # Repeat the procedure for the expanded ellipse
-            return find_source_segmentation(frame, center, radius, angle, config, track_record=track_record, expansion_level=expansion_level)
+            return find_source_segmentation(frame, center, radius, angle, config, track_record=track_record, expansion_level=expansion_level, special=special)
 
     else:
 
@@ -525,7 +525,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
         radius *= config.scale_factor
 
         # Find a source in the zoomed-out region
-        return find_source_peaks(frame, center, radius, angle, config, track_record=track_record, level=level+1)
+        return find_source_peaks(frame, center, radius, angle, config, track_record=track_record, level=level+1, special=special)
 
     # If more than one source was detected
     elif len(peaks) > 1:
@@ -543,7 +543,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
         radius /= config.scale_factor
 
         # Find a source in the zoomed-in region
-        return find_source_peaks(frame, center, radius, angle, config, track_record=track_record, level=level-1)
+        return find_source_peaks(frame, center, radius, angle, config, track_record=track_record, level=level-1, special=special)
 
     # If one source was detected
     elif len(peaks) == 1:

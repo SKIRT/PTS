@@ -46,6 +46,9 @@ class Galaxy(SkyObject):
         :return:
         """
 
+        # Get the properties of this galaxy from online catalogs
+        #self._get_properties(name)
+
         # Obtain more information about this galaxy
         try:
 
@@ -67,9 +70,6 @@ class Galaxy(SkyObject):
             self.name = name
             self.redshift = None
             self.type = None
-
-        #print(self.name)
-        #print("  type = ", self.type)
 
         # Create a new Vizier object and set the row limit to -1 (unlimited)
         viz = Vizier(keywords=["galaxies", "optical"])

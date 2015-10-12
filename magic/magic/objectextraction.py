@@ -108,7 +108,7 @@ class ObjectExtractor(object):
         """
 
         # Load the region and create a mask from it
-        region = pyregion.parse(self.config.special_region)
+        region = pyregion.open(self.config.special_region).as_imagecoord(frame.wcs.to_header())
         special_mask = region.get_mask(shape=frame.shape)
 
         # Loop over all objects
