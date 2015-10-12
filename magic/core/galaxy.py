@@ -80,7 +80,7 @@ class Galaxy(SkyObject):
         entry = result[0][0]
 
         # Get the right ascension and the declination
-        self.position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
+        position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
 
         # Get the names given to this galaxy
         self.names = entry["ANames"].split() if entry["ANames"] else None
@@ -123,7 +123,7 @@ class Galaxy(SkyObject):
         self.parent = None
 
         # Call the constructor of the base class
-        super(Galaxy, self).__init__()
+        super(Galaxy, self).__init__(position)
 
     # *****************************************************************
 
@@ -134,9 +134,6 @@ class Galaxy(SkyObject):
         :param default_radius:
         :return:
         """
-
-        # Get the center of the galaxy in pixel coordinates
-        x_center, y_center = self.position.to_pixel(wcs, origin=0)
 
         if self.pa is None: angle = Angle(0.0, u.deg)
         else: angle = self.pa
@@ -157,7 +154,7 @@ class Galaxy(SkyObject):
             y_radius = 0.5 * self.minor.to("arcsec") / pixelscale
 
         # Return the parameters
-        return Position(x=x_center, y=y_center), Extent(x=x_radius, y=y_radius), angle
+        return self.pixel_position(wcs), Extent(x=x_radius, y=y_radius), angle
 
     # *****************************************************************
 

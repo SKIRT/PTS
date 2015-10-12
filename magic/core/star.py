@@ -15,6 +15,7 @@ from astropy import units as u
 from astropy.coordinates import Angle
 
 # Import Astromagic modules
+from ..tools import statistics
 from .skyobject import SkyObject
 from .source import Source
 from ..tools import analysis
@@ -39,7 +40,6 @@ class Star(SkyObject):
 
         # Set the attributes
         self.ucac_id = ucac_id
-        self.position = position
         self.position_error = position_error
         self.ra_error = ra_error
         self.dec_error = dec_error
@@ -56,7 +56,7 @@ class Star(SkyObject):
         self.has_saturation = False
 
         # Call the constructor of the base class
-        super(Star, self).__init__()
+        super(Star, self).__init__(position)
 
     # *****************************************************************
 
@@ -108,11 +108,8 @@ class Star(SkyObject):
         :return:
         """
 
-        # Get the center of the galaxy in pixel coordinates
-        x_center, y_center = self.position.to_pixel(wcs, origin=0)
-
         # Return the parameters
-        return Position(x=x_center, y=y_center), default_radius, Angle(0.0, u.deg)
+        return self.pixel_position(wcs), default_radius, Angle(0.0, u.deg)
 
     # *****************************************************************
 
@@ -173,8 +170,7 @@ class Star(SkyObject):
             else:
 
                 # Calculate the pixel coordinate of the star's position
-                position_x, position_y = self.position.to_pixel(frame.wcs, origin=0)
-                center = Position(x=position_x, y=position_y)
+                center = self.pixel_position(frame.wcs)
 
             # Create a source
             source = Source(frame, center, radius, Angle(0.0, u.deg), config.outer_factor)
@@ -197,7 +193,7 @@ class Star(SkyObject):
         """
 
         # Convert FWHM to sigma
-        default_sigma = default_fwhm / 2.35
+        default_sigma = default_fwhm * statistics.fwhm_to_sigma
 
         # Determine the radius for the saturation detection
         model = self.model
@@ -207,7 +203,7 @@ class Star(SkyObject):
         if self.has_track_record: self.track_record.set_stage("saturation")
 
         # Look for a center segment corresponding to a 'saturation' source
-        source = analysis.find_source_segmentation(frame, self.source.center, radius, Angle(0.0, u.deg), config, track_record=self.track_record, special=self.special)
+        source = analysis.find_source_segmentation(frame, self.pixel_position(frame.wcs), radius, Angle(0.0, u.deg), config, track_record=self.track_record, special=self.special)
 
         # If a 'saturation' source was found
         if source is not None:

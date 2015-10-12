@@ -16,6 +16,7 @@ from photutils import segment_properties, properties_table
 from photutils import EllipticalAperture
 
 # Import Astromagic modules
+from .vector import Position
 from ..tools import analysis
 from .trackrecord import TrackRecord
 
@@ -31,13 +32,14 @@ class SkyObject(object):
 
     # *****************************************************************
 
-    def __init__(self):
+    def __init__(self, position):
 
         """
         The constructor ...
         """
 
-        #
+        # Position
+        self.position = position
 
         # Set the source attribute to None initially
         self.source = None
@@ -103,6 +105,22 @@ class SkyObject(object):
 
     @abstractmethod
     def ellipse_parameters(self, wcs, pixelscale, initial_radius): pass
+
+    # *****************************************************************
+
+    def pixel_position(self, wcs):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        # Get the x and y coordinate of the object's position
+        x, y = self.position.to_pixel(wcs, origin=0)
+
+        # Return the position in pixel coordinates
+        return Position(x, y)
 
     # *****************************************************************
 
