@@ -81,7 +81,7 @@ class ObjectExtractor(object):
             skyobject.find_source(frame, self.config.detection)
 
         # Inform the user
-        log.debug("Success ratio: {0:.2f}%".format(self.have_source/len(self.objects)*100.0))
+        log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.objects), self.have_source/len(self.objects)*100.0))
 
     # *****************************************************************
 

@@ -212,7 +212,7 @@ class StarExtractor(ObjectExtractor):
             if star.has_source or source is not None: star.fit_model(self.config.fitting, source)
 
         # Inform the user
-        log.debug("Success ratio: {0:.2f}%".format(self.have_model/self.have_source*100.0))
+        log.debug("Found a model for {0} out of {1} stars with source ({2:.2f}%)".format(self.have_model, self.have_source, self.have_model/self.have_source*100.0))
 
     # *****************************************************************
 
@@ -349,7 +349,7 @@ class StarExtractor(ObjectExtractor):
                     removed += success
 
             # Inform the user
-            log.debug("Removed saturation in " + str(removed) + " out of " + str(eligible) + " stars ({0:.2f}%)".format(removed/eligible*100.0))
+            log.debug("Removed saturation in {0} out of {1} stars ({2:.2f}%)".format(removed, eligible, removed/eligible*100.0))
 
         # Unkown saturation
         else: raise ValueError("Unknown method (should be 'brightest' or 'all'")
