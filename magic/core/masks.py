@@ -20,6 +20,7 @@ from .vector import Position, Extent
 # Import astronomical modules
 import astropy.units as u
 from astropy.coordinates import Angle
+from photutils import detect_sources
 
 # *****************************************************************
 
@@ -226,6 +227,44 @@ class Mask(np.ndarray):
 
         # Check whether this object remains of type Mask
         assert isinstance(self, Mask)
+
+    # *****************************************************************
+
+    def opening(self, structure, iterations=1):
+
+        """
+        This function ...
+        :return:
+        """
+
+        data = ndimage.binary_opening(self, structure, iterations)
+
+        return Mask(data)
+
+    # *****************************************************************
+
+    def remove_appendages(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        structure = np.array([[False, True, True, True, False],
+                              [True, True, True, True, True],
+                              [True, True, True, True, True],
+                              [True, True, True, True, True],
+                              [False, True, True, True, False]])
+
+        mask = self.opening(structure)
+
+        segments = detect_sources(mask, 0.5, 1)
+
+        # Get the label of the center segment
+        label = segments[int(0.5*segments.shape[0]), int(0.5*segments.shape[1])]
+
+        # Return the new mask with the appendages removed
+        return Mask((segments == label))
 
     # *****************************************************************
 

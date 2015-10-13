@@ -409,7 +409,20 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         # Show a plot for debugging
         if config.debug.no_segment or special: source.plot(title="No center segment was found")
 
+        # No source was found
         return None
+
+    # If the mask extents to the boundary of the cutout box en if enabled, apply binary opening to the mask to
+    if masks.overlap(source.background_mask, mask) and config.remove_appendages:
+
+        # Show a plot for debugging
+        if config.debug.overlap_before or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask before appendage removal")
+
+        # Remove appendages from the mask
+        mask = mask.remove_appendages()
+
+        # Show a plot for debugging
+        if config.debug.overlap_after or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask after appendage removal")
 
     # If the mask extents to the boundary of the cutout box and if enabled, expand the ellipse and repeat the procedure
     if masks.overlap(source.background_mask, mask) and config.expand:
