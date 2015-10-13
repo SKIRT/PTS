@@ -356,6 +356,23 @@ class Box(np.ndarray):
 
     # *****************************************************************
 
+    def contains(self, position):
+
+        """
+        This function ...
+        :param position:
+        :return:
+        """
+
+        # Convert to relative position
+        rel_position = self.rel_position(position)
+
+        # Check whether this box contains the position
+        if rel_position.x < 0 or rel_position.y < 0 or rel_position.x >= self.xsize or rel_position.y >= self.ysize: return False
+        else: return True
+
+    # *****************************************************************
+
     def replace(self, frame, where=None):
 
         """

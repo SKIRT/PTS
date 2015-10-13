@@ -127,6 +127,22 @@ class Galaxy(SkyObject):
 
     # *****************************************************************
 
+    def contains(self, position):
+
+        """
+        This function ...
+        :param star:
+        :return:
+        """
+
+        # If the position does not lie within the cutout box of the galaxy's source, return False
+        if not self.source.cutout.contains(position): return False
+
+        # If it does, check whether the pixel position is masked by the mask of the galaxy's source
+        return self.source.mask.masks(self.source.cutout.rel_position(position))
+
+    # *****************************************************************
+
     def ellipse_parameters(self, wcs, pixelscale, default_radius):
 
         """

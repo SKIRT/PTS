@@ -46,9 +46,6 @@ class ObjectExtractor(object):
         # Initialize an empty list for the sky objects
         self.objects = []
 
-        # Set special mask
-        #self.special_mask = None
-
     # *****************************************************************
 
     def clear(self):
@@ -109,19 +106,16 @@ class ObjectExtractor(object):
 
         # Load the region and create a mask from it
         region = pyregion.open(self.config.special_region).as_imagecoord(frame.wcs.to_header())
-        special_mask = region.get_mask(shape=frame.shape)
+        special_mask = Mask(region.get_mask(shape=frame.shape))
 
         # Loop over all objects
         for skyobject in self.objects:
 
-            x_center, y_center = skyobject.position.to_pixel(frame.wcs, origin=0)
-
-            # Calculate x and y of the pixel corresponding to the object's position
-            x = int(round(x_center))
-            y = int(round(y_center))
+            # Get the position of this object in pixel coordinates
+            position = skyobject.pixel_position(frame.wcs)
 
             # Set special if position is covered by the mask
-            if special_mask[y,x]: skyobject.special = True
+            if special_mask.masks(position): skyobject.special = True
 
     # *****************************************************************
 

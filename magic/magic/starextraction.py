@@ -21,6 +21,7 @@ from ..core.star import Star
 from ..tools import statistics
 from ..core.vector import Position
 from ..core.regions import Region
+from ..core.source import Source
 
 # Import astronomical modules
 import aplpy
@@ -75,19 +76,19 @@ class StarExtractor(ObjectExtractor):
         self.find_sources(frame)
 
         # Fit analytical models to the stars
-        self.fit_stars()
+        self.fit_stars(frame)
 
-        self.write_region(frame, regionpath[:-4]+"_0.reg", annotation="has_background")
+        #self.write_region(frame, regionpath[:-4]+"_0.reg", annotation="has_background")
 
         # If requested, remove the stars
-        if self.config.remove: self.remove_stars(frame)
+        if self.config.remove: self.remove_stars(frame, galaxyextractor)
 
-        self.write_region(frame, regionpath[:-4]+"_1.reg", annotation="has_background")
+        #self.write_region(frame, regionpath[:-4]+"_1.reg", annotation="has_background")
 
         # If requested, remove saturation in the image
-        if self.config.remove_saturation: self.remove_saturation(frame)
+        if self.config.remove_saturation: self.remove_saturation(frame, galaxyextractor)
 
-        self.write_region(frame, regionpath[:-4]+"_2.reg", annotation="has_background")
+        #self.write_region(frame, regionpath[:-4]+"_2.reg", annotation="has_background")
 
         # If requested, find apertures
         if self.config.find_apertures: self.find_apertures()
@@ -178,7 +179,7 @@ class StarExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def fit_stars(self):
+    def fit_stars(self, frame):
 
         """
         This function ...
@@ -190,15 +191,25 @@ class StarExtractor(ObjectExtractor):
         # Loop over all stars in the list
         for star in self.objects:
 
+            if not star.has_source and self.config.fitting.fit_if_undetected:
+
+                # Get the parameters of the circle
+                center, radius, angle = star.ellipse_parameters(frame.wcs, frame.pixelscale, self.config.fitting.initial_radius)
+
+                # Create a source object
+                source = Source(frame, center, radius, angle, self.config.fitting.background_outer_factor)
+
+            else: source = None
+
             # Find a source
-            if star.has_source: star.fit_model(self.config.fitting)
+            if star.has_source or source is not None: star.fit_model(self.config.fitting, source)
 
         # Inform the user
         log.debug("Success ratio: {0:.2f}%".format(self.have_model/self.have_source*100.0))
 
     # *****************************************************************
 
-    def remove_stars(self, frame):
+    def remove_stars(self, frame, galaxyextractor=None):
 
         """
         This function ...
@@ -222,12 +233,16 @@ class StarExtractor(ObjectExtractor):
         # Loop over all stars in the list
         for star in self.objects:
 
+            # Determine whether we want the background to be sigma-clipped when interpolating over the source
+            if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.removal.no_sigma_clip_on_galaxy: sigma_clip = False
+            else: sigma_clip = self.config.removal.sigma_clip
+
             # Remove the star in the frame
-            star.remove(frame, self.config.removal, default_fwhm)
+            star.remove(frame, self.config.removal, default_fwhm, sigma_clip)
 
     # *****************************************************************
 
-    def remove_saturation(self, frame):
+    def remove_saturation(self, frame, galaxyextractor=None):
 
         """
         This function ...
@@ -262,8 +277,12 @@ class StarExtractor(ObjectExtractor):
                 # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
                 if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
+                # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
+                if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
+                else: sigma_clip = self.config.saturation.sigma_clip
+
                 # Find a saturation source and remove it from the frame
-                success = star.remove_saturation(frame, self.config.saturation, default_fwhm)
+                success = star.remove_saturation(frame, self.config.saturation, default_fwhm, sigma_clip)
                 if success: star.has_saturation = True
                 removed += success
 
@@ -305,8 +324,12 @@ class StarExtractor(ObjectExtractor):
                 # Remove the saturation if the value is greater than the minimum value or the star has no source and 'remove_if_undetected' is enabled
                 if value >= minimum or (self.config.saturation.remove_if_undetected and not star.has_source):
 
+                    # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
+                    if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
+                    else: sigma_clip = self.config.saturation.sigma_clip
+
                     # Find a saturation source and remove it from the frame
-                    success = star.remove_saturation(frame, self.config.saturation, default_fwhm)
+                    success = star.remove_saturation(frame, self.config.saturation, default_fwhm, sigma_clip)
                     removed += success
 
             # Inform the user

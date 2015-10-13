@@ -333,6 +333,21 @@ class Mask(np.ndarray):
         # Return whether ...
         return hits >= min_pixels
 
+    # *****************************************************************
+
+    def masks(self, position):
+
+        """
+        This function ...
+        """
+
+        # Calculate x and y of the pixel corresponding to the object's position
+        x = int(round(position.x))
+        y = int(round(position.y))
+
+        # Return the value of the mask in this pixel
+        return self[y, x]
+
 # *****************************************************************
 
 def annuli_around(region, inner_factor, outer_factor, header, x_size, y_size):
