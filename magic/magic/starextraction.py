@@ -72,6 +72,9 @@ class StarExtractor(ObjectExtractor):
         # Set special stars
         if self.config.special_region is not None: self.set_special(frame)
 
+        # Set ignore stars
+        if self.config.ignore_region is not None: self.set_ignore(frame)
+
         # For each star, find a corresponding source in the image
         self.find_sources(frame)
 
@@ -191,6 +194,10 @@ class StarExtractor(ObjectExtractor):
         # Loop over all stars in the list
         for star in self.objects:
 
+            # If this star should be ignored, skip it
+            if star.ignore: continue
+
+            # Check if the star has a source (has been detected)
             if not star.has_source and self.config.fitting.fit_if_undetected:
 
                 # Get the parameters of the circle
@@ -233,6 +240,9 @@ class StarExtractor(ObjectExtractor):
         # Loop over all stars in the list
         for star in self.objects:
 
+            # If this star should be ignored, skip it
+            if star.ignore: continue
+
             # Determine whether we want the background to be sigma-clipped when interpolating over the source
             if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.removal.no_sigma_clip_on_galaxy: sigma_clip = False
             else: sigma_clip = self.config.removal.sigma_clip
@@ -274,6 +284,9 @@ class StarExtractor(ObjectExtractor):
             # Loop over all stars
             for star in self.objects:
 
+                # If this star should be ignored, skip it
+                if star.ignore: continue
+
                 # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
                 if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
@@ -314,6 +327,9 @@ class StarExtractor(ObjectExtractor):
             # Loop over all stars
             for star in self.objects:
 
+                # If this star should be ignored, skip it
+                if star.ignore: continue
+
                 # If a source was not found for this star, skip it
                 if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
@@ -350,6 +366,9 @@ class StarExtractor(ObjectExtractor):
 
         # Loop over all stars
         for star in self.objects:
+
+            # If this star should be ignored, skip it
+            if star.ignore: continue
 
             # If the galaxy does not have a source, continue
             if star.has_saturation: star.find_aperture(sigma_level=self.config.apertures.sigma_level)

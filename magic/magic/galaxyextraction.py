@@ -159,6 +159,9 @@ class GalaxyExtractor(ObjectExtractor):
         # Loop over all galaxies
         for galaxy in self.objects:
 
+            # If this galaxy should be ignored, skip it
+            if galaxy.ignore: continue
+
             # If the galaxy does not have a source, continue
             if galaxy.has_source: galaxy.find_aperture(sigma_level=self.config.apertures.sigma_level)
 
@@ -179,6 +182,9 @@ class GalaxyExtractor(ObjectExtractor):
 
         # Loop over all galaxies
         for galaxy in self.objects:
+
+            # If this galaxy should be ignored, skip it
+            if galaxy.ignore: continue
 
             # Remove the galaxy from the frame
             if not galaxy.principal and not galaxy.companion: galaxy.remove(frame, self.config.removal)

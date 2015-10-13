@@ -53,6 +53,9 @@ class SkyObject(object):
         # Set the special flag to False initially
         self.special = False
 
+        # Set the ignore flag to False initially
+        self.ignore = False
+
     # *****************************************************************
 
     @property

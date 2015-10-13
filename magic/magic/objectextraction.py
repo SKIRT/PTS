@@ -74,6 +74,9 @@ class ObjectExtractor(object):
         # Loop over all sky objects in the list
         for skyobject in self.objects:
 
+            # If this sky object should be ignored, skip it
+            if skyobject.ignore: continue
+
             # Find a source
             skyobject.find_source(frame, self.config.detection)
 
@@ -116,6 +119,29 @@ class ObjectExtractor(object):
 
             # Set special if position is covered by the mask
             if special_mask.masks(position): skyobject.special = True
+
+    # *****************************************************************
+
+    def set_ignore(self, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        # Load the region and create a mask from it
+        region = pyregion.open(self.config.ignore_region).as_imagecoord(frame.wcs.to_header())
+        ignore_mask = Mask(region.get_mask(shape=frame.shape))
+
+        # Loop over all objects
+        for skyobject in self.objects:
+
+            # Get the position of this object in pixel coordinates
+            position = skyobject.pixel_position(frame.wcs)
+
+            # Ignore if position is covered by the mask
+            if ignore_mask.masks(position): skyobject.ignore = True
 
     # *****************************************************************
 
