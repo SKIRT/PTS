@@ -453,6 +453,9 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         # Show a plot for debugging
         if config.debug.success or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=masks.union(mask, source.background_mask)), title="Masked segment doesn't hit boundary")
 
+
+        ## DILATION
+
         # Dilate the mask if requested
         if config.dilate: mask = mask.dilated(connectivity=config.connectivity, iterations=config.iterations)
 
@@ -461,6 +464,20 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
 
         # Show a plot for debugging
         if config.debug.dilated or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Dilated mask")
+
+
+        ## EXPANSION
+
+        # Expand the mask if requested
+        if config.user_expansion: mask = mask.expanded(config.user_expansion_factor)
+
+        # Set the source mask
+        source.mask = mask
+
+        # Show a plot for debugging
+        if config.debug.user_expansion or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="User-expanded mask")
+
+        ##
 
         # Inform the user
         #log.debug("Final expansion level: " + str(expansion_level))
