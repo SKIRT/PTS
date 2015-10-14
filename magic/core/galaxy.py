@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Import Astromagic modules
+from .source import Source
 from .skyobject import SkyObject
 from ..tools import analysis
 from .vector import Position, Extent
@@ -171,6 +172,20 @@ class Galaxy(SkyObject):
 
         # Return the parameters
         return self.pixel_position(wcs), Extent(x=x_radius, y=y_radius), angle
+
+    # *****************************************************************
+
+    def source_from_parameters(self, frame, outer_factor):
+
+        """
+        This function ...
+        :return:
+        """
+
+        center, radius, angle = self.ellipse_parameters(frame.wcs, frame.pixelscale, None)
+
+        # Create a source object
+        self.source = Source(frame, center, radius, angle, outer_factor)
 
     # *****************************************************************
 

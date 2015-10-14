@@ -73,6 +73,10 @@ class GalaxyExtractor(ObjectExtractor):
         # Find the sources
         self.find_sources(frame)
 
+        # If a source was not found for the principal galaxy, force it
+        outer_factor = self.config.detection.background_outer_factor
+        if not self.principal.has_source: self.principal.source_from_parameters(frame, outer_factor)
+
         # Find apertures
         if self.config.find_apertures: self.find_apertures()
 
@@ -438,7 +442,7 @@ class GalaxyExtractor(ObjectExtractor):
 
         # Plot the frame and the segments mask
         ax1.imshow(frame, origin='lower', interpolation='nearest', norm=norm, vmin=vmin, vmax=vmax)
-        ax2.imshow(self.create_mask(frame), origin='lower', cmap='jet')
+        ax2.imshow(self.mask(frame), origin='lower', cmap='jet')
 
         # Set axes limits
         plt.xlim(0, frame.xsize-1)
