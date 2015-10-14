@@ -17,6 +17,7 @@ from ..tools import coordinates
 from ..tools import cropping
 from ..tools import transformations
 from .vector import Position, Extent
+from ..tools import interpolation
 
 # Import astronomical modules
 import aplpy
@@ -403,6 +404,24 @@ class Frame(np.ndarray):
 
         # Set all NaN pixels to the specified value
         self[np.isnan(self)] = value
+
+    # *****************************************************************
+
+    def interpolate(self, mask):
+
+        """
+        This function ...
+        :param mask:
+        :return:
+        """
+
+        # Calculate the interpolated data
+        data = interpolation.in_paint(self, mask)
+
+        print(type(data))
+
+        # Return a new box
+        return Frame(data, self.wcs, self.pixelscale, self.description, unit=self.unit)
 
     # *****************************************************************
 

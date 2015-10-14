@@ -11,6 +11,7 @@ from __future__ import (absolute_import, division, print_function)
 import math
 import numpy as np
 from scipy import ndimage
+from skimage import morphology
 
 # Import Astromagic modules
 from . import regions
@@ -149,7 +150,7 @@ class Mask(np.ndarray):
 
     # *****************************************************************
 
-    def dilated(self, connectivity=2, iterations=100):
+    def dilated(self, structure=None, connectivity=2, iterations=100):
 
         """
         This function ...
@@ -159,7 +160,7 @@ class Mask(np.ndarray):
         """
 
         # Define the structure for the expansion
-        structure = ndimage.generate_binary_structure(2, connectivity=connectivity)
+        if structure is None: structure = ndimage.generate_binary_structure(2, connectivity=connectivity)
 
         # Make the new mask, made from 100 iterations with the structure array
         data = ndimage.binary_dilation(self, structure, iterations)
@@ -169,7 +170,7 @@ class Mask(np.ndarray):
 
     # *****************************************************************
 
-    def eroded(self, connectivity=2, iterations=100):
+    def eroded(self, structure=None, connectivity=2, iterations=100):
 
         """
         This function ...
@@ -179,7 +180,7 @@ class Mask(np.ndarray):
         """
 
         # Define the structure for the expansion
-        structure = ndimage.generate_binary_structure(2, connectivity=connectivity)
+        if structure is None: structure = ndimage.generate_binary_structure(2, connectivity=connectivity)
 
         # Make the new mask, made from 100 iterations with the structure array
         data = ndimage.binary_erosion(self, structure, iterations)
@@ -189,14 +190,14 @@ class Mask(np.ndarray):
 
     # *****************************************************************
 
-    def dilate(self, connectivity=2, iterations=100):
+    def dilate(self, structure=None, connectivity=2, iterations=100):
 
         """
         This function ...
         """
 
         # Define the structure for the expansion
-        structure = ndimage.generate_binary_structure(2, connectivity=connectivity)
+        if structure is None: structure = ndimage.generate_binary_structure(2, connectivity=connectivity)
 
         # Make the new mask, made from 100 iterations with the structure array
         data = ndimage.binary_dilation(self, structure, iterations)
@@ -209,7 +210,7 @@ class Mask(np.ndarray):
 
     # *****************************************************************
 
-    def erode(self, connectivity=2, iterations=100):
+    def erode(self, structure=None, connectivity=2, iterations=100):
 
         """
         This function ...
@@ -217,7 +218,7 @@ class Mask(np.ndarray):
         """
 
         # Define the structure for the expansion
-        structure = ndimage.generate_binary_structure(2, connectivity=connectivity)
+        if structure is None: structure = ndimage.generate_binary_structure(2, connectivity=connectivity)
 
         # Make the new mask, made from 100 iterations with the structure array
         data = ndimage.binary_erosion(self, structure, iterations)
@@ -239,7 +240,39 @@ class Mask(np.ndarray):
 
         data = ndimage.binary_opening(self, structure, iterations)
 
+        # Return the new mask
         return Mask(data)
+
+    # *****************************************************************
+
+    def expanded(self, factor):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # TODO: use radius from aperture of mask (application: saturation)?
+        radius = 0.5*self.xsize
+
+        #structure = np.array([[False, True, True, True, False],
+        #                      [True, True, True, True, True],
+        #                      [True, True, True, True, True],
+        #                      [True, True, True, True, True],
+        #                      [False, True, True, True, False]])
+
+
+        extra_pixels = radius * (factor - 1.0)
+
+        iterations = int(round(extra_pixels/4.0))
+
+        print("Factor = " + str(factor))
+        print("number of iterations = " + str(iterations))
+
+        disk_structure = morphology.disk(4)
+
+        if iterations < 1: return self
+        else: return self.dilated(disk_structure, iterations=iterations)
 
     # *****************************************************************
 
