@@ -112,7 +112,7 @@ class Galaxy(SkyObject):
         self.minor = diameter / ratio if diameter is not None and ratio is not None else None
 
         # Get the position angle of the galaxy
-        self.pa = Angle(entry["PA"]-90, u.deg) if entry["PA"] else None
+        self.pa = Angle(entry["PA"]-90.0, u.deg) if entry["PA"] else None
 
         # Set the principal and companion flags to False initially
         self.principal = False

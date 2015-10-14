@@ -83,9 +83,11 @@ class ObjectExtractor(object):
 
             except Exception as e:
 
+                import traceback
+
                 print(type(e))
-                print(e.args)
                 print(e)
+                traceback.print_exc()
 
                 if self.config.plot_track_record_if_exception:
 
