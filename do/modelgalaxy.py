@@ -23,6 +23,7 @@ from pts.galaxymodeler import GalaxyModeler
 parser = argparse.ArgumentParser()
 parser.add_argument('--image', type=str, help='provide this argument to only prepare one specific image')
 parser.add_argument('--stage', type=str, help='the preparation stage')
+parser.add_argument('--config', type=str, help='the name of a configuration file', default=None)
 parser.add_argument('--plot', action='store_true', help='plot the results of intermediate steps')
 parser.add_argument('--save', action='store_true', help='save intermediate results')
 
@@ -30,10 +31,11 @@ parser.add_argument('--save', action='store_true', help='save intermediate resul
 args = parser.parse_args()
 
 # Set the command-line options
-image = args.image
+filter_name = args.image
 stage = args.stage
 plot = args.plot
 save = args.save
+config_file = args.config
 
 # *****************************************************************
 
@@ -43,7 +45,7 @@ working_directory = os.getcwd()
 # *****************************************************************
 
 # Create a GalaxyModeler object
-modeler = GalaxyModeler(working_directory, image, plot, save)
+modeler = GalaxyModeler(working_directory, filter_name, config_file)
 
 # Run the modeling procedure
 if stage is None: modeler.run()
