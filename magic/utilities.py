@@ -10,7 +10,7 @@ import numpy as np
 
 # Import the Image class
 from . import Image
-from frames import Frame
+from .core.frames import Frame
 
 # Import astronomical modules
 from astropy import units as u

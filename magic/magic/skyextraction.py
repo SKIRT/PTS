@@ -17,6 +17,7 @@ from ..core import masks
 from ..tools import statistics
 from ..tools import interpolation
 from ..tools import configuration
+from ..core.frames import Frame
 
 # *****************************************************************
 
@@ -67,9 +68,12 @@ class SkyExtractor(object):
         # TODO: allow different estimation methods
 
         # Estimate the sky
-        self.sky = interpolation.low_res_interpolation(frame, self.config.downsample_factor, self.mask)
+        data = interpolation.low_res_interpolation(frame, self.config.downsample_factor, self.mask)
 
-        self.filtered_sky = self.sky
+        # Create sky map
+        self.sky = Frame(data, frame.wcs, frame.pixelscale, frame.description, frame.selected, frame.unit)
+
+        #self.filtered_sky = self.sky
 
     # *****************************************************************
 

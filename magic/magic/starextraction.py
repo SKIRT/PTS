@@ -19,7 +19,7 @@ from config import Config
 from .objectextraction import ObjectExtractor
 from ..core.star import Star
 from ..tools import statistics
-from ..core.vector import Position
+from ..core.vector import Position, Extent
 from ..core.regions import Region
 from ..core.source import Source
 from ..core.masks import Mask
@@ -33,6 +33,7 @@ import astropy.units as u
 import astropy.coordinates as coord
 from astropy.table import Table
 from astroquery.vizier import Vizier
+from astropy.coordinates import Angle
 
 # *****************************************************************
 
@@ -91,6 +92,9 @@ class StarExtractor(ObjectExtractor):
 
         # If requested, find apertures
         if self.config.find_apertures: self.find_apertures()
+
+        # If requested, remove apertures
+        if self.config.remove_apertures: self.remove_apertures(frame, galaxyextractor)
 
     # *****************************************************************
 
@@ -243,8 +247,12 @@ class StarExtractor(ObjectExtractor):
             if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.removal.no_sigma_clip_on_galaxy: sigma_clip = False
             else: sigma_clip = self.config.removal.sigma_clip
 
+            # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
+            if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.removal.polynomial_on_galaxy: method = "polynomial"
+            else: method = self.config.removal.method
+
             # Remove the star in the frame
-            star.remove(frame, self.config.removal, default_fwhm, sigma_clip)
+            star.remove(frame, self.config.removal, default_fwhm, method, sigma_clip)
 
     # *****************************************************************
 
@@ -290,8 +298,12 @@ class StarExtractor(ObjectExtractor):
                 if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
                 else: sigma_clip = self.config.saturation.sigma_clip
 
+                # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
+                if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
+                else: remove_method = self.config.saturation.remove_method
+
                 # Find a saturation source and remove it from the frame
-                success = star.remove_saturation(frame, self.config.saturation, default_fwhm, sigma_clip)
+                success = star.remove_saturation(frame, self.config.saturation, default_fwhm, remove_method, sigma_clip)
                 if success: star.has_saturation = True
                 removed += success
 
@@ -340,8 +352,12 @@ class StarExtractor(ObjectExtractor):
                     if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
                     else: sigma_clip = self.config.saturation.sigma_clip
 
+                    # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
+                    if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
+                    else: remove_method = self.config.saturation.remove_method
+
                     # Find a saturation source and remove it from the frame
-                    success = star.remove_saturation(frame, self.config.saturation, default_fwhm, sigma_clip)
+                    success = star.remove_saturation(frame, self.config.saturation, default_fwhm, remove_method, sigma_clip)
                     removed += success
 
             # Inform the user
@@ -368,6 +384,59 @@ class StarExtractor(ObjectExtractor):
 
             # If the galaxy does not have a source, continue
             if star.has_saturation: star.find_aperture(sigma_level=self.config.apertures.sigma_level)
+
+    # *****************************************************************
+
+    def remove_apertures(self, frame, galaxyextractor=None):
+
+        """
+        This function ...
+        :param frame:
+        :param factor:
+        :return:
+        """
+
+        # Loop over all stars
+        for star in self.objects:
+
+            # If the object does not have an aperture, skip it
+            if not star.has_aperture: continue
+
+            # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
+            #if not star.has_source: continue
+
+            # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
+            if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
+            else: sigma_clip = self.config.saturation.sigma_clip
+
+            # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
+            if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
+            else: remove_method = self.config.saturation.remove_method
+
+            # EXPANSION FACTOR
+            expansion_factor = self.config.remove_apertures_factor
+
+            # Create a source object
+            # Get the parameters of the elliptical aperture
+            x_center, y_center = star.aperture.positions[0]
+            center = Position(x=x_center, y=y_center)
+
+            major = star.aperture.a * expansion_factor
+            minor = star.aperture.b * expansion_factor
+
+            radius = Extent(x=major, y=minor)
+
+            # theta is in radians
+            angle = Angle(star.aperture.theta, u.rad)
+
+            # Create a source
+            source = Source(frame, center, radius, angle, self.config.saturation.background_outer_factor)
+
+            # Estimate the background for the source
+            source.estimate_background(remove_method, sigma_clip)
+
+            # Replace the frame in the appropriate area with the estimated background
+            source.background.replace(frame, where=source.mask)
 
     # *****************************************************************
 

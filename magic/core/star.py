@@ -146,7 +146,7 @@ class Star(SkyObject):
 
     # *****************************************************************
 
-    def remove(self, frame, config, default_fwhm, sigma_clip):
+    def remove(self, frame, config, default_fwhm, method, sigma_clip):
 
         """
         This function removes the star from a given frame
@@ -182,7 +182,7 @@ class Star(SkyObject):
             source = Source(frame, center, radius, Angle(0.0, u.deg), config.outer_factor)
 
             # Estimate the background
-            source.estimate_background(config.method, sigma_clip)
+            source.estimate_background(method, sigma_clip)
 
             # Add the source to the track record
             if self.has_track_record: self.track_record.append(source)
@@ -192,7 +192,7 @@ class Star(SkyObject):
 
     # *****************************************************************
 
-    def remove_saturation(self, frame, config, default_fwhm, sigma_clip):
+    def remove_saturation(self, frame, config, default_fwhm, remove_method, sigma_clip):
 
         """
         This function ...
@@ -218,7 +218,7 @@ class Star(SkyObject):
             self.source = source
 
             # Estimate the background
-            self.source.estimate_background(config.remove_method, sigma_clip)
+            self.source.estimate_background(remove_method, sigma_clip)
 
             # Replace the frame with the estimated background
             self.source.background.replace(frame, where=self.source.mask)

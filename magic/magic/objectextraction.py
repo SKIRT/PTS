@@ -85,6 +85,7 @@ class ObjectExtractor(object):
 
                 import traceback
 
+                log.error("Error when finding source")
                 print(type(e))
                 print(e)
                 traceback.print_exc()
@@ -93,6 +94,8 @@ class ObjectExtractor(object):
 
                     if skyobject.has_track_record: skyobject.track_record.plot()
                     else: print("Track record is not enabled")
+
+                log.error("Continuing with next source")
 
         # Inform the user
         log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.objects), self.have_source/len(self.objects)*100.0))

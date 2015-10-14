@@ -42,6 +42,26 @@ class Region(pyregion.ShapeList):
     # *****************************************************************
 
     @classmethod
+    def from_file(cls, filepath):
+
+        """
+        This function ...
+        :param filepath:
+        :return:
+        """
+
+        region = pyregion.open(filepath)
+
+        # Change the class name of the
+        region.__class__ = cls
+
+        region.selected = False
+
+        return region
+
+    # *****************************************************************
+
+    @classmethod
     def ellipse(cls, center, radius, angle):
 
         """

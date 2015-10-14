@@ -198,7 +198,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def import_region(self, path, name):
+    def import_region(self, path, name, overwrite=False):
 
         """
         This function imports a new region from a DS9 region file
@@ -207,11 +207,11 @@ class Image(object):
         :return:
         """
 
-        # Create an pyregion object from the regions file
-        region = pyregion.open(path)
+        # Create an Region object from the regions file
+        region = Region.from_file(path)
 
         # Add the region to the set of regions
-        self._add_region(region, name)
+        self.add_region(region, name, overwrite)
 
     # *****************************************************************
 
@@ -538,7 +538,7 @@ class Image(object):
         for region_name in self.regions.get_selected():
 
             # Create the mask
-            total_mask += regions.create_mask(self.regions[region_name].region, self.header, self.frames.primary.xsize, self.frames.primary.ysize)
+            total_mask += regions.create_mask(self.regions[region_name], self.header, self.frames.primary.xsize, self.frames.primary.ysize)
             name += region_name + "_"
 
         # Remove the trailing underscore
@@ -954,6 +954,27 @@ class Image(object):
 
         # Add the mask to the masks dictionary
         self.masks[name] = Mask(data)
+
+    # *****************************************************************
+
+    def add_region(self, region, name, overwrite=False):
+
+        """
+        This function ...
+        :param region:
+        :param name:
+        :param overwrite:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding '" + name + "' to the set of regions")
+
+        # Check whether a region with this name already exists
+        if name in self.regions and not overwrite: raise RuntimeError("A region with this name already exists")
+
+        # Add the region to the set of regions
+        self.regions[name] = region
 
     # *****************************************************************
 

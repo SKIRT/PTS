@@ -54,7 +54,11 @@ def adjust(config, user_config):
     for key in user_config:
 
         # If the property is a mapping (consists of more properties), call this function recursively
-        if isinstance(user_config[key], Mapping): adjust(config[key], user_config[key])
+        if isinstance(user_config[key], Mapping):
+
+            if not key in config: config[key] = Mapping()
+
+            adjust(config[key], user_config[key])
 
         # Adapt the value of the property in the configuration to be equal to the value in the user configuration
         else: config[key] = user_config[key]
