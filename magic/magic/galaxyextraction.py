@@ -128,6 +128,11 @@ class GalaxyExtractor(ObjectExtractor):
         principal_galaxy = max(self.objects, key=major_axis)
         principal_galaxy.principal = True
 
+        # Loop over the galaxies, and enable track record if requested
+        if self.config.track_record:
+
+            for galaxy in self.objects: galaxy.enable_track_record()
+
         # Loop over the galaxies, check if they are companion galaxies
         for galaxy in self.objects:
 

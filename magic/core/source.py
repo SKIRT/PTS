@@ -202,7 +202,11 @@ class Source(object):
 
         # Get the label of the center segment
         rel_center = self.cutout.rel_position(self.center)
-        label = segments[rel_center.y, rel_center.x]
+        try:
+            label = segments[rel_center.y, rel_center.x]
+        except IndexError:
+            #plotting.plot_box(self.cutout)
+            plotting.plot_peak(self.cutout, rel_center.x, rel_center.y)
 
         # If the center pixel is identified as being part of the background, create an empty mask (the center does not
         # correspond to a segment)

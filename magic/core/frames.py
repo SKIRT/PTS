@@ -418,8 +418,6 @@ class Frame(np.ndarray):
         # Calculate the interpolated data
         data = interpolation.in_paint(self, mask)
 
-        print(type(data))
-
         # Return a new box
         return Frame(data, self.wcs, self.pixelscale, self.description, unit=self.unit)
 

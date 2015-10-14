@@ -123,7 +123,7 @@ class Mask(np.ndarray):
     # *****************************************************************
 
     @classmethod
-    def from_aperture(cls, x_size, y_size, aperture):
+    def from_aperture(cls, x_size, y_size, aperture, expansion_factor=1.0):
 
         """
         This function ...
@@ -137,8 +137,8 @@ class Mask(np.ndarray):
         x_center, y_center = aperture.positions[0]
         center = Position(x=x_center, y=y_center)
 
-        major = aperture.a
-        minor = aperture.b
+        major = aperture.a * expansion_factor
+        minor = aperture.b * expansion_factor
 
         radius = Extent(x=major, y=minor)
 

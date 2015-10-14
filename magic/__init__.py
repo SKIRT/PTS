@@ -449,13 +449,16 @@ class Image(object):
         """
 
         # Loop over all selected frames
-        for frame in self.frames.selected(allow_none=False):
+        for frame_name in self.frames.get_selected(allow_none=False):
 
             # Loop over all selected masks
-            for mask in self.masks.selected(allow_none=False):
+            for mask_name in self.masks.get_selected(allow_none=False):
+
+                # Inform the user
+                log.info("Applying the " + mask_name + " mask to the " + frame_name + " frame")
 
                 # Apply the mask
-                mask.apply(frame, fill)
+                self.masks[mask_name].apply(self.frames[frame_name], fill)
 
     # *****************************************************************
 

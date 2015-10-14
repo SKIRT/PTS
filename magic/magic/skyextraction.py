@@ -59,7 +59,7 @@ class SkyExtractor(object):
         """
 
         # Create a mask that covers the galaxies and stars (including saturation)
-        self.mask = masks.union(galaxyextractor.create_mask(frame), starextractor.create_mask(frame))
+        self.mask = masks.union(galaxyextractor.mask(frame), starextractor.mask(frame))
 
         # Sigma-clipping
         if self.config.sigma_clip: self.mask = statistics.sigma_clip_mask(frame, self.config.sigma_level, self.mask)
