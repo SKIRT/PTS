@@ -19,9 +19,9 @@ import matplotlib.pylab as plt
 from .objectextraction import ObjectExtractor
 from ..tools import catalogs
 from ..core import regions
-from ..core.masks import Mask
 from ..core.galaxy import Galaxy
 from ..core.vector import Position
+from ..tools import configuration
 
 # Import astronomical modules
 from astropy import log
@@ -38,20 +38,20 @@ class GalaxyExtractor(ObjectExtractor):
     This class
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config_file=None):
 
         """
         The constructor ...
         """
 
-        # If no configuration is given, use the default configuration
-        if config is None:
+        # Load the configuration
+        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
+        default_path = os.path.join(directory, "config", "galaxyextractor.cfg")
 
-            directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-
-            # Load the default configurations for the galaxy extractor
-            config_path = os.path.join(directory, "config", "galaxyextractor.cfg")
-            config = Config(file(config_path))
+        # Open the default configuration if no configuration file is specified, otherwise adjust the default
+        # settings according to the user defined configuration file
+        if config_file is None: config = configuration.open(default_path)
+        else: config = configuration.open(config_file, default=default_path)
 
         # Call the constructor of the base class
         super(GalaxyExtractor, self).__init__(config)

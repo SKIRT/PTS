@@ -16,6 +16,7 @@ from config import Config
 from ..core import masks
 from ..tools import statistics
 from ..tools import interpolation
+from ..tools import configuration
 
 # *****************************************************************
 
@@ -25,7 +26,7 @@ class SkyExtractor(object):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config_file=None):
 
         """
         The constructor ...
@@ -33,15 +34,14 @@ class SkyExtractor(object):
         :return:
         """
 
-        if config is None:
+        # Load the configuration
+        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
+        default_path = os.path.join(directory, "config", "skyextractor.cfg")
 
-            directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-
-            # Load the default configurations for the star remover
-            config_path = os.path.join(directory, "config", "skyextractor.cfg")
-            self.config = Config(file(config_path))
-
-        else: self.config = config
+        # Open the default configuration if no configuration file is specified, otherwise adjust the default
+        # settings according to the user defined configuration file
+        if config_file is None: self.config = configuration.open(default_path)
+        else: self.config = configuration.open(config_file, default=default_path)
 
         # Set the mask to None initialy
         self.mask = None

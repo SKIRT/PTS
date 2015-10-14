@@ -145,7 +145,7 @@ class ObjectExtractor(object):
 
     # *****************************************************************
 
-    def create_mask(self, frame):
+    def mask(self, frame):
 
         """
         This function ...

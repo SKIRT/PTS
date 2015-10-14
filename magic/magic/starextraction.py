@@ -22,6 +22,8 @@ from ..tools import statistics
 from ..core.vector import Position
 from ..core.regions import Region
 from ..core.source import Source
+from ..core.masks import Mask
+from ..tools import configuration
 
 # Import astronomical modules
 import aplpy
@@ -40,27 +42,27 @@ class StarExtractor(ObjectExtractor):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config_file=None):
 
         """
         The constructor ...
         """
 
-        # If no configuration is given, use the default configuration
-        if config is None:
+        # Load the configuration
+        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
+        default_path = os.path.join(directory, "config", "starextractor.cfg")
 
-            directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-
-            # Load the default configurations for the star remover
-            config_path = os.path.join(directory, "config", "starextractor.cfg")
-            config = Config(file(config_path))
+        # Open the default configuration if no configuration file is specified, otherwise adjust the default
+        # settings according to the user defined configuration file
+        if config_file is None: config = configuration.open(default_path)
+        else: config = configuration.open(config_file, default=default_path)
 
         # Call the constructor of the base class
         super(StarExtractor, self).__init__(config)
 
     # *****************************************************************
 
-    def run(self, frame, galaxyextractor=None, regionpath=None):
+    def run(self, frame, galaxyextractor=None):
 
         """
         This function ...
@@ -81,17 +83,11 @@ class StarExtractor(ObjectExtractor):
         # Fit analytical models to the stars
         self.fit_stars(frame)
 
-        #self.write_region(frame, regionpath[:-4]+"_0.reg", annotation="has_background")
-
         # If requested, remove the stars
         if self.config.remove: self.remove_stars(frame, galaxyextractor)
 
-        #self.write_region(frame, regionpath[:-4]+"_1.reg", annotation="has_background")
-
         # If requested, remove saturation in the image
         if self.config.remove_saturation: self.remove_saturation(frame, galaxyextractor)
-
-        #self.write_region(frame, regionpath[:-4]+"_2.reg", annotation="has_background")
 
         # If requested, find apertures
         if self.config.find_apertures: self.find_apertures()
@@ -604,6 +600,39 @@ class StarExtractor(ObjectExtractor):
 
         # Return the mean of the fwhm for all fitted stars
         return np.mean(fwhm_list)
+
+    # *****************************************************************
+
+    def saturation_mask(self, frame):
+
+        """
+        This function ...
+
+        :return:
+        """
+
+        # Initialize a mask with the dimensions of the frame
+        mask = Mask(np.zeros_like(frame))
+
+        # Loop over all sky objects
+        for star in self.objects:
+
+            # If no saturation was found for this star, skip it
+            if not star.has_saturation: continue
+
+            # Add this star to the mask
+            if self.config.saturation_mask.use_aperture and star.has_aperture:
+
+                object_mask_frame = Mask.from_aperture(frame.xsize, frame.ysize, star.aperture)
+                object_mask = object_mask_frame[star.source.cutout.y_min:star.source.cutout.y_max, star.source.cutout.x_min:star.source.cutout.x_max]
+
+            else: object_mask = star.source.mask
+
+            # Add this galaxy to the total mask
+            mask[star.source.cutout.y_min:star.source.cutout.y_max, star.source.cutout.x_min:star.source.cutout.x_max] += object_mask
+
+        # Return the mask
+        return mask
 
     # *****************************************************************
 
