@@ -38,6 +38,22 @@ def galaxies_in_box(center, ra_span, dec_span):
 
     # Query Vizier and obtain the resulting table
     result = viz.query_region(center, width=ra_span, height=dec_span, catalog=["VII/237"])
+
+    # I noticed something strange happening once; where there were no entries in the result,
+    # with the following parameters:
+    #   center = (149.07614359, 69.24847936)
+    #   ra_span = 1.600000128 deg
+    #   dec_span = 1.3966667784 deg
+    #   catalog = ["VII/237"]
+    # When ra_span was only slightly changed (e.g. change the last digit to a '7'), output was normal
+    # Thus, it seems that the query goes wrong with specific values of the width (and/or height), in which
+    # case changing the value very slightly resolves the problem...
+    # I am baffled by this and I see no reasonable explanation.
+    if len(result) == 0:
+
+        ra_span *= 1.0+1e-5
+        result = viz.query_region(center, width=ra_span, height=dec_span, catalog=["VII/237"])
+
     table = result[0]
 
     # Loop over the rows in the table
