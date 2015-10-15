@@ -10,10 +10,11 @@ from __future__ import (absolute_import, division, print_function)
 # Import standard modules
 import os.path
 import inspect
-from config import Config
+import numpy as np
 
 # Import Astromagic modules
 from ..core import masks
+from ..core.masks import Mask
 from ..tools import statistics
 from ..tools import interpolation
 from ..tools import configuration
@@ -45,35 +46,52 @@ class SkyExtractor(object):
         else: self.config = configuration.open(config_file, default=default_path)
 
         # Set the mask to None initialy
-        self.mask = None
+        self.galaxy_mask = None
+        self.star_mask = None
 
         # Set the sky frame to None intially
         self.sky = None
 
     # *****************************************************************
 
-    def run(self, frame, galaxyextractor, starextractor):
+    def run(self, frame, galaxyextractor, starextractor=None):
 
         """
         This function ...
         :return:
         """
 
-        # Create a mask that covers the galaxies and stars (including saturation)
-        self.mask = masks.union(galaxyextractor.mask(frame), starextractor.mask(frame))
+        # Set the galaxy mask
+        self.galaxy_mask = galaxyextractor.mask(frame)
+
+        # Set the star mask
+        if starextractor is not None: self.star_mask = starextractor.mask(frame)
+        else: self.star_mask = Mask(np.zeros_like(frame))
 
         # Sigma-clipping
-        if self.config.sigma_clip: self.mask = statistics.sigma_clip_mask(frame, self.config.sigma_level, self.mask)
+        #if self.config.sigma_clip: self.mask = statistics.sigma_clip_mask(frame, self.config.sigma_level, self.mask)
 
         # TODO: allow different estimation methods
 
         # Estimate the sky
-        data = interpolation.low_res_interpolation(frame, self.config.downsample_factor, self.mask)
+        #data = interpolation.low_res_interpolation(frame, self.config.downsample_factor, self.mask)
 
         # Create sky map
-        self.sky = Frame(data, frame.wcs, frame.pixelscale, frame.description, frame.selected, frame.unit)
+        #self.sky = Frame(data, frame.wcs, frame.pixelscale, frame.description, frame.selected, frame.unit)
 
         #self.filtered_sky = self.sky
+
+    # *****************************************************************
+
+    @property
+    def mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return masks.union(self.galaxy_mask, self.star_mask)
 
     # *****************************************************************
 
@@ -84,7 +102,8 @@ class SkyExtractor(object):
         :return:
         """
 
-        # Set the mask to None
-        self.mask = None
+        # Set the masks to None
+        self.galaxy_mask = None
+        self.star_mask = None
 
 # *****************************************************************

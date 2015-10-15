@@ -13,7 +13,6 @@ import numpy as np
 import os.path
 import inspect
 import matplotlib.pyplot as plt
-from config import Config
 
 # Import Astromagic modules
 from .objectextraction import ObjectExtractor
@@ -60,6 +59,9 @@ class StarExtractor(ObjectExtractor):
 
         # Call the constructor of the base class
         super(StarExtractor, self).__init__(config)
+
+        # Initialize an empty list for NOMAD stars
+        self.nomad_stars = []
 
     # *****************************************************************
 
@@ -127,7 +129,8 @@ class StarExtractor(ObjectExtractor):
         for entry in table:
 
             # Get the PGC number
-            ucac_id = entry["UCAC4"]
+            #ucac_id = entry["UCAC4"]
+            ucac_id = None  # for compatibility with NOMAD catalog
 
             # Get the right ascension and the declination
             position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
@@ -136,7 +139,8 @@ class StarExtractor(ObjectExtractor):
             if not frame.contains(position): continue
 
             # Get the mean error on the right ascension and declination
-            position_error = entry["ePos"]*u.mas
+            #position_error = entry["ePos"]*u.mas
+            position_error = None    # To obtain compatibility with NOMAD catalog
             ra_error = entry["e_RAJ2000"]*u.mas
             dec_error = entry["e_DEJ2000"]*u.mas
 
@@ -158,11 +162,18 @@ class StarExtractor(ObjectExtractor):
             else:
 
                 # Get the magnitude in different bands
-                k_mag = entry["Kmag"]*u.mag
-                b_mag = entry["Bmag"]*u.mag
-                v_mag = entry["Vmag"]*u.mag
-                r_mag = entry["rmag"]*u.mag
-                i_mag = entry["imag"]*u.mag
+                #k_mag = entry["Kmag"]*u.mag
+                #b_mag = entry["Bmag"]*u.mag
+                #v_mag = entry["Vmag"]*u.mag
+                #r_mag = entry["rmag"]*u.mag
+                #i_mag = entry["imag"]*u.mag
+
+                # Compatibility with NOMAD catalog
+                k_mag = None
+                b_mag = None
+                v_mag = None
+                r_mag = None
+                i_mag = None
 
                 # Create a star object
                 star = Star(ucac_id=ucac_id, position=position, position_error=position_error, ra_error=ra_error,
@@ -179,6 +190,69 @@ class StarExtractor(ObjectExtractor):
 
         # Inform the user
         log.debug("Number of stars: " + str(len(self.objects)))
+
+    # *****************************************************************
+
+    def fetch_nomad(self, frame):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the range of right ascension and declination of this image
+        center, ra_span, dec_span = frame.coordinate_range()
+
+        # Create a new Vizier object and set the row limit to -1 (unlimited)
+        viz = Vizier(keywords=["stars", "optical"])
+        viz.ROW_LIMIT = -1
+
+        # Query Vizier and obtain the resulting table
+        result = viz.query_region(center, width=ra_span, height=dec_span, catalog=["NOMAD"])
+        table = result[0]
+
+        for entry in table:
+
+            # Get the right ascension and the declination
+            position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
+
+            ra_error = entry["e_RAJ2000"]*u.mas
+            dec_error = entry["e_DEJ2000"]*u.mas
+
+            # Get the magnitude in different bands
+            k_mag = entry["Kmag"]*u.mag
+            b_mag = entry["Bmag"]*u.mag
+            v_mag = entry["Vmag"]*u.mag
+            r_mag = entry["Rmag"]*u.mag
+            #j_mag = entry["Jmag"]*u.mag
+
+            smallest_distance = float("inf")
+            ra_error_pixels_ucac = None
+            dec_error_pixels_ucac = None
+
+            for star in self.objects:
+
+                x, y = position.to_pixel(frame.wcs, origin=0)
+                pixel_position = Position(x, y)
+
+                difference = pixel_position - star.pixel_position(frame.wcs)
+                distance = difference.norm
+
+                if distance < smallest_distance:
+
+                    smallest_distance = distance
+                    ra_error_pixels_ucac = star.ra_error.to("arcsec") / frame.pixelscale
+                    dec_error_pixels_ucac = star.dec_error.to("arcsec") / frame.pixelscale
+
+            ra_error_pixels = ra_error.to("arcsec") / frame.pixelscale
+            dec_error_pixels = dec_error.to("arcsec") / frame.pixelscale
+
+            # Smallest distance
+            print(smallest_distance, ra_error_pixels, dec_error_pixels, ra_error_pixels_ucac, dec_error_pixels_ucac)
+
+            # Create a star object
+            #star = Star(ucac_id=None, position=position, position_error=position_error, ra_error=ra_error,
+            #            dec_error=dec_error, k_mag=k_mag, b_mag=b_mag, v_mag=v_mag, r_mag=r_mag, i_mag=i_mag)
 
     # *****************************************************************
 
