@@ -24,6 +24,7 @@ import inspect
 
 # Import astronomical modules
 from astropy import units as u
+from astropy import log
 
 # Import Astromagic modules
 from astromagic.tools import configuration
@@ -33,79 +34,8 @@ from astromagic.magic.galaxyextraction import GalaxyExtractor
 from astromagic.magic.starextraction import StarExtractor
 from astromagic.magic.skyextraction import SkyExtractor
 
-# *****************************************************************
-
-# Define the full-width-half-maxima of the different images (in pixels)
-fwhmax = {"2MASSH":   None,
-          "GALEXFUV": 3.0,
-          "Ha":       None,
-          "IRACI1":     2.5333738673,
-          "MIPS24":   4.28666,
-          "PACS70":   4.05,
-          "PACS160":  3.9228070175}
-
-# Define the FWHM for the different images (in arcseconds) (Aniano et al. 2011)
-fwhm = {"2MASSH":   None,
-        "GALEXFUV": 4.48*u.arcsec,
-        "Ha":       None,
-        "IRACI1":   1.90*u.arcsec,
-        "MIPS24":   6.43*u.arcsec,
-        "PACS70":   5.67*u.arcsec,
-        "PACS160":  11.18*u.arcsec}
-
-# Define whether saturated stars should be recognized and removed in the image
-remove_saturation = {"2MASSH": True,
-                     "GALEXFUV": False,
-                     "Ha": False,
-                     "IRACI1": True,
-                     "MIPS24": False,
-                     "PACS70": False,
-                     "PACS160": False}
-
-# Define whether the edges should be masked or not
-edges = {"2MASSH":   True,
-         "GALEXFUV": True,
-         "Ha":       True,
-         "IRACI1":     False,
-         "MIPS24":   True,
-         "PACS70":   True,
-         "PACS160":  True}
-
-# Define which images are already sky-subtracted
-sky_subtracted = {"2MASSH":   False,
-                 "GALEXFUV": False,
-                 "Ha":       False,
-                 "IRACI1":     True,
-                 "MIPS24":   True,
-                 "PACS70":   False,
-                 "PACS160":  False}
-
-# Names for convolution kernel files
-aniano_names = {"2MASSH":    "Gauss_03.0",
-                "GALEXFUV":  "GALEX_FUV",
-                "Ha":        "Gauss_03.0",
-                "IRACI1":      "IRAC_3.6",
-                "MIPS24":    "MIPS_24",
-                "PACS70":    "PACS_70",
-                "PACS160": "PACS_160"}
-
-# Define the galactic attenuations for the different filters (zero for no attenuation)
-attenuations = {"2MASSH":   0.036,
-                "GALEXFUV": 0.5606,
-                "Ha":       0.174,
-                "IRACI1":     0.0,
-                "MIPS24":   0.0,
-                "PACS70":   0.0,
-                "PACS160":  0.0}
-
-# Define the units
-units = {"2MASSH":   "",  # dimensionless flux
-         "GALEXFUV": "count/s",
-         "Ha":       "erg/s/cm**2",
-         "IRACI1":     "MJy/sr",
-         "MIPS24":   "MJy/sr",
-         "PACS70":   "Jy/pix",
-         "PACS160":  "Jy/pix"}
+# Import PTS modules
+from pts.imagepreparation import ImagePreparation
 
 # *****************************************************************
 
@@ -120,7 +50,7 @@ class GalaxyModeler(object):
 
     # *****************************************************************
 
-    def __init__(self, directory, filter_name=None, config_file=None):
+    def __init__(self, path, filter_name=None, config=None):
 
         """
         The constructor ...
@@ -132,22 +62,27 @@ class GalaxyModeler(object):
         :return:
         """
 
-        # Load the configuration
-        directory_name = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_path = os.path.join(directory_name, "config", "galaxymodeler.cfg")
+        # Determine the path to the default configuration file
+        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
+        default_config = os.path.join(directory, "config", "galaxymodeler.cfg")
 
         # Open the default configuration if no configuration file is specified, otherwise adjust the default
         # settings according to the user defined configuration file
-        if config_file is None: self.config = configuration.open(default_path)
-        else: self.config = configuration.open(config_file, default=default_path)
+        if config is None: self.config = configuration.open(default_config)
+        else: self.config = configuration.open(config, default_config)
+
+        # Set the log level
+        log.setLevel(self.config.log_level)
 
         # Get the name of the galaxy (the name of the base directory)
-        self.galaxy_name = os.path.basename(directory)
+        self.galaxy_name = os.path.basename(path)
 
         # Get the full path to the 'data', 'prep' and 'in' directories
-        self.data_path = os.path.join(directory, self.config.data_dir)
-        self.prep_path = os.path.join(directory, self.config.prep_dir)
-        self.in_path = os.path.join(directory, self.config.in_dir)
+        self.data_path = os.path.join(path, self.config.data_dir)
+        self.prep_path = os.path.join(path, self.config.prep_dir)
+        self.in_path = os.path.join(path, self.config.in_dir)
+        self.config_path = os.path.join(path, self.config.config_dir)
+        self.extra_path = os.path.join(path, self.config.extra_dir)
 
         # Create the preparation and input directories if they were not yet present
         try: os.mkdir(self.prep_path)
@@ -166,6 +101,9 @@ class GalaxyModeler(object):
 
             # Ignore non-FITS files or hidden files
             if not filename.endswith(".fits") or filename.startswith("."): continue
+
+            # Ignore error maps
+            if "error" in filename: continue
 
             # Get the name of the file without the extension
             base_filename = os.path.splitext(filename)[0]
@@ -200,6 +138,8 @@ class GalaxyModeler(object):
         # 1. Prepare
         self.prepare_images()
 
+        exit()
+
         # 2. Fit bulge and disk
         self.fit_bulge_and_disk()
 
@@ -214,12 +154,137 @@ class GalaxyModeler(object):
     def prepare_images(self):
 
         """
-        This function prepares the images
+        This function ...
+        :return:
         """
 
         # Loop over all filters for which we have an image
         for filter_name, path in self.image_paths.items():
 
+            ### IF THE FINAL.FITS FILE EXISTS, SKIP THIS IMAGE
+
+            final_path = os.path.join(self.prep_path, filter_name, "final.fits")
+            if os.path.isfile(final_path): continue
+
+            ### CONFIGURATION FOR THE PREPARATION
+
+            # Determine the path to the default configuration file
+            directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
+            default_config = os.path.join(directory, "config", "imagepreparation.cfg")
+
+            # Look for a user configuration file
+            config_path = os.path.join(self.config_path, filter_name + ".cfg")
+            config = config_path if os.path.isfile(config_path) else None
+
+            # Open the default configuration if no configuration file is specified, otherwise adjust the default
+            # settings according to the user defined configuration file
+            if config is None: config = configuration.open(default_config)
+            else: config = configuration.open(config, default_config)
+
+            # Set saving parameters for galaxy extractor
+            config.galaxy_extraction.save_region = True
+            config.galaxy_extraction.save_masked_frame = True
+            config.galaxy_extraction.save_result = True
+            config.galaxy_extraction.saving.region_path = os.path.join(self.prep_path, filter_name, "galaxy.reg")
+            config.galaxy_extraction.saving.region_annotation = "name"
+            config.galaxy_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "masked_galaxies.fits")
+            config.galaxy_extraction.saving.result_path = os.path.join(self.prep_path, filter_name, "extractedgalaxies.fits")
+
+            # Set saving parameters for star extractor
+            config.star_extraction.save_region = True
+            config.star_extraction.save_masked_frame = True
+            config.star_extraction.save_result = True
+            config.star_extraction.saving.region_path = os.path.join(self.prep_path, filter_name, "stars.reg")
+            config.star_extraction.saving.region_annotation = "flux"
+            config.star_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "masked_stars.fits")
+            config.star_extraction.saving.result_path = os.path.join(self.prep_path, filter_name, "extractedstars.fits")
+
+            ### OPENING THE IMAGE
+
+            # Open the image
+            image = Image(path)
+
+            # If no error map was found in the FITS file, try to find a seperate FITS file containing error data
+            if image.frames.errors is None:
+
+                error_path = os.path.join(self.data_path, filter_name + "_error.fits")
+                if os.path.isfile(error_path): image.load_frames(error_path, 0, config.errors, "the error map")
+
+            if image.frames.errors is None: log.warning("No error data found for " + filter_name)
+
+            ### SELECTING THE APPROPRIATE FRAMES
+
+            # Select the primary and errors frame
+            image.deselect_all()
+            image.frames[config.primary].select()
+            if config.errors in image.frames: image.frames[config.errors].select()
+
+            ### SETTING FLAGS
+
+            # Set the extract_stars flag
+            if image.wavelength < 10.0 * u.micron: config.extract_stars = True
+            else: config.extract_stars = False
+
+            ### SETTING THE UNITS
+
+            # Set the unit
+            unit = u.Unit(config.unit)
+            image.set_unit(unit)
+
+            ### SETTING THE FWHM
+
+            # Set the FWHM of the PSF
+            fwhm = config.fwhm * u.Unit(config.fwhm_unit) if config.fwhm is not None else None
+            image.frames[config.primary].set_fwhm(fwhm)
+
+            ### REMOVING NANS AND BAD REGIONS
+
+            # Replace nans by zeros
+            image.frames[config.primary].replace_nans(0.0)
+
+            # Replace pixels in the 'extra' region with zeros
+            extra_path = os.path.join(self.extra_path, image.name + '.reg')
+            if os.path.isfile(extra_path):
+
+                image.import_region(extra_path, "extra")
+                image.regions.extra.select()
+                image.create_mask()
+                image.regions.extra.deselect()
+                image.masks.extra.select()
+                image.apply_masks(0.0)
+
+            ### SETTING THE REFERENCE IMAGE
+
+            # Set the path to the reference image for the rebinning
+            config.rebinning.rebin_to = os.path.join(self.data_path, self.config.reference_image)
+
+            ### PERFORMING THE PREPARATION
+
+            # Create the preparation object
+            preparation = ImagePreparation(config)
+
+            # Run the preparation
+            preparation.run(image)
+
+            ### SAVING
+
+            # Save the result
+            image.save(final_path)
+
+    # *****************************************************************
+
+    def prepare_images_old(self):
+
+        """
+        This function prepares the images
+        """
+
+        config = self.config.preparation
+
+        # Loop over all filters for which we have an image
+        for filter_name, path in self.image_paths.items():
+
+            # Path where the prepared images are being saved to
             filter_prep_path = os.path.join(self.prep_path, filter_name)
 
             # Open the image
@@ -230,7 +295,6 @@ class GalaxyModeler(object):
             image.primary.set_unit(unit)
 
             # Set the fwhm of the image, if it is not None
-            #if fwhmax[filter_name] is not None: image.set_fwhm(fwhm[filter_name])
             if fwhmax[filter_name] is not None: image.primary.set_fwhm(fwhm[filter_name])
 
             # Mask NaNs, edges and extra user-defined regions
@@ -249,13 +313,13 @@ class GalaxyModeler(object):
                 image.apply_masks(0.0)
 
             # Extract galaxies from the image
-            galaxyex = GalaxyExtractor()
+            galaxyex = GalaxyExtractor(config.galaxyextraction)
             galaxyex.run(image.frames.primary)
 
             # Extract the stars from the image
             if image.wavelength < 10.0 * u.micron:
 
-                starex = StarExtractor()
+                starex = StarExtractor(config.starextraction)
                 starex.run(image.frames.primary, galaxyex)
 
             else: starex = None
