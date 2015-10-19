@@ -242,10 +242,9 @@ class GalaxyModeler(object):
 
             ### LOOKING FOR REGIONS TO IGNORE FOR THE EXTRACTION ALGORITHMS
 
+            # If a region file exists with the name of this image, add its path to the configuration for the preparation
             ignore_path = os.path.join(self.ignore_path, image.name + ".reg")
-            if os.path.isfile(ignore_path):
-
-                pass
+            if os.path.isfile(ignore_path): config.star_extraction.ignore_region = ignore_path
 
             ### PERFORMING THE PREPARATION
 
