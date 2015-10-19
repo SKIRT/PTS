@@ -25,6 +25,7 @@ import inspect
 # Import astronomical modules
 from astropy import units as u
 from astropy import log
+import astropy.logger
 
 # Import Astromagic modules
 from astromagic.tools import configuration
@@ -62,6 +63,8 @@ class GalaxyModeler(object):
         :return:
         """
 
+        ### LOAD CONFIGURATION
+
         # Determine the path to the default configuration file
         directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
         default_config = os.path.join(directory, "config", "galaxymodeler.cfg")
@@ -71,8 +74,21 @@ class GalaxyModeler(object):
         if config is None: self.config = configuration.open(default_config)
         else: self.config = configuration.open(config, default_config)
 
+        ### TEMPORARY
+
+        self.config.decompose = False
+        self.config.make_maps = False
+        self.config.fit_sed = False
+
+        ### SET-UP LOGGING SYSTEM
+
         # Set the log level
-        log.setLevel(self.config.log_level)
+        log.setLevel(self.config.logging.level)
+
+        # Set log file path
+        if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
+
+        ### SET PATHS
 
         # Get the name of the galaxy (the name of the base directory)
         self.galaxy_name = os.path.basename(path)
@@ -90,42 +106,6 @@ class GalaxyModeler(object):
         try: os.mkdir(self.in_path)
         except OSError: pass
 
-        # Get a list of files in the data directory
-        files = [f for f in os.listdir(self.data_path) if os.path.isfile(os.path.join(self.data_path,f))]
-
-        # Create a dictionary holding the path of each valid FITS file with a key that represents the filter
-        self.image_paths = dict()
-
-        # Loop over all files in the data directory
-        for filename in files:
-
-            # Ignore non-FITS files or hidden files
-            if not filename.endswith(".fits") or filename.startswith("."): continue
-
-            # Ignore error maps
-            if "error" in filename: continue
-
-            # Get the name of the file without the extension
-            base_filename = os.path.splitext(filename)[0]
-
-            # If a filtername was specified, only add the file that corresponds to this filter
-            if filter_name is not None:
-
-                if filter_name.lower() == base_filename.lower():
-
-                    self.image_paths[filter_name] = os.path.join(self.data_path, filename)
-                    break
-
-            # If no filtername was specified, add each FITS file found in the data directory to the dictionary
-            else: self.image_paths[base_filename] = os.path.join(self.data_path, filename)
-
-            # If intermediate results should be saved, create a seperate directory for each filter
-            if self.config.save:
-
-                # Create the directory if it was not yet present
-                try: os.mkdir(os.path.join(self.prep_path, base_filename))
-                except OSError: pass
-
     # *****************************************************************
 
     def run(self):
@@ -136,18 +116,16 @@ class GalaxyModeler(object):
         """
 
         # 1. Prepare
-        self.prepare_images()
-
-        exit()
+        if self.config.prepare: self.prepare_images()
 
         # 2. Fit bulge and disk
-        self.fit_bulge_and_disk()
+        if self.config.decompose: self.fit_bulge_and_disk()
 
         # 4. Make maps
-        self.make_maps()
+        if self.config.make_maps: self.make_maps()
 
         # 5. Run SKIRT simulations, fit the SED
-        self.fit_sed()
+        if self.config.fit_sed: self.fit_sed()
 
     # *****************************************************************
 
@@ -157,6 +135,9 @@ class GalaxyModeler(object):
         This function ...
         :return:
         """
+
+        # Find the input FITS files
+        self.find_input_files()
 
         # Loop over all filters for which we have an image
         for filter_name, path in self.image_paths.items():
@@ -825,7 +806,52 @@ class GalaxyModeler(object):
         """
 
         pass
-        
+
+    # *****************************************************************
+
+    def find_input_files(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get a list of files in the data directory
+        files = [f for f in os.listdir(self.data_path) if os.path.isfile(os.path.join(self.data_path,f))]
+
+        # Create a dictionary holding the path of each valid FITS file with a key that represents the filter
+        self.image_paths = dict()
+
+        # Loop over all files in the data directory
+        for filename in files:
+
+            # Ignore non-FITS files or hidden files
+            if not filename.endswith(".fits") or filename.startswith("."): continue
+
+            # Ignore error maps
+            if "error" in filename: continue
+
+            # Get the name of the file without the extension
+            base_filename = os.path.splitext(filename)[0]
+
+            # If a filtername was specified, only add the file that corresponds to this filter
+            if filter_name is not None:
+
+                if filter_name.lower() == base_filename.lower():
+
+                    self.image_paths[filter_name] = os.path.join(self.data_path, filename)
+                    break
+
+            # If no filtername was specified, add each FITS file found in the data directory to the dictionary
+            else: self.image_paths[base_filename] = os.path.join(self.data_path, filename)
+
+            # If intermediate results should be saved, create a seperate directory for each filter
+            if self.config.save:
+
+                # Create the directory if it was not yet present
+                try: os.mkdir(os.path.join(self.prep_path, base_filename))
+                except OSError: pass
+
 # *****************************************************************
 
 

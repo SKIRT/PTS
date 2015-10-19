@@ -15,6 +15,7 @@ import inspect
 # Import astronomical modules
 import astropy.units as u
 from astropy import log
+import astropy.logger
 
 # Import Astromagic modules
 from astromagic import Image
@@ -48,10 +49,22 @@ class ImagePreparation(object):
         if config is None: self.config = configuration.open(default_config)
         else: self.config = configuration.open(config, default_config)
 
-        print(self.config.log_level)
+        ### SET-UP LOGGING SYSTEM
 
         # Set the log level
-        log.setLevel(self.config.log_level)
+        log.setLevel(self.config.logging.level)
+
+        # Set log file path
+        if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
+
+        ### TEMPORARY
+
+        self.config.extract_sky = False
+        self.config.correct_for_extinction = False
+        self.config.convert_unit = False
+        self.config.convolve = False
+
+        ###
 
         # Set extractors to None
         self.galaxyex = None
@@ -81,16 +94,16 @@ class ImagePreparation(object):
         if self.config.extract_stars: self.extract_stars()
 
         # If requested, extract the sky
-        #if self.config.extract_sky: self.extract_sky()
+        if self.config.extract_sky: self.extract_sky()
 
         # If requested, correct for galactic extinction
-        #if self.config.correct_for_extinction: self.correct_for_extinction()
+        if self.config.correct_for_extinction: self.correct_for_extinction()
 
         # If requested, convert the unit
-        #if self.config.convert_unit: self.convert_unit()
+        if self.config.convert_unit: self.convert_unit()
 
         # If requested, convolve
-        #if self.config.convolve: self.convolve()
+        if self.config.convolve: self.convolve()
 
         # If requested, rebin
         if self.config.rebin: self.rebin()
