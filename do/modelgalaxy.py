@@ -45,14 +45,19 @@ working_directory = os.getcwd()
 # *****************************************************************
 
 # Create a GalaxyModeler object
-modeler = GalaxyModeler(working_directory, filter_name, config_file)
+modeler = GalaxyModeler(working_directory, config_file)
 
 # Run the modeling procedure
 if stage is None: modeler.run()
-elif stage == "prepare": modeler.prepare_images()
-elif stage == "galfit": modeler.fit_bulge_and_disk()
-elif stage == "maps": modeler.make_maps()
-elif stage == "fit": modeler.fit_sed()
+elif stage == "preparation":
+
+    # Set the name of the image that needs to be prepared and run the image preparation
+    modeler.config.preparation.filter_name = filter_name
+    modeler.prepare_images()
+
+elif stage == "decomposition": modeler.decompose()
+elif stage == "mapmaking": modeler.make_maps()
+elif stage == "fitting": modeler.fit_sed()
 else: raise ValueError("Unkown stage")
 
 # *****************************************************************
