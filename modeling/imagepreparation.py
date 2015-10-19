@@ -59,7 +59,7 @@ class ImagePreparation(object):
 
         ### TEMPORARY
 
-        self.config.extract_sky = False
+        #self.config.extract_sky = False
         self.config.correct_for_extinction = False
         self.config.convert_unit = False
         self.config.convolve = False
@@ -138,9 +138,7 @@ class ImagePreparation(object):
         """
 
         # Create a galaxy extractor
-        #if "galaxyextraction" in self.config:
         self.galaxyex = GalaxyExtractor(self.config.galaxy_extraction)
-        #else: self.galaxyex = GalaxyExtractor()
 
         # Run the galaxy extractor
         self.galaxyex.run(self.image.frames[self.config.primary])
@@ -158,9 +156,7 @@ class ImagePreparation(object):
         """
 
         # Create a star extractor
-        #if "starextraction" in self.config:
         self.starex = StarExtractor(self.config.star_extraction)
-        #else: self.starex = StarExtractor()
 
         # Special region for stars
         #special_region_path = join("special", basename(path)[:-5] + "_special.reg")
@@ -173,21 +169,6 @@ class ImagePreparation(object):
         # Run the star extractor
         self.starex.run(self.image.frames[self.config.primary], self.galaxyex)
 
-        #image.deselect_all()
-        #image.frames.primary.select()
-
-        #mask = starex.aperture_mask(image.frames.primary, expansion_factor=1.1)
-        #image.masks["apertures_expanded"] = mask
-        #image.masks.apertures_expanded.select()
-        #image.apply_masks(0.0)
-
-        #image.frames.primary = image.frames.primary.interpolate(image.masks.apertures_expanded)
-
-        #image.frames.primary.select()
-
-        # Export the image
-        #image.save(join("out", "apertures_interpolated_"+basename(path)))
-
     # *****************************************************************
 
     def extract_sky(self):
@@ -198,20 +179,13 @@ class ImagePreparation(object):
         """
 
         # Create a sky extractor
-        #if "skyextraction" in self.config:
         self.skyex = SkyExtractor(self.config.sky_extraction)
-        #else: self.skyex = SkyExtractor()
 
         # Run the sky extraction
         self.skyex.run(self.image.frames[self.config.primary], self.galaxyex, self.starex)
 
-        # Create a sky frame
-        #image.add_mask(skyex.mask, "sky")
-        #image.masks.sky.select()
-        #image.apply_masks(0.0)
-
-        # Export the sky frame
-        #image.save(join("out", "sky_" + basename(path)))
+        # Plot the histogram of the sky map
+        self.skyex.histogram()
 
     # *****************************************************************
 

@@ -101,12 +101,7 @@ class GalaxyModeler(object):
         self.in_path = os.path.join(path, self.config.in_dir)
         self.config_path = os.path.join(path, self.config.config_dir)
         self.extra_path = os.path.join(path, self.config.extra_dir)
-
-        # Create the preparation and input directories if they were not yet present
-        try: os.mkdir(self.prep_path)
-        except OSError: pass
-        try: os.mkdir(self.in_path)
-        except OSError: pass
+        self.ignore_path = os.path.join(path, self.config.ignore_dir)
 
     # *****************************************************************
 
@@ -244,6 +239,13 @@ class GalaxyModeler(object):
 
             # Set the path to the reference image for the rebinning
             config.rebinning.rebin_to = os.path.join(self.data_path, self.config.reference_image)
+
+            ### LOOKING FOR REGIONS TO IGNORE FOR THE EXTRACTION ALGORITHMS
+
+            ignore_path = os.path.join(self.ignore_path, image.name + ".reg")
+            if os.path.isfile(ignore_path):
+
+                pass
 
             ### PERFORMING THE PREPARATION
 
