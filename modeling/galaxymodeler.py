@@ -164,21 +164,25 @@ class GalaxyModeler(object):
 
             # Set saving parameters for galaxy extractor
             config.galaxy_extraction.save_region = True
-            config.galaxy_extraction.save_masked_frame = True
-            config.galaxy_extraction.save_result = True
-            config.galaxy_extraction.saving.region_path = os.path.join(self.prep_path, filter_name, "galaxy.reg")
+            #config.galaxy_extraction.save_masked_frame = True
+            #config.galaxy_extraction.save_result = True
+            config.galaxy_extraction.saving.region_path = os.path.join(self.prep_path, filter_name, "galaxies.reg")
             config.galaxy_extraction.saving.region_annotation = "name"
-            config.galaxy_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "masked_galaxies.fits")
-            config.galaxy_extraction.saving.result_path = os.path.join(self.prep_path, filter_name, "extractedgalaxies.fits")
+            #config.galaxy_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "masked_galaxies.fits")
+            #config.galaxy_extraction.saving.result_path = os.path.join(self.prep_path, filter_name, "extractedgalaxies.fits")
 
             # Set saving parameters for star extractor
             config.star_extraction.save_region = True
-            config.star_extraction.save_masked_frame = True
+            #config.star_extraction.save_masked_frame = True
             config.star_extraction.save_result = True
             config.star_extraction.saving.region_path = os.path.join(self.prep_path, filter_name, "stars.reg")
             config.star_extraction.saving.region_annotation = "flux"
-            config.star_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "masked_stars.fits")
+            #config.star_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "masked_stars.fits")
             config.star_extraction.saving.result_path = os.path.join(self.prep_path, filter_name, "extractedstars.fits")
+
+            # Set saving parameters for sky extractor
+            config.sky_extraction.save_masked_frame = True
+            config.sky_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "sky_mask.fits")
 
             ### OPENING THE IMAGE
 
