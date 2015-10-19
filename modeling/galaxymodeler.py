@@ -381,7 +381,7 @@ class GalaxyModeler(object):
         # Run the decomposition
         decomposer.run()
 
-        
+
 
         # TODO: do the bulge/disk fitting here
 

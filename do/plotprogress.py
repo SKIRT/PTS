@@ -34,7 +34,7 @@ import argparse
 # Import relevant PTS modules
 from pts.log import Log
 from pts.skirtsimulation import createsimulations
-from pts.plotprogress import plotprogress
+from performance.plotprogress import plotprogress
 
 # -----------------------------------------------------------------
 

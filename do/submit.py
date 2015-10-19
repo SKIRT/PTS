@@ -19,7 +19,7 @@ import argparse
 from pts.log import Log
 from pts.skifile import SkiFile
 from pts.jobscript import JobScript
-from pts.memory import estimate_memory
+from performance.memory import estimate_memory
 
 # -----------------------------------------------------------------
 

@@ -15,7 +15,7 @@ import os
 import argparse
 
 # Import relevant PTS modules
-from pts.plottimeline import TimelinePlotter
+from performance.plottimeline import TimelinePlotter
 
 # -----------------------------------------------------------------
 
