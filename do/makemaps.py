@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.prepareimage Prepare an image with Astromagic
+## \package do.makemaps Make maps as input for a SKIRT radiative transfer model
 #
 
 # *****************************************************************
@@ -14,16 +14,13 @@
 import argparse
 
 # Import relevant PTS modules
-from modeling.imagepreparation import ImagePreparation
-
-# Import Astromagic modules
-from astromagic import Image
+from modeling.mapmaker import MapMaker
 
 # *****************************************************************
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
-parser.add_argument('path', type=str, help='the path to the image')
+parser.add_argument('map', type=str, help='the map to be made (dust, old, Y, IY)')
 parser.add_argument('--config', type=str, help='the name of a configuration file', default=None)
 
 # Parse the command line arguments
@@ -35,13 +32,10 @@ config_file = args.config
 
 # *****************************************************************
 
-# Create an image
-image = Image(path)
+# Create a MapMaker object
+maker = MapMaker(config_file)
 
-# Create a ImagePreparation object
-prep = ImagePreparation(config_file)
-
-# Run the image preparation on the image
-prep.run(image)
+# Run the map making
+maker.run()
 
 # *****************************************************************

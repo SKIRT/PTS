@@ -15,7 +15,7 @@ import os.path
 import argparse
 
 # Import relevant PTS modules
-from pts.galaxymodeler import GalaxyModeler
+from modeling.galaxymodeler import GalaxyModeler
 
 # *****************************************************************
 
