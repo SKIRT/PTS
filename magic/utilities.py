@@ -75,7 +75,7 @@ def save(image, directory, name):
 
     # Write to file
     path = os.path.join(directory, name)
-    image.export_datacube(path)
+    image.save(path)
 
 # *****************************************************************
 

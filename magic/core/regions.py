@@ -178,6 +178,16 @@ class Region(pyregion.ShapeList):
 
         self.selected = False
 
+    # *****************************************************************
+
+    def expand(self, factor):
+
+        """
+        This function ...
+        """
+
+        pass
+
 # *****************************************************************
 
 def ellipse_parameters(shape):

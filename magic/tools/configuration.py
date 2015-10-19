@@ -13,7 +13,28 @@ from config import Mapping
 
 # *****************************************************************
 
-def open(filepath, default=None):
+# Special trick
+def special(self, item):
+
+    """
+    This function ...
+    :param item:
+    :return:
+    """
+
+    try:
+        return self.__getitem__(item)
+    except AttributeError:
+        self[item] = Mapping()
+        return self[item]
+
+# Replace the __getattr__ function
+Config.__getattr__ = special
+Mapping.__getattr__ = special
+
+# *****************************************************************
+
+def open(config, default_config=None):
 
     """
     This function ...
@@ -22,22 +43,21 @@ def open(filepath, default=None):
     :return:
     """
 
-    # If a default configuration file is not given, open the filepath
-    if default is None: return Config(file(filepath))
+    # Open the config file
+    if isinstance(config, basestring): config = Config(file(config))
 
-    # Else, load the default configuration and adapt the properties according to
-    # the specified configuration file
+    # If a default configuration file is not given, return the opened config file
+    if default_config is None: return config
     else:
 
-        # Open the default configuration
-        config = Config(file(default))
+        # Open the default config file
+        if isinstance(default_config, basestring): default_config = Config(file(default_config))
 
-        # Open the configuration file
-        user_config = Config(file(filepath))
+        # Adjust the default configuration according to the user-defined configuration
+        adjust(default_config, config)
 
-        adjust(config, user_config)
-
-        return config
+        # Return the adjusted default configuration
+        return default_config
 
 # *****************************************************************
 
@@ -56,7 +76,9 @@ def adjust(config, user_config):
         # If the property is a mapping (consists of more properties), call this function recursively
         if isinstance(user_config[key], Mapping):
 
+            # If the Mapping with the name key does not exist in the config, add an empty mapping
             if not key in config: config[key] = Mapping()
+
 
             adjust(config[key], user_config[key])
 

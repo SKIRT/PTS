@@ -106,6 +106,29 @@ class Frame(np.ndarray):
 
     # *****************************************************************
 
+    @property
+    def header(self):
+
+        """
+        This function ...
+        """
+
+        # If the WCS for this frame is defined, use it to create a header
+        if self.wcs is not None: header = self.wcs.to_header()
+
+        # Else, create a new empty header
+        else: header = pyfits.Header()
+
+        # Add properties to the header
+        header['NAXIS'] = 2
+        header['NAXIS1'] = self.xsize
+        header['NAXIS2'] = self.ysize
+
+        # Return the header
+        return header
+
+    # *****************************************************************
+
     def set_unit(self, unit):
 
         """
@@ -140,10 +163,13 @@ class Frame(np.ndarray):
 
         # Convert the data
         conversion_factor = self.unit / unit
-        self *= conversion_factor
+        frame = self * conversion_factor
 
         # Set the new unit
-        self.unit = unit
+        frame.unit = unit
+
+        # Return the converted frame
+        return frame
 
     # *****************************************************************
 
@@ -154,13 +180,10 @@ class Frame(np.ndarray):
         :return:
         """
 
-        # Do the conversion
-        self = m_0 - 2.5 * np.log10(self)
-
         # TODO: adapt the unit
 
-        # Check whether this object remains of type Frame
-        assert isinstance(self, Frame)
+        # Do the conversion
+        return m_0 - 2.5 * np.log10(self)
 
     # *****************************************************************
 
@@ -171,13 +194,10 @@ class Frame(np.ndarray):
         :return:
         """
 
-        # Do the conversion
-        self = f_0 * np.power(10.0, - self / 2.5)
-
         # TODO: adapt the unit
 
-        # Check whether this object remains of type Frame
-        assert isinstance(self, Frame)
+        # Do the conversion
+        return f_0 * np.power(10.0, - self / 2.5)
 
      # *****************************************************************
 
@@ -199,10 +219,10 @@ class Frame(np.ndarray):
         kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
 
         # Do the convolution on this frame
-        self = convolve_fft(self, kernel, normalize_kernel=True)
+        data = convolve_fft(self, kernel, normalize_kernel=True)
 
-        # Check whether this object remains of type Frame
-        assert isinstance(self, Frame)
+        # Return the convolved frame
+        return Frame(data, self.wcs, self.pixelscale, self.description, self.selected, self.unit)
 
     # *****************************************************************
 
@@ -214,15 +234,11 @@ class Frame(np.ndarray):
         :return:
         """
 
-        # Create headers
-        header = self.wcs.to_header()
-        ref_header = ref_frame.wcs.to_header()
-
         # Do the rebinning
-        self = transformations.align_and_rebin(self, header, ref_header)
+        data = transformations.align_and_rebin(self, self.header, ref_frame.header)
 
-        # Check whether this object remains of type Frame
-        assert isinstance(self, Frame)
+        # Return the rebinned frame
+        return Frame(data, ref_frame.wcs, ref_frame.pixelscale, self.description, self.selected, self.unit)
 
     # *****************************************************************
 
@@ -237,13 +253,13 @@ class Frame(np.ndarray):
         :return:
         """
 
+        # TODO: change the WCS
+
         # Crop the frame
-        self = cropping.crop_check(self, x_min, x_max, y_min, y_max)
+        data = cropping.crop_check(self, x_min, x_max, y_min, y_max)
 
-        # Check whether this object remains of type Frame
-        assert isinstance(self, Frame)
-
-        # TODO: Adapt the wcs!
+        # Return the cropped frame
+        return Frame(data, None, self.pixelscale, self.description, self.selected, self.unit)
 
     # *****************************************************************
 
@@ -254,12 +270,13 @@ class Frame(np.ndarray):
         :return:
         """
 
-        self = ndimage.interpolation.zoom(self, zoom=1.0/factor)
+        # TODO: change the WCS
 
-        # TODO: Adapt the wcs!
+        # Calculate the downsampled array
+        data = ndimage.interpolation.zoom(self, zoom=1.0/factor)
 
-        # Check whether this object remains of type Frame
-        assert isinstance(self, Frame)
+        # Return the downsampled frame
+        return Frame(data, None, self.pixelscale*factor, self.description, self.selected, self.unit)
 
     # *****************************************************************
 
@@ -271,13 +288,13 @@ class Frame(np.ndarray):
         :return:
         """
 
-        # Do the rotation
-        ndimage.interpolation.rotate(self, angle)
+        # TODO: change the WCS
 
-        # TODO: Adapt the wcs!
+        # Calculate the rotated array
+        data = ndimage.interpolation.rotate(self, angle)
 
-        # Check whether this object remains of type Frame
-        assert isinstance(self, Frame)
+        # Return the rotated frame
+        return Frame(data, None, self.pixelscale, self.description, self.selected, self.unit)
 
     # *****************************************************************
 
@@ -288,13 +305,13 @@ class Frame(np.ndarray):
         :return:
         """
 
+        # TODO: change the WCS
+
         # Transform the data
-        self = ndimage.interpolation.shift(self, (extent.y, extent.x))
+        data = ndimage.interpolation.shift(self, (extent.y, extent.x))
 
-        # TODO: Adapt the wcs!
-
-        # Check whether this object remains of type Frame
-        assert isinstance(self, Frame)
+        # Return the shifted frame
+        return Frame(data, None, self.pixelscale, self.description, self.selected, self.unit)
 
     # *****************************************************************
 
@@ -309,7 +326,8 @@ class Frame(np.ndarray):
         center = Position(x=0.5*self.xsize, y=0.5*self.ysize)
         shift = position - center
 
-        self.shift(shift)
+        # Return the shifted frame
+        return self.shift(shift)
 
     # *****************************************************************
 
@@ -420,6 +438,20 @@ class Frame(np.ndarray):
 
         # Return a new box
         return Frame(data, self.wcs, self.pixelscale, self.description, unit=self.unit)
+
+    # *****************************************************************
+
+    def save(self, path):
+
+        """
+        This function ...
+        """
+
+        # Create the HDU
+        hdu = pyfits.PrimaryHDU(self, self.header)
+
+        # Write the HDU to a FITS file
+        hdu.writeto(path, clobber=True)
 
     # *****************************************************************
 

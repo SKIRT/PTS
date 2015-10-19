@@ -20,6 +20,10 @@ from ..tools import interpolation
 from ..tools import configuration
 from ..core.frames import Frame
 
+# Import astronomical modules
+from astropy import log
+import astropy.logger
+
 # *****************************************************************
 
 class SkyExtractor(object):
@@ -28,7 +32,7 @@ class SkyExtractor(object):
     This class ...
     """
 
-    def __init__(self, config_file=None):
+    def __init__(self, config=None):
 
         """
         The constructor ...
@@ -36,18 +40,31 @@ class SkyExtractor(object):
         :return:
         """
 
-        # Load the configuration
+        # Determine the path to the default configuration file
         directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_path = os.path.join(directory, "config", "skyextractor.cfg")
+        default_config = os.path.join(directory, "config", "skyextractor.cfg")
 
         # Open the default configuration if no configuration file is specified, otherwise adjust the default
         # settings according to the user defined configuration file
-        if config_file is None: self.config = configuration.open(default_path)
-        else: self.config = configuration.open(config_file, default=default_path)
+        if config is None: self.config = configuration.open(default_config)
+        else: self.config.configuration.open(config, default_config)
 
-        # Set the mask to None initialy
+        ### SET-UP LOGGING SYSTEM
+
+        # Set the log level
+        log.setLevel(self.config.logging.level)
+
+        # Set log file path
+        if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
+
+        ###
+
+        # Set the galaxy and star mask to None initialy
         self.galaxy_mask = None
         self.star_mask = None
+
+        # Set the frame to None initially
+        self.frame = None
 
         # Set the sky frame to None intially
         self.sky = None
@@ -61,12 +78,15 @@ class SkyExtractor(object):
         :return:
         """
 
+        # Make a local reference to the frame
+        self.frame = frame
+
         # Set the galaxy mask
-        self.galaxy_mask = galaxyextractor.mask(frame)
+        self.galaxy_mask = galaxyextractor.mask()
 
         # Set the star mask
-        if starextractor is not None: self.star_mask = starextractor.mask(frame)
-        else: self.star_mask = Mask(np.zeros_like(frame))
+        if starextractor is not None: self.star_mask = starextractor.mask()
+        else: self.star_mask = Mask(np.zeros_like(self.frame))
 
         # Sigma-clipping
         #if self.config.sigma_clip: self.mask = statistics.sigma_clip_mask(frame, self.config.sigma_level, self.mask)
@@ -105,5 +125,8 @@ class SkyExtractor(object):
         # Set the masks to None
         self.galaxy_mask = None
         self.star_mask = None
+
+        # Set the frames to None
+        self.frame = None
 
 # *****************************************************************

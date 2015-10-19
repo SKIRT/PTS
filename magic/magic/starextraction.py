@@ -42,23 +42,23 @@ class StarExtractor(ObjectExtractor):
     This class ...
     """
 
-    def __init__(self, config_file=None):
+    def __init__(self, config=None):
 
         """
         The constructor ...
         """
 
-        # Load the configuration
+        # Determine the path to the default configuration file
         directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_path = os.path.join(directory, "config", "starextractor.cfg")
+        default_config = os.path.join(directory, "config", "starextractor.cfg")
 
         # Open the default configuration if no configuration file is specified, otherwise adjust the default
         # settings according to the user defined configuration file
-        if config_file is None: config = configuration.open(default_path)
-        else: config = configuration.open(config_file, default=default_path)
+        if config is None: self.config = configuration.open(default_config)
+        else: self.config = configuration.open(config, default_config)
 
         # Call the constructor of the base class
-        super(StarExtractor, self).__init__(config)
+        super(StarExtractor, self).__init__()
 
         # Initialize an empty list for NOMAD stars
         self.nomad_stars = []
@@ -71,36 +71,48 @@ class StarExtractor(ObjectExtractor):
         This function ...
         """
 
+        # Make a local reference to the passed frame
+        self.frame = frame
+
         # Create a list of stars based on online catalogs
-        self.fetch_stars(frame, galaxyextractor)
+        self.fetch_stars(galaxyextractor)
 
         # Set special stars
-        if self.config.special_region is not None: self.set_special(frame)
+        if self.config.special_region is not None: self.set_special()
 
         # Set ignore stars
-        if self.config.ignore_region is not None: self.set_ignore(frame)
+        if self.config.ignore_region is not None: self.set_ignore()
 
         # For each star, find a corresponding source in the image
-        self.find_sources(frame)
+        self.find_sources()
 
         # Fit analytical models to the stars
-        self.fit_stars(frame)
+        self.fit_stars()
 
         # If requested, remove the stars
-        if self.config.remove: self.remove_stars(frame, galaxyextractor)
+        if self.config.remove: self.remove_stars(galaxyextractor)
 
         # If requested, remove saturation in the image
-        if self.config.remove_saturation: self.remove_saturation(frame, galaxyextractor)
+        if self.config.remove_saturation: self.remove_saturation(galaxyextractor)
 
         # If requested, find apertures
         if self.config.find_apertures: self.find_apertures()
 
         # If requested, remove apertures
-        if self.config.remove_apertures: self.remove_apertures(frame, galaxyextractor)
+        if self.config.remove_apertures: self.remove_apertures(galaxyextractor)
+
+        # If requested, save the galaxy region
+        if self.config.save_region: self.save_region()
+
+        # If requested, save the frame where the galaxies are masked
+        if self.config.save_masked_frame: self.save_masked_frame()
+
+        # If requested, save the result
+        if self.config.save_result: self.save_result()
 
     # *****************************************************************
 
-    def fetch_stars(self, frame, galaxyextractor=None):
+    def fetch_stars(self, galaxyextractor=None):
 
         """
         This function ...
@@ -110,7 +122,7 @@ class StarExtractor(ObjectExtractor):
         log.info("Fetching star positions from an online catalog")
 
         # Get the range of right ascension and declination of this image
-        center, ra_span, dec_span = frame.coordinate_range()
+        center, ra_span, dec_span = self.frame.coordinate_range()
 
         # Create a new Vizier object and set the row limit to -1 (unlimited)
         viz = Vizier(keywords=["stars", "optical"])
@@ -121,7 +133,7 @@ class StarExtractor(ObjectExtractor):
         table = result[0]
 
         # If a galaxyextractor is passed, get the positions of the galaxies in the frame
-        if galaxyextractor is not None: galaxies = galaxyextractor.position_list(frame)
+        if galaxyextractor is not None: galaxies = galaxyextractor.positions
         else: galaxies = []
 
         # Loop over all stars in the table
@@ -136,7 +148,7 @@ class StarExtractor(ObjectExtractor):
             position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
 
             # If this star does not lie within the frame, skip it
-            if not frame.contains(position): continue
+            if not self.frame.contains(position): continue
 
             # Get the mean error on the right ascension and declination
             #position_error = entry["ePos"]*u.mas
@@ -148,7 +160,7 @@ class StarExtractor(ObjectExtractor):
             for galaxy in galaxies:
 
                 # Calculate the distance between the star's position and the galaxy's center
-                x_center, y_center = position.to_pixel(frame.wcs)
+                x_center, y_center = position.to_pixel(self.frame.wcs)
                 difference = galaxy - Position(x=x_center, y=y_center)
 
                 norms.append(difference.norm)
@@ -256,7 +268,7 @@ class StarExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def fit_stars(self, frame):
+    def fit_stars(self):
 
         """
         This function ...
@@ -275,10 +287,10 @@ class StarExtractor(ObjectExtractor):
             if not star.has_source and self.config.fitting.fit_if_undetected:
 
                 # Get the parameters of the circle
-                center, radius, angle = star.ellipse_parameters(frame.wcs, frame.pixelscale, self.config.fitting.initial_radius)
+                center, radius, angle = star.ellipse_parameters(self.frame.wcs, self.frame.pixelscale, self.config.fitting.initial_radius)
 
                 # Create a source object
-                source = Source(frame, center, radius, angle, self.config.fitting.background_outer_factor)
+                source = Source(self.frame, center, radius, angle, self.config.fitting.background_outer_factor)
 
             else: source = None
 
@@ -290,7 +302,7 @@ class StarExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def remove_stars(self, frame, galaxyextractor=None):
+    def remove_stars(self, galaxyextractor=None):
 
         """
         This function ...
@@ -318,19 +330,19 @@ class StarExtractor(ObjectExtractor):
             if star.ignore: continue
 
             # Determine whether we want the background to be sigma-clipped when interpolating over the source
-            if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.removal.no_sigma_clip_on_galaxy: sigma_clip = False
+            if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.removal.no_sigma_clip_on_galaxy: sigma_clip = False
             else: sigma_clip = self.config.removal.sigma_clip
 
             # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-            if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.removal.polynomial_on_galaxy: method = "polynomial"
+            if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.removal.polynomial_on_galaxy: method = "polynomial"
             else: method = self.config.removal.method
 
             # Remove the star in the frame
-            star.remove(frame, self.config.removal, default_fwhm, method, sigma_clip)
+            star.remove(self.frame, self.config.removal, default_fwhm, method, sigma_clip)
 
     # *****************************************************************
 
-    def remove_saturation(self, frame, galaxyextractor=None):
+    def remove_saturation(self, galaxyextractor=None):
 
         """
         This function ...
@@ -369,15 +381,15 @@ class StarExtractor(ObjectExtractor):
                 if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
                 # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
-                if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
+                if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
                 else: sigma_clip = self.config.saturation.sigma_clip
 
                 # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-                if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
+                if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
                 else: remove_method = self.config.saturation.remove_method
 
                 # Find a saturation source and remove it from the frame
-                success = star.remove_saturation(frame, self.config.saturation, default_fwhm, remove_method, sigma_clip)
+                success = star.remove_saturation(self.frame, self.config.saturation, default_fwhm, remove_method, sigma_clip)
                 if success: star.has_saturation = True
                 removed += success
 
@@ -423,15 +435,15 @@ class StarExtractor(ObjectExtractor):
                 if value >= minimum or (self.config.saturation.remove_if_undetected and not star.has_source):
 
                     # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
-                    if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
+                    if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
                     else: sigma_clip = self.config.saturation.sigma_clip
 
                     # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-                    if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
+                    if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
                     else: remove_method = self.config.saturation.remove_method
 
                     # Find a saturation source and remove it from the frame
-                    success = star.remove_saturation(frame, self.config.saturation, default_fwhm, remove_method, sigma_clip)
+                    success = star.remove_saturation(self.frame, self.config.saturation, default_fwhm, remove_method, sigma_clip)
                     removed += success
 
             # Inform the user
@@ -461,7 +473,7 @@ class StarExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def remove_apertures(self, frame, galaxyextractor=None):
+    def remove_apertures(self, galaxyextractor=None):
 
         """
         This function ...
@@ -480,11 +492,11 @@ class StarExtractor(ObjectExtractor):
             #if not star.has_source: continue
 
             # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
-            if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
+            if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
             else: sigma_clip = self.config.saturation.sigma_clip
 
             # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-            if galaxyextractor.principal.contains(star.pixel_position(frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
+            if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
             else: remove_method = self.config.saturation.remove_method
 
             # EXPANSION FACTOR
@@ -504,27 +516,17 @@ class StarExtractor(ObjectExtractor):
             angle = Angle(star.aperture.theta, u.rad)
 
             # Create a source
-            source = Source(frame, center, radius, angle, self.config.saturation.background_outer_factor)
+            source = Source(self.frame, center, radius, angle, self.config.saturation.background_outer_factor)
 
             # Estimate the background for the source
             source.estimate_background(remove_method, sigma_clip)
 
             # Replace the frame in the appropriate area with the estimated background
-            source.background.replace(frame, where=source.mask)
+            source.background.replace(self.frame, where=source.mask)
 
     # *****************************************************************
 
-    def create_frame(self, frame):
-
-        """
-        This function ...
-        """
-
-        return None
-
-    # *****************************************************************
-
-    def create_region(self, frame, type="sky"):
+    def create_region(self, type="sky"):
 
         """
         This function ...
@@ -558,19 +560,19 @@ class StarExtractor(ObjectExtractor):
             radius = fwhm * statistics.fwhm_to_sigma * self.config.region.sigma_level
 
             # Add the radius (in arcseconds) and the color the appropriate list
-            radius_list.append(radius * frame.pixelscale)
+            radius_list.append(radius * self.frame.pixelscale)
             color_list.append(color)
 
         # Create a region
         region = Region.circles(position_list, radius_list, color_list)
 
         if type == "sky": return region
-        elif type == "image": return region.as_imagecoord(frame.wcs.to_header())
+        elif type == "image": return region.as_imagecoord(self.frame.wcs.to_header())
         else: raise ValueError("Type should be either 'sky' or 'image'")
 
     # *****************************************************************
 
-    def write_region(self, frame, path, annotation=None):
+    def write_region(self, path, annotation=None):
 
         """
         This function ...
@@ -582,7 +584,7 @@ class StarExtractor(ObjectExtractor):
         f = open(path,'w')
 
         # Initialize the region string
-        print("# Region file format: DS9 version 4.0", file=f)
+        print("# Region file format: DS9 version 4.1", file=f)
 
         # Calculate the default FWHM (calculated based on fitted stars)
         default_fwhm = self.fwhm
@@ -591,7 +593,7 @@ class StarExtractor(ObjectExtractor):
         for star in self.objects:
 
             # Get the center in pixel coordinates
-            x_center, y_center = star.position.to_pixel(frame.wcs, origin=0)
+            x_center, y_center = star.position.to_pixel(self.frame.wcs, origin=0)
 
             if star.has_source:
 
@@ -746,7 +748,8 @@ class StarExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def saturation_mask(self, frame):
+    @property
+    def saturation_mask(self):
 
         """
         This function ...
@@ -755,7 +758,7 @@ class StarExtractor(ObjectExtractor):
         """
 
         # Initialize a mask with the dimensions of the frame
-        mask = Mask(np.zeros_like(frame))
+        mask = Mask(np.zeros_like(self.frame))
 
         # Loop over all sky objects
         for star in self.objects:
@@ -766,7 +769,7 @@ class StarExtractor(ObjectExtractor):
             # Add this star to the mask
             if self.config.saturation_mask.use_aperture and star.has_aperture:
 
-                object_mask_frame = Mask.from_aperture(frame.xsize, frame.ysize, star.aperture)
+                object_mask_frame = Mask.from_aperture(self.frame.xsize, self.frame.ysize, star.aperture)
                 object_mask = object_mask_frame[star.source.cutout.y_min:star.source.cutout.y_max, star.source.cutout.x_min:star.source.cutout.x_max]
 
             else: object_mask = star.source.mask
@@ -779,6 +782,7 @@ class StarExtractor(ObjectExtractor):
 
     # *****************************************************************
 
+    @property
     def table(self):
 
         """
@@ -809,7 +813,7 @@ class StarExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def plot(self, frame):
+    def plot(self):
 
         """
         This function ...
@@ -818,7 +822,7 @@ class StarExtractor(ObjectExtractor):
         """
 
         # Create a HDU from this frame with the image header
-        hdu = pyfits.PrimaryHDU(frame, frame.wcs.to_header())
+        hdu = pyfits.PrimaryHDU(self.frame, self.frame.wcs.to_header())
 
         # Create a figure canvas
         figure = plt.figure(figsize=(20, 20))
@@ -833,7 +837,7 @@ class StarExtractor(ObjectExtractor):
         if self.config.plotting.show_colorbar: plot.add_colorbar()
 
         # Add these shapes to the plot
-        plot.show_regions(self.create_region(frame, type="image"))
+        plot.show_regions(self.create_region(self.frame, type="image"))
 
         # Show the plot
         plt.show()

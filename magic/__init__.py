@@ -18,7 +18,7 @@ import copy
 import aplpy
 import pyregion
 import astropy.io.fits as pyfits
-from astropy import wcs
+from astropy.wcs import WCS
 import astropy.units as u
 from astropy import log
 
@@ -83,7 +83,7 @@ class Image(object):
         self.regions = Layers()
         
         # Read in the image
-        self._load_image(filename)
+        self.load_frames(filename)
 
         # Set default values for other attributes
         self.unit = None
@@ -104,54 +104,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def import_datacube(self, path, name):
-
-        """
-        This function imports the datacube of a FITS file into this image
-        :param path:
-        :param name:
-        :return:
-        """
-
-        # TODO: add coordinates !
-
-        # Open the HDU list for the FITS file
-        hdulist = pyfits.open(path)
-
-        # Get the primary data
-        hdu = hdulist[0]
-        
-        header = hdu.header
-
-        # Check whether multiple planes are present in the FITS image
-        nframes = headers.get_number_of_frames(header)
-        if nframes > 1:
-
-            # For each frame
-            for i in range(nframes):
-
-                # Get the name of this frame, but the first frame always gets the name 'primary'
-                description = headers.get_frame_description(header, i)
-                frame_name = name + "_" + headers.get_frame_name(description) if i else name
-
-                # Add this frame to the frames dictionary
-                #self.add_frame(hdu.data[i], coordinates, frame_name, description)
-                self.add_frame(Frame(hdu.data[i], None, None, description), frame_name)
-
-        else:
-
-            # Sometimes, the 2D frame is embedded in a 3D array with shape (1, xsize, ysize)
-            if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
-
-            # Add the primary image frame
-            self.add_frame(Frame(hdu.data, None, None, None), name)
-
-        # Close the fits file
-        hdulist.close()
-
-    # *****************************************************************
-
-    def export_datacube(self, filepath):
+    def save(self, path):
 
         """
         This function exports the currently selected frame(s) as a datacube into FITS file
@@ -162,39 +115,41 @@ class Image(object):
         # Create an array to contain the data cube
         datacube = []
 
-        # Get the coordinates of the primary frame
-        coordinates = self.frames["primary"].wcs
-        
-        # Construct a header for the image based on the coordinates of the primary frame
-        header = coordinates.to_header() if coordinates is not None else None
-        
-        if header is None and self.header: header = self.header
-        if header is None: header = pyfits.Header()
-
         plane_index = 0
+
+        header = None
 
         # Export all active frames to the specified file
         for frame_name in self.frames.get_selected():
 
             # Inform the user that this frame is being rebinned
-            log.info("Exporting the " + frame_name + " frame to " + filepath)
+            log.info("Exporting the " + frame_name + " frame to " + path)
+
+            if header is None: header = self.frames[frame_name].header
+
+            # Check if the coordinate system of this frame matches that of the other frames
+            #if header != self.frames[frame_name].header: raise ValueError("The WCS of the different frames does not match")
 
             # Add this frame to the data cube, if its coordinates match those of the primary frame
-            if coordinates == self.frames[frame_name].wcs: datacube.append(self.frames[frame_name])
+            datacube.append(self.frames[frame_name])
             
             # Add the name of the frame to the header
             header["PLANE"+str(plane_index)] = frame_name
             
             plane_index += 1
 
+        if plane_index > 1:
+            header["NAXIS"] = 3
+            header["NAXIS3"] = plane_index
+
         # Create the HDU from the data array and the header
         hdu = pyfits.PrimaryHDU(np.array(datacube), header)
 
         # Write the HDU to a FITS file
-        hdu.writeto(filepath, clobber=True)
+        hdu.writeto(path, clobber=True)
 
         # Inform the user that the file has been created
-        log.info("File " + filepath + " created")
+        log.info("File " + path + " created")
 
     # *****************************************************************
 
@@ -276,6 +231,91 @@ class Image(object):
             elif layer_type == "regions": self.regions[name].selected = selected
             elif layer_type == "masks": self.masks[name].selected = selected
             else: raise ValueError("Invalid state dictionary")
+
+    # *****************************************************************
+
+    def set_unit(self, unit):
+
+        """
+        This function ...
+        """
+
+        # Loop over all currently selected frames
+        for frame_name in self.frames.get_selected():
+
+            # Inform the user
+            log.info("Setting the unit of the " + frame_name + " frame to " + str(unit))
+
+            # Set the unit for this frame
+            self.frames[frame_name].set_unit(unit)
+
+    # *****************************************************************
+
+    def convert_to(self, unit):
+
+        """
+        This function ...
+        """
+
+        # Loop over all currently selected frames
+        for frame_name in self.frames.get_selected():
+
+            # Inform the user
+            log.info("Converting the unit of the " + frame_name + " frame to " + str(unit))
+
+            # Set the unit for this frame
+            self.frames[frame_name].set_unit(unit)
+
+    # *****************************************************************
+
+    def convolve(self, kernel):
+
+        """
+        This function ...
+        """
+
+        # Loop over all currently selected frames
+        for frame_name in self.frames.get_selected():
+
+            # Inform the user
+            log.info("Convolving the " + frame_name + " frame")
+
+            # Convolve this frame
+            self.frames[frame_name] = self.frames[frame_name].convolve(kernel)
+
+    # *****************************************************************
+
+    def rebin(self, reference):
+
+        """
+        This function ...
+        """
+
+        # Loop over all currently selected frames
+        for frame_name in self.frames.get_selected():
+
+            # Inform the user
+            log.info("Rebinning the " + frame_name + " frame")
+
+            # Rebin this frame
+            self.frames[frame_name] = self.frames[frame_name].rebin(reference)
+
+    # *****************************************************************
+
+    def crop(self, x_min, x_max, y_min, y_max):
+
+        """
+        This function ...
+        """
+
+        # Loop over all currently selected frames
+        for frame_name in self.frames.get_selected():
+
+            # Inform the user
+            log.info("Cropping the " + frame_name + " frame")
+
+            # Rebin this frame
+            self.frames[frame_name] = self.frames[frame_name].crop(x_min, x_max, y_min, y_max)
 
     # *****************************************************************
 
@@ -538,7 +578,7 @@ class Image(object):
         for region_name in self.regions.get_selected():
 
             # Create the mask
-            total_mask += regions.create_mask(self.regions[region_name], self.header, self.frames.primary.xsize, self.frames.primary.ysize)
+            total_mask += regions.create_mask(self.regions[region_name], self.frames.primary.header, self.frames.primary.xsize, self.frames.primary.ysize)
             name += region_name + "_"
 
         # Remove the trailing underscore
@@ -557,42 +597,6 @@ class Image(object):
         """
 
         return catalogs.fetch_galactic_extinction(galaxy_name, self.filter)
-
-    # *****************************************************************
-
-    def expand_regions(self, factor, combine=False):
-
-        """
-        This function expands the currently selected region(s)
-        :param factor:
-        :param combine:
-        :return:
-        """
-
-        if combine:
-
-            # Create a combined region
-            region = self.combine_regions(allow_none=False)
-
-            # Expand this region
-            expanded_region = regions.expand(region, factor)
-
-            # Add this region to the list of regions
-            self._add_region(expanded_region, "expanded")
-
-        else:
-
-            # Loop over all active regions
-            for region_name in self.regions.get_selected(allow_none=False):
-
-                # Inform the user
-                log.info("Expanding the " + region_name + " region by a factor of " + str(factor))
-
-                # Create expanded region
-                expanded_region = regions.expand(self.regions[region_name].region, factor)
-
-                # Add the expanded region to the list of regions
-                self._add_region(expanded_region, region_name + "_expanded")
 
     # *****************************************************************
 
@@ -828,7 +832,7 @@ class Image(object):
 
     # *****************************************************************
 
-    def _load_image(self, filename):
+    def load_frames(self, filename, index=None, name=None, description=None):
 
         """
         This function ...
@@ -848,20 +852,29 @@ class Image(object):
         # Get the image header
         header = hdu.header
 
-        # Obtain the coordinate system
-        coordinates = wcs.WCS(header)
+        # Get a copy of the original header
+        self.old_header = header.copy()
+
+        # Remove references to the third axis
+        header["NAXIS"] = 2
+        if "NAXIS3" in header: del header["NAXIS3"]
+        for key in header:
+            if "PLANE" in key: del header[key]
+
+        # Obtain the world coordinate system
+        wcs = WCS(header)
 
         # Load the frames
         self.pixelscale = headers.get_pixelscale(header)
 
         # Obtain the filter for this image
-        self.filter = headers.get_filter(self.name, header)
+        self.filter = headers.get_filter(self.name, self.old_header)
 
         # Obtain the units of this image
-        self.unit = headers.get_units(header)
+        self.unit = headers.get_units(self.old_header)
 
         # Check whether the image is sky-subtracted
-        self.sky_subtracted = headers.is_sky_subtracted(header)
+        self.sky_subtracted = headers.is_sky_subtracted(self.old_header)
 
         self.wavelength = None
         if self.filter is not None: self.wavelength = self.filter.pivotwavelength() * u.Unit("micron")
@@ -869,34 +882,35 @@ class Image(object):
         else: log.warning("Could not determine the wavelength for this image")
 
         # Check whether multiple planes are present in the FITS image
-        nframes = headers.get_number_of_frames(header)
+        nframes = headers.get_number_of_frames(self.old_header)
         if nframes > 1:
 
             # For each frame
             for i in range(nframes):
 
-                # Get the name of this frame, but the first frame always gets the name 'primary'
-                description = headers.get_frame_description(header, i) if i else "the primary signal map"    
-                name = headers.get_frame_name(description) if i else "primary"
+                # If only a frame with specific index needs to be imported, skip this frame if it does not correspond
+                if index is not None and i != index: continue
+
+                if index is None:
+                    # Get the name of this frame, but the first frame always gets the name 'primary'
+                    description = headers.get_frame_description(self.old_header, i) if i else "the primary signal map"
+                    name = headers.get_frame_name(description) if i else "primary"
 
                 # Add this frame to the frames dictionary
-                self.add_frame(Frame(hdu.data[i], coordinates, self.pixelscale, description), name)
+                self.add_frame(Frame(hdu.data[i], wcs, self.pixelscale, description), name)
 
         else:
 
             # Sometimes, the 2D frame is embedded in a 3D array with shape (1, xsize, ysize)
             if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
 
+            if name is None: name = "primary"
+            if description is None: description = "the primary signal map"
+
             # Add the primary image frame
-            self.add_frame(Frame(hdu.data, coordinates, self.pixelscale, "the primary signal map"), "primary")
+            self.add_frame(Frame(hdu.data, wcs, self.pixelscale, description), name)
 
-        # Set the basic header for this image
-        self.header = header.copy(strip=True)
-        self.header["NAXIS"] = 2
-        self.header["NAXIS1"] = self.frames.primary.xsize
-        self.header["NAXIS2"] = self.frames.primary.ysize
-
-        # Select the primary image frame
+        # Select the primary frame
         self.frames.primary.select()
 
         # Close the FITS file

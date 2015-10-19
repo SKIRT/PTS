@@ -11,7 +11,6 @@ from __future__ import (absolute_import, division, print_function)
 import math
 import os.path
 import numpy as np
-from config import Config
 import inspect
 import matplotlib.pylab as plt
 
@@ -20,7 +19,6 @@ from .objectextraction import ObjectExtractor
 from ..tools import catalogs
 from ..core import regions
 from ..core.galaxy import Galaxy
-from ..core.vector import Position
 from ..tools import configuration
 
 # Import astronomical modules
@@ -38,23 +36,23 @@ class GalaxyExtractor(ObjectExtractor):
     This class
     """
 
-    def __init__(self, config_file=None):
+    def __init__(self, config=None):
 
         """
         The constructor ...
         """
 
-        # Load the configuration
+        # Determine the path to the default configuration file
         directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_path = os.path.join(directory, "config", "galaxyextractor.cfg")
+        default_config = os.path.join(directory, "config", "galaxyextractor.cfg")
 
         # Open the default configuration if no configuration file is specified, otherwise adjust the default
         # settings according to the user defined configuration file
-        if config_file is None: config = configuration.open(default_path)
-        else: config = configuration.open(config_file, default=default_path)
+        if config is None: self.config = configuration.open(default_config)
+        else: self.config = configuration.open(config, default_config)
 
         # Call the constructor of the base class
-        super(GalaxyExtractor, self).__init__(config)
+        super(GalaxyExtractor, self).__init__()
 
     # *****************************************************************
 
@@ -64,14 +62,17 @@ class GalaxyExtractor(ObjectExtractor):
         This function ...
         """
 
+        # Make a local reference to the passed frame
+        self.frame = frame
+
         # Get list of galaxies
-        self.fetch_galaxies(frame)
+        self.fetch_galaxies()
 
         # Set special galaxies
-        if self.config.special_region is not None: self.set_special(frame)
+        if self.config.special_region is not None: self.set_special()
 
         # Find the sources
-        self.find_sources(frame)
+        self.find_sources()
 
         # If a source was not found for the principal galaxy, force it
         outer_factor = self.config.detection.background_outer_factor
@@ -81,7 +82,16 @@ class GalaxyExtractor(ObjectExtractor):
         if self.config.find_apertures: self.find_apertures()
 
         # If requested, remove
-        if self.config.remove: self.remove_galaxies(frame)
+        if self.config.remove: self.remove_galaxies()
+
+        # If requested, save the galaxy region
+        if self.config.save_region: self.save_region()
+
+        # If requested, save the frame where the galaxies are masked
+        if self.config.save_masked_frame: self.save_masked_frame()
+
+        # If requested, save the result
+        if self.config.save_result: self.save_result()
 
     # *****************************************************************
 
@@ -101,7 +111,7 @@ class GalaxyExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def fetch_galaxies(self, frame):
+    def fetch_galaxies(self):
 
         """
         This function ...
@@ -114,7 +124,7 @@ class GalaxyExtractor(ObjectExtractor):
         log.info("Fetching galaxy positions from an online catalog")
 
         # Get the range of right ascension and declination of the image
-        center, ra_span, dec_span = frame.coordinate_range()
+        center, ra_span, dec_span = self.frame.coordinate_range()
 
         # Find galaxies in the box defined by the center and RA/DEC ranges
         for galaxy_name in catalogs.galaxies_in_box(center, ra_span, dec_span):
@@ -176,7 +186,7 @@ class GalaxyExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def remove_galaxies(self, frame):
+    def remove_galaxies(self):
 
         """
         This function ...
@@ -196,11 +206,11 @@ class GalaxyExtractor(ObjectExtractor):
             if galaxy.ignore: continue
 
             # Remove the galaxy from the frame
-            if not galaxy.principal and not galaxy.companion: galaxy.remove(frame, self.config.removal)
+            if not galaxy.principal and not galaxy.companion: galaxy.remove(self.frame, self.config.removal)
 
     # *****************************************************************
 
-    def create_region(self, frame):
+    def create_region(self):
 
         """
         This function ...
@@ -231,8 +241,8 @@ class GalaxyExtractor(ObjectExtractor):
 
             else:
 
-                width = self.config.region.default_radius * frame.pixelscale.value
-                height = self.config.region.default_radius * frame.pixelscale.value
+                width = self.config.region.default_radius * self.frame.pixelscale.value
+                height = self.config.region.default_radius * self.frame.pixelscale.value
 
             angle = galaxy.pa.degree if galaxy.pa is not None else 0.0
 
@@ -245,7 +255,7 @@ class GalaxyExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def write_region(self, frame, path, annotation="name"):
+    def write_region(self, path, annotation="name"):
 
         """
         This function ...
@@ -257,13 +267,13 @@ class GalaxyExtractor(ObjectExtractor):
         f = open(path,'w')
 
         # Initialize the region string
-        print("# Region file format: DS9 version 3.0", file=f)
+        print("# Region file format: DS9 version 4.1", file=f)
 
         # Loop over all galaxies
         for galaxy in self.objects:
 
             # Get the center in pixel coordinates
-            x_center, y_center = galaxy.position.to_pixel(frame.wcs, origin=0)
+            x_center, y_center = galaxy.position.to_pixel(self.frame.wcs, origin=0)
 
             # Set the angle
             angle = galaxy.pa.degree if galaxy.pa is not None else 0.0
@@ -279,15 +289,15 @@ class GalaxyExtractor(ObjectExtractor):
 
                 color = "green"
 
-                x_radius = 0.5 * galaxy.major.to("arcsec").value / frame.pixelscale.value
+                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.frame.pixelscale.value
                 y_radius = x_radius
 
             else:
 
                 color = "green"
 
-                x_radius = 0.5 * galaxy.major.to("arcsec").value / frame.pixelscale.value
-                y_radius = 0.5 * galaxy.minor.to("arcsec").value / frame.pixelscale.value
+                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.frame.pixelscale.value
+                y_radius = 0.5 * galaxy.minor.to("arcsec").value / self.frame.pixelscale.value
 
             # Annotation
             if annotation == "name": text = "text = {" + galaxy.name + "}"
@@ -320,28 +330,7 @@ class GalaxyExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def position_list(self, frame):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Initialize a list to contain the galaxy positions
-        position_list = []
-
-        # Loop over the galaxies
-        for galaxy in self.objects:
-
-            # Calculate the pixel coordinate in the frame and add it to the list
-            x_center, y_center = galaxy.position.to_pixel(frame.wcs)
-            position_list.append(Position(x=x_center, y=y_center))
-
-        # Return the list
-        return position_list
-
-    # *****************************************************************
-
+    @property
     def table(self):
 
         """
@@ -410,7 +399,7 @@ class GalaxyExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def plot(self, frame):
+    def plot(self):
 
         """
         This function ...
@@ -424,7 +413,7 @@ class GalaxyExtractor(ObjectExtractor):
         # Loop over all galaxies
         for galaxy in self.objects:
 
-            x_center, y_center = galaxy.position.to_pixel(frame.wcs)
+            x_center, y_center = galaxy.position.to_pixel(self.frame.wcs)
             x_centers.append(x_center)
             y_centers.append(y_center)
 
@@ -437,16 +426,16 @@ class GalaxyExtractor(ObjectExtractor):
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
         # Determine the maximum value in the box and the mimimum value for plotting
-        vmax = np.max(frame)
-        vmin = np.min(frame) if vmax <= 0 else 0.0
+        vmax = np.max(self.frame)
+        vmin = np.min(self.frame) if vmax <= 0 else 0.0
 
         # Plot the frame and the segments mask
-        ax1.imshow(frame, origin='lower', interpolation='nearest', norm=norm, vmin=vmin, vmax=vmax)
-        ax2.imshow(self.mask(frame), origin='lower', cmap='jet')
+        ax1.imshow(self.frame, origin='lower', interpolation='nearest', norm=norm, vmin=vmin, vmax=vmax)
+        ax2.imshow(self.mask, origin='lower', cmap='jet')
 
         # Set axes limits
-        plt.xlim(0, frame.xsize-1)
-        plt.ylim(0, frame.ysize-1)
+        plt.xlim(0, self.frame.xsize-1)
+        plt.ylim(0, self.frame.ysize-1)
 
         # Plot the apertures
         for aperture in apertures:

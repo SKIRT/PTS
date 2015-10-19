@@ -11,12 +11,14 @@ from __future__ import (absolute_import, division, print_function)
 from abc import ABCMeta
 from abc import abstractmethod
 import numpy as np
+import copy
 
 # Import Astromagic modules
 from ..core.masks import Mask
 
 # Import astronomical modules
 from astropy import log
+import astropy.logger
 import pyregion
 
 # *****************************************************************
@@ -31,20 +33,27 @@ class ObjectExtractor(object):
 
     # *****************************************************************
 
-    def __init__(self, config):
+    def __init__(self):
 
         """
         The constructor ...
         """
 
-        # Set attributes
-        self.config = config
+        ### SET-UP LOGGING SYSTEM
 
         # Set the log level
-        log.setLevel(self.config.log_level)
+        log.setLevel(self.config.logging.level)
+
+        # Set log file path
+        if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
+
+        ###
 
         # Initialize an empty list for the sky objects
         self.objects = []
+
+        # Set the frame to None
+        self.frame = None
 
     # *****************************************************************
 
@@ -58,9 +67,12 @@ class ObjectExtractor(object):
         # Clear the list of sky objects
         self.objects = []
 
+        # Clear the frame
+        self.frame = None
+
     # *****************************************************************
 
-    def find_sources(self, frame):
+    def find_sources(self):
 
         """
         This function ...
@@ -79,7 +91,7 @@ class ObjectExtractor(object):
 
             # Find a source
             try:
-                skyobject.find_source(frame, self.config.detection)
+                skyobject.find_source(self.frame, self.config.detection)
 
             except Exception as e:
 
@@ -116,7 +128,7 @@ class ObjectExtractor(object):
 
     # *****************************************************************
 
-    def set_special(self, frame):
+    def set_special(self):
 
         """
         This function ...
@@ -125,14 +137,14 @@ class ObjectExtractor(object):
         """
 
         # Load the region and create a mask from it
-        region = pyregion.open(self.config.special_region).as_imagecoord(frame.wcs.to_header())
-        special_mask = Mask(region.get_mask(shape=frame.shape))
+        region = pyregion.open(self.config.special_region).as_imagecoord(self.frame.wcs.to_header())
+        special_mask = Mask(region.get_mask(shape=self.frame.shape))
 
         # Loop over all objects
         for skyobject in self.objects:
 
             # Get the position of this object in pixel coordinates
-            position = skyobject.pixel_position(frame.wcs)
+            position = skyobject.pixel_position(self.frame.wcs)
 
             # Set special if position is covered by the mask
             if special_mask.masks(position): skyobject.special = True
@@ -162,7 +174,8 @@ class ObjectExtractor(object):
 
     # *****************************************************************
 
-    def mask(self, frame):
+    @property
+    def mask(self):
 
         """
         This function ...
@@ -171,7 +184,7 @@ class ObjectExtractor(object):
         """
 
         # Initialize a mask with the dimensions of the frame
-        mask = Mask(np.zeros_like(frame))
+        mask = Mask(np.zeros_like(self.frame))
 
         # Loop over all sky objects
         for skyobject in self.objects:
@@ -182,7 +195,7 @@ class ObjectExtractor(object):
             # Add this sky object to the mask
             if self.config.mask.use_aperture and skyobject.has_aperture:
 
-                object_mask_frame = Mask.from_aperture(frame.xsize, frame.ysize, skyobject.aperture)
+                object_mask_frame = Mask.from_aperture(self.frame.xsize, self.frame.ysize, skyobject.aperture)
                 object_mask = object_mask_frame[skyobject.source.cutout.y_min:skyobject.source.cutout.y_max, skyobject.source.cutout.x_min:skyobject.source.cutout.x_max]
 
             else: object_mask = skyobject.source.mask
@@ -195,7 +208,8 @@ class ObjectExtractor(object):
 
     # *****************************************************************
 
-    def aperture_mask(self, frame, expansion_factor=1.0):
+    @property
+    def aperture_mask(self):
 
         """
         This function ...
@@ -204,7 +218,7 @@ class ObjectExtractor(object):
         """
 
         # Initialize a mask with the dimensions of the frame
-        mask = Mask(np.zeros_like(frame))
+        mask = Mask(np.zeros_like(self.frame))
 
         # Loop over all sky objects
         for skyobject in self.objects:
@@ -213,7 +227,7 @@ class ObjectExtractor(object):
             if not skyobject.has_aperture: continue
 
             # Create a mask from the aperture of the object
-            object_mask_frame = Mask.from_aperture(frame.xsize, frame.ysize, skyobject.aperture, expansion_factor=expansion_factor)
+            object_mask_frame = Mask.from_aperture(self.frame.xsize, self.frame.ysize, skyobject.aperture, expansion_factor=self.config.aperture_mask.expansion_factor)
 
             # Add this aperture to the total mask
             #object_mask = object_mask_frame[skyobject.source.cutout.y_min:skyobject.source.cutout.y_max, skyobject.source.cutout.x_min:skyobject.source.cutout.x_max]
@@ -225,5 +239,64 @@ class ObjectExtractor(object):
 
         # Return the mask
         return mask
+
+    # *****************************************************************
+
+    def save_region(self):
+
+        """
+        This function ...
+        """
+
+        self.write_region(self.config.saving.region_path, self.config.saving.region_annotation)
+
+    # *****************************************************************
+
+    def save_masked_frame(self):
+
+        """
+        This function ...
+        """
+
+        # Create a frame where the objects are masked
+        frame = copy.deepcopy(self.frame)
+        frame[self.mask] = 0.0
+
+        # Save the masked frame
+        frame.save(self.config.saving.masked_frame_path)
+
+    # *****************************************************************
+
+    def save_result(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save the resulting frame
+        self.frame.save(self.config.saving.result_path)
+
+    # *****************************************************************
+
+    @property
+    def positions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list to contain the object positions
+        positions = []
+
+        # Loop over the galaxies
+        for skyobject in self.objects:
+
+            # Calculate the pixel coordinate in the frame and add it to the list
+            positions.append(skyobject.pixel_position(self.frame.wcs))
+
+        # Return the list
+        return positions
 
 # *****************************************************************
