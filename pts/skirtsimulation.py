@@ -314,7 +314,7 @@ class SkirtSimulation:
     # from the log file entry written by the SPH stellar component. It raises an error if this entry is not found or
     # if the mass is zero.
     def initialstellarmass(self):
-        result = self.getfieldfromfile("log.txt", "Reading SPH star", "Total stellar mass", "Msun")
+        result = self.getfieldfromfile("log.txt", "Reading SPH star", " mass:", "Msun")
         if result < 0: raise ValueError("Can't determine SPH initial stellar mass")
         return result
 
@@ -322,7 +322,7 @@ class SkirtSimulation:
     # the simulation, in solar masses. The function retrieves this information from the log file entry written
     # by the SPH starburst component. It raises an error if this entry is not found or if the mass is zero.
     def hiiregionmass(self):
-        result = self.getfieldfromfile("log.txt", "Reading SPH HII region", "Total stellar mass", "Msun")
+        result = self.getfieldfromfile("log.txt", "Reading SPH HII region", " mass:", "Msun")
         if result < 0: raise ValueError("Can't determine SPH HII region mass")
         return result
 
@@ -331,7 +331,7 @@ class SkirtSimulation:
     # log file entry written by the SPH stellar component. It raises an error if this entry is not found or if
     # the total stellar luminosity is zero.
     def stellarluminosity(self):
-        result = self.getfieldfromfile("log.txt", "Reading SPH star", "Total luminosity", "Lsun")
+        result = self.getfieldfromfile("log.txt", "Reading SPH star", " luminosity:", "Lsun")
         if result < 0: raise ValueError("Can't determine SPH stellar luminosity")
         return result
 
@@ -340,7 +340,7 @@ class SkirtSimulation:
     # log file entry written by the SPH starburst component. It raises an error if this entry is not found or if
     # the total stellar luminosity is zero.
     def hiiregionluminosity(self):
-        result = self.getfieldfromfile("log.txt", "Reading SPH HII region", "HII luminosity", "Lsun")
+        result = self.getfieldfromfile("log.txt", "Reading SPH HII region", " luminosity:", "Lsun")
         if result < 0: raise ValueError("Can't determine SPH HII region luminosity")
         return result
 
@@ -415,7 +415,7 @@ class SkirtSimulation:
     # The function requires the presence of the "luminosities.dat" file. If this file is not found, the function
     # raises an error.
     def stellarluminosities(self, unit='Lsun'):
-        filepath = self.outfilepath("luminosities.dat")
+        filepath = self.outfilepath("star_luminosities.dat")
         result = np.loadtxt(arch.opentext(filepath), usecols=(1,))
         return self.units().convert(result, to_unit=unit, quantity='luminosity')
 
@@ -425,7 +425,7 @@ class SkirtSimulation:
     # The function requires the presence of the "luminosities.dat" file. If this file is not found, the function
     # raises an error.
     def hiiregionluminosities(self, unit='Lsun'):
-        filepath = self.outfilepath("HII_luminosities.dat")
+        filepath = self.outfilepath("hii_luminosities.dat")
         result = np.loadtxt(arch.opentext(filepath), usecols=(1,))
         return self.units().convert(result, to_unit=unit, quantity='luminosity')
 

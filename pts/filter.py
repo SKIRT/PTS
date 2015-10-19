@@ -49,62 +49,54 @@ class Filter:
     # if the specified string matches multiple file names, the constructor raises an error.
     #
     # The VOTable resource files do not properly specify the type of filter (photon counter or bolometer).
-    # The constructor classifies filters with a central wavelength below 3 micron as photon counters, and
-    # filters with a higher central wavelength as bolometers. While this simple heuristic seems to work for now,
-    # it is not guaranteed to be correct for future cases.
+    # The constructor classifies filters based on the instrument name in the filter identifier.
+    # While this simple heuristic works for now, it is not guaranteed to be correct for future cases.
     #
-    # The tables below list the filters available at the time of writing, per filter type. More filter
-    # definitions can be downloaded from the filter profile service web site http://svo2.cab.inta-csic.es/theory/fps.
+    # The tables below list the filters available at the time of writing. More filter definitions can be
+    # downloaded from the filter profile service web site http://svo2.cab.inta-csic.es/theory/fps.
     #
-    # Photon counters:
-    #
-    #| Filter-spec | Central wavelength (micron) | Description
-    #|------- -----|-----------------------------|------------
-    #| GALEX/GALEX.FUV | 0.15258 | GALEX FUV
-    #| GALEX/GALEX.NUV | 0.23288 | GALEX NUV
-    #| Misc/MCPS.U | 0.36664 | MCPS Johnson U
-    #| Misc/MCPS.B | 0.44059 | MCPS Johnson B
-    #| Misc/MCPS.V | 0.54258 | MCPS Johnson V
-    #| Misc/MCPS.I | 0.86427 | MCPS Johnson I
-    #| SLOAN/SDSS.u | 0.35651 | SDSS u
-    #| SLOAN/SDSS.g | 0.47003 | SDSS g
-    #| SLOAN/SDSS.r | 0.61745 | SDSS r
-    #| SLOAN/SDSS.i | 0.75336 | SDSS i
-    #| SLOAN/SDSS.z | 0.87817 | SDSS z
-    #| UKIRT/UKIDSS.Z | 0.88251 | UKIDSS Z
-    #| UKIRT/UKIDSS.Y | 1.0304 | UKIDSS Y
-    #| UKIRT/UKIDSS.J | 1.2485 | UKIDSS J
-    #| UKIRT/UKIDSS.H | 1.6381 | UKIDSS H
-    #| UKIRT/UKIDSS.K | 2.2056 | UKIDSS K
-    #| 2MASS/2MASS.J | 1.2391 | 2MASS J
-    #| 2MASS/2MASS.H | 1.6487 | 2MASS H
-    #| 2MASS/2MASS.K | 2.1634 | 2MASS Ks
-    #
-    # Bolometers:
-    #
-    #| Filter-spec | Central wavelength (micron) | Description
-    #|-------------|-----------------------------|------------
-    #| WISE/WISE.W1 | 3.4655 | WISE W1 filter
-    #| WISE/WISE.W2 | 4.6443 | WISE W2 filter
-    #| WISE/WISE.W3 | 13.216 | WISE W3 filter
-    #| WISE/WISE.W4 | 22.223 | WISE W4 filter
-    #| IRAS/IRAS.12 | 11.432 | IRAS 12 micron
-    #| IRAS/IRAS.25 | 23.975 | IRAS 25 micron
-    #| IRAS/IRAS.60 | 61.88 | IRAS 60 micron
-    #| IRAS/IRAS.100 | 100.99 | IRAS 100 micron
-    #| Spitzer/IRAC.I1 | 3.5466 | IRAC I1
-    #| Spitzer/IRAC.I2 | 4.5024 | IRAC I2
-    #| Spitzer/IRAC.I3 | 5.7157 | IRAC I3
-    #| Spitzer/IRAC.I4 | 7.8556 | IRAC I4
-    #| Spitzer/MIPS.24 | 23.472 | MIPS 24 microns
-    #| Spitzer/MIPS.70 | 70.515 | MIPS 70 microns
-    #| Spitzer/MIPS.160 | 156.91 | MIPS 160 microns
-    #| Herschel/Pacs.blue | 71.331 | Herschel Pacs blue filter
-    #| Herschel/Pacs.green | 102.34 | Herschel Pacs green filter
-    #| Herschel/Pacs.red | 166.07 | Herschel Pacs red filter
-    #| Herschel/SPIRE.PSW | 257.65 | Herschel SPIRE PSW filter (extended sources)
-    #| Herschel/SPIRE.PMW | 357.55 | Herschel SPIRE PMW filter (extended sources)
-    #| Herschel/SPIRE.PLW | 518.44 | Herschel SPIRE PLW filter (extended sources)
+    #| Filter-spec | \f$\lambda_\text{ctr}\f$ | \f$\lambda_\text{piv}\f$ | Type | Description
+    #|------- -----|--------------------------|--------------------------|------|------------
+    #| 2MASS/2MASS.J | 1.239 | 1.239 | Pho | 2MASS J
+    #| 2MASS/2MASS.H | 1.649 | 1.649 | Pho | 2MASS H
+    #| 2MASS/2MASS.Ks | 2.163 | 2.164 | Pho | 2MASS Ks
+    #| GALEX/GALEX.FUV | 0.1526 | 0.1535 | Pho | GALEX FUV
+    #| GALEX/GALEX.NUV | 0.2329 | 0.2301 | Pho | GALEX NUV
+    #| Herschel/Pacs.blue | 71.33 | 70.77 | Bol | Herschel Pacs blue filter
+    #| Herschel/Pacs.green | 102.3 | 100.8 | Bol | Herschel Pacs green filter
+    #| Herschel/Pacs.red | 166.1 | 161.9 | Bol | Herschel Pacs red filter
+    #| Herschel/SPIRE.PSW_ext | 257.6 | 252.5 | Bol | Herschel SPIRE PSW filter (extended sources)
+    #| Herschel/SPIRE.PMW_ext | 357.5 | 354.3 | Bol | Herschel SPIRE PMW filter (extended sources)
+    #| Herschel/SPIRE.PLW_ext | 518.4 | 515.4 | Bol | Herschel SPIRE PLW filter (extended sources)
+    #| IRAS/IRAS.12mu | 11.43 | 11.41 | Pho | IRAS 12 micron
+    #| IRAS/IRAS.25mu | 23.97 | 23.61 | Pho | IRAS 25 micron
+    #| IRAS/IRAS.60mu | 61.88 | 60.41 | Pho | IRAS 60 micron
+    #| IRAS/IRAS.100mu | 101 | 101.1 | Pho | IRAS 100 micron
+    #| Misc/MCPS.U | 0.3666 | 0.3646 | Pho | MCPS Johnson U
+    #| Misc/MCPS.B | 0.4406 | 0.4434 | Pho | MCPS Johnson B
+    #| Misc/MCPS.V | 0.5426 | 0.5493 | Pho | MCPS Johnson V
+    #| Misc/MCPS.I | 0.8643 | 0.8739 | Pho | MCPS Johnson I
+    #| SLOAN/SDSS.u | 0.3565 | 0.3557 | Pho | SDSS u
+    #| SLOAN/SDSS.g | 0.47 | 0.4702 | Pho | SDSS g
+    #| SLOAN/SDSS.r | 0.6174 | 0.6176 | Pho | SDSS r
+    #| SLOAN/SDSS.i | 0.7534 | 0.749 | Pho | SDSS i
+    #| SLOAN/SDSS.z | 0.8782 | 0.8947 | Pho | SDSS z
+    #| Spitzer/IRAC.I1 | 3.547 | 3.551 | Pho | IRAC I1
+    #| Spitzer/IRAC.I2 | 4.502 | 4.496 | Pho | IRAC I2
+    #| Spitzer/IRAC.I3 | 5.716 | 5.724 | Pho | IRAC I3
+    #| Spitzer/IRAC.I4 | 7.856 | 7.884 | Pho | IRAC I4
+    #| Spitzer/MIPS.24mu | 23.47 | 23.59 | Bol | MIPS 24 microns
+    #| Spitzer/MIPS.70mu | 70.52 | 70.89 | Bol | MIPS 70 microns
+    #| Spitzer/MIPS.160mu | 156.9 | 155.4 | Bol | MIPS 160 microns
+    #| UKIRT/UKIDSS.Z | 0.8825 | 0.8826 | Pho | UKIDSS Z
+    #| UKIRT/UKIDSS.Y | 1.03 | 1.031 | Pho | UKIDSS Y
+    #| UKIRT/UKIDSS.J | 1.249 | 1.25 | Pho | UKIDSS J
+    #| UKIRT/UKIDSS.H | 1.638 | 1.635 | Pho | UKIDSS H
+    #| UKIRT/UKIDSS.K | 2.206 | 2.206 | Pho | UKIDSS K
+    #| WISE/WISE.W1 | 3.466 | 3.39 | Pho | WISE W1 filter
+    #| WISE/WISE.W2 | 4.644 | 4.641 | Pho | WISE W2 filter
+    #| WISE/WISE.W3 | 13.22 | 12.57 | Pho | WISE W3 filter
+    #| WISE/WISE.W4 | 22.22 | 22.31 | Pho | WISE W4 filter
     #
     def __init__(self, filterspec):
 
@@ -138,13 +130,14 @@ class Filter:
                     self._Wavelengths,self._Transmission = np.reshape(values, (-1,2)).T
                     self._Wavelengths *= 1e-4
 
-                    # determine the filter type and calculate the pivot wavelength
-                    if self._WavelengthCen < 3:
-                        self._PhotonCounter = True
+                    # determine the filter type (there seems to be no better heuristic than using the instrument name)
+                    self._PhotonCounter = not any(["/"+x in self._FilterID.lower() for x in ("mips","pacs","spire")])
+
+                    # calculate the pivot wavelength
+                    if self._PhotonCounter:
                         integral1 = np.trapz(x=self._Wavelengths, y=self._Transmission*self._Wavelengths)
                         integral2 = np.trapz(x=self._Wavelengths, y=self._Transmission/self._Wavelengths)
                     else:
-                        self._PhotonCounter = False
                         integral1 = np.trapz(x=self._Wavelengths, y=self._Transmission)
                         integral2 = np.trapz(x=self._Wavelengths, y=self._Transmission/(self._Wavelengths**2))
                     self._IntegratedTransmission = integral1
