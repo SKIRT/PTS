@@ -18,6 +18,7 @@ from astropy import log
 import astropy.logger
 
 # Import Astromagic modules
+from astromagic.core.frames import Frame
 from astromagic import Image
 from astromagic.magic.starextraction import StarExtractor
 from astromagic.magic.galaxyextraction import GalaxyExtractor
@@ -220,12 +221,12 @@ class ImagePreparation(object):
         :return:
         """
 
-        # Open the kernel image
+        # Open the kernel frame
         kernel_path = "Kernel_HiRes_" + self.config.convolution.aniano_name + "_to_" + self.config.convolution.convolve_to + ".fits"
-        kernel = Image(kernel_path)
+        kernel = Frame.from_file(kernel_path)
 
         # Convolve the image (the primary and errors frame)
-        self.image.convolve(kernel.frames.primary)
+        self.image.convolve(kernel)
 
     # *****************************************************************
 
@@ -237,11 +238,11 @@ class ImagePreparation(object):
         :return:
         """
 
-        # Open the reference image
-        reference = Image(self.config.rebinning.rebin_to)
+        # Open the reference frame
+        reference = Frame.from_file(self.config.rebinning.rebin_to)
 
         # Rebin the image (the primary and errors frame)
-        self.image.rebin(reference.frames.primary)
+        self.image.rebin(reference)
 
     # *****************************************************************
 

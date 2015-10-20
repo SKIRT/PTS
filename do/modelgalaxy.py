@@ -43,7 +43,7 @@ modeler = GalaxyModeler(working_directory, args.config)
 
 # Set configuration options passed as command line arguments
 modeler.config.preparation.filter_name = args.image
-if args.plot:
+if args.report:
 
     # Determine a unique report path and set the appropriate configuration entry
     timestamp = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")

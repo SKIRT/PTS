@@ -405,6 +405,16 @@ class GalaxyModeler(object):
         :return:
         """
 
+        # Create config for GalaxyDecomposer ...
+        config = None
+
+        # Set log level for the decomposer, if cascading is enabled
+        if self.config.logging.cascade:
+
+            config.logging.level = self.config.logging.level
+            config.logging.cascade = self.config.logging.cascade
+            config.logging.path = self.config.logging.path
+
         # Create a GalaxyDecomposer object
         decomposer = GalaxyDecomposer()
 
@@ -464,6 +474,16 @@ class GalaxyModeler(object):
         This function makes the maps of dust and stars ...
         """
 
+        # Create config for MapMaker ...
+        config = None
+
+        # Set log level for the map maker, if cascading is enabled
+        if self.config.logging.cascade:
+
+            config.logging.level = self.config.logging.level
+            config.logging.cascade = self.config.logging.cascade
+            config.logging.path = self.config.logging.path
+
         # Create a MapMaker object
         maker = MapMaker()
 
@@ -478,6 +498,16 @@ class GalaxyModeler(object):
         This function ...
         :return:
         """
+
+        # Create config for SEDFitter ...
+        config = None
+
+        # Set log level for the SED fitter, if cascading is enabled
+        if self.config.logging.cascade:
+
+            config.logging.level = self.config.logging.level
+            config.logging.cascade = self.config.logging.cascade
+            config.logging.path = self.config.logging.path
 
         # Create a SEDFitter object
         fitter = SEDFitter()
