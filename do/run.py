@@ -22,7 +22,7 @@ import numpy as np
 from pts.log import Log
 from pts.skifile import SkiFile
 from pts.skirtexec import SkirtExec
-from pts.memory import estimate_memory
+from performance.memory import estimate_memory
 
 # -----------------------------------------------------------------
 
