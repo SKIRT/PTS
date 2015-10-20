@@ -57,6 +57,19 @@ class Frame(np.ndarray):
 
     # *****************************************************************
 
+    @classmethod
+    def from_file(cls, path, index=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        pass
+
+    # *****************************************************************
+
     def __array_finalize__(self, obj):
 
         """

@@ -20,6 +20,7 @@ from ..core.masks import Mask
 from astropy import log
 import astropy.logger
 import pyregion
+from astropy.io import ascii
 
 # *****************************************************************
 
@@ -201,6 +202,18 @@ class ObjectExtractor(object):
 
         # Return the mask
         return mask
+
+    # *****************************************************************
+
+    def save_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write the table to file
+        ascii.write(self.table, self.config.saving.table_path)
 
     # *****************************************************************
 

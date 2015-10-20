@@ -85,6 +85,9 @@ class GalaxyExtractor(ObjectExtractor):
         # If requested, remove
         if self.config.remove: self.remove_galaxies()
 
+        # If requested, write a table with the galaxy properties
+        if self.config.save_table: self.save_table()
+
         # If requested, save the galaxy region
         if self.config.save_region: self.save_region()
 
@@ -357,7 +360,7 @@ class GalaxyExtractor(ObjectExtractor):
                     center, radius, angle = galaxy.ellipse_parameters(self.frame.wcs, self.frame.pixelscale, None)
 
                     # Create a mask from the ellipse parameters
-                    d25_mask = Mask.from_ellipse(self.frame.xsize, self.frame.ysize, center, radius, angle)
+                    d25_mask = Mask.from_ellipse(self.frame.xsize, self.frame.ysize, center, radius*self.config.mask.d25_expansion_factor, angle)
 
                     # Add the d25 mask to the total mask
                     mask += d25_mask

@@ -101,6 +101,9 @@ class StarExtractor(ObjectExtractor):
         # If requested, remove apertures
         if self.config.remove_apertures: self.remove_apertures(galaxyextractor)
 
+        # If requested, write a table with the galaxy properties
+        if self.config.save_table: self.save_table()
+
         # If requested, save the star region
         if self.config.save_region: self.save_region()
 
@@ -750,7 +753,7 @@ class StarExtractor(ObjectExtractor):
                 # Check whether the aperture should be used for the mask
                 if self.config.mask.use_aperture and star.has_aperture:
 
-                    # Create a mask from the aperture of the object (expand if specified under self.config.aperture_mask)
+                    # Create a mask from the aperture of the object (expand if specified under self.config.aperture_removal)
                     object_mask_frame = Mask.from_aperture(self.frame.xsize, self.frame.ysize, star.aperture, expansion_factor=self.config.aperture_removal.expansion_factor)
 
                     # Now, we don't limit setting the mask within the source's cutout, because we expanded the apertures to perhaps a size larger than this cutout,

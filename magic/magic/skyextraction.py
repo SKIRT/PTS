@@ -226,6 +226,19 @@ class SkyExtractor(object):
 
     # *****************************************************************
 
+    @property
+    def stddev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the standard deviation of the sigma-clipped frame
+        return np.ma.masked_array(self.frame, mask=self.clipped_mask).std()
+
+    # *****************************************************************
+
     def save_masked_frame(self):
 
         """
