@@ -146,6 +146,37 @@ class Star(SkyObject):
 
     # *****************************************************************
 
+    def source_at_sigma_level(self, frame, default_fwhm, sigma_level, outer_factor):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Convert FWHM to sigma
+        default_sigma = default_fwhm * statistics.fwhm_to_sigma
+
+        # Determine the radius of the contour in which the star will be removed
+        radius = fitting.sigma(self.model) * sigma_level if self.model is not None else default_sigma * sigma_level
+
+        # Determine the center position of the source (center of model if present, otherwise position of the star)
+        if self.source is not None:
+
+            # If the star has been modeled succesfully, use the center position of the model
+            # Otherwise, use the source's peak
+            if self.model is not None: center = fitting.center(self.model)
+            else: center = self.source.peak
+
+        else:
+
+            # Calculate the pixel coordinate of the star's position
+            center = self.pixel_position(frame.wcs)
+
+        # Create a source and return it
+        return Source(frame, center, radius, Angle(0.0, u.deg), outer_factor)
+
+    # *****************************************************************
+
     def remove(self, frame, config, default_fwhm, method, sigma_clip):
 
         """
@@ -160,26 +191,8 @@ class Star(SkyObject):
             # Add a new stage to the track record
             if self.has_track_record: self.track_record.set_stage("removal")
 
-            # Convert FWHM to sigma
-            default_sigma = default_fwhm / 2.35
-
-            radius = fitting.sigma(self.model) * config.sigma_level if self.model is not None else default_sigma * config.sigma_level
-
-            # Determine the center position of the source (center of model if present, otherwise position of the star)
-            if self.source is not None:
-
-                # If the star has been modeled succesfully, use the center position of the model
-                # Otherwise, use the source's peak
-                if self.model is not None: center = fitting.center(self.model)
-                else: center = self.source.peak
-
-            else:
-
-                # Calculate the pixel coordinate of the star's position
-                center = self.pixel_position(frame.wcs)
-
-            # Create a source
-            source = Source(frame, center, radius, Angle(0.0, u.deg), config.outer_factor)
+            # Create a source for the desired sigma level and outer factor
+            source = self.source_at_sigma_level(frame, default_fwhm, config.sigma_level, config.outer_factor)
 
             # Estimate the background
             source.estimate_background(method, sigma_clip)

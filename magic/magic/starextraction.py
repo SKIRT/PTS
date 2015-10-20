@@ -101,10 +101,10 @@ class StarExtractor(ObjectExtractor):
         # If requested, remove apertures
         if self.config.remove_apertures: self.remove_apertures(galaxyextractor)
 
-        # If requested, save the galaxy region
+        # If requested, save the star region
         if self.config.save_region: self.save_region()
 
-        # If requested, save the frame where the galaxies are masked
+        # If requested, save the frame where the stars are masked
         if self.config.save_masked_frame: self.save_masked_frame()
 
         # If requested, save the result
@@ -311,14 +311,8 @@ class StarExtractor(ObjectExtractor):
         # Inform the user
         log.info("Removing the stars from the frame")
 
-        # Get a list of the fwhm of all the stars that were fitted
-        fwhm_list = self.fwhm_list
-
-        # Determine the fwhm for the stars that were not fitted
-        if self.config.removal.no_source_fwhm == "max": default_fwhm = max(fwhm_list)
-        elif self.config.removal.no_source_fwhm == "mean": default_fwhm = np.mean(fwhm_list)
-        elif self.config.removal.no_source_fwhm == "median": default_fwhm = np.median(fwhm_list)
-        else: raise ValueError("Unkown measure for determining the fwhm of stars without detected source")
+        # Calculate the default FWHM, for the stars for which a model was not found
+        default_fwhm = self.fwhm
 
         # Inform the user
         log.debug("Default FWHM used when star could not be fitted: {0:.2f} pixels".format(default_fwhm))
@@ -353,14 +347,8 @@ class StarExtractor(ObjectExtractor):
         # Inform the user
         log.info("Removing saturation from the frame")
 
-        # Get a list of the fwhm of all the stars that were fitted
-        fwhm_list = self.fwhm_list
-
-        # Determine the fwhm for the stars that were not fitted
-        if self.config.saturation.no_source_fwhm == "max": default_fwhm = max(fwhm_list)
-        elif self.config.saturation.no_source_fwhm == "mean": default_fwhm = np.mean(fwhm_list)
-        elif self.config.saturation.no_source_fwhm == "median": default_fwhm = np.median(fwhm_list)
-        else: raise ValueError("Unkown measure for determining the fwhm of stars without detected source")
+        # Calculate the default FWHM, for the stars for which a model was not found
+        default_fwhm = self.fwhm
 
         # Set the number of stars where saturation was removed to zero initially
         removed = 0
@@ -402,7 +390,7 @@ class StarExtractor(ObjectExtractor):
             # TODO: allow "central_brightness" as config.saturation.criterion
 
             # Get a list of the fluxes of the stars
-            flux_list = self.flux_list
+            flux_list = self.fluxes
 
             # Calculate the minimal flux/central brightness
             minimum = statistics.cutoff(flux_list, self.config.saturation.brightest_method, self.config.saturation.limit)
@@ -500,7 +488,7 @@ class StarExtractor(ObjectExtractor):
             else: remove_method = self.config.saturation.remove_method
 
             # EXPANSION FACTOR
-            expansion_factor = self.config.remove_apertures_factor
+            expansion_factor = self.config.aperture_removal.expansion_factor
 
             # Create a source object
             # Get the parameters of the elliptical aperture
@@ -680,7 +668,7 @@ class StarExtractor(ObjectExtractor):
     # *****************************************************************
 
     @property
-    def fwhm_list(self):
+    def fwhms(self):
 
         """
         This function ...
@@ -688,21 +676,21 @@ class StarExtractor(ObjectExtractor):
         """
 
         # Initialize a list to contain the fwhm of the fitted stars
-        fwhm_list = []
+        fwhms = []
 
         # Loop over all stars
         for star in self.objects:
 
             # If the star contains a model, add the fwhm of that model to the list
-            if star.has_model: fwhm_list.append(star.fwhm)
+            if star.has_model: fwhms.append(star.fwhm)
 
         # Return the list
-        return fwhm_list
+        return fwhms
 
     # *****************************************************************
 
     @property
-    def flux_list(self):
+    def fluxes(self):
 
         """
         This function ...
@@ -710,7 +698,7 @@ class StarExtractor(ObjectExtractor):
         """
 
         # Initialize a list to contain the fluxes of the stars
-        flux_list = []
+        fluxes = []
 
         # Loop over all stars
         for star in self.objects:
@@ -719,10 +707,10 @@ class StarExtractor(ObjectExtractor):
             if star.has_source and star.source.has_background:
 
                 # Add the flux to the list
-                flux_list.append(star.flux)
+                fluxes.append(star.flux)
 
         # Return the list
-        return flux_list
+        return fluxes
 
     # *****************************************************************
 
@@ -734,17 +722,58 @@ class StarExtractor(ObjectExtractor):
         :return:
         """
 
-        # Initialize a list to contain the fwhm of the fitted stars
-        fwhm_list = []
+        # Determine the default FWHM and return it
+        if self.config.fwhm.measure == "max": return max(self.fwhms)
+        elif self.config.fwhm.measure == "mean": return np.mean(self.fwhms)
+        elif self.config.fwhm.measure == "median": return np.median(self.fwhms)
+        else: raise ValueError("Unkown measure for determining the default FWHM")
+
+    # *****************************************************************
+
+    @property
+    def mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a mask with the dimensions of the frame
+        mask = Mask(np.zeros_like(self.frame))
 
         # Loop over all stars
         for star in self.objects:
 
-            # If the star contains a model, add the fwhm of that model to the list
-            if star.has_model: fwhm_list.append(star.fwhm)
+            # If a source was found for this star
+            if star.has_source:
 
-        # Return the mean of the fwhm for all fitted stars
-        return np.mean(fwhm_list)
+                # Check whether the aperture should be used for the mask
+                if self.config.mask.use_aperture and star.has_aperture:
+
+                    # Create a mask from the aperture of the object (expand if specified under self.config.aperture_mask)
+                    object_mask_frame = Mask.from_aperture(self.frame.xsize, self.frame.ysize, star.aperture, expansion_factor=self.config.aperture_removal.expansion_factor)
+
+                    # Now, we don't limit setting the mask within the source's cutout, because we expanded the apertures to perhaps a size larger than this cutout,
+                    # so just add the object_mask_frame to the total frame
+                    mask += object_mask_frame
+
+                # Else, use the source mask (saturation or model-based source)
+                else:
+
+                    # Add this galaxy to the total mask
+                    mask[star.source.cutout.y_min:star.source.cutout.y_max, star.source.cutout.x_min:star.source.cutout.x_max] += star.source.mask
+
+            # If a source was not detected for this star but the inclusion of undetected stars in the mask is enabled
+            elif self.config.mask.include_undetected:
+
+                # Create a new source based on the default FWHM value and the specified sigma level and outer factor of the removal
+                source = star.source_at_sigma_level(self.frame, self.fwhm, self.config.removal.sigma_level, self.config.removal.outer_factor)
+
+                # Add this sky object to the total mask
+                mask[source.cutout.y_min:source.cutout.y_max, source.cutout.x_min:source.cutout.x_max] += source.mask
+
+        # Return the mask
+        return mask
 
     # *****************************************************************
 
@@ -753,7 +782,6 @@ class StarExtractor(ObjectExtractor):
 
         """
         This function ...
-
         :return:
         """
 

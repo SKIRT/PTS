@@ -175,40 +175,6 @@ class ObjectExtractor(object):
     # *****************************************************************
 
     @property
-    def mask(self):
-
-        """
-        This function ...
-
-        :return:
-        """
-
-        # Initialize a mask with the dimensions of the frame
-        mask = Mask(np.zeros_like(self.frame))
-
-        # Loop over all sky objects
-        for skyobject in self.objects:
-
-            # If no source was found for the object, skip it
-            if not skyobject.has_source: continue
-
-            # Add this sky object to the mask
-            if self.config.mask.use_aperture and skyobject.has_aperture:
-
-                object_mask_frame = Mask.from_aperture(self.frame.xsize, self.frame.ysize, skyobject.aperture)
-                object_mask = object_mask_frame[skyobject.source.cutout.y_min:skyobject.source.cutout.y_max, skyobject.source.cutout.x_min:skyobject.source.cutout.x_max]
-
-            else: object_mask = skyobject.source.mask
-
-            # Add this galaxy to the total mask
-            mask[skyobject.source.cutout.y_min:skyobject.source.cutout.y_max, skyobject.source.cutout.x_min:skyobject.source.cutout.x_max] += object_mask
-
-        # Return the mask
-        return mask
-
-    # *****************************************************************
-
-    @property
     def aperture_mask(self):
 
         """
@@ -228,10 +194,6 @@ class ObjectExtractor(object):
 
             # Create a mask from the aperture of the object
             object_mask_frame = Mask.from_aperture(self.frame.xsize, self.frame.ysize, skyobject.aperture, expansion_factor=self.config.aperture_mask.expansion_factor)
-
-            # Add this aperture to the total mask
-            #object_mask = object_mask_frame[skyobject.source.cutout.y_min:skyobject.source.cutout.y_max, skyobject.source.cutout.x_min:skyobject.source.cutout.x_max]
-            #mask[skyobject.source.cutout.y_min:skyobject.source.cutout.y_max, skyobject.source.cutout.x_min:skyobject.source.cutout.x_max] += object_mask
 
             # Now, we don't limit setting the mask within the source's cutout, because we expanded the apertures to perhaps a size larger than this cutout,
             # so just add the object_mask_frame to the total frame

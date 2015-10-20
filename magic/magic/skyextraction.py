@@ -11,6 +11,8 @@ from __future__ import (absolute_import, division, print_function)
 import os.path
 import inspect
 import numpy as np
+import matplotlib.pyplot as plt
+import copy
 
 # Import Astromagic modules
 from ..core import masks
@@ -19,6 +21,7 @@ from ..tools import statistics
 from ..tools import interpolation
 from ..tools import configuration
 from ..core.frames import Frame
+from ..tools import plotting
 
 # Import astronomical modules
 from astropy import log
@@ -47,7 +50,7 @@ class SkyExtractor(object):
         # Open the default configuration if no configuration file is specified, otherwise adjust the default
         # settings according to the user defined configuration file
         if config is None: self.config = configuration.open(default_config)
-        else: self.config.configuration.open(config, default_config)
+        else: self.config = configuration.open(config, default_config)
 
         ### SET-UP LOGGING SYSTEM
 
@@ -82,10 +85,10 @@ class SkyExtractor(object):
         self.frame = frame
 
         # Set the galaxy mask
-        self.galaxy_mask = galaxyextractor.mask()
+        self.galaxy_mask = galaxyextractor.mask
 
         # Set the star mask
-        if starextractor is not None: self.star_mask = starextractor.mask()
+        if starextractor is not None: self.star_mask = starextractor.mask
         else: self.star_mask = Mask(np.zeros_like(self.frame))
 
         # Sigma-clipping
@@ -101,6 +104,43 @@ class SkyExtractor(object):
 
         #self.filtered_sky = self.sky
 
+        # If requested, save the frame where the galaxies are masked
+        if self.config.save_masked_frame: self.save_masked_frame()
+
+    # *****************************************************************
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot the frame with the sky subtracted
+        #plotting.plot_box(np.ma.masked_array(self, mask=self.mask))
+        plotting.plot_difference(self.frame, self.sky)
+
+    # *****************************************************************
+
+    def histogram(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a masked array
+        masked = np.ma.masked_array(self.frame, mask=self.mask)
+
+        # Calculate minimum and maximum value
+        min = np.ma.min(masked)
+        max = np.ma.max(masked)
+
+        # Plot the histogram
+        #b: blue, g: green, r: red, c: cyan, m: magenta, y: yellow, k: black, w: white
+        plt.hist(masked.flatten(), 200, range=(min,max), fc='k', ec='k')
+        plt.show()
+
     # *****************************************************************
 
     @property
@@ -112,6 +152,22 @@ class SkyExtractor(object):
         """
 
         return masks.union(self.galaxy_mask, self.star_mask)
+
+    # *****************************************************************
+
+    def save_masked_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a frame where the objects are masked
+        frame = copy.deepcopy(self.frame)
+        frame[self.mask] = 0.0
+
+        # Save the masked frame
+        frame.save(self.config.saving.masked_frame_path)
 
     # *****************************************************************
 

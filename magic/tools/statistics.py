@@ -22,7 +22,9 @@ from ..core.masks import Mask
 
 # *****************************************************************
 
-fwhm_to_sigma = 1. / (8 * np.log(2))**0.5
+# Calculate sigma-to-FWHM and FWHM-to-sigma conversion factors
+sigma_to_fwhm = (8 * np.log(2))**0.5
+fwhm_to_sigma = 1.0 / sigma_to_fwhm
 
 # *****************************************************************
 

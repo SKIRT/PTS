@@ -190,47 +190,6 @@ class Mask(np.ndarray):
 
     # *****************************************************************
 
-    def dilate(self, structure=None, connectivity=2, iterations=100):
-
-        """
-        This function ...
-        """
-
-        # Define the structure for the expansion
-        if structure is None: structure = ndimage.generate_binary_structure(2, connectivity=connectivity)
-
-        # Make the new mask, made from 100 iterations with the structure array
-        data = ndimage.binary_dilation(self, structure, iterations)
-
-        # Reassign this object
-        self = Mask(data, self.selected, self.description)
-
-        # Check whether this object remains of type Mask
-        assert isinstance(self, Mask)
-
-    # *****************************************************************
-
-    def erode(self, structure=None, connectivity=2, iterations=100):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Define the structure for the expansion
-        if structure is None: structure = ndimage.generate_binary_structure(2, connectivity=connectivity)
-
-        # Make the new mask, made from 100 iterations with the structure array
-        data = ndimage.binary_erosion(self, structure, iterations)
-
-        # Reassign this object
-        self = Mask(data, self.selected, self.description)
-
-        # Check whether this object remains of type Mask
-        assert isinstance(self, Mask)
-
-    # *****************************************************************
-
     def opening(self, structure, iterations=1):
 
         """

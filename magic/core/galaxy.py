@@ -144,6 +144,19 @@ class Galaxy(SkyObject):
 
     # *****************************************************************
 
+    @property
+    def has_extent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the length of the major axis is defined
+        return self.major is not None
+
+    # *****************************************************************
+
     def ellipse_parameters(self, wcs, pixelscale, default_radius):
 
         """

@@ -20,6 +20,7 @@ from ..tools import catalogs
 from ..core import regions
 from ..core.galaxy import Galaxy
 from ..tools import configuration
+from ..core.masks import Mask
 
 # Import astronomical modules
 from astropy import log
@@ -327,6 +328,74 @@ class GalaxyExtractor(ObjectExtractor):
 
         # Close the file
         f.close()
+
+    # *****************************************************************
+
+    @property
+    def mask(self):
+
+        """
+        This function ...
+
+        :return:
+        """
+
+        # Initialize a mask with the dimensions of the frame
+        mask = Mask(np.zeros_like(self.frame))
+
+        # Loop over all galaxies
+        for galaxy in self.objects:
+
+            # If a source was found for this galaxy
+            if galaxy.has_source:
+
+                # Check whether the extent (as defined by the D25 isophotal radius) of the galaxy should be used for the mask
+                if self.config.mask.use_d25 and galaxy.has_extent:
+
+                    # Obtain the ellipse parameters (default radius should not be defined, since we only get here
+                    # after we checked galaxy.has_extent
+                    center, radius, angle = galaxy.ellipse_parameters(self.frame.wcs, self.frame.pixelscale, None)
+
+                    # Create a mask from the ellipse parameters
+                    d25_mask = Mask.from_ellipse(self.frame.xsize, self.frame.ysize, center, radius, angle)
+
+                    # Add the d25 mask to the total mask
+                    mask += d25_mask
+
+                # Else, check whether the aperture created from the center segment should be used
+                elif self.config.mask.use_aperture and galaxy.has_aperture:
+
+                    # Create a mask from the aperture of the object (expand if specified under self.config.aperture_mask)
+                    object_mask_frame = Mask.from_aperture(self.frame.xsize, self.frame.ysize, galaxy.aperture, expansion_factor=self.config.aperture_removal.expansion_factor)
+
+                    # Now, we don't limit setting the mask within the source's cutout, because we expanded the apertures to perhaps a size larger than this cutout,
+                    # so just add the object_mask_frame to the total frame
+                    mask += object_mask_frame
+
+                # Else, use the source mask (the detected center segment)
+                else:
+
+                    # Add the source mask of this galaxy to the total mask
+                    mask[galaxy.source.cutout.y_min:galaxy.source.cutout.y_max, galaxy.source.cutout.x_min:galaxy.source.cutout.x_max] += galaxy.source.mask
+
+            # If a source was not detected for this galaxy but the inclusion of undetected galaxies in the mask is enabled
+            elif self.config.mask.include_undetected:
+
+                # If the galaxy has no extents (D25 is not defined), skip it
+                if not galaxy.has_extent: continue
+
+                # Obtain the ellipse parameters (default radius should not be defined, since we only get here
+                # after we checked galaxy.has_extent
+                center, radius, angle = galaxy.ellipse_parameters(self.frame.wcs, self.frame.pixelscale, None)
+
+                # Create a mask from the ellipse parameters
+                d25_mask = Mask.from_ellipse(self.frame.xsize, self.frame.ysize, center, radius, angle)
+
+                # Add the d25 mask to the total mask
+                mask += d25_mask
+
+        # Return the mask
+        return mask
 
     # *****************************************************************
 
