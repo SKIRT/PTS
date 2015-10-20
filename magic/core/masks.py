@@ -99,6 +99,20 @@ class Mask(np.ndarray):
     # *****************************************************************
 
     @classmethod
+    def from_region(cls, region, shape):
+
+        """
+        This function ...
+        :param region:
+        :return:
+        """
+
+        # Return a new Mask object
+        return cls(region.get_mask(shape=shape))
+
+    # *****************************************************************
+
+    @classmethod
     def from_ellipse(cls, x_size, y_size, center, radius, angle):
 
         """

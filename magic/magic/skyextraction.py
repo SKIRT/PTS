@@ -11,12 +11,17 @@ from __future__ import (absolute_import, division, print_function)
 import os.path
 import inspect
 import numpy as np
+
+import matplotlib
+if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
+
 import matplotlib.pyplot as plt
 import copy
 
 # Import Astromagic modules
 from ..core import masks
 from ..core.masks import Mask
+from ..core.regions import Region
 from ..tools import statistics
 from ..tools import interpolation
 from ..tools import configuration
@@ -66,6 +71,12 @@ class SkyExtractor(object):
         self.galaxy_mask = None
         self.star_mask = None
 
+        # Set the extra mask to None initially
+        self.extra_mask = None
+
+        # Set the clipped mask to None initially
+        self.clipped_mask = None
+
         # Set the frame to None initially
         self.frame = None
 
@@ -89,23 +100,39 @@ class SkyExtractor(object):
 
         # Set the star mask
         if starextractor is not None: self.star_mask = starextractor.mask
-        else: self.star_mask = Mask(np.zeros_like(self.frame))
+
+        # Set the extra mask
+        if self.config.extra_region is not None: self.set_extra_mask()
 
         # Sigma-clipping
-        #if self.config.sigma_clip: self.mask = statistics.sigma_clip_mask(frame, self.config.sigma_level, self.mask)
+        if self.config.sigma_clip_mask: self.sigma_clip_mask()
 
-        # TODO: allow different estimation methods
+        # Save histogram
+        if self.config.save_histogram: self.save_histogram()
 
-        # Estimate the sky
-        #data = interpolation.low_res_interpolation(frame, self.config.downsample_factor, self.mask)
-
-        # Create sky map
-        #self.sky = Frame(data, frame.wcs, frame.pixelscale, frame.description, frame.selected, frame.unit)
-
-        #self.filtered_sky = self.sky
-
-        # If requested, save the frame where the galaxies are masked
+        # If requested, save the frame where the galaxies and stars are masked
         if self.config.save_masked_frame: self.save_masked_frame()
+
+        # If requested, save the frame where pixels covered by the sigma-clipped mask are zero
+        if self.config.save_clipped_masked_frame: self.save_clipped_masked_frame()
+
+        # If requested, estimate the sky
+        if self.config.estimate: self.estimate()
+
+        # If requested, subtract the sky
+        if self.config.subtract: self.subtract()
+
+    # *****************************************************************
+
+    def sigma_clip_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the sigma-clipped mask
+        self.clipped_mask = statistics.sigma_clip_mask(self.frame, self.config.sigma_clipping.sigma_level, self.mask)
 
     # *****************************************************************
 
@@ -122,7 +149,7 @@ class SkyExtractor(object):
 
     # *****************************************************************
 
-    def histogram(self):
+    def save_histogram(self):
 
         """
         This function ...
@@ -131,15 +158,23 @@ class SkyExtractor(object):
 
         # Create a masked array
         masked = np.ma.masked_array(self.frame, mask=self.mask)
+        masked_clipped = np.ma.masked_array(self.frame, mask=self.clipped_mask)
 
-        # Calculate minimum and maximum value
-        min = np.ma.min(masked)
-        max = np.ma.max(masked)
+        # Create a figure
+        plt.figure(1)
 
-        # Plot the histogram
+        # Plot the histograms
         #b: blue, g: green, r: red, c: cyan, m: magenta, y: yellow, k: black, w: white
-        plt.hist(masked.flatten(), 200, range=(min,max), fc='k', ec='k')
-        plt.show()
+        plt.subplot(211)
+        plt.hist(masked.compressed(), 200, range=(-10,20), alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='not clipped')
+        if self.config.histogram.log_scale: plt.semilogy()
+
+        plt.subplot(212)
+        plt.hist(masked_clipped.compressed(), 200, range=(-10,20), alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='clipped')
+        if self.config.histogram.log_scale: plt.semilogy()
+
+        # Save the figure
+        plt.savefig(self.config.saving.histogram_path, bbox_inches='tight', pad_inches=0.25)
 
     # *****************************************************************
 
@@ -151,7 +186,43 @@ class SkyExtractor(object):
         :return:
         """
 
-        return masks.union(self.galaxy_mask, self.star_mask)
+        # Create a total mask consisting only of the galaxy mask initially
+        mask = self.galaxy_mask
+
+        # Check whether a star mask is present, if so add it to the total mask
+        if self.star_mask is not None: mask += self.star_mask
+
+        # Check whether an extra mask is present, if so add it to the total mask
+        if self.extra_mask is not None: mask += self.extra_mask
+
+        # Return the total mask
+        return mask
+
+    # *****************************************************************
+
+    @property
+    def mean(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the sigma-clipped mean
+        return np.ma.mean(np.ma.masked_array(self.frame, mask=self.clipped_mask))
+
+    # *****************************************************************
+
+    @property
+    def median(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the sigma-clipped median
+        return np.ma.median(np.ma.masked_array(self.frame, mask=self.clipped_mask))
 
     # *****************************************************************
 
@@ -171,6 +242,83 @@ class SkyExtractor(object):
 
     # *****************************************************************
 
+    def save_clipped_masked_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a frame with masked pixels
+        frame = copy.deepcopy(self.frame)
+        frame[self.clipped_mask] = 0.0
+
+        # Save the masked frame
+        frame.save(self.config.saving.clipped_masked_frame_path)
+
+    # *****************************************************************
+
+    def set_extra_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the region and create a mask from it
+        extra_region = Region.from_file(self.config.extra_region, self.frame.wcs)
+        self.extra_mask = Mask.from_region(extra_region, self.frame.shape)
+
+    # *****************************************************************
+
+    def estimate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # TODO: allow different estimation methods
+
+        # If the mean sky level should be used
+        if self.config.estimation.method == "mean":
+
+            # Create a frame filled with the mean value
+            self.sky = Frame(np.full(self.frame.shape, self.mean), self.frame.wcs, self.frame.pixelscale, "estimated sky", False, self.frame.unit)
+
+        # If the median sky level should be used
+        elif self.config.estimation.method == "median":
+
+            # Create a frame filled with the median value
+            self.sky = Frame(np.full(self.frame.shape, self.median), self.frame.wcs, self.frame.pixelscale, "estimated sky", False, self.frame.unit)
+
+        # If the sky should be estimated by using low-resolution interpolation
+        elif self.config.estimation.method == "low-res-interpolation":
+
+            # Estimate the sky
+            data = interpolation.low_res_interpolation(self.frame, self.config.estimation.downsample_factor, self.mask)
+
+            # Create sky map
+            self.sky = Frame(data, self.frame.wcs, self.frame.pixelscale, "estimated sky", False, self.frame.unit)
+
+        # if the sky should be approximated by a polynomial function
+        elif self.config.estimatation.method == "polynomial":
+
+            pass
+
+    # *****************************************************************
+
+    def subtract(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # *****************************************************************
+
     def clear(self):
 
         """
@@ -181,6 +329,7 @@ class SkyExtractor(object):
         # Set the masks to None
         self.galaxy_mask = None
         self.star_mask = None
+        self.clipped_mask = None
 
         # Set the frames to None
         self.frame = None

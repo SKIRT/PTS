@@ -42,7 +42,7 @@ class Region(pyregion.ShapeList):
     # *****************************************************************
 
     @classmethod
-    def from_file(cls, filepath):
+    def from_file(cls, filepath, wcs=None):
 
         """
         This function ...
@@ -52,11 +52,16 @@ class Region(pyregion.ShapeList):
 
         region = pyregion.open(filepath)
 
-        # Change the class name of the
+        # Convert to image coordinates if a WCS is given
+        if wcs: region = region.as_imagecoord(wcs.to_header())
+
+        # Change the class name of the ShapeList instance to our own Region class
         region.__class__ = cls
 
+        # Set the attributes that are added in the Region subclass
         region.selected = False
 
+        # Return the Region object
         return region
 
     # *****************************************************************
