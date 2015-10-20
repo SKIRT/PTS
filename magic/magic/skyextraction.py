@@ -163,18 +163,25 @@ class SkyExtractor(object):
         # Create a figure
         plt.figure(1)
 
+        min = self.mean - 4.0*self.stddev
+        max = self.mean + 4.0*self.stddev
+
         # Plot the histograms
         #b: blue, g: green, r: red, c: cyan, m: magenta, y: yellow, k: black, w: white
         plt.subplot(211)
-        plt.hist(masked.compressed(), 200, range=(-10,20), alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='not clipped')
+        plt.hist(masked.compressed(), 200, range=(min,max), alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='not clipped')
         if self.config.histogram.log_scale: plt.semilogy()
 
         plt.subplot(212)
-        plt.hist(masked_clipped.compressed(), 200, range=(-10,20), alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='clipped')
+        plt.hist(masked_clipped.compressed(), 200, range=(min,max), alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='clipped')
         if self.config.histogram.log_scale: plt.semilogy()
 
         # Save the figure
         plt.savefig(self.config.saving.histogram_path, bbox_inches='tight', pad_inches=0.25)
+
+        # Clear and close
+        plt.cla()
+        plt.close()
 
     # *****************************************************************
 
