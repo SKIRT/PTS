@@ -233,6 +233,10 @@ class GalaxyModeler(object):
             if image.wavelength < 10.0 * u.micron: config.extract_stars = True
             else: config.extract_stars = False
 
+            # Set the correct_for_extinction flag
+            if image.wavelength < 1.0 * u.micron: config.correct_for_extinction = True
+            else: config.correct_for_extinction = False
+
             ### SETTING THE UNITS
 
             # Set the unit
@@ -269,6 +273,12 @@ class GalaxyModeler(object):
             # Set the path to the reference image for the rebinning
             config.rebinning.rebin_to = os.path.join(self.data_path, self.config.reference_image)
 
+            ### SETTING THE NOISE REGION
+
+            # Set the path to the noise region
+            noise_path = os.path.join(self.prep_path, "noise.reg")
+            config.uncertanties.noise_path = noise_path
+
             ### LOOKING FOR REGIONS TO IGNORE FOR THE EXTRACTION ALGORITHMS
 
             # If a region file exists with the name of this image, add its path to the configuration for the preparation
@@ -287,114 +297,6 @@ class GalaxyModeler(object):
 
             # Save the result
             image.save(final_path)
-
-    # *****************************************************************
-
-    def prepare_images_old(self):
-
-        """
-        This function prepares the images
-        """
-
-        config = self.config.preparation
-
-        # Loop over all filters for which we have an image
-        for filter_name, path in self.image_paths.items():
-
-            # Path where the prepared images are being saved to
-            filter_prep_path = os.path.join(self.prep_path, filter_name)
-
-            # Open the image
-            image = iu.open(path)
-
-            # Set the unit
-            unit = u.Unit(units[filter_name])
-            image.primary.set_unit(unit)
-
-            # Set the fwhm of the image, if it is not None
-            if fwhmax[filter_name] is not None: image.primary.set_fwhm(fwhm[filter_name])
-
-            # Mask NaNs, edges and extra user-defined regions
-            extra_path = os.path.join(self.data_path, 'extra', image.name + '.reg')
-            extra_path = extra_path if os.path.isfile(extra_path) else None
-
-            # Mask nans and extra regions
-            image.frames.primary.replace_nans(0.0)
-            if extra_path is not None:
-
-                image.import_region(extra_path, "extra")
-                image.regions.extra.select()
-                image.create_mask()
-                image.regions.extra.deselect()
-                image.masks.extra.select()
-                image.apply_masks(0.0)
-
-            # Extract galaxies from the image
-            galaxyex = GalaxyExtractor(config.galaxyextraction)
-            galaxyex.run(image.frames.primary)
-
-            # Extract the stars from the image
-            if image.wavelength < 10.0 * u.micron:
-
-                starex = StarExtractor(config.starextraction)
-                starex.run(image.frames.primary, galaxyex)
-
-            else: starex = None
-
-            # Subtract the sky
-            assert (sky_subtracted[filter_name] == image.sky_subtracted)
-
-            # Extract the sky from the image
-            if not image.sky_subtracted:
-
-                skyex = SkyExtractor()
-                skyex.run(image.frames.primary, galaxyex, starex)
-
-            # Determine whether galactic extinction should be taken into account
-            # If the wavelength is smaller than 1 micron, such extinction is expected
-            extinction = image.wavelength < 1.0 * u.micron
-            if extinction: image.frames.primary *= 10**(0.4*attenuations[filter_name])
-
-            exit()
-
-            # Convert the units to MJy / sr
-            unit = u.Unit("MJy/sr")
-            image.primary.convert_to(unit)
-
-            # Convolution
-            if self.config.convolve and filter_name != self.config.convolve_to:
-
-                reference_path = "Kernel_HiRes_" + aniano_names[filter_name] + "_to_" + aniano_names[self.config.convolve_to] + ".fits"
-                reference_image = Image(reference_path)
-                reference_frame = reference_image.frames.primary
-
-                # Convolve the primary and errors frame (if present)
-                image.frames.primary.convolve(reference_frame)
-                if image.frames.errors is not None: image.frames.errors.convolve(reference_frame)
-
-            # Rebinning
-            if self.config.rebin and filter_name != self.config.rebin_to:
-
-                reference_path = self.image_paths[self.config.rebin_to]
-                reference_image = Image(reference_path)
-                reference_frame = reference_image.frames.primary
-
-                # Rebin the primary and errors frame (if present)
-                image.frames.primary.rebin(reference_frame)
-                if image.frames.errors is not None: image.frames.errors.rebin(reference_frame)
-
-            # Set the uncertainties
-            if filter_name != "2MASSH": iu.set_uncertainty(image, self.prep_path, "noise.reg")
-
-            # If requested, save the result
-            if self.config.save: iu.save(image, filter_prep_path, 'convolved_rebinned.fits')
-
-            # Crop the interesting part of the image
-            image.frames.primary.crop(350, 725, 300, 825)
-            if image.frames.errors is not None: image.frames.errors.crop(350, 725, 300, 825)
-
-            # If requested, save the result
-            iu.save(image, filter_prep_path, 'final.fits')
 
     # *****************************************************************
 
