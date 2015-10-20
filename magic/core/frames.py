@@ -8,6 +8,7 @@
 from __future__ import (absolute_import, division, print_function)
 
 # Import standard modules
+import os.path
 import numpy as np
 from scipy import ndimage
 import matplotlib.pyplot as plt
@@ -18,8 +19,11 @@ from ..tools import cropping
 from ..tools import transformations
 from .vector import Position, Extent
 from ..tools import interpolation
+from ..tools import headers
 
 # Import astronomical modules
+from astropy import log
+from astropy.wcs import WCS
 import aplpy
 import astropy.io.fits as pyfits
 import astropy.units as u
@@ -36,7 +40,7 @@ class Frame(np.ndarray):
 
     # *****************************************************************
 
-    def __new__(cls, data, wcs=None, pixelscale=None, description=None, selected=False, unit=None):
+    def __new__(cls, data, wcs=None, pixelscale=None, description=None, selected=False, unit=None, name=None, filter=None, sky_subtracted=False):
 
         """
         This function ...
@@ -52,13 +56,16 @@ class Frame(np.ndarray):
         obj.description = description
         obj.selected = selected
         obj.unit = unit
+        obj.name = name
+        obj.filter = filter
+        obj.sky_subtracted = sky_subtracted
 
         return obj
 
     # *****************************************************************
 
     @classmethod
-    def from_file(cls, path, index=None):
+    def from_file(cls, path, index=0, name=None, description=None):
 
         """
         This function ...
@@ -66,7 +73,62 @@ class Frame(np.ndarray):
         :return:
         """
 
-        pass
+        # Show which image we are importing
+        log.info("Reading in file: " + path)
+
+        # Open the HDU list for the FITS file
+        hdulist = pyfits.open(path)
+
+        # Get the primary HDU
+        hdu = hdulist[0]
+
+        # Get the image header
+        header = hdu.header
+
+        # Remove references to a potential third axis
+        header["NAXIS"] = 2
+        if "NAXIS3" in header: del header["NAXIS3"]
+        for key in header:
+            if "PLANE" in key: del header[key]
+
+        # Obtain the world coordinate system
+        wcs = WCS(header)
+
+        # Load the frames
+        pixelscale = headers.get_pixelscale(header)
+
+        # Obtain the filter for this image
+        filter = headers.get_filter(os.path.basename(path[:-5]), header)
+
+        # Obtain the units of this image
+        unit = headers.get_units(header)
+
+        # Check whether the image is sky-subtracted
+        sky_subtracted = headers.is_sky_subtracted(header)
+
+        # Check whether multiple planes are present in the FITS image
+        nframes = headers.get_number_of_frames(header)
+        if nframes > 1:
+
+            # Get the name of this frame, but the first frame always gets the name 'primary'
+            description = headers.get_frame_description(header, index)
+
+            # Get the name from the file path
+            if name is None: name = os.path.basename(path[:-5])
+
+            # Return the frame
+            return cls(hdu.data[index], wcs, pixelscale, description, False, unit, name, filter, sky_subtracted)
+
+        else:
+
+            # Sometimes, the 2D frame is embedded in a 3D array with shape (1, xsize, ysize)
+            if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
+
+            # Get the name from the file path
+            if name is None: name = os.path.basename(path[:-5])
+
+            # Return the frame
+            return cls(hdu.data, wcs, pixelscale, description, False, unit, name, filter, sky_subtracted)
 
     # *****************************************************************
 
@@ -84,6 +146,8 @@ class Frame(np.ndarray):
         self.description = getattr(obj, 'description', None)
         self.selected = getattr(obj, 'selected', False)
         self.unit = getattr(obj, 'unit', None)
+        self.name = getattr(obj, 'name', None)
+        self.filter = getattr(obj, 'filter', None)
 
     # *****************************************************************
 

@@ -96,17 +96,17 @@ class ObjectExtractor(object):
 
             except Exception as e:
 
-                import traceback
+                #import traceback
 
                 log.error("Error when finding source")
-                print(type(e))
-                print(e)
-                traceback.print_exc()
+                #print(type(e))
+                #print(e)
+                #traceback.print_exc()
 
                 if self.config.plot_track_record_if_exception:
 
                     if skyobject.has_track_record: skyobject.track_record.plot()
-                    else: print("Track record is not enabled")
+                    else: log.warning("Track record is not enabled")
 
                 log.error("Continuing with next source")
 
