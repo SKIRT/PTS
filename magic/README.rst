@@ -1,5 +1,5 @@
 
-Astromagic, the new scriptable astronomical image editor. Includes magic features such as automatic star and background subtraction. Other features include:
+AstroMagic, the new scriptable astronomical image editor. Includes magic features such as automatic star and background subtraction. Other features include:
 
  - Convolution
  - Rebinning and aligning
@@ -11,16 +11,16 @@ Astromagic, the new scriptable astronomical image editor. Includes magic feature
 
 Astromagic is intended to be an open-source, community driven project. 
 
-The following prerequisites are required for Astromagic:
+The following prerequisites are needed for Astromagic:
 
  - numpy
  - scipy
  - matplotlib
- - aplpy
- - pyregion
- - astropy
- - photutils
- - astroquery
-
-It also requires the MGE_FIT_SECTORS package (Michele Cappellari) that can be found on this link: http://www-astro.physics.ox.ac.uk/~mxc/software/.
-The downloaded "mge" folder should be placed in a directory that is in the python path (you can always add a new directory to the "mge" folder by adding "export PYTHONPATH=~/mge" to your .profile file)
+ - aplpy (https://aplpy.github.io)
+ - pyregion (https://pypi.python.org/pypi/pyregion)
+ - astropy (http://www.astropy.org)
+ - photutils (https://photutils.readthedocs.org)
+ - astroquery (https://astroquery.readthedocs.org/en/latest/)
+ - config (https://pypi.python.org/pypi/config)
+ 
+Also, it requires the filter module of the PTS package, which can be found at https://github.com/SKIRT/PTS

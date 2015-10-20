@@ -20,9 +20,6 @@ from . import general
 from . import statistics
 from ..core.vector import Position, Extent
 
-# Import PTS modules
-from pts import mathematics
-
 # *****************************************************************
 
 def fit_2D_model(data, mask, background, model='Gaussian', x_center=None, y_center=None, radius=None, x_shift=0.0, y_shift=0.0, pixel_deviation=0.5, upsample_factor=1.0):
@@ -72,32 +69,6 @@ def fit_2D_model(data, mask, background, model='Gaussian', x_center=None, y_cent
 
     # Return the model
     return model_function
-
-# *****************************************************************
-
-def fit_polynomial_evaluate(box, degree, mask=None):
-
-    """
-    This function ...
-    :param box:
-    :param degree:
-    :param mask:
-    :return:
-    """
-
-    # Split x, y and z values that are not masked
-    x_values, y_values, z_values = tools.general.split_xyz(box, mask=mask)
-
-    # Do the fitting
-    model = mathematics.fit_polynomial(np.array(x_values), np.array(y_values), np.array(z_values), degree, True)
-
-    print(model)
-
-    # Create x and y meshgrid for evaluating the model
-    y_plotvalues, x_plotvalues = np.mgrid[:box.shape[0], :box.shape[1]]
-
-    # Return the evaluated model
-    return mathematics.polynomial(x_plotvalues, y_plotvalues, model)
 
 # *****************************************************************
 
