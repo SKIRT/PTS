@@ -158,14 +158,6 @@ class ImagePreparation(object):
         # Create a star extractor
         self.starex = StarExtractor(self.config.star_extraction)
 
-        # Special region for stars
-        #special_region_path = join("special", basename(path)[:-5] + "_special.reg")
-        #if isfile(special_region_path): starex.config.special_region = special_region_path
-
-        # Ignore region for stars
-        #ignore_region_path = join("ignore", basename(path)[:-5] + "_ignore.reg")
-        #if isfile(ignore_region_path): starex.config.ignore_region = ignore_region_path
-
         # Run the star extractor
         self.starex.run(self.image.frames[self.config.primary], self.galaxyex)
 
@@ -184,8 +176,10 @@ class ImagePreparation(object):
         # Run the sky extraction
         self.skyex.run(self.image.frames[self.config.primary], self.galaxyex, self.starex)
 
-        # Plot the histogram of the sky map
-        self.skyex.histogram()
+        # Print the statistics of the sky frame
+        log.info("Mean sky level = " + str(self.skyex.mean))
+        log.info("Median sky level = " + str(self.skyex.median))
+        log.info("Standard deviation of sky = " + str(self.skyex.stddev))
 
     # *****************************************************************
 

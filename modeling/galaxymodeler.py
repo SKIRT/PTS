@@ -159,19 +159,41 @@ class GalaxyModeler(object):
             if config is None: config = configuration.open(default_config)
             else: config = configuration.open(config, default_config)
 
+            # Set log level for the different children of the ImagePreparation object, if cascading is enabled
+            if self.config.logging.cascade:
+
+                # Galaxy extractor
+                config.galaxy_extraction.logging.level = self.config.logging.level
+                config.galaxy_extraction.logging.cascade = self.config.logging.cascade
+                config.galaxy_extraction.logging.path = self.config.logging.path
+
+                # Star extractor
+                config.star_extraction.logging.level = self.config.logging.level
+                config.star_extraction.logging.cascade = self.config.logging.cascade
+                config.star_extraction.logging.path = self.config.logging.path
+
+                # Sky extractor
+                config.sky_extraction.logging.level = self.config.logging.level
+                config.sky_extraction.logging.cascade = self.config.logging.cascade
+                config.sky_extraction.logging.path = self.config.logging.path
+
             # Set saving parameters for galaxy extractor
+            config.galaxy_extraction.save_table = True
             config.galaxy_extraction.save_region = True
             #config.galaxy_extraction.save_masked_frame = True
             #config.galaxy_extraction.save_result = True
+            config.galaxy_extraction.saving.table_path = os.path.join(self.prep_path, filter_name, "galaxies.txt")
             config.galaxy_extraction.saving.region_path = os.path.join(self.prep_path, filter_name, "galaxies.reg")
             config.galaxy_extraction.saving.region_annotation = "name"
             #config.galaxy_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "masked_galaxies.fits")
             #config.galaxy_extraction.saving.result_path = os.path.join(self.prep_path, filter_name, "extractedgalaxies.fits")
 
             # Set saving parameters for star extractor
+            config.star_extraction.save_table = True
             config.star_extraction.save_region = True
             #config.star_extraction.save_masked_frame = True
             config.star_extraction.save_result = True
+            config.star_extraction.saving.table_path = os.path.join(self.prep_path, filter_name, "stars.txt")
             config.star_extraction.saving.region_path = os.path.join(self.prep_path, filter_name, "stars.reg")
             config.star_extraction.saving.region_annotation = "flux"
             #config.star_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "masked_stars.fits")
@@ -179,7 +201,11 @@ class GalaxyModeler(object):
 
             # Set saving parameters for sky extractor
             config.sky_extraction.save_masked_frame = True
+            config.sky_extraction.save_clipped_masked_frame = True
+            config.sky_extraction.save_histogram = True
             config.sky_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "sky_mask.fits")
+            config.sky_extraction.saving.clipped_masked_frame_path = os.path.join(self.prep_path, filter_name, "clipped_sky_mask.fits")
+            config.sky_extraction.saving.histogram_path = os.path.join(self.prep_path, filter_name, "sky_histogram.pdf")
 
             ### OPENING THE IMAGE
 
@@ -234,6 +260,9 @@ class GalaxyModeler(object):
                 image.regions.extra.deselect()
                 image.masks.extra.select()
                 image.apply_masks(0.0)
+
+                # Set the path of the extra region in the SkyExtractor's configuration
+                config.sky_extraction.extra_region = extra_path
 
             ### SETTING THE REFERENCE IMAGE
 
