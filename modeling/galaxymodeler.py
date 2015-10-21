@@ -20,6 +20,7 @@ from __future__ import (absolute_import, division, print_function)
 # Import standard modules
 import os.path
 import inspect
+import shutil
 
 # Import astronomical modules
 from astropy import units as u
@@ -123,6 +124,17 @@ class GalaxyModeler(object):
 
         # 5. Run SKIRT simulations, fit the SED
         if self.config.fit_sed: self.fit_sed()
+
+    # *****************************************************************
+
+    def clear_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        shutil.rmtree('/home/me/test')
 
     # *****************************************************************
 
@@ -277,7 +289,7 @@ class GalaxyModeler(object):
 
             # Set the path to the noise region
             noise_path = os.path.join(self.prep_path, "noise.reg")
-            config.uncertanties.noise_path = noise_path
+            config.uncertainties.noise_path = noise_path
 
             ### LOOKING FOR REGIONS TO IGNORE FOR THE EXTRACTION ALGORITHMS
 

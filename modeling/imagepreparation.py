@@ -234,7 +234,7 @@ class ImagePreparation(object):
             factor = 1.4e-15 * spectralfactor * 1e17 * pixelfactor
 
             # Multiply the image (primary and errors frame) by the conversion factor
-            self.image.multiply(factor)
+            self.image *= factor
 
         # THE 2MASS H IMAGE
         elif self.image.name == "2MASSH":
@@ -254,7 +254,7 @@ class ImagePreparation(object):
             factor *= F0 * np.power(10.0, -m0/2.5)
 
             # Multiply the image (primary and errors frame) by the conversion factor
-            self.image.multiply(factor)
+            self.image *= factor
 
         # THE Halpha IMAGE
         elif self.image.name == "Ha":
@@ -277,7 +277,7 @@ class ImagePreparation(object):
             factor = 1e23 * 1e-6 * pixelfactor / frequency
 
             # Multiply the image (primary and errors frame) by the conversion factor
-            self.image.multiply(factor)
+            self.image *= factor
 
         # THE IRAC I1 IMAGE IS ALREADY IN MJY/SR
         elif self.image.name == "IRACI1": pass
@@ -296,7 +296,7 @@ class ImagePreparation(object):
             factor = 1e-6 * pixelfactor
 
             # Multiply the image (primary and errors frame) by the conversion factor
-            self.image.multiply(factor)
+            self.image *= factor
 
         # THE PACS 160 IMAGE
         elif self.image.name == "PACS160":
@@ -309,7 +309,7 @@ class ImagePreparation(object):
             factor = 1e-6 * pixelfactor
 
             # Multiply the image (primary and errors frame) by the conversion factor
-            self.image.multiply(factor)
+            self.image *= factor
 
         # UNKOWN IMAGE NAME
         else: raise ValueError("Unkown image: " + self.image.name)
