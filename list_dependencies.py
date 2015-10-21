@@ -10,6 +10,7 @@ from __future__ import (absolute_import, division, print_function)
 # Import standard modules
 import os
 import os.path
+import imp
 from collections import defaultdict
 
 # *****************************************************************
@@ -47,8 +48,16 @@ for directory, subdirs, files in os.walk(os.getcwd()):
 # List all required modules
 for module, files in modules.items(): 
     
+    # Check whether the module is present on this system
+    try: 
+        imp.find_module(module)
+        message = "present"
+    except ImportError:
+        found = False
+        message = "not found!"
+    
     # List the name of the module
-    print(module, ": ")
+    print(module, ":", message)
     
     # List the files where this module is used
     for file in files: print("  - ", file)
