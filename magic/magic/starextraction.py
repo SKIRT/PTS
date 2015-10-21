@@ -327,11 +327,11 @@ class StarExtractor(ObjectExtractor):
             if star.ignore: continue
 
             # Determine whether we want the background to be sigma-clipped when interpolating over the source
-            if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.removal.no_sigma_clip_on_galaxy: sigma_clip = False
+            if galaxyextractor is not None and galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.removal.no_sigma_clip_on_galaxy: sigma_clip = False
             else: sigma_clip = self.config.removal.sigma_clip
 
             # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-            if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.removal.polynomial_on_galaxy: method = "polynomial"
+            if galaxyextractor is not None and galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.removal.polynomial_on_galaxy: method = "polynomial"
             else: method = self.config.removal.method
 
             # Remove the star in the frame
@@ -372,11 +372,11 @@ class StarExtractor(ObjectExtractor):
                 if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
                 # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
-                if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
+                if galaxyextractor is not None and galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
                 else: sigma_clip = self.config.saturation.sigma_clip
 
                 # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-                if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
+                if galaxyextractor is not None and galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
                 else: remove_method = self.config.saturation.remove_method
 
                 # Find a saturation source and remove it from the frame
@@ -426,11 +426,11 @@ class StarExtractor(ObjectExtractor):
                 if value >= minimum or (self.config.saturation.remove_if_undetected and not star.has_source):
 
                     # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
-                    if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
+                    if galaxyextractor is not None and galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
                     else: sigma_clip = self.config.saturation.sigma_clip
 
                     # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-                    if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
+                    if galaxyextractor is not None and galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
                     else: remove_method = self.config.saturation.remove_method
 
                     # Find a saturation source and remove it from the frame
