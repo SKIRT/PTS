@@ -12,8 +12,9 @@ import os.path
 import inspect
 import numpy as np
 
-import matplotlib
-if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
+#import matplotlib
+#if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
+from matplotlib.backends.backend_pdf import PdfPages
 
 import matplotlib.pyplot as plt
 import copy
@@ -166,28 +167,32 @@ class SkyExtractor(object):
         masked = np.ma.masked_array(self.frame, mask=self.mask)
         masked_clipped = np.ma.masked_array(self.frame, mask=self.clipped_mask)
 
-        # Create a figure
-        plt.figure(1)
+        # Create the PDF figure
+        with PdfPages(self.config.saving.histogram_path) as pdf:
 
-        min = self.mean - 4.0*self.stddev
-        max = self.mean + 4.0*self.stddev
+            # Create a figure
+            fig = plt.figure()
 
-        # Plot the histograms
-        #b: blue, g: green, r: red, c: cyan, m: magenta, y: yellow, k: black, w: white
-        plt.subplot(211)
-        plt.hist(masked.compressed(), 200, range=(min,max), alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='not clipped')
-        if self.config.histogram.log_scale: plt.semilogy()
+            min = self.mean - 4.0*self.stddev
+            max = self.mean + 4.0*self.stddev
 
-        plt.subplot(212)
-        plt.hist(masked_clipped.compressed(), 200, range=(min,max), alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='clipped')
-        if self.config.histogram.log_scale: plt.semilogy()
+            # Plot the histograms
+            #b: blue, g: green, r: red, c: cyan, m: magenta, y: yellow, k: black, w: white
+            plt.subplot(211)
+            plt.hist(masked.compressed(), 200, range=(min,max), alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='not clipped')
+            if self.config.histogram.log_scale: plt.semilogy()
 
-        # Save the figure
-        plt.savefig(self.config.saving.histogram_path, bbox_inches='tight', pad_inches=0.25)
+            plt.subplot(212)
+            plt.hist(masked_clipped.compressed(), 200, range=(min,max), alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='clipped')
+            if self.config.histogram.log_scale: plt.semilogy()
 
-        # Clear and close
-        plt.cla()
-        plt.close()
+            # Save the figure
+            #plt.savefig(self.config.saving.histogram_path, bbox_inches='tight', pad_inches=0.25)
+
+            pdf.savefig(fig)
+
+            # Clear and close
+            #plt.close()
 
     # *****************************************************************
 
