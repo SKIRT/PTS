@@ -300,11 +300,8 @@ class Frame(np.ndarray):
         :return:
         """
 
-        # Get the pixel scale of the kernel
-        pixelscale_kernel = kernel.pixelscale
-
         # Calculate the zooming factor
-        factor = self.pixelscale / pixelscale_kernel
+        factor = (self.pixelscale / kernel.pixelscale).value
 
         # Rebin the kernel to the same grid of the image
         kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
