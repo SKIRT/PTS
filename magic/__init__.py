@@ -64,11 +64,6 @@ class Image(object):
             self.masks = Layers()
             self.regions = Layers()
 
-            # Set default values for other attributes
-            self.unit = None
-            self.fwhm = None
-            self.header = None
-            
             return
 
         # Check if the specified file exists, otherwise exit with an error
@@ -85,10 +80,6 @@ class Image(object):
         # Read in the image
         self.load_frames(filename)
 
-        # Set default values for other attributes
-        self.unit = None
-        self.fwhm = None
-
     # *****************************************************************
 
     def deselect_all(self):
@@ -98,9 +89,62 @@ class Image(object):
         :return:
         """
 
+        # Deselect all frames, regions and masks
         self.frames.deselect_all()
         self.regions.deselect_all()
         self.masks.deselect_all()
+
+    # *****************************************************************
+
+    @property
+    def filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the filter of the primary frame
+        return self.frames.primary.filter
+
+    # *****************************************************************
+
+    @property
+    def wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the wavelength of the primary frame
+        return self.frames.primary.wavelength
+
+    # *****************************************************************
+
+    @property
+    def unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the unit of the primary frame
+        return self.frames.primary.unit
+
+    # *****************************************************************
+
+    @property
+    def pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the pixelscale of the primary frame
+        return self.frames.primary.pixelscale
 
     # *****************************************************************
 
@@ -560,14 +604,56 @@ class Image(object):
 
     # *****************************************************************
 
+    def __imul__(self, factor):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        # Loop over all currently selected frames
+        for frame_name in self.frames.get_selected():
+
+            # Inform the user
+            log.info("Multiplying the " + frame_name + " frame by a factor of " + str(factor))
+
+            # Multiply the frame by the given factor
+            self.frames[frame_name] *= factor
+
+        # Return a reference to this instance
+        return self
+
+    # *****************************************************************
+
+    def __idiv__(self, factor):
+
+        """
+        This function ...
+        :param factor:
+        :return:
+        """
+
+        # Loop over all currently selected frames
+        for frame_name in self.frames.get_selected():
+
+            # Inform the user
+            log.info("Dividing the " + frame_name + " frame by a factor of " + str(factor))
+
+            # Divide the frame by the given factor
+            self.frames[frame_name] /= factor
+
+        # Return a reference to this instance
+        return self
+
+    # *****************************************************************
+
     def create_mask(self, return_mask=False):
 
         """
         This function creates a mask from the currently selected region(s)
         :return:
         """
-
-        # TODO: use combine_regions and regions.create_mask() !!
 
         # Initialize an boolean array for the total mask
         total_mask = np.zeros_like(self.frames.primary, dtype=bool)
@@ -865,21 +951,21 @@ class Image(object):
         wcs = WCS(header)
 
         # Load the frames
-        self.pixelscale = headers.get_pixelscale(header)
+        pixelscale = headers.get_pixelscale(header)
 
         # Obtain the filter for this image
-        self.filter = headers.get_filter(self.name, self.old_header)
+        filter = headers.get_filter(self.name, self.old_header)
 
         # Obtain the units of this image
-        self.unit = headers.get_units(self.old_header)
+        unit = headers.get_units(self.old_header)
 
         # Check whether the image is sky-subtracted
-        self.sky_subtracted = headers.is_sky_subtracted(self.old_header)
+        sky_subtracted = headers.is_sky_subtracted(self.old_header)
 
-        self.wavelength = None
-        if self.filter is not None: self.wavelength = self.filter.pivotwavelength() * u.Unit("micron")
-        elif "ha" in self.name.lower(): self.wavelength = 0.65628 * u.Unit("micron")
-        else: log.warning("Could not determine the wavelength for this image")
+        #wavelength = None
+        #if filter is not None: wavelength = filter.pivotwavelength() * u.Unit("micron")
+        #elif "ha" in self.name.lower(): wavelength = 0.65628 * u.Unit("micron")
+        #else: log.warning("Could not determine the wavelength for this image")
 
         # Check whether multiple planes are present in the FITS image
         nframes = headers.get_number_of_frames(self.old_header)
@@ -896,8 +982,11 @@ class Image(object):
                     description = headers.get_frame_description(self.old_header, i) if i else "the primary signal map"
                     name = headers.get_frame_name(description) if i else "primary"
 
+                # The sky-subtracted flag should only be set for the primary frame
+                subtracted = sky_subtracted if i == 0 else False
+
                 # Add this frame to the frames dictionary
-                self.add_frame(Frame(hdu.data[i], wcs, self.pixelscale, description), name)
+                self.add_frame(Frame(hdu.data[i], wcs, pixelscale, description, False, unit, name, filter, subtracted), name)
 
         else:
 
@@ -908,7 +997,7 @@ class Image(object):
             if description is None: description = "the primary signal map"
 
             # Add the primary image frame
-            self.add_frame(Frame(hdu.data, wcs, self.pixelscale, description), name)
+            self.add_frame(Frame(hdu.data, wcs, pixelscale, description, False, unit, name, filter, sky_subtracted), name)
 
         # Select the primary frame
         self.frames.primary.select()

@@ -69,6 +69,7 @@ def get_filter(name, header):
 
     # Determine the filter from the information in the header
     if 'INSTRUME' in header and 'FILTER' in header: filterid = header['INSTRUME'].lower() + header['FILTER'].lower()
+    elif 'FLTRNM' in header: filterid = header['FLTRNM']
 
     # If no filter information could be found in the header, try to obtain it from the file name
     else: filterid = name.lower()
@@ -86,6 +87,8 @@ def get_filter(name, header):
     elif "irac" in filterid:
 
         if '3.6' in filterid or 'i1' in filterid: filter = Filter("IRAC.I1")
+
+    elif "alpha" in filterid or "6561" in filterid: filter = Filter("656_1")
 
     # Return the filter
     return filter

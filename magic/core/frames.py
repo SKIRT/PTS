@@ -206,6 +206,20 @@ class Frame(np.ndarray):
 
     # *****************************************************************
 
+    @property
+    def wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the pivot wavelength of the frame's filter, if defined
+        if self.filter is None: return None
+        else: return self.filter.pivotwavelength() * u.Unit("micron")
+
+    # *****************************************************************
+
     def set_unit(self, unit):
 
         """

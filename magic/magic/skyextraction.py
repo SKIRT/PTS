@@ -229,7 +229,7 @@ class SkyExtractor(object):
         """
 
         # Return the sigma-clipped median
-        return np.ma.median(np.ma.masked_array(self.frame, mask=self.clipped_mask))
+        return np.median(np.ma.masked_array(self.frame, mask=self.clipped_mask).compressed())
 
     # *****************************************************************
 
