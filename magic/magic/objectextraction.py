@@ -65,6 +65,9 @@ class ObjectExtractor(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Clearing the extractor")
+
         # Clear the list of sky objects
         self.objects = []
 
@@ -137,6 +140,9 @@ class ObjectExtractor(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Setting special region from " + self.config.special_region)
+
         # Load the region and create a mask from it
         region = pyregion.open(self.config.special_region).as_imagecoord(self.frame.wcs.to_header())
         special_mask = Mask(region.get_mask(shape=self.frame.shape))
@@ -159,6 +165,9 @@ class ObjectExtractor(object):
         :param frame:
         :return:
         """
+
+        # Inform the user
+        log.info("Setting region to ignore for subtraction from " + self.config.ignore_region)
 
         # Load the region and create a mask from it
         region = pyregion.open(self.config.ignore_region).as_imagecoord(frame.wcs.to_header())
@@ -212,6 +221,9 @@ class ObjectExtractor(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Saving table to " + self.config.saving.table_path)
+
         # Write the table to file
         ascii.write(self.table, self.config.saving.table_path)
 
@@ -223,6 +235,9 @@ class ObjectExtractor(object):
         This function ...
         """
 
+        # Inform the user
+        log.info("Saving region to " + self.config.saving.region_path)
+
         self.write_region(self.config.saving.region_path, self.config.saving.region_annotation)
 
     # *****************************************************************
@@ -232,6 +247,9 @@ class ObjectExtractor(object):
         """
         This function ...
         """
+
+        # Inform the user
+        log.info("Saving masked frame to " + self.config.saving.masked_frame_path)
 
         # Create a frame where the objects are masked
         frame = copy.deepcopy(self.frame)
@@ -248,6 +266,9 @@ class ObjectExtractor(object):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Saving resulting frame to " + self.config.saving.result_path)
 
         # Save the resulting frame
         self.frame.save(self.config.saving.result_path)

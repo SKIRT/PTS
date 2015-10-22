@@ -131,6 +131,9 @@ class SkyExtractor(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Creating a sigma-clipped mask for the sky")
+
         # Create the sigma-clipped mask
         self.clipped_mask = statistics.sigma_clip_mask(self.frame, self.config.sigma_clipping.sigma_level, self.mask)
 
@@ -155,6 +158,9 @@ class SkyExtractor(object):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Saving sky histogram to " + self.config.saving.histogram_path)
 
         # Create a masked array
         masked = np.ma.masked_array(self.frame, mask=self.mask)
@@ -253,6 +259,9 @@ class SkyExtractor(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Saving the masked frame to " + self.config.saving.masked_frame_path)
+
         # Create a frame where the objects are masked
         frame = copy.deepcopy(self.frame)
         frame[self.mask] = 0.0
@@ -268,6 +277,9 @@ class SkyExtractor(object):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Saving sigma-clipped masked frame to " + self.config.saving.clipped_masked_frame_path)
 
         # Create a frame with masked pixels
         frame = copy.deepcopy(self.frame)
@@ -285,6 +297,9 @@ class SkyExtractor(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Creating an extra mask from " + self.config.extra_region)
+
         # Load the region and create a mask from it
         extra_region = Region.from_file(self.config.extra_region, self.frame.wcs)
         self.extra_mask = Mask.from_region(extra_region, self.frame.shape)
@@ -299,6 +314,9 @@ class SkyExtractor(object):
         """
 
         # TODO: allow different estimation methods
+
+        # Inform the user
+        log.info("Estimating the sky")
 
         # If the mean sky level should be used
         if self.config.estimation.method == "mean":
@@ -335,6 +353,9 @@ class SkyExtractor(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Subtracting the sky from the frame")
+
         pass
 
     # *****************************************************************
@@ -345,6 +366,9 @@ class SkyExtractor(object):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Clearing the sky extractor")
 
         # Set the masks to None
         self.galaxy_mask = None

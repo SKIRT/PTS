@@ -453,6 +453,9 @@ class StarExtractor(ObjectExtractor):
         :return:
         """
 
+        # Inform the user
+        log.info("Constructing elliptical apertures regions to encompass saturated stars")
+
         # Loop over all stars
         for star in self.objects:
 
@@ -472,6 +475,9 @@ class StarExtractor(ObjectExtractor):
         :param factor:
         :return:
         """
+
+        # Inform the user
+        log.info("Replacing aperture regions by the estimated background")
 
         # Loop over all stars
         for star in self.objects:
@@ -517,12 +523,17 @@ class StarExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def create_region(self, type="sky"):
+    @property
+    def region(self):
 
         """
         This function ...
         :return:
         """
+
+        # TODO: improve this function
+
+        type="sky"
 
         # Initialize lists
         position_list = []
@@ -570,6 +581,9 @@ class StarExtractor(ObjectExtractor):
         :param frame:
         :return:
         """
+
+        # Inform the user
+        log.info("Writing stars region to " + path)
 
         # Create a file
         f = open(path,'w')

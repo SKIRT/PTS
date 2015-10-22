@@ -179,6 +179,9 @@ class GalaxyExtractor(ObjectExtractor):
         :return:
         """
 
+        # Inform the user
+        log.info("Constructing elliptical apertures regions to encompass the detected galaxies")
+
         # Loop over all galaxies
         for galaxy in self.objects:
 
@@ -214,7 +217,8 @@ class GalaxyExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def create_region(self):
+    @property
+    def region(self):
 
         """
         This function ...
@@ -223,6 +227,8 @@ class GalaxyExtractor(ObjectExtractor):
         :param config:
         :return:
         """
+
+        # TODO: improve this function
 
         ra_list = []
         dec_list = []
@@ -266,6 +272,9 @@ class GalaxyExtractor(ObjectExtractor):
         :param frame:
         :return:
         """
+
+        # Inform the user
+        log.info("Writing galaxy region to " + path)
 
         # Create a file
         f = open(path,'w')
