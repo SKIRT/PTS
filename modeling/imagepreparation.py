@@ -221,7 +221,7 @@ class ImagePreparation(object):
         if self.image.name == "GALEXFUV":
 
             # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.pixelscale
+            pixelscale = self.image.frames.primary.pixelscale.value
 
             # Get the wavelength of the image
             wavelength = self.image.frames.primary.filter.centerwavelength()
@@ -246,7 +246,7 @@ class ImagePreparation(object):
             F0 = 1024.0
 
             # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.pixelscale
+            pixelscale = self.image.frames.primary.pixelscale.value
 
             # Calculate the conversion factor
             pixelfactor = (206264.806247 / pixelscale)**2
@@ -260,7 +260,7 @@ class ImagePreparation(object):
         elif self.image.name == "Ha":
 
             # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.pixelscale
+            pixelscale = self.image.frames.primary.pixelscale.value
 
             pixelfactor = (206264.806247 / pixelscale)**2
 
@@ -289,7 +289,7 @@ class ImagePreparation(object):
         elif self.image.name == "PACS70":
 
             # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.pixelscale
+            pixelscale = self.image.frames.primary.pixelscale.value
 
             # Calculate the conversion factor
             pixelfactor = (206264.806247 / pixelscale)**2
@@ -302,7 +302,7 @@ class ImagePreparation(object):
         elif self.image.name == "PACS160":
 
             # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.pixelscale
+            pixelscale = self.image.frames.primary.pixelscale.value
 
             # Calculate the conversion factor
             pixelfactor = (206264.806247 / pixelscale)**2
