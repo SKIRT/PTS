@@ -313,7 +313,7 @@ class Frame(np.ndarray):
         data = convolve_fft(self, kernel, normalize_kernel=True)
 
         # Return the convolved frame
-        return Frame(data, self.wcs, self.pixelscale, self.description, self.selected, self.unit)
+        return Frame(data, self.wcs, self.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
     # *****************************************************************
 
@@ -329,7 +329,7 @@ class Frame(np.ndarray):
         data = transformations.align_and_rebin(self, self.header, ref_frame.header)
 
         # Return the rebinned frame
-        return Frame(data, ref_frame.wcs, ref_frame.pixelscale, self.description, self.selected, self.unit)
+        return Frame(data, ref_frame.wcs, ref_frame.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
     # *****************************************************************
 
@@ -350,7 +350,7 @@ class Frame(np.ndarray):
         data = cropping.crop_check(self, x_min, x_max, y_min, y_max)
 
         # Return the cropped frame
-        return Frame(data, None, self.pixelscale, self.description, self.selected, self.unit)
+        return Frame(data, None, self.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
     # *****************************************************************
 
@@ -367,7 +367,7 @@ class Frame(np.ndarray):
         data = ndimage.interpolation.zoom(self, zoom=1.0/factor)
 
         # Return the downsampled frame
-        return Frame(data, None, self.pixelscale*factor, self.description, self.selected, self.unit)
+        return Frame(data, None, self.pixelscale*factor, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
     # *****************************************************************
 
