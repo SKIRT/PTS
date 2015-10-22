@@ -21,16 +21,22 @@ from pts.skifile import SkiFile
 
 # -----------------------------------------------------------------
 
-## This function upgrades the specified ski file to the latest format version, if needed. If so, a backup copy of
-# the original ski file is placed next to it, and the original ski file is overwritten with the upgraded version.
-# The function returns true if the ski file was changed (and a backup copy was made), false otherwise.
+## This function upgrades the specified ski file to the latest format version, if needed. The function
+# operates in one of two modes, depending on the number of filename arguments given. The specified filenames
+# should have the ".ski" or ".xml" extension and may include an absolute or relative path.
 #
-# The filename argument should include the ".ski" extension and may include an absolute or relative path.
+# If only one argument is given, and the specified ski file needs an update, the original ski file is
+# overwritten with the upgraded version, and a backup copy of the original ski file is placed next to it.
 # The name of the backup copy (if one is made) includes a time stamp and has the ".xml" filename extension.
+# The function returns true if the ski file was upgraded (and a backup copy was made), false otherwise.
 #
-def upgradeskifile(skifile):
+# Of two arguments are given, the source file remains untouched and a new, possibly upgraded ski file
+# is placed at the target filepath, overwriting any existing file. No extra backup is made.
+# The function returns true if the target ski file was upgraded, false otherwise.
+#
+def upgradeskifile(skifile, targetfile=None):
     skifile = os.path.expanduser(skifile)
-    assert skifile.endswith(".ski")
+    assert skifile.endswith((".ski",".xml"))
 
     # define the upgrade conditions and transforms
     upgrades = _get_upgrade_definitions()
@@ -41,16 +47,15 @@ def upgradeskifile(skifile):
     for condition,templates in upgrades:
         changed |= ski.transformif(condition, templates)
 
-    # if there were changes, make a backup copy and save the updated file over the original
-    if changed:
+    # single argument: if there were changes, make a backup copy and save the updated file over the original
+    if targetfile==None and changed:
         backup = skifile[:-4] + "_" + datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + "_backupski.xml"
         os.rename(skifile, backup)
         ski.saveto(skifile)
 
-    # for debugging purposes: if there were changes, save a copy under a new name
-#    if changed:
-#        ski.saveto(skifile[:-4]+"_upgraded.ski")
-#        os.rename(skifile[:-4]+"_upgraded.ski", skifile[:-4]+"_upgraded.xml")
+    # two arguments: save into the target file
+    if targetfile!=None:
+        ski.saveto(targetfile)
 
     return changed
 
@@ -662,6 +667,596 @@ def _get_upgrade_definitions():
     </xsl:template>
     '''),
 
+    # - - - - - - - - - - - -
+    # git 577-0008afd (Oct 22, 2015): new dust grid class hiearchy using meshes; instruments with field of view
+
+    # remove "Structure" from name and type of dustGridStructure property
+    ('''//dustGridStructure''',
+    '''
+    <xsl:template match="dustGridStructure">
+        <xsl:element name="dustGrid">
+            <xsl:attribute name="type">
+                <xsl:value-of select="'DustGrid'"/>
+            </xsl:attribute>
+            <xsl:apply-templates select="node()"/>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # replace LinSpheDustGridStructure by Sphere1DDustGrid
+    ('''//LinSpheDustGridStructure''',
+    '''
+    <xsl:template match="LinSpheDustGridStructure">
+        <xsl:element name="Sphere1DDustGrid">
+            <xsl:apply-templates select="@*[starts-with(name(),'write')]"/>
+            <xsl:attribute name="maxR">
+                <xsl:value-of select="@extent"/>
+            </xsl:attribute>
+            <xsl:element name="meshR">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'Mesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LinMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@points"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # replace PowSpheDustGridStructure by Sphere1DDustGrid
+    ('''//PowSpheDustGridStructure''',
+    '''
+    <xsl:template match="PowSpheDustGridStructure">
+        <xsl:element name="Sphere1DDustGrid">
+            <xsl:apply-templates select="@*[starts-with(name(),'write')]"/>
+            <xsl:attribute name="maxR">
+                <xsl:value-of select="@extent"/>
+            </xsl:attribute>
+            <xsl:element name="meshR">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'Mesh'"/>
+                </xsl:attribute>
+                <xsl:element name="PowMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@points"/>
+                    </xsl:attribute>
+                    <xsl:attribute name="ratio">
+                        <xsl:value-of select="@ratio"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # replace LogSpheDustGridStructure by Sphere1DDustGrid
+    ('''//LogSpheDustGridStructure''',
+    '''
+    <xsl:template match="LogSpheDustGridStructure">
+        <xsl:element name="Sphere1DDustGrid">
+            <xsl:apply-templates select="@*[starts-with(name(),'write')]"/>
+            <xsl:attribute name="maxR">
+                <xsl:value-of select="@outerExtent"/>
+            </xsl:attribute>
+            <xsl:element name="meshR">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'Mesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LogMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@points"/>
+                    </xsl:attribute>
+                    <xsl:attribute name="centralBinFraction">
+                        <xsl:value-of select="substring-before(normalize-space(@innerExtent),' ') div substring-before(normalize-space(@outerExtent),' ')"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # replace LogLinAxSpheDustGridStructure by Sphere2DDustGrid
+    ('''//LogLinAxSpheDustGridStructure''',
+    '''
+    <xsl:template match="LogLinAxSpheDustGridStructure">
+        <xsl:element name="Sphere2DDustGrid">
+            <xsl:apply-templates select="@*[starts-with(name(),'write')]"/>
+            <xsl:attribute name="maxR">
+                <xsl:value-of select="@radialOuterExtent"/>
+            </xsl:attribute>
+            <xsl:element name="meshR">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'Mesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LogMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@radialPoints"/>
+                    </xsl:attribute>
+                    <xsl:attribute name="centralBinFraction">
+                        <xsl:value-of select="substring-before(normalize-space(@radialInnerExtent),' ') div substring-before(normalize-space(@radialOuterExtent),' ')"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+            <xsl:element name="meshTheta">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'Mesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LinMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@angularPoints"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # replace LinAxDustGridStructure by Cylinder2DDustGrid
+    ('''//LinAxDustGridStructure''',
+    '''
+    <xsl:template match="LinAxDustGridStructure">
+        <xsl:element name="Cylinder2DDustGrid">
+            <xsl:apply-templates select="@*[starts-with(name(),'write')]"/>
+            <xsl:attribute name="maxR">
+                <xsl:value-of select="@radialExtent"/>
+            </xsl:attribute>
+            <xsl:attribute name="minZ">
+                <xsl:value-of select="concat('-',@axialExtent)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxZ">
+                <xsl:value-of select="@axialExtent"/>
+            </xsl:attribute>
+            <xsl:element name="meshR">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'Mesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LinMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@radialPoints"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+            <xsl:element name="meshZ">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LinMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@axialPoints"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # replace PowAxDustGridStructure by Cylinder2DDustGrid
+    ('''//PowAxDustGridStructure''',
+    '''
+    <xsl:template match="PowAxDustGridStructure">
+        <xsl:element name="Cylinder2DDustGrid">
+            <xsl:apply-templates select="@*[starts-with(name(),'write')]"/>
+            <xsl:attribute name="maxR">
+                <xsl:value-of select="@radialExtent"/>
+            </xsl:attribute>
+            <xsl:attribute name="minZ">
+                <xsl:value-of select="concat('-',@axialExtent)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxZ">
+                <xsl:value-of select="@axialExtent"/>
+            </xsl:attribute>
+            <xsl:element name="meshR">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'Mesh'"/>
+                </xsl:attribute>
+                <xsl:element name="PowMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@radialPoints"/>
+                    </xsl:attribute>
+                    <xsl:attribute name="ratio">
+                        <xsl:value-of select="@radialRatio"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+            <xsl:element name="meshZ">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="SymPowMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@axialPoints"/>
+                    </xsl:attribute>
+                    <xsl:attribute name="ratio">
+                        <xsl:value-of select="@axialRatio"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # replace LogLinAxDustGridStructure by Cylinder2DDustGrid
+    ('''//LogLinAxDustGridStructure''',
+    '''
+    <xsl:template match="LogLinAxDustGridStructure">
+        <xsl:element name="Cylinder2DDustGrid">
+            <xsl:apply-templates select="@*[starts-with(name(),'write')]"/>
+            <xsl:attribute name="maxR">
+                <xsl:value-of select="@radialOuterExtent"/>
+            </xsl:attribute>
+            <xsl:attribute name="minZ">
+                <xsl:value-of select="concat('-',@axialExtent)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxZ">
+                <xsl:value-of select="@axialExtent"/>
+            </xsl:attribute>
+            <xsl:element name="meshR">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'Mesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LogMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@radialPoints"/>
+                    </xsl:attribute>
+                    <xsl:attribute name="centralBinFraction">
+                        <xsl:value-of select="substring-before(normalize-space(@radialInnerExtent),' ') div substring-before(normalize-space(@radialOuterExtent),' ')"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+            <xsl:element name="meshZ">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LinMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@axialPoints"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # replace LogPowAxDustGridStructure by Cylinder2DDustGrid
+    ('''//LogPowAxDustGridStructure''',
+    '''
+    <xsl:template match="LogPowAxDustGridStructure">
+        <xsl:element name="Cylinder2DDustGrid">
+            <xsl:apply-templates select="@*[starts-with(name(),'write')]"/>
+            <xsl:attribute name="maxR">
+                <xsl:value-of select="@radialOuterExtent"/>
+            </xsl:attribute>
+            <xsl:attribute name="minZ">
+                <xsl:value-of select="concat('-',@axialExtent)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxZ">
+                <xsl:value-of select="@axialExtent"/>
+            </xsl:attribute>
+            <xsl:element name="meshR">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'Mesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LogMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@radialPoints"/>
+                    </xsl:attribute>
+                    <xsl:attribute name="centralBinFraction">
+                        <xsl:value-of select="substring-before(normalize-space(@radialInnerExtent),' ') div substring-before(normalize-space(@radialOuterExtent),' ')"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+            <xsl:element name="meshZ">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="SymPowMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@axialPoints"/>
+                    </xsl:attribute>
+                    <xsl:attribute name="ratio">
+                        <xsl:value-of select="@axialRatio"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # replace LinCubDustGridStructure by CartesianDustGrid
+    ('''//LinCubDustGridStructure''',
+    '''
+    <xsl:template match="LinCubDustGridStructure">
+        <xsl:element name="CartesianDustGrid">
+            <xsl:apply-templates select="@*[starts-with(name(),'write')]"/>
+            <xsl:attribute name="minX">
+                <xsl:value-of select="concat('-',@extentX)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxX">
+                <xsl:value-of select="@extentX"/>
+            </xsl:attribute>
+            <xsl:attribute name="minY">
+                <xsl:value-of select="concat('-',@extentY)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxY">
+                <xsl:value-of select="@extentY"/>
+            </xsl:attribute>
+            <xsl:attribute name="minZ">
+                <xsl:value-of select="concat('-',@extentZ)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxZ">
+                <xsl:value-of select="@extentZ"/>
+            </xsl:attribute>
+            <xsl:element name="meshX">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LinMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@pointsX"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+            <xsl:element name="meshY">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LinMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@pointsY"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+            <xsl:element name="meshZ">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LinMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@pointsZ"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # replace GenLinCubDustGridStructure by CartesianDustGrid
+    ('''//GenLinCubDustGridStructure''',
+    '''
+    <xsl:template match="GenLinCubDustGridStructure">
+        <xsl:element name="CartesianDustGrid">
+            <xsl:apply-templates select="@*[not(starts-with(name(),'points'))]"/>
+            <xsl:element name="meshX">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LinMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@pointsX"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+            <xsl:element name="meshY">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LinMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@pointsY"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+            <xsl:element name="meshZ">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LinMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@pointsZ"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # replace PowCubDustGridStructure by CartesianDustGrid
+    ('''//PowCubDustGridStructure''',
+    '''
+    <xsl:template match="PowCubDustGridStructure">
+        <xsl:element name="CartesianDustGrid">
+            <xsl:apply-templates select="@*[starts-with(name(),'write')]"/>
+            <xsl:attribute name="minX">
+                <xsl:value-of select="concat('-',@extentX)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxX">
+                <xsl:value-of select="@extentX"/>
+            </xsl:attribute>
+            <xsl:attribute name="minY">
+                <xsl:value-of select="concat('-',@extentY)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxY">
+                <xsl:value-of select="@extentY"/>
+            </xsl:attribute>
+            <xsl:attribute name="minZ">
+                <xsl:value-of select="concat('-',@extentZ)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxZ">
+                <xsl:value-of select="@extentZ"/>
+            </xsl:attribute>
+            <xsl:element name="meshX">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="SymPowMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@pointsX"/>
+                    </xsl:attribute>
+                    <xsl:attribute name="ratio">
+                        <xsl:value-of select="@ratioX"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+            <xsl:element name="meshY">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="SymPowMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@pointsY"/>
+                    </xsl:attribute>
+                    <xsl:attribute name="ratio">
+                        <xsl:value-of select="@ratioY"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+            <xsl:element name="meshZ">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="SymPowMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@pointsZ"/>
+                    </xsl:attribute>
+                    <xsl:attribute name="ratio">
+                        <xsl:value-of select="@ratioZ"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # replace AdaptiveMeshDustGridStructure by AdaptiveMeshDustGrid
+    ('''//AdaptiveMeshDustGridStructure''',
+    '''
+    <xsl:template match="AdaptiveMeshDustGridStructure">
+        <xsl:element name="AdaptiveMeshDustGrid">
+            <xsl:apply-templates select="@*"/>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # replace Voronoi/BinTree/OctTree/ParticleTree-DustGridStructure by -DustGrid
+    ('''//VoronoiDustGridStructure|//BinTreeDustGridStructure|//OctTreeDustGridStructure|//ParticleTreeDustGridStructure''',
+    '''
+    <xsl:template match="VoronoiDustGridStructure|BinTreeDustGridStructure|OctTreeDustGridStructure|ParticleTreeDustGridStructure">
+        <xsl:element name="{substring-before(name(),'Structure')}">
+            <xsl:apply-templates select="@*[not(starts-with(name(),'extent'))]"/>
+            <xsl:attribute name="minX">
+                <xsl:value-of select="concat('-',@extentX)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxX">
+                <xsl:value-of select="@extentX"/>
+            </xsl:attribute>
+            <xsl:attribute name="minY">
+                <xsl:value-of select="concat('-',@extentY)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxY">
+                <xsl:value-of select="@extentY"/>
+            </xsl:attribute>
+            <xsl:attribute name="minZ">
+                <xsl:value-of select="concat('-',@extentZ)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxZ">
+                <xsl:value-of select="@extentZ"/>
+            </xsl:attribute>
+            <xsl:apply-templates select="node()"/>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # replace TwoPhaseDustGridStructure by TwoPhaseDustGrid
+    ('''//TwoPhaseDustGridStructure''',
+    '''
+    <xsl:template match="TwoPhaseDustGridStructure">
+        <xsl:element name="TwoPhaseDustGrid">
+            <xsl:apply-templates select="@*[starts-with(name(),'write')]"/>
+            <xsl:apply-templates select="@*[starts-with(name(),'filli')]"/>
+            <xsl:apply-templates select="@*[starts-with(name(),'contr')]"/>
+            <xsl:attribute name="minX">
+                <xsl:value-of select="concat('-',@extentX)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxX">
+                <xsl:value-of select="@extentX"/>
+            </xsl:attribute>
+            <xsl:attribute name="minY">
+                <xsl:value-of select="concat('-',@extentY)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxY">
+                <xsl:value-of select="@extentY"/>
+            </xsl:attribute>
+            <xsl:attribute name="minZ">
+                <xsl:value-of select="concat('-',@extentZ)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxZ">
+                <xsl:value-of select="@extentZ"/>
+            </xsl:attribute>
+            <xsl:element name="meshX">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LinMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@pointsX"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+            <xsl:element name="meshY">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LinMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@pointsY"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+            <xsl:element name="meshZ">
+                <xsl:attribute name="type">
+                    <xsl:value-of select="'MoveableMesh'"/>
+                </xsl:attribute>
+                <xsl:element name="LinMesh">
+                    <xsl:attribute name="numBins">
+                        <xsl:value-of select="@pointsZ"/>
+                    </xsl:attribute>
+                </xsl:element>
+            </xsl:element>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # replace extent attributes on Instruments by fieldOfView attributes
+    ('''//SimpleInstrument|//FrameInstrument|//FullInstrument|//InstrumentFrame''',
+    '''
+    <xsl:template match="SimpleInstrument|FrameInstrument|FullInstrument|InstrumentFrame">
+        <xsl:element name="{name()}">
+            <xsl:apply-templates select="@*[not(starts-with(name(),'extent'))]"/>
+            <xsl:attribute name="fieldOfViewX">
+                <xsl:value-of select="concat(2*@pixelsX div (@pixelsX -1)*substring-before(normalize-space(@extentX),' '), ' ', substring-after(normalize-space(@extentX),' '))"/>
+            </xsl:attribute>
+            <xsl:attribute name="fieldOfViewY">
+                <xsl:value-of select="concat(2*@pixelsY div (@pixelsY -1)*substring-before(normalize-space(@extentY),' '), ' ', substring-after(normalize-space(@extentY),' '))"/>
+            </xsl:attribute>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # remove scattWavelength attribute on Oligo/Pan-MonteCarloSimulation
+    ('''//OligoMonteCarloSimulation|//PanMonteCarloSimulation''',
+    '''
+    <xsl:template match="OligoMonteCarloSimulation|PanMonteCarloSimulation">
+        <xsl:element name="{name()}">
+            <xsl:apply-templates select="@*[not(name()='scattWavelength')]"/>
+            <xsl:apply-templates select="node()"/>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # - - - - - - - - - - - -
 
     # terminate the list with a placeholder to keep the syntax of all previous items the same
     ("false()", "") )
