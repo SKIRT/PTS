@@ -30,10 +30,7 @@ import astropy.logger
 # Import Astromagic modules
 from astromagic.tools import configuration
 from astromagic import Image
-import astromagic.utilities as iu
-from astromagic.magic.galaxyextraction import GalaxyExtractor
-from astromagic.magic.starextraction import StarExtractor
-from astromagic.magic.skyextraction import SkyExtractor
+from astromagic.core.frames import Frame
 
 # Import PTS modules
 from .imagepreparation import ImagePreparation
@@ -224,6 +221,8 @@ class GalaxyModeler(object):
             # Open the image
             image = Image(path)
 
+            print(config.errors)
+
             # If no error map was found in the FITS file, try to find a seperate FITS file containing error data
             if image.frames.errors is None:
 
@@ -335,13 +334,11 @@ class GalaxyModeler(object):
         # Run the decomposition
         decomposer.run()
 
-
-
         # TODO: do the bulge/disk fitting here
 
         # Set path of bulge and disk images
-        bulge_path = os.path.join(self.prep_path, "Bulge", "M81_bulge_i59_total.fits")
-        disk_path = os.path.join(self.prep_path, "Disk", "M81_disk_i59_total.fits")
+        bulge_path = os.path.join(self.prep_path, "Bulge", "bulge.fits")
+        disk_path = os.path.join(self.prep_path, "Disk", "disk.fits")
 
         # Create list
         paths = {"Bulge": bulge_path, "Disk": disk_path}
@@ -349,36 +346,26 @@ class GalaxyModeler(object):
         # For bulge and disk ...
         for name, path in paths.items():
 
-            # Open the image
-            image = iu.open(path)
+            # Open the frame
+            frame = Frame.from_file(path)
 
-            # Set the header of the image
-            image.header["EQUINOX"] = 2000.0
-            image.header["NAXIS"] = 2
-            image.header["NAXIS1"] = 1000
-            image.header["NAXIS2"] = 1000
-            image.header["CRPIX1"] = 500.5
-            image.header["CRPIX2"] = 500.5
-            image.header["CRVAL1"] = 148.8883333
-            image.header["CRVAL2"] = +69.06527778
-            image.header["CD1_1"] = -4.77942772e-4
-            image.header["CD1_2"] = 0.0
-            image.header["CD2_1"] = 0.0
-            image.header["CD2_2"] = 4.77942772e-4
-            image.header["CROTA1"] = 0.0
-            image.header["CROTA2"] = 0.0
-            image.header["CTYPE1"] = 'RA---TAN'
-            image.header["CTYPE2"] = 'DEC--TAN'
+            # Convolve the frame to the PACS 160 resolution
+            kernels_dir = os.path.expanduser("~/Kernels")
+            kernel_path = os.path.join(kernels_dir, "Kernel_HiRes_Moffet_00.5_to_PACS_160.fits")
+            kernel = Frame.from_file(kernel_path)
+            frame.convolve(kernel)
 
-            # Convolve the bulge image to the PACS 160 resolution
-            iu.convolve(image, "Kernel_HiRes_Moffet_00.5_to_PACS_160.fits")
+            # Rebin the convolved frame to the PACS 160 frame (just as we did with the other images)
+            reference_path = os.path.join(self.data_path, "PACS160.fits")
+            reference = Frame.from_file(reference_path)
+            frame.rebin(reference)
 
-            # Rebin the convolved image to the frame of the PACS 160 image (just as we did with the other images)
-            iu.rebin(image, self.data_path, 'PACS160.fits')
-            image.crop(350, 725, 300, 825)
+            # Finally, crop the image
+            frame.frames.primary.crop(350, 725, 300, 825)
 
-            # Save the convolved, rebinned and cropped bulge or disk image
-            iu.save(image, os.path.join(self.prep_path, name), 'final.fits')
+            # Save the convolved, rebinned and cropped bulge or disk frame
+            component_path = os.path.join(self.prep_path, name, 'final.fits')
+            frame.save(component_path)
 
     # *****************************************************************
 

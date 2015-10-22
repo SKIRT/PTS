@@ -62,7 +62,7 @@ class ImagePreparation(object):
 
         ### TEMPORARY
 
-        self.config.convolve = False
+        #self.config.convolve = False
 
         ###
 
@@ -325,7 +325,8 @@ class ImagePreparation(object):
         """
 
         # Open the kernel frame
-        kernel_path = "Kernel_HiRes_" + self.config.convolution.aniano_name + "_to_" + self.config.convolution.convolve_to + ".fits"
+        kernels_dir = os.path.expanduser(self.config.convolution.kernels_dir)
+        kernel_path = os.path.join(kernels_dir, "Kernel_HiRes_" + self.config.convolution.aniano_name + "_to_" + self.config.convolution.convolve_to + ".fits")
         kernel = Frame.from_file(kernel_path)
 
         # Convolve the image (the primary and errors frame)
@@ -383,8 +384,11 @@ class ImagePreparation(object):
         # Calculate the global uncertainty
         uncertainty = np.sqrt(np.std(means)**2 + np.median(stddevs))
 
+        print(self.config.primary)
+        print(self.config.errors)
+
         # If there is no errors frame
-        if self.image.frames[self.config.errors] is None:
+        if not self.config.errors in self.image.frames:
 
             wcs = self.image.frames[self.config.primary].wcs
             pixelscale = self.image.frames[self.config.primary].pixelscale
