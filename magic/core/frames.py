@@ -148,6 +148,7 @@ class Frame(np.ndarray):
         self.unit = getattr(obj, 'unit', None)
         self.name = getattr(obj, 'name', None)
         self.filter = getattr(obj, 'filter', None)
+        self.sky_subtracted = getattr(obj, 'sky_subtracted', False)
 
     # *****************************************************************
 
