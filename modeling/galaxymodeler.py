@@ -283,7 +283,7 @@ class GalaxyModeler(object):
             config.rebinning.rebin_to = os.path.join(self.data_path, self.config.reference_image + ".fits")
 
             # Set the 'rebin' and 'convolve' flags
-            if image.name == config.reference_image:
+            if image.name == self.config.reference_image:
 
                 log.info("This is the reference image, will not be rebinned or convolved")
                 config.rebin = False
