@@ -1257,12 +1257,12 @@ def _get_upgrade_definitions():
     '''),
 
     # - - - - - - - - - - - -
-    # git  (Oct ?, 2015): replace extents on geometries and distributions by boxes
 
-    # replace extents Voronoi/BinTree/OctTree/ParticleTree-DustGridStructure by -DustGrid
-    ('''//AdaptiveMeshGeometry[@extentX]|//CropGeometryDecorator[@extentX]|//FoamGeometryDecorator[@extentX]|//UniformCuboidGeometry[@extentX]|//VoronoiGeometry[@extentX]''',
+    # git 580-f9e4296 (Oct 23, 2015): replace extents on geometries, dust distributions and stellar components by boxes
+    ('''//AdaptiveMeshGeometry[@extentX]|//CropGeometryDecorator[@extentX]|//FoamGeometryDecorator[@extentX]|//UniformCuboidGeometry[@extentX]|//VoronoiGeometry[@extentX]|'''+
+     '''//AdaptiveMeshDustDistribution[@extentX]|//VoronoiDustDistribution[@extentX]|//AdaptiveMeshStellarComp[@extentX]|//VoronoiStellarComp[@extentX]''',
     '''
-    <xsl:template match="AdaptiveMeshGeometry|CropGeometryDecorator|FoamGeometryDecorator|UniformCuboidGeometry|VoronoiGeometry">
+    <xsl:template match="AdaptiveMeshGeometry|CropGeometryDecorator|FoamGeometryDecorator|UniformCuboidGeometry|VoronoiGeometry|AdaptiveMeshDustDistribution|VoronoiDustDistribution|AdaptiveMeshStellarComp|VoronoiStellarComp">
         <xsl:element name="{name()}">
             <xsl:apply-templates select="@*[not(starts-with(name(),'extent'))]"/>
             <xsl:attribute name="minX">
@@ -1287,8 +1287,6 @@ def _get_upgrade_definitions():
         </xsl:element>
     </xsl:template>
     '''),
-
-# - - - - - - - - - - - -
 
     # terminate the list with a placeholder to keep the syntax of all previous items the same
     ("false()", "") )
