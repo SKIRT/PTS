@@ -64,34 +64,51 @@ def get_filter(name, header):
     :return:
     """
 
-    # Initially, set the filter to None
-    filter = None
+    filterid = name.lower()
 
     # Determine the filter from the information in the header
-    if 'INSTRUME' in header and 'FILTER' in header: filterid = header['INSTRUME'].lower() + header['FILTER'].lower()
-    elif 'FLTRNM' in header: filterid = header['FLTRNM']
-
-    # If no filter information could be found in the header, try to obtain it from the file name
-    else: filterid = name.lower()
+    if 'INSTRUME' in header: filterid += header['INSTRUME'].lower()
+    if 'FILTER' in header: filterid += header['FILTER'].lower()
+    if 'FLTRNM' in header: filterid += header['FLTRNM'].lower()
 
     # Create a filter object from the filterid
     if "fuv" in filterid: filter = Filter("GALEX.FUV")
     elif "pacs" in filterid:
 
-        if '70' in filterid or 'blue' in filterid: filter = Filter("Pacs.blue")
-        elif '100' in filterid or 'green' in filterid: filter = Filter("Pacs.green")
-        elif '160' in filterid or 'red' in filterid: filter = Filter("Pacs.red")
+        if '70' in filterid or 'blue' in filterid: return Filter("Pacs.blue")
+        elif '100' in filterid or 'green' in filterid: return Filter("Pacs.green")
+        elif '160' in filterid or 'red' in filterid: return Filter("Pacs.red")
+        else:
+            log.warning("Could not determine which PACS filter was used for this image")
+            return None
 
-    elif "mips" in filterid or "24" in filterid: filter = Filter("MIPS.24")
-    elif "2mass" in filterid and "h" in filterid: filter = Filter("2MASS.H")
+    elif "mips" in filterid:
+
+        if "24" in filterid: return Filter("MIPS.24")
+        elif "70" in filterid: return Filter("MIPS.70")
+        elif "160" in filterid: return Filter("MIPS.160")
+        else:
+            log.warning("Could not determine which MIPS filter was used for this image")
+            return None
+
+    elif "2mass" in filterid and "h" in filterid: return Filter("2MASS.H")
+    elif "2mass" in filterid and "j" in filterid: return Filter("2MASS.J")
+    elif "2mass" in filterid and "k" in filterid: return Filter("2MASS.Ks")
     elif "irac" in filterid:
 
-        if '3.6' in filterid or 'i1' in filterid: filter = Filter("IRAC.I1")
+        if '3.6' in filterid or 'i1' in filterid: return Filter("IRAC.I1")
+        elif '4.5' in filterid or 'i2' in filterid: return Filter("IRAC.I2")
+        elif '5.8' in filterid or 'i3' in filterid: return Filter("IRAC.I3")
+        elif '8.0' in filterid or 'i4' in filterid: return Filter("IRAC.I4")
+        else:
+            log.warning("Could not determine which IRAC filter was used for this image")
+            return None
 
-    elif "alpha" in filterid or "6561" in filterid: filter = Filter("656_1")
+    elif "alpha" in filterid or "6561" in filterid: return Filter("656_1")
+    elif "r" in filterid and "kpno" in filterid: return Filter("KPNO.Mosaic.R")
 
-    # Return the filter
-    return filter
+    # The filter could not be determined from the specified header
+    else: return None
 
 # *****************************************************************
 

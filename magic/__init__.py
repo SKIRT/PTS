@@ -956,16 +956,15 @@ class Image(object):
         # Obtain the filter for this image
         filter = headers.get_filter(self.name, self.old_header)
 
+        # Inform the user on the filter
+        if filter is not None: log.info("The filter for this image is " + filter.filterID())
+        else: log.warning("Could not determine the filter for this image")
+
         # Obtain the units of this image
         unit = headers.get_units(self.old_header)
 
         # Check whether the image is sky-subtracted
         sky_subtracted = headers.is_sky_subtracted(self.old_header)
-
-        #wavelength = None
-        #if filter is not None: wavelength = filter.pivotwavelength() * u.Unit("micron")
-        #elif "ha" in self.name.lower(): wavelength = 0.65628 * u.Unit("micron")
-        #else: log.warning("Could not determine the wavelength for this image")
 
         # Check whether multiple planes are present in the FITS image
         nframes = headers.get_number_of_frames(self.old_header)
