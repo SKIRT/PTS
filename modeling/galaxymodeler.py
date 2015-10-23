@@ -280,7 +280,7 @@ class GalaxyModeler(object):
             ### SETTING THE REFERENCE IMAGE
 
             # Set the path to the reference image for the rebinning
-            config.rebinning.rebin_to = os.path.join(self.data_path, self.config.reference_image)
+            config.rebinning.rebin_to = os.path.join(self.data_path, self.config.reference_image + ".fits")
 
             # Set the 'rebin' and 'convolve' flags
             if image.name == config.reference_image:
