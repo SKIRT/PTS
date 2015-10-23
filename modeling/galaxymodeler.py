@@ -20,6 +20,7 @@ from __future__ import (absolute_import, division, print_function)
 # Import standard modules
 import os.path
 import inspect
+import shutil
 
 # Import astronomical modules
 from astropy import units as u
@@ -29,10 +30,7 @@ import astropy.logger
 # Import Astromagic modules
 from astromagic.tools import configuration
 from astromagic import Image
-import astromagic.utilities as iu
-from astromagic.magic.galaxyextraction import GalaxyExtractor
-from astromagic.magic.starextraction import StarExtractor
-from astromagic.magic.skyextraction import SkyExtractor
+from astromagic.core.frames import Frame
 
 # Import PTS modules
 from .imagepreparation import ImagePreparation
@@ -126,6 +124,17 @@ class GalaxyModeler(object):
 
     # *****************************************************************
 
+    def clear_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        shutil.rmtree('/home/me/test')
+
+    # *****************************************************************
+
     def prepare_images(self):
 
         """
@@ -159,19 +168,41 @@ class GalaxyModeler(object):
             if config is None: config = configuration.open(default_config)
             else: config = configuration.open(config, default_config)
 
+            # Set log level for the different children of the ImagePreparation object, if cascading is enabled
+            if self.config.logging.cascade:
+
+                # Galaxy extractor
+                config.galaxy_extraction.logging.level = self.config.logging.level
+                config.galaxy_extraction.logging.cascade = self.config.logging.cascade
+                config.galaxy_extraction.logging.path = self.config.logging.path
+
+                # Star extractor
+                config.star_extraction.logging.level = self.config.logging.level
+                config.star_extraction.logging.cascade = self.config.logging.cascade
+                config.star_extraction.logging.path = self.config.logging.path
+
+                # Sky extractor
+                config.sky_extraction.logging.level = self.config.logging.level
+                config.sky_extraction.logging.cascade = self.config.logging.cascade
+                config.sky_extraction.logging.path = self.config.logging.path
+
             # Set saving parameters for galaxy extractor
+            config.galaxy_extraction.save_table = True
             config.galaxy_extraction.save_region = True
             #config.galaxy_extraction.save_masked_frame = True
             #config.galaxy_extraction.save_result = True
+            config.galaxy_extraction.saving.table_path = os.path.join(self.prep_path, filter_name, "galaxies.txt")
             config.galaxy_extraction.saving.region_path = os.path.join(self.prep_path, filter_name, "galaxies.reg")
             config.galaxy_extraction.saving.region_annotation = "name"
             #config.galaxy_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "masked_galaxies.fits")
             #config.galaxy_extraction.saving.result_path = os.path.join(self.prep_path, filter_name, "extractedgalaxies.fits")
 
             # Set saving parameters for star extractor
+            config.star_extraction.save_table = True
             config.star_extraction.save_region = True
             #config.star_extraction.save_masked_frame = True
             config.star_extraction.save_result = True
+            config.star_extraction.saving.table_path = os.path.join(self.prep_path, filter_name, "stars.txt")
             config.star_extraction.saving.region_path = os.path.join(self.prep_path, filter_name, "stars.reg")
             config.star_extraction.saving.region_annotation = "flux"
             #config.star_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "masked_stars.fits")
@@ -179,7 +210,11 @@ class GalaxyModeler(object):
 
             # Set saving parameters for sky extractor
             config.sky_extraction.save_masked_frame = True
+            config.sky_extraction.save_clipped_masked_frame = True
+            config.sky_extraction.save_histogram = True
             config.sky_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "sky_mask.fits")
+            config.sky_extraction.saving.clipped_masked_frame_path = os.path.join(self.prep_path, filter_name, "clipped_sky_mask.fits")
+            config.sky_extraction.saving.histogram_path = os.path.join(self.prep_path, filter_name, "sky_histogram.pdf")
 
             ### OPENING THE IMAGE
 
@@ -206,6 +241,10 @@ class GalaxyModeler(object):
             # Set the extract_stars flag
             if image.wavelength < 10.0 * u.micron: config.extract_stars = True
             else: config.extract_stars = False
+
+            # Set the correct_for_extinction flag
+            if image.wavelength < 1.0 * u.micron: config.correct_for_extinction = True
+            else: config.correct_for_extinction = False
 
             ### SETTING THE UNITS
 
@@ -235,10 +274,26 @@ class GalaxyModeler(object):
                 image.masks.extra.select()
                 image.apply_masks(0.0)
 
+                # Set the path of the extra region in the SkyExtractor's configuration
+                config.sky_extraction.extra_region = extra_path
+
             ### SETTING THE REFERENCE IMAGE
 
             # Set the path to the reference image for the rebinning
             config.rebinning.rebin_to = os.path.join(self.data_path, self.config.reference_image)
+
+            # Set the 'rebin' and 'convolve' flags
+            if image.name == config.reference_image:
+
+                log.info("This is the reference image, will not be rebinned or convolved")
+                config.rebin = False
+                config.convolve = False
+
+            ### SETTING THE NOISE REGION
+
+            # Set the path to the noise region
+            noise_path = os.path.join(self.prep_path, "noise.reg")
+            config.uncertainties.noise_path = noise_path
 
             ### LOOKING FOR REGIONS TO IGNORE FOR THE EXTRACTION ALGORITHMS
 
@@ -261,114 +316,6 @@ class GalaxyModeler(object):
 
     # *****************************************************************
 
-    def prepare_images_old(self):
-
-        """
-        This function prepares the images
-        """
-
-        config = self.config.preparation
-
-        # Loop over all filters for which we have an image
-        for filter_name, path in self.image_paths.items():
-
-            # Path where the prepared images are being saved to
-            filter_prep_path = os.path.join(self.prep_path, filter_name)
-
-            # Open the image
-            image = iu.open(path)
-
-            # Set the unit
-            unit = u.Unit(units[filter_name])
-            image.primary.set_unit(unit)
-
-            # Set the fwhm of the image, if it is not None
-            if fwhmax[filter_name] is not None: image.primary.set_fwhm(fwhm[filter_name])
-
-            # Mask NaNs, edges and extra user-defined regions
-            extra_path = os.path.join(self.data_path, 'extra', image.name + '.reg')
-            extra_path = extra_path if os.path.isfile(extra_path) else None
-
-            # Mask nans and extra regions
-            image.frames.primary.replace_nans(0.0)
-            if extra_path is not None:
-
-                image.import_region(extra_path, "extra")
-                image.regions.extra.select()
-                image.create_mask()
-                image.regions.extra.deselect()
-                image.masks.extra.select()
-                image.apply_masks(0.0)
-
-            # Extract galaxies from the image
-            galaxyex = GalaxyExtractor(config.galaxyextraction)
-            galaxyex.run(image.frames.primary)
-
-            # Extract the stars from the image
-            if image.wavelength < 10.0 * u.micron:
-
-                starex = StarExtractor(config.starextraction)
-                starex.run(image.frames.primary, galaxyex)
-
-            else: starex = None
-
-            # Subtract the sky
-            assert (sky_subtracted[filter_name] == image.sky_subtracted)
-
-            # Extract the sky from the image
-            if not image.sky_subtracted:
-
-                skyex = SkyExtractor()
-                skyex.run(image.frames.primary, galaxyex, starex)
-
-            # Determine whether galactic extinction should be taken into account
-            # If the wavelength is smaller than 1 micron, such extinction is expected
-            extinction = image.wavelength < 1.0 * u.micron
-            if extinction: image.frames.primary *= 10**(0.4*attenuations[filter_name])
-
-            exit()
-
-            # Convert the units to MJy / sr
-            unit = u.Unit("MJy/sr")
-            image.primary.convert_to(unit)
-
-            # Convolution
-            if self.config.convolve and filter_name != self.config.convolve_to:
-
-                reference_path = "Kernel_HiRes_" + aniano_names[filter_name] + "_to_" + aniano_names[self.config.convolve_to] + ".fits"
-                reference_image = Image(reference_path)
-                reference_frame = reference_image.frames.primary
-
-                # Convolve the primary and errors frame (if present)
-                image.frames.primary.convolve(reference_frame)
-                if image.frames.errors is not None: image.frames.errors.convolve(reference_frame)
-
-            # Rebinning
-            if self.config.rebin and filter_name != self.config.rebin_to:
-
-                reference_path = self.image_paths[self.config.rebin_to]
-                reference_image = Image(reference_path)
-                reference_frame = reference_image.frames.primary
-
-                # Rebin the primary and errors frame (if present)
-                image.frames.primary.rebin(reference_frame)
-                if image.frames.errors is not None: image.frames.errors.rebin(reference_frame)
-
-            # Set the uncertainties
-            if filter_name != "2MASSH": iu.set_uncertainty(image, self.prep_path, "noise.reg")
-
-            # If requested, save the result
-            if self.config.save: iu.save(image, filter_prep_path, 'convolved_rebinned.fits')
-
-            # Crop the interesting part of the image
-            image.frames.primary.crop(350, 725, 300, 825)
-            if image.frames.errors is not None: image.frames.errors.crop(350, 725, 300, 825)
-
-            # If requested, save the result
-            iu.save(image, filter_prep_path, 'final.fits')
-
-    # *****************************************************************
-
     def decompose(self):
 
         """
@@ -376,19 +323,27 @@ class GalaxyModeler(object):
         :return:
         """
 
+        # Create config for GalaxyDecomposer ...
+        config = None
+
+        # Set log level for the decomposer, if cascading is enabled
+        if self.config.logging.cascade:
+
+            config.logging.level = self.config.logging.level
+            config.logging.cascade = self.config.logging.cascade
+            config.logging.path = self.config.logging.path
+
         # Create a GalaxyDecomposer object
         decomposer = GalaxyDecomposer()
 
         # Run the decomposition
         decomposer.run()
 
-
-
         # TODO: do the bulge/disk fitting here
 
         # Set path of bulge and disk images
-        bulge_path = os.path.join(self.prep_path, "Bulge", "M81_bulge_i59_total.fits")
-        disk_path = os.path.join(self.prep_path, "Disk", "M81_disk_i59_total.fits")
+        bulge_path = os.path.join(self.prep_path, "Bulge", "bulge.fits")
+        disk_path = os.path.join(self.prep_path, "Disk", "disk.fits")
 
         # Create list
         paths = {"Bulge": bulge_path, "Disk": disk_path}
@@ -396,36 +351,26 @@ class GalaxyModeler(object):
         # For bulge and disk ...
         for name, path in paths.items():
 
-            # Open the image
-            image = iu.open(path)
+            # Open the frame
+            frame = Frame.from_file(path)
 
-            # Set the header of the image
-            image.header["EQUINOX"] = 2000.0
-            image.header["NAXIS"] = 2
-            image.header["NAXIS1"] = 1000
-            image.header["NAXIS2"] = 1000
-            image.header["CRPIX1"] = 500.5
-            image.header["CRPIX2"] = 500.5
-            image.header["CRVAL1"] = 148.8883333
-            image.header["CRVAL2"] = +69.06527778
-            image.header["CD1_1"] = -4.77942772e-4
-            image.header["CD1_2"] = 0.0
-            image.header["CD2_1"] = 0.0
-            image.header["CD2_2"] = 4.77942772e-4
-            image.header["CROTA1"] = 0.0
-            image.header["CROTA2"] = 0.0
-            image.header["CTYPE1"] = 'RA---TAN'
-            image.header["CTYPE2"] = 'DEC--TAN'
+            # Convolve the frame to the PACS 160 resolution
+            kernels_dir = os.path.expanduser("~/Kernels")
+            kernel_path = os.path.join(kernels_dir, "Kernel_HiRes_Moffet_00.5_to_PACS_160.fits")
+            kernel = Frame.from_file(kernel_path)
+            frame.convolve(kernel)
 
-            # Convolve the bulge image to the PACS 160 resolution
-            iu.convolve(image, "Kernel_HiRes_Moffet_00.5_to_PACS_160.fits")
+            # Rebin the convolved frame to the PACS 160 frame (just as we did with the other images)
+            reference_path = os.path.join(self.data_path, "PACS160.fits")
+            reference = Frame.from_file(reference_path)
+            frame.rebin(reference)
 
-            # Rebin the convolved image to the frame of the PACS 160 image (just as we did with the other images)
-            iu.rebin(image, self.data_path, 'PACS160.fits')
-            image.crop(350, 725, 300, 825)
+            # Finally, crop the image
+            frame.frames.primary.crop(350, 725, 300, 825)
 
-            # Save the convolved, rebinned and cropped bulge or disk image
-            iu.save(image, os.path.join(self.prep_path, name), 'final.fits')
+            # Save the convolved, rebinned and cropped bulge or disk frame
+            component_path = os.path.join(self.prep_path, name, 'final.fits')
+            frame.save(component_path)
 
     # *****************************************************************
 
@@ -434,6 +379,16 @@ class GalaxyModeler(object):
         """
         This function makes the maps of dust and stars ...
         """
+
+        # Create config for MapMaker ...
+        config = None
+
+        # Set log level for the map maker, if cascading is enabled
+        if self.config.logging.cascade:
+
+            config.logging.level = self.config.logging.level
+            config.logging.cascade = self.config.logging.cascade
+            config.logging.path = self.config.logging.path
 
         # Create a MapMaker object
         maker = MapMaker()
@@ -449,6 +404,16 @@ class GalaxyModeler(object):
         This function ...
         :return:
         """
+
+        # Create config for SEDFitter ...
+        config = None
+
+        # Set log level for the SED fitter, if cascading is enabled
+        if self.config.logging.cascade:
+
+            config.logging.level = self.config.logging.level
+            config.logging.cascade = self.config.logging.cascade
+            config.logging.path = self.config.logging.path
 
         # Create a SEDFitter object
         fitter = SEDFitter()
