@@ -221,8 +221,6 @@ class GalaxyModeler(object):
             # Open the image
             image = Image(path)
 
-            print(config.errors)
-
             # If no error map was found in the FITS file, try to find a seperate FITS file containing error data
             if image.frames.errors is None:
 
@@ -283,6 +281,13 @@ class GalaxyModeler(object):
 
             # Set the path to the reference image for the rebinning
             config.rebinning.rebin_to = os.path.join(self.data_path, self.config.reference_image)
+
+            # Set the 'rebin' and 'convolve' flags
+            if image.name == config.reference_image:
+
+                log.info("This is the reference image, will not be rebinned or convolved")
+                config.rebin = False
+                config.convolve = False
 
             ### SETTING THE NOISE REGION
 
