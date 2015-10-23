@@ -1230,7 +1230,7 @@ def _get_upgrade_definitions():
     '''),
 
     # replace extent attributes on Instruments by fieldOfView attributes
-    ('''//SimpleInstrument|//FrameInstrument|//FullInstrument|//InstrumentFrame''',
+    ('''//SimpleInstrument[@extentX]|//FrameInstrument[@extentX]|//FullInstrument[@extentX]|//InstrumentFrame[@extentX]''',
     '''
     <xsl:template match="SimpleInstrument|FrameInstrument|FullInstrument|InstrumentFrame">
         <xsl:element name="{name()}">
@@ -1246,7 +1246,7 @@ def _get_upgrade_definitions():
     '''),
 
     # remove scattWavelength attribute on Oligo/Pan-MonteCarloSimulation
-    ('''//OligoMonteCarloSimulation|//PanMonteCarloSimulation''',
+    ('''//OligoMonteCarloSimulation[@scattWavelength]|//PanMonteCarloSimulation[@scattWavelength]''',
     '''
     <xsl:template match="OligoMonteCarloSimulation|PanMonteCarloSimulation">
         <xsl:element name="{name()}">
@@ -1257,6 +1257,38 @@ def _get_upgrade_definitions():
     '''),
 
     # - - - - - - - - - - - -
+    # git  (Oct ?, 2015): replace extents on geometries and distributions by boxes
+
+    # replace extents Voronoi/BinTree/OctTree/ParticleTree-DustGridStructure by -DustGrid
+    ('''//AdaptiveMeshGeometry[@extentX]|//CropGeometryDecorator[@extentX]|//FoamGeometryDecorator[@extentX]|//UniformCuboidGeometry[@extentX]|//VoronoiGeometry[@extentX]''',
+    '''
+    <xsl:template match="AdaptiveMeshGeometry|CropGeometryDecorator|FoamGeometryDecorator|UniformCuboidGeometry|VoronoiGeometry">
+        <xsl:element name="{name()}">
+            <xsl:apply-templates select="@*[not(starts-with(name(),'extent'))]"/>
+            <xsl:attribute name="minX">
+                <xsl:value-of select="concat('-',@extentX)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxX">
+                <xsl:value-of select="@extentX"/>
+            </xsl:attribute>
+            <xsl:attribute name="minY">
+                <xsl:value-of select="concat('-',@extentY)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxY">
+                <xsl:value-of select="@extentY"/>
+            </xsl:attribute>
+            <xsl:attribute name="minZ">
+                <xsl:value-of select="concat('-',@extentZ)"/>
+            </xsl:attribute>
+            <xsl:attribute name="maxZ">
+                <xsl:value-of select="@extentZ"/>
+            </xsl:attribute>
+            <xsl:apply-templates select="node()"/>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+# - - - - - - - - - - - -
 
     # terminate the list with a placeholder to keep the syntax of all previous items the same
     ("false()", "") )
