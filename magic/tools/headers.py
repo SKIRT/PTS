@@ -18,6 +18,7 @@ from pts.filter import Filter
 import astropy.wcs as pywcs
 from astropy import coordinates
 from astropy import units as u
+from astropy import log
 
 # *****************************************************************
 
@@ -72,7 +73,7 @@ def get_filter(name, header):
     if 'FLTRNM' in header: filterid += header['FLTRNM'].lower()
 
     # Create a filter object from the filterid
-    if "fuv" in filterid: filter = Filter("GALEX.FUV")
+    if "fuv" in filterid: return Filter("GALEX.FUV")
     elif "pacs" in filterid:
 
         if '70' in filterid or 'blue' in filterid: return Filter("Pacs.blue")

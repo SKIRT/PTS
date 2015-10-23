@@ -321,7 +321,7 @@ class SkyExtractor(object):
         # TODO: allow different estimation methods
 
         # Inform the user
-        log.info("Estimating the sky")
+        log.info("Estimating the sky by using " + self.config.estimation.method)
 
         # If the mean sky level should be used
         if self.config.estimation.method == "mean":
@@ -349,6 +349,9 @@ class SkyExtractor(object):
 
             pass
 
+        # Unkown estimation method
+        else: raise ValueError("Unkown sky estimation method")
+
     # *****************************************************************
 
     def subtract(self):
@@ -361,7 +364,14 @@ class SkyExtractor(object):
         # Inform the user
         log.info("Subtracting the sky from the frame")
 
-        pass
+        # Check whether the median sky level exceeds the standard deviation
+        if self.median > self.stddev:
+
+            # Inform the user
+            log.info("The median sky level exceeds the standard deviation")
+
+            # Subtract the estimated sky from the image frame
+            self.frame -= self.sky
 
     # *****************************************************************
 
