@@ -12,12 +12,13 @@ from __future__ import (absolute_import, division, print_function)
 import os.path
 import inspect
 import numpy as np
-from skimage import morphology
+import copy
 
 # Import astronomical modules
 import astropy.units as u
 from astropy import log
 import astropy.logger
+from photutils import detect_sources
 
 # Import Astromagic modules
 from astromagic import Image
@@ -115,7 +116,7 @@ class MapMaker(object):
         self.make_oldstars_map()
 
         # Make FUV and MIPS 24 emission maps
-        self.make_fuv_and_24_maps()
+        #self.make_fuv_and_24_maps()
 
         # Make ionizing stars map
         self.make_ionizing_stars_map()
@@ -241,13 +242,31 @@ class MapMaker(object):
             data = reference.frames[self.config.primary] < self.config.cutoff.level*reference.frames[self.config.errors]
             self.mask = Mask(data)
 
-            # If requested, perform binary opening to remove small patches covering inner parts of the galaxy
-            if self.config.cutoff.opening:
+            # If requested, remove holes from the cut-off mask
+            if self.config.cutoff.remove_holes:
 
-                disk_structure = morphology.disk(4)
+                # Save the mask as a FITS file
+                Frame(self.mask.astype(float)).save(self.config.saving.cutoff_mask_with_holes_path)
 
-                Frame(self.mask.astype(float)).save(self.config.saving.cutoff_mask_before_opening_path)
-                self.mask = self.mask.opening(structure=disk_structure, iterations=1)
+                # Perform the segmentation
+                segments = detect_sources(self.mask.astype(float), 0.5, 1)
+
+                # Save segments
+                Frame(segments.astype(float)).save(self.config.saving.cutoff_mask_segments_path)
+
+                # Find the label of the largest segment (=the background)
+                label_counts = np.bincount(segments.flatten())
+                background_label = np.argmax(label_counts)
+
+                # Create a mask for the holes identified as background
+                holes = copy.deepcopy(self.mask)
+                holes[segments == background_label] = False
+
+                # Save holes mask
+                Frame(holes.astype(float)).save(self.config.saving.cutoff_mask_holes_path)
+
+                # Remove holes from the mask
+                self.mask[holes] = False
 
             # Save the mask as a FITS file
             Frame(self.mask.astype(float)).save(self.config.saving.cutoff_mask_path)

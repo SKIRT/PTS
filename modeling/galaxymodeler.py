@@ -409,7 +409,9 @@ class GalaxyModeler(object):
 
         # Set the path to the low signal-to-noise cutoff mask file
         config.saving.cutoff_mask_path = os.path.join(self.prep_path, self.config.reference_image, "cutoff_mask.fits")
-        config.saving.cutoff_mask_before_opening_path = os.path.join(self.prep_path, self.config.reference_image, "cutoff_mask_before_opening.fits")
+        config.saving.cutoff_mask_segments_path = os.path.join(self.prep_path, self.config.reference_image, "cutoff_mask_segments.fits")
+        config.saving.cutoff_mask_holes_path = os.path.join(self.prep_path, self.config.reference_image, "cutoff_mask_holes.fits")
+        config.saving.cutoff_mask_with_holes_path = os.path.join(self.prep_path, self.config.reference_image, "cutoff_mask_with_holes.fits")
 
         # Set the paths to the processed images
         config.h_path = os.path.join(self.prep_path, "2MASSH", "final.fits")
@@ -420,7 +422,7 @@ class GalaxyModeler(object):
         config.pacsblue_path = os.path.join(self.prep_path, "PACS70", "final.fits")
         config.pacsred_path = os.path.join(self.prep_path, "PACS160", "final.fits")
         config.disk_path = os.path.join(self.prep_path, "Disk", "final.fits")
-        config.bulge_path = os.path.join(self.prep_path, "Bugle", "final.fits")
+        config.bulge_path = os.path.join(self.prep_path, "Bulge", "final.fits")
 
         # Set the paths to the cutoff maps
         config.saving.h_cutoff_path = os.path.join(self.prep_path, "2MASSH", "cutoff.fits")
