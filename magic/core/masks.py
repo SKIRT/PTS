@@ -218,6 +218,21 @@ class Mask(np.ndarray):
 
     # *****************************************************************
 
+    def closed(self, structure, iterations=1):
+
+        """
+        This function ...
+        :param structure:
+        :return:
+        """
+
+        data = ndimage.binary_closing(self, structure, iterations)
+
+        # Return the new mask
+        return Mask(data)
+
+    # *****************************************************************
+
     def expanded(self, factor):
 
         """

@@ -65,7 +65,7 @@ class Frame(np.ndarray):
     # *****************************************************************
 
     @classmethod
-    def from_file(cls, path, index=0, name=None, description=None):
+    def from_file(cls, path, index=0, name=None, description=None, plane=None):
 
         """
         This function ...
@@ -110,8 +110,17 @@ class Frame(np.ndarray):
         nframes = headers.get_number_of_frames(header)
         if nframes > 1:
 
-            # Get the name of this frame, but the first frame always gets the name 'primary'
-            description = headers.get_frame_description(header, index)
+            if index is not None:
+
+                # Get the name of this frame, but the first frame always gets the name 'primary'
+                description = headers.get_frame_description(header, index)
+
+            elif plane is not None:
+
+                description = plane
+                index = headers.get_frame_index(header, plane)
+
+            else: raise ValueError("Either index or plane parameter should be specified when there are multiple planes")
 
             # Get the name from the file path
             if name is None: name = os.path.basename(path[:-5])

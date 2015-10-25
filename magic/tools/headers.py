@@ -195,6 +195,23 @@ def get_frame_description(header, i):
 
 # *****************************************************************
 
+def get_frame_index(header, name):
+
+    """
+    This function ...
+    """
+
+    for key in header:
+
+        # Skip keys not ...
+        if not "PLANE" in key: continue
+
+        if header[key] == name: return int(key.split("PLANE")[1])
+
+    return None
+
+# *****************************************************************
+
 def get_frame_name(description):
 
     """
