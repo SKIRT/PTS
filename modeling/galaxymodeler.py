@@ -211,7 +211,7 @@ class GalaxyModeler(object):
             # Set saving parameters for sky extractor
             config.sky_extraction.save_masked_frame = True
             config.sky_extraction.save_clipped_masked_frame = True
-            config.sky_extraction.save_histogram = True
+            config.sky_extraction.save_histogram = False
             config.sky_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "sky_mask.fits")
             config.sky_extraction.saving.clipped_masked_frame_path = os.path.join(self.prep_path, filter_name, "clipped_sky_mask.fits")
             config.sky_extraction.saving.histogram_path = os.path.join(self.prep_path, filter_name, "sky_histogram.pdf")
@@ -323,8 +323,12 @@ class GalaxyModeler(object):
         :return:
         """
 
-        # Create config for GalaxyDecomposer ...
-        config = None
+        # Determine the path to the default configuration file
+        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
+        default_config = os.path.join(directory, "config", "decomposer.cfg")
+
+        # Create config for the GalaxyDecomposer object
+        config = configuration.open(default_config)
 
         # Set log level for the decomposer, if cascading is enabled
         if self.config.logging.cascade:
@@ -334,7 +338,7 @@ class GalaxyModeler(object):
             config.logging.path = self.config.logging.path
 
         # Create a GalaxyDecomposer object
-        decomposer = GalaxyDecomposer()
+        decomposer = GalaxyDecomposer(config)
 
         # Run the decomposition
         decomposer.run()
@@ -380,8 +384,14 @@ class GalaxyModeler(object):
         This function makes the maps of dust and stars ...
         """
 
-        # Create config for MapMaker ...
-        config = None
+        # Determine the path to the default configuration file
+        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
+        default_config = os.path.join(directory, "config", "mapmaker.cfg")
+
+        # Create config for the MapMaker object
+        config = configuration.open(default_config)
+
+        ### CONFIGURATION FOR THE PREPARATION
 
         # Set log level for the map maker, if cascading is enabled
         if self.config.logging.cascade:
@@ -390,8 +400,47 @@ class GalaxyModeler(object):
             config.logging.cascade = self.config.logging.cascade
             config.logging.path = self.config.logging.path
 
+        # Set the names of the primary and error frames
+        config.primary = self.config.primary
+        config.errors = self.config.errors
+
+        # Open the prepared reference image
+        config.cutoff.reference_path = os.path.join(self.prep_path, self.config.reference_image, "final.fits")
+
+        # Set the path to the low signal-to-noise cutoff mask file
+        config.saving.cutoff_mask_path = os.path.join(self.prep_path, self.config.reference_image, "cutoff_mask.fits")
+        config.saving.cutoff_mask_before_opening_path = os.path.join(self.prep_path, self.config.reference_image, "cutoff_mask_before_opening.fits")
+
+        # Set the paths to the processed images
+        config.h_path = os.path.join(self.prep_path, "2MASSH", "final.fits")
+        config.fuv_path = os.path.join(self.prep_path, "GALEXFUV", "final.fits")
+        config.ha_path = os.path.join(self.prep_path, "Ha", "final.fits")
+        config.irac_path = os.path.join(self.prep_path, "IRACI1", "final.fits")
+        config.mips_path = os.path.join(self.prep_path, "MIPS24", "final.fits")
+        config.pacsblue_path = os.path.join(self.prep_path, "PACS70", "final.fits")
+        config.pacsred_path = os.path.join(self.prep_path, "PACS160", "final.fits")
+        config.disk_path = os.path.join(self.prep_path, "Disk", "final.fits")
+        config.bulge_path = os.path.join(self.prep_path, "Bugle", "final.fits")
+
+        # Set the paths to the cutoff maps
+        config.saving.h_cutoff_path = os.path.join(self.prep_path, "2MASSH", "cutoff.fits")
+        config.saving.fuv_cutoff_path = os.path.join(self.prep_path, "GALEXFUV", "cutoff.fits")
+        config.saving.ha_cutoff_path = os.path.join(self.prep_path, "Ha", "cutoff.fits")
+        config.saving.irac_cutoff_path = os.path.join(self.prep_path, "IRACI1", "cutoff.fits")
+        config.saving.mips_cutoff_path = os.path.join(self.prep_path, "MIPS24", "cutoff.fits")
+        config.saving.pacsblue_cutoff_path = os.path.join(self.prep_path, "PACS70", "cutoff.fits")
+        config.saving.pacsred_cutoff_path = os.path.join(self.prep_path, "PACS160", "cutoff.fits")
+        config.saving.disk_cutoff_path = os.path.join(self.prep_path, "Disk", "cutoff.fits")
+        config.saving.bulge_cutoff_path = os.path.join(self.prep_path, "Bulge", "cutoff.fits")
+
+        # Set the paths to the output maps
+        config.ssfr.output_path = os.path.join(self.in_path, "ssfr.fits")
+        config.attenuation.output_path = os.path.join(self.in_path, "fuv_attenuation.fits")
+
+        ### PERFORMING THE MAP MAKING
+
         # Create a MapMaker object
-        maker = MapMaker()
+        maker = MapMaker(config)
 
         # Run the map maker
         maker.run()
