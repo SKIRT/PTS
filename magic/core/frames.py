@@ -9,6 +9,7 @@ from __future__ import (absolute_import, division, print_function)
 
 # Import standard modules
 import os.path
+import copy
 import numpy as np
 from scipy import ndimage
 import matplotlib.pyplot as plt
@@ -85,14 +86,18 @@ class Frame(np.ndarray):
         # Get the image header
         header = hdu.header
 
-        # Remove references to a potential third axis
-        header["NAXIS"] = 2
-        if "NAXIS3" in header: del header["NAXIS3"]
-        for key in header:
-            if "PLANE" in key: del header[key]
+        # Check whether multiple planes are present in the FITS image
+        nframes = headers.get_number_of_frames(header)
 
-        # Obtain the world coordinate system
-        wcs = WCS(header)
+        # Remove references to a potential third axis
+        flat_header = copy.deepcopy(header)
+        flat_header["NAXIS"] = 2
+        if "NAXIS3" in flat_header: del flat_header["NAXIS3"]
+        for key in flat_header:
+            if "PLANE" in key: del flat_header[key]
+
+        # Obtain the world coordinate system from the 'flattened' header
+        wcs = WCS(flat_header)
 
         # Load the frames
         pixelscale = headers.get_pixelscale(header)
@@ -106,21 +111,17 @@ class Frame(np.ndarray):
         # Check whether the image is sky-subtracted
         sky_subtracted = headers.is_sky_subtracted(header)
 
-        # Check whether multiple planes are present in the FITS image
-        nframes = headers.get_number_of_frames(header)
         if nframes > 1:
 
-            if index is not None:
+            # Get the description of this frame index
+            description = headers.get_frame_description(header, index)
 
-                # Get the name of this frame, but the first frame always gets the name 'primary'
-                description = headers.get_frame_description(header, index)
-
-            elif plane is not None:
+            if plane is not None:
 
                 description = plane
                 index = headers.get_frame_index(header, plane)
 
-            else: raise ValueError("Either index or plane parameter should be specified when there are multiple planes")
+            print(index)
 
             # Get the name from the file path
             if name is None: name = os.path.basename(path[:-5])
@@ -138,6 +139,20 @@ class Frame(np.ndarray):
 
             # Return the frame
             return cls(hdu.data, wcs, pixelscale, description, False, unit, name, filter, sky_subtracted)
+
+    # *****************************************************************
+
+    @classmethod
+    def zeros_like(cls, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        # Return a zero-filled copy of the frame
+        return np.zeros_like(frame)
 
     # *****************************************************************
 
