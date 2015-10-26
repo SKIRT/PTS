@@ -216,6 +216,9 @@ class GalaxyModeler(object):
             config.sky_extraction.saving.clipped_masked_frame_path = os.path.join(self.prep_path, filter_name, "clipped_sky_mask.fits")
             config.sky_extraction.saving.histogram_path = os.path.join(self.prep_path, filter_name, "sky_histogram.pdf")
 
+            # Temporary: do not include calibration errors
+            config.uncertainties.add_calibration_error = False
+
             ### OPENING THE IMAGE
 
             # Open the image
@@ -435,9 +438,20 @@ class GalaxyModeler(object):
         config.saving.disk_cutoff_path = os.path.join(self.prep_path, "Disk", "cutoff.fits")
         config.saving.bulge_cutoff_path = os.path.join(self.prep_path, "Bulge", "cutoff.fits")
 
+        # Set the paths to the maps converted to solar luminosities
+        config.conversion.ha_output_path = os.path.join(self.in_path, "solar", "ha.fits")
+        config.conversion.ha_errors_output_path = os.path.join(self.in_path, "solar", "ha_errors.fits")
+        config.conversion.mips_output_path = os.path.join(self.in_path, "solar", "mips.fits")
+        config.conversion.mips_errors_output_path = os.path.join(self.in_path, "solar", "mips_errors.fits")
+        config.conversion.pacsblue_output_path = os.path.join(self.in_path, "solar", "pacsblue.fits")
+        config.conversion.pacsred_output_path = os.path.join(self.in_path, "solar", "pacsred.fits")
+
         # Set the paths to the output maps
-        config.ssfr.output_path = os.path.join(self.in_path, "ssfr.fits")
-        config.attenuation.output_path = os.path.join(self.in_path, "fuv_attenuation.fits")
+        config.dust.output_path = os.path.join(self.in_path, "dust.fits")
+        config.dust.ssfr.output_path = os.path.join(self.in_path, "ssfr.fits")  ## Temporary ?
+        config.old_stars.output_path = os.path.join(self.in_path, "old_stars.fits")
+        config.ionizing_stars.output_path = os.path.join(self.in_path, "ionizing_stars.fits")
+        config.non_ionizing_stars.output_path = os.path.join(self.in_path, "non_ionizing_stars.fits")
 
         ### PERFORMING THE MAP MAKING
 

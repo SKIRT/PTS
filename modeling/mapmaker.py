@@ -106,19 +106,21 @@ class MapMaker(object):
         # If requested, save the maps with masked
         if self.config.save_cutoff_maps: self.save_cutoff_maps()
 
-        # Make the specific star formation rate map
-        self.make_ssfr_map()
+        # Convert maps to solar luminosity units
+        self.convert_to_solar()
 
-        # Make the FUV attenuation map
-        self.make_attenuation_map()
+        exit()
+
+        # Make the dust map
+        self.make_dust_map()
 
         # Make the old stars map
-        self.make_oldstars_map()
+        self.make_old_stars_map()
 
-        # Make FUV and MIPS 24 emission maps
-        #self.make_fuv_and_24_maps()
+        # Make the non-ionizing young stars map
+        self.make_non_ionizing_stars_map()
 
-        # Make ionizing stars map
+        # Make the ionizing young stars map
         self.make_ionizing_stars_map()
 
     # *****************************************************************
@@ -283,6 +285,12 @@ class MapMaker(object):
         self.pacsblue[self.mask] = 0.0
         self.pacsred[self.mask] = 0.0
 
+        # Cut-off the error maps at the same contour level
+        self.fuv_errors[self.mask] = 0.0
+        self.ha_errors[self.mask] = 0.0
+        self.irac_errors[self.mask] = 0.0
+        self.mips_errors[self.mask] = 0.0
+
         # Cut-off the bulge and disk images at the same contour level
         self.disk[self.mask] = 0.0
         self.bulge[self.mask] = 0.0
@@ -312,41 +320,61 @@ class MapMaker(object):
 
     # *****************************************************************
 
-    def make_ssfr_map(self):
+    def convert_to_solar(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Creating the sSFR map")
+        # Distance of M81
+        d_m81 = 3.6
 
-        # Young non-ionizing stars (specific star formation rate) = GALEXFUV - H
-        fuv_h = -2.5*(np.log10(self.fuv) - np.log10(self.h))
 
-        # Mask nans in the sSFR map
-        fuv_h.replace_nans(0.0)
+        ### FUV IS NOT CONVERTED TO LSUN !!!!!
 
-        # Mask pixels outside of the low signal-to-noise contour
-        fuv_h[self.mask] = 0.0
 
-        # Set negative pixels to zero
-        fuv_h[fuv_h < 0.0] = 0.0
+        # Convert all maps to solar luminosities
 
-        # Mask low sigal-to-noise pixels in the fuv map, if requested
-        if self.config.ssfr.mask_low_fuv_snr: fuv_h[self.fuv < self.config.ssfr.level*self.fuv_errors] = 0.0
+        ### CONVERT THE H ALPHA IMAGE FROM MJY/SR TO SOLAR LUMINOSITIES
 
-        # Save the resulting sSFR map
-        fuv_h.save(self.config.ssfr.output_path)
+        # Convert to Lsun
+        factor_ha = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/0.657894736e-6) + np.log10(4*np.pi) + (2*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
 
-        # Cache
-        self.ssfr = fuv_h
+        # Multiply
+        self.ha *= 10.0**factor_ha
+
+        # Convert errors !!
+        self.ha_errors *= 10.0**factor_ha
+
+        # Output
+        self.ha.save(self.config.conversion.ha_output_path)
+        self.ha_errors.save(self.config.conversion.ha_errors_output_path)
+
+        ### CONVERT MIPS, PACSBLUE AND PACSRED TO SOLAR LUMINOSITIES
+
+        # Calculate conversion factors from MJy/sr to solar luminosities
+        factor24 = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/24e-6) + np.log10(4*np.pi) + (2*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
+        factor70 = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/70e-6) + np.log10(4*np.pi) + (2*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
+        factor160 = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/160e-6) + np.log10(4*np.pi) + (2*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
+
+        # Convert the units of the 24 micron, 70 micron and 160 micron images from MJy/sr to solar luminosities
+        self.mips *= 10.0**factor24
+        self.pacsblue *= 10.0**factor70
+        self.pacsred *= 10.0**factor160  ## ERROR ?
+
+        # Convert errors !!
+        self.mips_errors *= 10.0**factor24
+
+        # Output
+        self.mips.save(self.config.conversion.mips_output_path)
+        self.mips_errors.save(self.config.conversion.mips_errors_output_path)
+        self.pacsblue.save(self.config.conversion.pacsblue_output_path)
+        self.pacsred.save(self.config.conversion.pacsred_output_path)
 
     # *****************************************************************
 
-    @property
-    def tir(self):
+    def make_dust_map(self):
 
         """
         This function ...
@@ -354,46 +382,21 @@ class MapMaker(object):
         """
 
         # Inform the user
-        log.info("Creating the TIR map")
-
-        D_M81 = 3.6
-
-        factor24 = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/24e-6) + np.log10(4*np.pi) + (2*np.log10(D_M81*3.08567758e22)) - np.log10(3.846e26)
-        factor70 = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/70e-6) + np.log10(4*np.pi) + (2*np.log10(D_M81*3.08567758e22)) - np.log10(3.846e26)
-        factor160 = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/160e-6) + np.log10(4*np.pi) + (2*np.log10(D_M81*3.08567758e22)) - np.log10(3.846e26)
-
-        # Convert from MJy/sr to L_sun
-        mips = self.mips * 10.0**factor24
-        pacsblue = self.pacsblue * 10.0**factor70
-        pacsred = self.pacsred * 10.0**factor160  ## ERROR ?
-
-        # Galametz+2013 formula for Lsun units
-        tir_data = (2.133*mips) + (0.681*pacsblue) + (1.125*pacsred)
-
-        # Convert TIR from Lsun to W/m2
-        factor = np.log10(3.846e26) - np.log10(4*np.pi) - (2.0*np.log10(D_M81*3.08567758e22))
-        tir_data *= 10.0**factor
-
-        # Return the TIR map
-        return tir_data
-
-    # *****************************************************************
-
-    def make_attenuation_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating dust attenuation map")
+        log.info("Creating the dust attenuation map")
 
         # Dust = FUV attenuation = ratio of TIR and FUV luminosity
 
-        # Convert the FUV map
+
+        ### CALCULATE FUV AND TIR MAP IN W/M2 UNIT
+
+        ## SELF.TIR IS IN W/M2
+
+        # Convert the FUV map from MJy/sr to W/m2
         factor = - 20 + np.log10(3e8) - np.log10(0.153e-6) + (2*np.log10(2.85/206264.806247))
         fuv_converted = self.fuv * 10**factor
+
+
+        ### CALCULATE TIR TO FUV RATIO (AND POWERS THEREOF)
 
         # The ratio of TIR and FUV
         tir_to_fuv = np.log10(self.tir/fuv_converted)
@@ -402,6 +405,9 @@ class MapMaker(object):
         tir_to_fuv2 = np.power(tir_to_fuv, 2.0)
         tir_to_fuv3 = np.power(tir_to_fuv, 3.0)
         tir_to_fuv4 = np.power(tir_to_fuv, 4.0)
+
+
+        ### CREATE FUV ATTENUATION MAP
 
         #a_fuv_buat = (-0.0333*x3) + (0.3522*x2) + (1.1960*x) + 0.4967
 
@@ -548,23 +554,26 @@ class MapMaker(object):
         d.append(0.10588)
         e.append(0.01517)
 
+        # Calculate the specific star formation map
+        ssfr = self.ssfr
+
         # Create the FUV attenuation map
         for i in range(len(limits)):
 
-            if limits[i][0] is None: where = self.ssfr < limits[i][1]
-            elif limits[i][1] is None: where = self.ssfr > limits[i][0]
-            else: where = (self.ssfr >= limits[i][0]) * (self.ssfr < limits[i][1])
+            if limits[i][0] is None: where = ssfr < limits[i][1]
+            elif limits[i][1] is None: where = ssfr > limits[i][0]
+            else: where = (ssfr >= limits[i][0]) * (ssfr < limits[i][1])
 
             # Set the appropriate pixels
             a_fuv_cortese[where] = a[i] + b[i]*tir_to_fuv[where] + c[i]*tir_to_fuv2[where] + d[i]*tir_to_fuv3[where] - e[i]*tir_to_fuv4[where]
 
         # Set attenuation to zero where sSFR is smaller than zero
-        a_fuv_cortese[self.ssfr < 0.0] = 0.0
+        a_fuv_cortese[ssfr < 0.0] = 0.0
 
         # Set attenuation to zero where sSFR is greater than 10.5
-        a_fuv_cortese[self.ssfr >= 10.5] = 0.0
+        a_fuv_cortese[ssfr >= 10.5] = 0.0
 
-        # Set attenuation to zero where FUV is smaller than zero
+        # Set attenuation to zero where the original FUV map is smaller than zero
         a_fuv_cortese[self.fuv <= 0.0] = 0.0
 
         # Mask pixels outside of the low signal-to-noise contour
@@ -573,12 +582,12 @@ class MapMaker(object):
         # Make sure all pixel values are larger than or equal to zero
         a_fuv_cortese[a_fuv_cortese < 0.0] = 0.0
 
-        # Save FUV attenuation map as a FITS file
-        a_fuv_cortese.save(self.config.attenuation.output_path)
+        # Save the dust (FUV attenuation) map as a FITS file
+        a_fuv_cortese.save(self.config.dust.output_path)
 
     # *****************************************************************
 
-    def make_oldstars_map(self):
+    def make_old_stars_map(self):
 
         """
         This function ...
@@ -596,16 +605,140 @@ class MapMaker(object):
         factor = 0.54 * flux3_6 / self.bulge.sum()
 
         # Create the old stars map
-        oldstars = self.irac - factor*self.bulge
+        old_stars = self.irac - factor*self.bulge
 
         # Set the old stars map zero for pixels with low signal-to-noise in the 3.6 micron image
-        oldstars[self.irac < 10.0*self.irac_errors] = 0.0
+        old_stars[self.irac < self.config.old_stars.irac_snr_level*self.irac_errors] = 0.0
 
         # Make sure all pixel values are larger than or equal to zero
-        oldstars[oldstars < 0.0] = 0.0
+        old_stars[old_stars < 0.0] = 0.0
+
+        # Mask pixels outside of the low signal-to-noise contour
+        old_stars[self.mask] = 0.0
 
         # Save the old stars map as a FITS file
-        oldstars.save(self.config.oldstars.output_path)
+        old_stars.save(self.config.old_stars.output_path)
+
+    # *****************************************************************
+
+    def make_non_ionizing_stars_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate the non ionizing young stars map from the FUV data
+        non_ionizing_stars = self.fuv_young_stars
+
+        # Save the non-ionizing stars map as a FITS file
+        non_ionizing_stars.save(self.config.non_ionizing_stars.output_path)
+
+    # *****************************************************************
+
+    def make_ionizing_stars_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the ionizing young stars map")
+
+        ## HA HAS BEEN CONVERTED TO LSUN (ABOVE)
+
+        #Young ionizing stars = Ha + 0.031 x MIPS24
+
+        ### CALCULATE THE IONIZING STARS MAP BASED ON THE CONVERTED H ALPHA AND THE DISK-SUBTRACTED 24 MICRON IMAGE
+
+        # Calculate the young stellar contribution to the 24 micron image
+        mips_young_stars = self.mips_young_stars
+
+        # Save the mips_young_stars map
+        mips_young_stars.save(self.config.ionizing_stars.mips_young_stars.output_path)
+
+        # Calculate ionizing stars map and ratio
+        ionizing = self.ha + 0.031*mips_young_stars
+        #ionizing_ratio = self.ha / (0.031*mips_young_stars)
+
+
+        ### MASK NEGATIVE AND LOW SIGNAL-TO-NOISE PIXELS
+
+        # Set pixels to zero with low signal-to-noise in the H Alpha image
+        ionizing[self.ha < self.config.ionizing_stars.ha_snr_level*self.ha_errors] = 0.0
+        #ionizing_ratio[self.ha < self.config.ionizing_stars.ha_snr_level*self.ha_errors] = 0.0
+
+        # Set pixels to zero with low signal-to-noise in the 24 micron image
+        ionizing[self.mips < self.config.ionizing_stars.mips_snr_level*self.mips_errors] = 0.0
+        #ionizing_ratio[self.mips < self.config.ionizing_stars.mips_snr_level*self.mips_errors] = 0.0
+
+        # Make sure all pixel values are larger than or equal to zero
+        ionizing[ionizing < 0.0] = 0.0
+        #ionizing_ratio[ionizing < 0.0] = 0.0
+
+        # Save the ionizing stars map
+        ionizing.save(self.config.ionizing_stars.output_path)
+
+    # *****************************************************************
+
+    @property
+    def ssfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the specific star formation map")
+
+        # Young non-ionizing stars (specific star formation rate) = GALEXFUV - H
+        fuv_h = -2.5*(np.log10(self.fuv) - np.log10(self.h))
+
+        # Mask nans in the sSFR map
+        fuv_h.replace_nans(0.0)
+
+        # Mask pixels outside of the low signal-to-noise contour
+        fuv_h[self.mask] = 0.0
+
+        # Set negative pixels to zero
+        fuv_h[fuv_h < 0.0] = 0.0
+
+        # Mask low sigal-to-noise pixels in the fuv map, if requested
+        if self.config.ssfr.mask_low_fuv_snr: fuv_h[self.fuv < self.config.ssfr.fuv_snr_level*self.fuv_errors] = 0.0
+
+        # Save the resulting sSFR map
+        fuv_h.save(self.config.dust.ssfr.output_path)
+
+        return fuv_h
+
+    # *****************************************************************
+
+    @property
+    def tir(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the TIR map")
+
+        d_m81 = 3.6
+
+        ### MIPS, PACSBLUE AND PACSRED CONVERTED TO LSUN (ABOVE)
+
+        # Galametz (2013) formula for Lsun units
+        tir_data = (2.133*self.mips) + (0.681*self.pacsblue) + (1.125*self.pacsred)
+
+        # Convert the TIR frame from solar units to W/m2
+        factor = np.log10(3.846e26) - np.log10(4*np.pi) - (2.0*np.log10(d_m81*3.08567758e22))
+        tir_data *= 10.0**factor
+
+        # Return the TIR map  (IN W/M2)
+        return tir_data
 
     # *****************************************************************
 
@@ -626,10 +759,18 @@ class MapMaker(object):
         # TODO: calculate this flux value
         flux_fuv = 855.503
 
+        self_flux_fuv = self.fuv.sum()
+
+        # Assert flux calculation is correct
+        #assert int(flux_fuv) == int(self_flux_fuv), "FLUX FUV DOES NOT MATCH: " + str(flux_fuv) + " =/= " + str(self_flux_fuv)
+        log.warning("Flux FUV = " + str(flux_fuv) + " <> " + str(self_flux_fuv))
+
         #typisch 20% en 35% respectievelijk
         #48% voor MIPS 24 komt van Lu et al. 2014
 
         factor = 0.2*flux_fuv/self.disk.sum()
+
+        print("factor=", factor)
 
         # Subtract the disk contribution to the FUV image
         new_fuv = self.fuv - factor*self.disk
@@ -638,7 +779,7 @@ class MapMaker(object):
         new_fuv[new_fuv < 0.0] = 0.0
 
         # Set zero where low signal-to-noise ratio
-        new_fuv[self.fuv < 10.0*self.fuv_errors] = 0.0
+        new_fuv[self.fuv < self.config.non_ionizing_stars.fuv_snr_level*self.fuv_errors] = 0.0
 
         # Return the new FUV frame
         return new_fuv
@@ -659,8 +800,16 @@ class MapMaker(object):
         #     for this we typically use an exponential disk
         #     (scale length detemermined by GALFIT)
 
+        ## MIPS HAS BEEN CONVERTED TO LSUN (ABOVE)
+
         # TODO: calculate this flux value
         flux_mips = 27790.448
+
+        self_flux_mips = self.mips.sum()
+
+        # Assert flux calculation is correct
+        #assert int(flux_mips) == int(self_flux_mips), "FLUX MIPS DOES NOT MATCH: " + str(flux_mips) + " =/= " + str(self_flux_mips)
+        log.warning("Flux 24 micron = " + str(flux_mips) + " <> " + str(self_flux_mips))
 
         #typisch 20% en 35% respectievelijk
         #48% voor MIPS 24 komt van Lu et al. 2014
@@ -674,67 +823,9 @@ class MapMaker(object):
         new_mips[new_mips < 0.0] = 0.0
 
         # Set zero where low signal-to-noise ratio
-        new_mips[self.mips < 10.0*self.mips_errors] = 0.0
+        new_mips[self.mips < self.config.ionizing_stars.mips_young_stars.mips_snr_level*self.mips_errors] = 0.0
 
         # Return the new 24 micron frame
         return new_mips
-
-    # *****************************************************************
-
-    def make_ionizing_stars_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the ionizing young stars map")
-
-        #Young ionizing stars = Ha + 0.031 x MIPS24
-
-        D_M81 = 3.6
-
-        # Convert to Lsun
-        factor_ha = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/0.657894736e-6) + np.log10(4*np.pi) + (2*np.log10(D_M81*3.08567758e22)) - np.log10(3.846e26)
-
-        # Multiply
-        ha = self.ha * 10**factor_ha
-
-        #new_mips_path = os.path.join(self.in_path, "mips.fits")
-        #new_mips_image = iu.open(new_mips_path)
-
-        ionizing = ha + 0.031*self.mips
-
-        ionizing_ratio = ha / (0.031*self.mips)
-
-        low_snr = () + ()
-
-        # Set pixels to zero with low signal-to-noise in the H Alpha image
-        ionizing[ha < 10.0*self.ha_errors] = 0.0
-        ionizing_ratio[ha < 10.0*self.ha_errors] = 0.0
-
-        # Set pixels to zero with low signal-to-noise in the 24 micron image
-        ionizing[self.mips < 10.0*self.mips_errors] = 0.0
-        ionizing_ratio[self.mips < 10.0*self.mips_errors] = 0.0
-
-        # Make sure all pixel values are larger than or equal to zero
-        ionizing[ionizing < 0.0] = 0.0
-        ionizing_ratio[ionizing < 0.0] = 0.0
-
-        # Create a new image
-        image = Image()
-        image.name = "ionizingstars"
-
-        # Add the ionizing stars map and the ratio map as image frames
-        image.add_frame(ionizing, "primary")
-        image.add_frame(ionizing_ratio, "ratio")
-
-        # Select both frames
-        image.frames.primary.select()
-        image.frames.ratio.select()
-
-        # Save the ionizing stars image as a FITS file
-        image.save(self.config.ionizing.output_path)
 
 # *****************************************************************

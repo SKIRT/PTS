@@ -382,10 +382,7 @@ class ImagePreparation(object):
         stddevs = np.array(stddevs)
 
         # Calculate the global uncertainty
-        uncertainty = np.sqrt(np.std(means)**2 + np.median(stddevs))
-
-        print(self.config.primary)
-        print(self.config.errors)
+        uncertainty = np.sqrt(np.std(means)**2 + np.median(stddevs)**2)
 
         # If there is no errors frame
         if not self.config.errors in self.image.frames:
@@ -404,6 +401,20 @@ class ImagePreparation(object):
 
         # If there is an errors frame, add the uncertainty to the errors quadratically
         else: self.image.frames[self.config.errors] = np.sqrt(np.power(self.image.frames[self.config.errors], 2) + uncertainty**2)
+
+        ### CALIBRATION ERRORS
+
+        if self.config.uncertainties.add_calibration_error:
+
+            # Get calibration error
+            if self.config.uncertainties.calibration_error_type == "abs":
+
+                self.image.frames[self.config.errors] += self.config.uncertainties.calibration_error
+
+            elif self.config.uncertainties.calibration_error_type == "rel":
+
+                # Create frame for the calibration error map
+                self.image.frames[self.config.errors] += self.config.uncertainties.calibration_error * self.image.frames[self.config.primary]
 
     # *****************************************************************
 
