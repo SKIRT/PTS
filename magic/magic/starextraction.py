@@ -83,6 +83,9 @@ class StarExtractor(ObjectExtractor):
         # Set ignore stars
         if self.config.ignore_region is not None: self.set_ignore()
 
+        # Set manual stars
+        if self.config.manual_region is not None: self.set_manual()
+
         # For each star, find a corresponding source in the image
         self.find_sources()
 

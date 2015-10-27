@@ -15,12 +15,17 @@ import copy
 
 # Import Astromagic modules
 from ..core.masks import Mask
+from ..core.regions import ellipse_parameters
+from ..core.source import Source
+from ..core.vector import Position, Extent
 
 # Import astronomical modules
 from astropy import log
 import astropy.logger
 import pyregion
 from astropy.io import ascii
+import astropy.units as u
+from astropy.coordinates import Angle
 
 # *****************************************************************
 
@@ -53,6 +58,9 @@ class ObjectExtractor(object):
         # Initialize an empty list for the sky objects
         self.objects = []
 
+        # Initialize an empty list to contain the manual sources
+        self.manual_sources = []
+
         # Set the frame to None
         self.frame = None
 
@@ -70,6 +78,9 @@ class ObjectExtractor(object):
 
         # Clear the list of sky objects
         self.objects = []
+
+        # Clear the list of manual sources
+        self.manual_sources = []
 
         # Clear the frame
         self.frame = None
@@ -158,7 +169,7 @@ class ObjectExtractor(object):
 
     # *****************************************************************
 
-    def set_ignore(self, frame):
+    def set_ignore(self):
 
         """
         This function ...
@@ -170,17 +181,63 @@ class ObjectExtractor(object):
         log.info("Setting region to ignore for subtraction from " + self.config.ignore_region)
 
         # Load the region and create a mask from it
-        region = pyregion.open(self.config.ignore_region).as_imagecoord(frame.wcs.to_header())
-        ignore_mask = Mask(region.get_mask(shape=frame.shape))
+        region = pyregion.open(self.config.ignore_region).as_imagecoord(self.frame.wcs.to_header())
+        ignore_mask = Mask(region.get_mask(shape=self.frame.shape))
 
         # Loop over all objects
         for skyobject in self.objects:
 
             # Get the position of this object in pixel coordinates
-            position = skyobject.pixel_position(frame.wcs)
+            position = skyobject.pixel_position(self.frame.wcs)
 
             # Ignore if position is covered by the mask
             if ignore_mask.masks(position): skyobject.ignore = True
+
+    # *****************************************************************
+
+    def set_manual(self):
+
+        """
+        This function ...
+        """
+
+        # Inform the user
+        log.info("Setting region for manual star extraction from " + self.config.manual_region)
+
+        # Load the region and create a mask from it
+        region = pyregion.open(self.config.manual_region).as_imagecoord(self.frame.wcs.to_header())
+
+        # Loop over the shapes in the region
+        for shape in region:
+
+            # Get the center and radius of the
+            x_center, y_center, x_radius, y_radius = ellipse_parameters(shape)
+
+            # Create a source
+            source = Source(self.frame, Position(x_center, y_center), Extent(x_radius, y_radius), Angle(0.0, u.deg), self.config.manual.background_outer_factor)
+
+            # Add the source to the list of manual sources
+            self.manual_sources.append(source)
+
+    # *****************************************************************
+
+    def remove_manual(self):
+
+        """
+        This function ...
+        """
+
+        # Inform the user
+        log.info("Removing manually located stars from the frame")
+
+        # Loop over each item in the list of manual sources
+        for source in self.manual_sources:
+
+            # Estimate the background for the source
+            source.estimate_background(self.config.manual.remove_method, self.config.manual.sigma_clip)
+
+            # Replace the frame in the appropriate area with the estimated background
+            source.background.replace(self.frame, where=source.mask)
 
     # *****************************************************************
 
