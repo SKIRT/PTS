@@ -100,6 +100,7 @@ class GalaxyModeler(object):
         self.config_path = os.path.join(path, self.config.config_dir)
         self.extra_path = os.path.join(path, self.config.extra_dir)
         self.ignore_path = os.path.join(path, self.config.ignore_dir)
+        self.manual_path = os.path.join(path, self.config.manual_dir)
 
     # *****************************************************************
 
@@ -303,6 +304,12 @@ class GalaxyModeler(object):
             # If a region file exists with the name of this image, add its path to the configuration for the preparation
             ignore_path = os.path.join(self.ignore_path, image.name + ".reg")
             if os.path.isfile(ignore_path): config.star_extraction.ignore_region = ignore_path
+
+            ### LOOKING FOR MANUAL STAR REGIONS
+
+            # If a region file exists with the name of this image, add its path to the configuration for the preparation
+            manual_path = os.path.join(self.manual_path, image.name + ".reg")
+            if os.path.isfile(manual_path): config.star_extraction.manual_region = manual_path
 
             ### PERFORMING THE PREPARATION
 
