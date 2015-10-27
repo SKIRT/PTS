@@ -58,6 +58,7 @@ import h5py
 
 import eagle.config as config
 import eagle.starformation as sf
+from eagle.connection import Connection
 from pts.geometry import Transform
 
 # -----------------------------------------------------------------
@@ -179,18 +180,45 @@ class Snapshot:
         return os.path.join(config.catalogs_path, self.eaglesim + "_" + self.pattern + "_catalog.dat")
 
     ## This function builds and saves a catalog for the snapshot in a file with the path returned by the
-    # catalogfilepath() function. The catalog has an entry for each particle subgroup with at least the specified
-    # minimum number of star particles AND at least the specified minimum number of gas particles.
-    # Each text line in the file represents a catalog entry and has the following columns:
-    # group number, subgroup number, number of star particles, number of gas particles, total stellar mass,
+    # catalogfilepath() function. The function first queries the public EAGLE database to obtain a list
+    # of galaxies that have at least the specified stellar mass within an aperture of 30 kpc. It then
+    # builds a catalog including a text line for each of these galaxies with the following columns:
+    # galaxy ID, group number, subgroup number, number of star particles, number of gas particles, total stellar mass,
     # total gass mass, list of indices of the hdf5 data files holding the corresponding particle information.
-    # The masses are expressed in \f$\textrm{M}_\odot\f$.
-    def exportcatalog(self, minparticles = 500):
-        # loop over all star and gas particles and track group membership, creating a dictionary
-        # with key = ( group number, subgroup number )
-        # and value = [ # star particles, # gas particles, stellar mass, gass mass, set of file indices ]
+    # The masses are not limited to an aperture and expressed in \f$\textrm{M}_\odot\f$.
+    def exportcatalog(self, minstarmass):
+
+        # query the public EAGLE database
+        print "Querying public EAGLE database..."
+        # (currently we always query the snapshot for redshift zero)
+        if self.orig_redshift!=0: raise ValueError("Nonzero redshift not supported at this time")
+        con = Connection("camps", password="4nAPEqcs")
+        records = con.execute_query('''
+            SELECT
+                gal.GalaxyID as galaxyid,
+                gal.GroupNumber as groupnumber,
+                gal.SubGroupNumber as subgroupnumber
+            FROM
+                {0}_SubHalo as gal,
+                {0}_Aperture as ape
+            WHERE
+                ape.Mass_Star > {1} and
+                gal.SnapNum = 28 and
+                ape.ApertureSize = 30 and
+                gal.GalaxyID = ape.GalaxyID
+            '''.format(config.eagledatabase_name[self.eaglesim], minstarmass))
+        print "There will be {} galaxies in this catalog".format(len(records))
+
+        # build a dictionary with a key for every reported galaxy and placeholders for the values
+        # key = ( group number, subgroup number )
+        # value = [ galaxy ID, # star particles, # gas particles, stellar mass, gass mass, set of file indices ]
         print "Building catalog..."
         subgroups = { }
+        for record in records:
+            key = (int(record['groupnumber']), int(record['subgroupnumber']))
+            subgroups[key] = [ int(record['galaxyid']), 0, 0, 0., 0., set() ]
+
+        # loop over all star and gas particles and track group membership, filling in the values of the dictionary
         for index,path in zip(range(len(self.paths)),self.paths):
             if index%10==0: print " opening file", index+1, "of", len(self.paths)
             hdf = h5py.File(path, 'r')
@@ -198,34 +226,34 @@ class Snapshot:
             for groupnumber,subnumber,mass in zip(stars["GroupNumber"][:],stars["SubGroupNumber"][:],stars["Mass"][:]):
                 if subnumber < 1073741824:   # (1073741824 means "not in subgroup")
                     key = (abs(groupnumber), subnumber)
-                    if not key in subgroups: subgroups[key] = [ 0, 0, 0., 0., set() ]
-                    subgroup = subgroups[key]
-                    subgroup[0] += 1
-                    subgroup[2] += mass
-                    subgroup[4].add(index)
+                    if key in subgroups:
+                        subgroup = subgroups[key]
+                        subgroup[1] += 1
+                        subgroup[3] += mass
+                        subgroup[5].add(index)
             gas = hdf["PartType0"]
             for groupnumber,subnumber,mass in zip(gas["GroupNumber"][:],gas["SubGroupNumber"][:],gas["Mass"][:]):
                 if subnumber < 1073741824:   # (1073741824 means "not in subgroup")
                     key = (abs(groupnumber), subnumber)
-                    if not key in subgroups: subgroups[key] = [ 0, 0, 0., 0., set() ]
-                    subgroup = subgroups[key]
-                    subgroup[1] += 1
-                    subgroup[3] += mass
-                    subgroup[4].add(index)
+                    if key in subgroups:
+                        subgroup = subgroups[key]
+                        subgroup[2] += 1
+                        subgroup[4] += mass
+                        subgroup[5].add(index)
             hdf.close()
         print " done."
 
-        # save catalog entries for all sufficiently large subgroups
+        # save catalog entries
         print "Saving catalog..."
         out = open(self.catalogfilepath(),'w')
         for key in sorted(subgroups.keys()):
             value = subgroups[key]
-            if value[0] >= minparticles and value[1] >= minparticles:
-                line = str(key[0]) + ' ' + str(key[1])
-                for index in range(0,2): line += ' ' + str(value[index])
-                for index in range(2,4): line += ' ' + str(tosolar(value[index],self.hubbleparam))
-                for index in sorted([i for i in value[4]]): line += ' ' + str(index)
-                out.write(line + '\n')
+            line = str(value[0])
+            for index in range(0,2): line += ' ' + str(key[index])
+            for index in range(1,3): line += ' ' + str(value[index])
+            for index in range(3,5): line += ' ' + str(tosolar(value[index],self.hubbleparam))
+            for index in sorted([i for i in value[5]]): line += ' ' + str(index)
+            out.write(line + '\n')
         out.close()
         print " done."
 
@@ -252,11 +280,18 @@ class GalaxyList:
     def addgalaxy(self, galaxy):
         self.galaxies += [ galaxy ]
 
-    ## This function returns the specified galaxy object, if it is in the list; otherwise returns None.
-    def galaxy(self, groupnumber, subgroupnumber):
-        for galaxy in self.galaxies:
-            if galaxy.groupnumber == groupnumber and galaxy.subgroupnumber == subgroupnumber:
-                return galaxy
+    ## This function returns the specified galaxy object, if it is in the list; otherwise it returns None.
+    # If the function is called with two arguments, they specify the groupnumber and the subgroupnumber.
+    # If the function is called with a single argument, it specifies the galaxy ID.
+    def galaxy(self, groupnumber, subgroupnumber=None):
+        if subgroupnumber!=None:
+            for galaxy in self.galaxies:
+                if galaxy.groupnumber == groupnumber and galaxy.subgroupnumber == subgroupnumber:
+                    return galaxy
+        else:
+            for galaxy in self.galaxies:
+                if galaxy.galaxyid == groupnumber:
+                    return galaxy
         return None;
 
     ## This function removes all galaxies from the list that have a stellar mass under the specified value,
@@ -309,19 +344,28 @@ class Galaxy:
     ## This constructor initializes all property fields for the galaxy. The first argument provides a reference
     # to the snapshot containing this galaxy. The second argument is a list of field values used to initialize
     # the galaxy properties, corrresponding to the columns of the catalog entry for the galaxy:
-    # group number, subgroup number, number of star particles, number of gas particles, total stellar mass,
+    # galaxy id, group number, subgroup number, number of star particles, number of gas particles, total stellar mass,
     # total gass mass, list of indices of the hdf5 data files holding the corresponding particle information.
     # The masses are expressed in \f$\textrm{M}_\odot\f$.
     def __init__(self, snapshot, fields):
         self.snapshot = snapshot
-        self.groupnumber, self.subgroupnumber, self.numstarparticles, self.numgasparticles = map(int, fields[0:4])
-        self.starmass, self.gasmass = map(float, fields[4:6])
-        self.fileindices = map(int, fields[6:])
+        self.galaxyid, self.groupnumber, self.subgroupnumber, self.numstarparticles, self.numgasparticles \
+                = map(int, fields[0:5])
+        self.starmass, self.gasmass = map(float, fields[5:7])
+        self.fileindices = map(int, fields[7:])
         if len(self.fileindices)==0: raise ValueError("No cross reference info provided")
 
-    ## This function returns the 2-tuple (group number, subgroup number) identifying the galaxy in the snapshot
-    def key(self):
-        return (self.groupnumber, self.subgroupnumber)
+    ## This function returns the galaxy ID identifying the galaxy in the public EAGLE database snapshot
+    def galaxyid(self):
+        return self.galaxyid
+
+    ## This function returns the group number of the galaxy in the snapshot
+    def groupnumber(self):
+        return self.groupnumber
+
+    ## This function returns the subgroup number of the galaxy in the snapshot
+    def subgroupnumber(self):
+        return self.subgroupnumber
 
     ## This function returns the total number of particles in the galaxy
     def numparticles(self):
@@ -329,13 +373,13 @@ class Galaxy:
 
     ## This function prints a header line for the information lines printed by the printinfo() function
     def printinfotitle(self):
-        print " group subgr  #star part.  #gas part.  star mass  gas mass"
-        print "----------------------------------------------------------"
+        print "galaxyid group subgr  #star part.  #gas part.  star mass  gas mass"
+        print "------------------------------------------------------------------"
 
     ## This function prints some information on the galaxy on a single line
     def printinfo(self):
-        print " {0:5} {1:4}  {2:11,} {3:11,}   {4:9.1e} {5:9.1e}"  \
-            .format(self.groupnumber, self.subgroupnumber,
+        print "{:8} {:5} {:4}  {:11,} {:11,}   {:9.1e} {:9.1e}"  \
+            .format(self.galaxyid, self.groupnumber, self.subgroupnumber,
                     self.numstarparticles, self.numgasparticles, self.starmass, self.gasmass)
 
     ## This function exports particle data for the galaxy to three text files that can be imported in SKIRT.
