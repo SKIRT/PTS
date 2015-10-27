@@ -109,8 +109,6 @@ class MapMaker(object):
         # Convert maps to solar luminosity units
         self.convert_to_solar()
 
-        exit()
-
         # Make the dust map
         self.make_dust_map()
 
@@ -148,8 +146,8 @@ class MapMaker(object):
         if os.path.isfile(self.config.fuv_path):
 
             # Open the FUV image
-            self.fuv = Frame.from_file(self.config.h_path)
-            self.fuv_errors = Frame.from_file(self.config.h_path, plane=self.config.errors)
+            self.fuv = Frame.from_file(self.config.fuv_path)
+            self.fuv_errors = Frame.from_file(self.config.fuv_path, plane=self.config.errors)
 
         else: raise IOError("Could not find the FUV image")
 
@@ -339,7 +337,7 @@ class MapMaker(object):
         ### CONVERT THE H ALPHA IMAGE FROM MJY/SR TO SOLAR LUMINOSITIES
 
         # Convert to Lsun
-        factor_ha = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/0.657894736e-6) + np.log10(4*np.pi) + (2*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
+        factor_ha = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/0.657894736e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
 
         # Multiply
         self.ha *= 10.0**factor_ha
@@ -354,9 +352,9 @@ class MapMaker(object):
         ### CONVERT MIPS, PACSBLUE AND PACSRED TO SOLAR LUMINOSITIES
 
         # Calculate conversion factors from MJy/sr to solar luminosities
-        factor24 = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/24e-6) + np.log10(4*np.pi) + (2*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
-        factor70 = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/70e-6) + np.log10(4*np.pi) + (2*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
-        factor160 = (2*np.log10(2.85/206264.806247)) - 20 + np.log10(3e8/160e-6) + np.log10(4*np.pi) + (2*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
+        factor24 = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/24e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
+        factor70 = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/70e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
+        factor160 = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/160e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
 
         # Convert the units of the 24 micron, 70 micron and 160 micron images from MJy/sr to solar luminosities
         self.mips *= 10.0**factor24
@@ -392,20 +390,33 @@ class MapMaker(object):
         ## SELF.TIR IS IN W/M2
 
         # Convert the FUV map from MJy/sr to W/m2
-        factor = - 20 + np.log10(3e8) - np.log10(0.153e-6) + (2*np.log10(2.85/206264.806247))
-        fuv_converted = self.fuv * 10**factor
+        factor = - 20.0 + np.log10(3e8) - np.log10(0.153e-6) + (2*np.log10(2.85/206264.806247))
+        fuv_converted = self.fuv * 10.0**factor
+
+
+        ### TIR:
+
+        d_m81 = 3.6
+
+        tir = self.tir  # In solar units
+
+        # Convert the TIR frame from solar units to W/m2
+        factor = np.log10(3.846e26) - np.log10(4*np.pi) - (2.0*np.log10(d_m81*3.08567758e22))
+        tir *= 10.0**factor
 
 
         ### CALCULATE TIR TO FUV RATIO (AND POWERS THEREOF)
 
         # The ratio of TIR and FUV
-        tir_to_fuv = np.log10(self.tir/fuv_converted)
+        tir_to_fuv = np.log10(tir/fuv_converted)
 
         # Calculate powers of tir_to_fuv
         tir_to_fuv2 = np.power(tir_to_fuv, 2.0)
         tir_to_fuv3 = np.power(tir_to_fuv, 3.0)
         tir_to_fuv4 = np.power(tir_to_fuv, 4.0)
 
+        # Ouput TIR to FUV ratio
+        tir_to_fuv.save(self.config.dust.tir_to_fuv_output_path)
 
         ### CREATE FUV ATTENUATION MAP
 
@@ -694,7 +705,22 @@ class MapMaker(object):
         log.info("Creating the specific star formation map")
 
         # Young non-ionizing stars (specific star formation rate) = GALEXFUV - H
-        fuv_h = -2.5*(np.log10(self.fuv) - np.log10(self.h))
+        #fuv_h = -2.5*(np.log10(self.fuv) - np.log10(self.h))
+
+        from astromagic.tools import plotting
+
+        plotting.plot_box(self.fuv, title="fuv")
+        plotting.plot_box(self.h, title="h")
+
+        ratio = self.fuv / self.h
+
+        # Save ...
+        ratio.save(self.config.dust.ssfr.color_output_path)
+
+        fuv_h = -2.5*np.log10(self.fuv/self.h)
+
+        # Save ...
+        fuv_h.save(self.config.dust.ssfr.with_nans_output_path)
 
         # Mask nans in the sSFR map
         fuv_h.replace_nans(0.0)
@@ -726,18 +752,12 @@ class MapMaker(object):
         # Inform the user
         log.info("Creating the TIR map")
 
-        d_m81 = 3.6
-
         ### MIPS, PACSBLUE AND PACSRED CONVERTED TO LSUN (ABOVE)
 
         # Galametz (2013) formula for Lsun units
         tir_data = (2.133*self.mips) + (0.681*self.pacsblue) + (1.125*self.pacsred)
 
-        # Convert the TIR frame from solar units to W/m2
-        factor = np.log10(3.846e26) - np.log10(4*np.pi) - (2.0*np.log10(d_m81*3.08567758e22))
-        tir_data *= 10.0**factor
-
-        # Return the TIR map  (IN W/M2)
+        # Return the TIR map  (in solar units)
         return tir_data
 
     # *****************************************************************
