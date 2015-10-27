@@ -269,7 +269,7 @@ class SkyExtractor(object):
 
         # Create a frame where the objects are masked
         frame = copy.deepcopy(self.frame)
-        frame[self.mask] = 0.0
+        frame[self.mask] = float(self.config.saving.mask_value)
 
         # Save the masked frame
         frame.save(self.config.saving.masked_frame_path)
@@ -288,7 +288,7 @@ class SkyExtractor(object):
 
         # Create a frame with masked pixels
         frame = copy.deepcopy(self.frame)
-        frame[self.clipped_mask] = 0.0
+        frame[self.clipped_mask] = float(self.config.saving.mask_value)
 
         # Save the masked frame
         frame.save(self.config.saving.clipped_masked_frame_path)
