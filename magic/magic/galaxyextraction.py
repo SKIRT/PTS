@@ -85,6 +85,9 @@ class GalaxyExtractor(ObjectExtractor):
         # If requested, remove
         if self.config.remove: self.remove_galaxies()
 
+        # If a manual region was specified, remove the corresponding galaxies
+        if self.config.manual_region is not None: self.remove_manual()
+
         # If requested, write a table with the galaxy properties
         if self.config.save_table: self.save_table()
 

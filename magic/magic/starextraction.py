@@ -104,6 +104,9 @@ class StarExtractor(ObjectExtractor):
         # If requested, remove apertures
         if self.config.remove_apertures: self.remove_apertures(galaxyextractor)
 
+        # If a manual region was specified, remove the corresponding stars
+        if self.config.manual_region is not None: self.remove_manual()
+
         # If requested, write a table with the galaxy properties
         if self.config.save_table: self.save_table()
 
