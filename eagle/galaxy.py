@@ -274,71 +274,31 @@ class GalaxyList:
 
     ## This constructor creates an empty galaxy list.
     def __init__(self):
-        self.galaxies = [ ]
+        self.galaxies = { }     # key: galaxy id; value: Galaxy object
 
     ## This function adds a galaxy object to the list.
     def addgalaxy(self, galaxy):
-        self.galaxies += [ galaxy ]
+        self.galaxies[ galaxy.galaxyid ] = galaxy
 
-    ## This function returns the specified galaxy object, if it is in the list; otherwise it returns None.
-    # If the function is called with two arguments, they specify the groupnumber and the subgroupnumber.
-    # If the function is called with a single argument, it specifies the galaxy ID.
-    def galaxy(self, groupnumber, subgroupnumber=None):
-        if subgroupnumber!=None:
-            for galaxy in self.galaxies:
-                if galaxy.groupnumber == groupnumber and galaxy.subgroupnumber == subgroupnumber:
-                    return galaxy
-        else:
-            for galaxy in self.galaxies:
-                if galaxy.galaxyid == groupnumber:
-                    return galaxy
-        return None;
-
-    ## This function removes all galaxies from the list that have a stellar mass under the specified value,
-    # in \f$\textrm{M}_\odot\f$.
-    def remove_starmass_below(self, mass):
-        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.starmass >= mass ]
-
-    ## This function removes all galaxies from the list that have a gas mass under the specified value,
-    # in \f$\textrm{M}_\odot\f$.
-    def remove_gasmass_below(self, mass):
-        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.gasmass >= mass ]
-
-    ## This function removes all galaxies from the list that have a stellar mass above the specified value,
-    # in \f$\textrm{M}_\odot\f$.
-    def remove_starmass_above(self, mass):
-        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.starmass <= mass ]
-
-    ## This function removes all galaxies from the list that have a gas mass above the specified value,
-    # in \f$\textrm{M}_\odot\f$.
-    def remove_gasmass_above(self, mass):
-        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.gasmass <= mass ]
-
-    ## This function removes all galaxies from the list that have less star particles than the specified value.
-    def remove_starparticles_below(self, particles):
-        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.numstarparticles >= particles ]
-
-    ## This function removes all galaxies from the list that have less gas particles than the specified value.
-    def remove_gasparticles_below(self, particles):
-        self.galaxies = [ galaxy for galaxy in self.galaxies if galaxy.numgasparticles >= particles ]
+    ## This function returns the Galaxy object with the specified galaxy id, or None if it is not in the list.
+    def galaxy(self, galaxyid):
+        return self.galaxies[galaxyid] if galaxyid in self.galaxies else None
 
     ## This function prints some basic properties for all galaxies currently in the list. The output has
     # one line per galaxy and is sorted on descending total number of particles.
     def printinfo(self):
         if len(self.galaxies) > 0:
             print "There are {0} galaxies in the list".format(len(self.galaxies))
-            self.galaxies.sort(key=Galaxy.numparticles, reverse=True)
-            self.galaxies[0].printinfotitle()
-            for galaxy in self.galaxies:
+            self.galaxies.itervalues().next().printinfotitle()
+            for galaxy in sorted(self.galaxies.values(), key=Galaxy.numparticles, reverse=True):
                 galaxy.printinfo()
         else:
             print "There are no galaxies in the list"
 
 # -----------------------------------------------------------------
 
-## This class represents a single particle subgroup (or "galaxy") in a snapshot, identified by group number
-# and subgroup number. It serves to extract information about the galaxy from the catalog entry and/or
-# from underlying snapshot data files.
+## This class represents a single galaxy (a particle subgroup) in a snapshot. It serves to extract
+# information about the galaxy from the catalog entry and/or from underlying snapshot data files.
 class Galaxy:
 
     ## This constructor initializes all property fields for the galaxy. The first argument provides a reference
@@ -355,21 +315,13 @@ class Galaxy:
         self.fileindices = map(int, fields[7:])
         if len(self.fileindices)==0: raise ValueError("No cross reference info provided")
 
-    ## This function returns the galaxy ID identifying the galaxy in the public EAGLE database snapshot
-    def galaxyid(self):
-        return self.galaxyid
-
-    ## This function returns the group number of the galaxy in the snapshot
-    def groupnumber(self):
-        return self.groupnumber
-
-    ## This function returns the subgroup number of the galaxy in the snapshot
-    def subgroupnumber(self):
-        return self.subgroupnumber
-
     ## This function returns the total number of particles in the galaxy
     def numparticles(self):
         return self.numstarparticles + self.numgasparticles
+
+    ## This function returns a formatted string identifying the galaxy which can be used as a filename prefix.
+    def prefix(self):
+        return "{}_{}".format(self.snapshot.eaglesim, self.galaxyid)
 
     ## This function prints a header line for the information lines printed by the printinfo() function
     def printinfotitle(self):
@@ -383,10 +335,11 @@ class Galaxy:
                     self.numstarparticles, self.numgasparticles, self.starmass, self.gasmass)
 
     ## This function exports particle data for the galaxy to three text files that can be imported in SKIRT.
-    # The exported files are placed in the specified directory and are named "galaxy_G_S_stars.dat",
-    # "galaxy_G_S_hii.dat", and "galaxy_G_S_gas.dat" where G and S are replaced
-    # by the galaxy's group number and subgroup number. The file format is as described for SKIRT SPH import.
-    # In addition, the function creates a text file named "galaxy_G_S_info.txt", which contains relevant statistics
+    # The exported files are placed in the specified directory and are named "SIM_GID_stars.dat",
+    # "SIM_GID_hii.dat", and "SIM_GID_gas.dat" where SIM and GID are replaced respectively
+    # by the name of the snapshot in which the galaxy resides, and the galaxy ID identifying the galaxy
+    # in the public EAGLE database. The file format is as described for SKIRT SPH import.
+    # In addition, the function creates a text file named "SIM_GID_info.txt", which contains relevant statistics
     # including particle numbers and various total masses. The contents is documented in the file.
     def export(self, directory=""):
         print "Exporting galaxy ({0},{1}) from {2} files...".format(  \
@@ -690,7 +643,7 @@ class Galaxy:
         info["exported_mass_gas"] = info["exported_mass_non_star_forming_gas"] + info["exported_mass_unspent_gas"]
         info["exported_mass_baryons"] = info["exported_mass_stars"] + info["exported_mass_hii_regions"] + info["exported_mass_gas"]
 
-        infofilename = "galaxy_{0}_{1}_info.txt".format(self.groupnumber, self.subgroupnumber)
+        infofilename = self.prefix() + "_info.txt"
         infofile = open(os.path.join(directory,infofilename), 'w')
         infofile.write('# Statistics for SPH particles extracted from EAGLE HDF5 snapshot to SKIRT6 format\n')
         infofile.write('# Masses are expressed in solar mass units\n')
@@ -703,9 +656,9 @@ class Galaxy:
         # ---- write output files
 
         # open output files
-        starsfilename = "galaxy_{0}_{1}_stars.dat".format(self.groupnumber, self.subgroupnumber)
-        gasfilename = "galaxy_{0}_{1}_gas.dat".format(self.groupnumber, self.subgroupnumber)
-        hiifilename = "galaxy_{0}_{1}_hii.dat".format(self.groupnumber, self.subgroupnumber)
+        starsfilename = self.prefix() + "_stars.dat"
+        gasfilename = self.prefix() + "_gas.dat"
+        hiifilename = self.prefix() + "_hii.dat"
         starsfile = open(os.path.join(directory,starsfilename), 'w')
         starsfile.write('# SPH Star Particles\n')
         starsfile.write('# Extracted from EAGLE HDF5 snapshot to SKIRT6 format\n')
