@@ -132,14 +132,6 @@ configurations = {
 
 # -----------------------------------------------------------------
 
-# provide the name in the public EAGLE database corresponding to each of our shorthands
-eagledatabase_name = { 'Ref100':  "RefL0100N1504",
-                       'Ref25':   "RefL0025N0752",
-                       'Recal25': "RecalL0025N0752",
-                     }
-
-# -----------------------------------------------------------------
-
 # get the name of the user logged in on the terminal controlling this process; try various mechanisms
 username = ""
 if len(username)==0:
@@ -206,3 +198,19 @@ globals().update(configuration)
 
 # -----------------------------------------------------------------
 
+# provide the table name prefix in the public EAGLE database corresponding to each of our shorthands
+public_eagle_database_name = { 'Ref100':  "RefL0100N1504",
+                               'Ref25':   "RefL0025N0752",
+                               'Recal25': "RecalL0025N0752",
+                             }
+
+# get the user's account information for the public EAGLE database, if available
+public_eagle_database_username = username
+public_eagle_database_password = None
+try:
+    public_eagle_database_username, public_eagle_database_password = \
+        open(os.path.join(database_path,"public_eagle_database_account_info.txt")).readline().split()
+except Exception:
+    pass
+
+# -----------------------------------------------------------------

@@ -40,7 +40,7 @@ fraction = float(sys.argv[6])
 
 # get a list of the requested galaxies from the public EAGLE database
 print "Querying public EAGLE database..."
-con = Connection("camps", password="4nAPEqcs")
+con = Connection(config.public_eagle_database_username, password=config.public_eagle_database_password)
 records = con.execute_query('''
     SELECT
         gal.GalaxyID as galaxyid
@@ -55,7 +55,7 @@ records = con.execute_query('''
         gal.Spurious = 0 and
         ape.ApertureSize = 30 and
         gal.GalaxyID = ape.GalaxyID
-    '''.format(config.eagledatabase_name[eaglesim], minstarmass, maxstarmass, fraction))
+    '''.format(config.public_eagle_database_name[eaglesim], minstarmass, maxstarmass, fraction))
 
 # display some information for verification
 print "Selected {} galaxies with stellar masses in range {:.2e} .. {:.2e}".format(len(records),minstarmass,maxstarmass)

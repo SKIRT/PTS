@@ -192,7 +192,7 @@ class Snapshot:
         print "Querying public EAGLE database..."
         # (currently we always query the snapshot for redshift zero)
         if self.orig_redshift!=0: raise ValueError("Nonzero redshift not supported at this time")
-        con = Connection("camps", password="4nAPEqcs")
+        con = Connection(config.public_eagle_database_username, password=config.public_eagle_database_password)
         records = con.execute_query('''
             SELECT
                 gal.GalaxyID as galaxyid,
@@ -206,7 +206,7 @@ class Snapshot:
                 gal.SnapNum = 28 and
                 ape.ApertureSize = 30 and
                 gal.GalaxyID = ape.GalaxyID
-            '''.format(config.eagledatabase_name[self.eaglesim], minstarmass))
+            '''.format(config.public_eagle_database_name[self.eaglesim], minstarmass))
         print "There will be {} galaxies in this catalog".format(len(records))
 
         # build a dictionary with a key for every reported galaxy and placeholders for the values
