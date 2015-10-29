@@ -689,11 +689,11 @@ class Galaxy:
 def findhdf5files(dirpath, pattern):
     result = []
     for name in os.listdir(dirpath):
-        if name.find(pattern) >= 0:
+        if pattern in name and "particle" in name and not "snip" in name:
             path = os.path.join(dirpath,name);
             if os.path.isdir(path):
                 result += findhdf5files(path, pattern)
-            if os.path.isfile(path) and name.lower().endswith(".hdf5") and name.find("particles") >= 0:
+            if os.path.isfile(path) and name.lower().endswith(".hdf5"):
                 result += [ path ]
     return result
 
