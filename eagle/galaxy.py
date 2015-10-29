@@ -727,11 +727,12 @@ def age(R):
 ## This private helper function returns the periodicity corrected coordinates input as a (N,3)
 # numpy array, and takes the box size (in units of crds) and a test length in units of box size
 def periodicCorrec(crds, boxsize, testfact = 0.5):
-    for i in range(3):
-        crd = crds[:,i]
-        booldx = np.abs(crd - crd.min()) > boxsize * testfact
-        if booldx.any():
-            crd[booldx] = crd[booldx]  - boxsize
+    if len(crds)>0:
+        for i in range(3):
+            crd = crds[:,i]
+            booldx = np.abs(crd - crd.min()) > boxsize * testfact
+            if booldx.any():
+                crd[booldx] = crd[booldx] - boxsize
     return crds
 
 # This private helper function returns the centre of mass or the centre of mass and mean velocity
