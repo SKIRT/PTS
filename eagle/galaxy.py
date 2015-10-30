@@ -798,7 +798,13 @@ def rotAxis(crds, vels, mass, com, v_bar, apt = 3e4, aptfrac = 0.08):
 def applyAperture(data, radius):
     x,y,z = data['r'].T
     inside = (x*x+y*y+z*z) <= (radius*radius)
-    for key in data:
-        data[key] = data[key][inside]
+    if inside.any():
+        for key in data:
+            data[key] = data[key][inside]
+    else:
+        for key in data:
+            shape = list(data[key].shape)
+            shape[0] = 0
+            data[key] = np.zeros(shape)
 
 # -----------------------------------------------------------------
