@@ -274,7 +274,7 @@ class SkirtSimulation:
     # It raises an error if the convergence check data file is not available or if the dust mass is zero.
     def dustmass(self):
         result = self.getfieldfromfile("ds_convergence.dat", "total dust mass", "expected value", "Msun")
-        if result <= 0: raise ValueError("Can't determine dust mass")
+        if result < 0: raise ValueError("Can't determine dust mass")
         return result
 
     ## This function returns the total dust mass in the simulation's dust grid, in solar masses.
@@ -282,7 +282,7 @@ class SkirtSimulation:
     # It raises an error if the convergence check data file is not available or if the dust grid mass is zero.
     def dustgridmass(self):
         result = self.getfieldfromfile("ds_convergence.dat", "total dust mass", "actual value", "Msun")
-        if result <= 0: raise ValueError("Can't determine dust grid mass")
+        if result < 0: raise ValueError("Can't determine dust grid mass")
         return result
 
     ## This function returns the total mass of the cold gass represented by the set of SPH particles imported for
