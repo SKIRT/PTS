@@ -60,12 +60,8 @@ def plot_peak_model(box, x_peak, y_peak, model, title=None):
     # Create x and y meshgrid for plotting
     y_plotvalues, x_plotvalues = np.mgrid[:box.shape[0], :box.shape[1]]
 
-    # Calculate the pixel value at the peak for the data, model and residual
     x_peak_pixel = int(round(x_peak))
     y_peak_pixel = int(round(y_peak))
-    peak_data_value = box[y_peak_pixel,x_peak_pixel]
-    peak_model_value = model(x_plotvalues, y_plotvalues)[y_peak_pixel,x_peak_pixel]
-    peak_residual_value = peak_data_value - peak_model_value
 
     import copy
 
@@ -82,6 +78,11 @@ def plot_peak_model(box, x_peak, y_peak, model, title=None):
 
         model.x_0 -= box.x_min
         model.y_0 -= box.y_min
+
+    # Calculate the pixel value at the peak for the data, model and residual
+    peak_data_value = box[y_peak_pixel,x_peak_pixel]
+    peak_model_value = model(x_peak, y_peak)
+    peak_residual_value = peak_data_value - peak_model_value
 
     # Plot the data with the best-fit model
     plt.figure(figsize=(10,3))
@@ -258,6 +259,48 @@ def plot_star_model(background, background_clipped, est_background, star, est_ba
     plt.ylim(0, star.shape[0]-1)
     plt.title("Residual")
 
+    plt.show()
+
+# *****************************************************************
+
+def plot_removal(cutout, mask, background, removed, title=None):
+
+    norm = ImageNormalize(stretch=SqrtStretch())
+
+    # Determine the maximum value in the box and the minimum value for plotting
+    vmax = np.max(cutout)
+    vmin = np.min(cutout) if vmax <= 0 else 0.0
+
+    # Plot the data with the best-fit model
+    plt.figure(figsize=(20,3))
+    plt.subplot(1,4,1)
+    plt.imshow(cutout, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.xlim(-0.5, cutout.xsize-0.5)
+    plt.ylim(-0.5, cutout.ysize-0.5)
+    plt.title("Cutout")
+
+    plt.subplot(1,4,2)
+    plt.imshow(np.ma.masked_array(cutout, mask=mask), origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.xlim(-0.5, cutout.xsize-0.5)
+    plt.ylim(-0.5, cutout.ysize-0.5)
+    plt.title("Background mask")
+
+    plt.subplot(1,4,3)
+    plt.imshow(background, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.xlim(-0.5, background.xsize-0.5)
+    plt.ylim(-0.5, background.ysize-0.5)
+    plt.title("Estimated background")
+
+    plt.subplot(1,4,4)
+    plt.imshow(removed, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.xlim(-0.5, background.xsize-0.5)
+    plt.ylim(-0.5, background.ysize-0.5)
+    plt.title("Cutout with star removed")
+
+    # Set the main title
+    if title is not None: plt.suptitle(title, size=16)
+
+    # Show the plot
     plt.show()
 
 # *****************************************************************

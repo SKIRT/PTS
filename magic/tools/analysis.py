@@ -434,7 +434,12 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         if config.debug.expand or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=masks.union(mask, source.background_mask)), title="Masked segment hits boundary")
 
         # If the maximum expansion level has been reached, no source could be found
-        if expansion_level >= config.max_expansion_level: return None
+        if expansion_level >= config.max_expansion_level:
+
+            # To visualize the case where maximum expansion has been reached
+            #plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask))
+
+            return None
 
         else:
 

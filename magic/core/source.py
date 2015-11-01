@@ -200,6 +200,9 @@ class Source(object):
         # Perform the segmentation
         segments = detect_sources(box, threshold, npixels=min_pixels, filter_kernel=kernel)
 
+        # To plot the multiple segments that are detected
+        #if segments.max() > 1: plotting.plot_box(np.ma.masked_array(box, mask=segments.astype(bool)))
+
         # Get the label of the center segment
         rel_center = self.cutout.rel_position(self.center)
         label = segments[rel_center.y, rel_center.x]

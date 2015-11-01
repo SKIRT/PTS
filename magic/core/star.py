@@ -197,6 +197,14 @@ class Star(SkyObject):
             # Estimate the background
             source.estimate_background(method, sigma_clip)
 
+            # FOR PLOTTING THE REMOVAL
+            #import copy
+            #cutout_interpolated = copy.deepcopy(source.cutout)
+            #cutout_interpolated[source.mask] = source.background[source.mask]
+            #from ..tools import plotting
+            # Do the plotting
+            #plotting.plot_removal(source.cutout, source.mask, source.background, cutout_interpolated)
+
             # Add the source to the track record
             if self.has_track_record: self.track_record.append(source)
 
@@ -232,6 +240,14 @@ class Star(SkyObject):
 
             # Estimate the background
             self.source.estimate_background(remove_method, sigma_clip)
+
+            # FOR PLOTTING THE REMOVAL
+            #import copy
+            #cutout_interpolated = copy.deepcopy(source.cutout)
+            #cutout_interpolated[source.mask] = source.background[source.mask]
+            #from ..tools import plotting
+            # Do the plotting
+            #plotting.plot_removal(source.cutout, source.mask, source.background, cutout_interpolated)
 
             # Replace the frame with the estimated background
             self.source.background.replace(frame, where=self.source.mask)

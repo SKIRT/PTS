@@ -124,16 +124,14 @@ def get_units(header):
     # Initially, set the units to None
     units = None
 
-    if 'BUNIT' in header:
+    # Look for the 'BUNIT' keyword
+    if 'BUNIT' in header: return u.Unit(header['BUNIT'])
 
-        units = u.Unit(header['BUNIT'])
+    # Look for the 'SIGUNIT' keyword
+    elif 'SIGUNIT' in header: return u.Unit(header['SIGUNIT'])
 
-    elif 'ZUNITS' in header:
-
-        units = u.Unit(header['ZUNITS'])
-
-    # Return the units
-    return units
+    # Look for the 'ZUNITS' keyword
+    elif 'ZUNITS' in header: return u.Unit(header['ZUNITS'])
 
 # *****************************************************************
 
