@@ -790,8 +790,9 @@ def rotAxis(crds, vels, mass, com, v_bar, apt = 3e4, aptfrac = 0.08):
 
     # calculate net J vector and normalise to unit vector
     J = Js.sum(axis = 0)
-    n_vect = J * (np.dot(J, J).sum()) ** -0.5
-    return n_vect
+    norm2 = np.dot(J, J).sum()
+    if norm2 > 0: return J * norm2 ** -0.5
+    else: return np.array((0,0,1))
 
 # This private helper function applies a spherical aperture to a dictionary of particle data, i.e. it
 # adjusts the dictionary so that the particles outside the aperture are removed from each array.
