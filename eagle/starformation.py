@@ -211,7 +211,7 @@ def stochShiftPos(r, h, h_mapp):
     # the offset sampling smoothing length is determined so that in the limit of infinite particles,
     # the light distribution is the same as the parent particle kernel;
     # assuming Gaussian kernels this means h_sampling**2 + h_mapp**2 = h**2.
-    h_sampling = np.sqrt(h*h - h_mapp*h_mapp)
+    h_sampling = np.sqrt(np.maximum(0,h*h - h_mapp*h_mapp))
 
     # sample the offset from a scaled gaussian that resembles a cubic spline kernel
     # (see the documentation of the SPHDustDistribution class in SKIRT)
