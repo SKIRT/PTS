@@ -5,11 +5,7 @@
 # *****************************************************************
 
 # Import standard modules
-import os.path
 import numpy as np
-
-# Import Astromagic modules
-from .core.frames import Frame
 
 # Import astronomical modules
 from astropy import units as u
@@ -19,6 +15,12 @@ from astropy import log
 # *****************************************************************
 
 def print_status(image):
+
+    """
+    This function ...
+    :param image:
+    :return:
+    """
 
     # Print the status of the image frames
     log.info("Frames:")

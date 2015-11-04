@@ -26,8 +26,7 @@ class Star(SkyObject):
     This class ...
     """
 
-    def __init__(self, ucac_id=None, position=None, position_error=None, ra_error=None, dec_error=None, k_mag=None,
-                 b_mag=None, v_mag=None, r_mag=None, i_mag=None):
+    def __init__(self, catalog=None, id=None, position=None, ra_error=None, dec_error=None, magnitudes=None, magnitude_errors=None):
 
         """
         The constructor ...
@@ -35,15 +34,12 @@ class Star(SkyObject):
         """
 
         # Set the attributes
-        self.ucac_id = ucac_id
-        self.position_error = position_error
+        self.catalog = catalog
+        self.id = id
         self.ra_error = ra_error
         self.dec_error = dec_error
-        self.k_mag = k_mag
-        self.b_mag = b_mag
-        self.v_mag = v_mag
-        self.r_mag = r_mag
-        self.i_mag = i_mag
+        self.magnitudes = magnitudes
+        self.magnitude_errors = magnitude_errors
 
         # Set the model attribute to None initially
         self.model = None

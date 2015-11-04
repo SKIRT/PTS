@@ -138,7 +138,7 @@ class StarExtractor(ObjectExtractor):
         viz.ROW_LIMIT = -1
 
         # Query Vizier and obtain the resulting table
-        result = viz.query_region(center, width=ra_span, height=dec_span, catalog=self.config.fetching.catalogs)
+        result = viz.query_region(center, width=ra_span, height=dec_span, catalog=self.config.fetching.catalog)
         table = result[0]
 
         # If a galaxyextractor is passed, get the positions of the galaxies in the frame
@@ -149,21 +149,39 @@ class StarExtractor(ObjectExtractor):
         norms = []
         for entry in table:
 
-            # Get the PGC number
-            #ucac_id = entry["UCAC4"]
-            ucac_id = None  # for compatibility with NOMAD catalog
+            # Initialize an empty dictionary to contain the magnitudes and the magnitude errors
+            magnitudes = {}
+            mag_errors = {}
 
-            # Get the right ascension and the declination
+            # Get the ID of this star in the catalog
+            if self.config.fetching.catalog == "UCAC4": star_id = entry["UCAC4"]
+            elif self.config.fetching.catalog == "NOMAD": star_id = entry["NOMAD1"]
+            elif self.config.fetching.catalog == "II/246": star_id = entry["_2MASS"]
+            else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
+
+            # Get the position of the star as a SkyCoord object
             position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
 
             # If this star does not lie within the frame, skip it
             if not self.frame.contains(position): continue
 
             # Get the mean error on the right ascension and declination
-            #position_error = entry["ePos"]*u.mas
-            position_error = None    # To obtain compatibility with NOMAD catalog
-            ra_error = entry["e_RAJ2000"]*u.mas
-            dec_error = entry["e_DEJ2000"]*u.mas
+            if self.config.fetching.catalog == "UCAC4" or self.config.fetching.catalog == "NOMAD":
+
+                ra_error = entry["e_RAJ2000"]*u.mas
+                dec_error = entry["e_DEJ2000"]*u.mas
+
+            elif self.config.fetching.catalog == "II/246":
+
+                error_maj = entry["errMaj"] * u.arcsec
+                error_min = entry["errMin"] * u.arcsec
+                error_theta = Angle(entry["errPA"], u.deg)
+
+                # Temporary: use only the major axis error (convert the error ellipse into a circle)
+                ra_error = error_maj
+                dec_error = error_maj
+
+            else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
 
             # Loop over all galaxy positions in the list
             for galaxy in galaxies:
@@ -176,29 +194,37 @@ class StarExtractor(ObjectExtractor):
 
                 if difference.norm <= self.config.fetching.min_difference_from_galaxy:
 
-                    # Remove the position of this galaxy from the list
+                    # Remove the position of this galaxy from the list (one star is already identified with it)
                     galaxies.remove(galaxy)
                     break
 
+            # If a break is not encountered
             else:
 
                 # Get the magnitude in different bands
-                #k_mag = entry["Kmag"]*u.mag
-                #b_mag = entry["Bmag"]*u.mag
-                #v_mag = entry["Vmag"]*u.mag
-                #r_mag = entry["rmag"]*u.mag
-                #i_mag = entry["imag"]*u.mag
+                for name in entry.colnames:
 
-                # Compatibility with NOMAD catalog
-                k_mag = None
-                b_mag = None
-                v_mag = None
-                r_mag = None
-                i_mag = None
+                    # If this column name does not end with "mag", skip it
+                    if not name.endswith("mag"): continue
+
+                    # If the column name contains more than one character before "mag", skip it
+                    if len(name.split("mag")[0]) > 1: continue
+
+                    # Get the name of the band
+                    band = name.split("mag")[0]
+
+                    # Add the magnitude in this band to the dictionary
+                    magnitudes[band] = entry[name] * u.mag
+
+                    # Check whether an error on the magnitude is present
+                    if "e_"+name in entry.colnames:
+
+                        # If so, add it to the mag_errors dictionary
+                        mag_errors[band] = entry["e_"+name] * u.mag
 
                 # Create a star object
-                star = Star(ucac_id=ucac_id, position=position, position_error=position_error, ra_error=ra_error,
-                            dec_error=dec_error, k_mag=k_mag, b_mag=b_mag, v_mag=v_mag, r_mag=r_mag, i_mag=i_mag)
+                star = Star(catalog=self.config.fetching.catalog, id=star_id, position=position, ra_error=ra_error,
+                            dec_error=dec_error, magnitudes=magnitudes, magnitude_errors=mag_errors)
 
                 # If requested, enable track record
                 if self.config.track_record: star.enable_track_record()
@@ -214,7 +240,7 @@ class StarExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def fetch_nomad(self, frame):
+    def compare_nomad_stars(self, frame):
 
         """
         This function ...
@@ -240,25 +266,22 @@ class StarExtractor(ObjectExtractor):
             ra_error = entry["e_RAJ2000"]*u.mas
             dec_error = entry["e_DEJ2000"]*u.mas
 
-            # Get the magnitude in different bands
-            k_mag = entry["Kmag"]*u.mag
-            b_mag = entry["Bmag"]*u.mag
-            v_mag = entry["Vmag"]*u.mag
-            r_mag = entry["Rmag"]*u.mag
-            #j_mag = entry["Jmag"]*u.mag
-
             smallest_distance = float("inf")
             ra_error_pixels_ucac = None
             dec_error_pixels_ucac = None
 
+            # Loop over the stars found in the other catalog
             for star in self.objects:
 
+                # Create a pixel position for the NOMAD star
                 x, y = position.to_pixel(frame.wcs, origin=0)
                 pixel_position = Position(x, y)
 
+                # Calculate the distance between the NOMAD star and the current other star
                 difference = pixel_position - star.pixel_position(frame.wcs)
                 distance = difference.norm
 
+                # Check whether this is the smallest distance encountered so far
                 if distance < smallest_distance:
 
                     smallest_distance = distance
@@ -270,10 +293,6 @@ class StarExtractor(ObjectExtractor):
 
             # Smallest distance
             print(smallest_distance, ra_error_pixels, dec_error_pixels, ra_error_pixels_ucac, dec_error_pixels_ucac)
-
-            # Create a star object
-            #star = Star(ucac_id=None, position=position, position_error=position_error, ra_error=ra_error,
-            #            dec_error=dec_error, k_mag=k_mag, b_mag=b_mag, v_mag=v_mag, r_mag=r_mag, i_mag=i_mag)
 
     # *****************************************************************
 
