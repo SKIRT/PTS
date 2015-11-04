@@ -4,13 +4,12 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
-# Import Python 3 functionality
-from __future__ import (absolute_import, division, print_function)
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
 from scipy import ndimage
-import matplotlib.pyplot as plt
 import copy
 
 # Import Astromagic modules
@@ -21,16 +20,11 @@ from . import statistics
 from . import coordinates
 from . import cropping
 from . import interpolation
-from ..core.box import Box
 from ..core.source import Source
-from ..core.vector import Position, Extent
 from ..core import masks
 
 # Import astronomical modules
 from astropy.convolution import Gaussian2DKernel
-from astropy.stats import gaussian_fwhm_to_sigma
-from astropy.table import Table
-from photutils import find_peaks
 from astropy import log
 from photutils import daofind
 from astropy.stats import sigma_clipped_stats
@@ -313,7 +307,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
 
     # Create a kernel
-    sigma = config.kernel.fwhm * gaussian_fwhm_to_sigma
+    sigma = config.kernel.fwhm * statistics.fwhm_to_sigma
     kernel_size = int(round(4.0 * config.kernel.cutoff_level))
     kernel = Gaussian2DKernel(sigma, x_size=kernel_size, y_size=kernel_size)
 

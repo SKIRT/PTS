@@ -4,12 +4,11 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
+
 # Import standard modules
 import math
-import numpy as np
-
-# Import astronomical units
-from astropy import units as u
 
 # *****************************************************************
 

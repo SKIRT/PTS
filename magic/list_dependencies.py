@@ -4,8 +4,8 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
-# Import Python 3 functionality
-from __future__ import (absolute_import, division, print_function)
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
@@ -61,3 +61,5 @@ for module, files in modules.items():
     
     # List the files where this module is used
     for file in files: print("  - ", file)
+
+# *****************************************************************

@@ -4,8 +4,8 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
-# Import Python 3 functionality
-from __future__ import (absolute_import, division, print_function)
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os.path
@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from ..tools import coordinates
 from ..tools import cropping
 from ..tools import transformations
-from .vector import Position, Extent
+from .vector import Position
 from ..tools import interpolation
 from ..tools import headers
 

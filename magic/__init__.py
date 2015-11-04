@@ -4,8 +4,8 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
-# Import Python 3 functionality
-from __future__ import (absolute_import, division, print_function)
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
@@ -19,7 +19,6 @@ import aplpy
 import pyregion
 import astropy.io.fits as pyfits
 from astropy.wcs import WCS
-import astropy.units as u
 from astropy import log
 
 # Import Astromagic modules

@@ -4,6 +4,11 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
+
+# *****************************************************************
+
 class Layers(dict):
 
     """
@@ -97,11 +102,7 @@ class Layers(dict):
         """
 
         # Deselect each layer
-        for name in self.keys():
-            try:
-                self[name].deselect()
-            except AttributeError:
-                print name
+        for name in self.keys(): self[name].deselect()
 
     # *****************************************************************
 

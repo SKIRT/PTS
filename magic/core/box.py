@@ -4,11 +4,10 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
-# Import Python 3 functionality
-from __future__ import (absolute_import, division, print_function)
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import math
 import numpy as np
 from scipy import ndimage
 
@@ -17,7 +16,7 @@ from .regions import Region
 from ..tools import cropping
 from ..tools import fitting
 from ..tools import interpolation
-from .vector import Position, Extent
+from .vector import Position
 
 # *****************************************************************
 
@@ -367,8 +366,12 @@ class Box(np.ndarray):
         # Convert to relative position
         rel_position = self.rel_position(position)
 
+        # Calculate the pixel coordinates of the position
+        x_pixel = int(round(rel_position.x))
+        y_pixel = int(round(rel_position.y))
+
         # Check whether this box contains the position
-        if rel_position.x < 0 or rel_position.y < 0 or rel_position.x >= self.xsize or rel_position.y >= self.ysize: return False
+        if x_pixel < 0 or y_pixel < 0 or x_pixel >= self.xsize or y_pixel >= self.ysize: return False
         else: return True
 
     # *****************************************************************

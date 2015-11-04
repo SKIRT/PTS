@@ -4,8 +4,8 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
-# Import Python 3 functionality
-from __future__ import (absolute_import, division, print_function)
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
@@ -13,8 +13,6 @@ import numpy as np
 
 # Import astronomical modules
 from astropy.stats import sigma_clip, sigma_clipped_stats
-from astropy import log
-import pyregion
 
 # Import Astromagic modules
 from . import general
@@ -169,63 +167,6 @@ def sigma_clip_split(input_list, criterium, sigma=3.0, only_high=False, only_low
 
     # Return the valid and invalid lists
     return valid_list, invalid_list
-
-# *****************************************************************
-
-def split_percentage(input_list, criterium, percentage, nans="low"):
-
-    """
-    This function...
-    """
-
-    if type(input_list).__name__ == "ShapeList":
-
-        new_list = pyregion.ShapeList([])
-        nans_list = pyregion.ShapeList([])
-
-    else:
-
-        new_list = []
-        nans_list = []
-
-    # Fill in new and nans lists
-    for item in input_list:
-
-        if np.isnan(criterium(item)): nans_list.append(item)
-        else: new_list.append(item)
-
-    # Do the sorting
-    new_list.sort(key=criterium)
-
-    # Determine the splitting point
-    split = int(round(len(new_list) - percentage * len(new_list)))
-
-    # Return the two splitted lists
-    if type(input_list).__name__ == "ShapeList":
-
-        list_a = pyregion.ShapeList([])
-        list_b = pyregion.ShapeList([])
-
-        for i in range(len(new_list)):
-
-            if i < split: list_a.append(new_list[i])
-            else: list_b.append(new_list[i])
-
-        if nans == "low":
-            for j in range(len(nans_list)): list_a.append(nans_list[j])
-        elif nans == "high":
-            for j in range(len(nans_list)): list_b.append(nans_list[j])
-        elif nans == "discard": pass
-        else: raise ValueError("Invalid option for nan")
-
-        return list_a, list_b
-
-    else:
-
-        if nans == "low": return new_list[0:split-1] + nans_list, new_list[split:len(new_list)]
-        elif nans == "high": return new_list[0:split-1], new_list[split:len(new_list)] + nans_list
-        elif nans == "discard": return new_list[0:split-1], new_list[split:len(new_list)]
-        else: raise ValueError("Invalid option for nan")
 
 # *****************************************************************
 

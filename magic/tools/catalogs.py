@@ -4,14 +4,11 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
-# Import Python 3 functionality
-from __future__ import (absolute_import, division, print_function)
-
-# Import image modules
-from ..core import regions
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
 
 # Import Astromagic modules
-from ..core.galaxy import Galaxy
+from ..core import regions
 
 # Import astronomical modules
 import astropy.units as u

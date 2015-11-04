@@ -4,6 +4,9 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
+
 # Import image modules
 from . import Image
 
@@ -27,11 +30,11 @@ class MyPrompt(Cmd):
             name = 'stranger'
         else:
             name = args
-        print "Hello, %s" % name
+        print("Hello, %s" % name)
 
     def do_quit(self, args):
         """Quits the program."""
-        print "Quitting."
+        print("Quitting")
         raise SystemExit
 
 if __name__ == '__main__':

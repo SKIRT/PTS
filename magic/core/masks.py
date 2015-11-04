@@ -4,11 +4,10 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
-# Import Python 3 functionality
-from __future__ import (absolute_import, division, print_function)
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import math
 import numpy as np
 from scipy import ndimage
 from skimage import morphology
@@ -402,11 +401,15 @@ class Mask(np.ndarray):
         """
 
         # Calculate x and y of the pixel corresponding to the object's position
-        x = int(round(position.x))
-        y = int(round(position.y))
+        x_pixel = int(round(position.x))
+        y_pixel = int(round(position.y))
 
-        # Return the value of the mask in this pixel
-        return self[y, x]
+        # Check whether this box contains the position
+        if x_pixel < 0 or y_pixel < 0 or x_pixel >= self.xsize or y_pixel >= self.ysize: return False
+        else:
+
+            # Return the value of the mask in this pixel
+            return self[y_pixel, x_pixel]
 
 # *****************************************************************
 

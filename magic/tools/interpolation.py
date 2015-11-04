@@ -4,15 +4,14 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
-# Import Python 3 functionality
-from __future__ import (absolute_import, division, print_function)
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
 
 # Import Astromagic modules
 from .inpaint import replace_nans
-from ..core import masks
 
 # Import astronomical modules
 from photutils.background import Background

@@ -4,23 +4,18 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
-# Import Python 3 functionality
-from __future__ import (absolute_import, division, print_function)
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os.path
 import inspect
 import numpy as np
-
-#import matplotlib
-#if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
 from matplotlib.backends.backend_pdf import PdfPages
-
 import matplotlib.pyplot as plt
 import copy
 
 # Import Astromagic modules
-from ..core import masks
 from ..core.masks import Mask
 from ..core.regions import Region
 from ..tools import statistics
