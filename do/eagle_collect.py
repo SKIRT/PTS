@@ -9,8 +9,9 @@
 #
 # This script collects the statistics contained in the info files for a set of SKIRT-runs into a single data file,
 # which is placed in the "Collections" directory specified in eagle.config.
-# The current implementation simply selects the set of SKIRT-runs based on the EAGLE simulation name specified
-# as the sole command line argument for the script, for example "Ref25"
+# The script expects one or more command line arguments, which are used as possible values for the label
+# and eaglesim fields in the SKIRT-run database. For example, "pts collect Recal25 convergence" will collect all
+# runs that have a label value of "Recal25" or "convergence" \em and an eaglesim value of "Recal25" or "convergence".
 #
 
 # -----------------------------------------------------------------
@@ -26,16 +27,6 @@ from eagle.database import Database
 from eagle.skirtrun import SkirtRun
 
 # -----------------------------------------------------------------
-
-# returns a list of SkirtRun objects corresponding to all completed or archived skirt-runs
-# for the given eagle simulation name, in order of run-id.
-def completed_skirtruns_for_simulation(eaglesim):
-    db = Database()
-    query = "runstatus in ('completed','archived') and skitemplate='pan_v5' and eaglesim='{}'".format(eaglesim)
-    runids = sorted([ row['runid'] for row in db.select(query) ])
-    runs = [ SkirtRun(runid) for runid in runids ]
-    db.close()
-    return runs
 
 # collects the statistics for a given list of skirt-runs into a single dictionary with a numpy array for each entry
 # and dumps the dictionary in pickle format to the specified file.
@@ -61,19 +52,24 @@ def collect_info(skirtruns, outfilepath):
 
 # -----------------------------------------------------------------
 
-# get the command-line argument
-if len(sys.argv) != 2: raise ValueError("This script expects exactly one command-line argument")
-eaglesim = sys.argv[1]
+# chain the command-line arguments into a query list
+if len(sys.argv) <= 1: raise ValueError("This script expects one or more command-line arguments")
+querylist = "('{}')".format("','".join(sys.argv[1:]))
+namelist = "_".join(sys.argv[1:])
 
-# get a list of skirt-runs for which to collect statistics
-skirtruns = completed_skirtruns_for_simulation(eaglesim)
+# get a list of SkirtRun objects for which to collect statistics, in order of run-id
+db = Database()
+query = "runstatus in ('completed','archived') and label in {0} and eaglesim in {0}".format(querylist)
+runids = sorted([ row['runid'] for row in db.select(query) ])
+skirtruns = [ SkirtRun(runid) for runid in runids ]
+db.close()
 
 # perform the collection
 if len(skirtruns) > 0:
-    print "Collecting statistics from {} SKIRT-runs for EAGLE simulation {}...".format(len(skirtruns),eaglesim)
-    collect_info(skirtruns, os.path.join(config.collections_path,"{}_info_collection.dat".format(eaglesim)))
+    print "Collecting statistics from {} SKIRT-runs with label and eaglesim fields in {}...".format(len(skirtruns),querylist)
+    collect_info(skirtruns, os.path.join(config.collections_path,"{}_info_collection.dat".format(namelist)))
 
 else:
-    print "No SKIRT-runs for EAGLE simulation {}.".format(eaglesim)
+    print "There are no SKIRT-runs with label and eaglesim fields in {}.".format(querylist)
 
 # -----------------------------------------------------------------
