@@ -63,22 +63,6 @@ def plot_peak_model(box, x_peak, y_peak, model, title=None):
     x_peak_pixel = int(round(x_peak))
     y_peak_pixel = int(round(y_peak))
 
-    import copy
-
-    model = copy.deepcopy(model)
-
-    from astropy.modeling import models
-
-    if isinstance(model, models.Gaussian2D):
-
-        model.x_mean -= box.x_min
-        model.y_mean -= box.y_min
-
-    elif isinstance(model, models.AiryDisk2D):
-
-        model.x_0 -= box.x_min
-        model.y_0 -= box.y_min
-
     # Calculate the pixel value at the peak for the data, model and residual
     peak_data_value = box[y_peak_pixel,x_peak_pixel]
     peak_model_value = model(x_peak, y_peak)

@@ -296,8 +296,8 @@ class Box(np.ndarray):
             model = fitting.fit_2D_Gaussian(self, rel_center, sigma=sigma, max_center_offset=max_center_offset, amplitude=amplitude)
 
             # Adapt the coordinate of the center
-            model.x_mean.value = model.x_mean.value + self.x_min
-            model.y_mean.value = model.y_mean.value + self.y_min
+            #model.x_mean.value = model.x_mean.value + self.x_min
+            #model.y_mean.value = model.y_mean.value + self.y_min
 
         # Fit an Airy Disk model to the data
         elif model_name == "Airy":
@@ -311,14 +311,39 @@ class Box(np.ndarray):
             model = fitting.fit_2D_Airy(self, rel_center, radius=radius, max_center_offset=max_center_offset, amplitude=amplitude)
 
             # Adapt the coordinate of the center
-            model.x_0.value = model.x_0.value + self.x_min
-            model.y_0.value = model.y_0.value + self.y_min
+            #model.x_0.value = model.x_0.value + self.x_min
+            #model.y_0.value = model.y_0.value + self.y_min
 
         # Unknown model name
         else: raise ValueError("Model name should be 'Gaussian' or 'Airy'")
 
+        # Shift the position of the model so that it represents its absolute position in the frame
+        fitting.shift_model(model, self.x_min, self.y_min)
+
         # Return the model
         return model
+
+    # *****************************************************************
+
+    def evaluate_model(self, model):
+
+        """
+        This function ...
+        :param model:
+        :return:
+        """
+
+        # Make a local copy of the model so that we can adapt its position to be relative to this box
+        rel_model = fitting.shifted_model(model, -self.x_min, -self.y_min)
+
+        # Create x and y meshgrid for evaluating
+        y_values, x_values = np.mgrid[:self.ysize, :self.xsize]
+
+        # Evaluate the model
+        data = rel_model(x_values, y_values)
+
+        # Return a new box
+        return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
     # *****************************************************************
 

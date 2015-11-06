@@ -120,7 +120,8 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
         if config.debug.model_offset or special:
 
             rel_peak = source.cutout.rel_position(source.peak)
-            plotting.plot_peak_model(source.cutout, rel_peak.x, rel_peak.y, model, title="Center of source and peak do not match")
+            rel_model = fitting.shifted_model(model, -source.cutout.x_min, -source.cutout.y_min)
+            plotting.plot_peak_model(source.cutout, rel_peak.x, rel_peak.y, rel_model, title="Center of source and peak do not match")
 
         # Create a new zoomed-in source
         source = source.zoom(config.zoom_factor)
@@ -141,7 +142,8 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
         if config.debug.success or special:
 
             rel_peak = source.cutout.rel_position(source.peak)
-            plotting.plot_peak_model(source.cutout, rel_peak.x, rel_peak.y, model, title="Found a model that corresponds to the peak position")
+            rel_model = fitting.shifted_model(model, -source.cutout.x_min, -source.cutout.y_min)
+            plotting.plot_peak_model(source.cutout, rel_peak.x, rel_peak.y, rel_model, title="Found a model that corresponds to the peak position")
 
         # Return the model
         return source, model

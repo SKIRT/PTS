@@ -178,8 +178,27 @@ class Star(SkyObject):
         :return:
         """
 
+        # Check whether the method for removal is valid
+        if config.method != "model" and config.method != "interpolation":
+            raise ValueError("Method for removal should be either 'model' or 'interpolation'")
+
+        # Remove the star by subtracting the model if a model was found and the method is set to 'model'
+        if config.method == "model" and self.has_model:
+
+            # Add a new stage to the track record
+            if self.has_track_record: self.track_record.set_stage("removal")
+
+            # Evaluate the model in the cutout of the star's source
+            evaluated = self.source.cutout.evaluate_model(self.model)
+
+            # Create a box where the model has been subtracted
+            subtracted = self.source.cutout - evaluated
+
+            # Replace the frame with the subtracted box
+            subtracted.replace(frame, where=self.source.mask)
+
         # If a segment was found that can be identified with a source
-        if self.has_source or config.remove_if_undetected:
+        elif self.has_source or config.remove_if_undetected:
 
             # Add a new stage to the track record
             if self.has_track_record: self.track_record.set_stage("removal")

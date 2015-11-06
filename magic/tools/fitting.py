@@ -8,6 +8,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import copy
 import warnings
 import numpy as np
 from scipy import ndimage
@@ -579,5 +580,51 @@ def fwhm(model):
     """
 
     return 2.355 * sigma(model)
+
+# *****************************************************************
+
+def shift_model(model, x_shift, y_shift):
+
+    """
+    This function ...
+    :param model:
+    :param x_shift:
+    :param y_shift:
+    :return:
+    """
+
+    # If the model is a 2D Gaussian function
+    if isinstance(model, models.Gaussian2D):
+
+        model.x_mean += x_shift
+        model.y_mean += y_shift
+
+    # If the model is a 2D Airy Disk function
+    elif isinstance(model, models.AiryDisk2D):
+
+        model.x_0 += x_shift
+        model.y_0 += y_shift
+
+    # Unsupported models
+    else: raise ValueError("Unsupported model (should be 'Gaussian2D' or 'AiryDisk2D'")
+
+# *****************************************************************
+
+def shifted_model(model, x_shift, y_shift):
+
+    """
+    This function ...
+    :param model:
+    :return:
+    """
+
+    # Make a copy of the original model
+    new_model = copy.deepcopy(model)
+
+    # Shift the new model
+    shift_model(new_model, x_shift, y_shift)
+
+    # Return the new model
+    return new_model
 
 # *****************************************************************
