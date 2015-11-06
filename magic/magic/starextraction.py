@@ -662,21 +662,25 @@ class StarExtractor(ObjectExtractor):
             elif annotation is None: text = ""
             else: raise ValueError("Invalid option for annotation")
 
-            color_suffix = " # color = " + color
+            # If the FWHM is defined, draw a circle for the star and draw a cross for its peak position (if defined)
+            if fwhm is not None:
 
-            point_suffix = " # point = x " + text
+                # Calculate the radius in pixels
+                radius = fwhm * statistics.fwhm_to_sigma * self.config.region.sigma_level
 
-            # Calculate the radius in pixels
-            radius = fwhm * statistics.fwhm_to_sigma * self.config.region.sigma_level
+                # Draw a cross for the peak position
+                if star.has_source and star.source.has_peak:
 
-            if star.has_source:
-
-                if star.source.has_peak:
-
+                    point_suffix = " # point = x " + text
                     print("image;point({},{})".format(star.source.peak.x, star.source.peak.y) + point_suffix, file=f)
 
-            # Show a circle for the star
-            print("image;circle({},{},{})".format(x_center, y_center, radius) + color_suffix, file=f)
+                # Show a circle for the star
+                color_suffix = " # color = " + color
+                print("image;circle({},{},{})".format(x_center, y_center, radius) + color_suffix, file=f)
+
+            # If the FWHM is undefined, simply draw a point for the star's position (e.g. when this function is called
+            # after the fetch_stars method)
+            else: print("image;point({},{})".format(x_center, y_center), file=f)
 
             # Aperture created from saturation mask
             if star.has_aperture:
@@ -763,6 +767,9 @@ class StarExtractor(ObjectExtractor):
         This function ...
         :return:
         """
+
+        # If the list of FWHM values is empty (the stars were not fitted yet), return None
+        if len(self.fwhms) == 0: return None
 
         # Determine the default FWHM and return it
         if self.config.fwhm.measure == "max": return max(self.fwhms)

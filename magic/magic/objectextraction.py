@@ -300,6 +300,7 @@ class ObjectExtractor(object):
         # Inform the user
         log.info("Saving region to " + self.config.saving.region_path)
 
+        # Call the function in one of the derived class that implements this behaviour
         self.write_region(self.config.saving.region_path, self.config.saving.region_annotation)
 
     # *****************************************************************
