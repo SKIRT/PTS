@@ -226,7 +226,7 @@ class Galaxy(SkyObject):
         if self.has_source or config.remove_if_undetected:
 
             # Estimate the background
-            self.source.estimate_background(config.remove_method, config.sigma_clip)
+            self.source.estimate_background(config.interpolation_method, config.sigma_clip)
 
             # Replace the frame with the estimated background
             self.source.background.replace(frame, where=self.source.mask)

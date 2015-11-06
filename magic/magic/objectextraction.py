@@ -215,7 +215,7 @@ class ObjectExtractor(object):
         # Loop over the shapes in the region
         for shape in region:
 
-            # Get the center and radius of the
+            # Get the center and radius of the shape (can be a circle or an ellipse)
             x_center, y_center, x_radius, y_radius = ellipse_parameters(shape)
 
             # Create a source
@@ -239,7 +239,7 @@ class ObjectExtractor(object):
         for source in self.manual_sources:
 
             # Estimate the background for the source
-            source.estimate_background(self.config.manual.remove_method, self.config.manual.sigma_clip)
+            source.estimate_background(self.config.manual.interpolation_method, self.config.manual.sigma_clip)
 
             # Replace the frame in the appropriate area with the estimated background
             source.background.replace(self.frame, where=source.mask)

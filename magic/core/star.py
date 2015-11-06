@@ -26,7 +26,7 @@ class Star(SkyObject):
     This class ...
     """
 
-    def __init__(self, catalog=None, id=None, position=None, ra_error=None, dec_error=None, magnitudes=None, magnitude_errors=None):
+    def __init__(self, catalog=None, id=None, position=None, ra_error=None, dec_error=None, magnitudes=None, magnitude_errors=None, on_galaxy=False):
 
         """
         The constructor ...
@@ -40,6 +40,7 @@ class Star(SkyObject):
         self.dec_error = dec_error
         self.magnitudes = magnitudes
         self.magnitude_errors = magnitude_errors
+        self.on_galaxy = on_galaxy
 
         # Set the model attribute to None initially
         self.model = None
@@ -169,7 +170,7 @@ class Star(SkyObject):
 
     # *****************************************************************
 
-    def remove(self, frame, config, default_fwhm, method, sigma_clip):
+    def remove(self, frame, config, default_fwhm):
 
         """
         This function removes the star from a given frame
@@ -185,6 +186,14 @@ class Star(SkyObject):
 
             # Create a source for the desired sigma level and outer factor
             source = self.source_at_sigma_level(frame, default_fwhm, config.sigma_level, config.outer_factor)
+
+            # Determine whether we want the background to be sigma-clipped when interpolating over the source
+            if self.on_galaxy and config.no_sigma_clip_on_galaxy: sigma_clip = False
+            else: sigma_clip = config.sigma_clip
+
+            # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
+            if self.on_galaxy and config.polynomial_on_galaxy: method = "polynomial"
+            else: method = config.interpolation_method
 
             # Estimate the background
             source.estimate_background(method, sigma_clip)
@@ -205,7 +214,7 @@ class Star(SkyObject):
 
     # *****************************************************************
 
-    def remove_saturation(self, frame, config, default_fwhm, remove_method, sigma_clip):
+    def remove_saturation(self, frame, config, default_fwhm):
 
         """
         This function ...
@@ -230,8 +239,16 @@ class Star(SkyObject):
             # Replace the source by a source that covers the saturation
             self.source = source
 
+            # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
+            if self.on_galaxy and config.no_sigma_clip_on_galaxy: sigma_clip = False
+            else: sigma_clip = config.sigma_clip
+
+            # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
+            if self.on_galaxy and config.polynomial_on_galaxy: interpolation_method = "polynomial"
+            else: interpolation_method = config.interpolation_method
+
             # Estimate the background
-            self.source.estimate_background(remove_method, sigma_clip)
+            self.source.estimate_background(interpolation_method, sigma_clip)
 
             # FOR PLOTTING THE REMOVAL
             #import copy

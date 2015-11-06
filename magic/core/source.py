@@ -159,7 +159,7 @@ class Source(object):
                 self.background = self.cutout.fit_polynomial(3, mask=mask)
 
         # Interpolate ...
-        elif method == "interpolation": self.background = self.cutout.interpolate(mask)
+        elif method == "local_mean": self.background = self.cutout.interpolate(mask)
 
         # Calculate the mean
         elif method == "mean":

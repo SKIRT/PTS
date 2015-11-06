@@ -93,16 +93,16 @@ class StarExtractor(ObjectExtractor):
         self.fit_stars()
 
         # If requested, remove the stars
-        if self.config.remove: self.remove_stars(galaxyextractor)
+        if self.config.remove: self.remove_stars()
 
         # If requested, remove saturation in the image
-        if self.config.remove_saturation: self.remove_saturation(galaxyextractor)
+        if self.config.remove_saturation: self.remove_saturation()
 
         # If requested, find apertures
         if self.config.find_apertures: self.find_apertures()
 
         # If requested, remove apertures
-        if self.config.remove_apertures: self.remove_apertures(galaxyextractor)
+        if self.config.remove_apertures: self.remove_apertures()
 
         # If a manual region was specified, remove the corresponding stars
         if self.config.manual_region is not None: self.remove_manual()
@@ -226,6 +226,9 @@ class StarExtractor(ObjectExtractor):
                 star = Star(catalog=self.config.fetching.catalog, id=star_id, position=position, ra_error=ra_error,
                             dec_error=dec_error, magnitudes=magnitudes, magnitude_errors=mag_errors)
 
+                # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
+                if galaxyextractor is not None: star.on_galaxy = galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs))
+
                 # If requested, enable track record
                 if self.config.track_record: star.enable_track_record()
 
@@ -330,7 +333,7 @@ class StarExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def remove_stars(self, galaxyextractor=None):
+    def remove_stars(self):
 
         """
         This function ...
@@ -351,20 +354,12 @@ class StarExtractor(ObjectExtractor):
             # If this star should be ignored, skip it
             if star.ignore: continue
 
-            # Determine whether we want the background to be sigma-clipped when interpolating over the source
-            if galaxyextractor is not None and galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.removal.no_sigma_clip_on_galaxy: sigma_clip = False
-            else: sigma_clip = self.config.removal.sigma_clip
-
-            # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-            if galaxyextractor is not None and galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.removal.polynomial_on_galaxy: method = "polynomial"
-            else: method = self.config.removal.method
-
             # Remove the star in the frame
-            star.remove(self.frame, self.config.removal, default_fwhm, method, sigma_clip)
+            star.remove(self.frame, self.config.removal, default_fwhm)
 
     # *****************************************************************
 
-    def remove_saturation(self, galaxyextractor=None):
+    def remove_saturation(self):
 
         """
         This function ...
@@ -396,16 +391,8 @@ class StarExtractor(ObjectExtractor):
                 # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
                 if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
-                # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
-                if galaxyextractor is not None and galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
-                else: sigma_clip = self.config.saturation.sigma_clip
-
-                # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-                if galaxyextractor is not None and galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
-                else: remove_method = self.config.saturation.remove_method
-
                 # Find a saturation source and remove it from the frame
-                success = star.remove_saturation(self.frame, self.config.saturation, default_fwhm, remove_method, sigma_clip)
+                success = star.remove_saturation(self.frame, self.config.saturation, default_fwhm)
                 if success: star.has_saturation = True
                 removed += success
 
@@ -450,16 +437,8 @@ class StarExtractor(ObjectExtractor):
                 # Remove the saturation if the value is greater than the minimum value or the star has no source and 'remove_if_undetected' is enabled
                 if value >= minimum or (self.config.saturation.remove_if_undetected and not star.has_source):
 
-                    # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
-                    if galaxyextractor is not None and galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
-                    else: sigma_clip = self.config.saturation.sigma_clip
-
-                    # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-                    if galaxyextractor is not None and galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
-                    else: remove_method = self.config.saturation.remove_method
-
                     # Find a saturation source and remove it from the frame
-                    success = star.remove_saturation(self.frame, self.config.saturation, default_fwhm, remove_method, sigma_clip)
+                    success = star.remove_saturation(self.frame, self.config.saturation, default_fwhm)
                     removed += success
 
             # Inform the user
@@ -492,7 +471,7 @@ class StarExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def remove_apertures(self, galaxyextractor=None):
+    def remove_apertures(self):
 
         """
         This function ...
@@ -510,18 +489,15 @@ class StarExtractor(ObjectExtractor):
             # If the object does not have an aperture, skip it
             if not star.has_aperture: continue
 
-            # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
-            #if not star.has_source: continue
-
             # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
-            if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
+            if star.on_galaxy and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
             else: sigma_clip = self.config.saturation.sigma_clip
 
             # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-            if galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs)) and self.config.saturation.polynomial_on_galaxy: remove_method = "polynomial"
-            else: remove_method = self.config.saturation.remove_method
+            if star.on_galaxy and self.config.saturation.polynomial_on_galaxy: interpolation_method = "polynomial"
+            else: interpolation_method = self.config.saturation.interpolation_method
 
-            # EXPANSION FACTOR
+            # Expansion factor
             expansion_factor = self.config.aperture_removal.expansion_factor
 
             # Create a source object
@@ -541,7 +517,7 @@ class StarExtractor(ObjectExtractor):
             source = Source(self.frame, center, radius, angle, self.config.saturation.background_outer_factor)
 
             # Estimate the background for the source
-            source.estimate_background(remove_method, sigma_clip)
+            source.estimate_background(interpolation_method, sigma_clip)
 
             # Replace the frame in the appropriate area with the estimated background
             source.background.replace(self.frame, where=source.mask)
@@ -917,7 +893,7 @@ class StarExtractor(ObjectExtractor):
         if self.config.plotting.show_colorbar: plot.add_colorbar()
 
         # Add these shapes to the plot
-        plot.show_regions(self.create_region(self.frame, type="image"))
+        plot.show_regions(self.region)
 
         # Show the plot
         plt.show()
