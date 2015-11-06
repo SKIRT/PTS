@@ -121,8 +121,6 @@ class Frame(np.ndarray):
                 description = plane
                 index = headers.get_frame_index(header, plane)
 
-            print(index)
-
             # Get the name from the file path
             if name is None: name = os.path.basename(path[:-5])
 

@@ -30,29 +30,26 @@ def get_pixelscale(header):
     :return:
     """
 
-    # Initially, set the pixel scale to None
-    pixelscale = None
-
     # Search for 'PIXSCALE' keyword
-    if 'PIXSCALE' in header: pixelscale = header['PIXSCALE']
+    if 'PIXSCALE' in header: return header['PIXSCALE'] * u.arcsec
 
     # Search for the 'SECPIX' keyword
-    elif 'SECPIX' in header: pixelscale = header['SECPIX']
+    elif 'SECPIX' in header: return header['SECPIX'] * u.arcsec
 
     # Search for 'Pixel Field of View' keyword
-    elif 'PFOV' in header: pixelscale = header['PFOV']
+    elif 'PFOV' in header: return header['PFOV'] * u.arcsec
 
     # Search for the CD matrix elements
-    elif 'CD1_1' in header and 'CD1_2' in header: pixelscale = math.sqrt(header['CD1_1']**2 + header['CD1_2']**2 ) * 3600.0
+    elif 'CD1_1' in header and 'CD1_2' in header: return math.sqrt(header['CD1_1']**2 + header['CD1_2']**2 ) * 3600.0 * u.arcsec
 
     # Search for the diagonal CD matrix elements
-    elif 'CD1_1' in header: pixelscale = abs(header['CD1_1']) * 3600.0
+    elif 'CD1_1' in header: return abs(header['CD1_1']) * 3600.0 * u.arcsec
 
     # Search for the 'CDELT1' keyword
-    elif 'CDELT1' in header: pixelscale = abs(header['CDELT1']) * 3600.0
+    elif 'CDELT1' in header: return abs(header['CDELT1']) * 3600.0 * u.arcsec
 
-    # Return the pixel scale (in arcseconds)
-    return pixelscale*u.arcsec if pixelscale is not None else None
+    # If none of the above keywords were found, return None
+    else: return None
 
 # *****************************************************************
 
@@ -120,9 +117,6 @@ def get_units(header):
     :param header:
     :return:
     """
-
-    # Initially, set the units to None
-    units = None
 
     # Look for the 'BUNIT' keyword
     if 'BUNIT' in header: return u.Unit(header['BUNIT'])

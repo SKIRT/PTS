@@ -71,8 +71,8 @@ class StarExtractor(ObjectExtractor):
         This function ...
         """
 
-        # Make a local reference to the passed frame
-        self.frame = frame
+        # Call the setup function
+        self.setup(frame)
 
         # Create a list of stars based on online catalogs
         self.fetch_stars(galaxyextractor)
@@ -860,6 +860,8 @@ class StarExtractor(ObjectExtractor):
         :return:
         """
 
+        # Initialize empty lists for the table columns
+        catalogs = []
         ids = []
         ascensions = []
         declinations = []
@@ -870,7 +872,8 @@ class StarExtractor(ObjectExtractor):
         # Loop over all stars
         for star in self.objects:
 
-            ids.append(star.ucac_id)
+            catalogs.append(star.catalog)
+            ids.append(star.id)
             ascensions.append(star.position.ra.value)
             declinations.append(star.position.dec.value)
             sources.append(star.has_source)
@@ -879,7 +882,7 @@ class StarExtractor(ObjectExtractor):
             else: fwhms.append(None)
 
         # Create and return the table
-        return Table([ids, ascensions, declinations, sources, models, fwhms], names=('UCAC-ID', 'RA', 'DEC', 'Source', 'Model', 'FWHM'), meta={'name': 'stars'})
+        return Table([catalogs, ids, ascensions, declinations, sources, models, fwhms], names=('CATALOG', 'ID', 'RA', 'DEC', 'Source', 'Model', 'FWHM'), meta={'name': 'stars'})
 
     # *****************************************************************
 

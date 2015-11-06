@@ -45,16 +45,6 @@ class ObjectExtractor(object):
         The constructor ...
         """
 
-        ### SET-UP LOGGING SYSTEM
-
-        # Set the log level
-        log.setLevel(self.config.logging.level)
-
-        # Set log file path
-        if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
-
-        ###
-
         # Initialize an empty list for the sky objects
         self.objects = []
 
@@ -63,6 +53,21 @@ class ObjectExtractor(object):
 
         # Set the frame to None
         self.frame = None
+
+    # *****************************************************************
+
+    def setup(self, frame):
+
+        """
+        This function ...
+        """
+
+        # Make a local reference to the passed frame
+        self.frame = frame
+
+        # Set-up the logging system
+        log.setLevel(self.config.logging.level)  # the logging level
+        if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
 
     # *****************************************************************
 

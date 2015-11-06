@@ -63,8 +63,8 @@ class GalaxyExtractor(ObjectExtractor):
         This function ...
         """
 
-        # Make a local reference to the passed frame
-        self.frame = frame
+        # Call the setup function
+        self.setup(frame)
 
         # Get list of galaxies
         self.fetch_galaxies()
