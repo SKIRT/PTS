@@ -23,6 +23,7 @@ from ..core.regions import Region
 from ..core.source import Source
 from ..core.masks import Mask
 from ..tools import configuration
+from ..tools import fitting
 
 # Import astronomical modules
 import aplpy
@@ -146,7 +147,7 @@ class StarExtractor(ObjectExtractor):
         else: galaxies = []
 
         # Loop over all stars in the table
-        norms = []
+        distances = []
         for entry in table:
 
             # Initialize an empty dictionary to contain the magnitudes and the magnitude errors
@@ -190,9 +191,11 @@ class StarExtractor(ObjectExtractor):
                 x_center, y_center = position.to_pixel(self.frame.wcs)
                 difference = galaxy - Position(x=x_center, y=y_center)
 
-                norms.append(difference.norm)
+                # Add the star-galaxy distance to the list of distances
+                distances.append(difference.norm)
 
-                if difference.norm <= self.config.fetching.min_difference_from_galaxy:
+                # Check whether the star-galaxy distance is smaller than a certain threshold
+                if difference.norm <= self.config.fetching.min_distance_from_galaxy:
 
                     # Remove the position of this galaxy from the list (one star is already identified with it)
                     galaxies.remove(galaxy)
@@ -236,7 +239,7 @@ class StarExtractor(ObjectExtractor):
                 self.objects.append(star)
 
         # Inform the user
-        if galaxyextractor is not None: log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(norm) for norm in sorted(norms)[:10]))
+        if galaxyextractor is not None: log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
 
         # Inform the user
         log.debug("Number of stars: " + str(len(self.objects)))
@@ -347,6 +350,16 @@ class StarExtractor(ObjectExtractor):
 
         # Inform the user
         log.debug("Default FWHM used when star could not be fitted: {0:.2f} pixels".format(default_fwhm))
+
+        if self.config.removal.method == "model":
+
+            # Calculate the relative differences between the ampltides of the fitted models and the corresponding sources
+            differences = np.array(self.amplitude_differences) * 100.0
+
+            print(np.mean(differences))
+            print(np.median(differences))
+            print(np.std(differences))
+            print(differences)
 
         # Loop over all stars in the list
         for star in self.objects:
@@ -733,6 +746,46 @@ class StarExtractor(ObjectExtractor):
 
         # Return the list
         return fluxes
+
+    # *****************************************************************
+
+    @property
+    def amplitude_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        differences = []
+
+        # Loop over all stars
+        for star in self.objects:
+
+            # If the star was not fitted, skip it
+            if not star.has_model: continue
+
+            # Determine the amplitude and the position of the center of the model
+            amplitude_model = star.model.amplitude
+            center = star.source.cutout.rel_position(fitting.center(star.model))
+
+            # Convert into integers
+            x = int(round(center.x))
+            y = int(round(center.y))
+
+            # Calculate the value of the source at the model's center position
+            amplitude_source = star.source.subtracted[y, x]
+
+            # Calculate the difference of the amplitudes
+            difference = abs(amplitude_model - amplitude_source)
+            rel_difference = difference / amplitude_source
+
+            # Add the relative difference to the list
+            differences.append(rel_difference)
+
+        # Return the list of differences
+        return differences
 
     # *****************************************************************
 

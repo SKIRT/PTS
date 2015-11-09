@@ -82,10 +82,75 @@ def plot_peak_model(box, x_peak, y_peak, model, title=None):
     plt.subplot(1,3,3)
     plt.imshow(box - model(x_plotvalues, y_plotvalues), origin='lower', interpolation='nearest', vmin=0.0, vmax=vmax)
     plt.title("Residual " + str(peak_residual_value))
-    plt.show()
 
     # Set the main title
     if title is not None: plt.suptitle(title, size=16)
+
+    # Show the plot
+    plt.show()
+
+# *****************************************************************
+
+def plot_star(box, peak, model, title=None):
+
+    """
+    This function ...
+    :param box:
+    :param peak:
+    :param model:
+    :param title:
+    :return:
+    """
+
+    # Normalization
+    norm = ImageNormalize(stretch=SqrtStretch())
+
+    # Determine the maximum value in the box and the minimum value for plotting
+    vmax = np.max(box)
+    vmin = np.min(box) if vmax <= 0 else 0.0
+
+    # Evaluate the model and subtract it from the cutout
+    evaluated = box.evaluate_model(model)
+    subtracted = box - evaluated
+
+    # Create a figure
+    plt.figure(figsize=(10,3))
+
+    # Plot the box
+    plt.subplot(1,4,1)
+    plt.imshow(box, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.plot(peak.x, peak.y, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
+    plt.xlim(0, box.xsize-1)
+    plt.ylim(0, box.ysize-1)
+    plt.title("Cutout")
+
+    # Plot the model
+    plt.subplot(1,4,2)
+    plt.imshow(evaluated, origin='lower', interpolation='none', norm=norm, vmin=0.0, vmax=vmax)
+    plt.xlim(0, box.xsize-1)
+    plt.ylim(0, box.ysize-1)
+    plt.title("Model")
+
+    # Plot the subtracted box on the same scale as the original box and model
+    plt.subplot(1,4,3)
+    plt.imshow(subtracted, origin='lower', interpolation='none', norm=norm, vmin=0.0, vmax=vmax)
+    plt.xlim(0, box.xsize-1)
+    plt.ylim(0, box.ysize-1)
+    plt.title("Residual")
+
+    # Plot the subtracted box on a narrower color scale
+    plt.subplot(1,4,4)
+    sp = plt.imshow(subtracted, origin='lower', interpolation='none')
+    plt.xlim(0, box.xsize-1)
+    plt.ylim(0, box.ysize-1)
+    plt.title("Residual")
+    plt.colorbar(sp, format="%.2f")
+
+    # Set the main title
+    if title is not None: plt.suptitle(title, size=16)
+
+    # Show the plot
+    plt.show()
 
 # *****************************************************************
 

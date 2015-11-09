@@ -295,10 +295,6 @@ class Box(np.ndarray):
             # Do the fitting
             model = fitting.fit_2D_Gaussian(self, rel_center, sigma=sigma, max_center_offset=max_center_offset, amplitude=amplitude)
 
-            # Adapt the coordinate of the center
-            #model.x_mean.value = model.x_mean.value + self.x_min
-            #model.y_mean.value = model.y_mean.value + self.y_min
-
         # Fit an Airy Disk model to the data
         elif model_name == "Airy":
 
@@ -309,10 +305,6 @@ class Box(np.ndarray):
 
             # Do the fitting
             model = fitting.fit_2D_Airy(self, rel_center, radius=radius, max_center_offset=max_center_offset, amplitude=amplitude)
-
-            # Adapt the coordinate of the center
-            #model.x_0.value = model.x_0.value + self.x_min
-            #model.y_0.value = model.y_0.value + self.y_min
 
         # Unknown model name
         else: raise ValueError("Model name should be 'Gaussian' or 'Airy'")

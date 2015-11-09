@@ -188,14 +188,28 @@ class Star(SkyObject):
             # Add a new stage to the track record
             if self.has_track_record: self.track_record.set_stage("removal")
 
+            # Create a source for the desired sigma level and outer factor
+            source = self.source_at_sigma_level(frame, default_fwhm, config.sigma_level, config.outer_factor)
+
             # Evaluate the model in the cutout of the star's source
-            evaluated = self.source.cutout.evaluate_model(self.model)
+            evaluated = source.cutout.evaluate_model(self.model)
+
+            # Determine the value at the peak for both the source and the model
+            rel_peak = source.cutout.rel_position(self.source.peak)
 
             # Create a box where the model has been subtracted
-            subtracted = self.source.cutout - evaluated
+            subtracted = source.cutout - evaluated
+
+            # To plot the difference between the source and the fitted model
+            #from ..tools import plotting
+            #plotting.plot_star(source.cutout, rel_peak, self.model, "Star about to be removed by subtracting model")
+
+            # Add the evaluated and subtracted boxes to the track record
+            if self.has_track_record: self.track_record.append(evaluated)
+            if self.has_track_record: self.track_record.append(subtracted)
 
             # Replace the frame with the subtracted box
-            subtracted.replace(frame, where=self.source.mask)
+            subtracted.replace(frame, where=source.mask)
 
         # If a segment was found that can be identified with a source
         elif self.has_source or config.remove_if_undetected:
