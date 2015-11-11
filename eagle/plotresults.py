@@ -252,8 +252,8 @@ class Collection:
     ## The constructor loads the contents of the specified collection so that it is ready for plotting.
     # The collection name should \em not include the directory (which is taken from eagle.conf) nor the
     # postfix "_info_collection.dat".
-    def __init__(self, collectionname):
-        self.name = collectionname
+    def __init__(self, collectionname, collectionlabel):
+        self.name = collectionlabel
         self.info = {}
 
         # load the collection

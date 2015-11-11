@@ -88,8 +88,7 @@ configurations = {
         'skirt_path': absolutepath("~/SKIRT/release/SKIRTmain/skirt"),
         'eagledata_path': { 'Ref100':  "/cosma5/data/Eagle/ScienceRuns/Planck1/L0100N1504/PE/REFERENCE/data/",
                            'Ref25':   "/cosma5/data/Eagle/ScienceRuns/Planck1/L0025N0752/PE/REFERENCE/data",
-                           'Recal25': "/cosma5/data/Eagle/ScienceRuns/Planck1/L0025N0752/PE/RECALIBRATED/data",
-                           'Ref12':   "/cosma5/data/Eagle/ScienceRuns/Planck1/L0012N0188/PE/REFERENCE/data" },
+                           'Recal25': "/cosma5/data/Eagle/ScienceRuns/Planck1/L0025N0752/PE/RECALIBRATED/data" },
         'catalogs_path':  "/cosma5/data/Eagle/SkirtAnalysis/Catalogs",
         'database_path':  "/cosma5/data/Eagle/SkirtAnalysis/Database",
         'backup_path':    "/cosma5/data/Eagle/SkirtAnalysis/Backup",
@@ -112,8 +111,7 @@ configurations = {
         'skirt_path': absolutepath("~/SKIRT/release/SKIRTmain/skirt"),
         'eagledata_path': { 'Ref100': absolutepath("~/EAGLE/Snapshots/L0100N1504REF"),
                            'Ref25': absolutepath("~/EAGLE/Snapshots/L0025N0752REF"),
-                           'Recal25': absolutepath("~/EAGLE/Snapshots/L0025N0752RECAL"),
-                           'Ref12': absolutepath("~/EAGLE/Snapshots/L0012N0188REF") },
+                           'Recal25': absolutepath("~/EAGLE/Snapshots/L0025N0752RECAL") },
         'catalogs_path':  absolutepath("~/EAGLE/Catalogs"),
         'database_path':  absolutepath("~/EAGLE/Database"),
         'backup_path':    absolutepath("~/EAGLE/Backup"),
@@ -200,3 +198,19 @@ globals().update(configuration)
 
 # -----------------------------------------------------------------
 
+# provide the table name prefix in the public EAGLE database corresponding to each of our shorthands
+public_eagle_database_name = { 'Ref100':  "RefL0100N1504",
+                               'Ref25':   "RefL0025N0752",
+                               'Recal25': "RecalL0025N0752",
+                             }
+
+# get the user's account information for the public EAGLE database, if available
+public_eagle_database_username = username
+public_eagle_database_password = None
+try:
+    public_eagle_database_username, public_eagle_database_password = \
+        open(os.path.join(database_path,"public_eagle_database_account_info.txt")).readline().split()
+except Exception:
+    pass
+
+# -----------------------------------------------------------------

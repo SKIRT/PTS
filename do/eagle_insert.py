@@ -7,78 +7,78 @@
 
 ## \package do.eagle_insert Insert selected records into the SKIRT-runs database.
 #
-# This script populates the SKIRT-runs database with relevant galaxies selected from the default EAGLE snapshot.
+# This script populates the SKIRT-runs database with relevant galaxies selected from the public EAGLE database.
 #
-# The script expects exactly five command-line arguments specifying respectively:
-#  - a label that will identify the set of inserted records in the database
-#  - the name of the ski file template (without extension) to be used for these runs
-#  - a minimum number of particles for stars and gas (same minimum for each particle type)
-#  - a minimum stellar mass (in solar mass units)
-#  - a maximum stellar mass (in solar mass units)
+# The script expects exactly six command-line arguments specifying respectively:
+#  - label: a label that will identify the set of inserted records in the SKIRT-runs database
+#  - skitemplate: the name of the ski file template (without extension) to be used for these runs
+#  - eaglesim: the short name identifying the snapshot from which to extract galaxies (e.g. Ref100)
+#  - minstarmass: minimum stellar mass within 30kpc aperture (in solar mass units)
+#  - maxstarmass: maximum stellar mass within 30kpc aperture (in solar mass units)
+#  - fraction: random fraction of the galaxies to select
 #
 
 # -----------------------------------------------------------------
 
 import sys
-import random
-from eagle.galaxy import Snapshot
+import eagle.config as config
 import eagle.database
+from eagle.connection import Connection
+from eagle.galaxy import Snapshot
 
 # -----------------------------------------------------------------
 
 # get the command-line arguments
-if len(sys.argv) != 6: raise ValueError("This script expects exactly five command-line arguments")
+if len(sys.argv) != 7: raise ValueError("This script expects exactly six command-line arguments: " \
+                + "label skitemplate eaglesim minstarmass maxstarmass fraction")
 label = sys.argv[1]
-skiname = sys.argv[2]
-minparticles = int(sys.argv[3])
+skitemplate = sys.argv[2]
+eaglesim = sys.argv[3]
 minstarmass = float(sys.argv[4])
 maxstarmass = float(sys.argv[5])
+fraction = float(sys.argv[6])
 
-# backup and open the data base
+# get a list of the requested galaxies from the public EAGLE database
+print "Querying public EAGLE database..."
+con = Connection(config.public_eagle_database_username, password=config.public_eagle_database_password)
+records = con.execute_query('''
+    SELECT
+        gal.GalaxyID as galaxyid
+    FROM
+        {0}_SubHalo as gal,
+        {0}_Aperture as ape
+    WHERE
+        ape.Mass_Star > {1} and
+        ape.Mass_Star <= {2} and
+        gal.RandomNumber <= {3} and
+        gal.SnapNum = 28 and
+        gal.Spurious = 0 and
+        ape.ApertureSize = 30 and
+        gal.GalaxyID = ape.GalaxyID
+    '''.format(config.public_eagle_database_name[eaglesim], minstarmass, maxstarmass, fraction))
+
+# display some information for verification
+print "Selected {} galaxies with stellar masses in range {:.2e} .. {:.2e}".format(len(records),minstarmass,maxstarmass)
+print "SKIRT-runs will be inserted for these galaxies with:"
+print "  label:", label
+print "  skitemplate:", skitemplate
+print "  eaglesim:", eaglesim
+
+# ask confirmation
+confirm = raw_input("--> Would you like to insert {} new SKIRT-runs? [y/n]: ".format(len(records)))
+if not confirm.lower().startswith('y'): exit()
+
+# backup the data base
 eagle.database.backup()
+
+# insert a new record into the database for each selected galaxy
 db = eagle.database.Database()
-
-# make sure the specified label is new
-count = len(db.select("label=?", (label,)))
-if count > 0: raise ValueError("This label is already in use for " + str(count) + " records in the database")
-
-# open the snapshot files
-print "Opening the snapshot..."
-snap = Snapshot()
-snap.printinfo()
-print ""
-
-# get the list of galaxies within the specified range
-galaxies = snap.galaxies()
-galaxies.remove_starparticles_below(minparticles)
-galaxies.remove_gasparticles_below(minparticles)
-galaxies.remove_starmass_below(minstarmass)
-galaxies.remove_starmass_above(maxstarmass)
-
-# randomize the ordering of the galaxies so that consecutive subsets are more representative of the population
-galaxies = galaxies.galaxies
-random.shuffle(galaxies)
-
-# insert a new record into the database for each selected galaxy, without committing
-for g in galaxies:
-    db.insert(label, snap.eaglesim, snap.orig_redshift,
-              g.groupnumber, g.subgroupnumber, g.numstarparticles, g.numgasparticles, g.starmass, g.gasmass,
-              skiname)
-
-# show the result and ask for confirmation
-records = db.select("label=?", (label,))
-count = len(records)
-db.show(records)
-confirm = raw_input("--> Would you like to commit these " + str(count) + " new records to the database? [y/n]: ")
-
-# commit or reject based on user reply
-if confirm.lower().startswith('y'):
-    db.commit()
-    print str(count) + " new records were committed to the database"
-else:
-    print "New records were rejected"
-
-# close the database
+with db.transaction():
+    for record in records:
+        db.insert(label, eaglesim, 0, record["galaxyid"], skitemplate)
 db.close()
+
+# confirm completion
+print "{} new SKIRT-runs were inserted in the database".format(len(records))
 
 # -----------------------------------------------------------------

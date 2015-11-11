@@ -65,27 +65,22 @@ def run(runid):
         # create the appropriate SKIRT result directories
         skirtrun = SkirtRun(runid, create=True)
 
-        # construct some names based on the galaxy group/subgroup numbers
-        starsname = "galaxy_{0}_{1}_stars.dat".format(record['groupnr'], record['subgroupnr'])
-        gasname = "galaxy_{0}_{1}_gas.dat".format(record['groupnr'], record['subgroupnr'])
-        hiiname = "galaxy_{0}_{1}_hii.dat".format(record['groupnr'], record['subgroupnr'])
-        skiname = "{0}_{1}_{2}.ski".format(record['skitemplate'], record['groupnr'], record['subgroupnr'])
+        # extract the particle data for the galaxy from the EAGLE snapshot
+        galaxies = Snapshot(record['eaglesim'], redshift=record['redshift']).galaxies()
+        galaxy = galaxies.galaxy(record['galaxyid'])
+        galaxy.export(skirtrun.inpath())
 
         # create an adjusted copy of the ski file for this run
         ski = SkiFile(os.path.join(config.templates_path, record['skitemplate']+".ski"))
-        ski.setstarfile(starsname)
-        ski.setgasfile(gasname)
-        ski.sethiifile(hiiname)
-        ski.saveto(os.path.join(skirtrun.runpath(), skiname))
+        prefix = galaxy.prefix()
+        ski.setstarfile(prefix + "_stars.dat")
+        ski.setgasfile(prefix + "_gas.dat")
+        ski.sethiifile(prefix + "_hii.dat")
+        ski.saveto(os.path.join(skirtrun.runpath(), prefix+"_"+record['skitemplate']+".ski"))
 
         # copy the wavelength grid
-        grid = record['skitemplate']+"_wavelengths.dat"
+        grid = ski.wavelengthsfile()
         shutil.copyfile(os.path.join(config.templates_path, grid), os.path.join(skirtrun.inpath(), grid))
-
-        # extract the particle data for the galaxy from the EAGLE snapshot
-        galaxies = Snapshot(record['eaglesim'], redshift=record['redshift']).galaxies()
-        galaxy = galaxies.galaxy(record['groupnr'], record['subgroupnr'])
-        galaxy.export(skirtrun.inpath())
 
         # run the SKIRT simulation
         simulation = skirtrun.execute(mpistyle=config.mpistyle,

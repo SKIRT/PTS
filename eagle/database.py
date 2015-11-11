@@ -17,10 +17,8 @@
 # The SKIRT-runs database keeps track of SKIRT simulations performed on EAGLE simulation data.
 # Each record in the database represents a single SKIRT simulation and holds information on:
 #  - the current status of the SKIRT simulation (e.g. to be scheduled, running or finished)
-#  - the EAGLE data fed to this SKIRT simulation (e.g. snapshot, galaxy group/subgroup number)
+#  - the EAGLE data fed to this SKIRT simulation (e.g. snapshot, galaxy ID)
 #  - the SKIRT parameters used for the simulation
-#  - the results of the SKIRT simulation
-#  - some basic characteristics of the galaxy (e.g. mass, number of particles, color)
 #
 # <B>Fields</B>
 #
@@ -57,19 +55,9 @@
 #<TR><TD>redshift</TD>      <TD>Real</TD>
 #                           <TD>The redshift of the EAGLE snapshot from which data is obtained for this SKIRT run.
 #                               This value is used to determine the appropriate filenames in the EAGLE data.</TD></TR>
-#<TR><TD>groupnr</TD>       <TD>Integer</TD>
-#                           <TD>The group number of the EAGLE galaxy used for this SKIRT run.</TD></TR>
-#<TR><TD>subgroupnr</TD>    <TD>Integer</TD>
-#                           <TD>The subgroup number of the EAGLE galaxy used for this SKIRT run.</TD></TR>
-#<TR><TD>starparticles</TD> <TD>Integer</TD>
-#                           <TD>The number of star particles in the EAGLE galaxy used for this SKIRT run.</TD></TR>
-#<TR><TD>gasparticles</TD>  <TD>Integer</TD>
-#                           <TD>The number of gas particles in the EAGLE galaxy used for this SKIRT run.</TD></TR>
-#<TR><TD>starmass</TD>      <TD>Real</TD>
-#                           <TD>The stellar mass of the EAGLE galaxy used for this SKIRT run,
-#                               in solar mass units.</TD></TR>
-#<TR><TD>gasmass</TD>       <TD>Real</TD>
-#                           <TD>The gas mass of the EAGLE galaxy used for this SKIRT run, in solar mass units.</TD></TR>
+#<TR><TD>galaxyid</TD>      <TD>Integer</TD>
+#                           <TD>The identifier (GalaxyID) in the public EAGLE database for the galaxy
+#                               used for this SKIRT run.</TD></TR>
 #<TR><TD>skitemplate</TD>   <TD>Text</TD>
 #                           <TD>The name (without extension) of the ski file used as a template for this SKIRT run.
 #                               The actual ski file is automatically derived from the template. The templates are
@@ -168,8 +156,8 @@ class Database:
     # For example:
     #
     #\verbatim
-    #for row in db.select("starparticles>? and gasparticles>?", (minstar, mingas)):
-    #    print row["groupnr"], row["subgroupnr"], row["starparticles"], row["gasparticles"]
+    #for row in db.select("label=?", (label, )):
+    #    print row["galaxyid"], row["runstatus"]
     #\endverbatim
     #
     def select(self, where, params=None):
@@ -181,7 +169,7 @@ class Database:
     # For example:
     #
     #\verbatim
-    #db.show(db.select("gasparticles>5000"))
+    #db.show(db.select("runstatus='inserted'"))
     #\endverbatim
     #
     # If the \em refetch argument is True, the function retrieves the data from the data base based on the run-id's
@@ -228,18 +216,14 @@ class Database:
     ## This function inserts a new record into the database with the specified field values. The function
     # automatically determines values for runid (unique serial nr), username (from config), runstatus ('inserted')
     # and statusdate (now). The change is \em not committed.
-    def insert(self, label, eaglesim, redshift, groupnr, subgroupnr, starparticles, gasparticles, starmass, gasmass,
-                     skitemplate):
+    def insert(self, label, eaglesim, redshift, galaxyid, skitemplate):
         username = config.username
         runstatus = runstatus_enum[0]
         statusdate = config.timestamp()
         self._con.execute('''insert into skirtruns (username, runstatus, statusdate,
-                                    label, eaglesim, redshift, groupnr, subgroupnr,
-                                    starparticles, gasparticles, starmass, gasmass,
-                                    skitemplate)
-                             values (?,?,?,?,?,?,?,?,?,?,?,?,?)''',
-                           (username, runstatus, statusdate, label, eaglesim, redshift, groupnr, subgroupnr,
-                           starparticles, gasparticles, starmass, gasmass, skitemplate)
+                                    label, eaglesim, redshift, galaxyid, skitemplate)
+                             values (?,?,?,?,?,?,?,?)''',
+                           (username, runstatus, statusdate, label, eaglesim, redshift, galaxyid, skitemplate)
                           )
 
     ## This function updates the value of a field in the records specified through a list of run-id's.
@@ -303,12 +287,7 @@ class Database:
                              queue text,
                              eaglesim text,
                              redshift numeric,
-                             groupnr numeric,
-                             subgroupnr numeric,
-                             starparticles numeric,
-                             gasparticles numeric,
-                             starmass numeric,
-                             gasmass numeric,
+                             galaxyid numeric,
                              skitemplate text
                           )''')
 
@@ -318,7 +297,7 @@ class Database:
     def addfield(self, fieldname, fieldtype='text', initialvalue=None):
         if not fieldtype in fieldtype_enum: raise ValueError("unsupported field type: "+fieldtype)
         self._con.execute("alter table skirtruns add column " + fieldname + " " + fieldtype)
-        if initialvalue:
+        if initialvalue!=None:
             self._con.execute("update skirtruns set " + fieldname + " = ?", (initialvalue,))
             self._con.commit()
 

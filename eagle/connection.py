@@ -19,6 +19,8 @@ import urllib2
 import cookielib
 import re
 from getpass import getpass
+import os.path
+import tempfile
 
 # -----------------------------------------------------------------
 
@@ -35,7 +37,7 @@ numpy_dtype = {
 # -----------------------------------------------------------------
 
 # Cookie storage - want to avoid creating a new session for every query
-cookie_file = "sql_cookies.txt"
+cookie_file = os.path.join(tempfile.gettempdir(), "pts_eagle_sql_cookies.txt")
 cookie_jar = cookielib.LWPCookieJar(cookie_file)
 try:
     cookie_jar.load(ignore_discard=True)
