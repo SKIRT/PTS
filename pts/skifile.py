@@ -105,32 +105,34 @@ class SkiFile:
 
     ## This function returns the number of dust cells
     def ncells(self):
-        entry = self.tree.xpath("//dustGridStructure/*[1]")[0]
 
-        try:
-            xpoints = int(entry.get("pointsX"))
-        except TypeError:
-            # If this didn't work, we probably have a dust grid that is generated at runtime
-            raise ValueError("The number of dust cells is not defined within the ski file")
-
-        ypoints = int(entry.get("pointsY"))
+        xpoints = self.nxcells()
+        ypoints = 1
         zpoints = 1
+
         try:
-            zpoints = int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsZ"))
-        except TypeError:
-            pass
+            ypoints = self.nycells()
+        except ValueError: pass
+
+        try:
+            zpoints = self.nzcells()
+        except ValueError: pass
 
         # Return the total number of dust cells
         return xpoints*ypoints*zpoints
 
     ## This function returns the number of dust cells in the x direction
     def nxcells(self):
-        return int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsX"))
+        try:
+            xpoints = int(self.tree.xpath("//meshX/*")[0].get("numBins"))
+        except TypeError:
+            raise ValueError("The number of dust cels is not defined within the ski file")
+        return xpoints
 
     ## This function returns the number of dust cells in the y direction
     def nycells(self):
         try:
-            ypoints = int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsY"))
+            ypoints = int(self.tree.xpath("//meshY/*")[0].get("numBins"))
         except TypeError:
             raise ValueError("The dimension of the dust grid is lower than 2")
         return ypoints
@@ -138,7 +140,7 @@ class SkiFile:
     ## This function returns the number of dust cells in the z direction
     def nzcells(self):
         try:
-            zpoints = int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsZ"))
+            zpoints = int(self.tree.xpath("//meshZ/*")[0].get("numBins"))
         except TypeError:
             raise ValueError("The dimension of the dust grid is lower than 3")
         return zpoints
