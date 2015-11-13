@@ -49,6 +49,8 @@ class StarExtractor(ObjectExtractor):
         The constructor ...
         """
 
+        ## Configuration
+
         # Determine the path to the default configuration file
         directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
         default_config = os.path.join(directory, "config", "starextractor.cfg")
@@ -58,8 +60,12 @@ class StarExtractor(ObjectExtractor):
         if config is None: self.config = configuration.open(default_config)
         else: self.config = configuration.open(config, default_config)
 
+        ## Base class
+
         # Call the constructor of the base class
         super(StarExtractor, self).__init__()
+
+        ## Attributes
 
         # Initialize an empty list for NOMAD stars
         self.nomad_stars = []
@@ -94,10 +100,10 @@ class StarExtractor(ObjectExtractor):
         self.fit_stars()
 
         # If requested, remove the stars
-        if self.config.remove: self.remove_stars()
+        if self.config.remove: self.remove_stars(galaxyextractor)
 
         # If requested, remove saturation in the image
-        if self.config.remove_saturation: self.remove_saturation()
+        if self.config.remove_saturation: self.remove_saturation(galaxyextractor)
 
         # If requested, find apertures
         if self.config.find_apertures: self.find_apertures()
@@ -142,10 +148,6 @@ class StarExtractor(ObjectExtractor):
         result = viz.query_region(center, width=ra_span, height=dec_span, catalog=self.config.fetching.catalog)
         table = result[0]
 
-        # If a galaxyextractor is passed, get the positions of the galaxies in the frame
-        if galaxyextractor is not None: galaxies = galaxyextractor.positions
-        else: galaxies = []
-
         # Loop over all stars in the table
         distances = []
         for entry in table:
@@ -184,22 +186,39 @@ class StarExtractor(ObjectExtractor):
 
             else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
 
-            # Loop over all galaxy positions in the list
+            # Loop over all galaxies
+            galaxies = galaxyextractor.objects if galaxyextractor is not None else []
             for galaxy in galaxies:
+
+                # Calculate the pixel position of the galaxy
+                galaxy_position = galaxy.pixel_position(self.frame.wcs)
 
                 # Calculate the distance between the star's position and the galaxy's center
                 x_center, y_center = position.to_pixel(self.frame.wcs)
-                difference = galaxy - Position(x=x_center, y=y_center)
+                difference = galaxy_position - Position(x=x_center, y=y_center)
 
                 # Add the star-galaxy distance to the list of distances
                 distances.append(difference.norm)
 
-                # Check whether the star-galaxy distance is smaller than a certain threshold
-                if difference.norm <= self.config.fetching.min_distance_from_galaxy:
+                # The principal galaxy/galaxies
+                if galaxy.principal:
 
-                    # Remove the position of this galaxy from the list (one star is already identified with it)
-                    galaxies.remove(galaxy)
-                    break
+                    # Check whether the star-galaxy distance is smaller than a certain threshold
+                    if difference.norm <= self.config.fetching.min_distance_from_galaxy.principal:
+
+                        # Remove the position of this galaxy from the list (one star is already identified with it)
+                        #galaxies.remove(galaxy)
+                        break
+
+                # Companion galaxies
+                elif galaxy.companion:
+
+                    if difference.norm <= self.config.fetching.min_distance_from_galaxy.companion: break
+
+                # All other galaxies in the frame
+                else:
+
+                    if difference.norm <= self.config.fetching.min_distance_from_galaxy.other: break
 
             # If a break is not encountered
             else:
@@ -336,7 +355,7 @@ class StarExtractor(ObjectExtractor):
 
     # *****************************************************************
 
-    def remove_stars(self):
+    def remove_stars(self, galaxyextractor=None):
 
         """
         This function ...
@@ -367,12 +386,15 @@ class StarExtractor(ObjectExtractor):
             # If this star should be ignored, skip it
             if star.ignore: continue
 
+            # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
+            if not self.config.removal.remove_foreground and galaxyextractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
+
             # Remove the star in the frame
             star.remove(self.frame, self.config.removal, default_fwhm)
 
     # *****************************************************************
 
-    def remove_saturation(self):
+    def remove_saturation(self, galaxyextractor=None):
 
         """
         This function ...
@@ -400,6 +422,9 @@ class StarExtractor(ObjectExtractor):
 
                 # If this star should be ignored, skip it
                 if star.ignore: continue
+
+                # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
+                if not self.config.saturation.remove_foreground and galaxyextractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
 
                 # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
                 if not star.has_source and not self.config.saturation.remove_if_undetected: continue
@@ -439,6 +464,9 @@ class StarExtractor(ObjectExtractor):
 
                 # If this star should be ignored, skip it
                 if star.ignore: continue
+
+                # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
+                if not self.config.saturation.remove_foreground and galaxyextractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
 
                 # If a source was not found for this star, skip it
                 if not star.has_source and not self.config.saturation.remove_if_undetected: continue

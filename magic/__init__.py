@@ -960,7 +960,7 @@ class Image(object):
         else: log.warning("Could not determine the filter for this image")
 
         # Obtain the units of this image
-        unit = headers.get_units(self.old_header)
+        unit = headers.get_unit(self.old_header)
 
         # Check whether the image is sky-subtracted
         sky_subtracted = headers.is_sky_subtracted(self.old_header)

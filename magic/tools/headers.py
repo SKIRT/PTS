@@ -110,7 +110,7 @@ def get_filter(name, header):
 
 # *****************************************************************
 
-def get_units(header):
+def get_unit(header):
 
     """
     This function ...
@@ -119,13 +119,25 @@ def get_units(header):
     """
 
     # Look for the 'BUNIT' keyword
-    if 'BUNIT' in header: return u.Unit(header['BUNIT'])
+    if "BUNIT" in header:
+
+        value = header["BUNIT"].split("   / ")[0].rstrip()
+        return u.Unit(value)
 
     # Look for the 'SIGUNIT' keyword
-    elif 'SIGUNIT' in header: return u.Unit(header['SIGUNIT'])
+    elif "SIGUNIT" in header:
+
+        value = header["SIGUNIT"].split("   / ")[0].rstrip()
+        return u.Unit(value)
 
     # Look for the 'ZUNITS' keyword
-    elif 'ZUNITS' in header: return u.Unit(header['ZUNITS'])
+    elif "ZUNITS" in header:
+
+        value = header["ZUNITS"].split("   / ")[0].rstrip()
+        return u.Unit(value)
+
+    # No unit information was found
+    else: return None
 
 # *****************************************************************
 

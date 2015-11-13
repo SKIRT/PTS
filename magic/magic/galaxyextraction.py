@@ -43,6 +43,8 @@ class GalaxyExtractor(ObjectExtractor):
         The constructor ...
         """
 
+        ## Configuration
+
         # Determine the path to the default configuration file
         directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
         default_config = os.path.join(directory, "config", "galaxyextractor.cfg")
@@ -51,6 +53,8 @@ class GalaxyExtractor(ObjectExtractor):
         # settings according to the user defined configuration file
         if config is None: self.config = configuration.open(default_config)
         else: self.config = configuration.open(config, default_config)
+
+        ## Base class
 
         # Call the constructor of the base class
         super(GalaxyExtractor, self).__init__()

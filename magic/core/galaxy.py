@@ -54,8 +54,9 @@ class Galaxy(SkyObject):
             ned_result = Ned.query_object(name)
             ned_entry = ned_result[0]
 
-            # Get the NGC number
-            self.name = ned_entry["Object Name"]
+            # Get a more common name for this galaxy (sometimes, the name obtained from NED is one starting with 2MASX .., use the PGC name in this case)
+            if ned_entry["Object Name"].startswith("2MASX "): self.name = name
+            else: self.name = ned_entry["Object Name"]
 
             # Get the redshift
             self.redshift = ned_entry["Redshift"]
@@ -76,10 +77,41 @@ class Galaxy(SkyObject):
 
         # Query Vizier and obtain the resulting table
         result = viz.query_object(name, catalog=["VII/237"])
-        entry = result[0][0]
+        table = result[0]
+
+        # Get the correct entry (sometimes, for example for mergers, querying with the name of one galaxy gives two hits! We have to obtain the right one each time!)
+        if len(table) == 0: raise ValueError("The galaxy could not be found under this name")
+        elif len(table) == 1: entry = table[0]
+        else:
+
+            entry = None
+
+            #print("name = ", self.name, " , first ", name)
+            #print(table)
+
+            # Some rows don't have names, if no match is found based on the name just take the row that has other names defined
+            rows_with_names = []
+            for row in table:
+                if row["ANames"]: rows_with_names.append(row)
+
+            # If only one row remains, take that one for the galaxy we are looking for
+            if len(rows_with_names) == 1: entry = row
+
+            # Else, loop over the rows where names are defined and look for a match
+            else:
+                for row in rows_with_names:
+
+                    names = row["ANames"]
+
+                    if name.replace(" ", "") in names or self.name.replace(" ", "") in names:
+
+                        entry = row
+                        break
 
         # Get the right ascension and the declination
         position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
+
+        #print(self.name, name, entry["_RAJ2000"], entry["_DEJ2000"])
 
         # Get the names given to this galaxy
         self.names = entry["ANames"].split() if entry["ANames"] else None

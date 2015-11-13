@@ -45,6 +45,8 @@ class ObjectExtractor(object):
         The constructor ...
         """
 
+        ## Attributes
+
         # Initialize an empty list for the sky objects
         self.objects = []
 

@@ -44,6 +44,8 @@ class SkyExtractor(object):
         :return:
         """
 
+        ## Configuration
+
         # Determine the path to the default configuration file
         directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
         default_config = os.path.join(directory, "config", "skyextractor.cfg")
@@ -53,7 +55,7 @@ class SkyExtractor(object):
         if config is None: self.config = configuration.open(default_config)
         else: self.config = configuration.open(config, default_config)
 
-        ### SET-UP LOGGING SYSTEM
+        ## Logging
 
         # Set the log level
         log.setLevel(self.config.logging.level)
@@ -61,7 +63,7 @@ class SkyExtractor(object):
         # Set log file path
         if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
 
-        ###
+        ## Attributes
 
         # Set the galaxy and star mask to None initialy
         self.galaxy_mask = None

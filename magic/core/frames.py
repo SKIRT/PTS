@@ -106,7 +106,7 @@ class Frame(np.ndarray):
         filter = headers.get_filter(os.path.basename(path[:-5]), header)
 
         # Obtain the units of this image
-        unit = headers.get_units(header)
+        unit = headers.get_unit(header)
 
         # Check whether the image is sky-subtracted
         sky_subtracted = headers.is_sky_subtracted(header)
