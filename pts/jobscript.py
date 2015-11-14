@@ -172,7 +172,7 @@ class JobScript(object):
         self._script.close()
 
         # Then, swap to the desired cluster and launch the job script
-        output =  subprocess.check_output("module swap cluster/" + self._clustername + "; qsub " + self._path, shell=True, stderr=subprocess.STDOUT)
+        output = subprocess.check_output("module swap cluster/" + self._clustername + "; qsub " + self._path, shell=True, stderr=subprocess.STDOUT)
 
         # Read the job ID from the qsub output
         jobid = int(output.split(".")[0])

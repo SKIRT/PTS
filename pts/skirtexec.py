@@ -79,11 +79,13 @@ class SkirtExec:
     # The function returns a list of SkirtSimulation instances corresponding to the simulations to be performed
     # (after processing any wildcards in the ski filenames), in arbitrary order.
     #
-    def execute(self, skipattern, recursive=False, inpath="", outpath="", skirel=False,
-                threads=0, parallel=1, processes=1, mpistyle='generic', brief=False, verbose=False, wait=True):
+    def execute(self, skipattern, recursive=False, inpath="", outpath="", skirel=False, threads=0, parallel=1,
+                processes=1, mpistyle='generic', brief=False, verbose=False, memory=False, wait=True):
 
         # In multiprocessing mode, check whether MPI is installed on the system
-        if processes > 1 and not self._MPIinstalled(): return []
+        if processes > 1 and not mpi_present():
+            self._log.warning("No mpirun executable: skipping MPI simulations!")
+            return []
 
         # Create the argument list, starting with the SKIRT path in singleprocessing mode and "mpirun" in multiprocessing mode
         args = [self._path]
@@ -96,6 +98,7 @@ class SkirtExec:
         # Set general command line options
         if brief: args += ["-b"]
         if verbose: args += ["-v"]
+        if memory: args += ["-m"]
         if skirel: args += ["-k"]
         if recursive: args += ["-r"]
         if threads > 0: args += ["-t", str(threads)]
@@ -132,6 +135,21 @@ class SkirtExec:
         # Return the list of simulations so that their results can be followed up
         return simulations
 
+    ## This function does the same as the execute function, but obtains its arguments from a configuration object
+    def run(self, config):
+
+        # Execute SKIRT
+        simulation = self.execute(skipattern=config.skifile_path, inpath=config.input_path,
+                                  outpath=config.output_path, threads=config.parallel.threads,
+                                  processes=config.parallel.processes, brief=config.logging.brief,
+                                  verbose=config.logging.verbose, memory=config.logging.memory)[0]
+
+        # Check whether the simulation finished
+        if simulation.status() != "Finished": raise ValueError("Simulation " + simulation.status())
+
+        # Return the simulation instance
+        return simulation
+
     ## This function returns True if the previously started SKIRT process is still running, False otherwise
     def isrunning(self):
         return (self._process != None and self._process.poll() == None)
@@ -154,15 +172,90 @@ class SkirtExec:
     def directory(self):
         return os.path.dirname(os.path.dirname(os.path.dirname(self._path)))
 
-    ## This function checks whether the MPI executable is installed on the system.
-    def _MPIinstalled(self):
-        MPI = True
-        try:
-            devnull = open(os.devnull)
-            subprocess.Popen("mpirun", stdout=devnull, stderr=devnull).communicate()
-        except:
-            self._log.warning("No mpirun executable: skipping MPI simulations!")
-            MPI = False
-        return MPI
+# -----------------------------------------------------------------
+
+## An instance of the FitSkirtExec class represents a particular FitSKIRT executable, and allows invoking it
+#  with given command line arguments.
+class FitSkirtExec(object):
+
+    ## The constructor ...
+    def __init__(self, path=None):
+
+        # Set the FitSKIRT path
+        self._path = path
+        if not self._path.endswith("fitskirt"): self._path = os.path.join(self._path, "fitskirt")
+        if self._path != "fitskirt": self._path = os.path.realpath(os.path.expanduser(self._path))
+
+        # Indicate no simulations are running yet
+        self._process = None
+
+    ## This function ...
+    def execute(self, fskipattern, recursive=False, inpath="", outpath="", skirel=False, threads=0, parallel=1,
+                processes=1, mpistyle='generic', brief=False, verbose=False, memory=False, wait=True):
+
+        pass
+
+    ## This function ...
+    def run(self, config):
+
+        pass
+
+# -----------------------------------------------------------------
+
+## An instance of the SkirtMemoryExec class represents a particular SkirtMemory executable, and allows invoking it
+#  with given command line arguments.
+class SkirtMemoryExec(object):
+
+    ## The constructor ...
+    def __init__(self, path=None):
+
+        # Set the SkirtMemory path
+        self._path = path
+        if not self._path.endswith("skirtmem"): self._path = os.path.join(self._path, "skirtmem")
+        if self._path != "skirtmem": self._path = os.path.realpath(os.path.expanduser(self._path))
+
+        # Indicate no simulations are running yet
+        self._process = None
+
+    ## This function ...
+    def execute(self, skifilepath, inpath, outpath, processes=1, wait=True):
+
+        # In multiprocessing mode, check whether MPI is installed on the system
+        if processes > 1 and not mpi_present(): raise ValueError("No MPI installation found on this system")
+
+        # Create the argument list, starting with the SKIRT path in singleprocessing mode and "mpirun" in multiprocessing mode
+        args = [self._path]
+        if processes > 1: args = ["mpirun", "-np", str(processes)] + args
+
+        # Set general command line options
+        if inpath != "": args += ["-i", inpath]
+        if outpath != "": args += ["-o", outpath]
+        args += [skifilepath]
+
+        # Execute SkirtMemory
+        if wait:
+            self._process = None
+            subprocess.call(args)
+        else:
+            self._process = subprocess.Popen(args, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
+
+        # Return a simulation instance so that their results can be followed up
+        skifilename = os.path.basename(skifilepath)
+        return SkirtSimulation(skifilename, inpath=inpath, outpath=outpath)
+
+    ## This function ...
+    def run(self, config):
+
+        pass
+
+# -----------------------------------------------------------------
+
+## This function checks whether the MPI executable is installed on the system.
+def mpi_present():
+    try:
+        devnull = open(os.devnull)
+        subprocess.Popen("mpirun", stdout=devnull, stderr=devnull).communicate()
+        return True
+    except: return False
 
 # -----------------------------------------------------------------
