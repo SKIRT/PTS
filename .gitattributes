@@ -24,3 +24,6 @@
 *.jpg binary
 *.jpeg binary
 *.pdf binary
+
+# Allow certain configuration settings to be altered by the user without affecting the repo status
+*.cfg filter=gitignore
