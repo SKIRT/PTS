@@ -55,7 +55,7 @@ fullRef.addright(RGBImage("ugrizjhk.jpg"))
 # create a movie, frame by frame
 movie = MovieFile("fit.mov", shape=(fullRef.shape[0]+imageShape[0], fullRef.shape[1]), rate=6)
 for i in range(numSimulations):
-    print "Starting frame", i+1
+    print("Starting frame", i+1)
 
     # build a list of simulated images for this frame
     simImages = []

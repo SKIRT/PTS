@@ -19,14 +19,14 @@ from __future__ import absolute_import, division, print_function
 import sys
 import os.path
 
-# import relevant pts modules
-import ..pts.skifile
+# Import relevant pts modules
+from ..pts import skifile
 
 # -----------------------------------------------------------------
 
 print("Starting try...")
 
-print sys.argv
+print(sys.argv)
 
 print("Finished try")
 

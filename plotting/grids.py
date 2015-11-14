@@ -5,16 +5,22 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.plotgrids Plot a dust grid wireframe to PDF
+## \package plotting.grids Plot a dust grid wireframe to PDF
 #
 # The function in this module creates a PDF plot from a sequence of grid coordinates
 # provided as an input text file, directly creating a PDF file (i.e. without using matplotlib).
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 import numpy as np
 from reportlab.pdfgen import canvas
-import pts.archive as arch
+
+# Import the relevant PTS modules
+from ..pts import archive as arch
 
 # -----------------------------------------------------------------
 
@@ -127,6 +133,6 @@ def plotgrids(simulation, figsize=(8,8)):
         # save the figure
         fig.showPage()
         fig.save()
-        print "Created PDF grid plot file " + plotfile
+        print("Created PDF grid plot file " + plotfile)
 
 # -----------------------------------------------------------------

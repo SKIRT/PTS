@@ -12,14 +12,19 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 import numpy as np
 
-# use a non-interactive back-end to generate high-quality vector graphics
+# Use a non-interactive back-end to generate high-quality vector graphics
 import matplotlib
 if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 
-import pts.archive as arch
+# Import the relevant PTS modules
+from ..pts import archive as arch
 
 # -----------------------------------------------------------------
 
@@ -37,7 +42,7 @@ def plotseds(simulation, figsize=(10,6), xlim=None, ylim=None):
         labels = [ path.rsplit("_",2)[1] for path in sedpaths ]
         outpath = sedpaths[0].rsplit("_",2)[0] + "_sed.pdf"
         success = plotseds_impl(sedpaths, outpath, labels, simulation.fluxlabel(), figsize=figsize, xlim=xlim, ylim=ylim)
-        if success: print "Created PDF SED plot file " + outpath
+        if success: print("Created PDF SED plot file " + outpath)
 
 # -----------------------------------------------------------------
 

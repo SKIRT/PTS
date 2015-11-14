@@ -13,7 +13,10 @@
 
 # -----------------------------------------------------------------
 
-from __future__ import division
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 import numpy as np
 
 # -----------------------------------------------------------------

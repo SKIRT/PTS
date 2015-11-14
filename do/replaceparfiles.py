@@ -16,10 +16,15 @@
 
 # -----------------------------------------------------------------
 
-# import standard modules
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 import os
 import os.path
 import sys
+
+# -----------------------------------------------------------------
 
 # get the command-line argument specifying the test suite subset, if any
 subsuite = sys.argv[1] if len(sys.argv) > 1 else ""
@@ -31,13 +36,13 @@ for dirpath, dirs, files in os.walk(subsuite):
         for skifile in filter(lambda fn: fn.endswith(".ski"), os.listdir(dirpath[:-4])):
             prefix = skifile[:-4] + "_"
             # iterate over all output files with parameters.xml or parameters.tex extension
-            print prefix
+            print(prefix)
             for name in filter(lambda fn: fn.startswith(prefix) and   \
                               (fn.endswith("_parameters.xml") or fn.endswith("_parameters.tex")), files):
                 fromfile = os.path.join(dirpath, name)
                 tofile = os.path.join(os.path.join(dirpath[:-4],"ref"), name)
-                print fromfile
-                print tofile
+                print(fromfile)
+                print(tofile)
                 os.rename(fromfile, tofile)
 
 # -----------------------------------------------------------------

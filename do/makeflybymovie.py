@@ -29,7 +29,7 @@ import sys
 
 # Import the relevant PTS modules
 from ..pts.skirtsimulation import createsimulations
-from ..pts.makeflybymovie import makeflybymovie
+from ..misc.makeflybymovie import makeflybymovie
 
 # -----------------------------------------------------------------
 

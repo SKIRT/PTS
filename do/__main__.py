@@ -28,7 +28,10 @@
 
 # -----------------------------------------------------------------
 
-# import standard modules
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 import sys
 import os.path
 
@@ -52,12 +55,12 @@ if len(matches)==1:
     target = os.path.join(path, matches[0] + ".py")
     sys.argv[0] = target
     del sys.argv[1]
-    print "Executing: " + matches[0] + " " + " ".join(sys.argv[1:])
+    print("Executing: " + matches[0] + " " + " ".join(sys.argv[1:]))
     exec open(target)
 
 # if not, print the list of available scripts
 else:
-    print "Available scripts:"
-    for name in names: print "  " + name
+    print("Available scripts:")
+    for name in names: print("  " + name)
 
 # -----------------------------------------------------------------

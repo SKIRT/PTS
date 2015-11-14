@@ -12,15 +12,20 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 import numpy as np
 import pyfits
 
-# use a non-interactive back-end to generate high-quality vector graphics
+# Use a non-interactive back-end to generate high-quality vector graphics
 import matplotlib
 if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 
-import pts.archive as arch
+# Import the relevant PTS modules
+from ..pts import archive as arch
 
 # -----------------------------------------------------------------
 
@@ -80,6 +85,6 @@ def plotpolarization(simulation, figsize=(10,6)):
         plotfile = fileQ.replace("Q.fits",".pdf")
         plt.savefig(plotfile, bbox_inches='tight', pad_inches=0.25)
         plt.close()
-        print "Created PDF polarization map" + plotfile
+        print("Created PDF polarization map" + plotfile)
 
 # -----------------------------------------------------------------

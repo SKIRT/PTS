@@ -59,7 +59,7 @@ def makeflybymovie(simulation, rate=24, from_percentile=30, to_percentile=100, c
     outpath = simulation.outfilepath("flyby.mov")
 
     # determine the appropriate pixel range for ALL images
-    print "  preprocessing frames for " + outpath.rsplit("/",1)[1] + "..."
+    print("  preprocessing frames for " + outpath.rsplit("/",1)[1] + "...")
     ranges = []
     for fits in fitspaths:
         im = RGBImage(fits)
@@ -71,7 +71,7 @@ def makeflybymovie(simulation, rate=24, from_percentile=30, to_percentile=100, c
     movie = MovieFile(outpath, shape=simulation.instrumentshape(), rate=rate)
     nframes = len(fitspaths)
     for frame in range(nframes):
-        print "  adding frame " + str(frame+1) + "/" + str(nframes) + "..."
+        print("  adding frame " + str(frame+1) + "/" + str(nframes) + "...")
         im = RGBImage(fitspaths[frame])
         im.setrange(rmin,rmax)
         im.applylog()

@@ -15,17 +15,20 @@
 
 # -----------------------------------------------------------------
 
-rate = 15
-width = 21000
-pixels = 1000
-
-# -----------------------------------------------------------------
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
 
 # get the command line arguments
 import sys
 timelinename = sys.argv[1].lower() if len(sys.argv) > 1 else ""
 skifilepath = sys.argv[2].lower() if len(sys.argv) > 2 else ""
 interactive = (skifilepath=="interactive")
+
+# -----------------------------------------------------------------
+
+rate = 15
+width = 21000
+pixels = 1000
 
 # -----------------------------------------------------------------
 
@@ -59,8 +62,8 @@ if interactive:
 
 # or adjust ski file
 else:
-    from pts.makeflybymovie import prepareflybymovie
+    from ..misc.makeflybymovie import prepareflybymovie
     prepareflybymovie(skifilepath, timeline)
-    print "adjusted " + skifilepath
+    print("adjusted " + skifilepath)
 
 # -----------------------------------------------------------------

@@ -12,16 +12,21 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
 import os
 import os.path
 import shutil
+
 import eagle.config as config
 from eagle.database import Database
 from eagle.galaxy import Snapshot, Galaxy
 from eagle.skirtrun import SkirtRun
+
 from pts.skifile import SkiFile
-from pts.plotseds import plotseds   # import this one first to avoid warnings about setting the matplotlib backend
-from pts.makergbimages import makergbimages
+from ..plotting.seds import plotseds   # import this one first to avoid warnings about setting the matplotlib backend
+from ..misc.makergbimages import makergbimages
 
 # -----------------------------------------------------------------
 

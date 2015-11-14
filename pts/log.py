@@ -11,6 +11,9 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
 # Import standard modules
 import datetime
 import os
@@ -74,7 +77,7 @@ class Log(object):
             os.fsync(self._report.fileno())
 
         # Print the stamped message
-        print stampedmessage
+        print(stampedmessage)
 
     ## This function logs a warning message.
     def warning(self, message):
@@ -93,7 +96,7 @@ class Log(object):
             os.fsync(self._report.fileno())
 
         # Print the stamped message
-        print "\033[35m" + stampedmessage + "\033[0m"
+        print("\033[35m" + stampedmessage + "\033[0m")
 
     ## This function logs a success message.
     def success(self, message):
@@ -112,7 +115,7 @@ class Log(object):
             os.fsync(self._report.fileno())
 
         # Print the stamped message
-        print "\033[32m" + stampedmessage + "\033[0m"
+        print("\033[32m" + stampedmessage + "\033[0m")
 
     ## This function logs a failure message
     def failure(self, message):
@@ -131,7 +134,7 @@ class Log(object):
             os.fsync(self._report.fileno())
 
         # Print the stamped message
-        print "\033[31m" + stampedmessage + "\033[0m"
+        print("\033[31m" + stampedmessage + "\033[0m")
 
     ## This function logs an error message.
     def error(self, message):
@@ -150,7 +153,7 @@ class Log(object):
             os.fsync(self._report.fileno())
 
         # Print the stamped message
-        print "\033[31m" + stampedmessage + "\033[0m"
+        print("\033[31m" + stampedmessage + "\033[0m")
 
     ## This function closes the log file, if necessary
     def finish(self):
