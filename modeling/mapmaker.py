@@ -5,8 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-# Import Python 3 functionality
-from __future__ import (absolute_import, division, print_function)
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os.path
@@ -707,11 +707,6 @@ class MapMaker(object):
         # Young non-ionizing stars (specific star formation rate) = GALEXFUV - H
         #fuv_h = -2.5*(np.log10(self.fuv) - np.log10(self.h))
 
-        from astromagic.tools import plotting
-
-        plotting.plot_box(self.fuv, title="fuv")
-        plotting.plot_box(self.h, title="h")
-
         ratio = self.fuv / self.h
 
         # Save ...
@@ -783,14 +778,14 @@ class MapMaker(object):
 
         # Assert flux calculation is correct
         #assert int(flux_fuv) == int(self_flux_fuv), "FLUX FUV DOES NOT MATCH: " + str(flux_fuv) + " =/= " + str(self_flux_fuv)
-        log.warning("Flux FUV = " + str(flux_fuv) + " <> " + str(self_flux_fuv))
+        #log.warning("Flux FUV = " + str(flux_fuv) + " <> " + str(self_flux_fuv))
 
         #typisch 20% en 35% respectievelijk
         #48% voor MIPS 24 komt van Lu et al. 2014
 
         factor = 0.2*flux_fuv/self.disk.sum()
 
-        print("factor=", factor)
+        #print("factor=", factor)
 
         # Subtract the disk contribution to the FUV image
         new_fuv = self.fuv - factor*self.disk
@@ -829,7 +824,7 @@ class MapMaker(object):
 
         # Assert flux calculation is correct
         #assert int(flux_mips) == int(self_flux_mips), "FLUX MIPS DOES NOT MATCH: " + str(flux_mips) + " =/= " + str(self_flux_mips)
-        log.warning("Flux 24 micron = " + str(flux_mips) + " <> " + str(self_flux_mips))
+        #log.warning("Flux 24 micron = " + str(flux_mips) + " <> " + str(self_flux_mips))
 
         #typisch 20% en 35% respectievelijk
         #48% voor MIPS 24 komt van Lu et al. 2014
