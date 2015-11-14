@@ -11,15 +11,22 @@
 # The in/out filenames and other parameters are hardcoded in the script.
 #
 
-# import the relevant PTS classes
-from pts.rgbimage import RGBImage
+# *****************************************************************
+
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 import matplotlib
 import matplotlib.colors as col
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 
-# ------------------------------------------------------------------
+# Import the relevant PTS modules
+from ..pts.rgbimage import RGBImage
+
+# *****************************************************************
 
 # wavelengths and names of reference images used during fit; number of output simulations
 residualsname="ranges_Residual_64_"
@@ -27,7 +34,7 @@ wavelengthsname="ranges_Best_64_"
 refs=["B.fits", "V.fits", "R.fits", "I.fits"]
 numSimulations = 1
 
-#colormaps and scales used
+# colormaps and scales used
 frame_cmap = "afmhot"
 frame_min = 0.0
 frame_max = 0.0015
@@ -35,13 +42,13 @@ frame_max = 0.0015
 res=[]
 waves=[]
 for i in range(0,len(refs)):
-	print i
-	res.append(residualsname+str(i)+".fits")
-	waves.append(wavelengthsname+str(i)+".fits")
+    
+    print(i)
+    res.append(residualsname+str(i)+".fits")
+    waves.append(wavelengthsname+str(i)+".fits")
 
-print res
-print waves	
-
+print(res)
+print(waves)
 
 # Define new colormap for residuals
 def discrete_cmap(N=8):
@@ -51,7 +58,7 @@ def discrete_cmap(N=8):
     cmap_i8 = col.ListedColormap(cpool[0:N], 'i8')
     cm.register_cmap(cmap=cmap_i8)
 
-# ------------------------------------------------------------------
+# *****************************************************************
 
 # build a list of residual images
 resImages = []
@@ -75,7 +82,7 @@ for i in range(1,len(resImages)):
 
 fullRes.saveto("residuals.png")
 
-# ------------------------------------------------------------------
+# *****************************************************************
 
 # build a list of reference images
 refImages = []
@@ -123,5 +130,4 @@ fullRef.saveto("compare.png")
 fullRef.addright(fullRes)
 fullRef.saveto("compare_residuals.png")
 
-
-# ------------------------------------------------------------------
+# *****************************************************************

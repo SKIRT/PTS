@@ -14,9 +14,12 @@
 
 # -----------------------------------------------------------------
 
-# import relevant PTS classes
-from pts.rgbimage import RGBImage
-from pts.moviefile import MovieFile
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import the relevant PTS classes
+from ..pts.rgbimage import RGBImage
+from ..pts.moviefile import MovieFile
 
 # ------------------------------------------------------------------
 

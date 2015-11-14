@@ -10,10 +10,13 @@
 
 # *****************************************************************
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
 # Import standard modules
 import argparse
 
-# Import relevant PTS modules
+# Import the relevant PTS modules
 from modeling.imagepreparation import ImagePreparation
 
 # Import Astromagic modules

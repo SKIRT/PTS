@@ -18,7 +18,7 @@ import os
 import os.path
 import argparse
 
-# Import the relevant PTS class
+# Import the relevant PTS modules
 from ..plotting.scaling import ScalingPlotter
 
 # *****************************************************************

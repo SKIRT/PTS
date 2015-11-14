@@ -21,12 +21,15 @@
 
 # -----------------------------------------------------------------
 
-# import standard modules
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 import sys
 
-# import relevant PTS modules
-from pts.skirtsimulation import createsimulations
-from pts.makeflybymovie import makeflybymovie
+# Import the relevant PTS modules
+from ..pts.skirtsimulation import createsimulations
+from ..pts.makeflybymovie import makeflybymovie
 
 # -----------------------------------------------------------------
 
@@ -37,7 +40,7 @@ to_percentile = 100             # upper percentile used to clip the luminosity v
 
 # -----------------------------------------------------------------
 
-print "Starting makeflybymovie..."
+print("Starting makeflybymovie...")
 
 # get the command-line argument specifying the simulation(s)
 argument = sys.argv[1] if len(sys.argv) > 1 else ""
@@ -47,6 +50,6 @@ for simulation in createsimulations(argument):
     makeflybymovie(simulation, rate=rate, contrast=contrast,
                    from_percentile=from_percentile, to_percentile=to_percentile)
 
-print "Finished makeflybymovie."
+print("Finished makeflybymovie.")
 
 # -----------------------------------------------------------------

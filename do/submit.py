@@ -10,16 +10,19 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
 # Import standard modules
 import os
 import os.path
 import argparse
 
 # Import the relevant PTS class
-from pts.log import Log
-from pts.skifile import SkiFile
-from pts.jobscript import JobScript
-from performance.memory import estimate_memory
+from ..pts.log import Log
+from ..pts.skifile import SkiFile
+from ..pts.jobscript import JobScript
+from ..performance.memory import estimate_memory
 
 # -----------------------------------------------------------------
 

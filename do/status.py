@@ -9,6 +9,9 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
 # Import standard modules
 import argparse
 import os.path
@@ -19,8 +22,8 @@ from collections import defaultdict
 from distutils.spawn import find_executable
 
 # Import the relevant PTS modules
-from pts.log import Log
-from pts.skirtsimulation import SkirtSimulation
+from ..pts.log import Log
+from ..pts.skirtsimulation import SkirtSimulation
 
 # -----------------------------------------------------------------
 

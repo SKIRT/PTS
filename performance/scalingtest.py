@@ -23,11 +23,11 @@ import numpy as np
 import shutil
 
 # Import the relevant PTS class
-from pts.skifile import SkiFile
-from pts.skirtexec import SkirtExec
-from pts.log import Log
-from ..extract.extractscaling import extract
-from pts.jobscript import JobScript
+from ..pts.skifile import SkiFile
+from ..pts.skirtexec import SkirtExec
+from ..pts.log import Log
+from ..extract.scaling import extract
+from ..pts.jobscript import JobScript
 
 # -----------------------------------------------------------------
 
@@ -411,10 +411,10 @@ class ScalingTest(object):
             progressfilepath = self._createprogressfile(processes)
 
             # Load the extractprogress module
-            from ..extract import extractprogress
+            from ..extract import progress
 
             # Extract the progress information
-            extractprogress.extract(self._skifilename, dataoutputpath, progressfilepath)
+            progress.extract(self._skifilename, dataoutputpath, progressfilepath)
 
             # Write the path of the progress file to the info file
             infofile.write(" - progress information extracted to: " + progressfilepath + "\n")
@@ -426,10 +426,10 @@ class ScalingTest(object):
             timelinefilepath = self._createtimelinefile(processes)
 
             # Load the extracttimeline module
-            from ..extract import extracttimeline
+            from ..extract import timeline
 
             # Extract the timeline information
-            extracttimeline.extract(self._skifilename, dataoutputpath, timelinefilepath)
+            timeline.extract(self._skifilename, dataoutputpath, timelinefilepath)
 
             # Write the path of the timeline file to the info file
             infofile.write(" - timeline information extracted to: " + timelinefilepath + "\n")

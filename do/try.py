@@ -12,19 +12,22 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
 # import standard modules
 import sys
 import os.path
 
 # import relevant pts modules
-import pts.skifile
+import ..pts.skifile
 
 # -----------------------------------------------------------------
 
-print "Starting try..."
+print("Starting try...")
 
 print sys.argv
 
-print "Finished try."
+print("Finished try")
 
 # -----------------------------------------------------------------

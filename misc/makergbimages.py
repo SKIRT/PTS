@@ -12,10 +12,18 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 import numpy as np
+
+# Import astronomical modules
 import pyfits
-from pts.rgbimage import RGBImage
-import pts.archive as arch
+
+# Import the relevant PTS modules
+from ..pts.rgbimage import RGBImage
+import ..pts.archive as arch
 
 # -----------------------------------------------------------------
 
@@ -58,7 +66,7 @@ def makergbimages(simulation, wavelength_tuples=None, from_percentile=30, to_per
                 im.applycurve()
                 savename = outname[:-5] + (str(index+1) if index > 0 else "") + ".png"
                 im.saveto(savename)
-                print "Created RGB image file " + savename
+                print("Created RGB image file " + savename)
 
 # -----------------------------------------------------------------
 
@@ -127,7 +135,7 @@ def makeintegratedrgbimages(simulation, filterspecs, postfix="", fmax=None, fmin
             im.applycurve()
             savename = outname[:-5] + postfix + ".png"
             im.saveto(savename)
-            print "Created integrated RGB image file " + savename
+            print("Created integrated RGB image file " + savename)
 
         # return the flux range used for these images
         return (fmin,fmax)

@@ -30,7 +30,7 @@ from ..plotting.grids import plotgrids
 
 # -----------------------------------------------------------------
 
-print "Starting plotgrids..."
+print("Starting plotgrids...")
 
 # get the command-line argument specifying the simulation(s)
 argument = sys.argv[1] if len(sys.argv) > 1 else ""
@@ -39,6 +39,6 @@ argument = sys.argv[1] if len(sys.argv) > 1 else ""
 for simulation in createsimulations(argument):
     plotgrids(simulation)
 
-print "Finished plotgrids."
+print("Finished plotgrids")
 
 # -----------------------------------------------------------------

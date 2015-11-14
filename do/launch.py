@@ -18,7 +18,7 @@ import os
 import argparse
 
 # Import the relevant PTS modules
-from pts.launcher import SkirtLauncher, FitSkirtLauncher, SkirtMemoryLauncher
+from ..pts.launcher import SkirtLauncher, FitSkirtLauncher, SkirtMemoryLauncher
 
 # -----------------------------------------------------------------
 

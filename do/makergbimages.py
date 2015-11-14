@@ -27,16 +27,19 @@ wavelength_tuples = None                                    # use the default fr
 
 # -----------------------------------------------------------------
 
-# import standard modules
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 import sys
 
-# import relevant PTS modules
-from pts.skirtsimulation import createsimulations
-from pts.makergbimages import makergbimages
+# Import the relevant PTS modules
+from ..pts.skirtsimulation import createsimulations
+from ..misc.makergbimages import makergbimages
 
 # -----------------------------------------------------------------
 
-print "Starting makergbimages..."
+print("Starting makergbimages...")
 
 # get the command-line argument specifying the simulation(s)
 argument = sys.argv[1] if len(sys.argv) > 1 else ""
@@ -45,6 +48,6 @@ argument = sys.argv[1] if len(sys.argv) > 1 else ""
 for simulation in createsimulations(argument):
     makergbimages(simulation, wavelength_tuples)
 
-print "Finished makergbimages."
+print("Finished makergbimages.")
 
 # -----------------------------------------------------------------

@@ -13,15 +13,22 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 import numpy as np
 import matplotlib
 if matplotlib.get_backend().lower() != "agg": matplotlib.use("agg")
 import matplotlib.pyplot as plt
+
+# Import astronomical modules
 import pyfits
 
-from pts.moviefile import MovieFile
-from pts.rgbimage import RGBImage
-import pts.archive as arch
+# Import the relevant PTS modules
+from ..pts.moviefile import MovieFile
+from ..pts.rgbimage import RGBImage
+import ..pts.archive as arch
 
 # -----------------------------------------------------------------
 
@@ -53,12 +60,12 @@ def makewavemovie(simulation, xlim=None, ylim=None, from_percentile=30, to_perce
             totalshape = (sedshape[0], fitsshape[1]+sedshape[1])
 
             # load the data
-            print "  loading data for " + outpath.rsplit("/",1)[1] + "..."
+            print("  loading data for " + outpath.rsplit("/",1)[1] + "...")
             datacubes = [ pyfits.getdata(arch.openbinary(fitspath)).T for fitspath in fitspaths ]
             sedtables = [ np.loadtxt(arch.opentext(sedpath)) for sedpath in sedpaths ]
 
             # determine the appropriate pixel range for ALL images
-            print "  preprocessing frames..."
+            print("  preprocessing frames...")
             ranges = []
             for frame in range(nlambda):
                 for data in datacubes:
@@ -72,7 +79,7 @@ def makewavemovie(simulation, xlim=None, ylim=None, from_percentile=30, to_perce
 
             # for each wavelength, add a movie frame
             for frame in range(nlambda):
-                print "  adding frame " + str(frame+1)+"/"+str(nlambda) + "..."
+                print("  adding frame " + str(frame+1)+"/"+str(nlambda) + "...")
 
                 # assemble the top panel
                 image = None;
@@ -107,6 +114,6 @@ def makewavemovie(simulation, xlim=None, ylim=None, from_percentile=30, to_perce
 
             # close the movie file
             movie.close()
-            print "Created wave movie file " + outpath
+            print("Created wave movie file " + outpath)
 
 # -----------------------------------------------------------------

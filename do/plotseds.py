@@ -43,7 +43,7 @@ from ..plotting.seds import plotseds
 
 # -----------------------------------------------------------------
 
-print "Starting plotseds..."
+print("Starting plotseds...")
 
 # get the command-line argument specifying the simulation(s)
 argument = sys.argv[1] if len(sys.argv) > 1 else ""
@@ -52,6 +52,6 @@ argument = sys.argv[1] if len(sys.argv) > 1 else ""
 for simulation in createsimulations(argument):
     plotseds(simulation, xlim=xlim, ylim=ylim)
 
-print "Finished plotseds."
+print("Finished plotseds")
 
 # -----------------------------------------------------------------

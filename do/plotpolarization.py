@@ -24,13 +24,13 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import sys
 
-# Import relevant PTS modules
+# Import the relevant PTS modules
 from ..pts.skirtsimulation import createsimulations
 from ..plotting.polarization import plotpolarization
 
 # -----------------------------------------------------------------
 
-print "Starting plotpolarization..."
+print("Starting plotpolarization...")
 
 # get the command-line argument specifying the simulation(s)
 argument = sys.argv[1] if len(sys.argv) > 1 else ""
@@ -39,6 +39,6 @@ argument = sys.argv[1] if len(sys.argv) > 1 else ""
 for simulation in createsimulations(argument):
     plotpolarization(simulation)
 
-print "Finished plotpolarization."
+print("Finished plotpolarization")
 
 # -----------------------------------------------------------------

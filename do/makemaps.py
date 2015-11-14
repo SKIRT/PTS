@@ -10,11 +10,14 @@
 
 # *****************************************************************
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
 # Import standard modules
 import argparse
 
 # Import relevant PTS modules
-from modeling.mapmaker import MapMaker
+from ..modeling.mapmaker import MapMaker
 
 # *****************************************************************
 

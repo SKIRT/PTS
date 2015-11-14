@@ -10,13 +10,16 @@
 
 # *****************************************************************
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
 # Import standard modules
 import os.path
 import argparse
 from datetime import datetime
 
 # Import relevant PTS modules
-from modeling.galaxymodeler import GalaxyModeler
+from ..modeling.galaxymodeler import GalaxyModeler
 
 # *****************************************************************
 

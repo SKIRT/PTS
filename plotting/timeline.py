@@ -25,8 +25,8 @@ if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 
 # Import relevant PTS modules
-from pts.log import Log
-from pts.skirtsimulation import createsimulations
+from ..pts.log import Log
+from ..pts.skirtsimulation import createsimulations
 
 # -----------------------------------------------------------------
 
@@ -95,7 +95,7 @@ class TimelinePlotter(object):
             for simulation in createsimulations(simulations):
 
                 # Load the extract function to extract timeline information from simulation log files
-                from ..extract.extracttimeline import extract
+                from ..extract.timeline import extract
 
                 # Create a temporaray timeline file
                 timelinefilepath = os.path.join(os.getcwd(), "timeline_" + simulation.prefix() + ".dat")

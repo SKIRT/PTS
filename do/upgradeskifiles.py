@@ -22,13 +22,16 @@
 
 # -----------------------------------------------------------------
 
-# import standard modules
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 import os
 import os.path
 import sys
 
-# import relevant pts function
-from pts.upgradeskifile import upgradeskifile
+# Import the relevant PTS modules
+from ..pts.upgradeskifile import upgradeskifile
 
 # -----------------------------------------------------------------
 
@@ -38,13 +41,13 @@ def do_single_dir(target):
     names = sorted(filter(lambda fn: fn.endswith(".ski"), os.listdir(target)))
 
     # examine each ski file
-    print "-> " + target + "..."
+    print("-> " + target + "...")
     for name in names:
         changed = upgradeskifile(os.path.join(target,name))
         if changed:
-            print "** " + name + " (UPGRADED)."
+            print("** " + name + " (UPGRADED).")
         else:
-            print "   " + name + " (not changed)."
+            print("   " + name + " (not changed).")
 
 # -----------------------------------------------------------------
 
@@ -64,6 +67,6 @@ if recursive:
 else:
     do_single_dir(target)
 
-print "All done."
+print("All done")
 
 # -----------------------------------------------------------------

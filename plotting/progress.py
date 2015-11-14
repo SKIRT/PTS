@@ -97,7 +97,7 @@ class ProgressPlotter(object):
             for simulation in createsimulations(simulations):
 
                 # Load the extract function to extract progress information from simulation log files
-                from ..extract.extractprogress import extract
+                from ..extract.progress import extract
 
                 # Create a temporaray progress file
                 progressfilepath = os.path.join(os.getcwd(), "progress_" + simulation.prefix() + ".dat")
