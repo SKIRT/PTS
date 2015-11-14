@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import argparse
@@ -190,4 +197,3 @@ if __name__ == "__main__":
 
     # Extract the timings
     extract(skifilepath, outputpath, progressfilepath)
-

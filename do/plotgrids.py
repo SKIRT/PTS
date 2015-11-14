@@ -18,12 +18,15 @@
 
 # -----------------------------------------------------------------
 
-# import standard modules
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 import sys
 
-# import relevant PTS modules
-from pts.skirtsimulation import createsimulations
-from pts.plotgrids import plotgrids
+# Import the relevant PTS modules
+from ..pts.skirtsimulation import createsimulations
+from ..plotting.grids import plotgrids
 
 # -----------------------------------------------------------------
 

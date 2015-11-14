@@ -11,6 +11,9 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
 # Import standard modules
 import os.path
 import numpy as np
@@ -92,7 +95,7 @@ class TimelinePlotter(object):
             for simulation in createsimulations(simulations):
 
                 # Load the extract function to extract timeline information from simulation log files
-                from do.extracttimeline import extract
+                from ..extract.extracttimeline import extract
 
                 # Create a temporaray timeline file
                 timelinefilepath = os.path.join(os.getcwd(), "timeline_" + simulation.prefix() + ".dat")

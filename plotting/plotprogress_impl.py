@@ -24,8 +24,8 @@ import matplotlib
 if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 
-# Import relevant PTS modules
-from pts.log import Log
+# Import astronomical modules
+from astropy import log
 
 # -----------------------------------------------------------------
 
@@ -41,9 +41,6 @@ phaseinfo = {'stellar': 'emitting stellar photon packages', 'spectra': 'calculat
              'dust': 'emitting dust photon packages'}
 
 # -----------------------------------------------------------------
-
-# Create a logger
-log = Log()
 
 ## This function plots the progress in function of time for certain phases of a SKIRT simulation, based on the progress
 #  information extracted from its log files. The plots are saved in PDF format and are placed next to the original

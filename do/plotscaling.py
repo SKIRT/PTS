@@ -8,7 +8,10 @@
 ## \package do.plotscaling Make plots for the scaling benchmark output
 #
 
-# -----------------------------------------------------------------
+# *****************************************************************
+
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
@@ -16,14 +19,14 @@ import os.path
 import argparse
 
 # Import the relevant PTS class
-from performance.plotscaling import ScalingPlotter
+from ..plotting.scaling import ScalingPlotter
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
 # The choices for the simulation phase
 phases = ['setup', 'stellar', 'dustselfabs', 'dustem', 'writing', 'total']
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
 # Create the command-line parser and a set of subparsers
 parser = argparse.ArgumentParser()

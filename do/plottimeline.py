@@ -10,12 +10,15 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
 # Import standard modules
 import os
 import argparse
 
 # Import relevant PTS modules
-from performance.plottimeline import TimelinePlotter
+from ..plotting.timeline import TimelinePlotter
 
 # -----------------------------------------------------------------
 

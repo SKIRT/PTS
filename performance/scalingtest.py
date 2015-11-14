@@ -11,6 +11,9 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
 # Import standard modules
 import os
 import os.path
@@ -23,7 +26,7 @@ import shutil
 from pts.skifile import SkiFile
 from pts.skirtexec import SkirtExec
 from pts.log import Log
-from do.extractscaling import extract
+from ..extract.extractscaling import extract
 from pts.jobscript import JobScript
 
 # -----------------------------------------------------------------
@@ -408,10 +411,10 @@ class ScalingTest(object):
             progressfilepath = self._createprogressfile(processes)
 
             # Load the extractprogress module
-            import do.extractprogress
+            from ..extract import extractprogress
 
             # Extract the progress information
-            do.extractprogress.extract(self._skifilename, dataoutputpath, progressfilepath)
+            extractprogress.extract(self._skifilename, dataoutputpath, progressfilepath)
 
             # Write the path of the progress file to the info file
             infofile.write(" - progress information extracted to: " + progressfilepath + "\n")
@@ -423,10 +426,10 @@ class ScalingTest(object):
             timelinefilepath = self._createtimelinefile(processes)
 
             # Load the extracttimeline module
-            import do.extracttimeline
+            from ..extract import extracttimeline
 
             # Extract the timeline information
-            do.extracttimeline.extract(self._skifilename, dataoutputpath, timelinefilepath)
+            extracttimeline.extract(self._skifilename, dataoutputpath, timelinefilepath)
 
             # Write the path of the timeline file to the info file
             infofile.write(" - timeline information extracted to: " + timelinefilepath + "\n")
