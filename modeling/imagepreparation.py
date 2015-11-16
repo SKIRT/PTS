@@ -23,9 +23,11 @@ from astromagic.core.frames import Frame
 from astromagic.magic.starextraction import StarExtractor
 from astromagic.magic.galaxyextraction import GalaxyExtractor
 from astromagic.magic.skyextraction import SkyExtractor
-from astromagic.tools import configuration
 from astromagic.core import regions
 from astromagic.tools import cropping
+
+# Import the relevant PTS modules
+from ..tools import configuration
 
 # *****************************************************************
 
@@ -43,16 +45,11 @@ class ImagePreparation(object):
         :return:
         """
 
-        # Determine the path to the default configuration file
-        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_config = os.path.join(directory, "config", "imagepreparation.cfg")
+        ## Configuration
 
-        # Open the default configuration if no configuration file is specified, otherwise adjust the default
-        # settings according to the user defined configuration file
-        if config is None: self.config = configuration.open(default_config)
-        else: self.config = configuration.open(config, default_config)
+        self.config = configuration.set("imagepreparation", config)
 
-        ### SET-UP LOGGING SYSTEM
+        ## Logging
 
         # Set the log level
         log.setLevel(self.config.logging.level)
@@ -60,11 +57,11 @@ class ImagePreparation(object):
         # Set log file path
         if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
 
-        ### TEMPORARY
+        ## Temporary
 
         #self.config.convolve = False
 
-        ###
+        ## Attributes
 
         # Set extractors to None
         self.galaxyex = None

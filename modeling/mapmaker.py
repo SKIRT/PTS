@@ -10,21 +10,21 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os.path
-import inspect
 import numpy as np
 import copy
 
 # Import astronomical modules
-import astropy.units as u
 from astropy import log
 import astropy.logger
 from photutils import detect_sources
 
 # Import Astromagic modules
 from astromagic import Image
-from astromagic.tools import configuration
 from astromagic.core.frames import Frame
 from astromagic.core.masks import Mask
+
+# Import the relevant PTS modules
+from ..tools import configuration
 
 # *****************************************************************
 
@@ -42,16 +42,11 @@ class MapMaker(object):
         :return:
         """
 
-        # Determine the path to the default configuration file
-        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_config = os.path.join(directory, "config", "mapmaker.cfg")
+        ## Configuration
 
-        # Open the default configuration if no configuration file is specified, otherwise adjust the default
-        # settings according to the user defined configuration file
-        if config is None: self.config = configuration.open(default_config)
-        else: self.config = configuration.open(config, default_config)
+        self.config = configuration.set("mapmaker", config)
 
-        ### SET-UP LOGGING SYSTEM
+        ## Logging
 
         # Set the log level
         log.setLevel(self.config.logging.level)
@@ -59,11 +54,7 @@ class MapMaker(object):
         # Set log file path
         if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
 
-        ### TEMPORARY
-
-        # ...
-
-        ### INITIALIZE ATTRIBUTES
+        ## Attributes
 
         # Input images
         self.h = None

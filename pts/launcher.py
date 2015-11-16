@@ -24,8 +24,8 @@ from astropy import log
 import astropy.logger
 
 # Import the relevant PTS modules
-from pts.skirtexec import SkirtExec, FitSkirtExec, SkirtMemoryExec
-from pts import configuration
+from ..pts.skirtexec import SkirtExec, FitSkirtExec, SkirtMemoryExec
+from ..tools import configuration
 
 # -----------------------------------------------------------------
 
@@ -45,14 +45,7 @@ class SkirtLauncher(object):
 
         ## Configuration
 
-        # Determine the path to the default configuration file
-        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_config = os.path.join(directory, "config", "skirtlauncher.cfg")
-
-        # Open the default configuration if no configuration file is specified, otherwise adjust the default
-        # settings according to the user defined configuration file
-        if config is None: self.config = configuration.open(default_config)
-        else: self.config = configuration.open(config, default_config)
+        self.config = configuration.set("skirtlauncher", config)
 
         ## Logging
 
@@ -80,16 +73,13 @@ class SkirtLauncher(object):
         :return:
         """
 
-        # Determine the path to the default configuration file
-        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_config = os.path.join(directory, "config", "skirtlauncher.cfg")
-
-        # Open the default configuration
-        config = configuration.open(default_config)
+        # Load the default configuration for this class
+        config = configuration.set("skirtlauncher")
 
         ## Adjust the configuration settings according to the command-line arguments
 
         # Logging (no options here yet)
+        # ...
 
         # Simulation input and output
         config.simulation.skifile_path = arguments.filepath
@@ -278,14 +268,7 @@ class FitSkirtLauncher(object):
 
         ## Configuration
 
-        # Determine the path to the default configuration file
-        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_config = os.path.join(directory, "config", "fitskirtlauncher.cfg")
-
-        # Open the default configuration if no configuration file is specified, otherwise adjust the default
-        # settings according to the user defined configuration file
-        if config is None: self.config = configuration.open(default_config)
-        else: self.config = configuration.open(config, default_config)
+        self.config = configuration.set("fitskirtlauncher", config)
 
         ## Logging
 
@@ -314,15 +297,11 @@ class FitSkirtLauncher(object):
         :return:
         """
 
-        # Determine the path to the default configuration file
-        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_config = os.path.join(directory, "config", "fitskirtlauncher.cfg")
+        # Load the default configuration for this class
+        config = configuration.set("fitskirtlauncher")
 
-        # Open the default configuration
-        config = configuration.open(default_config)
-
-        # Adjust the configuration settings according to the command-line arguments
-
+        ## Adjust the configuration settings according to the command-line arguments
+        # ...
 
         # Create and return a FitSkirtLauncher instance
         return cls(config)
@@ -368,14 +347,7 @@ class SkirtMemoryLauncher(object):
 
         ## Configuration
 
-        # Determine the path to the default configuration file
-        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_config = os.path.join(directory, "config", "skirtmemorylauncher.cfg")
-
-        # Open the default configuration if no configuration file is specified, otherwise adjust the default
-        # settings according to the user defined configuration file
-        if config is None: self.config = configuration.open(default_config)
-        else: self.config = configuration.open(config, default_config)
+        self.config = configuration.set("skirtmemorylauncher", config)
 
         ## Logging
 
@@ -404,16 +376,13 @@ class SkirtMemoryLauncher(object):
         :return:
         """
 
-        # Determine the path to the default configuration file
-        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_config = os.path.join(directory, "config", "skirtmemorylauncher.cfg")
-
-        # Open the default configuration
-        config = configuration.open(default_config)
+        # Load the default configuration for this class
+        config = configuration.set("skirtmemorylauncher")
 
         ## Adjust the configuration settings according to the command-line arguments
 
         # Logging (no options here yet)
+        # ...
 
         # Simulation input and output
         config.simulation.skifile_path = arguments.filepath

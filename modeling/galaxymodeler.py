@@ -28,11 +28,11 @@ from astropy import log
 import astropy.logger
 
 # Import Astromagic modules
-from astromagic.tools import configuration
 from astromagic import Image
 from astromagic.core.frames import Frame
 
 # Import PTS modules
+from ..tools import configuration
 from .imagepreparation import ImagePreparation
 from .mapmaker import MapMaker
 from .sedfitter import SEDFitter
@@ -63,24 +63,17 @@ class GalaxyModeler(object):
         :return:
         """
 
-        ### LOAD CONFIGURATION
+        ## Configuration
 
-        # Determine the path to the default configuration file
-        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_config = os.path.join(directory, "config", "galaxymodeler.cfg")
+        self.config = configuration.set("galaxymodeler", config)
 
-        # Open the default configuration if no configuration file is specified, otherwise adjust the default
-        # settings according to the user defined configuration file
-        if config is None: self.config = configuration.open(default_config)
-        else: self.config = configuration.open(config, default_config)
-
-        ### TEMPORARY
+        ## Temporary
 
         self.config.decompose = False
         self.config.make_maps = False
         self.config.fit_sed = False
 
-        ### SET-UP LOGGING SYSTEM
+        ## Logging
 
         # Set the log level
         log.setLevel(self.config.logging.level)
@@ -88,7 +81,7 @@ class GalaxyModeler(object):
         # Set log file path
         if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
 
-        ### SET PATHS
+        ## Paths
 
         # Get the name of the galaxy (the name of the base directory)
         self.galaxy_name = os.path.basename(path)
