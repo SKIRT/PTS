@@ -5,132 +5,142 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.memory Investigate the memory requirements of a particular SKIRT simulation
+## \package extract.memory Extract memory information from SKIRT or SkirtMemory output
 
-import subprocess
+# *****************************************************************
+
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 from datetime import datetime
-import matplotlib.pyplot as plt
-import numpy as np
 
-from pts.skirtsimulation import SkirtSimulation
-from pts.skifile import SkiFile
+# Import astronomical modules
+from astropy.table import Table
 
-# This private helper function returns the datetime object corresponding to the time stamp in a line
-def timestamp(line):
+# *****************************************************************
 
-    date, time, dummy = line.split(None, 2)
-    try:
-        day, month, year = date.split('/')
-    except ValueError:
-        return None
-    hour, minute, second = time.split(':')
-    second, microsecond = second.split('.')
-    
-    return datetime(year=int(year), month=int(month), day=int(day),
-                    hour=int(hour), minute=int(minute), second=int(second), microsecond=int(microsecond))
+class MemoryExtractor(object):
 
-# Execute the skirtmem command and get the output
-try:
-    output = subprocess.check_output(["skirtmem", "PanSpiral/PanSpiral.ski", "-o", "PanSpiral"], stderr=subprocess.STDOUT)
-except subprocess.CalledProcessError as e:
-    output = e.output
+    """
+    This function ...
+    """
 
-# Create a simulation object from the simulation's output path
-simulation = SkirtSimulation(prefix="PanSpiral.ski", outpath="PanSpiral")
+    def __init__(self):
 
-# Create a ski file object
-skifile = SkiFile("PanSpiral/PanSpiral.ski")
+        """
+        The constructor ...
+        :return:
+        """
+
+        pass
+
+    # *****************************************************************
+
+    def run(self, simulation, output_path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Obtain the log files and memory files created by the simulation
+        log_files = simulation.logfiles()
+        memory_files = simulation.memoryfiles()
+
+        # Check whether memory mode has been used for the simulation
+        memory_mode = len(memory_files) > 0
+
+        # Initialize lists for the columns
+        process_list = []
+        phase_list = []
+        seconds_list = []
+        memory_list = []
+        delta_list = []
+
+        # Loop over all log files to determine the earliest recorded time
+        t0 = datetime.now()
+        for log_file in log_files:
+            if log_file.t0 < t0: t0 = log_file.t0
+
+        # Loop over the log files again and fill the column lists
+        for log_file in log_files:
+
+            # Get the process rank associated with this log file
+            process = log_file.process
+
+            # If memory mode was used
+            if memory_mode:
+
+                # Get the associated memory file
+                memory_file = memory_files[process]
+                assert process == memory_file.process
+
+            # Create two counter variables
+            j = k = 0
+
+            # Loop over both the entries of the log file and the memory file
+            end_log = False
+            end_memory = False if memory_mode else True
+            while True:
+
+                # Check whether to end looping over either the log or memory file's contents
+                if j == len(log_file.contents): end_log = True
+                if k == len(memory_file.contents): end_memory = True
+
+                # Calculate the number of seconds that have passed since the earliest recorded log time
+                seconds_log = (log_file.contents["Time"][j] - t0).total_seconds()
+                seconds_memory = (memory_files.contents["Time"][k] - t0).total_seconds()
+
+                if (not end_log) and seconds_log < seconds_memory:
+
+                    # Fill in the column lists
+                    process_list.append(process)
+                    phase_list.append(log_file.contents["Phase"][j])
+                    seconds_list.append(seconds_log)
+                    memory_list.append(log_file.contents["Memory"][j])
+                    delta_list.append(None)
+
+                    j += 1
+
+                elif (not end_memory) and seconds_memory < seconds_log:
+
+                    # Fill in the column lists
+                    process_list.append(process)
+                    phase_list.append(phase_list[len(phase_list)-1])
+                    seconds_list.append(seconds_memory)
+                    memory_list.append(None)
+                    delta_list.append(memory_file.contents["Delta"][k])
+
+                    k += 1
+
+                # Exit the double loop
+                else: break
+
+        # Create a table
+        table = Table([process_list, phase_list, seconds_list, memory_list, delta_list], names=('Process rank', 'Simulation phase', 'Simulation time', 'Memory usage', 'Memory (de)allocation'))
+        table["Simulation time"].unit = "s"
+        table["Memory usage"].unit = "GB"
+        table["Memory (de)allocation"].unit = "GB"
+
+        # Write the table to file
+        table.write(output_path, format="ascii")
+
+# *****************************************************************
 
 # Calculate the number of wavelengths and dust cells
-Nlambda = skifile.nwavelengths()
-Ncells = skifile.ncells()
-Ndoubles = Nlambda * Ncells
+#Nlambda = skifile.nwavelengths()
+#Ncells = skifile.ncells()
+#Ndoubles = Nlambda * Ncells
 
-# Get the list of logfiles for this simulation
-logfilepaths = simulation.logfilepaths()
+#plt.plot(seconds_list, memory_list)
 
-# Create a table to contain the timeline data from the log files
-nprocs = len(logfilepaths)
-data = [[] for _ in range(nprocs)]
-
-# Keep track of the earliest time that is found in any of the log files
-T0 = datetime.now()
-
-time_list = []
-memory_list = []
-
-# Loop over all log files
-for logfile in logfilepaths:
-
-    # Get the rank of the process that created this log file (for the process with rank zero finding this rank will
-    # not succeed, therefore use the try-except statements
-    processrank = 0
-    try: processrank = int(logfile[-7:-4])
-    except ValueError: pass
-    
-    # Set the default value for the number of processes
-    nprocs = 1
-    
-    # Iterate over each line in this log file
-    for line in open(logfile):
-
-        # Get the date and time information from this line in the log file
-        time = timestamp(line)
-
-        # Replace the start time with the time at which this simulation started, if earlier
-        if "Starting simulation" in line:
-
-            if time < T0: T0 = time
-
-            # Get the number of processes with which the simulation was run
-            if "with" in line: nprocs = int(line.split(' with ')[1].split()[0])
-
-        memory = float(line.split(" (")[1].split(" GB)")[0])
-        
-        time_list.append(time)
-        memory_list.append(memory)
-
-seconds_list = []
-for time in time_list:
-    
-    seconds = (time - T0).total_seconds()
-    seconds_list.append(seconds)
-
-plt.plot(seconds_list, memory_list)
-
-times = []
-deltas = []
-
-# Iterate over each line in the output
-for line in output.splitlines():
-    
-    # Get the time
-    time = timestamp(line)
-    
-    # Skip the line
-    if time is None: continue
-    
-    # Calculate the difference in number of seconds
-    seconds = (time - T0).total_seconds()
-    
-    if line[26] == "+":
-        
-        memory = float(line.split("+")[1].split("GB")[0])
-        times.append(seconds)
-        deltas.append(memory)
-        
-    elif line[26] == "-":
-        
-        memory = -float(line.split("-", 1)[1].split("GB")[0])
-        times.append(seconds)
-        deltas.append(memory)
-
-totals = np.cumsum(deltas)
+#totals = np.cumsum(deltas)
 
 #for i in range(len(times)):
 #    print times[i], totals[i]
 
 #plt.step(times, totals)
-plt.fill_between(times, totals, color='green')
+#plt.fill_between(times, totals, color='green')
 #plt.bar(times, totals, color='r')
-plt.show()
+#plt.show()

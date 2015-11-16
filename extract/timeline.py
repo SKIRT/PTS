@@ -5,6 +5,10 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
+## \package extract.timeline
+
+# *****************************************************************
+
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
@@ -15,12 +19,12 @@ from datetime import datetime
 # Import relevant PTS modules
 from pts.skirtsimulation import SkirtSimulation
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
 # Define the indices used to identify the different simulation phases
 phaseindices = {'setup': 0, 'stellar': 1, 'comm': 2, 'spectra': 3, 'dust': 4, 'writing': 5, 'waiting': 6}
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
 ## This function extracts the timeline of the different stages in a SKIRT simulation for the different processes
 #  from the log files created by this simulation.
@@ -261,7 +265,7 @@ def extract(skifilename, outputpath, timelinefilepath=""):
         # If no timeline file is given, return the table of extracted timeline information
         return data
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
 # This private helper function returns the datetime object corresponding to the time stamp in a line
 def _timestamp(line):
@@ -273,7 +277,7 @@ def _timestamp(line):
     return datetime(year=int(year), month=int(month), day=int(day),
                     hour=int(hour), minute=int(minute), second=int(second), microsecond=int(microsecond))
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
 # Execute the statements below if this script is run from the command line
 if __name__ == "__main__":
@@ -299,3 +303,4 @@ if __name__ == "__main__":
     # Extract the timeline
     extract(skifilepath, outputpath, timelinefilepath)
 
+# *****************************************************************
