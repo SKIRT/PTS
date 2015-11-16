@@ -12,12 +12,19 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 import os
 import os.path
 import types
 import numpy as np
-from pts.skifile import SkiFile
-import pts.archive as arch
+
+# Import the relevant PTS modules
+from .skifile import SkiFile
+from . import archive as arch
+from ..core.logfile import LogFile
 
 # -----------------------------------------------------------------
 
@@ -98,6 +105,8 @@ class SkirtSimulation:
         # provide placeholders for caching frequently-used objects
         self._parameters = None
         self._units = None
+        self._processes = None
+        self._threads = None
 
     ## This function returns the simulation name, used as a prefix for output filenames
     def prefix(self):
@@ -123,6 +132,10 @@ class SkirtSimulation:
     ## This function returns the absolute path for the simulation log file
     def logfilepath(self):
         return self.outfilepath("log.txt")
+
+    ## This function returns a LogFile object created from the simulation's log file
+    def logfile(self):
+        return LogFile(self.outfilepath("log.txt"))
 
     # -----------------------------------------------------------------
 
@@ -156,6 +169,31 @@ class SkirtSimulation:
         return "Running"
 
     # -----------------------------------------------------------------
+
+    ## This function returns the number of processes used for this simulation
+    def processes(self):
+        if self._processes is None:
+            with open(self.logfilepath()) as logfile:
+                for line in logfile:
+                    if "Starting simulation" in line:
+                        if "with" in line:
+                            self._processes = int(line.split(' with ')[1].split()[0])
+                        else: self._processes = 1
+        return self._processes
+
+    ## This function returns the number of threads used for this simulation
+    def threads(self):
+        if self._threads is None:
+            with open(self.logfilepath()) as logfile:
+                triggered = False
+                max_thread_number = 0
+                for line in logfile:
+                    if "Initializing random number generator" in line:
+                        triggered = True
+                        max_thread_number = int(line.split("thread number ")[1].split(" with seed")[0])
+                    elif triggered: self._threads = max_thread_number+1
+                raise ValueError("Cannot determine the number of threads from the log file")
+        return self._threads
 
     ## This function returns a SkiFile object representing the parameter file for this simulation.
     def parameters(self):
@@ -192,6 +230,22 @@ class SkirtSimulation:
         logname = self._prefix + "_log"
         logfiles = sorted(filter(lambda fn: fn.startswith(logname), arch.listdir(self._outpath,".txt")))
         return [ os.path.join(self._outpath, logfile) for logfile in logfiles ]
+
+    ## This function returns a list of LogFile objects, created from the log files produced by the simulation.
+    def logfiles(self):
+        return [LogFile(logfilepath) for logfilepath in self.logfilepaths()]
+
+    ## This function returns a list of absolute filepaths for all memory files produced by the simulation, including
+    #  the master memory file and any memory files produced by parallel (MPI) processes. The list includes only paths
+    #  for mememory files that actually exist, and the paths are listed in order of process rank.
+    def memoryfilepaths(self):
+        logname = self._prefix + "_memory"
+        logfiles = sorted(filter(lambda fn: fn.startswith(logname), arch.listdir(self._outpath,".txt")))
+        return [ os.path.join(self._outpath, logfile) for logfile in logfiles ]
+
+    ## This function returns a list of MemoryFile objects, created from the memory files produced by the simulation
+    def memoryfiles(self):
+        return [MemoryFile(memoryfilepath) for memoryfilepath in self.memoryfilepaths()]
 
     ## This function returns a list of absolute filepaths for all "total.fits" files produced by the simulation,
     # in the same order as the corresponding instruments occur in the ski file.
