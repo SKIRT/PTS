@@ -52,6 +52,18 @@ class MemoryFile(object):
         # Parse the memory file
         self.contents = parse(path)
 
+    # *****************************************************************
+
+    def t0(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the time of the first line in the memory file
+        return self.contents["Time"][0]
+
 # *****************************************************************
 
 def parse(path):

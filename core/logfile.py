@@ -56,6 +56,18 @@ class LogFile(object):
         self.processes = get_processes(self.contents)
         self.threads = get_threads(self.contents)
 
+    # *****************************************************************
+
+    def t0(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the time of the first log message
+        return self.contents["Time"][0]
+
 # *****************************************************************
 
 def get_processes(table):
