@@ -17,6 +17,7 @@
 import os.path
 import numpy as np
 import pyfits
+from scipy.ndimage.filters import gaussian_filter
 import pts.archive as arch
 from pts.filter import Filter
 
@@ -102,6 +103,18 @@ def makeinfofile(skirtrun):
     # create a mask that removes the carbon line emission peaks from the dust continuum emission
     cmask = (np.abs(wavelengths-157.5)>3) & (np.abs(wavelengths-360)>20) & (np.abs(wavelengths-600)>20)
 
+    # define properties for the Herschel instruments used in determining dust temperature
+    h_filterspecs = ("Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW")
+    # --> beam FWHM & area for PACS from Herschel PACS observer's manual, July 2013
+    # --> beam FWHM & area for SPIRE from Ciesla et al. 2012, A&A 543, A161
+    h_beam_fwhms = (12, 18.2, 24.5, 36.0)       # in arcsec
+    h_beam_areas = (180, 423, 751, 1587)        # in arcsec^2
+    # --> flux limit for PACS = noise level from Cortese et al. 2014
+    # --> flux limit for SPIRE = confusion noise from Nguyen et al. 2010 A&A 518, L5
+    h_flux_limits = (5, 5.8, 6.3, 6.8)          # in mJy/beam
+    # --> convert to MJy/sr
+    h_flux_limits = np.array(h_flux_limits) / np.array(h_beam_areas) * (648000/np.pi)**2 * 1e-9
+
     # gather statistics on fluxes received by each instrument
     for name in simulation.instrumentnames():
         # maximum flux in Jy
@@ -112,10 +125,10 @@ def makeinfofile(skirtrun):
         fluxdensities = simulation.fluxdensities(name, unit='W/m2/micron')
 
         # integrated flux density and absolute magnitude for each filter
-        for filterspec,filter in _filters.iteritems():
-            fluxdensity = filter.convolve(wavelengths, fluxdensities)
+        for filterspec,filterobject in _filters.iteritems():
+            fluxdensity = filterobject.convolve(wavelengths, fluxdensities)
             fluxdensity = simulation.convert(fluxdensity, from_unit='W/m2/micron', to_unit='Jy',
-                                             wavelength=filter.pivotwavelength())
+                                             wavelength=filterobject.pivotwavelength())
             magnitude = simulation.absolutemagnitude(fluxdensity, distance,
                                                      fluxdensity_unit='Jy', distance_unit='pc')
             filtername = filterspec.replace(".","_").lower()
@@ -124,15 +137,24 @@ def makeinfofile(skirtrun):
 
         # for the Herschel filters, calculate flux and magnitude excluding the carbon line emission peaks
         for filterspec in ("Pacs.blue","Pacs.green","Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW"):
-            filter = _filters[filterspec]
-            fluxdensity = filter.convolve(wavelengths[cmask], fluxdensities[cmask])
+            filterobject = _filters[filterspec]
+            fluxdensity = filterobject.convolve(wavelengths[cmask], fluxdensities[cmask])
             fluxdensity = simulation.convert(fluxdensity, from_unit='W/m2/micron', to_unit='Jy',
-                                             wavelength=filter.pivotwavelength())
-            magnitude = simulation.absolutemagnitude(fluxdensity, distance,
-                                                     fluxdensity_unit='Jy', distance_unit='pc')
+                                             wavelength=filterobject.pivotwavelength())
+            magnitude = simulation.absolutemagnitude(fluxdensity, distance, fluxdensity_unit='Jy', distance_unit='pc')
             filtername = filterspec.replace(".","_").lower()
             info["instr_"+name+"_fluxdensity_"+filtername+"_continuum"] = fluxdensity
             info["instr_"+name+"_magnitude_"+filtername+"_continuum"] = magnitude
+
+        # for the Herschel filters used in determining dust temperature, calculate the "limited" flux and magnitude
+        # (i.e. ignoring pixels with a flux under a specific limit, and still excluding the carbon line emission peaks)
+        for filterspec,fwhm,fluxlimit in zip(h_filterspecs, h_beam_fwhms, h_flux_limits):
+            fluxdensity = limitedfluxdensity(simulation, name, wavelengths, cmask, _filters[filterspec], fwhm, fluxlimit)
+            if fluxdensity != None:
+                magnitude = simulation.absolutemagnitude(fluxdensity, distance, fluxdensity_unit='Jy', distance_unit='pc')
+                filtername = filterspec.replace(".","_").lower()
+                info["instr_"+name+"_fluxdensity_"+filtername+"_limited"] = fluxdensity
+                info["instr_"+name+"_magnitude_"+filtername+"_limited"] = magnitude
 
     # estimate a representative temperature and corresponding standard deviation
     info["probe_average_temperature_dust"], info["probe_stddev_temperature_dust"],  \
@@ -182,5 +204,47 @@ def dusttemperature(simulation):
     # otherwise return dummy values
     else:
         return ( 0, 0, 0, 0 )
+
+# -----------------------------------------------------------------
+
+# This function calculates and returns the "limited" flux density (in Jy) in a given band
+# based on the data cube of a particular instrument. The function first convolves the data cube over
+# the wavelengths of the specified filter to obtain an averaged image, then convolves the image with
+# a Gaussion PSF, and finally integrates over the image ignoring any pixels with a value under the
+# specified surface brightness limit.
+#
+# The function takes the following arguments:
+#  - \em simulation: a SkirtSimulation instance representing the simulation for which to perform the calculation.
+#  - \em instrumentname: the name of the instrument (as listed in the ski file) for which to perform the calculation.
+#  - \em wavelengths: the simulation's wavelength grid (this could be retrieved from the simulation but happens to
+#                     be available at the caller site already).
+#  - \em cmask: a mask indicating the wavelengths to include/exclude in the convolution with the filter.
+#  - \em filterobject: the filter defining the band for which to perform the convolution.
+#  - \em fwhm: the FWHM of the Gaussion filter to be applied to the image, in arcsecs.
+#  - \em fluxlimit: the min. surface brightness for a pixel to be included in the integration over the image, in MJy/sr.
+#
+def limitedfluxdensity(simulation, instrumentname, wavelengths, cmask, filterobject, fwhm, fluxlimit):
+
+    # get the path for the data cube corresponding to this instrument
+    fitspaths = filter(lambda fn: ("_"+instrumentname+"_") in fn, simulation.totalfitspaths())
+    if len(fitspaths) != 1: return None
+
+    # get the data cube and convert it to per-wavelength units
+    cube = pyfits.getdata(arch.openbinary(fitspaths[0])).T
+    cube = simulation.convert(cube, to_unit='W/m3/sr', quantity='surfacebrightness', wavelength=wavelengths)
+
+    # convolve the data cube to a single frame, and convert back to per-frequency units
+    frame = filterobject.convolve(wavelengths[cmask], cube[:,:,cmask])
+    frame = simulation.convert(frame, from_unit='W/m3/sr', to_unit='MJy/sr', wavelength=filterobject.pivotwavelength())
+
+    # convolve the frame with a Gaussian of the appropriate size
+    pixelarea = simulation.angularpixelarea()   # in sr
+    pixelwidth = np.sqrt(pixelarea)             # in radians
+    pixelwidth = pixelwidth * 648000 / np.pi    # in arcsec
+    frame = gaussian_filter(frame, sigma=fwhm/pixelwidth/2.35482, mode='constant')
+
+    # integrate over the frame to obtain the total flux density and convert from MJy to Jy
+    fluxdensity = frame[frame>fluxlimit].sum() * pixelarea * 1e6
+    return fluxdensity
 
 # -----------------------------------------------------------------

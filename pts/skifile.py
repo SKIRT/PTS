@@ -14,6 +14,7 @@
 import os.path
 from datetime import datetime
 from lxml import etree
+from numpy import arctan
 from pts.skirtunits import SkirtUnits
 import pts.archive as arch
 
@@ -252,7 +253,7 @@ class SkiFile:
         if len(instruments) != 1: raise ValueError("No instruments in ski file")
         # get the distance including the unit string
         distance = instruments[0].get("distance")
-        # convert to pc
+        # convert to requested units
         return self.units().convert(distance, to_unit=unit, quantity='distance')
 
     ## This function returns the shape of the first instrument's frame, in pixels.
@@ -262,6 +263,25 @@ class SkiFile:
         if len(instruments) != 1: raise ValueError("No instruments in ski file")
         # get its shape
         return ( int(instruments[0].get("pixelsX")), int(instruments[0].get("pixelsY")) )
+
+    ## This function returns the angular area (in sr) of a single pixel in the first instrument's frame.
+    def angularpixelarea(self):
+        # get the first instrument element
+        instruments = self.tree.xpath("//instruments/*[1]")
+        if len(instruments) != 1: raise ValueError("No instruments in ski file")
+        instrument = instruments[0]
+        # get the distance in m
+        d = self.units().convert(instrument.get("distance"), to_unit='m', quantity='distance')
+        # get the field of view in m
+        fovx = self.units().convert(instrument.get("fieldOfViewX"), to_unit='m', quantity='length')
+        fovy = self.units().convert(instrument.get("fieldOfViewY"), to_unit='m', quantity='length')
+        # get the number of pixels
+        nx = int(instrument.get("pixelsX"))
+        ny = int(instrument.get("pixelsY"))
+        # calculate the angular pixel area
+        sx = 2 * arctan(fovx / nx / d / 2)
+        sy = 2 * arctan(fovy / ny / d / 2)
+        return sx * sy
 
     ## This function returns a list of instrument names, in order of occurrence in the ski file.
     def instrumentnames(self):
@@ -311,9 +331,7 @@ class SkiFile:
 
     ## This function sets the number of wavelengths
     def setnwavelengths(self, number):
-
         elems = self.tree.xpath("//wavelengthGrid/*[1]")
-
         elems[0].set("points", str(number))
 
     ## This function sets the number of dust cells in the x direction
