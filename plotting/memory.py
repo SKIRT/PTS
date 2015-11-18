@@ -15,8 +15,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os.path
-import numpy as np
+from astropy.table import Table
 
 # Use a non-interactive back-end to generate high-quality vector graphics
 import matplotlib
@@ -49,12 +48,21 @@ class MemoryPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, input_path, output_path):
+    def run(self, input, output_path):
 
         """
         This function ...
         :return:
         """
+
+        # If the input is a Table object
+        if isinstance(input, Table): pass
+
+        # If the input is a string
+        elif isinstance(input, basestring): pass
+
+        # Invalid input
+        else: raise ValueError("Input must be either an Astropy Table object or a filename (e.g. memory.dat)")
 
         # Calculate the number of wavelengths and dust cells
         #Nlambda = skifile.nwavelengths()

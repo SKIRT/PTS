@@ -7,7 +7,7 @@
 
 ## \package extract.memory Extract memory information from SKIRT or SkirtMemory output
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
@@ -18,7 +18,7 @@ from datetime import datetime
 # Import astronomical modules
 from astropy.table import Table
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class MemoryExtractor(object):
 
@@ -33,9 +33,15 @@ class MemoryExtractor(object):
         :return:
         """
 
-        pass
+        ## Configuration
 
-    # *****************************************************************
+        # ...
+
+        ## Attributes
+
+        self.table = None
+
+    # -----------------------------------------------------------------
 
     def run(self, simulation, output_path):
 
@@ -130,12 +136,23 @@ class MemoryExtractor(object):
             names += ["Array (de)allocation", "Array ID"]
 
         # Create the table
-        table = Table(data, names=names)
-        table["Simulation time"].unit = "s"
-        table["Memory usage"].unit = "GB"
-        table["Array (de)allocation"].unit = "GB"
+        self.table = Table(data, names=names)
+        self.table["Simulation time"].unit = "s"
+        self.table["Memory usage"].unit = "GB"
+        self.table["Array (de)allocation"].unit = "GB"
 
         # Write the table to file
-        table.write(output_path, format="ascii.commented_header")
+        self.table.write(output_path, format="ascii.commented_header")
 
-# *****************************************************************
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.table = None
+
+# -----------------------------------------------------------------

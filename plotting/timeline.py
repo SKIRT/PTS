@@ -51,7 +51,7 @@ colors = ['r', 'g', '#FF7626', 'm', 'c', 'y', 'b']
 
 ## An instance of the TimelinePlotter is used to create timeline diagrams for the different simulation phases
 #
-class TimelinePlotter(object):
+class TimeLinePlotter(object):
 
     ## The constructor accepts the following arguments:
     #

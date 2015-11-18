@@ -28,6 +28,9 @@ from ..extract.progress import ProgressExtractor
 from ..extract.timeline import TimeLineExtractor
 from ..extract.memory import MemoryExtractor
 from ..tools import monitoring
+from ..plotting.progress import ProgressPlotter
+from ..plotting.timeline import TimeLinePlotter
+from ..plotting.memory import MemoryPlotter
 
 # -----------------------------------------------------------------
 
@@ -71,6 +74,11 @@ class SkirtLauncher(object):
         self.output_path = None
         self.extr_path = None
         self.plot_path = None
+
+        # Tables
+        self.progress = None
+        self.timeline = None
+        self.memory = None
 
     # -----------------------------------------------------------------
 
@@ -285,6 +293,9 @@ class SkirtLauncher(object):
         extractor = ProgressExtractor()
         extractor.run(self.simulation, path)
 
+        # Set the table
+        #self.progress = extractor.table
+
     # -----------------------------------------------------------------
 
     def extract_timeline(self):
@@ -304,6 +315,9 @@ class SkirtLauncher(object):
         extractor = TimeLineExtractor()
         extractor.run(self.simulation, path)
 
+        # Set the table
+        #self.timeline = extractor.table
+
     # -----------------------------------------------------------------
 
     def extract_memory(self):
@@ -322,6 +336,9 @@ class SkirtLauncher(object):
         # Create and run a MemoryExtractor object
         extractor = MemoryExtractor()
         extractor.run(self.simulation, path)
+
+        # Set the table
+        self.memory = extractor.table
 
     # -----------------------------------------------------------------
 
@@ -359,6 +376,13 @@ class SkirtLauncher(object):
         # Inform the user
         log.info("Plotting the progress information...")
 
+        # Determine the path to the progress plot file
+        path = os.path.join(self.plot_path, "progress.pdf")
+
+        # Create and run a ProgressPlotter object
+        plotter = ProgressPlotter()
+        #plotter.run(self.progress, path)
+
     # -----------------------------------------------------------------
 
     def plot_timeline(self):
@@ -370,6 +394,13 @@ class SkirtLauncher(object):
 
         # Inform the user
         log.info("Plotting the timeline...")
+
+        # Determine the path to the timeline plot file
+        path = os.path.join(self.plot_path, "timeline.pdf")
+
+        # Create and run a TimeLinePlotter object
+        #plotter = TimeLinePlotter()
+        #plotter.run(self.timeline, path)
 
     # -----------------------------------------------------------------
 
@@ -388,7 +419,7 @@ class SkirtLauncher(object):
 
         # Create and run a MemoryPlotter object
         plotter = MemoryPlotter()
-        plotter.run(self.simulation, path)
+        plotter.run(self.memory, path)
 
     # -----------------------------------------------------------------
 
