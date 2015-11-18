@@ -13,14 +13,42 @@ import argparse
 from datetime import datetime
 
 # Import relevant PTS modules
-from pts.skirtsimulation import SkirtSimulation
-import pts.archive as arch
+from ..core.simulation import SkirtSimulation
+from ..core import archive as arch
 
-# -----------------------------------------------------------------
+# *****************************************************************
+
+class ProgressExtractor(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        :return:
+        """
+
+        pass
+
+    # *****************************************************************
+
+    def run(self, simulation, output_path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+# *****************************************************************
 
 phaseindices = {'stellar': 0, 'spectra': 1, 'dust': 2}
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
 ## This function extracts the progress from the simulation log files and writes them to file.
 #  It takes the following arguments:

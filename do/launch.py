@@ -18,21 +18,23 @@ import os
 import argparse
 
 # Import the relevant PTS modules
-from ..pts.launcher import SkirtLauncher, FitSkirtLauncher, SkirtMemoryLauncher
+from pts.core.launcher import SkirtLauncher, FitSkirtLauncher
 
 # -----------------------------------------------------------------
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
 parser.add_argument("file", type=str, help="the name of the ski/fski file")
-parser.add_argument("inpath", type=str, help="the simulation input path")
-parser.add_argument("outpath", type=str, help="the simulation output path")
+parser.add_argument("--input", type=str, help="the simulation input path")
+parser.add_argument("--output", type=str, help="the simulation output path")
 parser.add_argument("--remote", action="store_true", help="run the simulation remotely")
-parser.add_argument("--memory", action="store_true", help="run the memory console application")
 parser.add_argument("--relative", action="store_true", help="treats the given input and output paths as being relative to the ski/fski file")
 parser.add_argument("--brief", action="store_true", help="enable brief console logging")
 parser.add_argument("--verbose", action="store_true", help="enable verbose logging mode")
-parser.add_argument("--logmemory", action="store_true", help="enable memory logging mode")
+parser.add_argument("--memory", action="store_true", help="enable memory logging mode")
+parser.add_argument("--allocation", action="store_true", help="enable memory (de)allocation logging mode")
+parser.add_argument("--emulate", action="store_true", help="emulate the simulation while limiting computation")
+parser.add_argument("--extractmemory", action="store_true", help="extract the memory usage from the log files")
 parser.add_argument("--plotseds", action="store_true", help="make plots of the output SEDs")
 parser.add_argument("--plotgrids", action="store_true", help="make plots of the dust grid")
 parser.add_argument("--plotprogress", action="store_true", help="make plots of the progress of the different processes as a function of time")
@@ -50,38 +52,24 @@ arguments = parser.parse_args()
 arguments.filepath = os.path.abspath(arguments.file)
 
 # Determine the full path to the input and output directories
-arguments.input_path = os.path.abspath(arguments.inpath)
-arguments.output_path = os.path.abspath(arguments.outpath)
+if arguments.input is not None: arguments.input_path = os.path.abspath(arguments.input)
+if arguments.output is not None: arguments.output_path = os.path.abspath(arguments.output)
 
 # -----------------------------------------------------------------
 
 # If the parameter file describes a SKIRT simulation
 if arguments.filepath.endswith(".ski"):
 
-    # Check whether the 'memory' flag was provided
-    if arguments.memory:
-
-        # Create a SkirtMemoryLauncher instance and run it
-        launcher = SkirtMemoryLauncher.from_arguments(arguments)
-        launcher.run()
-
-    else:
-
-        # Create a SkirtLauncher instance and run it
-        launcher = SkirtLauncher.from_arguments(arguments)
-        launcher.run()
+    # Create a SkirtLauncher instance and run it
+    launcher = SkirtLauncher.from_arguments(arguments)
+    launcher.run()
 
 # If the parameter file describes a FitSKIRT simulation
 elif arguments.filepath.endswith(".fski"):
 
-    # Check whether the 'memory' flag was provided
-    if arguments.memory: raise ValueError("The memory console application for FitSKIRT does not exist yet")
-
-    else:
-
-        # Create a FitSkirtLauncher instance and run it
-        launcher = FitSkirtLauncher.from_arguments(arguments)
-        launcher.run()
+    # Create a FitSkirtLauncher instance and run it
+    launcher = FitSkirtLauncher.from_arguments(arguments)
+    launcher.run()
 
 # If the parameter file has a different extension
 else: raise argparse.ArgumentError("The parameter file is not a ski or fski file")

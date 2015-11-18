@@ -10,15 +10,19 @@
 # An instance of the SkirtExec class in this module represents a particular SKIRT executable,
 # and allows invoking it with given command line arguments.
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
-import fnmatch
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
 import os
 import os.path
 import subprocess
 
-from pts.log import Log
-from pts.skirtsimulation import SkirtSimulation
+# Import the relevant PTS modules
+from .log import Log
+from ..core.parameters import SkirtParameters
 
 # -----------------------------------------------------------------
 #  SkirtExec class
@@ -34,7 +38,7 @@ class SkirtExec:
     # directory path. The path may be absolute, relative to a user's home folder, or relative to the current
     # working directory.
     # The default value is the empty path, which means <tt>SKIRT</tt> is looked for in the standard system path \c $PATH.
-    def __init__(self, path="", log=""):
+    def __init__(self, path="", log="", mpi_style="generic"):
 
         # Set the SKIRT path
         self._path = path
@@ -46,6 +50,32 @@ class SkirtExec:
 
         # Set the log mechanism
         self._log = log if log else Log()
+
+        # Check whether MPI is present on this system
+        self.mpi = mpi_present()
+
+        # Set the MPI style
+        self.mpi_style = mpi_style.lower()
+
+    ## This function returns the command for calling SKIRT, the mpirun command is added if MPI is present on the
+    #  system and if the number of processes is greater than one.
+    def skirt_command(self, processes):
+
+        # Multiprocessing mode
+        if processes > 1:
+
+            # Check whether MPI is installed on the system
+            if not self.mpi:
+                self._log.warning("No mpirun executable: skipping simulations")
+                return None
+
+            # Determine the command based on the MPI style
+            # For 'lsf', the number of processes and hosts is derived from environment variables
+            if self.mpi_style == 'lsf': return ["mpirun", "-lsf", self._path]
+            else: return ["mpirun", "-np", str(processes), self._path]
+
+        # Singleprocessing mode
+        else: return [self._path]
 
     ## This function invokes the <tt>SKIRT</tt> executable with the simulations and command line options corresponding to the
     #  values of the function arguments:
@@ -79,76 +109,87 @@ class SkirtExec:
     # The function returns a list of SkirtSimulation instances corresponding to the simulations to be performed
     # (after processing any wildcards in the ski filenames), in arbitrary order.
     #
-    def execute(self, skipattern, recursive=False, inpath="", outpath="", skirel=False, threads=0, parallel=1,
-                processes=1, mpistyle='generic', brief=False, verbose=False, memory=False, wait=True):
+    def execute(self, skipattern, recursive=False, inpath=None, outpath=None, skirel=False, threads=0, parallel=1,
+                processes=1, mpistyle='generic', brief=False, verbose=False, memory=False, allocation=False,
+                emulate=False, single=False, wait=True, silent=False):
 
-        # In multiprocessing mode, check whether MPI is installed on the system
-        if processes > 1 and not mpi_present():
-            self._log.warning("No mpirun executable: skipping MPI simulations!")
-            return []
+        self.mpi_style = mpistyle
 
-        # Create the argument list, starting with the SKIRT path in singleprocessing mode and "mpirun" in multiprocessing mode
-        args = [self._path]
-        if processes > 1:
-            if mpistyle.lower()=='lsf':
-                args = ["mpirun", "-lsf"] + args  # the number of processes and hosts is derived from environment variables
-            else:
-                args = ["mpirun", "-np", str(processes)] + args
+        # Create a SkirtParameters object
+        parameters = SkirtParameters()
 
-        # Set general command line options
-        if brief: args += ["-b"]
-        if verbose: args += ["-v"]
-        if memory: args += ["-m"]
-        if skirel: args += ["-k"]
-        if recursive: args += ["-r"]
-        if threads > 0: args += ["-t", str(threads)]
-        if inpath != "": args += ["-i", inpath]
-        if outpath != "": args += ["-o", outpath]
-        if parallel > 1 and processes<=1: args += ["-s", str(parallel)]
-        if isinstance(skipattern, basestring): skipattern = [skipattern]
-        args += skipattern
+        # The ski file pattern
+        parameters.ski_pattern = skipattern
+        parameters.recursive = recursive
+        parameters.relative = skirel
 
-        # Execute SKIRT
+        # Input and output
+        parameters.input_path = inpath
+        parameters.output_path = outpath
+
+        # Parallelization settings
+        parameters.parallel.threads = threads
+        parameters.parallel.processes = processes
+        parameters.parallel.simulations = parallel
+
+        # Logging settings
+        parameters.logging.brief = brief
+        parameters.logging.verbose = verbose
+        parameters.logging.memory = memory
+        parameters.logging.allocation = allocation
+
+        # Other settings
+        parameters.emulate = emulate
+        parameters.single = single
+
+        # Run SKIRT with the specified parameters
+        self.run(parameters, wait, silent)
+
+    ## This function does the same as the execute function, but obtains its arguments from a SkirtParameters object
+    def run(self, parameters, wait=True, silent=False):
+
+        # Create the argument list
+        arguments = self.skirt_command(parameters.parallel.processes)
+        if arguments is None: return []
+
+        ## Parallelization
+
+        if parameters.parallel.threads > 0: arguments += ["-t", str(parameters.parallel.threads)]
+        if parameters.parallel.simulations > 1 and parameters.parallel.processes <= 1: arguments += ["-s", str(parameters.parallel.simulations)]
+
+        ## Logging
+
+        if parameters.logging.brief: arguments += ["-b"]
+        if parameters.logging.verbose: arguments += ["-v"]
+        if parameters.logging.memory: arguments += ["-m"]
+        if parameters.logging.allocation: arguments += ["-l ", str(parameters.logging.allocation_limit)]
+
+        ## Input and output
+
+        if parameters.input_path is not None: arguments += ["-i", parameters.input_path]
+        if parameters.output_path is not None: arguments += ["-o", parameters.output_path]
+
+        ## Other options
+
+        if parameters.emulate: arguments += ["-e"]
+
+        ## Ski file pattern
+
+        if parameters.relative: arguments += ["-k"]
+        if parameters.recursive: arguments += ["-r"]
+        if isinstance(parameters.ski_pattern, basestring): arguments += [parameters.ski_pattern]
+        elif isinstance(parameters.ski_pattern, list): arguments += parameters.ski_pattern
+        else: raise ValueError("The ski pattern must consist of either a string or a list of strings")
+
+        # Launch the SKIRT command
         if wait:
             self._process = None
-            subprocess.call(args)
-        else:
-            self._process = subprocess.Popen(args, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
-
-        # Create a list of the simulations that are executed
-        simulations = []
-        for skifile in skipattern:
-            root, pattern = os.path.split(skifile)
-            root = os.path.realpath(root)
-            # The "dirlist" variable becomes a list of 3-tuples (dirpath, dirnames, filenames) where dirnames is never used
-            if recursive:
-                dirlist = os.walk(root)
-            else:
-                dirlist = [( root, [ ], filter(lambda fn: os.path.isfile(os.path.join(root,fn)), os.listdir(root)) )]
-            # Process "dirlist"
-            for dirpath, dirnames, filenames in dirlist:
-                for filename in fnmatch.filter(filenames, pattern):
-                    inp = os.path.join(dirpath, inpath)  if (skirel) else inpath
-                    out = os.path.join(dirpath, outpath) if (skirel) else outpath
-                    simulations.append(SkirtSimulation(filename, inpath=inp, outpath=out))
+            if silent: subprocess.call(" ".join(arguments), shell=True, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
+            else: subprocess.call(" ".join(arguments), shell=True)
+        else: self._process = subprocess.Popen(arguments, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
 
         # Return the list of simulations so that their results can be followed up
-        return simulations
-
-    ## This function does the same as the execute function, but obtains its arguments from a configuration object
-    def run(self, config):
-
-        # Execute SKIRT
-        simulation = self.execute(skipattern=config.skifile_path, inpath=config.input_path,
-                                  outpath=config.output_path, threads=config.parallel.threads,
-                                  processes=config.parallel.processes, brief=config.logging.brief,
-                                  verbose=config.logging.verbose, memory=config.logging.memory)[0]
-
-        # Check whether the simulation finished
-        if simulation.status() != "Finished": raise ValueError("Simulation " + simulation.status())
-
-        # Return the simulation instance
-        return simulation
+        return parameters.simulations()
 
     ## This function returns True if the previously started SKIRT process is still running, False otherwise
     def isrunning(self):
@@ -200,58 +241,15 @@ class FitSkirtExec(object):
 
         pass
 
-# -----------------------------------------------------------------
+# *****************************************************************
 
-## An instance of the SkirtMemoryExec class represents a particular SkirtMemory executable, and allows invoking it
-#  with given command line arguments.
-class SkirtMemoryExec(object):
-
-    ## The constructor ...
-    def __init__(self, path=None):
-
-        # Set the SkirtMemory path
-        self._path = path
-        if not self._path.endswith("skirtmem"): self._path = os.path.join(self._path, "skirtmem")
-        if self._path != "skirtmem": self._path = os.path.realpath(os.path.expanduser(self._path))
-
-        # Indicate no simulations are running yet
-        self._process = None
-
-    ## This function ...
-    def execute(self, skifilepath, inpath, outpath, processes=1, wait=True):
-
-        # In multiprocessing mode, check whether MPI is installed on the system
-        if processes > 1 and not mpi_present(): raise ValueError("No MPI installation found on this system")
-
-        # Create the argument list, starting with the SKIRT path in singleprocessing mode and "mpirun" in multiprocessing mode
-        args = [self._path]
-        if processes > 1: args = ["mpirun", "-np", str(processes)] + args
-
-        # Set general command line options
-        if inpath != "": args += ["-i", inpath]
-        if outpath != "": args += ["-o", outpath]
-        args += [skifilepath]
-
-        # Execute SkirtMemory
-        if wait:
-            self._process = None
-            subprocess.call(args)
-        else:
-            self._process = subprocess.Popen(args, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
-
-        # Return a simulation instance so that their results can be followed up
-        skifilename = os.path.basename(skifilepath)
-        return SkirtSimulation(skifilename, inpath=inpath, outpath=outpath)
-
-    ## This function ...
-    def run(self, config):
-
-        pass
-
-# -----------------------------------------------------------------
-
-## This function checks whether the MPI executable is installed on the system.
 def mpi_present():
+
+    """
+    This function checks whether the MPI executable is installed on the system
+    :return:
+    """
+
     try:
         devnull = open(os.devnull)
         subprocess.Popen("mpirun", stdout=devnull, stderr=devnull).communicate()

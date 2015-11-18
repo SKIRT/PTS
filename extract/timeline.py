@@ -17,7 +17,35 @@ import argparse
 from datetime import datetime
 
 # Import relevant PTS modules
-from pts.skirtsimulation import SkirtSimulation
+from ..core.simulation import SkirtSimulation
+
+# *****************************************************************
+
+class TimeLineExtractor(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        :return:
+        """
+
+        pass
+
+    # *****************************************************************
+
+    def run(self, simulation, output_path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
 # *****************************************************************
 

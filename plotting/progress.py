@@ -7,7 +7,7 @@
 
 ## \package plotting.plotprogress
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
@@ -19,7 +19,7 @@ import os
 from pts.skirtsimulation import createsimulations
 from performance.plotprogress import plotprogress
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class ProgressPlotter(object):
     
@@ -30,10 +30,12 @@ class ProgressPlotter(object):
     def __init__(self):
         
         """
-        This function ...
+        The constructor ...
         """
 
-    # *****************************************************************
+        pass
+
+    # -----------------------------------------------------------------
 
     def run(self, simulations, phase):
         
@@ -128,5 +130,4 @@ class ProgressPlotter(object):
                 # Plot the progress for this simulation
                 plotprogress(progressfilepath, plotfilepath, phase)
         
-# *****************************************************************
-
+# -----------------------------------------------------------------

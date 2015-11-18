@@ -22,7 +22,7 @@ import argparse
 from ..pts.log import Log
 from ..pts.skifile import SkiFile
 from ..pts.jobscript import JobScript
-from ..performance.memory import estimate_memory
+from ..performance.resources import estimate_memory
 
 # -----------------------------------------------------------------
 

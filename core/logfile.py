@@ -7,7 +7,7 @@
 
 ## \package core.logfile
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
@@ -21,7 +21,7 @@ from astropy.table import Table
 # Import the relevant PTS modules
 from ..tools import time
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class LogFile(object):
 
@@ -56,8 +56,9 @@ class LogFile(object):
         self.processes = get_processes(self.contents)
         self.threads = get_threads(self.contents)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
+    @property
     def t0(self):
 
         """
@@ -68,7 +69,19 @@ class LogFile(object):
         # Return the time of the first log message
         return self.contents["Time"][0]
 
-# *****************************************************************
+    # -----------------------------------------------------------------
+
+    @property
+    def peak_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return float(self.contents["Message"][len(self.contents)-1].split("Peak memory usage: ")[1].split(" GB")[0])
+
+# -----------------------------------------------------------------
 
 def get_processes(table):
 
@@ -84,7 +97,7 @@ def get_processes(table):
             else: return 1
     raise ValueError("Cannot determine the number of processes from the log file")
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def get_threads(table):
 
@@ -103,7 +116,7 @@ def get_threads(table):
         elif triggered: return max_thread_number+1
     raise ValueError("Cannot determine the number of threads from the log file")
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def parse(path):
 
@@ -121,7 +134,7 @@ def parse(path):
     memories = []
 
     verbose_logging = None
-    memory_logging = True
+    memory_logging = None
 
     # Open the log file
     with open(path, 'r') as f:
@@ -141,6 +154,9 @@ def parse(path):
 
             # Check whether the log file was created in verbose logging mode
             if verbose_logging is None: verbose_logging = "[P" in line
+
+            # Check whether the log file was created in memory logging mode
+            if memory_logging is None: memory_logging = "GB)" in line
 
             # Get the memory usage at the current line, if memory logging was enabled for the simulation
             if memory_logging:
@@ -170,12 +186,10 @@ def parse(path):
             phases.append(current_phase)
 
     # Set the contents variable
-    if memory_logging:
-        return Table([times, phases, messages, types, memories], names=('Time', 'Phase', 'Message', 'Type', 'Memory'), meta={"name": "the contents of the simulation's log file"})
-    else:
-        return Table([times, phases, messages, types], names=('Time', 'Phase', 'Message', 'Type'), meta={"name": "the contents of the simulation's log file"})
+    if memory_logging: return Table([times, phases, messages, types, memories], names=('Time', 'Phase', 'Message', 'Type', 'Memory'), meta={"name": "the contents of the simulation's log file"})
+    else: return Table([times, phases, messages, types], names=('Time', 'Phase', 'Message', 'Type'), meta={"name": "the contents of the simulation's log file"})
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def get_phase(line, current):
 
@@ -197,7 +211,7 @@ def get_phase(line, current):
     elif search_write(line): return "write"
     else: return current
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def search_start(line):
 
@@ -210,7 +224,7 @@ def search_start(line):
     if "Starting simulation" in line: return True
     else: return False
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def search_end(line):
 
@@ -229,7 +243,7 @@ def search_end(line):
     elif "Finished writing results" in line: return True
     else: return False
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def search_setup(line):
 
@@ -243,7 +257,7 @@ def search_setup(line):
     elif "Finished communication of the dust densities" in line: return True
     else: return False
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def search_wait(line):
 
@@ -261,7 +275,7 @@ def search_wait(line):
     elif "Waiting for other processes to finish the dust emission phase" in line: return True
     else: return False
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def search_comm(line):
 
@@ -276,7 +290,7 @@ def search_comm(line):
     elif "Starting communication of the dust emission spectra" in line: return True
     else: return False
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def search_stellar(line):
 
@@ -289,7 +303,7 @@ def search_stellar(line):
     if "Starting the stellar emission phase" in line: return True
     else: return False
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def search_spectra(line):
 
@@ -302,7 +316,7 @@ def search_spectra(line):
     if "Library entries in use" in line: return True
     else: return False
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def search_dust(line):
 
@@ -315,7 +329,7 @@ def search_dust(line):
     if "Dust emission spectra calculated" in line: return True
     else: return False
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def search_write(line):
 
@@ -328,4 +342,4 @@ def search_write(line):
     if "Starting writing results" in line: return True
     else: return False
 
-# *****************************************************************
+# -----------------------------------------------------------------

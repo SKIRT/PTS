@@ -91,7 +91,7 @@ class SkirtSimulation:
     #   or relative to the current working directory. A missing or empty outpath means the current working directory.
     #
     def __init__(self, prefix="", inpath="", outpath=""):
-        self._inpath = os.path.realpath(os.path.expanduser(inpath))
+        self._inpath = os.path.realpath(os.path.expanduser(inpath)) if inpath is not None else None
         self._outpath = os.path.realpath(os.path.expanduser(outpath))
         self._prefix = prefix
         if self._prefix.endswith(".ski"):
@@ -234,18 +234,6 @@ class SkirtSimulation:
     ## This function returns a list of LogFile objects, created from the log files produced by the simulation.
     def logfiles(self):
         return [LogFile(logfilepath) for logfilepath in self.logfilepaths()]
-
-    ## This function returns a list of absolute filepaths for all memory files produced by the simulation, including
-    #  the master memory file and any memory files produced by parallel (MPI) processes. The list includes only paths
-    #  for mememory files that actually exist, and the paths are listed in order of process rank.
-    def memoryfilepaths(self):
-        logname = self._prefix + "_memory"
-        logfiles = sorted(filter(lambda fn: fn.startswith(logname), arch.listdir(self._outpath,".txt")))
-        return [ os.path.join(self._outpath, logfile) for logfile in logfiles ]
-
-    ## This function returns a list of MemoryFile objects, created from the memory files produced by the simulation
-    def memoryfiles(self):
-        return [MemoryFile(memoryfilepath) for memoryfilepath in self.memoryfilepaths()]
 
     ## This function returns a list of absolute filepaths for all "total.fits" files produced by the simulation,
     # in the same order as the corresponding instruments occur in the ski file.

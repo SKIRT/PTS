@@ -58,3 +58,15 @@ def timestamp(time):
     return datetime.now().strftime("%d/%m/%Y %H:%M:%S.%f")[:-3]
 
 # *****************************************************************
+
+def unique_name(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    return name + datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+
+# *****************************************************************
