@@ -22,6 +22,7 @@ from ..core.source import Source
 from ..core.masks import Mask
 from ..tools import configuration
 from ..tools import fitting
+from ..core import masks
 
 # Import astronomical modules
 import aplpy
@@ -32,6 +33,8 @@ import astropy.coordinates as coord
 from astropy.table import Table
 from astroquery.vizier import Vizier
 from astropy.coordinates import Angle
+from photutils import detect_sources
+from astropy.convolution import Gaussian2DKernel
 
 # -----------------------------------------------------------------
 
@@ -101,6 +104,12 @@ class StarExtractor(ObjectExtractor):
 
         # If requested, remove apertures
         if self.config.remove_apertures: self.remove_apertures()
+
+        # If requested, find other sources in the frame
+        if self.config.find_other: self.find_other_sources(galaxyextractor)
+
+        # If requested, remove the other sources
+        if self.config.remove_other: self.remove_other_sources()
 
         # If a manual region was specified, remove the corresponding stars
         if self.config.manual_region is not None: self.remove_manual()
@@ -556,6 +565,45 @@ class StarExtractor(ObjectExtractor):
 
     # -----------------------------------------------------------------
 
+    def find_other_sources(self, galaxyextractor=None):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate the total mask
+        mask = masks.union(galaxyextractor.mask, self.mask)
+
+        # Create the sigma-clipped mask
+        clipped_mask = statistics.sigma_clip_mask(self.frame, 3.0, mask)
+
+        # Calculate the median sky value and the standard deviation
+        median = np.median(np.ma.masked_array(self.frame, mask=clipped_mask).compressed())
+        stddev = np.ma.masked_array(self.frame, mask=clipped_mask).std()
+
+        # Calculate the detection threshold
+        threshold = median + (3.0 * stddev)
+
+        # Create a segmentation map from the frame
+        segments = detect_sources(self.frame, threshold, npixels=5, filter_kernel=self.kernel)
+
+        from ..tools import plotting
+        plotting.plot_box(segments)
+
+    # -----------------------------------------------------------------
+
+    def remove_other_sources(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
     @property
     def region(self):
 
@@ -824,6 +872,20 @@ class StarExtractor(ObjectExtractor):
         elif self.config.fwhm.measure == "mean": return np.mean(self.fwhms)
         elif self.config.fwhm.measure == "median": return np.median(self.fwhms)
         else: raise ValueError("Unkown measure for determining the default FWHM")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def kernel(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a Gaussian convolution kernel and return it
+        sigma = statistics.fwhm_to_sigma(self.fwhm)
+        return Gaussian2DKernel(sigma, x_size=4.0*sigma, y_size=4.0*sigma)
 
     # -----------------------------------------------------------------
 
