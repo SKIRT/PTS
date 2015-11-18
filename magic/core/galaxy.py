@@ -27,7 +27,7 @@ from astropy.coordinates import Angle
 import astropy.coordinates as coord
 from astroquery.vizier import Vizier
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class Galaxy(SkyObject):
 
@@ -156,7 +156,7 @@ class Galaxy(SkyObject):
         # Call the constructor of the base class
         super(Galaxy, self).__init__(position)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def contains(self, position):
 
@@ -172,7 +172,7 @@ class Galaxy(SkyObject):
         # If it does, check whether the pixel position is masked by the mask of the galaxy's source
         return self.source.mask.masks(self.source.cutout.rel_position(position))
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def has_extent(self):
@@ -185,7 +185,7 @@ class Galaxy(SkyObject):
         # Check whether the length of the major axis is defined
         return self.major is not None
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def ellipse_parameters(self, wcs, pixelscale, default_radius):
 
@@ -216,7 +216,7 @@ class Galaxy(SkyObject):
         # Return the parameters
         return self.pixel_position(wcs), Extent(x=x_radius, y=y_radius), angle
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def source_from_parameters(self, frame, outer_factor):
 
@@ -230,7 +230,7 @@ class Galaxy(SkyObject):
         # Create a source object
         self.source = Source(frame, center, radius, angle, outer_factor)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def fit_model(self, config):
 
@@ -243,7 +243,7 @@ class Galaxy(SkyObject):
 
         pass
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def remove(self, frame, config):
 
@@ -263,7 +263,7 @@ class Galaxy(SkyObject):
             # Replace the frame with the estimated background
             self.source.background.replace(frame, where=self.source.mask)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def plot(self, frame):
 
@@ -316,4 +316,4 @@ class Galaxy(SkyObject):
             # Show the plot
             plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------

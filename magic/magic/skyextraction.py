@@ -26,7 +26,7 @@ from ..tools import plotting
 from astropy import log
 import astropy.logger
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class SkyExtractor(object):
 
@@ -72,7 +72,7 @@ class SkyExtractor(object):
         # Set the sky frame to None intially
         self.sky = None
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def run(self, frame, galaxyextractor, starextractor=None):
 
@@ -111,7 +111,7 @@ class SkyExtractor(object):
         # If requested, subtract the sky
         if self.config.subtract: self.subtract()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def sigma_clip_mask(self):
 
@@ -126,7 +126,7 @@ class SkyExtractor(object):
         # Create the sigma-clipped mask
         self.clipped_mask = statistics.sigma_clip_mask(self.frame, self.config.sigma_clipping.sigma_level, self.mask)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def plot(self):
 
@@ -139,7 +139,7 @@ class SkyExtractor(object):
         #plotting.plot_box(np.ma.masked_array(self, mask=self.mask))
         plotting.plot_difference(self.frame, self.sky)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def save_histogram(self):
 
@@ -182,7 +182,7 @@ class SkyExtractor(object):
             # Clear and close
             #plt.close()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def mask(self):
@@ -204,7 +204,7 @@ class SkyExtractor(object):
         # Return the total mask
         return mask
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def mean(self):
@@ -217,7 +217,7 @@ class SkyExtractor(object):
         # Return the sigma-clipped mean
         return np.ma.mean(np.ma.masked_array(self.frame, mask=self.clipped_mask))
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def median(self):
@@ -230,7 +230,7 @@ class SkyExtractor(object):
         # Return the sigma-clipped median
         return np.median(np.ma.masked_array(self.frame, mask=self.clipped_mask).compressed())
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def stddev(self):
@@ -243,7 +243,7 @@ class SkyExtractor(object):
         # Return the standard deviation of the sigma-clipped frame
         return np.ma.masked_array(self.frame, mask=self.clipped_mask).std()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def save_masked_frame(self):
 
@@ -262,7 +262,7 @@ class SkyExtractor(object):
         # Save the masked frame
         frame.save(self.config.saving.masked_frame_path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def save_clipped_masked_frame(self):
 
@@ -281,7 +281,7 @@ class SkyExtractor(object):
         # Save the masked frame
         frame.save(self.config.saving.clipped_masked_frame_path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def set_extra_mask(self):
 
@@ -297,7 +297,7 @@ class SkyExtractor(object):
         extra_region = Region.from_file(self.config.extra_region, self.frame.wcs)
         self.extra_mask = Mask.from_region(extra_region, self.frame.shape)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def estimate(self):
 
@@ -340,7 +340,7 @@ class SkyExtractor(object):
         # Unkown estimation method
         else: raise ValueError("Unkown sky estimation method")
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def subtract(self):
 
@@ -361,7 +361,7 @@ class SkyExtractor(object):
             # Subtract the estimated sky from the image frame
             self.frame -= self.sky
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def clear(self):
 
@@ -381,4 +381,4 @@ class SkyExtractor(object):
         # Set the frames to None
         self.frame = None
 
-# *****************************************************************
+# -----------------------------------------------------------------

@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function
 # Import Astromagic modules
 from ..tools import configuration
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class WCSFinder(object):
 
@@ -30,7 +30,7 @@ class WCSFinder(object):
 
         self.config = configuration.set("wcsfinder", config)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def run(self, frame):
 
@@ -41,4 +41,4 @@ class WCSFinder(object):
 
         pass
         
-# *****************************************************************
+# -----------------------------------------------------------------

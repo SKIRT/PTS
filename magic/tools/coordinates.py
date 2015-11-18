@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def relative_coordinate(x, y, x_shift, y_shift):
 
@@ -28,7 +28,7 @@ def relative_coordinate(x, y, x_shift, y_shift):
 
     return (rel_x, rel_y)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def absolute_coordinate(x, y, x_shift, y_shift):
 
@@ -46,7 +46,7 @@ def absolute_coordinate(x, y, x_shift, y_shift):
 
     return (abs_x, abs_y)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def distance_points(x_pos1, y_pos1, x_pos2, y_pos2):
 
@@ -64,7 +64,7 @@ def distance_points(x_pos1, y_pos1, x_pos2, y_pos2):
 
     return np.sqrt(diff_x**2 + diff_y**2)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def distance_model_point(model, x_pos, y_pos):
 
@@ -78,7 +78,7 @@ def distance_model_point(model, x_pos, y_pos):
 
     return distance_points(model.x_mean.value, model.y_mean.value, x_pos, y_pos)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def distance_models(model_a, model_b):
 
@@ -113,7 +113,7 @@ def distance_models(model_a, model_b):
 
     return distance_points(x_mean_a, y_mean_a, x_mean_b, y_mean_b)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def ra_distance(declination, ra_a, ra_b):
 
@@ -130,7 +130,7 @@ def ra_distance(declination, ra_a, ra_b):
     # Return ...
     return np.degrees(np.arccos(cos_ra_distance))
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def degrees_to_hms(ra='', dec='', round=False):
 
@@ -172,7 +172,7 @@ def degrees_to_hms(ra='', dec='', round=False):
     if ra and dec: return (RA, DEC)
     else: return RA or DEC
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def hms_to_degrees(ra='', dec=''):
 
@@ -197,4 +197,4 @@ def hms_to_degrees(ra='', dec=''):
     if ra and dec: return (RA, DEC)
     else: return RA or DEC
 
-# *****************************************************************
+# -----------------------------------------------------------------

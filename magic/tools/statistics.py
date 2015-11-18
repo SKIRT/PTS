@@ -18,13 +18,13 @@ from astropy.stats import sigma_clip, sigma_clipped_stats
 from . import general
 from ..core.masks import Mask
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Calculate sigma-to-FWHM and FWHM-to-sigma conversion factors
 sigma_to_fwhm = (8 * np.log(2))**0.5
 fwhm_to_sigma = 1.0 / sigma_to_fwhm
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def sigma_clip_mask_list(data, sigma=3.0, mask=None):
 
@@ -47,7 +47,7 @@ def sigma_clip_mask_list(data, sigma=3.0, mask=None):
     # Return the new or updated mask
     return new_mask
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def sigma_clip_mask(data, sigma_level=3.0, mask=None):
 
@@ -82,7 +82,7 @@ def sigma_clip_mask(data, sigma_level=3.0, mask=None):
     # Return the new or updated mask
     return new_mask
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def sigma_clipped_median(data, sigma=3.0, mask=None):
 
@@ -100,7 +100,7 @@ def sigma_clipped_median(data, sigma=3.0, mask=None):
     # Return the median value
     return median
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def sigma_clipped_statistics(data, sigma=3.0, mask=None):
 
@@ -118,7 +118,7 @@ def sigma_clipped_statistics(data, sigma=3.0, mask=None):
     # Return the statistical parameters
     return mean, median, stddev
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def sigma_clip_split(input_list, criterium, sigma=3.0, only_high=False, only_low=False, nans="low"):
 
@@ -168,7 +168,7 @@ def sigma_clip_split(input_list, criterium, sigma=3.0, only_high=False, only_low
     # Return the valid and invalid lists
     return valid_list, invalid_list
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def cutoff(values, method, limit):
 
@@ -200,4 +200,4 @@ def cutoff(values, method, limit):
 
     else: raise ValueError("Invalid cutoff method (must be 'percentage' or 'sigma_clip'")
 
-# *****************************************************************
+# -----------------------------------------------------------------

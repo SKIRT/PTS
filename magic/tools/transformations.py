@@ -7,7 +7,7 @@
 # This module was adapted from the FITS_Tools package written by Adam Ginsburg
 # Link: https://github.com/keflavich/FITS_tools
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
@@ -22,7 +22,7 @@ from . import headers
 # Import astronomical modules
 import astropy.io.fits as pyfits
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def align_and_rebin(image, header1, header2, preserve_bad_pixels=True, **kwargs):
 
@@ -70,7 +70,7 @@ def align_and_rebin(image, header1, header2, preserve_bad_pixels=True, **kwargs)
     # Return the new image array
     return new_image
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def zoom_fits(fitsfile, scalefactor, preserve_bad_pixels=True, **kwargs):
 
@@ -115,7 +115,7 @@ def zoom_fits(fitsfile, scalefactor, preserve_bad_pixels=True, **kwargs):
 
     return up_hdu
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def wcs_align(hdu_in, header, outname=None, clobber=False):
 
@@ -278,4 +278,4 @@ def wcs_align(hdu_in, header, outname=None, clobber=False):
     
     return hdu_in
 
-# *****************************************************************
+# -----------------------------------------------------------------

@@ -16,7 +16,7 @@ from .inpaint import replace_nans
 # Import astronomical modules
 from photutils.background import Background
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def in_paint(data, mask):
 
@@ -48,7 +48,7 @@ def in_paint(data, mask):
     # Return the interpolated data
     return interpolated
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def low_res_interpolation(frame, downsample_factor, mask=None):
 
@@ -74,4 +74,4 @@ def low_res_interpolation(frame, downsample_factor, mask=None):
     # Return the data
     return back
 
-# *****************************************************************
+# -----------------------------------------------------------------

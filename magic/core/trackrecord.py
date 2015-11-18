@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from collections import defaultdict
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class TrackRecord(object):
 
@@ -28,7 +28,7 @@ class TrackRecord(object):
         self.stage = initial_stage
         self.snapshots = defaultdict(list)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def set_stage(self, stage):
 
@@ -38,7 +38,7 @@ class TrackRecord(object):
 
         self.stage = stage
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def append(self, source):
 
@@ -48,7 +48,7 @@ class TrackRecord(object):
 
         self.snapshots[self.stage].append(source)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def plot(self):
         

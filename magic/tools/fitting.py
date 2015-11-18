@@ -21,7 +21,7 @@ from . import general
 from . import statistics
 from ..core.vector import Position, Extent
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def fit_2D_model(data, mask, background, model='Gaussian', x_center=None, y_center=None, radius=None, x_shift=0.0, y_shift=0.0, pixel_deviation=0.5, upsample_factor=1.0):
 
@@ -71,7 +71,7 @@ def fit_2D_model(data, mask, background, model='Gaussian', x_center=None, y_cent
     # Return the model
     return model_function
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def fit_polynomial(data, degree, mask=None, sigma_clip_background=False):
 
@@ -106,7 +106,7 @@ def fit_polynomial(data, degree, mask=None, sigma_clip_background=False):
     # Return the polynomial model
     else: return poly
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def evaluate_model(model, x_min, x_max, y_min, y_max, x_delta=1, y_delta=1):
 
@@ -131,7 +131,7 @@ def evaluate_model(model, x_min, x_max, y_min, y_max, x_delta=1, y_delta=1):
     # Return the evaluated data
     return evaluated_model
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def fit_two_2D_Gaussians(box, x_shift=0.0, y_shift=0.0, zoom_factor=1.0, mask=None):
 
@@ -208,7 +208,7 @@ def fit_two_2D_Gaussians(box, x_shift=0.0, y_shift=0.0, zoom_factor=1.0, mask=No
     # Return the model
     return two_gaussians
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def fit_2D_Gaussian(box, center=None, fixed_center=False, max_center_offset=None, sigma=None, zoom_factor=1.0, mask=None, amplitude=None):
 
@@ -297,7 +297,7 @@ def fit_2D_Gaussian(box, center=None, fixed_center=False, max_center_offset=None
     # Return the Gaussian model
     return gaussian
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def fit_2D_Airy(box, center=None, fixed_center=False, max_center_offset=None, radius=None, zoom_factor=1.0, mask=None, amplitude=None):
 
@@ -376,7 +376,7 @@ def fit_2D_Airy(box, center=None, fixed_center=False, max_center_offset=None, ra
     # Return the fitted two-dimensional Airy Disk model
     return airy
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def fit_2D_Moffat(box, center=None, fixed_center=False, deviation_center=None, x_shift=0.0, y_shift=0.0,
                   zoom_factor=1.0, mask=None):
@@ -456,7 +456,7 @@ def fit_2D_Moffat(box, center=None, fixed_center=False, deviation_center=None, x
     # Return the fitted two-dimensional Moffat model
     return moffat
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def fit_2D_MexicanHat(box, center=None, fixed_center=False, deviation_center=None, radius=None, x_shift=0.0,
                       y_shift=0.0, zoom_factor=1.0, mask=None):
@@ -541,7 +541,7 @@ def fit_2D_MexicanHat(box, center=None, fixed_center=False, deviation_center=Non
     # Return the fitted two-dimensional Mexican Hat model
     return mexicanhat
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def center(model):
 
@@ -555,7 +555,7 @@ def center(model):
     elif isinstance(model, models.AiryDisk2D): return Position(x=model.x_0.value, y=model.y_0.value)
     else: raise ValueError("Unsupported model type")
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def sigma(model):
 
@@ -569,7 +569,7 @@ def sigma(model):
     elif isinstance(model, models.AiryDisk2D): return 0.42 * model.radius * 0.81989397882
     else: raise ValueError("Unsupported model type")
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def fwhm(model):
 
@@ -581,7 +581,7 @@ def fwhm(model):
 
     return 2.355 * sigma(model)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def shift_model(model, x_shift, y_shift):
 
@@ -608,7 +608,7 @@ def shift_model(model, x_shift, y_shift):
     # Unsupported models
     else: raise ValueError("Unsupported model (should be 'Gaussian2D' or 'AiryDisk2D'")
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def shifted_model(model, x_shift, y_shift):
 
@@ -627,4 +627,4 @@ def shifted_model(model, x_shift, y_shift):
     # Return the new model
     return new_model
 
-# *****************************************************************
+# -----------------------------------------------------------------

@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def split_xyz(data, mask=None, arrays=False):
 
@@ -41,10 +41,10 @@ def split_xyz(data, mask=None, arrays=False):
     if arrays: return np.array(x_values), np.array(y_values), np.array(z_values)
     else: return x_values, y_values, z_values
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def average_stddev(model):
 
     return 0.5*(model.x_stddev.value + model.y_stddev.value)
 
-# *****************************************************************
+# -----------------------------------------------------------------

@@ -20,7 +20,7 @@ from .vector import Position
 from ..tools import analysis
 from .trackrecord import TrackRecord
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class SkyObject(object):
 
@@ -30,7 +30,7 @@ class SkyObject(object):
 
     __metaclass__ = ABCMeta
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def __init__(self, position):
 
@@ -56,7 +56,7 @@ class SkyObject(object):
         # Set the ignore flag to False initially
         self.ignore = False
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def has_source(self):
@@ -68,7 +68,7 @@ class SkyObject(object):
 
         return self.source is not None
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def has_aperture(self):
@@ -80,7 +80,7 @@ class SkyObject(object):
 
         return self.aperture is not None
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def has_track_record(self):
@@ -92,7 +92,7 @@ class SkyObject(object):
 
         return self.track_record is not None
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def enable_track_record(self):
 
@@ -104,12 +104,12 @@ class SkyObject(object):
         # Create a new track record
         self.track_record = TrackRecord("Start")
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @abstractmethod
     def ellipse_parameters(self, wcs, pixelscale, initial_radius): pass
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def pixel_position(self, wcs):
 
@@ -125,7 +125,7 @@ class SkyObject(object):
         # Return the position in pixel coordinates
         return Position(x, y)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def find_source(self, frame, config):
 
@@ -143,7 +143,7 @@ class SkyObject(object):
         # Find a source
         self.source = analysis.find_source(frame, center, radius, angle, config, self.track_record, special=self.special)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def find_aperture(self, sigma_level):
 
@@ -171,4 +171,4 @@ class SkyObject(object):
         # Create the aperture
         self.aperture = EllipticalAperture(position, a, b, theta=theta)
 
-# *****************************************************************
+# -----------------------------------------------------------------

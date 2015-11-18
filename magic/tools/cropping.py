@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def crop(data, x_center, y_center, x_radius, y_radius):
 
@@ -33,7 +33,7 @@ def crop(data, x_center, y_center, x_radius, y_radius):
     # Return the cropped data
     return crop_direct(data, x_min, x_max, y_min, y_max)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def crop_direct(data, x_min, x_max, y_min, y_max):
 
@@ -57,7 +57,7 @@ def crop_direct(data, x_min, x_max, y_min, y_max):
     # Return the new image, and the coordinates of the origin of the new image with respect to the original image
     return box, x_min, x_max, y_min, y_max
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def crop_check(data, x_min, x_max, y_min, y_max):
 
@@ -78,4 +78,4 @@ def crop_check(data, x_min, x_max, y_min, y_max):
 
     return crop_direct(data, x_min, x_max, y_min, y_max)[0]
 
-# *****************************************************************
+# -----------------------------------------------------------------

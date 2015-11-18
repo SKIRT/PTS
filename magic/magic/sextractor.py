@@ -22,7 +22,7 @@ from astropy.table import Table
 from astropy import log
 import astropy.logger
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class SExtractor(object):
 
@@ -68,7 +68,7 @@ class SExtractor(object):
         # Set the catalog to None initially
         self.catalog = None
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def run(self, frame, galaxyextractor=None, starextractor=None):
 
@@ -95,7 +95,7 @@ class SExtractor(object):
         # Remove the temporary directory, if requested
         if self.config.remove_temp: self.remove_directory()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def create_directory(self):
 
@@ -113,7 +113,7 @@ class SExtractor(object):
         # Create the directory
         os.mkdir(self.directory)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def copy_input(self):
 
@@ -152,7 +152,7 @@ class SExtractor(object):
         image_path = os.path.join(self.directory, "input.fits")
         self.frame.save(image_path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def launch_sextractor(self):
 
@@ -200,7 +200,7 @@ class SExtractor(object):
         # Launch the SExtractor command as a seperate process
         subprocess.call(command, shell=True)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def read_output(self):
 
@@ -217,7 +217,7 @@ class SExtractor(object):
         catalog_path = os.path.join(self.directory, "field.cat")
         self.catalog = Table.read(catalog_path, format="ascii")
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def remove_directory(self):
 
@@ -228,4 +228,4 @@ class SExtractor(object):
 
         pass
 
-    # *****************************************************************
+# -----------------------------------------------------------------

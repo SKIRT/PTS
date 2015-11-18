@@ -18,7 +18,7 @@ from ..tools import fitting
 from ..tools import interpolation
 from .vector import Position
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class Box(np.ndarray):
 
@@ -48,7 +48,7 @@ class Box(np.ndarray):
         # Return the object
         return obj
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @classmethod
     def cutout(cls, frame, center, x_radius, y_radius):
@@ -71,7 +71,7 @@ class Box(np.ndarray):
         # Return a new box
         return cls(cropped, x_min, x_max, y_min, y_max)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @classmethod
     def cutout_limits(cls, frame, x_min, x_max, y_min, y_max):
@@ -87,7 +87,7 @@ class Box(np.ndarray):
         # Return a new box
         return cls(cropped, x_min, x_max, y_min, y_max)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @classmethod
     def from_ellipse(cls, frame, center, radius, angle):
@@ -128,7 +128,7 @@ class Box(np.ndarray):
         # Return a new box
         return cls.cutout_limits(frame, x_min, x_max, y_min, y_max)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def box_like(self, box):
 
@@ -149,7 +149,7 @@ class Box(np.ndarray):
         # Create the new box
         return Box(data, box.x_min, box.x_max, box.y_min, box.y_max)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def zoom(self, center, factor):
 
@@ -172,7 +172,7 @@ class Box(np.ndarray):
         # Create the new box
         return Box(data, rel_x_min+self.x_min, rel_x_max+self.x_min, rel_y_min+self.y_min, rel_y_max+self.y_min)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def __array_finalize__(self, obj):
 
@@ -190,7 +190,7 @@ class Box(np.ndarray):
         self.y_min = getattr(obj, 'y_min', None)
         self.y_max = getattr(obj, 'y_max', None)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def plot(self, frame=None):
 
@@ -204,21 +204,21 @@ class Box(np.ndarray):
 
         # If frame is not None, plot 'zoom' plot
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def xsize(self):
 
         return self.shape[1]
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def ysize(self):
 
         return self.shape[0]
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def rel_position(self, position):
 
@@ -231,7 +231,7 @@ class Box(np.ndarray):
         # Return the relative position
         return Position(x=position.x-self.x_min, y=position.y-self.y_min)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def abs_position(self, position):
 
@@ -244,7 +244,7 @@ class Box(np.ndarray):
         # Return the absolute position
         return Position(x=position.x+self.x_min, y=position.y+self.y_min)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def fit_polynomial(self, order, mask=None):
 
@@ -262,7 +262,7 @@ class Box(np.ndarray):
         # Return a new box
         return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def gaussian_filter(self, sigma):
 
@@ -277,7 +277,7 @@ class Box(np.ndarray):
         # Return a new box
         return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def fit_model(self, center, model_name, sigma=None, max_center_offset=None, amplitude=None):
 
@@ -315,7 +315,7 @@ class Box(np.ndarray):
         # Return the model
         return model
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def evaluate_model(self, model):
 
@@ -337,7 +337,7 @@ class Box(np.ndarray):
         # Return a new box
         return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def interpolate(self, mask=None):
 
@@ -352,7 +352,7 @@ class Box(np.ndarray):
         # Return a new box
         return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def value(self, position):
 
@@ -370,7 +370,7 @@ class Box(np.ndarray):
         # Return the pixel value
         return self[y, x]
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def contains(self, position):
 
@@ -391,7 +391,7 @@ class Box(np.ndarray):
         if x_pixel < 0 or y_pixel < 0 or x_pixel >= self.xsize or y_pixel >= self.ysize: return False
         else: return True
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def replace(self, frame, where=None):
 
@@ -409,4 +409,4 @@ class Box(np.ndarray):
         #plotting.plot_box(frame[self.y_min:self.y_max, self.x_min:self.x_max])
         #plotting.plot_box(np.ma.masked_array(frame[self.y_min:self.y_max, self.x_min:self.x_max], mask=where))
 
-# *****************************************************************
+# -----------------------------------------------------------------

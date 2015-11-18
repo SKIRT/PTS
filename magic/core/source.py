@@ -26,7 +26,7 @@ from ..core import masks
 from ..tools import statistics
 from .vector import Position
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class Source(object):
 
@@ -62,7 +62,7 @@ class Source(object):
         # Set peak position to None initially
         self.peak = None
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def background_mask(self):
@@ -74,7 +74,7 @@ class Source(object):
 
         return self.mask.inverse()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def subtracted(self):
@@ -87,7 +87,7 @@ class Source(object):
         # Return the box with the background subtracted
         return self.cutout - self.background
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def has_background(self):
@@ -99,7 +99,7 @@ class Source(object):
 
         return self.background is not None
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def has_peak(self):
@@ -111,7 +111,7 @@ class Source(object):
 
         return self.peak is not None
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def flux(self):
@@ -135,7 +135,7 @@ class Source(object):
 
         return np.ma.sum(np.ma.masked_array(np.asarray(self.subtracted), mask=self.background_mask))
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def estimate_background(self, method, sigma_clip=True, sigma_level=3.0):
 
@@ -175,7 +175,7 @@ class Source(object):
 
         else: raise ValueError("Unknown background estimation method")
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def find_center_segment(self, threshold_sigmas, kernel=None, min_pixels=5):
 
@@ -217,7 +217,7 @@ class Source(object):
         # Create a mask of the center segment
         else: return Mask((segments == label))
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def locate_peaks(self, threshold_sigmas):
 
@@ -259,7 +259,7 @@ class Source(object):
         # Return the list of peak positions
         return positions
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def zoom(self, factor):
 
@@ -290,7 +290,7 @@ class Source(object):
         # Return the new source
         return source
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def plot(self, title=None, peaks=None):
 
@@ -332,4 +332,4 @@ class Source(object):
             # Do the plotting
             plotting.plot_background_center(self.cutout, self.mask, peaks=peak_coordinates, title=title)
 
-# *****************************************************************
+# -----------------------------------------------------------------

@@ -18,7 +18,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def replace_nans(array, max_iter, tol, kernel_size=1, method='localmean'):
 
@@ -128,7 +128,7 @@ def replace_nans(array, max_iter, tol, kernel_size=1, method='localmean'):
     
     return filled
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def sincinterp(image, x, y, kernel_size=3 ):
 
@@ -174,4 +174,4 @@ def sincinterp(image, x, y, kernel_size=3 ):
     # Return the interpolated image
     return r
 
-# *****************************************************************
+# -----------------------------------------------------------------

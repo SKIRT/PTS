@@ -18,7 +18,7 @@ from .source import Source
 from ..tools import analysis
 from ..tools import fitting
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class Star(SkyObject):
 
@@ -51,7 +51,7 @@ class Star(SkyObject):
         # Call the constructor of the base class
         super(Star, self).__init__(position)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def has_model(self):
@@ -63,7 +63,7 @@ class Star(SkyObject):
 
         return self.model is not None
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def fwhm(self):
@@ -76,7 +76,7 @@ class Star(SkyObject):
         # Return the fwhm value of the model
         return fitting.fwhm(self.model)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def flux(self):
@@ -89,7 +89,7 @@ class Star(SkyObject):
         # Return the flux of the source
         return self.source.flux
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def ellipse_parameters(self, wcs, pixelscale, default_radius):
 
@@ -104,7 +104,7 @@ class Star(SkyObject):
         # Return the parameters
         return self.pixel_position(wcs), default_radius, Angle(0.0, u.deg)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def fit_model(self, config, source=None):
 
@@ -137,7 +137,7 @@ class Star(SkyObject):
                 self.model = model
                 break
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def source_at_sigma_level(self, frame, default_fwhm, sigma_level, outer_factor):
 
@@ -168,7 +168,7 @@ class Star(SkyObject):
         # Create a source and return it
         return Source(frame, center, radius, Angle(0.0, u.deg), outer_factor)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def remove(self, frame, config, default_fwhm):
 
@@ -245,7 +245,7 @@ class Star(SkyObject):
             # Replace the frame with the estimated background
             source.background.replace(frame, where=source.mask)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def remove_saturation(self, frame, config, default_fwhm):
 
@@ -300,4 +300,4 @@ class Star(SkyObject):
         # Otherwise, return False
         else: return False
 
-# *****************************************************************
+# -----------------------------------------------------------------

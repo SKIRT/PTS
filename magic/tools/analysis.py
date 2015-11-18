@@ -29,7 +29,7 @@ from astropy import log
 from photutils import daofind
 from astropy.stats import sigma_clipped_stats
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def find_source_daofind(frame, center, radius, angle, config, track_record, special=False):
 
@@ -60,7 +60,7 @@ def find_source_daofind(frame, center, radius, angle, config, track_record, spec
     source = []
     return source
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def find_source_iraf(frame, center, radius, angle, config, track_record, special=False):
 
@@ -72,7 +72,7 @@ def find_source_iraf(frame, center, radius, angle, config, track_record, special
 
     # TODO: FIX THIS FUNCTION
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def fit_model_to_source(source, config, track_record=None, level=0, special=False):
 
@@ -148,7 +148,7 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
         # Return the model
         return source, model
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def estimate_background(data, mask, interpolate=True, sigma_clip=True):
 
@@ -176,7 +176,7 @@ def estimate_background(data, mask, interpolate=True, sigma_clip=True):
     # Return the background
     return background, mask
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def make_star_model(shape, data, annuli_mask, fit_mask, background_outer_sigmas, fit_sigmas,
                     model_name, upsample_factor=1.0, interpolate_background=True, sigma_clip_background=True, plot=False):
@@ -266,7 +266,7 @@ def make_star_model(shape, data, annuli_mask, fit_mask, background_outer_sigmas,
     # Return ...
     return success, shape, evaluated_model, (x_min, x_max, y_min, y_max)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def find_source(frame, center, radius, angle, config, track_record=None, special=False):
 
@@ -290,7 +290,7 @@ def find_source(frame, center, radius, angle, config, track_record=None, special
     # Unknown detection method
     else: raise ValueError("Unknown source detection method")
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def find_source_segmentation(frame, center, radius, angle, config, track_record=None, expansion_level=1, special=False):
 
@@ -424,7 +424,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         # Return the source
         return source
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def find_source_peaks(frame, center, radius, angle, config, track_record=None, level=0, special=False):
 
@@ -539,4 +539,4 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
         # Else, return the source
         else: return source
 
-# *****************************************************************
+# -----------------------------------------------------------------

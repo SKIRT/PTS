@@ -18,7 +18,7 @@ import astropy.coordinates as coord
 # Import Astromagic modules
 from ..core.vector import Extent
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class Region(pyregion.ShapeList):
 
@@ -26,7 +26,7 @@ class Region(pyregion.ShapeList):
     This class ...
     """
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def __init__(self):
 
@@ -42,7 +42,7 @@ class Region(pyregion.ShapeList):
         # Set as unselected initially
         self.selected = False
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @classmethod
     def from_file(cls, filepath, wcs=None):
@@ -67,7 +67,7 @@ class Region(pyregion.ShapeList):
         # Return the Region object
         return region
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @classmethod
     def ellipse(cls, center, radius, angle):
@@ -94,7 +94,7 @@ class Region(pyregion.ShapeList):
         # Create a region and return it
         return pyregion.parse(region_string)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @classmethod
     def ellipses(cls, centers, radii, angles):
@@ -123,7 +123,7 @@ class Region(pyregion.ShapeList):
         # Create a region and return it
         return pyregion.parse(region_string)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @classmethod
     def circles(cls, centers, radii, colors=None):
@@ -164,7 +164,7 @@ class Region(pyregion.ShapeList):
         # Create a region and return it
         return pyregion.parse(region_string)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def select(self):
 
@@ -175,7 +175,7 @@ class Region(pyregion.ShapeList):
 
         self.selected = True
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def deselect(self):
 
@@ -186,7 +186,7 @@ class Region(pyregion.ShapeList):
 
         self.selected = False
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def expand(self, factor):
 
@@ -196,7 +196,7 @@ class Region(pyregion.ShapeList):
 
         pass
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def ellipse_parameters(shape):
 
@@ -216,7 +216,7 @@ def ellipse_parameters(shape):
     
     return x_center, y_center, x_radius, y_radius
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def get_enclosing_box(shape):
 
@@ -240,7 +240,7 @@ def get_enclosing_box(shape):
     # Return the extents
     return x_min, x_max, y_min, y_max
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def get_enclosing_boxes(region):
 
@@ -270,7 +270,7 @@ def get_enclosing_boxes(region):
 
     return boxes
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def create_annulus(region, outer_factor, inner_factor=1.0):
 
@@ -313,7 +313,7 @@ def create_annulus(region, outer_factor, inner_factor=1.0):
     # Return the new region
     return region_annulus
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def expand(region, factor):
 
@@ -343,7 +343,7 @@ def expand(region, factor):
     # Return the new region
     return region_expanded
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def ellipses(ra_list, dec_list, height_list, width_list, angle_list):
 
@@ -362,7 +362,7 @@ def ellipses(ra_list, dec_list, height_list, width_list, angle_list):
     # Return the region
     return region
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def circles(ra_list, dec_list, radius_list):
 
@@ -381,7 +381,7 @@ def circles(ra_list, dec_list, radius_list):
     # Return the region
     return region
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def ellipses_from_coordinates(coordinates):
 
@@ -415,7 +415,7 @@ def ellipses_from_coordinates(coordinates):
     # Return the region
     return region
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def one_ellipse(parameters):
 
@@ -434,7 +434,7 @@ def one_ellipse(parameters):
     # Create a region and return it
     return pyregion.parse(region_string)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def create_mask(region, header, x_size, y_size):
 
@@ -450,7 +450,7 @@ def create_mask(region, header, x_size, y_size):
     # Create a mask and return it
     return region.get_mask(header=header, shape=(y_size,x_size))
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def parse(region_string):
 
@@ -463,7 +463,7 @@ def parse(region_string):
     # Parse the region string and create a region
     return pyregion.parse(region_string)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def scale(shape, factor):
 
@@ -481,7 +481,7 @@ def scale(shape, factor):
 
     return new_shape
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def scale_circle(shape, factor):
 
@@ -497,7 +497,7 @@ def scale_circle(shape, factor):
 
     return new_shape
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def subtract(region_a, region_b, center_offset_tolerance, header):
 
@@ -534,7 +534,7 @@ def subtract(region_a, region_b, center_offset_tolerance, header):
     # Return the subtracted region
     return new_region
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def in_box(shape, dimensions, require_completely=False):
 
@@ -555,7 +555,7 @@ def in_box(shape, dimensions, require_completely=False):
 
     return True
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def mean_radius(region):
 
@@ -573,7 +573,7 @@ def mean_radius(region):
 
     return np.mean(sigmas)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def max_radius(region):
 
@@ -591,4 +591,4 @@ def max_radius(region):
 
     return max(sigmas)
 
-# *****************************************************************
+# -----------------------------------------------------------------

@@ -20,7 +20,7 @@ from astropy import coordinates
 from astropy import units as u
 from astropy import log
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def get_pixelscale(header):
 
@@ -51,7 +51,7 @@ def get_pixelscale(header):
     # If none of the above keywords were found, return None
     else: return None
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def get_filter(name, header):
 
@@ -108,7 +108,7 @@ def get_filter(name, header):
     # The filter could not be determined from the specified header
     else: return None
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def get_unit(header):
 
@@ -139,7 +139,7 @@ def get_unit(header):
     # No unit information was found
     else: return None
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def is_sky_subtracted(header):
 
@@ -157,7 +157,7 @@ def is_sky_subtracted(header):
     # Return the boolean value
     return subtracted
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def get_number_of_frames(header):
 
@@ -178,7 +178,7 @@ def get_number_of_frames(header):
     # Return the boolean value
     return nframes
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def get_frame_description(header, i):
 
@@ -197,7 +197,7 @@ def get_frame_description(header, i):
     # Return the description
     return description
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def get_frame_index(header, name):
 
@@ -214,7 +214,7 @@ def get_frame_index(header, name):
 
     return None
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def get_frame_name(description):
 
@@ -235,7 +235,7 @@ def get_frame_name(description):
     # Return the frame name
     return name
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def load_wcs_from_header(header):
 
@@ -260,7 +260,7 @@ def load_wcs_from_header(header):
 
     return wcs
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def check_header_matches_image(image, header):
 
@@ -278,7 +278,7 @@ def check_header_matches_image(image, header):
             (wcs.naxis1 == image.shape[1] and wcs.naxis2 == image.shape[0])):
         raise Exception("Image shape must match header shape.")
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def get_pixel_mapping(header1, header2):
 
@@ -342,7 +342,7 @@ def get_pixel_mapping(header1, header2):
     # Return the grid
     return grid
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def ctype_to_csys(wcs):
 
@@ -363,4 +363,4 @@ def ctype_to_csys(wcs):
     elif 'GLON' in ctype or 'GLAT' in ctype:
         return 'galactic'
 
-# *****************************************************************
+# -----------------------------------------------------------------

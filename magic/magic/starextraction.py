@@ -33,7 +33,7 @@ from astropy.table import Table
 from astroquery.vizier import Vizier
 from astropy.coordinates import Angle
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class StarExtractor(ObjectExtractor):
 
@@ -61,7 +61,7 @@ class StarExtractor(ObjectExtractor):
         # Initialize an empty list for NOMAD stars
         self.nomad_stars = []
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def run(self, frame, galaxyextractor=None):
 
@@ -117,7 +117,7 @@ class StarExtractor(ObjectExtractor):
         # If requested, save the result
         if self.config.save_result: self.save_result()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def fetch_stars(self, galaxyextractor=None):
 
@@ -254,7 +254,7 @@ class StarExtractor(ObjectExtractor):
         # Inform the user
         log.debug("Number of stars: " + str(len(self.objects)))
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def compare_nomad_stars(self, frame):
 
@@ -310,7 +310,7 @@ class StarExtractor(ObjectExtractor):
             # Smallest distance
             print(smallest_distance, ra_error_pixels, dec_error_pixels, ra_error_pixels_ucac, dec_error_pixels_ucac)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def fit_stars(self):
 
@@ -344,7 +344,7 @@ class StarExtractor(ObjectExtractor):
         # Inform the user
         log.debug("Found a model for {0} out of {1} stars with source ({2:.2f}%)".format(self.have_model, self.have_source, self.have_model/self.have_source*100.0))
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def remove_stars(self, galaxyextractor=None):
 
@@ -383,7 +383,7 @@ class StarExtractor(ObjectExtractor):
             # Remove the star in the frame
             star.remove(self.frame, self.config.removal, default_fwhm)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def remove_saturation(self, galaxyextractor=None):
 
@@ -479,7 +479,7 @@ class StarExtractor(ObjectExtractor):
         # Unkown saturation
         else: raise ValueError("Unknown method (should be 'brightest' or 'all'")
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def find_apertures(self):
 
@@ -501,7 +501,7 @@ class StarExtractor(ObjectExtractor):
             # If the galaxy does not have a source, continue
             if star.has_saturation: star.find_aperture(sigma_level=self.config.apertures.sigma_level)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def remove_apertures(self):
 
@@ -554,7 +554,7 @@ class StarExtractor(ObjectExtractor):
             # Replace the frame in the appropriate area with the estimated background
             source.background.replace(self.frame, where=source.mask)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def region(self):
@@ -605,7 +605,7 @@ class StarExtractor(ObjectExtractor):
         elif type == "image": return region.as_imagecoord(self.frame.wcs.to_header())
         else: raise ValueError("Type should be either 'sky' or 'image'")
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def write_region(self, path, annotation=None):
 
@@ -705,7 +705,7 @@ class StarExtractor(ObjectExtractor):
         # Close the file
         f.close()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def have_model(self):
@@ -719,7 +719,7 @@ class StarExtractor(ObjectExtractor):
         for star in self.objects: count += star.has_model
         return count
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def fwhms(self):
@@ -741,7 +741,7 @@ class StarExtractor(ObjectExtractor):
         # Return the list
         return fwhms
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def fluxes(self):
@@ -766,7 +766,7 @@ class StarExtractor(ObjectExtractor):
         # Return the list
         return fluxes
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def amplitude_differences(self):
@@ -806,7 +806,7 @@ class StarExtractor(ObjectExtractor):
         # Return the list of differences
         return differences
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def fwhm(self):
@@ -825,7 +825,7 @@ class StarExtractor(ObjectExtractor):
         elif self.config.fwhm.measure == "median": return np.median(self.fwhms)
         else: raise ValueError("Unkown measure for determining the default FWHM")
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def mask(self):
@@ -872,7 +872,7 @@ class StarExtractor(ObjectExtractor):
         # Return the mask
         return mask
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def saturation_mask(self):
@@ -905,7 +905,7 @@ class StarExtractor(ObjectExtractor):
         # Return the mask
         return mask
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def table(self):
@@ -939,7 +939,7 @@ class StarExtractor(ObjectExtractor):
         # Create and return the table
         return Table([catalogs, ids, ascensions, declinations, sources, models, fwhms], names=('CATALOG', 'ID', 'RA', 'DEC', 'Source', 'Model', 'FWHM'), meta={'name': 'stars'})
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def plot(self):
 
@@ -970,4 +970,4 @@ class StarExtractor(ObjectExtractor):
         # Show the plot
         plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------

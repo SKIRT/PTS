@@ -16,7 +16,7 @@ from astropy.visualization import SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from photutils import CircularAperture
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def plot_box(box, title=None):
 
@@ -40,7 +40,7 @@ def plot_box(box, title=None):
 
     plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def plot_peak_model(box, x_peak, y_peak, model, title=None):
 
@@ -89,7 +89,7 @@ def plot_peak_model(box, x_peak, y_peak, model, title=None):
     # Show the plot
     plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def plot_star(box, peak, model, title=None):
 
@@ -152,7 +152,7 @@ def plot_star(box, peak, model, title=None):
     # Show the plot
     plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def plot_peaks(box, x_peaks, y_peaks, radius=None, title=None):
 
@@ -189,7 +189,7 @@ def plot_peaks(box, x_peaks, y_peaks, radius=None, title=None):
 
     plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def plot_peak(box, x_peak, y_peak, radius=None, title=None):
 
@@ -203,7 +203,7 @@ def plot_peak(box, x_peak, y_peak, radius=None, title=None):
 
     plot_peaks(box, [x_peak], [y_peak], radius=radius, title=title)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def plot_peaks_models(box, x_peaks, y_peaks, models):
 
@@ -243,7 +243,7 @@ def plot_peaks_models(box, x_peaks, y_peaks, models):
     plt.title("Residual")
     plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def plot_star_model(background, background_clipped, est_background, star, est_background_star, fitted_star):
 
@@ -310,7 +310,7 @@ def plot_star_model(background, background_clipped, est_background, star, est_ba
 
     plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def plot_removal(cutout, mask, background, removed, title=None):
 
@@ -352,7 +352,7 @@ def plot_removal(cutout, mask, background, removed, title=None):
     # Show the plot
     plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def plot_source(cutout, mask, background, peaks=None, title=None):
 
@@ -417,7 +417,7 @@ def plot_source(cutout, mask, background, peaks=None, title=None):
     # Show the plot
     plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def plot_background_subtraction(background, background_clipped, est_background, star, est_background_star):
 
@@ -472,7 +472,7 @@ def plot_background_subtraction(background, background_clipped, est_background, 
 
     plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def plot_background_center(cutout, mask, peaks=None, title=None):
 
@@ -521,7 +521,7 @@ def plot_background_center(cutout, mask, peaks=None, title=None):
     # Show the plot
     plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def plot_difference(box_a, box_b, share_colorscale=False):
 
@@ -573,7 +573,7 @@ def plot_difference(box_a, box_b, share_colorscale=False):
 
     plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def plot_difference_value(box, value, share_colorscale=False):
 
@@ -624,7 +624,7 @@ def plot_difference_value(box, value, share_colorscale=False):
 
     plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def plot_difference_model(box, model):
 
@@ -662,4 +662,4 @@ def plot_difference_model(box, model):
 
     plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------

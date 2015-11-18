@@ -17,7 +17,7 @@ from astroquery.vizier import Vizier
 from astroquery.ned import Ned
 from astroquery.irsa_dust import IrsaDust
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def galaxies_in_box(center, ra_span, dec_span):
 
@@ -59,7 +59,7 @@ def galaxies_in_box(center, ra_span, dec_span):
     # Return the list of galaxies
     return names
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def fetch_objects_in_box(box, catalog, keywords, radius, limit=None, column_filters=None):
 
@@ -114,7 +114,7 @@ def fetch_objects_in_box(box, catalog, keywords, radius, limit=None, column_filt
     # Return the region
     return regions.parse(region_string)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def fetch_object_by_name(name, radius):
 
@@ -150,7 +150,7 @@ def fetch_object_by_name(name, radius):
     # Return the region
     return regions.parse(region_string)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def fetch_galactic_extinction(name, filter_name):
 
@@ -169,4 +169,4 @@ def fetch_galactic_extinction(name, filter_name):
 
     return table["A_SandF"][index]
 
-# *****************************************************************
+# -----------------------------------------------------------------

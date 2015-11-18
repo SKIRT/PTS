@@ -7,7 +7,7 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class Layers(dict):
 
@@ -17,14 +17,14 @@ class Layers(dict):
     in this case), with high user-friendliness and easy programming interface.
     """
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     # Use a trick to be able to access attributes of this class by using 'dot' notation ("object.attribute")
     def __getattr__(self, attr): return self.get(attr, None)
     __setattr__= dict.__setitem__   # Set an item of the dictionary
     __delattr__= dict.__delitem__   # Delete an item from the dictionary
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def selected(self, require_single=False, allow_none=True):
 
@@ -48,7 +48,7 @@ class Layers(dict):
         # Return the list of layers (or the single selected layer if requested)
         return layers[0] if require_single else layers
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def get_selected(self, require_single=False, allow_none=True):
 
@@ -80,7 +80,7 @@ class Layers(dict):
         # Return the name(s) of the currently selected layers
         return names[0] if require_single else names
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def select_all(self):
 
@@ -92,7 +92,7 @@ class Layers(dict):
         # Select each layer
         for name in self.keys(): self[name].select()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def deselect_all(self):
 
@@ -104,7 +104,7 @@ class Layers(dict):
         # Deselect each layer
         for name in self.keys(): self[name].deselect()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def get_state(self):
 
@@ -117,7 +117,7 @@ class Layers(dict):
         # Return the state dictionary
         return state
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def set_state(self, state):
 
@@ -131,4 +131,4 @@ class Layers(dict):
             if layer_name in self: self[layer_name].selected = selected
             else: raise ValueError("Invalid state dictionary")
 
-# *******************************************************************
+# -----------------------------------------------------------------

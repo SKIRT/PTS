@@ -31,7 +31,7 @@ import astropy.units as u
 import astropy.coordinates as coord
 from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class Frame(np.ndarray):
 
@@ -39,7 +39,7 @@ class Frame(np.ndarray):
     This class ...
     """
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def __new__(cls, data, wcs=None, pixelscale=None, description=None, selected=False, unit=None, name=None, filter=None, sky_subtracted=False):
 
@@ -63,7 +63,7 @@ class Frame(np.ndarray):
 
         return obj
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @classmethod
     def from_file(cls, path, index=0, name=None, description=None, plane=None):
@@ -138,7 +138,7 @@ class Frame(np.ndarray):
             # Return the frame
             return cls(hdu.data, wcs, pixelscale, description, False, unit, name, filter, sky_subtracted)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @classmethod
     def zeros_like(cls, frame):
@@ -152,7 +152,7 @@ class Frame(np.ndarray):
         # Return a zero-filled copy of the frame
         return np.zeros_like(frame)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def __array_finalize__(self, obj):
 
@@ -172,7 +172,7 @@ class Frame(np.ndarray):
         self.filter = getattr(obj, 'filter', None)
         self.sky_subtracted = getattr(obj, 'sky_subtracted', False)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def select(self):
 
@@ -183,7 +183,7 @@ class Frame(np.ndarray):
 
         self.selected = True
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def deselect(self):
 
@@ -194,17 +194,17 @@ class Frame(np.ndarray):
 
         self.selected = False
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def xsize(self): return self.shape[1]
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def ysize(self): return self.shape[0]
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def header(self):
@@ -227,7 +227,7 @@ class Frame(np.ndarray):
         # Return the header
         return header
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def wavelength(self):
@@ -241,7 +241,7 @@ class Frame(np.ndarray):
         if self.filter is None: return None
         else: return self.filter.pivotwavelength() * u.Unit("micron")
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def set_unit(self, unit):
 
@@ -253,7 +253,7 @@ class Frame(np.ndarray):
 
         self.unit = unit
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def set_fwhm(self, fwhm):
 
@@ -265,7 +265,7 @@ class Frame(np.ndarray):
 
         self.fwhm = fwhm
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def convert_to(self, unit):
 
@@ -285,7 +285,7 @@ class Frame(np.ndarray):
         # Return the converted frame
         return frame
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def to_magnitude(self, m_0):
 
@@ -299,7 +299,7 @@ class Frame(np.ndarray):
         # Do the conversion
         return m_0 - 2.5 * np.log10(self)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def to_flux(self, f_0):
 
@@ -313,7 +313,7 @@ class Frame(np.ndarray):
         # Do the conversion
         return f_0 * np.power(10.0, - self / 2.5)
 
-     # *****************************************************************
+     # -----------------------------------------------------------------
 
     def convolve(self, kernel):
 
@@ -335,7 +335,7 @@ class Frame(np.ndarray):
         # Return the convolved frame
         return Frame(data, self.wcs, self.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def rebin(self, ref_frame):
 
@@ -351,7 +351,7 @@ class Frame(np.ndarray):
         # Return the rebinned frame
         return Frame(data, ref_frame.wcs, ref_frame.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def crop(self, x_min, x_max, y_min, y_max):
 
@@ -372,7 +372,7 @@ class Frame(np.ndarray):
         # Return the cropped frame
         return Frame(data, None, self.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def downsample(self, factor):
 
@@ -389,7 +389,7 @@ class Frame(np.ndarray):
         # Return the downsampled frame
         return Frame(data, None, self.pixelscale*factor, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def rotate(self, angle):
 
@@ -407,7 +407,7 @@ class Frame(np.ndarray):
         # Return the rotated frame
         return Frame(data, None, self.pixelscale, self.description, self.selected, self.unit)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def shift(self, extent):
 
@@ -424,7 +424,7 @@ class Frame(np.ndarray):
         # Return the shifted frame
         return Frame(data, None, self.pixelscale, self.description, self.selected, self.unit)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def center_around(self, position):
 
@@ -440,7 +440,7 @@ class Frame(np.ndarray):
         # Return the shifted frame
         return self.shift(shift)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def coordinate_range(self):
 
@@ -504,7 +504,7 @@ class Frame(np.ndarray):
         # Return the center coordinate and the RA and DEC span
         return center, ra_span, dec_span
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def contains(self, coordinate):
 
@@ -521,7 +521,7 @@ class Frame(np.ndarray):
 
         return 0.0 <= x < self.xsize and 0.0 <= y < self.ysize
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def replace_nans(self, value):
 
@@ -534,7 +534,7 @@ class Frame(np.ndarray):
         # Set all NaN pixels to the specified value
         self[np.isnan(self)] = value
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def interpolate(self, mask):
 
@@ -550,7 +550,7 @@ class Frame(np.ndarray):
         # Return a new box
         return Frame(data, self.wcs, self.pixelscale, self.description, unit=self.unit)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def save(self, path):
 
@@ -564,7 +564,7 @@ class Frame(np.ndarray):
         # Write the HDU to a FITS file
         hdu.writeto(path, clobber=True)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def plot(self, mask=None, color=True, nan_color='black', grid=False):
 
@@ -603,4 +603,4 @@ class Frame(np.ndarray):
         # Show the plot on screen
         plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------

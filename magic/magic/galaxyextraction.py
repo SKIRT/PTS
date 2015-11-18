@@ -27,7 +27,7 @@ from astropy.table import Table
 from astropy.visualization import SqrtStretch, LogStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class GalaxyExtractor(ObjectExtractor):
 
@@ -50,7 +50,7 @@ class GalaxyExtractor(ObjectExtractor):
         # Call the constructor of the base class
         super(GalaxyExtractor, self).__init__()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def run(self, frame):
 
@@ -95,7 +95,7 @@ class GalaxyExtractor(ObjectExtractor):
         # If requested, save the result
         if self.config.save_result: self.save_result()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def principal(self):
@@ -111,7 +111,7 @@ class GalaxyExtractor(ObjectExtractor):
             # Check if it is the principal galaxy; if so, return it
             if galaxy.principal: return galaxy
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def fetch_galaxies(self):
 
@@ -167,7 +167,7 @@ class GalaxyExtractor(ObjectExtractor):
         log.debug(self.principal.name + " is the principal galaxy in the frame")
         log.debug("The following galaxies are its companions: " + str(self.principal.companions))
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def find_apertures(self):
 
@@ -189,7 +189,7 @@ class GalaxyExtractor(ObjectExtractor):
             # If the galaxy does not have a source, continue
             if galaxy.has_source: galaxy.find_aperture(sigma_level=self.config.apertures.sigma_level)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def remove_galaxies(self):
 
@@ -213,7 +213,7 @@ class GalaxyExtractor(ObjectExtractor):
             # Remove the galaxy from the frame
             if not galaxy.principal and not galaxy.companion: galaxy.remove(self.frame, self.config.removal)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def region(self):
@@ -261,7 +261,7 @@ class GalaxyExtractor(ObjectExtractor):
         # Create a region and return it
         return regions.ellipses(ra_list, dec_list, height_list, width_list, angle_list)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def write_region(self, path, annotation="name"):
 
@@ -339,7 +339,7 @@ class GalaxyExtractor(ObjectExtractor):
         # Close the file
         f.close()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def mask(self):
@@ -407,7 +407,7 @@ class GalaxyExtractor(ObjectExtractor):
         # Return the mask
         return mask
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def table(self):
@@ -476,7 +476,7 @@ class GalaxyExtractor(ObjectExtractor):
         # Return the table
         return table
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def plot(self):
 
@@ -528,4 +528,4 @@ class GalaxyExtractor(ObjectExtractor):
         # Show the plot
         plt.show()
 
-# *****************************************************************
+# -----------------------------------------------------------------

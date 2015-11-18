@@ -34,13 +34,13 @@ from .core.frames import Frame
 from .core.masks import Mask
 from .core.regions import Region
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Do not show warnings, to block Canopy's UserWarnings from spoiling the console log
 import warnings
 warnings.filterwarnings("ignore")
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class Image(object):
 
@@ -79,7 +79,7 @@ class Image(object):
         # Read in the image
         self.load_frames(filename)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def deselect_all(self):
 
@@ -93,7 +93,7 @@ class Image(object):
         self.regions.deselect_all()
         self.masks.deselect_all()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def filter(self):
@@ -106,7 +106,7 @@ class Image(object):
         # Return the filter of the primary frame
         return self.frames.primary.filter
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def wavelength(self):
@@ -119,7 +119,7 @@ class Image(object):
         # Return the wavelength of the primary frame
         return self.frames.primary.wavelength
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def unit(self):
@@ -132,7 +132,7 @@ class Image(object):
         # Return the unit of the primary frame
         return self.frames.primary.unit
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def pixelscale(self):
@@ -145,7 +145,7 @@ class Image(object):
         # Return the pixelscale of the primary frame
         return self.frames.primary.pixelscale
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def save(self, path):
 
@@ -194,7 +194,7 @@ class Image(object):
         # Inform the user that the file has been created
         log.info("File " + path + " created")
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def import_region(self, path, name, overwrite=False):
 
@@ -211,7 +211,7 @@ class Image(object):
         # Add the region to the set of regions
         self.add_region(region, name, overwrite)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def export_region(self, path):
 
@@ -230,7 +230,7 @@ class Image(object):
         # Write the region file
         self.regions[region].region.write(path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def get_state(self):
 
@@ -250,7 +250,7 @@ class Image(object):
         # Return the state dictionary
         return state
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def set_state(self, state):
 
@@ -275,7 +275,7 @@ class Image(object):
             elif layer_type == "masks": self.masks[name].selected = selected
             else: raise ValueError("Invalid state dictionary")
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def set_unit(self, unit):
 
@@ -292,7 +292,7 @@ class Image(object):
             # Set the unit for this frame
             self.frames[frame_name].set_unit(unit)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def convert_to(self, unit):
 
@@ -309,7 +309,7 @@ class Image(object):
             # Set the unit for this frame
             self.frames[frame_name].set_unit(unit)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def convolve(self, kernel):
 
@@ -326,7 +326,7 @@ class Image(object):
             # Convolve this frame
             self.frames[frame_name] = self.frames[frame_name].convolve(kernel)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def rebin(self, reference):
 
@@ -343,7 +343,7 @@ class Image(object):
             # Rebin this frame
             self.frames[frame_name] = self.frames[frame_name].rebin(reference)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def crop(self, x_min, x_max, y_min, y_max):
 
@@ -360,7 +360,7 @@ class Image(object):
             # Rebin this frame
             self.frames[frame_name] = self.frames[frame_name].crop(x_min, x_max, y_min, y_max)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def plot(self, path=None, color=True, grid=False, blacknan=False, publication=False):
 
@@ -444,7 +444,7 @@ class Image(object):
 
         else: plot.save(path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def delete_frames(self):
 
@@ -462,7 +462,7 @@ class Image(object):
             # Remove this frame from the frames dictionary
             del self.frames[frame_name]
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def copy_frames(self):
 
@@ -485,7 +485,7 @@ class Image(object):
 
             self.add_frame(data_copy, frame_name+"_copy")
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def delete_regions(self):
 
@@ -503,7 +503,7 @@ class Image(object):
             # Remove this region from the regions dictionary
             del self.regions[region_name]
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def delete_masks(self):
 
@@ -521,7 +521,7 @@ class Image(object):
             # Remove this mask from the masks dictionary
             del self.masks[mask_name]
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def apply_masks(self, fill=0.0):
 
@@ -543,7 +543,7 @@ class Image(object):
                 # Apply the mask
                 self.masks[mask_name].apply(self.frames[frame_name], fill)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def combine_regions(self, name=None, allow_none=True):
 
@@ -574,7 +574,7 @@ class Image(object):
         # Else, add the region to the list of regions, with the appropriate name
         else: self._add_region(total_region, name)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def combine_masks(self, name=None, allow_none=True, return_mask=False):
 
@@ -601,7 +601,7 @@ class Image(object):
         if return_mask: return total_mask
         else: self._add_mask(total_mask, name)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def __imul__(self, factor):
 
@@ -623,7 +623,7 @@ class Image(object):
         # Return a reference to this instance
         return self
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def __idiv__(self, factor):
 
@@ -645,7 +645,7 @@ class Image(object):
         # Return a reference to this instance
         return self
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def create_mask(self, return_mask=False):
 
@@ -673,7 +673,7 @@ class Image(object):
         if return_mask: return total_mask
         else: self._add_mask(total_mask, name)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def get_galactic_extinction(self, galaxy_name):
 
@@ -683,7 +683,7 @@ class Image(object):
 
         return catalogs.fetch_galactic_extinction(galaxy_name, self.filter)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def rename_region(self, name):
 
@@ -699,7 +699,7 @@ class Image(object):
         # Remove the region of the dictionary of regions and re-add it under a different key
         self.regions[name] = self.regions.pop(region_name)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def rename_frame(self, name):
 
@@ -715,7 +715,7 @@ class Image(object):
         # Remove the frame from the dictionary of frames and re-add it under a different key
         self.frames[name] = self.frames.pop(frame_name)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def rename_mask(self, name):
 
@@ -731,7 +731,7 @@ class Image(object):
         # Remove the mask from the dictionary of masks and re-add it under a different key
         self.masks[name] = self.masks.pop(mask_name)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def model_stars(self, model_name='Gaussian', background_inner_sigmas=5.0, background_outer_sigmas=10.0, fit_sigmas=5.0,
                     upsample_factor=1.0, interpolate_background=True, sigma_clip_background=True, plot=False):
@@ -802,7 +802,7 @@ class Image(object):
         self._add_region(modeled, "modeled_stars")
         self._add_region(unmodeled, "unmodeled_stars")
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def find_sky(self):
 
@@ -854,7 +854,7 @@ class Image(object):
         # Add this frame to the set of frames
         self.add_frame(skyframe, "sky")
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def fit_polynomial(self, plot=False, degree=3, sigma_clipping=True):
 
@@ -890,7 +890,7 @@ class Image(object):
             description = "A polynomial fit to the " + frame_name + " primary frame"
             self.add_frame(Frame(evaluated, self.frames[frame_name].coordinates, self.pixelscale, description), frame_name+"_polynomial")
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def subtract(self):
 
@@ -915,7 +915,7 @@ class Image(object):
             # Subtract the data in this frame from the primary image, in the pixels that the mask does not cover
             self.frames.primary -= self.frames[frame_name]*negativetotalmask
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def load_frames(self, filename, index=None, name=None, description=None):
 
@@ -1003,7 +1003,7 @@ class Image(object):
         # Close the FITS file
         hdulist.close()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def add_frame(self, frame, name):
 
@@ -1022,7 +1022,7 @@ class Image(object):
         # Add the layer to the layers dictionary
         self.frames[name] = frame
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def _add_region(self, region, name):
 
@@ -1039,7 +1039,7 @@ class Image(object):
         # Add the region to the regions dictionary
         self.regions[name] = Region(region)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def _add_mask(self, data, name):
 
@@ -1056,7 +1056,7 @@ class Image(object):
         # Add the mask to the masks dictionary
         self.masks[name] = Mask(data)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def add_region(self, region, name, overwrite=False):
 
@@ -1077,7 +1077,7 @@ class Image(object):
         # Add the region to the set of regions
         self.regions[name] = region
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def add_mask(self, mask, name, overwrite=False):
 
@@ -1097,4 +1097,4 @@ class Image(object):
         # Add the mask to the set of masks
         self.masks[name] = mask
 
-# *****************************************************************
+# -----------------------------------------------------------------

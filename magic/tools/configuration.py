@@ -12,7 +12,7 @@ import os
 import inspect
 from config import Config, Mapping
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def special(self, item):
 
@@ -32,7 +32,7 @@ def special(self, item):
 Config.__getattr__ = special
 Mapping.__getattr__ = special
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def set(classname, config=None):
 
@@ -52,7 +52,7 @@ def set(classname, config=None):
     if config is None: return open(default_config)
     else: return open(config, default_config)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def open(config, default_config=None):
 
@@ -79,7 +79,7 @@ def open(config, default_config=None):
         # Return the adjusted default configuration
         return default_config
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def adjust(config, user_config):
 
@@ -105,7 +105,7 @@ def adjust(config, user_config):
         # Adapt the value of the property in the configuration to be equal to the value in the user configuration
         else: config[key] = user_config[key]
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 
 

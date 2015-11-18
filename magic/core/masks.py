@@ -22,7 +22,7 @@ import astropy.units as u
 from astropy.coordinates import Angle
 from photutils import detect_sources
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class Mask(np.ndarray):
 
@@ -30,7 +30,7 @@ class Mask(np.ndarray):
     This class ...
     """
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def __new__(cls, data, selected=False, description=None):
 
@@ -49,7 +49,7 @@ class Mask(np.ndarray):
 
         return obj
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def __array_finalize__(self, obj):
 
@@ -63,7 +63,7 @@ class Mask(np.ndarray):
         self.selected = getattr(obj, 'selected', False)
         self.description = getattr(obj, 'description', None)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def select(self):
 
@@ -74,7 +74,7 @@ class Mask(np.ndarray):
 
         self.selected = True
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def deselect(self):
 
@@ -85,17 +85,17 @@ class Mask(np.ndarray):
 
         self.selected = False
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def xsize(self): return self.shape[1]
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def ysize(self): return self.shape[0]
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @classmethod
     def from_region(cls, region, shape):
@@ -109,7 +109,7 @@ class Mask(np.ndarray):
         # Return a new Mask object
         return cls(region.get_mask(shape=shape))
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @classmethod
     def from_ellipse(cls, x_size, y_size, center, radius, angle):
@@ -133,7 +133,7 @@ class Mask(np.ndarray):
         # Return a new Mask object
         return cls(data)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @classmethod
     def from_aperture(cls, x_size, y_size, aperture, expansion_factor=1.0):
@@ -161,7 +161,7 @@ class Mask(np.ndarray):
         # Return a new Mask object
         return cls.from_ellipse(x_size, y_size, center, radius, angle)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def dilated(self, structure=None, connectivity=2, iterations=100):
 
@@ -181,7 +181,7 @@ class Mask(np.ndarray):
         # Reassign this object
         return Mask(data, self.selected, self.description)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def eroded(self, structure=None, connectivity=2, iterations=100):
 
@@ -201,7 +201,7 @@ class Mask(np.ndarray):
         # Reassign this object
         return Mask(data, self.selected, self.description)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def opening(self, structure, iterations=1):
 
@@ -215,7 +215,7 @@ class Mask(np.ndarray):
         # Return the new mask
         return Mask(data)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def closed(self, structure, iterations=1):
 
@@ -230,7 +230,7 @@ class Mask(np.ndarray):
         # Return the new mask
         return Mask(data)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def expanded(self, factor):
 
@@ -261,7 +261,7 @@ class Mask(np.ndarray):
         if iterations < 1: return self
         else: return self.dilated(disk_structure, iterations=iterations)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def remove_appendages(self):
 
@@ -286,7 +286,7 @@ class Mask(np.ndarray):
         # Return the new mask with the appendages removed
         return Mask((segments == label))
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def apply(self, frame, fill=0.0):
 
@@ -297,7 +297,7 @@ class Mask(np.ndarray):
         # Replace the masked pixel values with the given fill value
         frame[self] = fill
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def inverse(self):
 
@@ -311,7 +311,7 @@ class Mask(np.ndarray):
         # Return the inverse of this mask
         return np.logical_not(self)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def intersection(self, mask):
 
@@ -326,7 +326,7 @@ class Mask(np.ndarray):
 
         return self * mask
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def subtract(self, mask):
 
@@ -342,7 +342,7 @@ class Mask(np.ndarray):
         # Return ...
         return self.intersection(mask.inverse())
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def union(self, mask):
 
@@ -358,7 +358,7 @@ class Mask(np.ndarray):
         # Return ...
         return self + mask
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def hits_boundary(self, min_pixels=2):
 
@@ -392,7 +392,7 @@ class Mask(np.ndarray):
         # Return whether ...
         return hits >= min_pixels
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def masks(self, position):
 
@@ -411,7 +411,7 @@ class Mask(np.ndarray):
             # Return the value of the mask in this pixel
             return self[y_pixel, x_pixel]
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def annuli_around(region, inner_factor, outer_factor, header, x_size, y_size):
 
@@ -440,7 +440,7 @@ def annuli_around(region, inner_factor, outer_factor, header, x_size, y_size):
     # Return the mask
     return mask
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def masked_outside(region, header, x_size, y_size, expand_factor=1.0):
 
@@ -463,7 +463,7 @@ def masked_outside(region, header, x_size, y_size, expand_factor=1.0):
     # Return the mask
     return mask
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def create_disk_mask(x_size, y_size, x_center, y_center, radius):
 
@@ -484,7 +484,7 @@ def create_disk_mask(x_size, y_size, x_center, y_center, radius):
     # Return the mask
     return mask
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def create_ellipse_mask(x_size, y_size, center, radius, angle):
 
@@ -509,7 +509,7 @@ def create_ellipse_mask(x_size, y_size, center, radius, angle):
     # Return the mask
     return Mask(data)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def create_annulus_mask(xsize, ysize, center, inner_radius, outer_radius, angle):
 
@@ -529,7 +529,7 @@ def create_annulus_mask(xsize, ysize, center, inner_radius, outer_radius, angle)
     # Return the annulus mask
     return inner_mask.union(outer_mask.inverse())
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def union(mask_a, mask_b):
 
@@ -543,7 +543,7 @@ def union(mask_a, mask_b):
     # Return the unified mask
     return mask_a + mask_b
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def intersection(mask_a, mask_b):
 
@@ -557,7 +557,7 @@ def intersection(mask_a, mask_b):
     # Return the intersection
     return mask_a * mask_b
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def overlap(mask_a, mask_b):
 
@@ -570,4 +570,4 @@ def overlap(mask_a, mask_b):
 
     return np.any(intersection(mask_a, mask_b))
 
-# *****************************************************************
+# -----------------------------------------------------------------

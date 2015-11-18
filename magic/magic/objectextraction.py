@@ -27,7 +27,7 @@ from astropy.io import ascii
 import astropy.units as u
 from astropy.coordinates import Angle
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class ObjectExtractor(object):
 
@@ -37,7 +37,7 @@ class ObjectExtractor(object):
 
     __metaclass__ = ABCMeta
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def __init__(self):
 
@@ -56,7 +56,7 @@ class ObjectExtractor(object):
         # Set the frame to None
         self.frame = None
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def setup(self, frame):
 
@@ -71,7 +71,7 @@ class ObjectExtractor(object):
         log.setLevel(self.config.logging.level)  # the logging level
         if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def clear(self):
 
@@ -92,7 +92,7 @@ class ObjectExtractor(object):
         # Clear the frame
         self.frame = None
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def find_sources(self):
 
@@ -134,7 +134,7 @@ class ObjectExtractor(object):
         # Inform the user
         log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.objects), self.have_source/len(self.objects)*100.0))
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def have_source(self):
@@ -148,7 +148,7 @@ class ObjectExtractor(object):
         for skyobject in self.objects: count += skyobject.has_source
         return count
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def set_special(self):
 
@@ -174,7 +174,7 @@ class ObjectExtractor(object):
             # Set special if position is covered by the mask
             if special_mask.masks(position): skyobject.special = True
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def set_ignore(self):
 
@@ -200,7 +200,7 @@ class ObjectExtractor(object):
             # Ignore if position is covered by the mask
             if ignore_mask.masks(position): skyobject.ignore = True
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def set_manual(self):
 
@@ -226,7 +226,7 @@ class ObjectExtractor(object):
             # Add the source to the list of manual sources
             self.manual_sources.append(source)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def remove_manual(self):
 
@@ -246,7 +246,7 @@ class ObjectExtractor(object):
             # Replace the frame in the appropriate area with the estimated background
             source.background.replace(self.frame, where=source.mask)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def aperture_mask(self):
@@ -276,7 +276,7 @@ class ObjectExtractor(object):
         # Return the mask
         return mask
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def save_table(self):
 
@@ -291,7 +291,7 @@ class ObjectExtractor(object):
         # Write the table to file
         ascii.write(self.table, self.config.saving.table_path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def save_region(self):
 
@@ -305,7 +305,7 @@ class ObjectExtractor(object):
         # Call the function in one of the derived class that implements this behaviour
         self.write_region(self.config.saving.region_path, self.config.saving.region_annotation)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def save_masked_frame(self):
 
@@ -323,7 +323,7 @@ class ObjectExtractor(object):
         # Save the masked frame
         frame.save(self.config.saving.masked_frame_path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def save_result(self):
 
@@ -338,7 +338,7 @@ class ObjectExtractor(object):
         # Save the resulting frame
         self.frame.save(self.config.saving.result_path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def positions(self):
@@ -360,4 +360,4 @@ class ObjectExtractor(object):
         # Return the list
         return positions
 
-# *****************************************************************
+# -----------------------------------------------------------------
