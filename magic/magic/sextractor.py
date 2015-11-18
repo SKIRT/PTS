@@ -40,14 +40,7 @@ class SExtractor(object):
 
         ## Configuration
 
-        # Determine the path to the default configuration file
-        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_config = os.path.join(directory, "config", "sextractor.cfg")
-
-        # Open the default configuration if no configuration file is specified, otherwise adjust the default
-        # settings according to the user defined configuration file
-        if config is None: self.config = configuration.open(default_config)
-        else: self.config = configuration.open(config, default_config)
+        self.config = configuration.set("sextractor", config)
 
         ## Logging
 
@@ -63,6 +56,7 @@ class SExtractor(object):
         self.frame = None
 
         # Set the path to the dat/SExtractor directory
+        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
         self.dat_path = os.path.join(directory, "dat", "sextractor")
 
         # Set the path to the temporary directory to None initially

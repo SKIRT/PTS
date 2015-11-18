@@ -8,8 +8,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os.path
-import inspect
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
@@ -46,14 +44,7 @@ class SkyExtractor(object):
 
         ## Configuration
 
-        # Determine the path to the default configuration file
-        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_config = os.path.join(directory, "config", "skyextractor.cfg")
-
-        # Open the default configuration if no configuration file is specified, otherwise adjust the default
-        # settings according to the user defined configuration file
-        if config is None: self.config = configuration.open(default_config)
-        else: self.config = configuration.open(config, default_config)
+        self.config = configuration.set("skyextractor", config)
 
         ## Logging
 

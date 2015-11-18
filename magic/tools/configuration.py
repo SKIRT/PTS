@@ -8,12 +8,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from config import Config
-from config import Mapping
+import os
+import inspect
+from config import Config, Mapping
 
 # *****************************************************************
 
-# Special trick
 def special(self, item):
 
     """
@@ -31,6 +31,26 @@ def special(self, item):
 # Replace the __getattr__ function
 Config.__getattr__ = special
 Mapping.__getattr__ = special
+
+# *****************************************************************
+
+def set(classname, config=None):
+
+    """
+    This function ...
+    :param classname:
+    :param config:
+    :return:
+    """
+
+    # Determine the path to the default configuration file
+    directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
+    default_config = os.path.join(directory, "config", classname + ".cfg")
+
+    # Open the default configuration if no configuration file is specified, otherwise adjust the default
+    # settings according to the user defined configuration file
+    if config is None: return open(default_config)
+    else: return open(config, default_config)
 
 # *****************************************************************
 
