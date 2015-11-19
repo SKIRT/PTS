@@ -81,6 +81,50 @@ class LogFile(object):
 
         return float(self.contents["Message"][len(self.contents)-1].split("Peak memory usage: ")[1].split(" GB")[0])
 
+    # -----------------------------------------------------------------
+
+    def packages(self, phase):
+
+        """
+        This function ...
+        :return:
+        """
+
+        ## Phase must be "stellar" or "dustem"
+
+        # Stellar emission phase
+        if phase == "stellar":
+
+            # Loop over the log entries
+            for i in range(len(self.contents)):
+
+                # Skip entries corresponding to other phases
+                if not self.contents["Phase"][i] == "stellar": continue
+
+                # Search for the line stating the number of photon packages
+                if "photon packages for each of" in self.contents["Message"][i]:
+
+                    # Return the number of stellar photon packages
+                    return int(self.contents["Message"][i].split("(")[1].split(" photon")[0])
+
+        # Dust emission phase
+        elif phase == "dustem":
+
+            # Loop over the log entries in reversed order
+            for i in reversed(range(len(self.contents))):
+
+                # Skip entries not corresponding to the dust emission phase
+                if not self.contents["Phase"][i] == "dust": continue
+
+                # Search for the line stating the number of photon packages
+                if "photon packages for each of" in self.contents["Message"][i]:
+
+                    # Return the number of dust emission photon packages
+                    return int(self.contents["Message"][i].split("(")[1].split(" photon")[0])
+
+        # Invalid option
+        else: raise ValueError("Phase must be either 'stellar' or 'dustem'")
+
 # -----------------------------------------------------------------
 
 def get_processes(table):

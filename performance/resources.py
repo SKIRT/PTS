@@ -17,8 +17,10 @@ import os
 import shutil
 
 # Import the relevant PTS modules
+from ..core.skifile import SkiFile
 from ..core.skirtexec import SkirtExec
 from ..core.parameters import SkirtParameters
+from ..extract.timeline import TimeLineExtractor
 
 # -----------------------------------------------------------------
 
@@ -44,6 +46,12 @@ class ResourceEstimator(object):
         # Create the SKIRT execution context
         self.skirt = SkirtExec("~/Development/SKIRT/release/SKIRTmain/skirt")
 
+        # Set the simulation instance to None initially
+        self.simulation = None
+
+        # Set the ski file instance to None initially
+        self.ski_file = None
+
         # Set the log file instance to None initially
         self.log_file = None
 
@@ -62,11 +70,16 @@ class ResourceEstimator(object):
         :return:
         """
 
+        # Adjust settings
+        self.ski_file = SkiFile(ski_path)
+        self.processes = processes
+        self.threads = threads
+
         # Make the temporary directory
         self.make_temp(ski_path)
 
-        # Set the parameters
-        self.set_parameters(ski_path, processes, threads)
+        # Set the parameters for the simulation
+        self.set_parameters()
 
         # Run the simulation
         self.simulate()
@@ -92,7 +105,7 @@ class ResourceEstimator(object):
 
     # -----------------------------------------------------------------
 
-    def set_parameters(self, ski_path, processes, threads):
+    def set_parameters(self):
 
         """
         This function ...
@@ -103,9 +116,9 @@ class ResourceEstimator(object):
         self.parameters = SkirtParameters()
 
         # Adjust the parameters
-        self.parameters.ski_pattern = ski_path
-        self.parameters.parallel.processes = processes
-        self.parameters.parallel.threads = threads
+        self.parameters.ski_pattern = self.ski_file.path
+        self.parameters.parallel.processes = self.processes
+        self.parameters.parallel.threads = self.threads
         self.parameters.output_path = self.temp_path
         self.parameters.emulate = True
         self.parameters.logging.verbose = False
@@ -123,10 +136,11 @@ class ResourceEstimator(object):
         """
 
         # Run SKIRT in emulation mode
-        simulation = self.skirt.run(self.parameters, silent=True)
+        self.simulation = self.skirt.run(self.parameters, silent=True)
 
-        # Get the simulation's log file
-        self.log_file = simulation.logfile()
+        # Get the simulation's ski file and log file
+        self.log_file = self.simulation.log_file
+        self.ski_file = self.simulation.ski_file
 
     # -----------------------------------------------------------------
 
@@ -150,7 +164,8 @@ class ResourceEstimator(object):
         :return:
         """
 
-        return self.log_file.peak_memory
+        # Assume each process consumes the same amount of memory
+        return self.log_file.peak_memory * self.processes
 
     # -----------------------------------------------------------------
 
@@ -162,7 +177,33 @@ class ResourceEstimator(object):
         :return:
         """
 
-        return None
+        # Create a TimeLineExtractor instance
+        extractor = TimeLineExtractor()
+        extractor.run(self.simulation)
+
+        # Determine the number of photon packages defined in the ski file
+        packages = self.ski_file.packages
+
+        # Calculate the rate of photon packages launched per second
+        rate = self.log_file.packages("stellar") / extractor.stellar
+
+        # Calculate the rate of photon pakcages launched per second without recording absorption
+        rate_noabsorption = self.log_file.packages("dustem") / extractor.dustem
+
+        # Estimate the walltime for the stellar emission phase
+        stellar_walltime = self.ski_file.packages / rate
+
+        # Estimate the walltime for the dust self-absorption phase
+        factors = [1./10., 1./3., 1.]
+        cycles = [3, 3, 3]  # this is a guess !!
+        total_pp = (factors[0] * cycles[0] + factors[1] * cycles[1] + factors[2] * cycles[2]) * packages
+        selfabs_walltime = total_pp * rate
+
+        # Estimate the walltime for the dust emission phase
+        dustem_walltime = self.ski_file.packages * self.ski_file.emission_boost / rate_noabsorption
+
+        # Return an estimation for the walltime
+        return extractor.duration_without(["stellar", "dust"]) + stellar_walltime + selfabs_walltime + dustem_walltime
 
 # -----------------------------------------------------------------
 

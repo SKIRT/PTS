@@ -134,7 +134,8 @@ class SkirtSimulation:
         return self.outfilepath("log.txt")
 
     ## This function returns a LogFile object created from the simulation's log file
-    def logfile(self):
+    @property
+    def log_file(self):
         return LogFile(self.outfilepath("log.txt"))
 
     # -----------------------------------------------------------------
@@ -200,6 +201,10 @@ class SkirtSimulation:
         if self._parameters==None:
             self._parameters = SkiFile(self.outfilepath("parameters.xml"))
         return self._parameters
+
+    @property
+    def skifile(self):
+        return self.parameters()
 
     ## This function returns a SkirtUnits object representing the default SKIRT units for this simulation.
     def units(self):

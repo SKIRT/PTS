@@ -10,7 +10,7 @@
 # An instance of the SkirtExec class in this module represents a particular SKIRT executable,
 # and allows invoking it with given command line arguments.
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
@@ -241,7 +241,7 @@ class FitSkirtExec(object):
 
         pass
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def mpi_present():
 

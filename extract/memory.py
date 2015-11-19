@@ -33,25 +33,36 @@ class MemoryExtractor(object):
         :return:
         """
 
-        ## Configuration
-
-        # ...
-
         ## Attributes
 
         self.table = None
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, output_path):
+    def run(self, simulation, output_path=None):
 
         """
         This function ...
         :return:
         """
 
-        # Obtain the log files and memory files created by the simulation
-        log_files = simulation.logfiles()
+        # Obtain the log files created by the simulation
+        self.log_files = simulation.logfiles()
+
+        # Perform the extraction
+        self.extract()
+
+        # Write the results
+        if output_path is not None: self.write(output_path)
+
+    # -----------------------------------------------------------------
+
+    def extract(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Initialize lists for the columns
         process_list = []
@@ -63,20 +74,20 @@ class MemoryExtractor(object):
 
         # Check whether allocation logging had been enabled for the simulation by looping over the entries of the first log file
         allocation_logging = False
-        for i in range(len(log_files[0].contents)):
+        for i in range(len(self.log_files[0].contents)):
 
             # Check whether memory (de)allocation is reported in this entry
-            if not allocation_logging and "GB at" in log_files[0].contents["Message"][i]:
+            if not allocation_logging and "GB at" in self.log_files[0].contents["Message"][i]:
                 allocation_logging = True
                 break
 
         # Loop over all log files to determine the earliest recorded time
         t0 = datetime.now()
-        for log_file in log_files:
+        for log_file in self.log_files:
             if log_file.t0 < t0: t0 = log_file.t0
 
         # Loop over the log files again and fill the column lists
-        for log_file in log_files:
+        for log_file in self.log_files:
 
             unique_ids = 0
             address_to_id = dict()
@@ -140,6 +151,15 @@ class MemoryExtractor(object):
         self.table["Simulation time"].unit = "s"
         self.table["Memory usage"].unit = "GB"
         self.table["Array (de)allocation"].unit = "GB"
+
+    # -----------------------------------------------------------------
+
+    def write(self, output_path):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Write the table to file
         self.table.write(output_path, format="ascii.commented_header")
