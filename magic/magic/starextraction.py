@@ -23,6 +23,8 @@ from ..core.masks import Mask
 from ..tools import configuration
 from ..tools import fitting
 from ..core import masks
+from ..core.frames import Frame
+from ..tools import interpolation
 
 # Import astronomical modules
 import aplpy
@@ -52,7 +54,7 @@ class StarExtractor(ObjectExtractor):
 
         ## Configuration
 
-        self.config = configuration.set("skyextractor", config)
+        self.config = configuration.set("starextractor", config)
 
         ## Base class
 
@@ -61,8 +63,7 @@ class StarExtractor(ObjectExtractor):
 
         ## Attributes
 
-        # Initialize an empty list for NOMAD stars
-        self.nomad_stars = []
+        self.segments = None
 
     # -----------------------------------------------------------------
 
@@ -107,6 +108,9 @@ class StarExtractor(ObjectExtractor):
 
         # If requested, find other sources in the frame
         if self.config.find_other: self.find_other_sources(galaxyextractor)
+
+        # If requested, save the mask of other sources
+        if self.config.save_other_segments: self.save_other_segments()
 
         # If requested, remove the other sources
         if self.config.remove_other: self.remove_other_sources()
@@ -262,62 +266,6 @@ class StarExtractor(ObjectExtractor):
 
         # Inform the user
         log.debug("Number of stars: " + str(len(self.objects)))
-
-    # -----------------------------------------------------------------
-
-    def compare_nomad_stars(self, frame):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the range of right ascension and declination of this image
-        center, ra_span, dec_span = frame.coordinate_range()
-
-        # Create a new Vizier object and set the row limit to -1 (unlimited)
-        viz = Vizier(keywords=["stars", "optical"])
-        viz.ROW_LIMIT = -1
-
-        # Query Vizier and obtain the resulting table
-        result = viz.query_region(center, width=ra_span, height=dec_span, catalog=["NOMAD"])
-        table = result[0]
-
-        for entry in table:
-
-            # Get the right ascension and the declination
-            position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
-
-            ra_error = entry["e_RAJ2000"]*u.mas
-            dec_error = entry["e_DEJ2000"]*u.mas
-
-            smallest_distance = float("inf")
-            ra_error_pixels_ucac = None
-            dec_error_pixels_ucac = None
-
-            # Loop over the stars found in the other catalog
-            for star in self.objects:
-
-                # Create a pixel position for the NOMAD star
-                x, y = position.to_pixel(frame.wcs, origin=0)
-                pixel_position = Position(x, y)
-
-                # Calculate the distance between the NOMAD star and the current other star
-                difference = pixel_position - star.pixel_position(frame.wcs)
-                distance = difference.norm
-
-                # Check whether this is the smallest distance encountered so far
-                if distance < smallest_distance:
-
-                    smallest_distance = distance
-                    ra_error_pixels_ucac = star.ra_error.to("arcsec") / frame.pixelscale
-                    dec_error_pixels_ucac = star.dec_error.to("arcsec") / frame.pixelscale
-
-            ra_error_pixels = ra_error.to("arcsec") / frame.pixelscale
-            dec_error_pixels = dec_error.to("arcsec") / frame.pixelscale
-
-            # Smallest distance
-            print(smallest_distance, ra_error_pixels, dec_error_pixels, ra_error_pixels_ucac, dec_error_pixels_ucac)
 
     # -----------------------------------------------------------------
 
@@ -586,10 +534,43 @@ class StarExtractor(ObjectExtractor):
         threshold = median + (3.0 * stddev)
 
         # Create a segmentation map from the frame
-        segments = detect_sources(self.frame, threshold, npixels=5, filter_kernel=self.kernel)
+        self.segments = detect_sources(self.frame, threshold, npixels=5, filter_kernel=self.kernel)
 
-        from ..tools import plotting
-        plotting.plot_box(segments)
+        # Write the segmentation map to file
+        Frame(self.segments).save("other_segments_first.fits")
+
+        # Eliminate the principal galaxy and companion galaxies from the segments
+        for galaxy in [galaxyextractor.principal] + galaxyextractor.companions:
+
+            # Obtain the galaxy's mask
+            galaxy_mask = galaxy.source.mask
+
+            # Check where it overlaps with the segments map
+            overlap = masks.intersection(self.segments, galaxy_mask)
+            where = overlap > 0
+            pixels_in_mask = np.sum(where)
+            index = int(np.sum(overlap) / pixels_in_mask)
+
+            # Remove the galaxy from the segmentation map
+            self.segments[self.segments == index] = 0
+
+        #from ..tools import plotting
+        #plotting.plot_box(segments)
+
+    # -----------------------------------------------------------------
+
+    def save_other_segments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the segmentation map of other sources to " + self.config.saving.other_segments_path)
+
+        # Save the segmentation map
+        Frame(self.segments).save(self.config.saving.other_segments_path)
 
     # -----------------------------------------------------------------
 
@@ -600,7 +581,12 @@ class StarExtractor(ObjectExtractor):
         :return:
         """
 
-        pass
+        # Interpolate over the segments
+        mask = self.segments > 0
+        data = interpolation.in_paint(self, mask)
+
+        # Saving
+        Frame(data).save("removed_other_segments.fits")
 
     # -----------------------------------------------------------------
 
@@ -884,8 +870,8 @@ class StarExtractor(ObjectExtractor):
         """
 
         # Create a Gaussian convolution kernel and return it
-        sigma = statistics.fwhm_to_sigma(self.fwhm)
-        return Gaussian2DKernel(sigma, x_size=4.0*sigma, y_size=4.0*sigma)
+        sigma = self.fwhm * statistics.fwhm_to_sigma
+        return Gaussian2DKernel(sigma)
 
     # -----------------------------------------------------------------
 

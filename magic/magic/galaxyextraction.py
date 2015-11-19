@@ -113,6 +113,28 @@ class GalaxyExtractor(ObjectExtractor):
 
     # -----------------------------------------------------------------
 
+    @property
+    def companions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list to contain the companion galaxies
+        companions = []
+
+        # Loop over the list of galaxies
+        for galaxy in self.objects:
+
+            # Check if it is a companion galaxy; if so, add it to the list
+            if galaxy.companion: companions.append(galaxy)
+
+        # Return the list of companion galaxies
+        return companions
+
+    # -----------------------------------------------------------------
+
     def fetch_galaxies(self):
 
         """
