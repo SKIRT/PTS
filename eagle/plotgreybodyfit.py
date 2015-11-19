@@ -74,11 +74,25 @@ def plotgreybodyfit(skirtrun):
     plt.xscale('log')
     plt.yscale('log')
 
-    # load and plot the SED
+    # load and plot the total SED
     filepath = simulation.seddatpaths()[0]
     lambdav, fluxv = np.loadtxt(arch.opentext(filepath), usecols=(0,1), unpack=True)
+    lambdav = simulation.convert(lambdav, to_unit='micron', quantity='wavelength')
+    fluxv = simulation.convert(fluxv, to_unit='Jy', quantity='fluxdensity', wavelength=lambdav)
     plot = (lambdav>=10) & (lambdav<=1000)
     plt.plot(lambdav[plot], fluxv[plot], color='b', label="SKIRT galaxy SED")
+
+    # load and plot the contributions from HII particles (stellar emission) and gas particles (dust emission)
+    # --> we do this inside a try block because these columns are not always available
+    try:
+        fstrdirv, fstrscav, ftotdusv = np.loadtxt(arch.opentext(filepath), usecols=(2,3,4), unpack=True)
+        fstrdirv = simulation.convert(fstrdirv, to_unit='Jy', quantity='fluxdensity', wavelength=lambdav)
+        fstrscav = simulation.convert(fstrscav, to_unit='Jy', quantity='fluxdensity', wavelength=lambdav)
+        ftotdusv = simulation.convert(ftotdusv, to_unit='Jy', quantity='fluxdensity', wavelength=lambdav)
+        plt.plot(lambdav[plot], fstrdirv[plot]+fstrscav[plot], color='c', ls="dashed", label="  contribution from HII regions")
+        plt.plot(lambdav[plot], ftotdusv[plot], color='y', ls="dashed", label="  contribution from other dust")
+    except:
+        pass
 
     # load and plot the Herschel continuum data points (160, 250, 350, 500 micron)
     info = { }

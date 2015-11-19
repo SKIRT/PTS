@@ -62,7 +62,7 @@ axistypes = {
     'fracMgas': ( r"$M_\mathrm{gas}/(M_*+M_\mathrm{gas})$", lambda: divide_if_positive(setup_mass_cold_gas,original_mass_stars+setup_mass_cold_gas) ),
     'logM/L': ( r"$\log_{10}(M_*/L_\mathrm{tot})\,[M_\odot/L_\odot]$",
         lambda: log_divide_if_positive(original_mass_stars,setup_luminosity_stars+setup_luminosity_hii_regions) ),
-    'Mgas/Mhii': ( r"$M_\mathrm{HII}/M_\mathrm{gas}$", lambda: divide_if_positive(setup_mass_cold_gas,setup_mass_hii_regions) ),
+    'Mgas/Mhii': ( r"$M_\mathrm{gas}/M_\mathrm{HII}$", lambda: divide_if_positive(setup_mass_cold_gas,setup_mass_hii_regions) ),
 
     # magnitudes and colors
     'g': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g ),
@@ -78,7 +78,7 @@ axistypes = {
     'fmax': ( r"$f_{\nu,\mathrm{max}}\,[\mathrm{kJy}]$",
         lambda: np.maximum(instr_xy_fluxdensity_maximum,instr_xz_fluxdensity_maximum,instr_yz_fluxdensity_maximum)/1e3 ),
 
-    # ratios of flux densities (Jy/Jy)
+    # ratios of flux densities using unlimited continuum fluxes (Jy/Jy)
     'logf250/f500': ( r"$\log_{10}(f_{250}/f_{500})$",
         lambda: log_divide_if_positive(instr_fluxdensity_spire_psw_continuum,instr_fluxdensity_spire_plw_continuum) ),
     'logf250/fNUV': ( r"$f_{250}/f_\mathrm{NUV}$",
@@ -89,6 +89,14 @@ axistypes = {
         lambda: divide_if_positive(instr_fluxdensity_spire_psw_continuum,instr_fluxdensity_spire_plw_continuum) ),
     'f350/f500': ( r"$f_{350}/f_{500}$",
         lambda: divide_if_positive(instr_fluxdensity_spire_pmw_continuum,instr_fluxdensity_spire_plw_continuum) ),
+
+    # ratios of flux densities using limited continuum fluxes (Jy/Jy)
+    'f250/f350.lim': ( r"$f_{250,\mathrm{lim}}/f_{350,\mathrm{lim}}$",
+        lambda: divide_if_positive(instr_fluxdensity_spire_psw_limited,instr_fluxdensity_spire_pmw_limited) ),
+    'f250/f500.lim': ( r"$f_{250,\mathrm{lim}}/f_{500,\mathrm{lim}}$",
+        lambda: divide_if_positive(instr_fluxdensity_spire_psw_limited,instr_fluxdensity_spire_plw_limited) ),
+    'f350/f500.lim': ( r"$f_{350,\mathrm{lim}}/f_{500,\mathrm{lim}}$",
+        lambda: divide_if_positive(instr_fluxdensity_spire_pmw_limited,instr_fluxdensity_spire_plw_limited) ),
 
     # luminosities in specific bands
     'logLk': ( r"$\log_{10}(L_\mathrm{K})\,[L_{\odot,\mathrm{K}}]$",
@@ -107,7 +115,8 @@ axistypes = {
 
     # observationally derived mass properties
     'logMstar.zib': ( r"$\log_{10}(M_{*,\mathrm{zib}})\,[M_\odot]$", lambda: log_stellar_mass_as_zibetti() ),
-    'logMdust.fit': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit}})\,[M_\odot]$", lambda: log_dust_mass_from_grey_body_fit() ),
+    'logMdust.fit': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit}})\,[M_\odot]$", lambda: log_dust_mass_from_grey_body_fit("continuum") ),
+    'logMdust.fit.lim': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit},\mathrm{lim}})\,[M_\odot]$", lambda: log_dust_mass_from_grey_body_fit("limited") ),
     'logMdust.cort': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{cort}})\,[M_\odot]$", lambda: log_dust_mass_as_cortese() ),
     'logMdust.grid': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{grid}})\,[M_\odot]$", lambda: log_dust_mass_from_grid_temperature() ),
     'logMdust.fit/Mstar.zib': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit}}/M_{*,\mathrm{zib}})$",
@@ -116,7 +125,8 @@ axistypes = {
         lambda: log_dust_mass_as_cortese() - log_stellar_mass_as_zibetti() ),
 
     # dust temperature
-    'Tdust.fit': ( r"$T_{\mathrm{dust},\mathrm{fit}}\,[\mathrm{K}]$", lambda: dust_temperature_from_grey_body_fit() ),
+    'Tdust.fit': ( r"$T_{\mathrm{dust},\mathrm{fit}}\,[\mathrm{K}]$", lambda: dust_temperature_from_grey_body_fit("continuum") ),
+    'Tdust.fit.lim': ( r"$T_{\mathrm{dust},\mathrm{fit},\mathrm{lim}}\,[\mathrm{K}]$", lambda: dust_temperature_from_grey_body_fit("limited") ),
     'Tdust.grid': ( r"$T_{\mathrm{dust},\mathrm{grid}}\,[\mathrm{K}]$", lambda: probe_average_temperature_dust ),
 }
 
@@ -192,17 +202,18 @@ def greybody(wave, T, M):
 
 # returns the Herschel 160, 250, 350, 500 data points as a tuple (N, waves, fluxes, sigmas)
 # with shapes (), (4,) (4, N) (4,) where N is the number of galaxies in the collection
-def herschel_data():
+def herschel_data(fluxtype):
     waves = np.array( [ Filter(fs).pivotwavelength() for fs in ("Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW")] )
-    fluxes = np.array(( instr_fluxdensity_pacs_red_continuum, instr_fluxdensity_spire_psw_continuum,
-                        instr_fluxdensity_spire_pmw_continuum, instr_fluxdensity_spire_plw_continuum ))
+    fluxstring = '''( instr_fluxdensity_pacs_red_{0}, instr_fluxdensity_spire_psw_{0},
+                      instr_fluxdensity_spire_pmw_{0}, instr_fluxdensity_spire_plw_{0} )'''.format(fluxtype)
+    fluxes = np.array(eval(fluxstring))
     sigmas = np.array(( 3,1,1,3 ))      # pacs is less sensitive; longer wavelength fluxes are harder to measure
     return fluxes.shape[1], waves, fluxes, sigmas
 
 # returns temperature T (K) for best fit with Herschel 160, 250, 350, 500 data points
 # using beta and kappa as set by the greybody() function above
-def dust_temperature_from_grey_body_fit():
-    N, waves, fluxes, sigmas = herschel_data()
+def dust_temperature_from_grey_body_fit(fluxtype="continuum"):
+    N, waves, fluxes, sigmas = herschel_data(fluxtype)
     T = np.zeros(N)
     for i in range(N):
         if fluxes[-1,i]>0:
@@ -212,8 +223,8 @@ def dust_temperature_from_grey_body_fit():
 # dust mass M (Msun) for best fit with Herschel 160, 250, 350, 500 data points
 # using beta and kappa as set by the greybody() function above
 # returns log10 of dust mass in solar units
-def log_dust_mass_from_grey_body_fit():
-    N, waves, fluxes, sigmas = herschel_data()
+def log_dust_mass_from_grey_body_fit(fluxtype="continuum"):
+    N, waves, fluxes, sigmas = herschel_data(fluxtype)
     M = np.zeros(N)
     for i in range(N):
         if fluxes[-1,i]>0:
