@@ -554,10 +554,11 @@ class Galaxy:
                 hiiregions['P']     = sdat['P'][idxs][isinfant] * 0.1   # Convert to Pa for output
                 hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
                 hiiregions['h_mapp']  = (ms[isinfant] / (sdat['rho_born'][idxs][isinfant] * densconv))**(1/3.)
-                hiiregions['fPDR']  = 1 - (ts[isinfant]/1e7)            # Covering fraction goes from 1 to 0 over HII region lifetime
+                #hiiregions['fPDR']  = 1 - (ts[isinfant]/1e7)            # Covering fraction goes from 1 to 0 over HII region lifetime
+                hiiregions['fPDR']  = 0.2                               # Covering fraction is set to fiducial constant value
 
                 # randomly shift the positions of the HII regions
-                sf.stochShiftPos(hiiregions['r'], hiiregions['h'], hiiregions['h_mapp'])
+                #sf.stochShiftPos(hiiregions['r'], hiiregions['h'], hiiregions['h_mapp'])
 
                 # append to MAPPINGSIII array
                 mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
@@ -603,10 +604,11 @@ class Galaxy:
                 hiiregions['P']     = gdat['P'][idxs][isinfant] * 0.1     # convert to Pa
                 hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
                 hiiregions['h_mapp'] = (ms[isinfant] / (gdat['rho'][idxs][isinfant] * densconv))**(1/3.)
-                hiiregions['fPDR']  = 1 - (ts[isinfant]/1e7)            # Covering fraction goes from 1 to 0 over HII region lifetime
+                #hiiregions['fPDR']  = 1 - (ts[isinfant]/1e7)            # Covering fraction goes from 1 to 0 over HII region lifetime
+                hiiregions['fPDR']  = 0.2                               # Covering fraction is set to fiducial constant value
 
                 # randomly shift the positions of the HII regions
-                sf.stochShiftPos(hiiregions['r'], hiiregions['h'], hiiregions['h_mapp'])
+                #sf.stochShiftPos(hiiregions['r'], hiiregions['h'], hiiregions['h_mapp'])
 
                 # append to MAPPINGSIII array
                 mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
