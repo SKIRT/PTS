@@ -28,8 +28,8 @@ from __future__ import absolute_import, division, print_function
 import sys
 
 # Import the relevant PTS modules
-from ..pts.skirtsimulation import createsimulations
-from ..misc.makeflybymovie import makeflybymovie
+from pts.simulation import createsimulations
+from misc.makeflybymovie import makeflybymovie
 
 # -----------------------------------------------------------------
 

@@ -19,7 +19,7 @@ import argparse
 from datetime import datetime
 
 # Import relevant PTS modules
-from ..modeling.galaxymodeler import GalaxyModeler
+from modeling.galaxymodeler import GalaxyModeler
 
 # *****************************************************************
 

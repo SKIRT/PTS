@@ -16,8 +16,8 @@ from __future__ import absolute_import, division, print_function
 import os
 
 # Import the relevant PTS modules
-from pts.skirtsimulation import createsimulations
-from performance.plotprogress import plotprogress
+from pts.simulation import createsimulations
+#from performance.plotprogress import plotprogress
 
 # -----------------------------------------------------------------
 

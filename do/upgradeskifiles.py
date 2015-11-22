@@ -31,7 +31,7 @@ import os.path
 import sys
 
 # Import the relevant PTS modules
-from ..pts.upgradeskifile import upgradeskifile
+from pts.upgradeskifile import upgradeskifile
 
 # -----------------------------------------------------------------
 

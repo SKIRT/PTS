@@ -22,15 +22,6 @@
 
 # -----------------------------------------------------------------
 
-# a value of None means that the axis is autoscaled;
-# alternatively specify a range through a tuple with min and max values
-xlim = None
-ylim = None
-#xlim = ( 5e-2, 1e3 )
-#ylim = ( 1e-13, 1e-9 )
-
-# -----------------------------------------------------------------
-
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
@@ -38,8 +29,17 @@ from __future__ import absolute_import, division, print_function
 import sys
 
 # Import the relevant PTS modules
-from ..pts.skirtsimulation import createsimulations
-from ..plotting.seds import plotseds
+from pts.simulation import createsimulations
+from plotting.seds import plotseds
+
+# -----------------------------------------------------------------
+
+# a value of None means that the axis is autoscaled;
+# alternatively specify a range through a tuple with min and max values
+xlim = None
+ylim = None
+#xlim = ( 5e-2, 1e3 )
+#ylim = ( 1e-13, 1e-9 )
 
 # -----------------------------------------------------------------
 

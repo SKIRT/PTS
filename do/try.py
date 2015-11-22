@@ -19,8 +19,8 @@ from __future__ import absolute_import, division, print_function
 import sys
 import os.path
 
-# Import relevant pts modules
-from ..pts import skifile
+# Import relevant PTS modules
+from pts import skifile
 
 # -----------------------------------------------------------------
 

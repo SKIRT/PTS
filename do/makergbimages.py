@@ -20,13 +20,6 @@
 
 # -----------------------------------------------------------------
 
-# the wavelengths for each of the RGB images to be created
-wavelength_tuples = None                                    # use the default frames
-#wavelength_tuples=((0.75,0.60,0.45),)                       # use approximate SDSS gri wavelengths
-#wavelength_tuples = [ (0.77,0.55,0.33), (333,100,24) ]      # use these arbitrary wavelength sets
-
-# -----------------------------------------------------------------
-
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
@@ -34,8 +27,15 @@ from __future__ import absolute_import, division, print_function
 import sys
 
 # Import the relevant PTS modules
-from ..pts.skirtsimulation import createsimulations
-from ..misc.makergbimages import makergbimages
+from pts.simulation import createsimulations
+from misc.makergbimages import makergbimages
+
+# -----------------------------------------------------------------
+
+# the wavelengths for each of the RGB images to be created
+wavelength_tuples = None                                    # use the default frames
+#wavelength_tuples=((0.75,0.60,0.45),)                       # use approximate SDSS gri wavelengths
+#wavelength_tuples = [ (0.77,0.55,0.33), (333,100,24) ]      # use these arbitrary wavelength sets
 
 # -----------------------------------------------------------------
 

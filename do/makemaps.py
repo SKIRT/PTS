@@ -17,7 +17,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import relevant PTS modules
-from ..modeling.mapmaker import MapMaker
+from modeling.mapmaker import MapMaker
 
 # *****************************************************************
 

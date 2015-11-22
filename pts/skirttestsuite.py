@@ -27,7 +27,7 @@ import multiprocessing
 import pyfits
 
 # Import relevant PTS modules
-from pts.skirtsimulation import SkirtSimulation
+from pts.simulation import SkirtSimulation
 from pts.skirtexec import SkirtExec
 from pts.log import Log
 

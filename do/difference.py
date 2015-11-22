@@ -25,7 +25,7 @@ import os.path
 import filecmp
 
 # Import the relevant PTS modules
-from ..pts.skirttestsuite import equalfiles
+from pts.skirttestsuite import equalfiles
 
 # -----------------------------------------------------------------
 

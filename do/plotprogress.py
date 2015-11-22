@@ -34,7 +34,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS modules
-from ..plotting.progress import ProgressPlotter
+from plotting.progress import ProgressPlotter
 
 # Import astronomical modules
 from astropy import log

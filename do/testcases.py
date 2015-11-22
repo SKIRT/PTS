@@ -25,7 +25,7 @@ import sys
 import argparse
 
 # Import the relevant PTS class
-from ..pts.skirttestsuite import SkirtTestSuite
+from pts.skirttestsuite import SkirtTestSuite
 
 # -----------------------------------------------------------------
 

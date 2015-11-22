@@ -16,7 +16,7 @@
 import os
 import os.path
 import eagle.config as config
-from pts.skirtsimulation import SkirtSimulation
+from pts.simulation import SkirtSimulation
 from pts.skirtexec import SkirtExec
 
 # -----------------------------------------------------------------

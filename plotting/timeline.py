@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 
 # Import relevant PTS modules
 from ..pts.log import Log
-from ..pts.skirtsimulation import createsimulations
+from ..pts.simulation import createsimulations
 
 # -----------------------------------------------------------------
 

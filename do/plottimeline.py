@@ -18,7 +18,7 @@ import os
 import argparse
 
 # Import relevant PTS modules
-from ..plotting.timeline import TimelinePlotter
+from plotting.timeline import TimelinePlotter
 
 # -----------------------------------------------------------------
 

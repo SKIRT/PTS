@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Import the relevant PTS modules
-from ..pts.rgbimage import RGBImage
+from pts.rgbimage import RGBImage
 
 # *****************************************************************
 

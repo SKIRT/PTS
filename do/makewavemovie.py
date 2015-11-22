@@ -23,6 +23,18 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
+import sys
+
+# Import relevant PTS modules
+from pts.simulation import createsimulations
+from misc.makewavemovie import makewavemovie
+
+# -----------------------------------------------------------------
+
 # a value of None means that the axis is autoscaled;
 # alternatively specify a range through a tuple with min and max values
 xlim = None
@@ -34,18 +46,6 @@ ylim = None
 # loaded from the fits files; the default values are 30 and 100 respectively
 from_percentile = 30
 to_percentile = 100
-
-# -----------------------------------------------------------------
-
-# Ensure Python 3 compatibility
-from __future__ import absolute_import, division, print_function
-
-# Import standard modules
-import sys
-
-# Import relevant PTS modules
-from ..pts.skirtsimulation import createsimulations
-from ..misc.makewavemovie import makewavemovie
 
 # -----------------------------------------------------------------
 

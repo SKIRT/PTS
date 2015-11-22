@@ -159,7 +159,7 @@ if vistype=='particles':
 
 # build RGB images
 if vistype=='rgbimages':
-    from pts.makergbimages import makeintegratedrgbimages
+    from misc.makergbimages import makeintegratedrgbimages
     from pts.filter import Filter
     print "Building RGB images for {} SKIRT-runs".format(len(skirtruns))
     filterR = Filter('SDSS.i')
@@ -180,7 +180,7 @@ if vistype=='rgbimages':
 
 # build SED plots for each SKIRT-run
 if vistype=='seds':
-    from pts.plotseds import plotseds
+    from plotting.seds import plotseds
     print "Building SED plots for {} SKIRT-runs".format(len(skirtruns))
     for skirtrun in skirtruns:
         print "Building SED plot for SKIRT-run {}...".format(skirtrun.runid())
@@ -201,7 +201,7 @@ if vistype=='temperature':
 
 # build wavelength movies for each SKIRT-run
 if vistype=='wavemovie':
-    from pts.makewavemovie import makewavemovie
+    from misc.makewavemovie import makewavemovie
     print "Building wavelength movies for {} SKIRT-runs".format(len(skirtruns))
     for skirtrun in skirtruns:
         print "Building wavelength movie for SKIRT-run {}...".format(skirtrun.runid())
