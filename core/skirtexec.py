@@ -41,7 +41,7 @@ class SkirtExec:
     def __init__(self, path="", log="", mpi_style="generic"):
 
         # Set the SKIRT path
-        self._path = path
+        self._path = path if path is not None else ""
         if not self._path.endswith("skirt"): self._path = os.path.join(self._path, "skirt")
         if self._path != "skirt": self._path = os.path.realpath(os.path.expanduser(self._path))
 

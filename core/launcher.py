@@ -63,7 +63,7 @@ class SkirtLauncher(object):
         ## Attributes
 
         # Create the SKIRT execution context
-        self.skirt = SkirtExec("~/Development/SKIRT/release/SKIRTmain/skirt")
+        self.skirt = SkirtExec()
 
         # Set the simulation instance to None initially
         self.simulation = None
