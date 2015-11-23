@@ -170,11 +170,12 @@ class Star(SkyObject):
 
     # -----------------------------------------------------------------
 
-    def remove(self, frame, config, default_fwhm):
+    def remove(self, frame, mask, config, default_fwhm):
 
         """
         This function removes the star from a given frame
         :param frame:
+        :param mask:
         :return:
         """
 
@@ -211,6 +212,9 @@ class Star(SkyObject):
             # Replace the frame with the subtracted box
             subtracted.replace(frame, where=source.mask)
 
+            # Update the mask
+            mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
+
         # If a segment was found that can be identified with a source
         elif self.has_source or config.remove_if_undetected:
 
@@ -245,9 +249,12 @@ class Star(SkyObject):
             # Replace the frame with the estimated background
             source.background.replace(frame, where=source.mask)
 
+            # Update the mask
+            mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
+
     # -----------------------------------------------------------------
 
-    def remove_saturation(self, frame, config, default_fwhm):
+    def remove_saturation(self, frame, mask, config, default_fwhm):
 
         """
         This function ...
@@ -293,6 +300,9 @@ class Star(SkyObject):
 
             # Replace the frame with the estimated background
             self.source.background.replace(frame, where=self.source.mask)
+
+            # Update the mask
+            mask[self.source.cutout.y_slice, self.source.cutout.x_slice] += self.source.mask
 
             # Indicate that a saturation source was found
             return True

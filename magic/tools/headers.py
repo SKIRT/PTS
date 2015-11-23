@@ -12,7 +12,7 @@ import numpy as np
 import math
 
 # Import PTS modules
-from pts.core.filter import Filter
+from pts.filter import Filter
 
 # Import astronomical modules
 import astropy.wcs as pywcs

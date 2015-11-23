@@ -8,8 +8,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import ABCMeta
-from abc import abstractmethod
 import numpy as np
 import copy
 
@@ -23,7 +21,6 @@ from ..core.vector import Position, Extent
 from astropy import log
 import astropy.logger
 import pyregion
-from astropy.io import ascii
 import astropy.units as u
 from astropy.coordinates import Angle
 
@@ -34,8 +31,6 @@ class ObjectExtractor(object):
     """
     This class ...
     """
-
-    __metaclass__ = ABCMeta
 
     # -----------------------------------------------------------------
 
@@ -56,6 +51,9 @@ class ObjectExtractor(object):
         # Set the frame to None
         self.frame = None
 
+        # Set the mask to None
+        self.mask = None
+
     # -----------------------------------------------------------------
 
     def setup(self, frame):
@@ -70,6 +68,9 @@ class ObjectExtractor(object):
         # Set-up the logging system
         log.setLevel(self.config.logging.level)  # the logging level
         if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
+
+        # Create a mask with shape equal to the shape of the frame
+        self.mask = Mask(np.zeros_like(self.frame))
 
     # -----------------------------------------------------------------
 
@@ -89,50 +90,9 @@ class ObjectExtractor(object):
         # Clear the list of manual sources
         self.manual_sources = []
 
-        # Clear the frame
+        # Clear the frame and the mask
         self.frame = None
-
-    # -----------------------------------------------------------------
-
-    def find_sources(self):
-
-        """
-        This function ...
-        :param frame:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Looking for sources near the object positions")
-
-        # Loop over all sky objects in the list
-        for skyobject in self.objects:
-
-            # If this sky object should be ignored, skip it
-            if skyobject.ignore: continue
-
-            # Find a source
-            try:
-                skyobject.find_source(self.frame, self.config.detection)
-
-            except Exception as e:
-
-                #import traceback
-
-                log.error("Error when finding source")
-                #print(type(e))
-                #print(e)
-                #traceback.print_exc()
-
-                if self.config.plot_track_record_if_exception:
-
-                    if skyobject.has_track_record: skyobject.track_record.plot()
-                    else: log.warning("Track record is not enabled")
-
-                log.error("Continuing with next source")
-
-        # Inform the user
-        log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.objects), self.have_source/len(self.objects)*100.0))
+        self.mask = None
 
     # -----------------------------------------------------------------
 
@@ -278,7 +238,7 @@ class ObjectExtractor(object):
 
     # -----------------------------------------------------------------
 
-    def save_table(self):
+    def write_table(self):
 
         """
         This function ...
@@ -286,46 +246,32 @@ class ObjectExtractor(object):
         """
 
         # Inform the user
-        log.info("Saving table to " + self.config.saving.table_path)
+        log.info("Writing table to " + self.config.writing.table_path)
 
         # Write the table to file
-        ascii.write(self.table, self.config.saving.table_path)
+        self.table.write(self.config.writing.table_path, format="ascii.commented_header")
 
     # -----------------------------------------------------------------
 
-    def save_region(self):
+    def write_masked_frame(self):
 
         """
         This function ...
         """
 
         # Inform the user
-        log.info("Saving region to " + self.config.saving.region_path)
-
-        # Call the function in one of the derived class that implements this behaviour
-        self.write_region(self.config.saving.region_path, self.config.saving.region_annotation)
-
-    # -----------------------------------------------------------------
-
-    def save_masked_frame(self):
-
-        """
-        This function ...
-        """
-
-        # Inform the user
-        log.info("Saving masked frame to " + self.config.saving.masked_frame_path)
+        log.info("Writing masked frame to " + self.config.writing.masked_frame_path)
 
         # Create a frame where the objects are masked
-        frame = copy.deepcopy(self.frame)
+        frame = self.frame.copy()
         frame[self.mask] = 0.0
 
-        # Save the masked frame
-        frame.save(self.config.saving.masked_frame_path)
+        # Write out the masked frame
+        frame.save(self.config.writing.masked_frame_path)
 
     # -----------------------------------------------------------------
 
-    def save_result(self):
+    def write_result(self):
 
         """
         This function ...
@@ -333,10 +279,10 @@ class ObjectExtractor(object):
         """
 
         # Inform the user
-        log.info("Saving resulting frame to " + self.config.saving.result_path)
+        log.info("Writing resulting frame to " + self.config.writing.result_path)
 
-        # Save the resulting frame
-        self.frame.save(self.config.saving.result_path)
+        # Write out the resulting frame
+        self.frame.save(self.config.writing.result_path)
 
     # -----------------------------------------------------------------
 

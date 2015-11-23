@@ -148,32 +148,8 @@ class Source(object):
         if sigma_clip: mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
         else: mask = self.mask
 
-        # Fit a polynomial ...
-        if method == "polynomial":
-            try:
-                self.background = self.cutout.fit_polynomial(3, mask=mask)
-            except TypeError:
-                plotting.plot_box(np.ma.masked_array(self.cutout, mask=mask))
-                mask = mask.eroded(2, 1)
-                plotting.plot_box(np.ma.masked_array(self.cutout, mask=mask))
-                self.background = self.cutout.fit_polynomial(3, mask=mask)
-
-        # Interpolate ...
-        elif method == "local_mean": self.background = self.cutout.interpolate(mask)
-
-        # Calculate the mean
-        elif method == "mean":
-
-            mean = np.ma.mean(np.ma.masked_array(self.cutout, mask=mask))
-            self.background = self.cutout.full(mean)
-
-        # Calculate the median
-        elif method == "median":
-
-            median = np.ma.median(np.ma.masked_array(self.cutout, mask=mask))
-            self.background = self.cutout.full(median)
-
-        else: raise ValueError("Unknown background estimation method")
+        # Perform the interpolation
+        self.background = self.cutout.interpolated(mask, method)
 
     # -----------------------------------------------------------------
 

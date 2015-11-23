@@ -245,11 +245,12 @@ class Galaxy(SkyObject):
 
     # -----------------------------------------------------------------
 
-    def remove(self, frame, config):
+    def remove(self, frame, mask, config):
 
         """
         This function ...
         :param frame:
+        :param mask:
         :param config:
         :return:
         """
@@ -262,6 +263,9 @@ class Galaxy(SkyObject):
 
             # Replace the frame with the estimated background
             self.source.background.replace(frame, where=self.source.mask)
+
+            # Update the mask
+            mask[self.source.cutout.y_slice, self.source.cutout.x_slice] += self.source.mask
 
     # -----------------------------------------------------------------
 

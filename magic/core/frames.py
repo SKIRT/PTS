@@ -21,6 +21,7 @@ from ..tools import transformations
 from .vector import Position
 from ..tools import interpolation
 from ..tools import headers
+from ..tools import fitting
 
 # Import astronomical modules
 from astropy import log
@@ -536,7 +537,25 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def interpolate(self, mask):
+    def fit_polynomial(self, order, mask=None):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Do the fitting
+        polynomial = fitting.fit_polynomial(self, order, mask=mask)
+
+        # Evaluate the polynomial
+        data = fitting.evaluate_model(polynomial, 0, self.xsize, 0, self.ysize)
+
+        # Return a new Frame
+        return Frame(data, self.wcs, self.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+
+    # -----------------------------------------------------------------
+
+    def interpolated(self, mask, method):
 
         """
         This function ...
@@ -544,11 +563,37 @@ class Frame(np.ndarray):
         :return:
         """
 
-        # Calculate the interpolated data
-        data = interpolation.in_paint(self, mask)
+        # Fit a polynomial to the data
+        if method == "polynomial":
+            try:
+                return self.fit_polynomial(3, mask=mask)
+            except TypeError:
+                mask = mask.eroded(2, 1)
+                return self.fit_polynomial(3, mask=mask)
 
-        # Return a new box
-        return Frame(data, self.wcs, self.pixelscale, self.description, unit=self.unit)
+        # Interpolate using the local mean method
+        elif method == "local_mean":
+
+            # Calculate the interpolated data
+            data = interpolation.in_paint(self, mask)
+
+            # Return a new Frame
+            return Frame(data, self.wcs, self.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+
+        # Calculate the mean value of the data
+        elif method == "mean":
+
+            mean = np.ma.mean(np.ma.masked_array(self, mask=mask))
+            return self.full(mean)
+
+        # Calculate the median value of the data
+        elif method == "median":
+
+            median = np.ma.median(np.ma.masked_array(self, mask=mask))
+            return self.full(median)
+
+        # Invalid option
+        else: raise ValueError("Unknown interpolation method")
 
     # -----------------------------------------------------------------
 

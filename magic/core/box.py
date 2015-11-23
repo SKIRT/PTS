@@ -220,6 +220,20 @@ class Box(np.ndarray):
 
     # -----------------------------------------------------------------
 
+    @property
+    def x_slice(self):
+
+        return slice(self.x_min, self.x_max)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_slice(self):
+
+        return slice(self.y_min, self.y_max)
+
+    # -----------------------------------------------------------------
+
     def rel_position(self, position):
 
         """
@@ -339,18 +353,46 @@ class Box(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def interpolate(self, mask=None):
+    def interpolated(self, mask, method):
 
         """
         This function ...
         :return:
         """
 
-        # Calculate the interpolated data
-        data = interpolation.in_paint(self, mask)
+        # Fit a polynomial to the data
+        if method == "polynomial":
+            try:
+                return self.fit_polynomial(3, mask=mask)
+            except TypeError:
+                #plotting.plot_box(np.ma.masked_array(self.cutout, mask=mask))
+                mask = mask.eroded(2, 1)
+                #plotting.plot_box(np.ma.masked_array(self.cutout, mask=mask))
+                return self.fit_polynomial(3, mask=mask)
 
-        # Return a new box
-        return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
+        # Interpolate using the local mean method
+        elif method == "local_mean":
+
+            # Calculate the interpolated data
+            data = interpolation.in_paint(self, mask)
+
+            # Create and return a new box
+            return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
+
+        # Calculate the mean value of the data
+        elif method == "mean":
+
+            mean = np.ma.mean(np.ma.masked_array(self, mask=mask))
+            return self.full(mean)
+
+        # Calculate the median value of the data
+        elif method == "median":
+
+            median = np.ma.median(np.ma.masked_array(self, mask=mask))
+            return self.full(median)
+
+        # Invalid option
+        else: raise ValueError("Unknown interpolation method")
 
     # -----------------------------------------------------------------
 
