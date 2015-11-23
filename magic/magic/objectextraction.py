@@ -9,17 +9,16 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
-import copy
 
 # Import Astromagic modules
 from ..core.masks import Mask
 from ..core.regions import ellipse_parameters
 from ..core.source import Source
 from ..core.vector import Position, Extent
+from ..tools import logging
 
 # Import astronomical modules
 from astropy import log
-import astropy.logger
 import pyregion
 import astropy.units as u
 from astropy.coordinates import Angle
@@ -67,7 +66,7 @@ class ObjectExtractor(object):
 
         # Set-up the logging system
         log.setLevel(self.config.logging.level)  # the logging level
-        if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
+        if self.config.logging.path is not None: logging.link_file_log(log, self.config.logging.path, self.config.logging.level)
 
         # Create a mask with shape equal to the shape of the frame
         self.mask = Mask(np.zeros_like(self.frame))

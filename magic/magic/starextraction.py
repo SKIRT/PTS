@@ -160,6 +160,8 @@ class StarExtractor(ObjectExtractor):
         # If requested, remove the other sources
         if self.config.remove_other: self.remove_other_sources()
 
+        self.frame.save("testframe.fits")
+
     # -----------------------------------------------------------------
 
     def fetch_stars(self):
@@ -678,7 +680,10 @@ class StarExtractor(ObjectExtractor):
 
         # Interpolate over the segments
         mask = self.segments > 0
-        self.frame = self.frame.interpolated(mask, "local_mean")
+        interpolated = self.frame.interpolated(mask, "local_mean")
+
+        # Adapt the frame
+        self.frame[mask] = interpolated[mask]
 
         # Update the mask
         self.mask[mask] = True

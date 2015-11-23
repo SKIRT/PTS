@@ -21,10 +21,10 @@ from ..tools import interpolation
 from ..tools import configuration
 from ..core.frames import Frame
 from ..tools import plotting
+from ..tools import logging
 
 # Import astronomical modules
 from astropy import log
-import astropy.logger
 
 # -----------------------------------------------------------------
 
@@ -52,7 +52,7 @@ class SkyExtractor(object):
         log.setLevel(self.config.logging.level)
 
         # Set log file path
-        if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
+        if self.config.logging.path is not None: logging.link_file_log(log, self.config.logging.path, self.config.logging.level)
 
         ## Attributes
 
@@ -81,6 +81,42 @@ class SkyExtractor(object):
         :return:
         """
 
+        # Call the setup function
+        self.setup(frame, galaxyextractor, starextractor)
+
+        # Set the extra mask
+        if self.config.extra_region is not None: self.set_extra_mask()
+
+        # Perform sigma-clipping
+        if self.config.sigma_clip_mask: self.sigma_clip_mask()
+
+        # Write out a histogram of the sky pixels
+        if self.config.write_histogram: self.save_histogram()
+
+        # If requested, write out the frame where the galaxies and stars are masked
+        if self.config.write_masked_frame: self.save_masked_frame()
+
+        # If requested, write out the frame where pixels covered by the sigma-clipped mask are zero
+        if self.config.write_clipped_masked_frame: self.write_clipped_masked_frame()
+
+        # If requested, estimate the sky
+        if self.config.estimate: self.estimate()
+
+        # If requested, subtract the sky
+        if self.config.subtract: self.subtract()
+
+        # Write out the results
+        self.write()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, frame, galaxyextractor, starextractor=None):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Make a local reference to the frame
         self.frame = frame
 
@@ -90,26 +126,16 @@ class SkyExtractor(object):
         # Set the star mask
         if starextractor is not None: self.star_mask = starextractor.mask
 
-        # Set the extra mask
-        if self.config.extra_region is not None: self.set_extra_mask()
+    # -----------------------------------------------------------------
 
-        # Sigma-clipping
-        if self.config.sigma_clip_mask: self.sigma_clip_mask()
+    def write(self):
 
-        # Save histogram
-        if self.config.save_histogram: self.save_histogram()
+        """
+        This function ...
+        :return:
+        """
 
-        # If requested, save the frame where the galaxies and stars are masked
-        if self.config.save_masked_frame: self.save_masked_frame()
-
-        # If requested, save the frame where pixels covered by the sigma-clipped mask are zero
-        if self.config.save_clipped_masked_frame: self.save_clipped_masked_frame()
-
-        # If requested, estimate the sky
-        if self.config.estimate: self.estimate()
-
-        # If requested, subtract the sky
-        if self.config.subtract: self.subtract()
+        pass
 
     # -----------------------------------------------------------------
 
