@@ -346,7 +346,7 @@ class StarExtractor(object):
                 self.stars.append(star)
 
         # Inform the user
-        if self.galaxyextractor is not None: log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
+        if self.galaxyextractor is not None: self.log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
 
         # Inform the user
         self.log.debug("Number of stars: " + str(len(self.stars)))
@@ -677,14 +677,12 @@ class StarExtractor(object):
             # Determine the mask that covers the principal and companion galaxies
             galaxy_mask = self.galaxyextractor.principal_mask + self.galaxyextractor.companion_mask
 
-            print(galaxy_mask)
-
             # Check where the galaxy mask overlaps with the segmentation map
             overlap = masks.intersection(self.segments, galaxy_mask)
             if not np.any(overlap): return
 
             # Check which indices are present in the overlap map
-            possible = range(1,np.max(overlap)+1)
+            possible = np.array(range(1,np.max(overlap)+1))
             present = np.in1d(possible, overlap)
             indices = possible[present]
 
