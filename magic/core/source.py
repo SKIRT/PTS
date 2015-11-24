@@ -21,7 +21,7 @@ from photutils import detect_threshold
 from .box import Box
 
 # Import other AstroMagic modules and classes
-from ..basic import Position, Mask
+from ..basics import Position, Mask
 from ..tools import plotting, statistics
 
 # -----------------------------------------------------------------

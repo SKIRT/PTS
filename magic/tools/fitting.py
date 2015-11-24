@@ -18,7 +18,7 @@ from astropy.modeling import models, fitting
 
 # Import Astromagic modules
 from . import general, statistics
-from ..basic import Position, Extent
+from ..basics import Position, Extent
 
 # -----------------------------------------------------------------
 

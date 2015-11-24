@@ -12,7 +12,7 @@ import numpy as np
 from scipy import ndimage
 
 # Import Astromagic modules
-from ..basic import Position, Region
+from ..basics import Position, Region
 from ..tools import cropping, fitting, interpolation
 
 # -----------------------------------------------------------------

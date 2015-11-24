@@ -24,10 +24,10 @@ from photutils import detect_sources
 from astropy.convolution import Gaussian2DKernel
 
 # Import Astromagic modules
-from ..basic import Position, Extent, Mask, Region
-from ..core import Frame, Source
-from ..sky import Star
-from ..tools import statistics, configuration, fitting, logging, regions, masks
+from .basics import Position, Extent, Mask, Region
+from .core import Frame, Source
+from .sky import Star
+from .tools import statistics, configuration, fitting, logging, regions, masks
 
 # -----------------------------------------------------------------
 
@@ -669,7 +669,7 @@ class StarExtractor(object):
         self.segments = detect_sources(self.frame, threshold, npixels=5, filter_kernel=self.kernel)
 
         # Write the segmentation map to file
-        Frame(self.segments).save("other_segments_first.fits")
+        Frame(self.segments).save(self.config.writing.other_segments_path[:-5]+"_or.fits")
 
         # Eliminate the principal galaxy and companion galaxies from the segments
         if self.galaxyextractor is not None:

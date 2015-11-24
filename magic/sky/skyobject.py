@@ -16,7 +16,7 @@ from photutils import segment_properties, properties_table
 from photutils import EllipticalAperture
 
 # Import Astromagic modules
-from ..basic import Position, TrackRecord
+from ..basics import Position, TrackRecord
 from ..analysis import sources
 
 # -----------------------------------------------------------------

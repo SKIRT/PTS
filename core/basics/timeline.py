@@ -15,7 +15,7 @@
 
 import numpy as np
 import math
-import geometry as g
+import pts.core.tools.geometry as g
 
 # -----------------------------------------------------------------
 

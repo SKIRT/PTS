@@ -19,7 +19,7 @@ import pyfits
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from PIL import Image
-import pts.archive as arch
+import pts.core.tools.archive as arch
 
 # -----------------------------------------------------------------
 #  RGBImage class

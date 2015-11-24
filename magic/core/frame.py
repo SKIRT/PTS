@@ -24,7 +24,7 @@ import astropy.coordinates as coord
 from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
 
 # Import Astromagic modules
-from ..basic import Position
+from ..basics import Position
 from ..tools import coordinates, cropping, transformations, interpolation, headers, fitting
 
 # -----------------------------------------------------------------

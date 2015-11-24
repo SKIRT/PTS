@@ -21,7 +21,7 @@ import matplotlib
 if matplotlib.get_backend().lower() != "tkagg": matplotlib.use("tkagg")
 import matplotlib.pyplot as plt
 
-from pts.geometry import Transform
+from pts.core.tools.geometry import Transform
 
 # -----------------------------------------------------------------
 

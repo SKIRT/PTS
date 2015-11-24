@@ -17,9 +17,9 @@ import copy
 from astropy import log
 
 # Import AstroMagic modules
-from ..basic import Mask, Region
-from ..core import Frame
-from ..tools import statistics, interpolation, configuration, plotting, logging
+from .basics import Mask, Region
+from .core import Frame
+from .tools import statistics, interpolation, configuration, plotting, logging
 
 # -----------------------------------------------------------------
 

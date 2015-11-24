@@ -19,11 +19,11 @@ from astropy.coordinates import Angle
 from astropy.visualization import SqrtStretch, LogStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 
-# Import Astromagic modules
-from ..basic import Mask, Region, Position, Extent
-from ..core import Source
-from ..sky import Galaxy
-from ..tools import catalogs, configuration, regions, logging
+# Import AstroMagic modules
+from .basics import Mask, Region, Position, Extent
+from .core import Source
+from .sky import Galaxy
+from .tools import catalogs, configuration, regions, logging
 
 # -----------------------------------------------------------------
 

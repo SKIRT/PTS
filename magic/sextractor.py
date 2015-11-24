@@ -18,9 +18,9 @@ from astropy.table import Table
 from astropy import log
 import astropy.logger
 
-# Import Astromagic modules
-from ..core import Frame
-from ..tools import configuration
+# Import AstroMagic modules
+from .core import Frame
+from .tools import configuration
 
 # -----------------------------------------------------------------
 

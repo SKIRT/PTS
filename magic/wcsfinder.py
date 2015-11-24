@@ -7,8 +7,8 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
-# Import Astromagic modules
-from ..tools import configuration
+# Import AstroMagic modules
+from .tools import configuration
 
 # -----------------------------------------------------------------
 

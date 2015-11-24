@@ -22,7 +22,7 @@ from astropy.wcs import WCS
 from astropy import log
 
 # Import AstroMagic modules
-from ..basic import Layers, Mask, Region
+from ..basics import Layers, Mask, Region
 from .frame import Frame
 from ..tools import headers, fitting, plotting, regions, statistics, catalogs
 

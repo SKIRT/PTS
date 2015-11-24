@@ -24,7 +24,7 @@ from astroquery.vizier import Vizier
 # Import AstroMagic modules
 from ..core import Source
 from .skyobject import SkyObject
-from ..basic import Extent
+from ..basics import Extent
 
 # -----------------------------------------------------------------
 
