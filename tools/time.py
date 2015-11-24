@@ -7,7 +7,7 @@
 
 ## \package tools.time Useful functions for generating timestamps etc.
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from datetime import datetime
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def parse(line):
 
@@ -44,7 +44,7 @@ def parse(line):
     # Create and return a datetime object
     return datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second, microsecond=microsecond)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def timestamp(time):
 
@@ -57,7 +57,7 @@ def timestamp(time):
     # Return a timestamp accurate up to the millisecond
     return datetime.now().strftime("%d/%m/%Y %H:%M:%S.%f")[:-3]
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def unique_name(name):
 
@@ -69,4 +69,4 @@ def unique_name(name):
 
     return name + datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
 
-# *****************************************************************
+# -----------------------------------------------------------------
