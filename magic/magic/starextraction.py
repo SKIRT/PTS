@@ -275,7 +275,7 @@ class StarExtractor(object):
             else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
 
             # Loop over all galaxies
-            galaxies = self.galaxyextractor.objects if self.galaxyextractor is not None else []
+            galaxies = self.galaxyextractor.galaxies if self.galaxyextractor is not None else []
             for galaxy in galaxies:
 
                 # Calculate the pixel position of the galaxy
