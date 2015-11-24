@@ -11,10 +11,14 @@ from __future__ import absolute_import, division, print_function
 from astropy import units as u
 from astropy.coordinates import Angle
 
-# Import Astromagic modules
-from . import SkyObject, Source
+# Import classes from this subpackage
+from .skyobject import SkyObject
+
+# Import other AstroMagic modules and classes
+from ..core import Source
 from ..tools import statistics
-from ..tools import analysis, fitting
+from ..tools import fitting
+from ..analysis import sources
 
 # -----------------------------------------------------------------
 
@@ -122,11 +126,11 @@ class Star(SkyObject):
             if source is None:
 
                 # Do the fitting
-                source, model = analysis.fit_model_to_source(self.source, config, self.track_record, level=level)
+                source, model = sources.fit_model_to_source(self.source, config, self.track_record, level=level)
 
             else:
 
-                source, model = analysis.fit_model_to_source(source, config, self.track_record, level=level)
+                source, model = sources.fit_model_to_source(source, config, self.track_record, level=level)
 
             # If a model was found, set the attributes of the star object and exit the loop
             if model is not None:
@@ -269,7 +273,7 @@ class Star(SkyObject):
         if self.has_track_record: self.track_record.set_stage("saturation")
 
         # Look for a center segment corresponding to a 'saturation' source
-        source = analysis.find_source_segmentation(frame, self.pixel_position(frame.wcs), radius, Angle(0.0, u.deg), config, track_record=self.track_record, special=self.special)
+        source = sources.find_source_segmentation(frame, self.pixel_position(frame.wcs), radius, Angle(0.0, u.deg), config, track_record=self.track_record, special=self.special)
 
         # If a 'saturation' source was found
         if source is not None:

@@ -16,7 +16,7 @@ from astropy.stats import sigma_clip, sigma_clipped_stats
 
 # Import Astromagic modules
 from . import general
-from ..core import Mask
+from ..basic import Mask
 
 # -----------------------------------------------------------------
 

@@ -4,6 +4,12 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
+"""
+This module contains the Vector class and the classes Position and Extent that inherit from it.
+"""
+
+# -----------------------------------------------------------------
+
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 

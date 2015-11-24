@@ -21,8 +21,9 @@ from astropy.coordinates import Angle
 import astropy.coordinates as coord
 from astroquery.vizier import Vizier
 
-# Import Astromagic modules
-from . import Source, SkyObject
+# Import AstroMagic modules
+from ..core import Source
+from .skyobject import SkyObject
 from ..basic import Extent
 
 # -----------------------------------------------------------------

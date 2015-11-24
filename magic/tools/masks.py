@@ -12,7 +12,6 @@ import numpy as np
 
 # Import Astromagic modules
 from . import regions
-from ..core import Region
 
 # -----------------------------------------------------------------
 
@@ -86,51 +85,6 @@ def create_disk_mask(x_size, y_size, x_center, y_center, radius):
 
     # Return the mask
     return mask
-
-# -----------------------------------------------------------------
-
-def create_ellipse_mask(x_size, y_size, center, radius, angle):
-
-    """
-    This function ...
-    :param x_size:
-    :param y_size:
-    :param x_center:
-    :param y_center:
-    :param x_radius:
-    :param y_radius:
-    :param angle:
-    :return:
-    """
-
-    # Create a region consisting of one ellipse
-    region = Region.ellipse(center, radius, angle)
-
-    # Create the mask
-    data = region.get_mask(shape=(y_size, x_size))
-
-    # Return the mask
-    return Mask(data)
-
-# -----------------------------------------------------------------
-
-def create_annulus_mask(xsize, ysize, center, inner_radius, outer_radius, angle):
-
-    """
-    This function ...
-    :param xsize:
-    :param ysize:
-    :param center:
-    :param radius:
-    :param angle:
-    :return:
-    """
-
-    inner_mask = create_ellipse_mask(xsize, ysize, center, inner_radius, angle)
-    outer_mask = create_ellipse_mask(xsize, ysize, center, outer_radius, angle)
-
-    # Return the annulus mask
-    return inner_mask.union(outer_mask.inverse())
 
 # -----------------------------------------------------------------
 

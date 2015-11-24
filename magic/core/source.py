@@ -17,10 +17,12 @@ from photutils import find_peaks
 from photutils import detect_sources
 from photutils import detect_threshold
 
-# Import Astromagic modules
-from . import Mask, Box
-from ..basic import Position
-from ..tools import plotting, masks, statistics
+# Import classes from this submodule
+from .box import Box
+
+# Import other AstroMagic modules and classes
+from ..basic import Position, Mask
+from ..tools import plotting, statistics
 
 # -----------------------------------------------------------------
 
@@ -49,7 +51,7 @@ class Source(object):
         rel_center = self.cutout.rel_position(center)
 
         # Create masks
-        self.mask = masks.create_ellipse_mask(self.cutout.xsize, self.cutout.ysize, rel_center, radius, self.angle)
+        self.mask = Mask.from_ellipse(self.cutout.xsize, self.cutout.ysize, rel_center, radius, self.angle)
 
         # Set (estimated) background and removed to None
         self.background = None
@@ -253,7 +255,7 @@ class Source(object):
         source.radius = self.radius / factor
 
         # Create smaller mask
-        source.mask = masks.create_ellipse_mask(source.cutout.xsize, source.cutout.ysize, rel_center, source.radius, source.angle)
+        source.mask = Mask.from_ellipse(source.cutout.xsize, source.cutout.ysize, rel_center, source.radius, source.angle)
 
         # Set other properties to None
         source.background = None

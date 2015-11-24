@@ -19,7 +19,7 @@ from photutils import daofind
 from astropy.stats import sigma_clipped_stats
 
 # Import Astromagic modules
-from . import fitting, plotting, statistics, coordinates, cropping, interpolation, masks, regions
+from ..tools import fitting, plotting, statistics, coordinates, cropping, interpolation, masks, regions
 from ..core import Source
 
 # -----------------------------------------------------------------

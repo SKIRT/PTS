@@ -24,8 +24,9 @@ from photutils import detect_sources
 from astropy.convolution import Gaussian2DKernel
 
 # Import Astromagic modules
-from ..core import Frame, Mask, Region, Source, Star
-from ..basic import Position, Extent
+from ..basic import Position, Extent, Mask, Region
+from ..core import Frame, Source
+from ..sky import Star
 from ..tools import statistics, configuration, fitting, logging, regions, masks
 
 # -----------------------------------------------------------------

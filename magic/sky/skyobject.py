@@ -16,9 +16,8 @@ from photutils import segment_properties, properties_table
 from photutils import EllipticalAperture
 
 # Import Astromagic modules
-from . import TrackRecord
-from ..basic import Position
-from ..tools import analysis
+from ..basic import Position, TrackRecord
+from ..analysis import sources
 
 # -----------------------------------------------------------------
 
@@ -141,7 +140,7 @@ class SkyObject(object):
         center, radius, angle = self.ellipse_parameters(frame.wcs, frame.pixelscale, config.initial_radius)
 
         # Find a source
-        self.source = analysis.find_source(frame, center, radius, angle, config, self.track_record, special=self.special)
+        self.source = sources.find_source(frame, center, radius, angle, config, self.track_record, special=self.special)
 
     # -----------------------------------------------------------------
 

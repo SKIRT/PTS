@@ -11,14 +11,14 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import math
 
-# Import PTS modules
-from pts.filter import Filter
-
 # Import astronomical modules
 import astropy.wcs as pywcs
 from astropy import coordinates
 from astropy import units as u
 from astropy import log
+
+# Import PTS modules
+from pts.filter import Filter
 
 # -----------------------------------------------------------------
 

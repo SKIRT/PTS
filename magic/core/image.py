@@ -21,9 +21,10 @@ import astropy.io.fits as pyfits
 from astropy.wcs import WCS
 from astropy import log
 
-# Import Astromagic modules
-from ..core import Layers, Frame, Mask, Region
-from ..tools import headers, fitting, plotting, analysis, regions, statistics, catalogs
+# Import AstroMagic modules
+from ..basic import Layers, Mask, Region
+from .frame import Frame
+from ..tools import headers, fitting, plotting, regions, statistics, catalogs
 
 # -----------------------------------------------------------------
 
@@ -721,77 +722,6 @@ class Image(object):
 
         # Remove the mask from the dictionary of masks and re-add it under a different key
         self.masks[name] = self.masks.pop(mask_name)
-
-    # -----------------------------------------------------------------
-
-    def model_stars(self, model_name='Gaussian', background_inner_sigmas=5.0, background_outer_sigmas=10.0, fit_sigmas=5.0,
-                    upsample_factor=1.0, interpolate_background=True, sigma_clip_background=True, plot=False):
-
-        """
-        This function ...
-        :param model:
-        :param plot:
-        :param background_inner_sigmas:
-        :param background_outer_sigmas:
-        :param fit_sigmas:
-        :param resample_factor:
-        :param interpolate_background:
-        :param sigma_clip_background:
-        :return:
-        """
-
-        # TODO: should not only work with regions that contain nothing but ellipses
-
-        # Create a region for stars that were succesfully modeled and a region for objects that could not be fitted to a star model
-        modeled = pyregion.ShapeList([])
-        unmodeled = pyregion.ShapeList([])
-
-        # Get the name of the active frame
-        frame_name = self.frames.get_selected(require_single=True)
-
-        # Inform the user
-        log.info("Modeling stars in the " + frame_name + " frame enclosed by any of the currently selected regions")
-
-        # Create a new frame to contain the modeled stars
-        stars_frame = np.zeros_like(self.frames[frame_name])
-
-        # Combine all the active regions
-        total_region = self.combine_regions(allow_none=False)
-
-        # Create the background mask
-        annuli_mask = masks.annuli_around(total_region, background_inner_sigmas, background_outer_sigmas, self.header, self.xsize, self.ysize)
-
-        # Create a mask that covers pixels too far away from the center of the star (for fitting the model)
-        fit_mask = masks.masked_outside(total_region, self.header, self.xsize, self.ysize, expand_factor=fit_sigmas)
-
-        # For each shape (star)
-        for shape in total_region:
-
-            # Try to make an analytical model for the star enclosed by this shape
-            success, shape, model, extents = analysis.make_star_model(shape, self.frames[frame_name],
-                                                                      annuli_mask, fit_mask, background_outer_sigmas,
-                                                                      fit_sigmas, model_name,
-                                                                      upsample_factor=upsample_factor,
-                                                                      interpolate_background=interpolate_background,
-                                                                      sigma_clip_background=sigma_clip_background,
-                                                                      plot=plot)
-
-            if success:
-
-                # Add the 1-sigma contour of the analytical model to the modeled stars region
-                modeled.append(shape)
-
-                # Add the model to the stars frame
-                stars_frame[extents[2]:extents[3], extents[0]:extents[1]] += model
-
-            else: unmodeled.append(shape)
-
-        # Add the modelled stars frame to the list of frames
-        self.add_frame(stars_frame, "stars")
-
-        # Add the successfully modeled stars and the unmodeled stars to the corresponding regions
-        self._add_region(modeled, "modeled_stars")
-        self._add_region(unmodeled, "unmodeled_stars")
 
     # -----------------------------------------------------------------
 
