@@ -12,11 +12,9 @@ from astropy import units as u
 from astropy.coordinates import Angle
 
 # Import Astromagic modules
+from . import SkyObject, Source
 from ..tools import statistics
-from .skyobject import SkyObject
-from .source import Source
-from ..tools import analysis
-from ..tools import fitting
+from ..tools import analysis, fitting
 
 # -----------------------------------------------------------------
 

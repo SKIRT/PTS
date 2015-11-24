@@ -12,19 +12,15 @@ import numpy as np
 import copy
 
 # Import astronomical modules
-from astropy import units as u
 from astropy.table import Table
 from photutils import find_peaks
 from photutils import detect_sources
 from photutils import detect_threshold
 
 # Import Astromagic modules
-from .masks import Mask
-from .box import Box
-from ..tools import plotting
-from ..core import masks
-from ..tools import statistics
-from .vector import Position
+from . import Mask, Box
+from ..basic import Position
+from ..tools import plotting, masks, statistics
 
 # -----------------------------------------------------------------
 

@@ -12,24 +12,21 @@ import math
 import numpy as np
 import matplotlib.pylab as plt
 
-# Import Astromagic modules
-from .objectextraction import ObjectExtractor
-from ..tools import catalogs
-from ..core import regions
-from ..core.galaxy import Galaxy
-from ..tools import configuration
-from ..core.masks import Mask
-
 # Import astronomical modules
-from astropy import log
 import astropy.units as u
 from astropy.table import Table
+from astropy.coordinates import Angle
 from astropy.visualization import SqrtStretch, LogStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 
+# Import Astromagic modules
+from ..core import Mask, Region, Galaxy, Source
+from ..basic import Position, Extent
+from ..tools import catalogs, configuration, regions, logging
+
 # -----------------------------------------------------------------
 
-class GalaxyExtractor(ObjectExtractor):
+class GalaxyExtractor(object):
 
     """
     This class
@@ -45,10 +42,22 @@ class GalaxyExtractor(ObjectExtractor):
 
         self.config = configuration.set("galaxyextractor", config)
 
-        ## Base class
+        ## Attributes
 
-        # Call the constructor of the base class
-        super(GalaxyExtractor, self).__init__()
+        # Initialize an empty list for the galaxies
+        self.galaxies = []
+
+        # Initialize an empty list to contain the manual sources
+        self.manual_sources = []
+
+        # Set the frame to None
+        self.frame = None
+
+        # Set the mask to None
+        self.mask = None
+
+        # Set the logger to None initially
+        self.log = None
 
     # -----------------------------------------------------------------
 
@@ -58,17 +67,57 @@ class GalaxyExtractor(ObjectExtractor):
         This function ...
         """
 
-        # Call the setup function
+        # 1. Call the setup function
         self.setup(frame)
 
-        # Find and remove the galaxies
+        # 2. Find and remove the galaxies
         self.find_and_remove_galaxies()
 
-        # If a manual region was specified, remove the corresponding galaxies
-        if self.config.manual_region is not None: self.remove_manual()
+        # 3. If a manual region was specified, remove the corresponding galaxies
+        if self.config.manual_region is not None: self.set_and_remove_manual()
 
-        # Writing
+        # 4. Writing
         self.write()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, frame):
+
+        """
+        This function ...
+        """
+
+        # Make a local reference to the passed frame
+        self.frame = frame
+
+        # Create the logger
+        self.log = logging.new_log("galaxyextractor", self.config.logging.level)
+        if self.config.logging.path is not None: logging.link_file_log(self.log, self.config.logging.path, self.config.logging.level)
+
+        # Create a mask with shape equal to the shape of the frame
+        self.mask = Mask(np.zeros_like(self.frame))
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Clearing the galaxy extractor")
+
+        # Clear the list of galaxies
+        self.galaxies = []
+
+        # Clear the list of manual sources
+        self.manual_sources = []
+
+        # Clear the frame and the mask
+        self.frame = None
+        self.mask = None
 
     # -----------------------------------------------------------------
 
@@ -96,6 +145,43 @@ class GalaxyExtractor(ObjectExtractor):
 
     # -----------------------------------------------------------------
 
+    def set_and_remove_manual(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set manual galaxies
+        self.set_manual()
+
+        # If requested, remove the manually specified galaxies
+        if self.config.remove_manual: self.remove_manual()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def positions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list to contain the object positions
+        positions = []
+
+        # Loop over the galaxies
+        for galaxy in self.galaxies:
+
+            # Calculate the pixel coordinate in the frame and add it to the list
+            positions.append(galaxy.pixel_position(self.frame.wcs))
+
+        # Return the list
+        return positions
+
+    # -----------------------------------------------------------------
+
     @property
     def principal(self):
 
@@ -105,7 +191,7 @@ class GalaxyExtractor(ObjectExtractor):
         """
 
         # Loop over the list of galaxies
-        for galaxy in self.objects:
+        for galaxy in self.galaxies:
 
             # Check if it is the principal galaxy; if so, return it
             if galaxy.principal: return galaxy
@@ -124,7 +210,7 @@ class GalaxyExtractor(ObjectExtractor):
         companions = []
 
         # Loop over the list of galaxies
-        for galaxy in self.objects:
+        for galaxy in self.galaxies:
 
             # Check if it is a companion galaxy; if so, add it to the list
             if galaxy.companion: companions.append(galaxy)
@@ -142,10 +228,10 @@ class GalaxyExtractor(ObjectExtractor):
         """
 
         # Inform the user
-        log.info("Looking for sources near the galaxy positions")
+        self.log.info("Looking for sources near the galaxy positions")
 
-        # Loop over all sky objects in the list
-        for galaxy in self.objects:
+        # Loop over all galaxies in the list
+        for galaxy in self.galaxies:
 
             # If this sky object should be ignored, skip it
             if galaxy.ignore: continue
@@ -154,36 +240,30 @@ class GalaxyExtractor(ObjectExtractor):
             if self.config.detection.use_d25 and galaxy.has_extent:
 
                 outer_factor = self.config.detection.background_outer_factor
-                galaxy.source_from_parameters(self.frame, outer_factor)
+                expansion_factor = self.config.detection.d25_expansion_factor
+                galaxy.source_from_parameters(self.frame, outer_factor, expansion_factor)
 
             else:
 
                 # Find a source
-                try:
-                    galaxy.find_source(self.frame, self.config.detection)
-
-                except Exception as e:
-
+                try: galaxy.find_source(self.frame, self.config.detection)
+                except Exception:
                     #import traceback
-
-                    log.error("Error when finding source")
+                    self.log.error("Error when finding source")
                     #print(type(e))
                     #print(e)
                     #traceback.print_exc()
-
                     if self.config.plot_track_record_if_exception:
-
                         if galaxy.has_track_record: galaxy.track_record.plot()
-                        else: log.warning("Track record is not enabled")
+                        else: self.log.warning("Track record is not enabled")
 
-                    log.error("Continuing with next source")
+            # If a source was not found for the principal or companion galaxies, force it
+            outer_factor = self.config.detection.background_outer_factor
+            if galaxy.principal and not galaxy.has_source: galaxy.source_from_parameters(self.frame, outer_factor)
+            elif galaxy.companion and not galaxy.has_source and galaxy.has_extent: galaxy.source_from_parameters(self.frame, outer_factor)
 
         # Inform the user
-        log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.objects), self.have_source/len(self.objects)*100.0))
-
-        # If a source was not found for the principal galaxy, force it
-        outer_factor = self.config.detection.background_outer_factor
-        if not self.principal.has_source: self.principal.source_from_parameters(self.frame, outer_factor)
+        self.log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.galaxies), self.have_source/len(self.galaxies)*100.0))
 
     # -----------------------------------------------------------------
 
@@ -197,7 +277,7 @@ class GalaxyExtractor(ObjectExtractor):
         """
 
         # Inform the user
-        log.info("Fetching galaxy positions from an online catalog")
+        self.log.info("Fetching galaxy positions from an online catalog")
 
         # Get the range of right ascension and declination of the image
         center, ra_span, dec_span = self.frame.coordinate_range()
@@ -206,7 +286,7 @@ class GalaxyExtractor(ObjectExtractor):
         for galaxy_name in catalogs.galaxies_in_box(center, ra_span, dec_span):
 
             # Create a Galaxy object and add it to the list
-            self.objects.append(Galaxy(galaxy_name))
+            self.galaxies.append(Galaxy(galaxy_name))
 
         # Define a function that returns the length of the major axis of the galaxy
         def major_axis(galaxy):
@@ -215,16 +295,16 @@ class GalaxyExtractor(ObjectExtractor):
             else: return galaxy.major
 
         # Indicate which galaxy is the principal galaxy
-        principal_galaxy = max(self.objects, key=major_axis)
+        principal_galaxy = max(self.galaxies, key=major_axis)
         principal_galaxy.principal = True
 
         # Loop over the galaxies, and enable track record if requested
         if self.config.track_record:
 
-            for galaxy in self.objects: galaxy.enable_track_record()
+            for galaxy in self.galaxies: galaxy.enable_track_record()
 
         # Loop over the galaxies, check if they are companion galaxies
-        for galaxy in self.objects:
+        for galaxy in self.galaxies:
 
             # Skip the principal galaxy
             if galaxy.principal: continue
@@ -237,9 +317,9 @@ class GalaxyExtractor(ObjectExtractor):
                 galaxy.parent = principal_galaxy.name
 
         # Inform the user
-        log.debug("Number of galaxies: " + str(len(self.objects)))
-        log.debug(self.principal.name + " is the principal galaxy in the frame")
-        log.debug("The following galaxies are its companions: " + str(self.principal.companions))
+        self.log.debug("Number of galaxies: " + str(len(self.galaxies)))
+        self.log.debug(self.principal.name + " is the principal galaxy in the frame")
+        self.log.debug("The following galaxies are its companions: " + str(self.principal.companions))
 
     # -----------------------------------------------------------------
 
@@ -252,10 +332,10 @@ class GalaxyExtractor(ObjectExtractor):
         """
 
         # Inform the user
-        log.info("Constructing elliptical apertures regions to encompass the detected galaxies")
+        self.log.info("Constructing elliptical apertures regions to encompass the detected galaxies")
 
         # Loop over all galaxies
-        for galaxy in self.objects:
+        for galaxy in self.galaxies:
 
             # If this galaxy should be ignored, skip it
             if galaxy.ignore: continue
@@ -276,10 +356,10 @@ class GalaxyExtractor(ObjectExtractor):
         """
 
         # Inform the user
-        log.info("Removing the galaxies from the frame (except for the principal galaxy and its companions)")
+        self.log.info("Removing the galaxies from the frame (except for the principal galaxy and its companions)")
 
         # Loop over all galaxies
-        for galaxy in self.objects:
+        for galaxy in self.galaxies:
 
             # If this galaxy should be ignored, skip it
             if galaxy.ignore: continue
@@ -293,6 +373,104 @@ class GalaxyExtractor(ObjectExtractor):
 
     # -----------------------------------------------------------------
 
+    def set_special(self):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Setting special region from " + self.config.special_region)
+
+        # Load the region and create a mask from it
+        region = Region.from_file(self.config.special_region, self.frame.wcs)
+        special_mask = Mask(region.get_mask(shape=self.frame.shape))
+
+        # Loop over all galaxies
+        for galaxy in self.galaxies:
+
+            # Get the position of this object in pixel coordinates
+            position = galaxy.pixel_position(self.frame.wcs)
+
+            # Set special if position is covered by the mask
+            if special_mask.masks(position): galaxy.special = True
+
+    # -----------------------------------------------------------------
+
+    def set_ignore(self):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Setting region to ignore for subtraction from " + self.config.ignore_region)
+
+        # Load the region and create a mask from it
+        region = Region.from_file(self.config.ignore_region, self.frame.wcs)
+        ignore_mask = Mask(region.get_mask(shape=self.frame.shape))
+
+        # Loop over all galaxies
+        for galaxy in self.galaxies:
+
+            # Get the position of this object in pixel coordinates
+            position = galaxy.pixel_position(self.frame.wcs)
+
+            # Ignore if position is covered by the mask
+            if ignore_mask.masks(position): galaxy.ignore = True
+
+    # -----------------------------------------------------------------
+
+    def set_manual(self):
+
+        """
+        This function ...
+        """
+
+        # Inform the user
+        self.log.info("Setting region for manual galaxy extraction from " + self.config.manual_region)
+
+        # Load the region and create a mask from it
+        region = Region.from_file(self.config.manual_region, self.frame.wcs)
+
+        # Loop over the shapes in the region
+        for shape in region:
+
+            # Get the center and radius of the shape (can be a circle or an ellipse)
+            x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
+
+            # Create a source
+            source = Source(self.frame, Position(x_center, y_center), Extent(x_radius, y_radius), Angle(0.0, u.deg), self.config.manual.background_outer_factor)
+
+            # Add the source to the list of manual sources
+            self.manual_sources.append(source)
+
+    # -----------------------------------------------------------------
+
+    def remove_manual(self):
+
+        """
+        This function ...
+        """
+
+        # Inform the user
+        self.log.info("Removing manually specified galaxies from the frame")
+
+        # Loop over each item in the list of manual sources
+        for source in self.manual_sources:
+
+            # Estimate the background for the source
+            source.estimate_background(self.config.manual.interpolation_method, self.config.manual.sigma_clip)
+
+            # Replace the frame in the appropriate area with the estimated background
+            source.background.replace(self.frame, where=source.mask)
+
+    # -----------------------------------------------------------------
+
     @property
     def principal_mask(self):
 
@@ -301,8 +479,13 @@ class GalaxyExtractor(ObjectExtractor):
         :return:
         """
 
+        # Create a new mask with the dimensions of the frame
         mask = Mask(np.zeros_like(self.frame))
+
+        # Add the principal galaxy's mask to the total mask
         mask[self.principal.source.cutout.y_slice, self.principal.source.cutout.x_slice] = self.principal.source.mask
+
+        # Return the mask
         return mask
 
     # -----------------------------------------------------------------
@@ -315,11 +498,16 @@ class GalaxyExtractor(ObjectExtractor):
         :return:
         """
 
+        # Create a new mask with the dimension of the frame
         mask = Mask(np.zeros_like(self.frame))
+
+        # Loop over all companion galaxies
         for galaxy in self.companions:
 
-            mask[galaxy.source.cutout.y_slice, galaxy.source.cutout.x_slice] = galaxy.source.mask
+            # Check if the galaxy has a source and add its mask to the total mask
+            if galaxy.has_source: mask[galaxy.source.cutout.y_slice, galaxy.source.cutout.x_slice] = galaxy.source.mask
 
+        # Return the mask
         return mask
 
     # -----------------------------------------------------------------
@@ -344,7 +532,7 @@ class GalaxyExtractor(ObjectExtractor):
         angle_list = []
 
         # Loop over all galaxies
-        for galaxy in self.objects:
+        for galaxy in self.galaxies:
 
             ra_list.append(galaxy.position.ra.value)
             dec_list.append(galaxy.position.dec.value)
@@ -384,7 +572,7 @@ class GalaxyExtractor(ObjectExtractor):
         annotation = self.config.writing.region_annotation
 
         # Inform the user
-        log.info("Writing galaxy region to " + path)
+        self.log.info("Writing galaxy region to " + path)
 
         # Create a file
         f = open(path,'w')
@@ -393,7 +581,7 @@ class GalaxyExtractor(ObjectExtractor):
         print("# Region file format: DS9 version 4.1", file=f)
 
         # Loop over all galaxies
-        for galaxy in self.objects:
+        for galaxy in self.galaxies:
 
             # Get the center in pixel coordinates
             x_center, y_center = galaxy.position.to_pixel(self.frame.wcs, origin=0)
@@ -453,71 +641,65 @@ class GalaxyExtractor(ObjectExtractor):
 
     # -----------------------------------------------------------------
 
-    #@property
-    #def mask(self):
-    #
-    #    """
-    #    This function ...
-    #
-    #    :return:
-    #    """
-    #
-    #    # Initialize a mask with the dimensions of the frame
-    #    mask = Mask(np.zeros_like(self.frame))
-    #
-    #    # Loop over all galaxies
-    #    for galaxy in self.objects:
-    #
-    #        # If a source was found for this galaxy
-    #        if galaxy.has_source:
-    #
-    #            # Check whether the extent (as defined by the D25 isophotal radius) of the galaxy should be used for the mask
-    #            if self.config.mask.use_d25 and galaxy.has_extent:
-    #
-    #                # Obtain the ellipse parameters (default radius should not be defined, since we only get here
-    #                # after we checked galaxy.has_extent
-    #                center, radius, angle = galaxy.ellipse_parameters(self.frame.wcs, self.frame.pixelscale, None)
-    #
-    #                # Create a mask from the ellipse parameters
-    #                d25_mask = Mask.from_ellipse(self.frame.xsize, self.frame.ysize, center, radius*self.config.mask.d25_expansion_factor, angle)
-    #
-    #                # Add the d25 mask to the total mask
-    #                mask += d25_mask
-    #
-    #            # Else, check whether the aperture created from the center segment should be used
-    #            elif self.config.mask.use_aperture and galaxy.has_aperture:
-    #
-    #                # Create a mask from the aperture of the object (expand if specified under self.config.aperture_mask)
-    #                object_mask_frame = Mask.from_aperture(self.frame.xsize, self.frame.ysize, galaxy.aperture, expansion_factor=self.config.aperture_removal.expansion_factor)
-    #
-    #                # Now, we don't limit setting the mask within the source's cutout, because we expanded the apertures to perhaps a size larger than this cutout,
-    #                # so just add the object_mask_frame to the total frame
-    #                mask += object_mask_frame
-    #
-    #            # Else, use the source mask (the detected center segment)
-    #            else:
-    #
-    #                # Add the source mask of this galaxy to the total mask
-    #                mask[galaxy.source.cutout.y_min:galaxy.source.cutout.y_max, galaxy.source.cutout.x_min:galaxy.source.cutout.x_max] += galaxy.source.mask
-    #
-    #        # If a source was not detected for this galaxy but the inclusion of undetected galaxies in the mask is enabled
-    #        elif self.config.mask.include_undetected:
-    #
-    #            # If the galaxy has no extents (D25 is not defined), skip it
-    #            if not galaxy.has_extent: continue
-    #
-    #            # Obtain the ellipse parameters (default radius should not be defined, since we only get here
-    #            # after we checked galaxy.has_extent
-    #            center, radius, angle = galaxy.ellipse_parameters(self.frame.wcs, self.frame.pixelscale, None)
-    #
-    #            # Create a mask from the ellipse parameters
-    #            d25_mask = Mask.from_ellipse(self.frame.xsize, self.frame.ysize, center, radius, angle)
-    #
-    #            # Add the d25 mask to the total mask
-    #            mask += d25_mask
-    #
-    #    # Return the mask
-    #    return mask
+    def write_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Writing table to " + self.config.writing.table_path)
+
+        # Write the table to file
+        self.table.write(self.config.writing.table_path, format="ascii.commented_header")
+
+    # -----------------------------------------------------------------
+
+    def write_masked_frame(self):
+
+        """
+        This function ...
+        """
+
+        # Inform the user
+        self.log.info("Writing masked frame to " + self.config.writing.masked_frame_path)
+
+        # Create a frame where the objects are masked
+        frame = self.frame.copy()
+        frame[self.mask] = 0.0
+
+        # Write out the masked frame
+        frame.save(self.config.writing.masked_frame_path)
+
+    # -----------------------------------------------------------------
+
+    def write_result(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Writing resulting frame to " + self.config.writing.result_path)
+
+        # Write out the resulting frame
+        self.frame.save(self.config.writing.result_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def have_source(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        count = 0
+        for galaxy in self.galaxies: count += galaxy.has_source
+        return count
 
     # -----------------------------------------------------------------
 
@@ -532,7 +714,7 @@ class GalaxyExtractor(ObjectExtractor):
         names = ["name", "type", "distance", ""]
         values = [[] for i in range(len(names))]
 
-        #for galaxy in self.objects:
+        #for galaxy in self.galaxies:
 
             #for index, name in enumerate(names):
 
@@ -553,7 +735,7 @@ class GalaxyExtractor(ObjectExtractor):
         sources = []
 
         # Loop over all stars
-        for galaxy in self.objects:
+        for galaxy in self.galaxies:
 
             names.append(galaxy.name)
             types.append(galaxy.type)
@@ -602,7 +784,7 @@ class GalaxyExtractor(ObjectExtractor):
         apertures = []
 
         # Loop over all galaxies
-        for galaxy in self.objects:
+        for galaxy in self.galaxies:
 
             x_center, y_center = galaxy.position.to_pixel(self.frame.wcs)
             x_centers.append(x_center)
@@ -649,13 +831,13 @@ class GalaxyExtractor(ObjectExtractor):
         :return:
         """
 
-        # If requested, write out a table with the star/galaxy properties
+        # If requested, write out a table with the galaxy properties
         if self.config.write_table: self.write_table()
 
-        # If requested, write out the star/galaxy region
+        # If requested, write out the galaxy region
         if self.config.write_region: self.write_region()
 
-        # If requested, write out the frame where the stars/galaxies are masked
+        # If requested, write out the frame where the galaxies are masked
         if self.config.write_masked_frame: self.write_masked_frame()
 
         # If requested, write out the result

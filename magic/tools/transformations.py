@@ -16,11 +16,11 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import scipy.ndimage
 
-# Import image modules
-from . import headers
-
 # Import astronomical modules
 import astropy.io.fits as pyfits
+
+# Import AstroMagic modules
+from . import headers
 
 # -----------------------------------------------------------------
 

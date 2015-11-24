@@ -13,18 +13,12 @@ from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import copy
 
-# Import Astromagic modules
-from ..core.masks import Mask
-from ..core.regions import Region
-from ..tools import statistics
-from ..tools import interpolation
-from ..tools import configuration
-from ..core.frames import Frame
-from ..tools import plotting
-from ..tools import logging
-
 # Import astronomical modules
 from astropy import log
+
+# Import AstroMagic modules
+from ..core import Frame, Mask, Region
+from ..tools import statistics, interpolation, configuration, plotting, logging
 
 # -----------------------------------------------------------------
 
@@ -46,14 +40,6 @@ class SkyExtractor(object):
 
         self.config = configuration.set("skyextractor", config)
 
-        ## Logging
-
-        # Set the log level
-        log.setLevel(self.config.logging.level)
-
-        # Set log file path
-        if self.config.logging.path is not None: logging.link_file_log(log, self.config.logging.path, self.config.logging.level)
-
         ## Attributes
 
         # Set the galaxy and star mask to None initialy
@@ -69,8 +55,11 @@ class SkyExtractor(object):
         # Set the frame to None initially
         self.frame = None
 
-        # Set the sky frame to None intially
+        # Set the sky frame to None initially
         self.sky = None
+
+        # Set the logger to None initially
+        self.log = None
 
     # -----------------------------------------------------------------
 
@@ -81,7 +70,7 @@ class SkyExtractor(object):
         :return:
         """
 
-        # Call the setup function
+        # 1. Call the setup function
         self.setup(frame, galaxyextractor, starextractor)
 
         # Set the extra mask
@@ -125,6 +114,10 @@ class SkyExtractor(object):
 
         # Set the star mask
         if starextractor is not None: self.star_mask = starextractor.mask
+
+        # Create a logger
+        self.log = logging.new_log("skyextractor", self.config.logging.level)
+        if self.config.logging.path is not None: logging.link_file_log(self.log, self.config.logging.path, self.config.logging.level)
 
     # -----------------------------------------------------------------
 

@@ -13,7 +13,13 @@ from astropy import units as u
 # -----------------------------------------------------------------
 
 def parse(unit):
-    
+
+    """
+    This function ...
+    :param unit:
+    :return:
+    """
+
     return u.Unit(unit)
     
 # -----------------------------------------------------------------

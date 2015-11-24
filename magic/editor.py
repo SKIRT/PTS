@@ -14,7 +14,7 @@ from . import Image
 from cmd import Cmd
 from inspect import isfunction
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class MyPrompt(Cmd):
 
@@ -42,3 +42,5 @@ if __name__ == '__main__':
     prompt = MyPrompt()
     prompt.prompt = '> '
     prompt.cmdloop('Starting prompt...')
+
+# -----------------------------------------------------------------

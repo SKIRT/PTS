@@ -12,7 +12,7 @@ from astropy import units as u
 from astroquery.irsa_dust import IrsaDust
 from astropy import log
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def print_status(image):
 
@@ -43,7 +43,7 @@ def print_status(image):
 
         log.info("  " + mask_name + ": " + str(selected))
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def subtract_sky(image, galaxy_name, plot=False, output_path=None, downsample_factor=1):
 
@@ -133,7 +133,7 @@ def subtract_sky(image, galaxy_name, plot=False, output_path=None, downsample_fa
     # If requested, plot the sky-subtracted primary image
     if plot: image.plot()
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def convert_units(image, filter_name, attenuations):
 
@@ -177,7 +177,7 @@ def convert_units(image, filter_name, attenuations):
     # Deselect all regions, masks and frames (except the primary frame)
     reset_selection(image)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def reset_selection(image):
 
@@ -190,7 +190,7 @@ def reset_selection(image):
     image.deselect_all()
     image.frames.primary.select()
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def conversionfactorFUV(image, attenuation):
 
@@ -223,7 +223,7 @@ def conversionfactorFUV(image, attenuation):
 
     return totalfactor
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def conversionfactorP70(image, attenuation):
 
@@ -243,7 +243,7 @@ def conversionfactorP70(image, attenuation):
 
     return factor
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def conversionfactorH(image, attenuation):
 
@@ -264,7 +264,7 @@ def conversionfactorH(image, attenuation):
 
     return totalfactor
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def conversionfactorP160(image, attenuation):
 
@@ -278,7 +278,7 @@ def conversionfactorP160(image, attenuation):
 
     return factor
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def conversionfactorHa(image, attenuation):
 
@@ -308,7 +308,7 @@ def conversionfactorHa(image, attenuation):
 
     return totalfactor
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 def get_attenuations(galaxy_name, filter_names):
 
@@ -327,4 +327,4 @@ def get_attenuations(galaxy_name, filter_names):
 
         pass
 
-# *****************************************************************
+# -----------------------------------------------------------------

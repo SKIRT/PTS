@@ -12,15 +12,15 @@ import numpy as np
 from scipy import ndimage
 from skimage import morphology
 
-# Import Astromagic modules
-from . import regions
-from .regions import Region
-from .vector import Position, Extent
-
 # Import astronomical modules
 import astropy.units as u
 from astropy.coordinates import Angle
 from photutils import detect_sources
+
+# Import Astromagic modules
+from . import Region
+from ..basic import Position, Extent
+from ..tools import regions
 
 # -----------------------------------------------------------------
 

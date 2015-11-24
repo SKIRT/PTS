@@ -17,9 +17,8 @@ from scipy import ndimage
 from astropy.modeling import models, fitting
 
 # Import Astromagic modules
-from . import general
-from . import statistics
-from ..core.vector import Position, Extent
+from . import general, statistics
+from ..basic import Position, Extent
 
 # -----------------------------------------------------------------
 

@@ -14,15 +14,6 @@ import numpy as np
 from scipy import ndimage
 import matplotlib.pyplot as plt
 
-# Import Astromagic modules
-from ..tools import coordinates
-from ..tools import cropping
-from ..tools import transformations
-from .vector import Position
-from ..tools import interpolation
-from ..tools import headers
-from ..tools import fitting
-
 # Import astronomical modules
 from astropy import log
 from astropy.wcs import WCS
@@ -31,6 +22,10 @@ import astropy.io.fits as pyfits
 import astropy.units as u
 import astropy.coordinates as coord
 from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
+
+# Import Astromagic modules
+from ..basic import Position
+from ..tools import coordinates, cropping, transformations, interpolation, headers, fitting
 
 # -----------------------------------------------------------------
 

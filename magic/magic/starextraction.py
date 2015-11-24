@@ -12,24 +12,9 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Import Astromagic modules
-from .objectextraction import ObjectExtractor
-from ..core.star import Star
-from ..tools import statistics
-from ..core.vector import Position, Extent
-from ..core.regions import Region
-from ..core.source import Source
-from ..core.masks import Mask
-from ..tools import configuration
-from ..tools import fitting
-from ..core import masks
-from ..core.frames import Frame
-from ..tools import interpolation
-
 # Import astronomical modules
 import aplpy
 import astropy.io.fits as pyfits
-from astropy import log
 import astropy.units as u
 import astropy.coordinates as coord
 from astropy.table import Table
@@ -38,9 +23,14 @@ from astropy.coordinates import Angle
 from photutils import detect_sources
 from astropy.convolution import Gaussian2DKernel
 
+# Import Astromagic modules
+from ..core import Frame, Mask, Region, Source, Star
+from ..basic import Position, Extent
+from ..tools import statistics, configuration, fitting, logging, regions, masks
+
 # -----------------------------------------------------------------
 
-class StarExtractor(ObjectExtractor):
+class StarExtractor(object):
 
     """
     This class ...
@@ -56,14 +46,25 @@ class StarExtractor(ObjectExtractor):
 
         self.config = configuration.set("starextractor", config)
 
-        ## Base class
-
-        # Call the constructor of the base class
-        super(StarExtractor, self).__init__()
-
         ## Attributes
 
+        # Initialize an empty list for the stars
+        self.stars = []
+
+        # Initialize an empty list to contain the manual sources
+        self.manual_sources = []
+
+        # Set the frame to None
+        self.frame = None
+
+        # Set the mask to None
+        self.mask = None
+
+        # Set the segmentation map for other sources to None
         self.segments = None
+
+        # Set the logger to None initially
+        self.log = None
 
     # -----------------------------------------------------------------
 
@@ -73,26 +74,66 @@ class StarExtractor(ObjectExtractor):
         This function ...
         """
 
-        # Call the setup function
-        self.setup(frame)
+        # 1. Call the setup function
+        self.setup(frame, galaxyextractor)
 
-        # Cache a reference to the galaxy extractor
-        self.galaxyextractor = galaxyextractor
-
-        # Find and remove the stars
+        # 2. Find and remove the stars
         self.find_fit_and_remove_stars()
 
-        # If requested, find and remove saturated stars
+        # 3. If requested, find and remove saturated stars
         if self.config.find_saturation: self.find_and_remove_saturation()
 
-        # If requested, find and remove other sources in the frame
+        # 4. If requested, find and remove other sources in the frame
         if self.config.find_other: self.find_and_remove_other()
 
-        # If specified, remove manually selected stars
-        if self.config.manual_region is not None: self.remove_manual()
+        # 5. If specified, remove manually selected stars
+        if self.config.manual_region is not None: self.set_and_remove_manual()
 
-        # Writing
+        # 6. Writing
         self.write()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, frame, galaxyextractor=None):
+
+        """
+        This function ...
+        """
+
+        # Make a local reference to the passed frame
+        self.frame = frame
+
+        # Make a local reference to the galaxy extractor (if any)
+        self.galaxyextractor = galaxyextractor
+
+        # Create the logger
+        self.log = logging.new_log("starextractor", self.config.logging.level)
+        if self.config.logging.path is not None: logging.link_file_log(self.log, self.config.logging.path, self.config.logging.level)
+
+        # Create a mask with shape equal to the shape of the frame
+        self.mask = Mask(np.zeros_like(self.frame))
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Clearing the star extractor")
+
+        # Clear the list of stars
+        self.stars = []
+
+        # Clear the list of manual sources
+        self.manual_sources = []
+
+        # Clear the frame and the mask
+        self.frame = None
+        self.mask = None
 
     # -----------------------------------------------------------------
 
@@ -111,9 +152,6 @@ class StarExtractor(ObjectExtractor):
 
         # Set ignore stars
         if self.config.ignore_region is not None: self.set_ignore()
-
-        # Set manual stars
-        if self.config.manual_region is not None: self.set_manual()
 
         # For each star, find a corresponding source in the image
         self.find_sources()
@@ -160,7 +198,20 @@ class StarExtractor(ObjectExtractor):
         # If requested, remove the other sources
         if self.config.remove_other: self.remove_other_sources()
 
-        self.frame.save("testframe.fits")
+    # -----------------------------------------------------------------
+
+    def set_and_remove_manual(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set manual stars
+        self.set_manual()
+
+        # If requested, remove the manually specified stars
+        if self.config.remove_manual: self.remove_manual()
 
     # -----------------------------------------------------------------
 
@@ -171,7 +222,7 @@ class StarExtractor(ObjectExtractor):
         """
 
         # Inform the user
-        log.info("Fetching star positions from an online catalog")
+        self.log.info("Fetching star positions from an online catalog")
 
         # Get the range of right ascension and declination of this image
         center, ra_span, dec_span = self.frame.coordinate_range()
@@ -291,13 +342,13 @@ class StarExtractor(ObjectExtractor):
                 if self.config.track_record: star.enable_track_record()
 
                 # Add the star to the list of stars
-                self.objects.append(star)
+                self.stars.append(star)
 
         # Inform the user
         if self.galaxyextractor is not None: log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
 
         # Inform the user
-        log.debug("Number of stars: " + str(len(self.objects)))
+        self.log.debug("Number of stars: " + str(len(self.stars)))
 
     # -----------------------------------------------------------------
 
@@ -310,10 +361,10 @@ class StarExtractor(ObjectExtractor):
         """
 
         # Inform the user
-        log.info("Looking for sources near the star positions")
+        self.log.info("Looking for sources near the star positions")
 
         # Loop over all sky objects in the list
-        for skyobject in self.objects:
+        for skyobject in self.stars:
 
             # If this sky object should be ignored, skip it
             if skyobject.ignore: continue
@@ -326,7 +377,7 @@ class StarExtractor(ObjectExtractor):
 
                 #import traceback
 
-                log.error("Error when finding source")
+                self.log.error("Error when finding source")
                 #print(type(e))
                 #print(e)
                 #traceback.print_exc()
@@ -334,12 +385,12 @@ class StarExtractor(ObjectExtractor):
                 if self.config.plot_track_record_if_exception:
 
                     if skyobject.has_track_record: skyobject.track_record.plot()
-                    else: log.warning("Track record is not enabled")
+                    else: self.log.warning("Track record is not enabled")
 
-                log.error("Continuing with next source")
+                self.log.error("Continuing with next source")
 
         # Inform the user
-        log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.objects), self.have_source/len(self.objects)*100.0))
+        self.log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.stars), self.have_source/len(self.stars)*100.0))
 
     # -----------------------------------------------------------------
 
@@ -350,10 +401,10 @@ class StarExtractor(ObjectExtractor):
         """
 
         # Inform the user
-        log.info("Fitting analytical profiles to the sources")
+        self.log.info("Fitting analytical profiles to the sources")
 
         # Loop over all stars in the list
-        for star in self.objects:
+        for star in self.stars:
 
             # If this star should be ignored, skip it
             if star.ignore: continue
@@ -373,7 +424,7 @@ class StarExtractor(ObjectExtractor):
             if star.has_source or source is not None: star.fit_model(self.config.fitting, source)
 
         # Inform the user
-        log.debug("Found a model for {0} out of {1} stars with source ({2:.2f}%)".format(self.have_model, self.have_source, self.have_model/self.have_source*100.0))
+        self.log.debug("Found a model for {0} out of {1} stars with source ({2:.2f}%)".format(self.have_model, self.have_source, self.have_model/self.have_source*100.0))
 
     # -----------------------------------------------------------------
 
@@ -384,13 +435,13 @@ class StarExtractor(ObjectExtractor):
         """
 
         # Inform the user
-        log.info("Removing the stars from the frame")
+        self.log.info("Removing the stars from the frame")
 
         # Calculate the default FWHM, for the stars for which a model was not found
         default_fwhm = self.fwhm
 
         # Inform the user
-        log.debug("Default FWHM used when star could not be fitted: {0:.2f} pixels".format(default_fwhm))
+        self.log.debug("Default FWHM used when star could not be fitted: {0:.2f} pixels".format(default_fwhm))
 
         if self.config.removal.method == "model":
 
@@ -403,7 +454,7 @@ class StarExtractor(ObjectExtractor):
             print(differences)
 
         # Loop over all stars in the list
-        for star in self.objects:
+        for star in self.stars:
 
             # If this star should be ignored, skip it
             if star.ignore: continue
@@ -425,7 +476,7 @@ class StarExtractor(ObjectExtractor):
         """
 
         # Inform the user
-        log.info("Removing saturation from the frame")
+        self.log.info("Removing saturation from the frame")
 
         # Calculate the default FWHM, for the stars for which a model was not found
         default_fwhm = self.fwhm
@@ -437,10 +488,10 @@ class StarExtractor(ObjectExtractor):
         if self.config.saturation.method == "all":
 
             # Inform the user on the number of stars that have a source
-            log.debug("Number of stars with source = " + str(self.have_source))
+            self.log.debug("Number of stars with source = " + str(self.have_source))
 
             # Loop over all stars
-            for star in self.objects:
+            for star in self.stars:
 
                 # If this star should be ignored, skip it
                 if star.ignore: continue
@@ -457,7 +508,7 @@ class StarExtractor(ObjectExtractor):
                 removed += success
 
             # Inform the user
-            log.debug("Removed saturation in " + str(removed) + " out of " + str(self.have_source) + " stars with source ({0:.2f}%)".format(removed/self.have_source*100.0))
+            self.log.debug("Removed saturation in " + str(removed) + " out of " + str(self.have_source) + " stars with source ({0:.2f}%)".format(removed/self.have_source*100.0))
 
         # Detect and remove saturation for the brightest stars
         elif self.config.saturation.method == "brightest":
@@ -472,17 +523,17 @@ class StarExtractor(ObjectExtractor):
 
             # Inform the user
             quantity = "flux" if self.config.saturation.criterion == "flux" else "central brightness"
-            log.debug("Minimum value of the " + quantity + " for saturation removal: {0:.2f}".format(minimum))
+            self.log.debug("Minimum value of the " + quantity + " for saturation removal: {0:.2f}".format(minimum))
 
             # Inform the user
             eligible = len([flux for flux in flux_list if flux >= minimum])
-            log.debug("Number of stars eligible for saturation removal: " + str(eligible) + " ({0:.2f}%)".format(eligible/len(self.objects)*100.0))
+            self.log.debug("Number of stars eligible for saturation removal: " + str(eligible) + " ({0:.2f}%)".format(eligible/len(self.stars)*100.0))
 
             # Inform the user on the number of stars that have a source
-            log.debug("Number of stars with source = " + str(self.have_source))
+            self.log.debug("Number of stars with source = " + str(self.have_source))
 
             # Loop over all stars
-            for star in self.objects:
+            for star in self.stars:
 
                 # If this star should be ignored, skip it
                 if star.ignore: continue
@@ -505,7 +556,7 @@ class StarExtractor(ObjectExtractor):
                     removed += success
 
             # Inform the user
-            log.debug("Removed saturation in {0} out of {1} stars ({2:.2f}%)".format(removed, eligible, removed/eligible*100.0))
+            self.log.debug("Removed saturation in {0} out of {1} stars ({2:.2f}%)".format(removed, eligible, removed/eligible*100.0))
 
         # Unkown saturation
         else: raise ValueError("Unknown method (should be 'brightest' or 'all'")
@@ -521,10 +572,10 @@ class StarExtractor(ObjectExtractor):
         """
 
         # Inform the user
-        log.info("Constructing elliptical apertures regions to encompass saturated stars")
+        self.log.info("Constructing elliptical apertures regions to encompass saturated stars")
 
         # Loop over all stars
-        for star in self.objects:
+        for star in self.stars:
 
             # If this star should be ignored, skip it
             if star.ignore: continue
@@ -544,10 +595,10 @@ class StarExtractor(ObjectExtractor):
         """
 
         # Inform the user
-        log.info("Replacing aperture regions by the estimated background")
+        self.log.info("Replacing aperture regions by the estimated background")
 
         # Loop over all stars
-        for star in self.objects:
+        for star in self.stars:
 
             # If the object does not have an aperture, skip it
             if not star.has_aperture: continue
@@ -598,7 +649,7 @@ class StarExtractor(ObjectExtractor):
         """
 
         # Inform the user
-        log.info("Searching for other contaminating sources not in the stellar catalog")
+        self.log.info("Searching for other contaminating sources not in the stellar catalog")
 
         # Calculate the total mask
         mask = masks.union(self.galaxyextractor.mask, self.mask) if self.galaxyextractor is not None else self.mask
@@ -622,34 +673,22 @@ class StarExtractor(ObjectExtractor):
         # Eliminate the principal galaxy and companion galaxies from the segments
         if self.galaxyextractor is not None:
 
-            # Loop over the principal and companion galaxies
-            for galaxy in [self.galaxyextractor.principal] + self.galaxyextractor.companions:
+            # Determine the mask that covers the principal and companion galaxies
+            galaxy_mask = self.galaxyextractor.principal_mask + self.galaxyextractor.companion_mask
 
-                # If this galaxy has not been detected in the frame, skip it
-                if not galaxy.has_source:
+            print(galaxy_mask)
 
-                    log.warning("The galaxy " + galaxy.name + " does not have a source")
-                    continue
+            # Check where the galaxy mask overlaps with the segmentation map
+            overlap = masks.intersection(self.segments, galaxy_mask)
+            if not np.any(overlap): return
 
-                # Obtain the galaxy's mask in the entire image frame
-                galaxy_mask = Mask(np.zeros_like(self.frame))
-                x_min = galaxy.source.cutout.x_min
-                y_min = galaxy.source.cutout.y_min
-                x_max = galaxy.source.cutout.x_max
-                y_max = galaxy.source.cutout.y_max
-                galaxy_mask[y_min:y_max, x_min:x_max] = galaxy.source.mask
+            # Check which indices are present in the overlap map
+            possible = range(1,np.max(overlap)+1)
+            present = np.in1d(possible, overlap)
+            indices = possible[present]
 
-                # Check where it overlaps with the segments map
-                overlap = masks.intersection(self.segments, galaxy_mask)
-                if not np.any(overlap): continue
-                #from ..tools import plotting
-                #plotting.plot_box(overlap)
-                where = overlap > 0
-                pixels_in_mask = np.sum(where)
-                index = int(np.sum(overlap) / pixels_in_mask)
-
-                # Remove the galaxy from the segmentation map
-                self.segments[self.segments == index] = 0
+            # Remove the galaxies from the segmentation map
+            for index in indices: self.segments[self.segments == index] = 0
 
     # -----------------------------------------------------------------
 
@@ -661,7 +700,7 @@ class StarExtractor(ObjectExtractor):
         """
 
         # Inform the user
-        log.info("Writing the segmentation map of other sources to " + self.config.writing.other_segments_path)
+        self.log.info("Writing the segmentation map of other sources to " + self.config.writing.other_segments_path)
 
         # Save the segmentation map
         Frame(self.segments).save(self.config.writing.other_segments_path)
@@ -676,7 +715,7 @@ class StarExtractor(ObjectExtractor):
         """
 
         # Inform the user
-        log.info("Removing the other source from the frame")
+        self.log.info("Removing the other source from the frame")
 
         # Interpolate over the segments
         mask = self.segments > 0
@@ -687,6 +726,104 @@ class StarExtractor(ObjectExtractor):
 
         # Update the mask
         self.mask[mask] = True
+
+    # -----------------------------------------------------------------
+
+    def set_special(self):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Setting special region from " + self.config.special_region)
+
+        # Load the region and create a mask from it
+        region = Region.from_file(self.config.special_region, self.frame.wcs)
+        special_mask = Mask(region.get_mask(shape=self.frame.shape))
+
+        # Loop over all objects
+        for skyobject in self.stars:
+
+            # Get the position of this object in pixel coordinates
+            position = skyobject.pixel_position(self.frame.wcs)
+
+            # Set special if position is covered by the mask
+            if special_mask.masks(position): skyobject.special = True
+
+    # -----------------------------------------------------------------
+
+    def set_ignore(self):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Setting region to ignore for subtraction from " + self.config.ignore_region)
+
+        # Load the region and create a mask from it
+        region = Region.from_file(self.config.ignore_region, self.frame.wcs)
+        ignore_mask = Mask(region.get_mask(shape=self.frame.shape))
+
+        # Loop over all objects
+        for skyobject in self.stars:
+
+            # Get the position of this object in pixel coordinates
+            position = skyobject.pixel_position(self.frame.wcs)
+
+            # Ignore if position is covered by the mask
+            if ignore_mask.masks(position): skyobject.ignore = True
+
+    # -----------------------------------------------------------------
+
+    def set_manual(self):
+
+        """
+        This function ...
+        """
+
+        # Inform the user
+        self.log.info("Setting region for manual star extraction from " + self.config.manual_region)
+
+        # Load the region and create a mask from it
+        region = Region.from_file(self.config.manual_region, self.frame.wcs)
+
+        # Loop over the shapes in the region
+        for shape in region:
+
+            # Get the center and radius of the shape (can be a circle or an ellipse)
+            x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
+
+            # Create a source
+            source = Source(self.frame, Position(x_center, y_center), Extent(x_radius, y_radius), Angle(0.0, u.deg), self.config.manual.background_outer_factor)
+
+            # Add the source to the list of manual sources
+            self.manual_sources.append(source)
+
+    # -----------------------------------------------------------------
+
+    def remove_manual(self):
+
+        """
+        This function ...
+        """
+
+        # Inform the user
+        self.log.info("Removing manually specified stars from the frame")
+
+        # Loop over each item in the list of manual sources
+        for source in self.manual_sources:
+
+            # Estimate the background for the source
+            source.estimate_background(self.config.manual.interpolation_method, self.config.manual.sigma_clip)
+
+            # Replace the frame in the appropriate area with the estimated background
+            source.background.replace(self.frame, where=source.mask)
 
     # -----------------------------------------------------------------
 
@@ -711,7 +848,7 @@ class StarExtractor(ObjectExtractor):
         default_fwhm = self.fwhm
 
         # Loop over all galaxies
-        for star in self.objects:
+        for star in self.stars:
 
             position_list.append(star.position)
 
@@ -753,7 +890,7 @@ class StarExtractor(ObjectExtractor):
         annotation = self.config.writing.region_annotation
 
         # Inform the user
-        log.info("Writing stars region to " + path)
+        self.log.info("Writing stars region to " + path)
 
         # Create a file
         f = open(path,'w')
@@ -765,7 +902,7 @@ class StarExtractor(ObjectExtractor):
         default_fwhm = self.fwhm
 
         # Loop over all galaxies
-        for star in self.objects:
+        for star in self.stars:
 
             # Get the center in pixel coordinates
             x_center, y_center = star.position.to_pixel(self.frame.wcs, origin=0)
@@ -844,6 +981,90 @@ class StarExtractor(ObjectExtractor):
 
     # -----------------------------------------------------------------
 
+    def write_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Writing table to " + self.config.writing.table_path)
+
+        # Write the table to file
+        self.table.write(self.config.writing.table_path, format="ascii.commented_header")
+
+    # -----------------------------------------------------------------
+
+    def write_masked_frame(self):
+
+        """
+        This function ...
+        """
+
+        # Inform the user
+        self.log.info("Writing masked frame to " + self.config.writing.masked_frame_path)
+
+        # Create a frame where the objects are masked
+        frame = self.frame.copy()
+        frame[self.mask] = 0.0
+
+        # Write out the masked frame
+        frame.save(self.config.writing.masked_frame_path)
+
+    # -----------------------------------------------------------------
+
+    def write_result(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Writing resulting frame to " + self.config.writing.result_path)
+
+        # Write out the resulting frame
+        self.frame.save(self.config.writing.result_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def positions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list to contain the object positions
+        positions = []
+
+        # Loop over the galaxies
+        for skyobject in self.stars:
+
+            # Calculate the pixel coordinate in the frame and add it to the list
+            positions.append(skyobject.pixel_position(self.frame.wcs))
+
+        # Return the list
+        return positions
+
+    # -----------------------------------------------------------------
+
+    @property
+    def have_source(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        count = 0
+        for skyobject in self.stars: count += skyobject.has_source
+        return count
+
+    # -----------------------------------------------------------------
+
     @property
     def have_model(self):
 
@@ -853,7 +1074,7 @@ class StarExtractor(ObjectExtractor):
         """
 
         count = 0
-        for star in self.objects: count += star.has_model
+        for star in self.stars: count += star.has_model
         return count
 
     # -----------------------------------------------------------------
@@ -870,7 +1091,7 @@ class StarExtractor(ObjectExtractor):
         fwhms = []
 
         # Loop over all stars
-        for star in self.objects:
+        for star in self.stars:
 
             # If the star contains a model, add the fwhm of that model to the list
             if star.has_model: fwhms.append(star.fwhm)
@@ -892,7 +1113,7 @@ class StarExtractor(ObjectExtractor):
         fluxes = []
 
         # Loop over all stars
-        for star in self.objects:
+        for star in self.stars:
 
             # If the star contains a source and the background of this source has been subtracted, calculate the flux
             if star.has_source and star.source.has_background:
@@ -917,7 +1138,7 @@ class StarExtractor(ObjectExtractor):
         differences = []
 
         # Loop over all stars
-        for star in self.objects:
+        for star in self.stars:
 
             # If the star was not fitted, skip it
             if not star.has_model: continue
@@ -978,86 +1199,6 @@ class StarExtractor(ObjectExtractor):
 
     # -----------------------------------------------------------------
 
-    #@property
-    #def mask(self):
-    #
-    #    """
-    #    This function ...
-    #    :return:
-    #    """
-    #
-    #    # Initialize a mask with the dimensions of the frame
-    #    mask = Mask(np.zeros_like(self.frame))
-    #
-    #    # Loop over all stars
-    #    for star in self.objects:
-    #
-    #        # If a source was found for this star
-    #        if star.has_source:
-    #
-    #            # Check whether the aperture should be used for the mask
-    #            if self.config.mask.use_aperture and star.has_aperture:
-    #
-    #                # Create a mask from the aperture of the object (expand if specified under self.config.aperture_removal)
-    #                object_mask_frame = Mask.from_aperture(self.frame.xsize, self.frame.ysize, star.aperture, expansion_factor=self.config.aperture_removal.expansion_factor)
-    #
-    #                # Now, we don't limit setting the mask within the source's cutout, because we expanded the apertures to perhaps a size larger than this cutout,
-    #                # so just add the object_mask_frame to the total frame
-    #                mask += object_mask_frame
-    #
-    #            # Else, use the source mask (saturation or model-based source)
-    #            else:
-    #
-    #                # Add this galaxy to the total mask
-    #                mask[star.source.cutout.y_min:star.source.cutout.y_max, star.source.cutout.x_min:star.source.cutout.x_max] += star.source.mask
-    #
-    #        # If a source was not detected for this star but the inclusion of undetected stars in the mask is enabled
-    #        elif self.config.mask.include_undetected:
-    #
-    #            # Create a new source based on the default FWHM value and the specified sigma level and outer factor of the removal
-    #            source = star.source_at_sigma_level(self.frame, self.fwhm, self.config.removal.sigma_level, self.config.removal.outer_factor)
-    #
-    #            # Add this sky object to the total mask
-    #            mask[source.cutout.y_min:source.cutout.y_max, source.cutout.x_min:source.cutout.x_max] += source.mask
-    #
-    #    # Return the mask
-    #    return mask
-
-    # -----------------------------------------------------------------
-
-    #@property
-    #def saturation_mask(self):
-
-    #    """
-    #    This function ...
-    #    :return:
-    #    """
-
-    #    # Initialize a mask with the dimensions of the frame
-    #    mask = Mask(np.zeros_like(self.frame))
-    #
-    #    # Loop over all sky objects
-    #    for star in self.objects:
-    #
-    #        # If no saturation was found for this star, skip it
-    #        if not star.has_saturation: continue
-    #
-    #        # Add this star to the mask
-    #        if self.config.saturation_mask.use_aperture and star.has_aperture:
-    #
-    #            object_mask_frame = Mask.from_aperture(self.frame.xsize, self.frame.ysize, star.aperture)
-    #            object_mask = object_mask_frame[star.source.cutout.y_min:star.source.cutout.y_max, star.source.cutout.x_min:star.source.cutout.x_max]
-    #
-    #        else: object_mask = star.source.mask
-    #
-    #        # Add this galaxy to the total mask
-    #        mask[star.source.cutout.y_min:star.source.cutout.y_max, star.source.cutout.x_min:star.source.cutout.x_max] += object_mask
-    #
-    #    # Return the mask
-    #    return mask
-
-    # -----------------------------------------------------------------
-
     @property
     def table(self):
 
@@ -1076,7 +1217,7 @@ class StarExtractor(ObjectExtractor):
         fwhms = []
 
         # Loop over all stars
-        for star in self.objects:
+        for star in self.stars:
 
             catalogs.append(star.catalog)
             ids.append(star.id)
@@ -1130,13 +1271,13 @@ class StarExtractor(ObjectExtractor):
         :return:
         """
 
-        # If requested, write out a table with the star/galaxy properties
+        # If requested, write out a table with the star properties
         if self.config.write_table: self.write_table()
 
-        # If requested, write out the star/galaxy region
+        # If requested, write out the star region
         if self.config.write_region: self.write_region()
 
-        # If requested, write out the frame where the stars/galaxies are masked
+        # If requested, write out the frame where the stars are masked
         if self.config.write_masked_frame: self.write_masked_frame()
 
         # If requested, write out the mask of other sources

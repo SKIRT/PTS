@@ -12,22 +12,15 @@ import numpy as np
 from scipy import ndimage
 import copy
 
-# Import Astromagic modules
-from . import fitting
-from . import plotting
-from ..core import regions
-from . import statistics
-from . import coordinates
-from . import cropping
-from . import interpolation
-from ..core.source import Source
-from ..core import masks
-
 # Import astronomical modules
 from astropy.convolution import Gaussian2DKernel
 from astropy import log
 from photutils import daofind
 from astropy.stats import sigma_clipped_stats
+
+# Import Astromagic modules
+from . import fitting, plotting, statistics, coordinates, cropping, interpolation, masks, regions
+from ..core import Source
 
 # -----------------------------------------------------------------
 

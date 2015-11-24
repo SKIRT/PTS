@@ -4,7 +4,7 @@
 # **       Astromagic -- the image editor for Astronomers        **
 # *****************************************************************
 
-# Ensure Python 3 functionality
+# Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
@@ -13,7 +13,7 @@ import os.path
 import imp
 from collections import defaultdict
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Create an empty dictionary to contain the required modules together with the places of use
 modules = defaultdict(list)
@@ -62,4 +62,4 @@ for module, files in modules.items():
     # List the files where this module is used
     for file in files: print("  - ", file)
 
-# *****************************************************************
+# -----------------------------------------------------------------

@@ -106,6 +106,3 @@ def adjust(config, user_config):
         else: config[key] = user_config[key]
 
 # -----------------------------------------------------------------
-
-
-

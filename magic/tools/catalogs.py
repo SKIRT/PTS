@@ -7,15 +7,15 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
-# Import Astromagic modules
-from ..core import regions
-
 # Import astronomical modules
 import astropy.units as u
 import astropy.coordinates as coord
 from astroquery.vizier import Vizier
 from astroquery.ned import Ned
 from astroquery.irsa_dust import IrsaDust
+
+# Import Astromagic modules
+from . import regions
 
 # -----------------------------------------------------------------
 

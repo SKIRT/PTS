@@ -15,6 +15,25 @@ from astropy import logger
 
 # -----------------------------------------------------------------
 
+def new_log(name, level):
+
+    """
+    This function ...
+    :param level:
+    :return:
+    """
+
+    # Create the logger
+    log = logger.AstropyLogger(name)
+
+    # Set the log level
+    log.setLevel(level)
+
+    # Return the logger
+    return log
+
+# -----------------------------------------------------------------
+
 def link_file_log(log, path, level):
     
     """
@@ -25,7 +44,7 @@ def link_file_log(log, path, level):
     fh = logger.FileHandler(path)
     
     # Create a formatter
-    formatter = logging.Formatter("%(asctime)s.%(msecs)d - %(levelname)s - %(message)s (%(origin)s)", "%d/%m/%Y %H:%M:%S")
+    formatter = logging.Formatter("%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s (%(origin)s)", "%d/%m/%Y %H:%M:%S")
 
     # Set the formatter
     fh.setFormatter(formatter)

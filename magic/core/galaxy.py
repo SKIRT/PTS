@@ -11,12 +11,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Import Astromagic modules
-from .source import Source
-from .skyobject import SkyObject
-from .vector import Extent
-from astropy.coordinates import Angle
-
 # Import astronomical modules
 import astropy.io.fits as pyfits
 import aplpy
@@ -26,6 +20,10 @@ import astroquery.exceptions
 from astropy.coordinates import Angle
 import astropy.coordinates as coord
 from astroquery.vizier import Vizier
+
+# Import Astromagic modules
+from . import Source, SkyObject
+from ..basic import Extent
 
 # -----------------------------------------------------------------
 
@@ -218,17 +216,18 @@ class Galaxy(SkyObject):
 
     # -----------------------------------------------------------------
 
-    def source_from_parameters(self, frame, outer_factor):
+    def source_from_parameters(self, frame, outer_factor, expansion_factor=1.0):
 
         """
         This function ...
         :return:
         """
 
+        # Get the parameters describing the elliptical contour
         center, radius, angle = self.ellipse_parameters(frame.wcs, frame.pixelscale, None)
 
         # Create a source object
-        self.source = Source(frame, center, radius, angle, outer_factor)
+        self.source = Source(frame, center, radius*expansion_factor, angle, outer_factor)
 
     # -----------------------------------------------------------------
 
