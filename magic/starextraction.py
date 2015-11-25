@@ -518,6 +518,10 @@ class StarExtractor(object):
                 # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
                 if not self.config.saturation.remove_foreground and self.galaxyextractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
 
+                # If a model was not found for this star, skip it unless the remove_if_not_fitted flag is enabled
+                if not star.has_model and not self.config.saturation.remove_if_not_fitted: continue
+                if star.has_model: assert star.has_source
+
                 # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
                 if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
@@ -560,7 +564,11 @@ class StarExtractor(object):
                 # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
                 if not self.config.saturation.remove_foreground and self.galaxyextractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
 
-                # If a source was not found for this star, skip it
+                # If a model was not found for this star, skip it unless the remove_if_not_fitted flag is enabled
+                if not star.has_model and not self.config.saturation.remove_if_not_fitted: continue
+                if star.has_model: assert star.has_source
+
+                # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
                 if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
                 # Calculate the value (flux or brightness) for this star
