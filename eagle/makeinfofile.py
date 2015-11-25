@@ -237,14 +237,32 @@ def limitedfluxdensity(simulation, instrumentname, wavelengths, cmask, filterobj
     frame = filterobject.convolve(wavelengths[cmask], cube[:,:,cmask])
     frame = simulation.convert(frame, from_unit='W/m3/sr', to_unit='MJy/sr', wavelength=filterobject.pivotwavelength())
 
+    # get information on the simulated pixels (assume all frames are identical and square)
+    sim_pixels = simulation.instrumentshape()[0]
+    sim_pixelarea = simulation.angularpixelarea()   # in sr
+    sim_pixelwidth = np.sqrt(sim_pixelarea) * 648000 / np.pi   # in arcsec
+
+    # get information on the observational instrument's pixels (assume pixel width ~ fwhm/3)
+    obs_pixelwidth = fwhm/3   # in arcsec
+
+    # calculate the bin size to obtain simulated pixels similar to observed pixels
+    bin_pixels = find_nearest_divisor(sim_pixels, obs_pixelwidth/sim_pixelwidth)
+    bin_pixelarea = sim_pixelarea * bin_pixels**2
+
+    # rebin the frame
+    frame = frame.reshape((sim_pixels//bin_pixels,bin_pixels,sim_pixels//bin_pixels,bin_pixels)).mean(axis=3).mean(axis=1)
+
     # convolve the frame with a Gaussian of the appropriate size
-    pixelarea = simulation.angularpixelarea()   # in sr
-    pixelwidth = np.sqrt(pixelarea)             # in radians
-    pixelwidth = pixelwidth * 648000 / np.pi    # in arcsec
-    frame = gaussian_filter(frame, sigma=fwhm/pixelwidth/2.35482, mode='constant')
+    frame = gaussian_filter(frame, sigma=fwhm/sim_pixelwidth/bin_pixels/2.35482, mode='constant')
 
     # integrate over the frame to obtain the total flux density and convert from MJy to Jy
-    fluxdensity = frame[frame>fluxlimit].sum() * pixelarea * 1e6
+    fluxdensity = frame[frame>fluxlimit].sum() * bin_pixelarea * 1e6
     return fluxdensity
+
+# This function returns the integer divisor of the first (integer) argument that is nearest to the second (float) argument
+def find_nearest_divisor(n, d):
+    divisors = np.asarray(sorted(set( x for tup in ((i, n//i) for i in range(1, int(n**0.5)+1) if n % i == 0) for x in tup )))
+    index = np.argmin(np.abs(divisors-d))
+    return divisors[index]
 
 # -----------------------------------------------------------------
