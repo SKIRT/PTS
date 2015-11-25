@@ -287,6 +287,35 @@ class Star(SkyObject):
         # If a 'saturation' source was found
         if source is not None:
 
+            # Check whether the source centroid matches the star position
+            if config.check_centroid:
+
+                from photutils import segment_properties, properties_table
+                from ..basics import Position
+
+                # Get the segment properties
+                # Since there is only one segment in the source.mask (the center segment), the props
+                # list contains only one entry (one galaxy)
+                props = segment_properties(source.cutout, source.mask)
+                properties = props[0]
+
+                x_shift = source.cutout.x_min
+                y_shift = source.cutout.y_min
+
+                # Obtain the position, orientation and extent
+                position = Position(properties.xcentroid.value + x_shift, properties.ycentroid.value + y_shift)
+                a = properties.semimajor_axis_sigma.value
+                b = properties.semiminor_axis_sigma.value
+                theta = properties.orientation.value
+
+                # Create the aperture
+                #self.aperture = EllipticalAperture(position, a, b, theta=theta)
+
+                difference = position - self.pixel_position(frame.wcs)
+
+                with open(config.centroid_table_path, 'a') as centroid_file:
+                    centroid_file.write(str(difference.norm) + "  " + str(a/b) + "\n")
+
             # Replace the source by a source that covers the saturation
             self.source = source
 
