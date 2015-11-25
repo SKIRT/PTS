@@ -56,7 +56,7 @@ class SExtractor(object):
         self.frame = None
 
         # Set the path to the dat/SExtractor directory
-        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
+        directory = os.path.dirname(inspect.getfile(inspect.currentframe()))
         self.dat_path = os.path.join(directory, "dat", "sextractor")
 
         # Set the path to the temporary directory to None initially

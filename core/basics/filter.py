@@ -103,7 +103,8 @@ class Filter:
         # string --> load from appropriate resource file
         if isinstance(filterspec, types.StringTypes):
             for pythondir in sys.path:
-                filterdir = os.path.join(pythondir, "dat", "filters")
+                filterdir = os.path.join(pythondir, "pts", "core", "dat", "filters")
+                print filterdir
                 if os.path.isdir(filterdir):
                     filterfiles = filter(lambda fn: fn.endswith(".xml") and filterspec in fn, os.listdir(filterdir))
                     if len(filterfiles) > 1: raise ValueError("filter spec " + filterspec + " is ambiguous")

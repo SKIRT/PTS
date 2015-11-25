@@ -181,12 +181,17 @@ class Star(SkyObject):
         :return:
         """
 
-        # Check whether the method for removal is valid
-        if config.method != "model" and config.method != "interpolation":
-            raise ValueError("Method for removal should be either 'model' or 'interpolation'")
+        # Check which removal method to use, depending on the case
+        # (star has model, star has no model but source, star has neither)
+        if self.has_model: removal_method = config.method[0]
+        elif self.has_source: removal_method = config.method[1]
+        else: removal_method = config.method[2]
 
         # Remove the star by subtracting the model if a model was found and the method is set to 'model'
-        if config.method == "model" and self.has_model:
+        if removal_method == "model":
+
+            # Check whether this star has a model
+            if not self.has_model: raise ValueError("Cannot use 'model' mode for stars without a model")
 
             # Add a new stage to the track record
             if self.has_track_record: self.track_record.set_stage("removal")
@@ -218,7 +223,7 @@ class Star(SkyObject):
             mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
 
         # If a segment was found that can be identified with a source
-        elif self.has_source or config.remove_if_undetected:
+        elif removal_method == "interpolation":
 
             # Add a new stage to the track record
             if self.has_track_record: self.track_record.set_stage("removal")
@@ -253,6 +258,10 @@ class Star(SkyObject):
 
             # Update the mask
             mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
+
+        # None is a valid removal method
+        elif removal_method is None: pass
+        else: raise ValueError("The valid options for removal methods are 'model', 'interpolation' or None")
 
     # -----------------------------------------------------------------
 

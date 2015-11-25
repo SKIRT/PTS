@@ -463,6 +463,8 @@ class StarExtractor(object):
             # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
             if not self.config.removal.remove_foreground and self.galaxyextractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
 
+            #
+
             # Remove the star in the frame
             star.remove(self.frame, self.mask, self.config.removal, default_fwhm)
 
