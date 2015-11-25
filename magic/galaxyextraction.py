@@ -668,7 +668,7 @@ class GalaxyExtractor(object):
 
         # Create a frame where the objects are masked
         frame = self.frame.copy()
-        frame[self.mask] = 0.0
+        frame[self.mask] = float(self.config.writing.mask_value)
 
         # Write out the masked frame
         frame.save(self.config.writing.masked_frame_path)

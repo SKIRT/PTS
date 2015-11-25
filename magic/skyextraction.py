@@ -80,15 +80,6 @@ class SkyExtractor(object):
         # Perform sigma-clipping
         if self.config.sigma_clip_mask: self.sigma_clip_mask()
 
-        # Write out a histogram of the sky pixels
-        if self.config.write_histogram: self.save_histogram()
-
-        # If requested, write out the frame where the galaxies and stars are masked
-        if self.config.write_masked_frame: self.save_masked_frame()
-
-        # If requested, write out the frame where pixels covered by the sigma-clipped mask are zero
-        if self.config.write_clipped_masked_frame: self.write_clipped_masked_frame()
-
         # If requested, estimate the sky
         if self.config.estimate: self.estimate()
 
@@ -129,7 +120,14 @@ class SkyExtractor(object):
         :return:
         """
 
-        pass
+        # Write out a histogram of the sky pixels
+        if self.config.write_histogram: self.write_histogram()
+
+        # If requested, write out the frame where the galaxies and stars are masked
+        if self.config.write_masked_frame: self.write_masked_frame()
+
+        # If requested, write out the frame where pixels covered by the sigma-clipped mask are zero
+        if self.config.write_clipped_masked_frame: self.write_clipped_masked_frame()
 
     # -----------------------------------------------------------------
 
@@ -161,7 +159,7 @@ class SkyExtractor(object):
 
     # -----------------------------------------------------------------
 
-    def save_histogram(self):
+    def write_histogram(self):
 
         """
         This function ...
@@ -169,14 +167,14 @@ class SkyExtractor(object):
         """
 
         # Inform the user
-        log.info("Saving sky histogram to " + self.config.saving.histogram_path)
+        log.info("Writing sky histogram to " + self.config.writing.histogram_path)
 
         # Create a masked array
         masked = np.ma.masked_array(self.frame, mask=self.mask)
         masked_clipped = np.ma.masked_array(self.frame, mask=self.clipped_mask)
 
         # Create the PDF figure
-        with PdfPages(self.config.saving.histogram_path) as pdf:
+        with PdfPages(self.config.writing.histogram_path) as pdf:
 
             # Create a figure
             fig = plt.figure()
@@ -195,7 +193,7 @@ class SkyExtractor(object):
             if self.config.histogram.log_scale: plt.semilogy()
 
             # Save the figure
-            #plt.savefig(self.config.saving.histogram_path, bbox_inches='tight', pad_inches=0.25)
+            #plt.savefig(self.config.writing.histogram_path, bbox_inches='tight', pad_inches=0.25)
 
             pdf.savefig(fig)
 
@@ -265,7 +263,7 @@ class SkyExtractor(object):
 
     # -----------------------------------------------------------------
 
-    def save_masked_frame(self):
+    def write_masked_frame(self):
 
         """
         This function ...
@@ -273,18 +271,18 @@ class SkyExtractor(object):
         """
 
         # Inform the user
-        log.info("Saving the masked frame to " + self.config.saving.masked_frame_path)
+        log.info("Writing the masked frame to " + self.config.writing.masked_frame_path)
 
         # Create a frame where the objects are masked
         frame = copy.deepcopy(self.frame)
-        frame[self.mask] = float(self.config.saving.mask_value)
+        frame[self.mask] = float(self.config.writing.mask_value)
 
         # Save the masked frame
-        frame.save(self.config.saving.masked_frame_path)
+        frame.save(self.config.writing.masked_frame_path)
 
     # -----------------------------------------------------------------
 
-    def save_clipped_masked_frame(self):
+    def write_clipped_masked_frame(self):
 
         """
         This function ...
@@ -292,14 +290,14 @@ class SkyExtractor(object):
         """
 
         # Inform the user
-        log.info("Saving sigma-clipped masked frame to " + self.config.saving.clipped_masked_frame_path)
+        log.info("Saving sigma-clipped masked frame to " + self.config.writing.clipped_masked_frame_path)
 
         # Create a frame with masked pixels
         frame = copy.deepcopy(self.frame)
-        frame[self.clipped_mask] = float(self.config.saving.mask_value)
+        frame[self.clipped_mask] = float(self.config.writing.mask_value)
 
         # Save the masked frame
-        frame.save(self.config.saving.clipped_masked_frame_path)
+        frame.save(self.config.writing.clipped_masked_frame_path)
 
     # -----------------------------------------------------------------
 

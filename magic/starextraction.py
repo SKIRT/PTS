@@ -424,6 +424,22 @@ class StarExtractor(object):
             # Find a source
             if star.has_source or source is not None: star.fit_model(self.config.fitting, source)
 
+        # If requested, perform sigma-clipping to the list of FWHM's to filter out outliers
+        if self.config.fitting.sigma_clip_fwhms:
+
+            mean, median, stddev = statistics.sigma_clipped_statistics(self.fwhms, self.config.fitting.fwhm_sigma_level)
+            lower = median - self.config.fitting.fwhm_sigma_level * stddev
+            upper = median + self.config.fitting.fwhm_sigma_level * stddev
+
+            # Loop over all stars for which a model was found
+            for star in self.stars:
+
+                # Ignore stars without model
+                if not star.has_model: continue
+
+                # Remove the model if its FWHM is clipped out
+                if star.fwhm > upper or star.fwhm < lower: star.model = None
+
         # Inform the user
         self.log.debug("Found a model for {0} out of {1} stars with source ({2:.2f}%)".format(self.have_model, self.have_source, self.have_model/self.have_source*100.0))
 
@@ -1008,7 +1024,7 @@ class StarExtractor(object):
 
         # Create a frame where the objects are masked
         frame = self.frame.copy()
-        frame[self.mask] = 0.0
+        frame[self.mask] = float(self.config.writing.mask_value)
 
         # Write out the masked frame
         frame.save(self.config.writing.masked_frame_path)
