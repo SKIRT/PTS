@@ -1117,6 +1117,9 @@ class StarExtractor(object):
         # Initialize the region string
         print("# Region file format: DS9 version 4.1", file=f)
 
+        print("have saturation = ", self.have_saturation)
+        print("have aperture = ", self.have_aperture)
+
         # Loop over the stars
         for star in self.stars:
 
@@ -1228,7 +1231,7 @@ class StarExtractor(object):
         """
 
         count = 0
-        for skyobject in self.stars: count += skyobject.has_source
+        for star in self.stars: count += star.has_source
         return count
 
     # -----------------------------------------------------------------
@@ -1243,6 +1246,34 @@ class StarExtractor(object):
 
         count = 0
         for star in self.stars: count += star.has_model
+        return count
+
+    # -----------------------------------------------------------------
+
+    @property
+    def have_saturation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        count = 0
+        for star in self.stars: count += star.has_saturation
+        return count
+
+    # -----------------------------------------------------------------
+
+    @property
+    def have_aperture(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        count = 0
+        for star in self.stars: count += star.has_aperture
         return count
 
     # -----------------------------------------------------------------
