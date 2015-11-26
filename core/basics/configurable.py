@@ -6,7 +6,7 @@
 # *****************************************************************
 
 """
-This module can be used to launch SKIRT/FitSKIRT simulations remotely
+This module ...
 """
 
 # -----------------------------------------------------------------
@@ -15,67 +15,50 @@ This module can be used to launch SKIRT/FitSKIRT simulations remotely
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import pxssh
+import os
+import logging
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import Configurable
+from pts.core.tools import configuration
 
 # -----------------------------------------------------------------
 
-class SkirtRemote(Configurable):
+class Configurable(object):
 
     """
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config):
 
-        """
-        The constructor ...
-        :param config:
-        :return:
-        """
-
-        # Call the constructor of the base class
-        super(SkirtRemote, self).__init__(config, "skirtremote")
-
-        ## Attributes
-
-        # Create the SSH interface
-        self.ssh = pxssh.pxssh()
+        # Set the configuration object
+        self.config = configuration.set(self.name, config)
+        
+        # Set the logger to None initially
+        self.log = None
 
     # -----------------------------------------------------------------
 
-    def login(self):
+    def setup(self):
+        
+        """
+        This function ...
+        """
+    
+        # Create the logger
+        self.log = logging.new_log(self.name, self.config.logging.level)
+        if self.config.logging.path is not None: logging.link_file_log(self.log, self.config.logging.path, self.config.logging.level)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def name(self):
 
         """
         This function ...
         :return:
         """
 
-        # Connect to the remote host
-        self.ssh.login(self.config.host, self.config.user, self.config.password)
-
-    # -----------------------------------------------------------------
-
-    def submit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    def status(self):
-
-        """
-        This function ..
-        :return:
-        """
-
-        pass
+        return type(self).__name__.lower()
 
 # -----------------------------------------------------------------

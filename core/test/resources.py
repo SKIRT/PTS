@@ -16,15 +16,14 @@ from __future__ import absolute_import, division, print_function
 import os
 import shutil
 
-# Import the relevant PTS modules
-from ..core.skifile import SkiFile
-from ..core.skirtexec import SkirtExec
-from ..core.parameters import SkirtParameters
-from ..extract.timeline import TimeLineExtractor
+# Import the relevant PTS classes and modules
+from pts.core.basics import Configurable
+from pts.core.simulation import SkiFile, SkirtExec, SkirtParameters
+from pts.core.extract import TimeLineExtractor
 
 # -----------------------------------------------------------------
 
-class ResourceEstimator(object):
+class ResourceEstimator(Configurable):
 
     """
     This class...
@@ -37,9 +36,8 @@ class ResourceEstimator(object):
         :return:
         """
 
-        ## Configuration
-
-        # ...
+        # Call the constructor of the base class
+        #super(ResourceEstimator, self).__init__(config)
 
         ## Attributes
 
@@ -70,22 +68,37 @@ class ResourceEstimator(object):
         :return:
         """
 
+        # 1. Call the setup function
+        self.setup(ski_path, processes, threads)
+
+        # 2. Make the temporary directory
+        self.make_temp(ski_path)
+
+        # 3. Set the parameters for the simulation
+        self.set_parameters()
+
+        # 4. Run the simulation
+        self.simulate()
+
+        # 5. Remove the output
+        self.clear()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, ski_path, processes, threads):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(ResourceEstimator, self).__init__()
+
         # Adjust settings
         self.ski_file = SkiFile(ski_path)
         self.processes = processes
         self.threads = threads
-
-        # Make the temporary directory
-        self.make_temp(ski_path)
-
-        # Set the parameters for the simulation
-        self.set_parameters()
-
-        # Run the simulation
-        self.simulate()
-
-        # Remove the output
-        self.clear()
 
     # -----------------------------------------------------------------
 

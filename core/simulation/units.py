@@ -15,6 +15,7 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import types
 import numpy as np
 

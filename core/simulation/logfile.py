@@ -5,7 +5,9 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package core.logfile
+"""
+This module ...
+"""
 
 # -----------------------------------------------------------------
 
@@ -18,7 +20,7 @@ import os
 # Import astronomical modules
 from astropy.table import Table
 
-# Import the relevant PTS modules
+# Import the relevant PTS classes and modules
 from ..tools import time
 
 # -----------------------------------------------------------------

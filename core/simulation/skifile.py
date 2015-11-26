@@ -11,17 +11,14 @@
 
 # -----------------------------------------------------------------
 
-# Ensure Python 3 compatibility
-from __future__ import absolute_import, division, print_function
-
 # Import standard modules
 import os.path
 from datetime import datetime
 from lxml import etree
 
-# Import the relevant PTS modules
-from .skirtunits import SkirtUnits
-from . import archive as arch
+# Import the relevant PTS classes and modules
+from pts.core.simulation import SkirtUnits
+from pts.core.tools import archive as arch
 
 # -----------------------------------------------------------------
 #  SkiFile class

@@ -12,7 +12,7 @@
 # dust, star formation and old stars. Then, it uses these maps as input for SKIRT radiative transfer simulations
 # and fits the output to the observed galaxy SED.
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
@@ -24,23 +24,17 @@ import shutil
 
 # Import astronomical modules
 from astropy import units as u
-from astropy import log
-import astropy.logger
 
-# Import Astromagic modules
-from astromagic import Image
-from astromagic.core.frames import Frame
+# Import the relevant AstroMagic classes and modules
+from pts.magic.core import Image, Frame
 
-# Import PTS modules
-from ..tools import configuration
-from .imagepreparation import ImagePreparation
-from .mapmaker import MapMaker
-from .sedfitter import SEDFitter
-from .galaxydecomposer import GalaxyDecomposer
+# Import the relevant PTS classes and modules
+from pts.modeling.core import ImagePreparation, MapMaker, SEDFitter, GalaxyDecomposer
+from pts.core.basics import Configurable
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
-class GalaxyModeler(object):
+class GalaxyModeler(Configurable):
 
     """
     An instance of the GalaxyModeler class in this module is responsible for taking reduced astronomical image data
@@ -49,7 +43,7 @@ class GalaxyModeler(object):
     and fits the output to the observed galaxy SED.
     """
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def __init__(self, path, config=None):
 
@@ -63,23 +57,14 @@ class GalaxyModeler(object):
         :return:
         """
 
-        ## Configuration
-
-        self.config = configuration.set("galaxymodeler", config)
+        # Call the constructor of the base class
+        super(ImagePreparation, self).__init__(config, "galaxymodeler")
 
         ## Temporary
 
         self.config.decompose = False
         self.config.make_maps = False
         self.config.fit_sed = False
-
-        ## Logging
-
-        # Set the log level
-        log.setLevel(self.config.logging.level)
-
-        # Set log file path
-        if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
 
         ## Paths
 
@@ -95,7 +80,7 @@ class GalaxyModeler(object):
         self.ignore_path = os.path.join(path, self.config.ignore_dir)
         self.manual_path = os.path.join(path, self.config.manual_dir)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def run(self):
 
@@ -104,10 +89,13 @@ class GalaxyModeler(object):
         :return:
         """
 
-        # 1. Prepare
+        # 1. Call the setup function
+        self.setup()
+
+        # 2. Prepare the images
         if self.config.prepare: self.prepare_images()
 
-        # 2. Fit bulge and disk
+        # 3. Fit bulge and disk
         if self.config.decompose: self.decompose()
 
         # 4. Make maps
@@ -116,7 +104,7 @@ class GalaxyModeler(object):
         # 5. Run SKIRT simulations, fit the SED
         if self.config.fit_sed: self.fit_sed()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def clear_output(self):
 
@@ -127,7 +115,7 @@ class GalaxyModeler(object):
 
         shutil.rmtree('/home/me/test')
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def prepare_images(self):
 
@@ -317,7 +305,7 @@ class GalaxyModeler(object):
             # Save the result
             image.save(final_path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def decompose(self):
 
@@ -379,7 +367,7 @@ class GalaxyModeler(object):
             component_path = os.path.join(self.prep_path, name, 'final.fits')
             frame.save(component_path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def make_maps(self):
 
@@ -464,7 +452,7 @@ class GalaxyModeler(object):
         # Run the map maker
         maker.run()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
     
     def fit_sed(self):
 
@@ -489,7 +477,7 @@ class GalaxyModeler(object):
         # Run the SED fitting
         fitter.run()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def find_input_files(self):
 
@@ -534,7 +522,4 @@ class GalaxyModeler(object):
                 try: os.mkdir(os.path.join(self.prep_path, base_filename))
                 except OSError: pass
 
-# *****************************************************************
-
-
-
+# -----------------------------------------------------------------

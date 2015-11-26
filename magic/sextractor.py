@@ -15,16 +15,16 @@ from datetime import datetime
 
 # Import astronomical modules
 from astropy.table import Table
-from astropy import log
-import astropy.logger
 
 # Import the relevant AstroMagic classes and modules
 from .core import Frame
-from .tools import configuration
+
+# Import the relevant PTS classes and modules
+from pts.core.basics import Configurable
 
 # -----------------------------------------------------------------
 
-class SExtractor(object):
+class SExtractor(Configurable):
 
     """
     This class ...
@@ -38,17 +38,8 @@ class SExtractor(object):
         :return:
         """
 
-        ## Configuration
-
-        self.config = configuration.set("sextractor", config)
-
-        ## Logging
-
-        # Set the log level
-        log.setLevel(self.config.logging.level)
-
-        # Set log file path
-        if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
+        # Call the constructor of the base class
+        super(SExtractor, self).__init__(config)
 
         ## Attributes
 
@@ -77,23 +68,42 @@ class SExtractor(object):
         :return:
         """
 
+        # 1. Call the setup function
+        self.setup(frame, galaxyextractor, starextractor)
+
+        # 2. Create a temporary directory for the input and output of SExtractor
+        self.create_directory()
+
+        # 3. Copy the input files into the temporary directory
+        self.copy_input()
+
+        # 4. Launch SExtractor
+        self.launch_sextractor()
+
+        # 5. Read the SExtractor output
+        self.read_output()
+
+        # 6. Remove the temporary directory, if requested
+        if self.config.remove_temp: self.remove_directory()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, frame, galaxyextractor=None, starextractor=None):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(SExtractor, self).setup()
+
         # Make a local reference to the frame
         self.frame = frame
 
-        # Create a temporary directory for the input and output of SExtractor
-        self.create_directory()
-
-        # Copy the input files into the temporary directory
-        self.copy_input()
-
-        # Launch SExtractor
-        self.launch_sextractor()
-
-        # Read the SExtractor output
-        self.read_output()
-
-        # Remove the temporary directory, if requested
-        if self.config.remove_temp: self.remove_directory()
+        # Make local references to the galaxy and star extractors
+        self.galaxyex = galaxyextractor
+        self.starex = starextractor
 
     # -----------------------------------------------------------------
 

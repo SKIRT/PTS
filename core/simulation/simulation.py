@@ -12,19 +12,15 @@
 
 # -----------------------------------------------------------------
 
-# Ensure Python 3 compatibility
-from __future__ import absolute_import, division, print_function
-
 # Import standard modules
 import os
 import os.path
 import types
 import numpy as np
 
-# Import the relevant PTS modules
-from .skifile import SkiFile
-from . import archive as arch
-from ..core.logfile import LogFile
+# Import the relevant PTS classes and modules
+from pts.core.simulation import SkiFile, LogFile
+from pts.core.tools import archive as arch
 
 # -----------------------------------------------------------------
 

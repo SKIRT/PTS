@@ -6,6 +6,7 @@
 # *****************************************************************
 
 # Import classes to make them available at the level of this subpackage
+from configurable import Configurable
 from filter import Filter
 from moviefile import MovieFile
 from rgbimage import RGBImage

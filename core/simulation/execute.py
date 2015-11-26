@@ -12,17 +12,14 @@
 
 # -----------------------------------------------------------------
 
-# Ensure Python 3 compatibility
-from __future__ import absolute_import, division, print_function
-
 # Import standard modules
 import os
 import os.path
 import subprocess
 
-# Import the relevant PTS modules
-from .log import Log
-from ..core.parameters import SkirtParameters
+# Import the relevant PTS classes and modules
+from pts.core.basics import Log
+from pts.core.simulation import SkirtParameters
 
 # -----------------------------------------------------------------
 #  SkirtExec class

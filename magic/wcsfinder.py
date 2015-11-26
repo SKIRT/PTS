@@ -4,15 +4,21 @@
 # **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
-# Ensure Python 3 functionality
-from __future__ import absolute_import, division, print_function
-
-# Import the relevant AstroMagic classes and modules
-from .tools import configuration
+"""
+This module ...
+"""
 
 # -----------------------------------------------------------------
 
-class WCSFinder(object):
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
+
+# Import the relevant PTS classes and modules
+from pts.core.basics import Configurable
+
+# -----------------------------------------------------------------
+
+class WCSFinder(Configurable):
 
     """
     This class ...
@@ -26,9 +32,8 @@ class WCSFinder(object):
         :return:
         """
 
-        ## Configuration
-
-        self.config = configuration.set("wcsfinder", config)
+        # Call the constructor of the base class
+        super(WCSFinder, self).__init__(config)
 
     # -----------------------------------------------------------------
 
@@ -39,6 +44,7 @@ class WCSFinder(object):
         :return:
         """
 
-        pass
+        # 1. Call the setup function
+        self.setup()
         
 # -----------------------------------------------------------------

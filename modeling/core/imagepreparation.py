@@ -5,33 +5,33 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
+"""
+This module ...
+"""
+
+# -----------------------------------------------------------------
+
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import os
 import numpy as np
-import os.path
-import inspect
 
 # Import astronomical modules
 import astropy.units as u
-from astropy import log
-import astropy.logger
 
-# Import Astromagic modules
-from astromagic.core.frames import Frame
-from astromagic.magic.starextraction import StarExtractor
-from astromagic.magic.galaxyextraction import GalaxyExtractor
-from astromagic.magic.skyextraction import SkyExtractor
-from astromagic.core import regions
-from astromagic.tools import cropping
+# Import the relevant AstroMagic classes and modules
+from pts.magic.core import Frame
+from pts.magic import StarExtractor, GalaxyExtractor, SkySubtractor
+from pts.magic.tools import regions, cropping
 
-# Import the relevant PTS modules
-from ..tools import configuration
+# Import the relevant PTS classes and modules
+from pts.core.basics import Configurable
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
-class ImagePreparation(object):
+class ImagePreparation(Configurable):
     
     """
     This class...
@@ -45,17 +45,8 @@ class ImagePreparation(object):
         :return:
         """
 
-        ## Configuration
-
-        self.config = configuration.set("imagepreparation", config)
-
-        ## Logging
-
-        # Set the log level
-        log.setLevel(self.config.logging.level)
-
-        # Set log file path
-        if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
+        # Call the constructor of the base class
+        super(ImagePreparation, self).__init__(config, "imagepreparation")
 
         ## Temporary
 
@@ -63,15 +54,17 @@ class ImagePreparation(object):
 
         ## Attributes
 
-        # Set extractors to None
+        # Set the galaxy and star extractors to None initially
         self.galaxyex = None
         self.starex = None
-        self.skyex = None
+
+        # Set the sky subtractor to None initially
+        self.skysub = None
 
         # Set the image reference to None initially
         self.image = None
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def run(self, image):
 
@@ -81,37 +74,49 @@ class ImagePreparation(object):
         :return:
         """
 
-        # Cache a reference to the image
-        self.image = image
+        # 1. Call the setup function
+        self.setup(image)
 
-        # Extract galaxies
-        self.extract_galaxies()
+        # 2. Extract stars and galaxies from the image
+        self.extract_sources()
 
-        # If requested, extract the stars
-        if self.config.extract_stars: self.extract_stars()
+        # 3. If requested, subtract the sky
+        if self.config.extract_sky: self.subtract_sky()
 
-        # If requested, extract the sky
-        if self.config.extract_sky: self.extract_sky()
-
-        # If requested, correct for galactic extinction
+        # 4. If requested, correct for galactic extinction
         if self.config.correct_for_extinction: self.correct_for_extinction()
 
-        # If requested, convert the unit
+        # 5. If requested, convert the unit
         if self.config.convert_unit: self.convert_unit()
 
-        # If requested, convolve
+        # 6. If requested, convolve
         if self.config.convolve: self.convolve()
 
-        # If requested, rebin
+        # 7. If requested, rebin
         if self.config.rebin: self.rebin()
 
-        # If requested, set the uncertainties
+        # 8. If requested, set the uncertainties
         if self.config.set_uncertainties: self.set_uncertainties()
 
-        # If requested, crop
+        # 9. If requested, crop
         if self.config.crop: self.crop()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
+
+    def setup(self, image):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(ImagePreparation, self).setup()
+
+        # Make a local reference to the passed image
+        self.frame = image
+
+    # -----------------------------------------------------------------
 
     def clear(self):
 
@@ -120,15 +125,32 @@ class ImagePreparation(object):
         :return:
         """
 
-        # Set extractors to None
+        # Set the galaxy and star extractors to None
         self.galaxyex = None
         self.starex = None
-        self.skyex = None
+
+        # Set the sky subtractor to None
+        self.skysub = None
 
         # Set the image reference to None
         self.image = None
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
+
+    def extract_sources(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Extract the galaxies
+        self.extract_galaxies()
+
+        # If requested, extract the stars
+        if self.config.extract_stars: self.extract_stars()
+
+    # -----------------------------------------------------------------
 
     def extract_galaxies(self):
 
@@ -143,7 +165,7 @@ class ImagePreparation(object):
         # Run the galaxy extractor
         self.galaxyex.run(self.image.frames[self.config.primary])
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def extract_stars(self):
 
@@ -158,27 +180,27 @@ class ImagePreparation(object):
         # Run the star extractor
         self.starex.run(self.image.frames[self.config.primary], self.galaxyex)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
-    def extract_sky(self):
+    def subtract_sky(self):
 
         """
         This function ...
         :return:
         """
 
-        # Create a sky extractor
-        self.skyex = SkyExtractor(self.config.sky_extraction)
+        # Create a sky subtractor
+        self.skysub = SkySubtractor(self.config.sky_extraction)
 
         # Run the sky extraction
-        self.skyex.run(self.image.frames[self.config.primary], self.galaxyex, self.starex)
+        self.skysub.run(self.image.frames[self.config.primary], self.galaxyex, self.starex)
 
         # Print the statistics of the sky frame
-        log.info("Mean sky level = " + str(self.skyex.mean))
-        log.info("Median sky level = " + str(self.skyex.median))
-        log.info("Standard deviation of sky = " + str(self.skyex.stddev))
+        self.log.info("Mean sky level = " + str(self.skysub.mean))
+        self.log.info("Median sky level = " + str(self.skysub.median))
+        self.log.info("Standard deviation of sky = " + str(self.skysub.stddev))
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def correct_for_extinction(self):
 
@@ -191,7 +213,7 @@ class ImagePreparation(object):
         # Correct the primary frame for galactic extinction
         self.image.frames[self.config.primary] *= 10**(0.4*self.config.attenuation)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def convert_unit(self):
 
@@ -207,7 +229,7 @@ class ImagePreparation(object):
         unit = u.Unit(self.config.unit_conversion.to_unit)
 
         # Inform the user
-        log.info("Converting image to " + str(unit) + ", but not yet automatic")
+        self.log.info("Converting image to " + str(unit) + ", but not yet automatic")
 
         # Convert the image to different units (primary and errors frame)
         #self.image.convert_to(unit)
@@ -311,7 +333,7 @@ class ImagePreparation(object):
         # UNKOWN IMAGE NAME
         else: raise ValueError("Unkown image: " + self.image.name)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def convolve(self):
 
@@ -329,7 +351,7 @@ class ImagePreparation(object):
         # Convolve the image (the primary and errors frame)
         self.image.convolve(kernel)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def rebin(self):
 
@@ -345,7 +367,7 @@ class ImagePreparation(object):
         # Rebin the image (the primary and errors frame)
         self.image.rebin(reference)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def set_uncertainties(self):
 
@@ -413,7 +435,7 @@ class ImagePreparation(object):
                 # Create frame for the calibration error map
                 self.image.frames[self.config.errors] += self.config.uncertainties.calibration_error * self.image.frames[self.config.primary]
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def crop(self):
 
@@ -432,4 +454,4 @@ class ImagePreparation(object):
         # Crop the image (the primary and errors frame)
         self.image.crop(x_min, x_max, y_min, y_max)
 
-# *****************************************************************
+# -----------------------------------------------------------------

@@ -144,7 +144,7 @@ class SkyObject(object):
 
     # -----------------------------------------------------------------
 
-    def find_aperture(self, sigma_level):
+    def find_aperture(self, frame, config):
 
         """
         This function ...
@@ -163,11 +163,17 @@ class SkyObject(object):
 
         # Obtain the position, orientation and extent
         position = (properties.xcentroid.value + x_shift, properties.ycentroid.value + y_shift)
-        a = properties.semimajor_axis_sigma.value * sigma_level
-        b = properties.semiminor_axis_sigma.value * sigma_level
+        a = properties.semimajor_axis_sigma.value * config.sigma_level
+        b = properties.semiminor_axis_sigma.value * config.sigma_level
         theta = properties.orientation.value
 
-        # Create the aperture
-        self.aperture = EllipticalAperture(position, a, b, theta=theta)
+        # Calculate the difference (in number of pixels) between the aperture center and the position of the sky object
+        difference = self.pixel_position(frame.wcs) - Position(position[0], position[1])
+
+        # Set the aperture if the offset is smaller than or equal to the specified maximum
+        if difference.norm <= config.max_offset or config.max_offset is None:
+
+            # Create the aperture
+            self.aperture = EllipticalAperture(position, a, b, theta=theta)
 
 # -----------------------------------------------------------------

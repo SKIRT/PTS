@@ -4,6 +4,12 @@
 # **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
+"""
+This module ...
+"""
+
+# -----------------------------------------------------------------
+
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
@@ -27,11 +33,14 @@ from astropy.convolution import Gaussian2DKernel
 from .basics import Position, Extent, Mask, Region
 from .core import Frame, Source
 from .sky import Star
-from .tools import statistics, configuration, fitting, logging, regions, masks
+from .tools import statistics, fitting, regions, masks
+
+# Import the relevant PTS classes and modules
+from pts.core.basics import Configurable
 
 # -----------------------------------------------------------------
 
-class StarExtractor(object):
+class StarExtractor(Configurable):
 
     """
     This class ...
@@ -43,9 +52,8 @@ class StarExtractor(object):
         The constructor ...
         """
 
-        ## Configuration
-
-        self.config = configuration.set("starextractor", config)
+        # Call the constructor of the base class
+        super(StarExtractor, self).__init__(config)
 
         ## Attributes
 
@@ -107,15 +115,14 @@ class StarExtractor(object):
         This function ...
         """
 
+        # Call the setup function of the base class
+        super(StarExtractor, self).setup()
+
         # Make a local reference to the passed frame
         self.frame = frame
 
         # Make a local reference to the galaxy extractor (if any)
         self.galaxyextractor = galaxyextractor
-
-        # Create the logger
-        self.log = logging.new_log("starextractor", self.config.logging.level)
-        if self.config.logging.path is not None: logging.link_file_log(self.log, self.config.logging.path, self.config.logging.level)
 
         # Create a mask with shape equal to the shape of the frame
         self.mask = Mask(np.zeros_like(self.frame))
@@ -645,7 +652,7 @@ class StarExtractor(object):
             if star.ignore: continue
 
             # If the star does not have saturation, continue
-            if star.has_saturation: star.find_aperture(sigma_level=self.config.apertures.sigma_level)
+            if star.has_saturation: star.find_aperture(self.frame, self.config.apertures)
 
         # Inform the user
         self.log.info("Constructing elliptical aperture regions to encompass other contaminating sources")
@@ -1171,7 +1178,7 @@ class StarExtractor(object):
 
             # Calculate the difference between the aperture center and the star position (in number of pixels)
             difference = star.pixel_position(self.frame.wcs) - Position(ap_x_center, ap_y_center)
-            aperture_suffix += "text = {" + str(difference.norm) + "}"
+            aperture_suffix += " text = {" + str(difference.norm) + "}"
 
             print("image;ellipse({},{},{},{},{})".format(ap_x_center, ap_y_center, major, minor, angle) + aperture_suffix, file=f)
 

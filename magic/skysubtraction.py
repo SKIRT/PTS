@@ -19,11 +19,14 @@ from astropy import log
 # Import the relevant AstroMagic classes and modules
 from .basics import Mask, Region
 from .core import Frame
-from .tools import statistics, interpolation, configuration, plotting, logging
+from .tools import statistics, interpolation, plotting
+
+# Import the relevant PTS classes and modules
+from pts.core.basics import Configurable
 
 # -----------------------------------------------------------------
 
-class SkyExtractor(object):
+class SkySubtractor(Configurable):
 
     """
     This class ...
@@ -37,9 +40,8 @@ class SkyExtractor(object):
         :return:
         """
 
-        ## Configuration
-
-        self.config = configuration.set("skyextractor", config)
+        # Call the constructor of the base class
+        super(SkySubtractor, self).__init__(config)
 
         ## Attributes
 
@@ -98,6 +100,9 @@ class SkyExtractor(object):
         :return:
         """
 
+        # Call the setup function of the base class
+        super(SkySubtractor, self).setup()
+
         # Make a local reference to the frame
         self.frame = frame
 
@@ -106,10 +111,6 @@ class SkyExtractor(object):
 
         # Set the star mask
         if starextractor is not None: self.star_mask = starextractor.mask
-
-        # Create a logger
-        self.log = logging.new_log("skyextractor", self.config.logging.level)
-        if self.config.logging.path is not None: logging.link_file_log(self.log, self.config.logging.path, self.config.logging.level)
 
     # -----------------------------------------------------------------
 

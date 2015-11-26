@@ -4,6 +4,12 @@
 # **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
+"""
+This module ...
+"""
+
+# -----------------------------------------------------------------
+
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
@@ -23,11 +29,14 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 from .basics import Mask, Region, Position, Extent
 from .core import Source
 from .sky import Galaxy
-from .tools import catalogs, configuration, regions, logging
+from .tools import catalogs, regions, logging
+
+# Import the relevant PTS classes and modules
+from pts.core.basics import Configurable
 
 # -----------------------------------------------------------------
 
-class GalaxyExtractor(object):
+class GalaxyExtractor(Configurable):
 
     """
     This class
@@ -39,9 +48,8 @@ class GalaxyExtractor(object):
         The constructor ...
         """
 
-        ## Configuration
-
-        self.config = configuration.set("galaxyextractor", config)
+        # Call the constructor of the base class
+        super(GalaxyExtractor, self).__init__(config)
 
         ## Attributes
 
@@ -56,9 +64,6 @@ class GalaxyExtractor(object):
 
         # Set the mask to None
         self.mask = None
-
-        # Set the logger to None initially
-        self.log = None
 
     # -----------------------------------------------------------------
 
@@ -88,12 +93,11 @@ class GalaxyExtractor(object):
         This function ...
         """
 
+        # Call the setup function of the base class
+        super(GalaxyExtractor, self).setup()
+
         # Make a local reference to the passed frame
         self.frame = frame
-
-        # Create the logger
-        self.log = logging.new_log("galaxyextractor", self.config.logging.level)
-        if self.config.logging.path is not None: logging.link_file_log(self.log, self.config.logging.path, self.config.logging.level)
 
         # Create a mask with shape equal to the shape of the frame
         self.mask = Mask(np.zeros_like(self.frame))
@@ -342,7 +346,7 @@ class GalaxyExtractor(object):
             if galaxy.ignore: continue
 
             # If the galaxy does not have a source, continue
-            if galaxy.has_source: galaxy.find_aperture(sigma_level=self.config.apertures.sigma_level)
+            if galaxy.has_source: galaxy.find_aperture(self.frame, self.config.apertures)
 
     # -----------------------------------------------------------------
 

@@ -5,9 +5,11 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package core.parameters.py
+"""
+This module ...
+"""
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
@@ -16,11 +18,11 @@ from __future__ import absolute_import, division, print_function
 import os
 import fnmatch
 
-# Import the relevant PTS modules
-from ..tools import configuration
-from .simulation import SkirtSimulation
+# Import the relevant PTS classes and modules
+from pts.core.tools import configuration
+from pts.core.simulation import SkirtSimulation
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class SkirtParameters(object):
 
@@ -41,7 +43,7 @@ class SkirtParameters(object):
         # Set the configuration entries as attributes of the object
         for entry in config: setattr(self, entry, config[entry])
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def simulations(self):
 
@@ -85,7 +87,7 @@ class SkirtParameters(object):
         # Else, just return the list of simulations (even when containing only one item)
         else: return simulations
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class FitSkirtParameters(object):
 
@@ -107,7 +109,7 @@ class FitSkirtParameters(object):
         # Set the configuration entries as attributes of the object
         for entry in config: setattr(self, entry, config[entry])
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def simulations(self):
 
@@ -118,4 +120,4 @@ class FitSkirtParameters(object):
 
         pass
 
-# *****************************************************************
+# -----------------------------------------------------------------

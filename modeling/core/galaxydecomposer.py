@@ -5,19 +5,21 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
+"""
+This module ...
+"""
+
+# -----------------------------------------------------------------
+
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy import log
-import astropy.logger
+# Import the relevant PTS classes and modules
+from pts.core.basics import Configurable
 
-# Import the relevant PTS modules
-from ..tools import configuration
+# -----------------------------------------------------------------
 
-# *****************************************************************
-
-class GalaxyDecomposer(object):
+class GalaxyDecomposer(Configurable):
     
     """
     This class...
@@ -31,19 +33,10 @@ class GalaxyDecomposer(object):
         :return:
         """
 
-        ## Configuration
+        # Call the constructor of the base class
+        super(GalaxyDecomposer, self).__init__(config, "galaxydecomposer")
 
-        self.config = configuration.set("galaxydecomposer", config)
-
-        ## Logging
-
-        # Set the log level
-        log.setLevel(self.config.logging.level)
-
-        # Set log file path
-        if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
-
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def run(self):
 
@@ -52,6 +45,21 @@ class GalaxyDecomposer(object):
         :return:
         """
 
-        pass
+        # 1. Call the setup function
+        self.setup()
 
-# *****************************************************************
+        # 2. ...
+
+    # -----------------------------------------------------------------
+
+    def setup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(GalaxyDecomposer, self).setup()
+
+# -----------------------------------------------------------------

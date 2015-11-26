@@ -13,7 +13,7 @@ import argparse
 
 # -----------------------------------------------------------------
 
-class ScalingExtractor(object):
+class ScalingExtractor():
 
     """
     This class ...

@@ -5,7 +5,9 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.launcher This module can be used to launch SKIRT/FitSKIRT simulations in a convenient way
+"""
+This module can be used to launch SKIRT/FitSKIRT simulations in a convenient way
+"""
 
 # -----------------------------------------------------------------
 
@@ -15,15 +17,11 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 
-# Import astronomical modules
-from astropy import log
-import astropy.logger
-
-# Import the relevant PTS modules
+# Import the relevant PTS classes and modules
+from pts.core.basics import Configurable
 from .skirtexec import SkirtExec, FitSkirtExec
 from ..core.parameters import SkirtParameters
 from ..performance.resources import ResourceEstimator
-from ..tools import configuration
 from ..extract.progress import ProgressExtractor
 from ..extract.timeline import TimeLineExtractor
 from ..extract.memory import MemoryExtractor
@@ -34,7 +32,7 @@ from ..plotting.memory import MemoryPlotter
 
 # -----------------------------------------------------------------
 
-class SkirtLauncher(object):
+class SkirtLauncher(Configurable):
 
     """
     This class ...
@@ -48,17 +46,8 @@ class SkirtLauncher(object):
         :return:
         """
 
-        ## Configuration
-
-        self.config = configuration.set("skirtlauncher", config)
-
-        ## Logging
-
-        # Set the log level
-        log.setLevel(self.config.logging.level)
-
-        # Set log file path
-        if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
+        # Call the constructor of the base class
+        super(SkirtLauncher, self).__init__(config)
 
         ## Attributes
 
@@ -90,8 +79,8 @@ class SkirtLauncher(object):
         :return:
         """
 
-        # Load the default configuration for this class
-        config = configuration.set("skirtlauncher")
+        # Create and a new SkirtLauncher instance
+        launcher = cls()
 
         ## Adjust the configuration settings according to the command-line arguments
 
@@ -99,34 +88,34 @@ class SkirtLauncher(object):
         # ...
 
         # Ski file
-        config.parameters.ski_pattern = arguments.filepath
+        launcher.config.parameters.ski_pattern = arguments.filepath
 
         # Simulation logging
-        config.parameters.logging.brief = arguments.brief
-        config.parameters.logging.verbose = arguments.verbose
-        config.parameters.logging.memory = arguments.memory
-        config.parameters.logging.allocation = arguments.allocation
+        launcher.config.parameters.logging.brief = arguments.brief
+        launcher.config.parameters.logging.verbose = arguments.verbose
+        launcher.config.parameters.logging.memory = arguments.memory
+        launcher.config.parameters.logging.allocation = arguments.allocation
 
         # Other simulation parameters
-        config.parameters.emulate = arguments.emulate
-        config.parameters.single = True  # For now, we only allow single simulations
+        launcher.config.parameters.emulate = arguments.emulate
+        launcher.config.parameters.single = True  # For now, we only allow single simulations
 
         # Extraction
-        config.extraction.memory = arguments.extractmemory
+        launcher.config.extraction.memory = arguments.extractmemory
 
         # Plotting
-        config.plotting.seds = arguments.plotseds
-        config.plotting.grids = arguments.plotgrids
-        config.plotting.progress = arguments.plotprogress
-        config.plotting.timeline = arguments.plottimeline
-        config.plotting.memory = arguments.plotmemory
+        launcher.config.plotting.seds = arguments.plotseds
+        launcher.config.plotting.grids = arguments.plotgrids
+        launcher.config.plotting.progress = arguments.plotprogress
+        launcher.config.plotting.timeline = arguments.plottimeline
+        launcher.config.plotting.memory = arguments.plotmemory
 
         # Advanced options
-        config.advanced.rgb = arguments.makergb
-        config.advanced.wavemovie = arguments.makewave
+        launcher.config.advanced.rgb = arguments.makergb
+        launcher.config.advanced.wavemovie = arguments.makewave
 
-        # Create and return a SkirtLauncher instance
-        return cls(config)
+        # Return the new launcher
+        return launcher
 
     # -----------------------------------------------------------------
 
@@ -137,52 +126,23 @@ class SkirtLauncher(object):
         :return:
         """
 
-        # Setup
+        # 1. Call the setup function
         self.setup()
 
-        # Set the parallelization scheme
+        # 2. Set the parallelization scheme
         self.set_parallelization()
 
-        ## Simulation
-
-        # Run the simulation
+        # 3. Run the simulation
         self.simulate()
 
-        ## Extraction
+        # 4. Extract information from the simulation's log files
+        self.extract()
 
-        # Extract the progress information
-        if self.config.extraction.progress: self.extract_progress()
+        # 5. Make plots based on the simulation output
+        self.plot()
 
-        # Extract the timeline information
-        if self.config.extraction.timeline: self.extract_timeline()
-
-        # Extract the memory information
-        if self.config.extraction.memory: self.extract_memory()
-
-        ## Plotting
-
-        # If requested, plot the SED's
-        if self.config.plotting.seds: self.plot_seds()
-
-        # If requested, make plots of the dust grid
-        if self.config.plotting.grids: self.plot_grids()
-
-        # If requested, plot the simulation progress as a function of time
-        if self.config.plotting.progress: self.plot_progress()
-
-        # If requested, plot a timeline of the different simulation phases
-        if self.config.plotting.timeline: self.plot_timeline()
-
-        # If requested, plot the memory usage as a function of time
-        if self.config.plotting.memory: self.plot_memory()
-
-        ## Advanced
-
-        # If requested, make RGB images of the output FITS files
-        if self.config.advanced.rgb: self.make_rgb()
-
-        # If requested, make wave movies from the ouput FITS files
-        if self.config.advanced.wavemovie: self.make_wave()
+        # 6. Advanced output
+        self.advanced()
 
     # -----------------------------------------------------------------
 
@@ -192,6 +152,9 @@ class SkirtLauncher(object):
         This function ...
         :return:
         """
+
+        # Call the setup function of the base class
+        super(SkirtLauncher, self).__init__()
 
         # Set the paths
         self.base_path = os.path.dirname(self.config.parameters.ski_pattern) if "/" in self.config.parameters.ski_pattern else os.getcwd()
@@ -229,7 +192,7 @@ class SkirtLauncher(object):
         """
 
         # Inform the user
-        log.info("Determining the parallelization scheme by estimating the memory requirements...")
+        self.log.info("Determining the parallelization scheme by estimating the memory requirements...")
 
         # Calculate the amount of required memory for this simulation
         estimator = ResourceEstimator()
@@ -242,7 +205,7 @@ class SkirtLauncher(object):
         if processes < 1:
 
             # Exit with an error
-            log.error("Not enough memory available to run this simulation")
+            self.log.error("Not enough memory available to run this simulation")
             exit()
 
         # Calculate the maximum number of threads per process based on the current cpu load of the system
@@ -268,11 +231,68 @@ class SkirtLauncher(object):
         """
 
         # Inform the user
-        log.info("Performing the simulation...")
+        self.log.info("Performing the simulation...")
 
         # Run the simulation
         parameters = SkirtParameters(self.config.parameters)
         self.simulation = self.skirt.run(parameters, silent=True)
+
+    # -----------------------------------------------------------------
+
+    def extract(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Extract the progress information
+        if self.config.extraction.progress: self.extract_progress()
+
+        # Extract the timeline information
+        if self.config.extraction.timeline: self.extract_timeline()
+
+        # Extract the memory information
+        if self.config.extraction.memory: self.extract_memory()
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If requested, plot the SED's
+        if self.config.plotting.seds: self.plot_seds()
+
+        # If requested, make plots of the dust grid
+        if self.config.plotting.grids: self.plot_grids()
+
+        # If requested, plot the simulation progress as a function of time
+        if self.config.plotting.progress: self.plot_progress()
+
+        # If requested, plot a timeline of the different simulation phases
+        if self.config.plotting.timeline: self.plot_timeline()
+
+        # If requested, plot the memory usage as a function of time
+        if self.config.plotting.memory: self.plot_memory()
+
+    # -----------------------------------------------------------------
+
+    def advanced(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If requested, make RGB images of the output FITS files
+        if self.config.advanced.rgb: self.make_rgb()
+
+        # If requested, make wave movies from the ouput FITS files
+        if self.config.advanced.wavemovie: self.make_wave()
 
     # -----------------------------------------------------------------
 
@@ -284,7 +304,7 @@ class SkirtLauncher(object):
         """
 
         # Inform the user
-        log.info("Extracting the progress information...")
+        self.log.info("Extracting the progress information...")
 
         # Determine the path to the progress file
         path = os.path.join(self.extr_path, "progress.dat")
@@ -306,7 +326,7 @@ class SkirtLauncher(object):
         """
 
         # Inform the user
-        log.info("Extracting the timeline information...")
+        self.log.info("Extracting the timeline information...")
 
         # Determine the path to the timeline file
         path = os.path.join(self.extr_path, "timeline.dat")
@@ -328,7 +348,7 @@ class SkirtLauncher(object):
         """
 
         # Inform the user
-        log.info("Extracting the memory information...")
+        self.log.info("Extracting the memory information...")
 
         # Determine the path to the memory file
         path = os.path.join(self.extr_path, "memory.dat")
@@ -350,7 +370,7 @@ class SkirtLauncher(object):
         """
 
         # Inform the user
-        log.info("Plotting SEDs...")
+        self.log.info("Plotting SEDs...")
 
     # -----------------------------------------------------------------
 
@@ -362,7 +382,7 @@ class SkirtLauncher(object):
         """
 
         # Inform the user
-        log.info("Plotting grids...")
+        self.log.info("Plotting grids...")
 
     # -----------------------------------------------------------------
 
@@ -374,7 +394,7 @@ class SkirtLauncher(object):
         """
 
         # Inform the user
-        log.info("Plotting the progress information...")
+        self.log.info("Plotting the progress information...")
 
         # Determine the path to the progress plot file
         path = os.path.join(self.plot_path, "progress.pdf")
@@ -393,7 +413,7 @@ class SkirtLauncher(object):
         """
 
         # Inform the user
-        log.info("Plotting the timeline...")
+        self.log.info("Plotting the timeline...")
 
         # Determine the path to the timeline plot file
         path = os.path.join(self.plot_path, "timeline.pdf")
@@ -412,7 +432,7 @@ class SkirtLauncher(object):
         """
 
         # Inform the user
-        log.info("Plotting the memory information...")
+        self.log.info("Plotting the memory information...")
 
         # Determine the path to the memory plot file
         path = os.path.join(self.plot_path, "memory.pdf")
@@ -431,7 +451,7 @@ class SkirtLauncher(object):
         """
 
         # Inform the user
-        log.info("Making RGB images...")
+        self.log.info("Making RGB images...")
 
     # -----------------------------------------------------------------
 
@@ -443,7 +463,7 @@ class SkirtLauncher(object):
         """
 
         # Inform the user
-        log.info("Making wave movies...")
+        self.log.info("Making wave movies...")
 
 # -----------------------------------------------------------------
 
@@ -492,14 +512,14 @@ class FitSkirtLauncher(object):
         :return:
         """
 
-        # Load the default configuration for this class
-        config = configuration.set("fitskirtlauncher")
+        # Create a new FitSkirtLauncher instance
+        launcher = cls()
 
         ## Adjust the configuration settings according to the command-line arguments
         # ...
 
-        # Create and return a FitSkirtLauncher instance
-        return cls(config)
+        # Return the new launcher
+        return launcher
 
     # -----------------------------------------------------------------
 
@@ -510,7 +530,10 @@ class FitSkirtLauncher(object):
         :return:
         """
 
-        # Run the simulation
+        # 1. Call the setup function
+        self.setup()
+
+        # 2. Run the simulation
         self.simulate()
 
     # -----------------------------------------------------------------

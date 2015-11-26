@@ -26,10 +26,9 @@ import numpy as np
 import multiprocessing
 import pyfits
 
-# Import relevant PTS modules
-from pts.simulation import SkirtSimulation
-from pts.skirtexec import SkirtExec
-from pts.log import Log
+# Import the relevant PTS classes and modules
+from pts.core.simulation import SkirtSimulation, SkirtExec
+from pts.core.basics import Log
 
 # -----------------------------------------------------------------
 #  SkirtTestSuite class

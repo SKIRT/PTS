@@ -18,6 +18,8 @@ import subprocess
 import datetime
 from distutils.spawn import find_executable
 
+# Import the relevant PTS classes and modules
+
 # -----------------------------------------------------------------
 
 # Define the number of physical cores on the different clusters
@@ -153,6 +155,8 @@ class JobScript(object):
         # Write the command string to the job script
         self._script.write(commandstring + "\n")
 
+    # -----------------------------------------------------------------
+
     ## Add an additional command to the job script, optionally preceeded by a comment line
     def addcommand(self, command, comment=""):
 
@@ -164,6 +168,8 @@ class JobScript(object):
 
         # Add the command to the job script
         self._script.write(command + "\n")
+
+    # -----------------------------------------------------------------
 
     ## Submit the script on the cluster
     def submit(self):
@@ -190,6 +196,8 @@ class JobScript(object):
 
         # Close the file
         jobfile.close()
+
+    # -----------------------------------------------------------------
 
     ## This function removes the job script
     def remove(self):

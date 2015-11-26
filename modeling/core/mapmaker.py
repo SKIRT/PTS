@@ -5,6 +5,12 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
+"""
+This module ...
+"""
+
+# -----------------------------------------------------------------
+
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
@@ -18,17 +24,17 @@ from astropy import log
 import astropy.logger
 from photutils import detect_sources
 
-# Import Astromagic modules
+# Import the relevant AstroMagic classes and modules
 from astromagic import Image
 from astromagic.core.frames import Frame
 from astromagic.core.masks import Mask
 
-# Import the relevant PTS modules
-from ..tools import configuration
+# Import the relevant PTS classes and modules
+from pts.core.basics import Configurable
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
-class MapMaker(object):
+class MapMaker(Configurable):
     
     """
     This class...
@@ -42,17 +48,8 @@ class MapMaker(object):
         :return:
         """
 
-        ## Configuration
-
-        self.config = configuration.set("mapmaker", config)
-
-        ## Logging
-
-        # Set the log level
-        log.setLevel(self.config.logging.level)
-
-        # Set log file path
-        if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
+        # Call the constructor of the base class
+        super(MapMaker, self).__init__(config, "mapmaker")
 
         ## Attributes
 
@@ -78,7 +75,7 @@ class MapMaker(object):
         # Set the low signal-to-noise mask to None initially
         self.mask = None
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def run(self):
 
@@ -87,6 +84,9 @@ class MapMaker(object):
         :param image:
         :return:
         """
+
+        # 1. Call the setup function
+        self.setup()
 
         # Load the input images
         self.load_images()
@@ -112,7 +112,7 @@ class MapMaker(object):
         # Make the ionizing young stars map
         self.make_ionizing_stars_map()
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def load_images(self):
 
@@ -211,7 +211,7 @@ class MapMaker(object):
 
         else: raise IOError("Could not find the bulge image")
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def cutoff_low_snr(self):
 
@@ -284,7 +284,7 @@ class MapMaker(object):
         self.disk[self.mask] = 0.0
         self.bulge[self.mask] = 0.0
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def save_cutoff_maps(self):
 
@@ -307,7 +307,7 @@ class MapMaker(object):
         self.disk.save(self.config.saving.disk_cutoff_path)
         self.bulge.save(self.config.saving.bulge_cutoff_path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def convert_to_solar(self):
 
@@ -361,7 +361,7 @@ class MapMaker(object):
         self.pacsblue.save(self.config.conversion.pacsblue_output_path)
         self.pacsred.save(self.config.conversion.pacsred_output_path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def make_dust_map(self):
 
@@ -587,7 +587,7 @@ class MapMaker(object):
         # Save the dust (FUV attenuation) map as a FITS file
         a_fuv_cortese.save(self.config.dust.output_path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def make_old_stars_map(self):
 
@@ -621,7 +621,7 @@ class MapMaker(object):
         # Save the old stars map as a FITS file
         old_stars.save(self.config.old_stars.output_path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def make_non_ionizing_stars_map(self):
 
@@ -636,7 +636,7 @@ class MapMaker(object):
         # Save the non-ionizing stars map as a FITS file
         non_ionizing_stars.save(self.config.non_ionizing_stars.output_path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def make_ionizing_stars_map(self):
 
@@ -682,7 +682,7 @@ class MapMaker(object):
         # Save the ionizing stars map
         ionizing.save(self.config.ionizing_stars.output_path)
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def ssfr(self):
@@ -725,7 +725,7 @@ class MapMaker(object):
 
         return fuv_h
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def tir(self):
@@ -746,7 +746,7 @@ class MapMaker(object):
         # Return the TIR map  (in solar units)
         return tir_data
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def fuv_young_stars(self):
@@ -790,7 +790,7 @@ class MapMaker(object):
         # Return the new FUV frame
         return new_fuv
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     @property
     def mips_young_stars(self):
@@ -834,4 +834,4 @@ class MapMaker(object):
         # Return the new 24 micron frame
         return new_mips
 
-# *****************************************************************
+# -----------------------------------------------------------------
