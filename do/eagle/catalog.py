@@ -20,9 +20,12 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import sys
 import os.path
-from eagle.galaxy import Snapshot
+
+# Import the relevant PTS classes and modules
+from pts.eagle.galaxy import Snapshot
 
 # -----------------------------------------------------------------
 

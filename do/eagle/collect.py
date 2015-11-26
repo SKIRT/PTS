@@ -16,15 +16,18 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import sys
 import types
 import os.path
 import pickle
 import numpy as np
-import pts.archive as arch
-import eagle.config as config
-from eagle.database import Database
-from eagle.skirtrun import SkirtRun
+
+# Import the relevant PTS classes and modules
+import pts.core.tools.archive as arch
+import pts.eagle.config as config
+from pts.eagle.database import Database
+from pts.eagle.skirtrun import SkirtRun
 
 # -----------------------------------------------------------------
 

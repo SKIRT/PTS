@@ -15,8 +15,11 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import sys
-import eagle.runner
+
+# Import the relevant PTS classes and modules
+from pts.eagle import runner
 
 # -----------------------------------------------------------------
 
@@ -27,7 +30,7 @@ if len(sys.argv) != 2: raise ValueError("This script expects a single command-li
 runid = int(sys.argv[1])
 
 # execute for the specified run-id
-eagle.runner.run(runid)
+runner.run(runid)
 
 print "Finished eagle_run."
 

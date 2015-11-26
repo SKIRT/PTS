@@ -20,11 +20,14 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import sys
-import eagle.config as config
-import eagle.database
-from eagle.connection import Connection
-from eagle.galaxy import Snapshot
+
+# Import the relevant PTS classes and modules
+import pts.eagle.config as config
+from pts.eagle import database
+from pts.eagle.connection import Connection
+from pts.eagle.galaxy import Snapshot
 
 # -----------------------------------------------------------------
 
@@ -69,10 +72,10 @@ confirm = raw_input("--> Would you like to insert {} new SKIRT-runs? [y/n]: ".fo
 if not confirm.lower().startswith('y'): exit()
 
 # backup the data base
-eagle.database.backup()
+database.backup()
 
 # insert a new record into the database for each selected galaxy
-db = eagle.database.Database()
+db = database.Database()
 with db.transaction():
     for record in records:
         db.insert(label, eaglesim, 0, record["galaxyid"], skitemplate)

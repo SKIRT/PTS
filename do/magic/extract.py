@@ -20,10 +20,9 @@ import argparse
 # Import astronomical modules
 from astropy import log
 
-# Import AstroMagic modules
-from astromagic import Image
-from astromagic.magic.galaxyextraction import GalaxyExtractor
-from astromagic.magic.starextraction import StarExtractor
+# Import the relevant AstroMagic classes and modules
+from astromagic.core import Image
+from astromagic import GalaxyExtractor, StarExtractor
 
 # -----------------------------------------------------------------
 

@@ -33,12 +33,15 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import sys
 import types
 import os.path
-from eagle.database import Database
-from eagle.skirtrun import SkirtRun
-from eagle.skirtrun import runids_in_range
+
+# Import the relevant PTS classes and modules
+from pts.eagle.database import Database
+from pts.eagle.skirtrun import SkirtRun
+from pts.eagle.skirtrun import runids_in_range
 
 # -----------------------------------------------------------------
 

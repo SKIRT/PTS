@@ -25,8 +25,11 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import sys
-from eagle.scheduler import schedule
+
+# Import the relevant PTS classes and modules
+from pts.eagle.scheduler import schedule
 
 # -----------------------------------------------------------------
 

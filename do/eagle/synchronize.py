@@ -14,12 +14,15 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import os.path
 import subprocess
-import eagle.config as config
-from eagle.database import Database
-from eagle.database import backup
-from eagle.skirtrun import SkirtRun
+
+# Import the relevant PTS classes and modules
+import pts.eagle.config as config
+from pts.eagle.database import Database
+from pts.eagle.database import backup
+from pts.eagle.skirtrun import SkirtRun
 
 # -----------------------------------------------------------------
 

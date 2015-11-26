@@ -20,14 +20,17 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import sys
 import os
 import os.path
 import subprocess
-import eagle.config as config
-from eagle.database import Database
-from eagle.skirtrun import SkirtRun
-from eagle.skirtrun import runids_in_range
+
+# Import the relevant PTS classes and modules
+import pts.eagle.config as config
+from pts.eagle.database import Database
+from pts.eagle.skirtrun import SkirtRun
+from pts.eagle.skirtrun import runids_in_range
 
 # -----------------------------------------------------------------
 # ==== path definition that may be moved elsewhere over time   ====

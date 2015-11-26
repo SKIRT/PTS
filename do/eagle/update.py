@@ -23,8 +23,11 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import sys
-import eagle.database
+
+# Import the relevant PTS classes and modules
+from pts.eagle import database
 
 # -----------------------------------------------------------------
 
@@ -33,7 +36,7 @@ if len(sys.argv) != 4: raise ValueError("This script expects exactly three comma
 dummy, selection, fieldname, newvalue  = sys.argv
 
 # open the database
-db = eagle.database.Database()
+db = database.Database()
 
 # update the records (but don't yet commit)
 records = db.select(selection)

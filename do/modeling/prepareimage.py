@@ -8,7 +8,7 @@
 ## \package do.prepareimage Prepare an image with Astromagic
 #
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
@@ -16,13 +16,13 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import argparse
 
-# Import the relevant PTS modules
-from modeling.imagepreparation import ImagePreparation
+# Import the relevant PTS classes and modules
+from pts.modeling.core import ImagePreparation
 
-# Import Astromagic modules
-from astromagic import Image
+# Import the relevant AstroMagic classes and modules
+from pts.magic.core import Image
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
@@ -36,7 +36,7 @@ args = parser.parse_args()
 path = args.path
 config_file = args.config
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Create an image
 image = Image(path)
@@ -47,4 +47,4 @@ prep = ImagePreparation(config_file)
 # Run the image preparation on the image
 prep.run(image)
 
-# *****************************************************************
+# -----------------------------------------------------------------

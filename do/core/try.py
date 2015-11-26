@@ -12,22 +12,18 @@
 
 # -----------------------------------------------------------------
 
-# Ensure Python 3 compatibility
-from __future__ import absolute_import, division, print_function
-
-# import standard modules
+# Import standard modules
 import sys
-import os.path
 
-# Import relevant PTS modules
-from pts import skifile
+# Import the relevant PTS classes and modules
+from pts.core.simulation import skifile
 
 # -----------------------------------------------------------------
 
-print("Starting try...")
+print "Starting try..."
 
-print(sys.argv)
+print sys.argv
 
-print("Finished try")
+print "Finished try"
 
 # -----------------------------------------------------------------

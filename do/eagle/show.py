@@ -13,8 +13,11 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import sys
-import eagle.database
+
+# Import the relevant PTS classes and modules
+from pts.eagle import database
 
 # -----------------------------------------------------------------
 
@@ -22,7 +25,7 @@ import eagle.database
 selection = sys.argv[1] if len(sys.argv) > 1 else "1"
 
 # show the database records
-db = eagle.database.Database()
+db = database.Database()
 db.show(db.select(selection))
 db.close()
 

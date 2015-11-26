@@ -8,7 +8,7 @@
 ## \package do.makemaps Make maps as input for a SKIRT radiative transfer model
 #
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
@@ -16,10 +16,10 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import argparse
 
-# Import relevant PTS modules
-from modeling.mapmaker import MapMaker
+# Import the relevant PTS classes and modules
+from pts.modeling.core import MapMaker
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
@@ -33,7 +33,7 @@ args = parser.parse_args()
 path = args.path
 config_file = args.config
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Create a MapMaker object
 maker = MapMaker(config_file)
@@ -41,4 +41,4 @@ maker = MapMaker(config_file)
 # Run the map making
 maker.run()
 
-# *****************************************************************
+# -----------------------------------------------------------------
