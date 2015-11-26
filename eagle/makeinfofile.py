@@ -94,8 +94,7 @@ def makeinfofile(skirtrun):
     info["setup_luminosity_hii_regions"] = simulation.hiiregionluminosity()
     info["setup_cells_dust_grid"], info["setup_optical_depth_maximum"], \
         info["setup_optical_depth_percentile90"] = map(float,simulation.dustcellstats())
-    distance = simulation.instrumentdistance()
-    info["setup_distance_instrument"] = distance
+    info["setup_distance_instrument"] = simulation.instrumentdistance()
 
     # load filters and wavelength grid
     _loadfilters()
@@ -121,40 +120,25 @@ def makeinfofile(skirtrun):
         fluxdensities = simulation.fluxdensities(name, unit='Jy')
         info["instr_"+name+"_fluxdensity_maximum"] = fluxdensities.max()
 
-        # get flux densities per unit of wavelength because filter.convolve() requires this
-        fluxdensities = simulation.fluxdensities(name, unit='W/m2/micron')
-
-        # integrated flux density and absolute magnitude for each filter
+        #  for each filter, calculate integrated flux density and absolute magnitude
         for filterspec,filterobject in _filters.iteritems():
-            fluxdensity = filterobject.convolve(wavelengths, fluxdensities)
-            fluxdensity = simulation.convert(fluxdensity, from_unit='W/m2/micron', to_unit='Jy',
-                                             wavelength=filterobject.pivotwavelength())
-            magnitude = simulation.absolutemagnitude(fluxdensity, distance,
-                                                     fluxdensity_unit='Jy', distance_unit='pc')
-            filtername = filterspec.replace(".","_").lower()
-            info["instr_"+name+"_fluxdensity_"+filtername] = fluxdensity
-            info["instr_"+name+"_magnitude_"+filtername] = magnitude
+            fluxdensity = regularfluxdensity(simulation, name, [1], wavelengths, None, filterobject)
+            addfluxinfo(info, simulation, name, filterspec, fluxdensity, "")
 
         # for the Herschel filters, calculate flux and magnitude excluding the carbon line emission peaks
         for filterspec in ("Pacs.blue","Pacs.green","Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW"):
-            filterobject = _filters[filterspec]
-            fluxdensity = filterobject.convolve(wavelengths[cmask], fluxdensities[cmask])
-            fluxdensity = simulation.convert(fluxdensity, from_unit='W/m2/micron', to_unit='Jy',
-                                             wavelength=filterobject.pivotwavelength())
-            magnitude = simulation.absolutemagnitude(fluxdensity, distance, fluxdensity_unit='Jy', distance_unit='pc')
-            filtername = filterspec.replace(".","_").lower()
-            info["instr_"+name+"_fluxdensity_"+filtername+"_continuum"] = fluxdensity
-            info["instr_"+name+"_magnitude_"+filtername+"_continuum"] = magnitude
+            fluxdensity = regularfluxdensity(simulation, name, [1], wavelengths, cmask, _filters[filterspec])
+            addfluxinfo(info, simulation, name, filterspec, fluxdensity, "continuum")
+            fluxdensity = regularfluxdensity(simulation, name, [2,3], wavelengths, cmask, _filters[filterspec])
+            addfluxinfo(info, simulation, name, filterspec, fluxdensity, "hii_continuum")
+            fluxdensity = regularfluxdensity(simulation, name, [4], wavelengths, cmask, _filters[filterspec])
+            addfluxinfo(info, simulation, name, filterspec, fluxdensity, "other_continuum")
 
         # for the Herschel filters used in determining dust temperature, calculate the "limited" flux and magnitude
         # (i.e. ignoring pixels with a flux under a specific limit, and still excluding the carbon line emission peaks)
         for filterspec,fwhm,fluxlimit in zip(h_filterspecs, h_beam_fwhms, h_flux_limits):
             fluxdensity = limitedfluxdensity(simulation, name, wavelengths, cmask, _filters[filterspec], fwhm, fluxlimit)
-            if fluxdensity != None:
-                magnitude = simulation.absolutemagnitude(fluxdensity, distance, fluxdensity_unit='Jy', distance_unit='pc')
-                filtername = filterspec.replace(".","_").lower()
-                info["instr_"+name+"_fluxdensity_"+filtername+"_limited"] = fluxdensity
-                info["instr_"+name+"_magnitude_"+filtername+"_limited"] = magnitude
+            addfluxinfo(info, simulation, name, filterspec, fluxdensity, "limited")
 
     # estimate a representative temperature and corresponding standard deviation
     info["probe_average_temperature_dust"], info["probe_stddev_temperature_dust"],  \
@@ -171,7 +155,7 @@ def makeinfofile(skirtrun):
     infofile.write('# distance : pc\n')
     infofile.write('# fluxdensity : Jy\n')
     infofile.write('# temperature : K\n')
-    infofile.write('# magnitude : dex\n')
+    infofile.write('# magnitude : mag\n')
     maxkeylen = max(map(len,info.keys()))
     for key in sorted(info.keys()):
         valueformat = ".0f" if "_particles_" in key or "_cells_" in key or "run_id" in key else ".9e"
@@ -183,27 +167,65 @@ def makeinfofile(skirtrun):
 
 # -----------------------------------------------------------------
 
-# Calculate and return statistics for the indicative temperature (weighted by mass) as a tuple:
-#  (average, standard deviation, skew, excess curtosis).
-# The data is extracted from the <prefix>_ds_celltemps.dat file generated by SKIRT.
-# If this file is not present, the procedure fails.
-def dusttemperature(simulation):
-    # load the mass and temperature data for all cells
-    filepath = simulation.outfilepath("ds_celltemps.dat")
-    M,T = np.loadtxt(arch.opentext(filepath), unpack=True)
+# This function adds the specified flux density and the corresponding magnitude to the info dictionary.
+# The function takes the following arguments:
+#  - \em info: the info dictionary in which to store the information.
+#  - \em simulation: a SkirtSimulation instance representing the simulation for which to perform the action.
+#  - \em instrumentname: the name of the instrument; for use in constructing the info dictionary key.
+#  - \em filterspec: the string that specifies the filter; for use in constructing the info dictionary key.
+#  - \em fluxdensity: the flux density to be added to the dictionary, in Jy. If None, the function does nothing.
+#  - \em fluxtype: a string specifying the flux type (no underscore); for use in constructing the info dictionary key.
+#
+def addfluxinfo(info, simulation, instrumentname, filterspec, fluxdensity, fluxtype):
+    if not fluxdensity is None:
+        magnitude = simulation.absolutemagnitude(fluxdensity, simulation.instrumentdistance(unit='pc'),
+                                                 fluxdensity_unit='Jy', distance_unit='pc')
+        filtername = filterspec.replace(".","_").lower()
+        if fluxtype!="": fluxtype = "_"+fluxtype
+        info["instr_"+instrumentname+"_fluxdensity_"+filtername+fluxtype] = fluxdensity
+        info["instr_"+instrumentname+"_magnitude_"+filtername+fluxtype] = magnitude
 
-    # if the galaxy contains dust, calculate and return the statistics
-    Mtot =  M.sum()
-    if Mtot > 0:
-        Tavg = np.average(T, weights=M)
-        Tstd = np.sqrt( (M*((T-Tavg)**2)).sum()/Mtot )
-        skew = (M*((T-Tavg)**3)).sum()/Mtot/ Tstd**3
-        kurtosis = (M*((T-Tavg)**4)).sum()/Mtot/ Tstd**4 - 3
-        return ( Tavg, Tstd, skew, kurtosis )
+# -----------------------------------------------------------------
 
-    # otherwise return dummy values
-    else:
-        return ( 0, 0, 0, 0 )
+# This function calculates and returns the flux density (in Jy) in a given band based on the total sed or on some of
+# the component seds of a particular instrument. The function convolves the sed over the wavelengths of the specified
+# filter to obtain an average value.
+#
+# The function takes the following arguments:
+#  - \em simulation: a SkirtSimulation instance representing the simulation for which to perform the calculation.
+#  - \em instrumentname: the name of the instrument (as listed in the ski file) for which to perform the calculation.
+#  - \em columns: a sequence of zero-based column indices in the sed data file; these flux densities are summed.
+#  - \em wavelengths: the simulation's wavelength grid (this could be retrieved from the simulation but happens to
+#                     be available at the caller site already).
+#  - \em cmask: a mask indicating the wavelengths to include/exclude in the convolution with the filter, or None.
+#  - \em filterobject: the filter defining the band for which to perform the convolution.
+#
+def regularfluxdensity(simulation, instrumentname, columns, wavelengths, cmask, filterobject):
+
+    # get the path for the sed data file corresponding to this instrument
+    sedpaths = filter(lambda fn: ("_"+instrumentname+"_") in fn, simulation.seddatpaths())
+    if len(sedpaths) != 1: return None
+
+    # we do this inside a try block in case the specified columns are not available
+    try:
+        # load the flux densities and convert them to a per-wavelength unit, as required by Filter.convolve()
+        fluxdensities = np.loadtxt(arch.opentext(sedpaths[0]), usecols=columns, unpack=True)
+        if len(columns)>1: fluxdensities = fluxdensities.sum(axis=0)
+        fluxdensities = simulation.convert(fluxdensities, to_unit='W/m2/micron', quantity='fluxdensity',
+                                           wavelength=wavelengths)
+
+        # perform the convolution, using the mask if requested
+        if cmask is None:
+            fluxdensity = filterobject.convolve(wavelengths, fluxdensities)
+        else:
+            fluxdensity = filterobject.convolve(wavelengths[cmask], fluxdensities[cmask])
+
+        # convert the final flux density to Jy using the filter's pivot wavelength
+        fluxdensity = simulation.convert(fluxdensity, from_unit='W/m2/micron', to_unit='Jy',
+                                         wavelength=filterobject.pivotwavelength())
+        return fluxdensity
+    except:
+        return None
 
 # -----------------------------------------------------------------
 
@@ -264,5 +286,29 @@ def find_nearest_divisor(n, d):
     divisors = np.asarray(sorted(set( x for tup in ((i, n//i) for i in range(1, int(n**0.5)+1) if n % i == 0) for x in tup )))
     index = np.argmin(np.abs(divisors-d))
     return divisors[index]
+
+# -----------------------------------------------------------------
+
+# Calculate and return statistics for the indicative temperature (weighted by mass) as a tuple:
+#  (average, standard deviation, skew, excess curtosis).
+# The data is extracted from the <prefix>_ds_celltemps.dat file generated by SKIRT.
+# If this file is not present, the procedure fails.
+def dusttemperature(simulation):
+    # load the mass and temperature data for all cells
+    filepath = simulation.outfilepath("ds_celltemps.dat")
+    M,T = np.loadtxt(arch.opentext(filepath), unpack=True)
+
+    # if the galaxy contains dust, calculate and return the statistics
+    Mtot =  M.sum()
+    if Mtot > 0:
+        Tavg = np.average(T, weights=M)
+        Tstd = np.sqrt( (M*((T-Tavg)**2)).sum()/Mtot )
+        skew = (M*((T-Tavg)**3)).sum()/Mtot/ Tstd**3
+        kurtosis = (M*((T-Tavg)**4)).sum()/Mtot/ Tstd**4 - 3
+        return ( Tavg, Tstd, skew, kurtosis )
+
+    # otherwise return dummy values
+    else:
+        return ( 0, 0, 0, 0 )
 
 # -----------------------------------------------------------------
