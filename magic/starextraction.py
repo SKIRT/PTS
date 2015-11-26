@@ -64,6 +64,9 @@ class StarExtractor(object):
         # Set the segmentation map for other sources to None
         self.segments = None
 
+        # Initialize an empty list for the apertures constructed for the other sources
+        self.other_apertures = []
+
         # Set the logger to None initially
         self.log = None
 
@@ -86,6 +89,9 @@ class StarExtractor(object):
 
         # 4. If requested, find and remove other sources in the frame
         if self.config.find_other: self.find_and_remove_other()
+
+        # 5. If requested, find and remove apertures
+        if self.config.find_apertures: self.find_and_remove_apertures()
 
         # 5. If specified, remove manually selected stars
         if self.config.manual_region is not None: self.set_and_remove_manual()
@@ -175,15 +181,6 @@ class StarExtractor(object):
         # If requested, remove saturation in the image
         if self.config.remove_saturation: self.remove_saturation()
 
-        # If requested, find and remove apertures
-        if self.config.find_apertures:
-
-            # Find apertures
-            self.find_apertures()
-
-            # If requested, remove apertures
-            if self.config.remove_apertures: self.remove_apertures()
-
     # -----------------------------------------------------------------
 
     def find_and_remove_other(self):
@@ -198,6 +195,21 @@ class StarExtractor(object):
 
         # If requested, remove the other sources
         if self.config.remove_other: self.remove_other_sources()
+
+    # -----------------------------------------------------------------
+
+    def find_and_remove_apertures(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Find the apertures
+        self.find_apertures()
+
+        # If requested, remove apertures
+        if self.config.remove_apertures: self.remove_apertures()
 
     # -----------------------------------------------------------------
 
@@ -225,6 +237,12 @@ class StarExtractor(object):
         # Inform the user
         self.log.info("Fetching star positions from an online catalog")
 
+        if isinstance(self.config.fetching.catalogs, basestring):
+            catalogs = [self.config.fetching.catalogs]
+        elif isinstance(self.config.fetching.catalogs, list):
+            catalogs = self.config.fetching.catalogs
+        else: raise ValueError("Invalid option for 'catalogs', should be a string or a list of strings")
+
         # Get the range of right ascension and declination of this image
         center, ra_span, dec_span = self.frame.coordinate_range()
 
@@ -232,118 +250,138 @@ class StarExtractor(object):
         viz = Vizier(keywords=["stars", "optical"])
         viz.ROW_LIMIT = -1
 
-        # Query Vizier and obtain the resulting table
-        result = viz.query_region(center, width=ra_span, height=dec_span, catalog=self.config.fetching.catalog)
-        table = result[0]
+        # Loop over the different catalogs
+        for catalog in catalogs:
 
-        # Loop over all stars in the table
-        distances = []
-        for entry in table:
+            # Initialize a list for the stars obtained from this catalog
+            stars = []
 
-            # Initialize an empty dictionary to contain the magnitudes and the magnitude errors
-            magnitudes = {}
-            mag_errors = {}
+            # Query Vizier and obtain the resulting table
+            result = viz.query_region(center, width=ra_span, height=dec_span, catalog=catalog)
+            table = result[0]
 
-            # Get the ID of this star in the catalog
-            if self.config.fetching.catalog == "UCAC4": star_id = entry["UCAC4"]
-            elif self.config.fetching.catalog == "NOMAD": star_id = entry["NOMAD1"]
-            elif self.config.fetching.catalog == "II/246": star_id = entry["_2MASS"]
-            else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
+            # Loop over all stars in the table
+            distances = []
+            for entry in table:
 
-            # Get the position of the star as a SkyCoord object
-            position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
+                # Initialize an empty dictionary to contain the magnitudes and the magnitude errors
+                magnitudes = {}
+                mag_errors = {}
 
-            # If this star does not lie within the frame, skip it
-            if not self.frame.contains(position): continue
+                # Get the ID of this star in the catalog
+                if catalog == "UCAC4": star_id = entry["UCAC4"]
+                elif catalog == "NOMAD": star_id = entry["NOMAD1"]
+                elif catalog == "II/246": star_id = entry["_2MASS"]
+                else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
 
-            # Get the mean error on the right ascension and declination
-            if self.config.fetching.catalog == "UCAC4" or self.config.fetching.catalog == "NOMAD":
+                # Get the position of the star as a SkyCoord object
+                position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
 
-                ra_error = entry["e_RAJ2000"]*u.mas
-                dec_error = entry["e_DEJ2000"]*u.mas
+                # If this star does not lie within the frame, skip it
+                if not self.frame.contains(position): continue
 
-            elif self.config.fetching.catalog == "II/246":
+                # Get the mean error on the right ascension and declination
+                if catalog == "UCAC4" or catalog == "NOMAD":
 
-                error_maj = entry["errMaj"] * u.arcsec
-                error_min = entry["errMin"] * u.arcsec
-                error_theta = Angle(entry["errPA"], u.deg)
+                    ra_error = entry["e_RAJ2000"]*u.mas
+                    dec_error = entry["e_DEJ2000"]*u.mas
 
-                # Temporary: use only the major axis error (convert the error ellipse into a circle)
-                ra_error = error_maj
-                dec_error = error_maj
+                elif catalog == "II/246":
 
-            else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
+                    error_maj = entry["errMaj"] * u.arcsec
+                    error_min = entry["errMin"] * u.arcsec
+                    error_theta = Angle(entry["errPA"], u.deg)
 
-            # Loop over all galaxies
-            galaxies = self.galaxyextractor.galaxies if self.galaxyextractor is not None else []
-            for galaxy in galaxies:
+                    # Temporary: use only the major axis error (convert the error ellipse into a circle)
+                    ra_error = error_maj
+                    dec_error = error_maj
 
-                # Calculate the pixel position of the galaxy
-                galaxy_position = galaxy.pixel_position(self.frame.wcs)
+                else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
 
-                # Calculate the distance between the star's position and the galaxy's center
-                x_center, y_center = position.to_pixel(self.frame.wcs)
-                difference = galaxy_position - Position(x=x_center, y=y_center)
+                # Loop over all galaxies
+                galaxies = self.galaxyextractor.galaxies if self.galaxyextractor is not None else []
+                for galaxy in galaxies:
 
-                # Add the star-galaxy distance to the list of distances
-                distances.append(difference.norm)
+                    # Calculate the pixel position of the galaxy
+                    galaxy_position = galaxy.pixel_position(self.frame.wcs)
 
-                # The principal galaxy/galaxies
-                if galaxy.principal:
+                    # Calculate the distance between the star's position and the galaxy's center
+                    x_center, y_center = position.to_pixel(self.frame.wcs)
+                    difference = galaxy_position - Position(x=x_center, y=y_center)
 
-                    # Check whether the star-galaxy distance is smaller than a certain threshold
-                    if difference.norm <= self.config.fetching.min_distance_from_galaxy.principal:
+                    # Add the star-galaxy distance to the list of distances
+                    distances.append(difference.norm)
 
-                        # Remove the position of this galaxy from the list (one star is already identified with it)
-                        #galaxies.remove(galaxy)
-                        break
+                    # The principal galaxy/galaxies
+                    if galaxy.principal:
 
-                # Companion galaxies
-                elif galaxy.companion:
+                        # Check whether the star-galaxy distance is smaller than a certain threshold
+                        if difference.norm <= self.config.fetching.min_distance_from_galaxy.principal:
 
-                    if difference.norm <= self.config.fetching.min_distance_from_galaxy.companion: break
+                            # Remove the position of this galaxy from the list (one star is already identified with it)
+                            #galaxies.remove(galaxy)
+                            break
 
-                # All other galaxies in the frame
+                    # Companion galaxies
+                    elif galaxy.companion:
+
+                        if difference.norm <= self.config.fetching.min_distance_from_galaxy.companion: break
+
+                    # All other galaxies in the frame
+                    else:
+
+                        if difference.norm <= self.config.fetching.min_distance_from_galaxy.other: break
+
+                # If a break is not encountered
                 else:
 
-                    if difference.norm <= self.config.fetching.min_distance_from_galaxy.other: break
+                    # Get the magnitude in different bands
+                    for name in entry.colnames:
 
-            # If a break is not encountered
-            else:
+                        # If this column name does not end with "mag", skip it
+                        if not name.endswith("mag"): continue
 
-                # Get the magnitude in different bands
-                for name in entry.colnames:
+                        # If the column name contains more than one character before "mag", skip it
+                        if len(name.split("mag")[0]) > 1: continue
 
-                    # If this column name does not end with "mag", skip it
-                    if not name.endswith("mag"): continue
+                        # Get the name of the band
+                        band = name.split("mag")[0]
 
-                    # If the column name contains more than one character before "mag", skip it
-                    if len(name.split("mag")[0]) > 1: continue
+                        # Add the magnitude in this band to the dictionary
+                        magnitudes[band] = entry[name] * u.mag
 
-                    # Get the name of the band
-                    band = name.split("mag")[0]
+                        # Check whether an error on the magnitude is present
+                        if "e_"+name in entry.colnames:
 
-                    # Add the magnitude in this band to the dictionary
-                    magnitudes[band] = entry[name] * u.mag
+                            # If so, add it to the mag_errors dictionary
+                            mag_errors[band] = entry["e_"+name] * u.mag
 
-                    # Check whether an error on the magnitude is present
-                    if "e_"+name in entry.colnames:
+                    # Create a star object
+                    star = Star(catalog=catalog, id=star_id, position=position, ra_error=ra_error,
+                                dec_error=dec_error, magnitudes=magnitudes, magnitude_errors=mag_errors)
 
-                        # If so, add it to the mag_errors dictionary
-                        mag_errors[band] = entry["e_"+name] * u.mag
+                    # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
+                    if self.galaxyextractor is not None: star.on_galaxy = self.galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs))
 
-                # Create a star object
-                star = Star(catalog=self.config.fetching.catalog, id=star_id, position=position, ra_error=ra_error,
-                            dec_error=dec_error, magnitudes=magnitudes, magnitude_errors=mag_errors)
+                    # If requested, enable track record
+                    if self.config.track_record: star.enable_track_record()
 
-                # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
-                if self.galaxyextractor is not None: star.on_galaxy = self.galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs))
+                    # If there are already stars in the list, check for correspondances with the current stars
+                    if len(self.stars) > 0:
+                        for saved_star in self.stars:
+                            difference = saved_star.pixel_position(self.frame.wcs) - star.pixel_position(self.frame.wcs)
+                            if difference.norm < 3.0:
+                                saved_star.confidence_level += 1
+                                break
 
-                # If requested, enable track record
-                if self.config.track_record: star.enable_track_record()
+                        # If no corresponding star was found (no break is encountered)
+                        else: stars.append(star)
 
-                # Add the star to the list of stars
-                self.stars.append(star)
+                    # If no other stars are in the list yet, just add them all
+                    else: stars.append(star)
+
+            # Add the new stars to the stars list
+            self.stars += stars
 
         # Inform the user
         if self.galaxyextractor is not None: self.log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
@@ -479,8 +517,6 @@ class StarExtractor(object):
             # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
             if not self.config.removal.remove_foreground and self.galaxyextractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
 
-            #
-
             # Remove the star in the frame
             star.remove(self.frame, self.mask, self.config.removal, default_fwhm)
 
@@ -607,8 +643,68 @@ class StarExtractor(object):
             # If this star should be ignored, skip it
             if star.ignore: continue
 
-            # If the galaxy does not have a source, continue
+            # If the star does not have saturation, continue
             if star.has_saturation: star.find_aperture(sigma_level=self.config.apertures.sigma_level)
+
+        # Inform the user
+        self.log.info("Constructing elliptical aperture regions to encompass other contaminating sources")
+
+        # Find apertures for the other sources
+        #from scipy import ndimage
+        from photutils import segment_properties, properties_table
+        #from photutils.segmentation import SegmentProperties
+        from photutils import EllipticalAperture
+
+        # Get the segment properties
+        # Since there is only one segment in the source.mask (the center segment), the props
+        # list contains only one entry (one galaxy)
+        properties_list = segment_properties(np.asarray(self.frame), self.segments)
+
+        # Below we perform some steps exactly as in the photutils segment_properties function, but we want to
+        # avoid calling that function since it also calls _prepare_data which calls _check_units in turn,
+        # and because our frames have a 'unit' attribute it crashes for some reason (saying that if one of the
+        # [frames, errors, background] has a unit, the other must have too, although we don't provide these errors
+        # and background arrays ... More investigation in this should follow.
+        #label_ids = np.unique(self.segments[self.segments > 0])
+        #filtered_data = None
+        #label_slices = ndimage.find_objects(self.segments)
+        #properties_list = []
+        #for i, label_slice in enumerate(label_slices):
+        #    label = i + 1    # consecutive even if some label numbers are missing
+        #    # label_slice is None for missing label numbers
+        #    if label_slice is None or label not in label_ids:
+        #        continue
+        #    segm_props = SegmentProperties(
+        #        self.frame, self.segments, label, label_slice=label_slice, error=None,
+        #        effective_gain=None, mask=None, background=None,
+        #        wcs=self.frame.wcs, filtered_data=filtered_data, data_prepared=True)
+        #    properties_list.append(segm_props)
+
+        #table = properties_table(properties)
+        for properties in properties_list:
+
+            # Obtain the position, orientation and extent
+            position = (properties.xcentroid.value, properties.ycentroid.value)
+            a = properties.semimajor_axis_sigma.value * self.config.apertures.sigma_level
+            b = properties.semiminor_axis_sigma.value * self.config.apertures.sigma_level
+            theta = properties.orientation.value
+
+            # Create the aperture
+            self.other_apertures.append(EllipticalAperture(position, a, b, theta=theta))
+
+        # Plotting the apertures
+        #from astropy.visualization import SqrtStretch
+        #from astropy.visualization.mpl_normalize import ImageNormalize
+        #import matplotlib.pylab as plt
+
+        #norm = ImageNormalize(stretch=SqrtStretch())
+
+        #plt.figure()
+
+        #plt.imshow(self.segments, origin='lower', cmap='jet')
+        #for aperture in self.other_apertures: aperture.plot(color='blue', lw=1.5, alpha=0.5)
+
+        #plt.show()
 
     # -----------------------------------------------------------------
 
@@ -695,7 +791,7 @@ class StarExtractor(object):
         self.segments = detect_sources(self.frame, threshold, npixels=5, filter_kernel=self.kernel)
 
         # Write the segmentation map to file
-        Frame(self.segments).save(self.config.writing.other_segments_path[:-5]+"_or.fits")
+        #Frame(self.segments).save(self.config.writing.other_segments_path[:-5]+"_or.fits")
 
         # Eliminate the principal galaxy and companion galaxies from the segments
         if self.galaxyextractor is not None:
@@ -1006,6 +1102,53 @@ class StarExtractor(object):
 
     # -----------------------------------------------------------------
 
+    def write_aperture_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = self.config.writing.aperture_region_path
+
+        # Create a file
+        f = open(path, 'w')
+
+        # Initialize the region string
+        print("# Region file format: DS9 version 4.1", file=f)
+
+        # Loop over the stars
+        for star in self.stars:
+
+            # Skip stars that do not have an aperture
+            if not star.has_aperture: continue
+
+            ap_x_center, ap_y_center = star.aperture.positions[0]
+            major = star.aperture.a
+            minor = star.aperture.b
+            angle = star.aperture.theta / math.pi * 180
+
+            aperture_suffix = " # color = blue"
+
+            print("image;ellipse({},{},{},{},{})".format(ap_x_center, ap_y_center, major, minor, angle) + aperture_suffix, file=f)
+
+        # Loop over all other apertures
+        for aperture in self.other_apertures:
+
+            ap_x_center, ap_y_center = aperture.positions[0]
+            major = aperture.a
+            minor = aperture.b
+            angle = aperture.theta / math.pi * 180
+
+            aperture_suffix = " # color = red"
+
+            print("image;ellipse({},{},{},{},{})".format(ap_x_center, ap_y_center, major, minor, angle) + aperture_suffix, file=f)
+
+        # Close the file
+        f.close()
+
+    # -----------------------------------------------------------------
+
     def write_table(self):
 
         """
@@ -1301,6 +1444,9 @@ class StarExtractor(object):
 
         # If requested, write out the star region
         if self.config.write_region: self.write_region()
+
+        # If requested, write out the aperture region
+        if self.config.write_aperture_region: self.write_aperture_region()
 
         # If requested, write out the frame where the stars are masked
         if self.config.write_masked_frame: self.write_masked_frame()

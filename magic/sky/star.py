@@ -44,6 +44,8 @@ class Star(SkyObject):
         self.magnitude_errors = magnitude_errors
         self.on_galaxy = on_galaxy
 
+        self.confidence_level = 1
+
         # Set the model attribute to None initially
         self.model = None
 

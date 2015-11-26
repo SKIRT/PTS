@@ -576,7 +576,7 @@ class GalaxyExtractor(object):
         self.log.info("Writing galaxy region to " + path)
 
         # Create a file
-        f = open(path,'w')
+        f = open(path, 'w')
 
         # Initialize the region string
         print("# Region file format: DS9 version 4.1", file=f)
