@@ -690,8 +690,10 @@ class StarExtractor(object):
             b = properties.semiminor_axis_sigma.value * self.config.apertures.sigma_level
             theta = properties.orientation.value
 
+            ellipticity = (a-b)/b
+
             # Create the aperture
-            self.other_apertures.append(EllipticalAperture(position, a, b, theta=theta))
+            if ellipticity < self.config.apertures.max_ellipticity: self.other_apertures.append(EllipticalAperture(position, a, b, theta=theta))
 
         # Plotting the apertures
         #from astropy.visualization import SqrtStretch
@@ -728,12 +730,12 @@ class StarExtractor(object):
             if not star.has_aperture: continue
 
             # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
-            if star.on_galaxy and self.config.saturation.no_sigma_clip_on_galaxy: sigma_clip = False
-            else: sigma_clip = self.config.saturation.sigma_clip
+            if star.on_galaxy and self.config.aperture_removal.no_sigma_clip_on_galaxy: sigma_clip = False
+            else: sigma_clip = self.config.aperture_removal.sigma_clip
 
             # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-            if star.on_galaxy and self.config.saturation.polynomial_on_galaxy: interpolation_method = "polynomial"
-            else: interpolation_method = self.config.saturation.interpolation_method
+            if star.on_galaxy and self.config.aperture_removal.polynomial_on_galaxy: interpolation_method = "polynomial"
+            else: interpolation_method = self.config.aperture_removal.interpolation_method
 
             # Expansion factor
             expansion_factor = self.config.aperture_removal.expansion_factor
@@ -766,7 +768,9 @@ class StarExtractor(object):
         # Loop over all other apertures
         for aperture in self.other_apertures:
 
-            # Expansion factor
+            # Configuration settings
+            sigma_clip = self.config.aperture_removal.sigma_clip
+            interpolation_method = self.config.aperture_removal.interpolation_method
             expansion_factor = self.config.aperture_removal.expansion_factor
 
             # Create a source object
@@ -1164,6 +1168,10 @@ class StarExtractor(object):
             angle = star.aperture.theta / math.pi * 180
 
             aperture_suffix = " # color = blue"
+
+            # Calculate the difference between the aperture center and the star position (in number of pixels)
+            difference = star.pixel_position(self.frame.wcs) - Position(ap_x_center, ap_y_center)
+            aperture_suffix += "text = {" + str(difference.norm) + "}"
 
             print("image;ellipse({},{},{},{},{})".format(ap_x_center, ap_y_center, major, minor, angle) + aperture_suffix, file=f)
 
