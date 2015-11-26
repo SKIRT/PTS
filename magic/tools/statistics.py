@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
 # Ensure Python 3 functionality
@@ -14,7 +14,7 @@ import numpy as np
 # Import astronomical modules
 from astropy.stats import sigma_clip, sigma_clipped_stats
 
-# Import Astromagic modules
+# Import the relevant AstroMagic classes and modules
 from . import general
 from ..basics import Mask
 

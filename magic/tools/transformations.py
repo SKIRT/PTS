@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
 # This module was adapted from the FITS_Tools package written by Adam Ginsburg
@@ -19,7 +19,7 @@ import scipy.ndimage
 # Import astronomical modules
 import astropy.io.fits as pyfits
 
-# Import AstroMagic modules
+# Import the relevant AstroMagic classes and modules
 from . import headers
 
 # -----------------------------------------------------------------

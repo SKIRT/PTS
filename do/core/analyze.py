@@ -14,8 +14,13 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import numpy as np
-from pts.sphanalyze import *
+
+# Import the relevant PTS classes and modules
+from pts.core.prep.sphanalyze import *
+
+# -----------------------------------------------------------------
 
 inpath = "/Users/pcamps/EAGLE/Snapshot50/dat/"
 

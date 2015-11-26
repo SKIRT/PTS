@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
 # Ensure Python 3 compatibility
@@ -18,7 +18,7 @@ from astropy.table import Table
 from astropy import log
 import astropy.logger
 
-# Import AstroMagic modules
+# Import the relevant AstroMagic classes and modules
 from .core import Frame
 from .tools import configuration
 

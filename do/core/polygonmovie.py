@@ -14,8 +14,13 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import numpy as np
-from pts.polygonmovie import *
+
+# Import the relevant PTS classes and modules
+from pts.core.prep.polygonmovie import *
+
+# -----------------------------------------------------------------
 
 def optim(x,y):
     return (16*x*(1-x)*y*(1-y)*np.sin(np.pi*x)*np.sin(np.pi*y)) ** 2

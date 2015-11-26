@@ -18,8 +18,8 @@ import os
 import os.path
 import argparse
 
-# Import the relevant PTS class
-from performance.scalingtest import ScalingTest
+# Import the relevant PTS classes and modules
+from pts.core.test import ScalingTest
 
 # -----------------------------------------------------------------
 

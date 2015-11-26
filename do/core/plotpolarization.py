@@ -18,19 +18,16 @@
 
 # -----------------------------------------------------------------
 
-# Ensure Python 3 compatibility
-from __future__ import absolute_import, division, print_function
-
 # Import standard modules
 import sys
 
-# Import the relevant PTS modules
-from pts.simulation import createsimulations
-from plotting.polarization import plotpolarization
+# Import the relevant PTS classes and modules
+from pts.core.simulation import createsimulations
+from pts.core.plot.polarization import plotpolarization
 
 # -----------------------------------------------------------------
 
-print("Starting plotpolarization...")
+print "Starting plotpolarization..."
 
 # get the command-line argument specifying the simulation(s)
 argument = sys.argv[1] if len(sys.argv) > 1 else ""
@@ -39,6 +36,6 @@ argument = sys.argv[1] if len(sys.argv) > 1 else ""
 for simulation in createsimulations(argument):
     plotpolarization(simulation)
 
-print("Finished plotpolarization")
+print "Finished plotpolarization"
 
 # -----------------------------------------------------------------

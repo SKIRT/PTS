@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
 ##  This module is used for interpolating masked areas in an image

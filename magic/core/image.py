@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
 # Ensure Python 3 functionality
@@ -21,7 +21,7 @@ import astropy.io.fits as pyfits
 from astropy.wcs import WCS
 from astropy import log
 
-# Import AstroMagic modules
+# Import the relevant AstroMagic classes and modules
 from ..basics import Layers, Mask, Region
 from .frame import Frame
 from ..tools import headers, fitting, plotting, regions, statistics, catalogs

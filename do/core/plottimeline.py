@@ -17,8 +17,8 @@ from __future__ import absolute_import, division, print_function
 import os
 import argparse
 
-# Import relevant PTS modules
-from plotting.timeline import TimelinePlotter
+# Import the relevant PTS classes and modules
+from pts.core.plot import TimelinePlotter
 
 # -----------------------------------------------------------------
 

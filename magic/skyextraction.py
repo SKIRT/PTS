@@ -16,7 +16,7 @@ import copy
 # Import astronomical modules
 from astropy import log
 
-# Import AstroMagic modules
+# Import the relevant AstroMagic classes and modules
 from .basics import Mask, Region
 from .core import Frame
 from .tools import statistics, interpolation, configuration, plotting, logging

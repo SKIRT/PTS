@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
 # Ensure Python 3 functionality
@@ -11,10 +11,8 @@ from __future__ import absolute_import, division, print_function
 from astropy import units as u
 from astropy.coordinates import Angle
 
-# Import classes from this subpackage
+# Import the relevant AstroMagic classes and modules
 from .skyobject import SkyObject
-
-# Import other AstroMagic modules and classes
 from ..core import Source
 from ..tools import statistics
 from ..tools import fitting

@@ -23,15 +23,12 @@
 
 # -----------------------------------------------------------------
 
-# Ensure Python 3 compatibility
-from __future__ import absolute_import, division, print_function
-
 # Import standard modules
 import sys
 
-# Import relevant PTS modules
-from pts.simulation import createsimulations
-from misc.makewavemovie import makewavemovie
+# Import the relevant PTS classes and modules
+from pts.core.simulation import createsimulations
+from pts.core.plot.makewavemovie import makewavemovie
 
 # -----------------------------------------------------------------
 
@@ -49,7 +46,7 @@ to_percentile = 100
 
 # -----------------------------------------------------------------
 
-print("Starting makewavemovie...")
+print "Starting makewavemovie..."
 
 # get the command-line argument specifying the simulation(s)
 argument = sys.argv[1] if len(sys.argv) > 1 else ""
@@ -58,6 +55,6 @@ argument = sys.argv[1] if len(sys.argv) > 1 else ""
 for simulation in createsimulations(argument):
     makewavemovie(simulation, xlim=xlim, ylim=ylim, from_percentile=from_percentile, to_percentile=to_percentile)
 
-print("Finished makewavemovie")
+print "Finished makewavemovie"
 
 # -----------------------------------------------------------------

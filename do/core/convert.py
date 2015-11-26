@@ -14,7 +14,10 @@
 
 # -----------------------------------------------------------------
 
-from pts.sphconvert import *
+# Import the relevant PTS classes and modules
+from pts.core.prep.sphconvert import *
+
+# -----------------------------------------------------------------
 
 #convert_stars_EAGLE("galaxy_stars_035_007_147.data", "eagle_stars.dat")
 #convert_gas_EAGLE("galaxy_gas_035_007_147.data", "eagle_gas.dat")

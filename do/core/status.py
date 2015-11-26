@@ -21,9 +21,9 @@ from operator import itemgetter
 from collections import defaultdict
 from distutils.spawn import find_executable
 
-# Import the relevant PTS modules
-from pts.log import Log
-from pts.simulation import SkirtSimulation
+# Import the relevant PTS classes and modules
+from pts.core.basics import Log
+from pts.core.simulation import SkirtSimulation
 
 # -----------------------------------------------------------------
 

@@ -5,6 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
+# Import classes to make them available at the level of this subpackage
 from filter import Filter
 from moviefile import MovieFile
 from rgbimage import RGBImage

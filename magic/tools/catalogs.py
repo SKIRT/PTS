@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
 # Ensure Python 3 functionality
@@ -14,7 +14,7 @@ from astroquery.vizier import Vizier
 from astroquery.ned import Ned
 from astroquery.irsa_dust import IrsaDust
 
-# Import Astromagic modules
+# Import the relevant AstroMagic classes and modules
 from . import regions
 
 # -----------------------------------------------------------------

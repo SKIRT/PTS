@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
 # Ensure Python 3 functionality
@@ -11,7 +11,7 @@ from __future__ import absolute_import, division, print_function
 import pyregion
 import astropy.coordinates as coord
 
-# Import AstroMagic modules
+# Import the relevant AstroMagic classes and modules
 from .vector import Extent
 
 # -----------------------------------------------------------------

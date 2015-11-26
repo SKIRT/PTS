@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for Astronomers        **
 # *****************************************************************
 
 # Ensure Python 3 functionality
@@ -18,7 +18,7 @@ from astropy import log
 from photutils import daofind
 from astropy.stats import sigma_clipped_stats
 
-# Import Astromagic modules
+# Import the relevant AstroMagic classes and modules
 from ..tools import fitting, plotting, statistics, coordinates, cropping, interpolation, masks, regions
 from ..core import Source
 

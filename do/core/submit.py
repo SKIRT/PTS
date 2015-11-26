@@ -18,11 +18,10 @@ import os
 import os.path
 import argparse
 
-# Import the relevant PTS class
-from pts.log import Log
-from pts.skifile import SkiFile
-from pts.jobscript import JobScript
-#from performance.resources import estimate_memory
+# Import the relevant PTS classes and modules
+from pts.core.basics import Log
+from pts.core.simulation import SkiFile
+from pts.core.simulation import JobScript
 
 # -----------------------------------------------------------------
 

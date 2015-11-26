@@ -17,8 +17,8 @@ from __future__ import absolute_import, division, print_function
 import os
 import argparse
 
-# Import the relevant PTS modules
-from pts.launcher import SkirtLauncher, FitSkirtLauncher
+# Import the relevant PTS classes and modules
+from pts.core.simulation import SkirtLauncher, FitSkirtLauncher
 
 # -----------------------------------------------------------------
 

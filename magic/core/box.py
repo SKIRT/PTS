@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
 # Ensure Python 3 functionality
@@ -11,7 +11,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from scipy import ndimage
 
-# Import Astromagic modules
+# Import the relevant AstroMagic classes and modules
 from ..basics import Position, Region
 from ..tools import cropping, fitting, interpolation
 

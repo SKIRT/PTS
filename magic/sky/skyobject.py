@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
 # Ensure Python 3 functionality
@@ -15,7 +15,7 @@ from abc import abstractmethod
 from photutils import segment_properties, properties_table
 from photutils import EllipticalAperture
 
-# Import Astromagic modules
+# Import the relevant AstroMagic classes and modules
 from ..basics import Position, TrackRecord
 from ..analysis import sources
 

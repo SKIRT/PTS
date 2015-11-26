@@ -23,8 +23,8 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Import the relevant PTS modules
-from pts.rgbimage import RGBImage
+# Import the relevant PTS classes and modules
+from pts.core.basics import RGBImage
 
 # *****************************************************************
 

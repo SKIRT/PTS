@@ -15,11 +15,10 @@
 
 # -----------------------------------------------------------------
 
-# Ensure Python 3 compatibility
-from __future__ import absolute_import, division, print_function
-
-# get the command line arguments
+# Import standard modules
 import sys
+
+# Get the command line arguments
 timelinename = sys.argv[1].lower() if len(sys.argv) > 1 else ""
 skifilepath = sys.argv[2].lower() if len(sys.argv) > 2 else ""
 interactive = (skifilepath=="interactive")
@@ -33,7 +32,7 @@ pixels = 1000
 # -----------------------------------------------------------------
 
 # construct the requested timeline
-from pts.timeline import Timeline
+from pts.core.basics import Timeline
 timeline = Timeline(rate=rate, lengthunit=(1 if interactive else width), shape=(pixels,pixels))
 
 if timelinename == "circle":
@@ -55,15 +54,15 @@ else: raise ValueError("Unsupported timeline name")
 
 # show interactively
 if interactive:
-    from pts.viewangles import ViewAngles
+    from pts.core.basics import ViewAngles
     view = ViewAngles()
     view.flyby(timeline)
     view.close()
 
 # or adjust ski file
 else:
-    from ..misc.makeflybymovie import prepareflybymovie
+    from pts.core.plot.makeflybymovie import prepareflybymovie
     prepareflybymovie(skifilepath, timeline)
-    print("adjusted " + skifilepath)
+    print "adjusted " + skifilepath
 
 # -----------------------------------------------------------------

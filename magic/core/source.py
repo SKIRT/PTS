@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
 # Ensure Python 3 functionality
@@ -17,10 +17,8 @@ from photutils import find_peaks
 from photutils import detect_sources
 from photutils import detect_threshold
 
-# Import classes from this submodule
+# Import the relevant AstroMagic classes and modules
 from .box import Box
-
-# Import other AstroMagic modules and classes
 from ..basics import Position, Mask
 from ..tools import plotting, statistics
 

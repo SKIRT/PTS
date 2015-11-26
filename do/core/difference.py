@@ -24,8 +24,8 @@ import sys
 import os.path
 import filecmp
 
-# Import the relevant PTS modules
-from pts.skirttestsuite import equalfiles
+# Import the relevant PTS classes and modules
+from pts.core.test.testsuite import equalfiles
 
 # -----------------------------------------------------------------
 

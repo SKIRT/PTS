@@ -13,6 +13,34 @@ import argparse
 
 # -----------------------------------------------------------------
 
+class ScalingExtractor(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def run(self, simulation, output_path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+# -----------------------------------------------------------------
+
 ## This function extracts the timings from the simulation log file and either returns them or writes them to file.
 #  It takes the following arguments:
 #

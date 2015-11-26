@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
 # Ensure Python 3 functionality
@@ -23,7 +23,7 @@ import astropy.units as u
 import astropy.coordinates as coord
 from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
 
-# Import Astromagic modules
+# Import the relevant AstroMagic classes and modules
 from ..basics import Position
 from ..tools import coordinates, cropping, transformations, interpolation, headers, fitting
 

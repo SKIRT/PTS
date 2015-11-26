@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
 # Ensure Python 3 functionality
@@ -21,7 +21,7 @@ from astropy.coordinates import Angle
 import astropy.coordinates as coord
 from astroquery.vizier import Vizier
 
-# Import AstroMagic modules
+# Import the relevant AstroMagic classes and modules
 from ..core import Source
 from .skyobject import SkyObject
 from ..basics import Extent

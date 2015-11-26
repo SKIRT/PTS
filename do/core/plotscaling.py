@@ -18,15 +18,15 @@ import os
 import os.path
 import argparse
 
-# Import the relevant PTS modules
-from plotting.scaling import ScalingPlotter
+# Import the relevant PTS classes and modules
+from pts.core.plot import ScalingPlotter
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # The choices for the simulation phase
 phases = ['setup', 'stellar', 'dustselfabs', 'dustem', 'writing', 'total']
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Create the command-line parser and a set of subparsers
 parser = argparse.ArgumentParser()

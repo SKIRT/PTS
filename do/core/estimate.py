@@ -20,8 +20,8 @@ import argparse
 # Import astronomical modules
 from astropy import log
 
-# Import relevant PTS modules
-from performance.resources import ResourceEstimator
+# Import the relevant PTS classes and modules
+from pts.core.test import ResourceEstimator
 
 # -----------------------------------------------------------------
 

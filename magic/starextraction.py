@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
 # Ensure Python 3 functionality
@@ -23,7 +23,7 @@ from astropy.coordinates import Angle
 from photutils import detect_sources
 from astropy.convolution import Gaussian2DKernel
 
-# Import Astromagic modules
+# Import the relevant AstroMagic classes and modules
 from .basics import Position, Extent, Mask, Region
 from .core import Frame, Source
 from .sky import Star
@@ -616,6 +616,7 @@ class StarExtractor(object):
 
                     # Find a saturation source and remove it from the frame
                     success = star.remove_saturation(self.frame, self.mask, self.config.saturation, default_fwhm)
+                    if success: star.has_saturation = True
                     removed += success
 
             # Inform the user
@@ -1117,8 +1118,8 @@ class StarExtractor(object):
         # Initialize the region string
         print("# Region file format: DS9 version 4.1", file=f)
 
-        print("have saturation = ", self.have_saturation)
-        print("have aperture = ", self.have_aperture)
+        #print("have saturation = ", self.have_saturation)
+        #print("have aperture = ", self.have_aperture)
 
         # Loop over the stars
         for star in self.stars:

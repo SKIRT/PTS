@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       Astromagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
 # Ensure Python 3 functionality
@@ -19,7 +19,7 @@ from astropy.coordinates import Angle
 from astropy.visualization import SqrtStretch, LogStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 
-# Import AstroMagic modules
+# Import the relevant AstroMagic classes and modules
 from .basics import Mask, Region, Position, Extent
 from .core import Source
 from .sky import Galaxy
