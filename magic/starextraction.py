@@ -752,10 +752,41 @@ class StarExtractor(object):
             angle = Angle(star.aperture.theta, u.rad)
 
             # Create a source
-            source = Source(self.frame, center, radius, angle, self.config.saturation.background_outer_factor)
+            source = Source(self.frame, center, radius, angle, self.config.aperture_removal.background_outer_factor)
 
             # Estimate the background for the source
             source.estimate_background(interpolation_method, sigma_clip)
+
+            # Replace the frame in the appropriate area with the estimated background
+            source.background.replace(self.frame, where=source.mask)
+
+            # Update the mask
+            self.mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
+
+        # Loop over all other apertures
+        for aperture in self.other_apertures:
+
+            # Expansion factor
+            expansion_factor = self.config.aperture_removal.expansion_factor
+
+            # Create a source object
+            # Get the parameters of the elliptical aperture
+            x_center, y_center = aperture.positions[0]
+            center = Position(x=x_center, y=y_center)
+
+            major = aperture.a * expansion_factor
+            minor = aperture.b * expansion_factor
+
+            radius = Extent(x=major, y=minor)
+
+            # theta is in radians
+            angle = Angle(aperture.theta, u.rad)
+
+            # Create a source
+            source = Source(self.frame, center, radius, angle, self.config.aperture_removal.background_outer_factor)
+
+            # Estimate the background for the source
+            source.estimate_background("local_mean", True)
 
             # Replace the frame in the appropriate area with the estimated background
             source.background.replace(self.frame, where=source.mask)
