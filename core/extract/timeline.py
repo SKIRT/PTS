@@ -19,8 +19,8 @@ from datetime import datetime
 # Import astronomical modules
 from astropy.table import Table
 
-# Import relevant PTS modules
-from ..core.simulation import SkirtSimulation
+# Import the relevant PTS classes and modules
+from ..simulation import SkirtSimulation
 
 # -----------------------------------------------------------------
 

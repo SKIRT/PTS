@@ -23,9 +23,6 @@
 
 # -----------------------------------------------------------------
 
-# Ensure Python 3 compatibility
-from __future__ import absolute_import, division, print_function
-
 # Import standard modules
 import numpy as np
 import matplotlib.pyplot as plt
@@ -158,27 +155,27 @@ def intersects(xmin, xmax, ymin, ymax, zmin, zmax,  xc, yc, zc, r):
 def analyze(filename, columns=(0,1,2,3), scale=1, supfac=1, gridsize=9, plotfile=None,
             basicplot=False, circleplot=False, cellplot=False, accurate=False):
     # read the data
-    print("---------------------------------------")
-    print("Reading data file", filename)
+    print "---------------------------------------"
+    print "Reading data file", filename
     data = np.loadtxt(filename, usecols=columns) * scale
     x,y,z,r = data[:,0], data[:,1], data[:,2], data[:,3]*supfac
 
     # print number of particles
-    print("Number of particles: {0}".format(len(r)))
+    print "Number of particles: {0}".format(len(r))
 
     # print domain size
     xmin, xmax = min(x-r), max(x+r)
     ymin, ymax = min(y-r), max(y+r)
     zmin, zmax = min(z-r), max(z+r)
-    print("Domain range: [{0:.0f}..{1:.0f}] [{2:.0f}..{3:.0f}] [{4:.0f}..{5:.0f}]".format(xmin,xmax,ymin,ymax,zmin,zmax))
+    print "Domain range: [{0:.0f}..{1:.0f}] [{2:.0f}..{3:.0f}] [{4:.0f}..{5:.0f}]".format(xmin,xmax,ymin,ymax,zmin,zmax)
 
     # print maximum particle radius as a fraction of domain size
     rmax = max(r)
     xperc = 100*rmax/(xmax-xmin)
     yperc = 100*rmax/(ymax-ymin)
     zperc = 100*rmax/(zmax-zmin)
-    print("Maximum particle radius: {0:.0f} ({1:.0f}% of X size, {2:.0f}% of Y size, {3:.0f}% of Z size)" \
-                        .format(rmax, xperc,yperc,zperc))
+    print "Maximum particle radius: {0:.0f} ({1:.0f}% of X size, {2:.0f}% of Y size, {3:.0f}% of Z size)" \
+                        .format(rmax, xperc,yperc,zperc)
 
     # produce basic plot if requested
     if basicplot:
@@ -243,7 +240,7 @@ def analyze(filename, columns=(0,1,2,3), scale=1, supfac=1, gridsize=9, plotfile
     # create smart grid and produce cell plot if requested
     if cellplot:
         # create smart grid
-        print("Creating smart {0}x{0}x{0} grid ({1} cells)".format(gridsize, gridsize**3))
+        print "Creating smart {0}x{0}x{0} grid ({1} cells)".format(gridsize, gridsize**3)
         xgrid = makegrid(x, xmin, xmax, gridsize)
         ygrid = makegrid(y, ymin, ymax, gridsize)
         zgrid = makegrid(z, zmin, zmax, gridsize)
@@ -277,10 +274,10 @@ def analyze(filename, columns=(0,1,2,3), scale=1, supfac=1, gridsize=9, plotfile
 
             # report progress
             if index%50000==0:
-                print(" .. processed {0} particles".format(index))
+                print " .. processed {0} particles".format(index)
 
         # print basic statistic
-        print("Maximum {0} particles affecting a single cell".format( max(partsincell.flatten()) ))
+        print "Maximum {0} particles affecting a single cell".format( max(partsincell.flatten()) )
 
         # start the figure
         plt.figure(1, figsize=(12,12))
@@ -304,6 +301,6 @@ def analyze(filename, columns=(0,1,2,3), scale=1, supfac=1, gridsize=9, plotfile
             plt.savefig(plotfile)
             plt.close()
 
-    print("-----")
+    print "-----"
 
 # -----------------------------------------------------------------

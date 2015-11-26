@@ -12,15 +12,17 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import numpy as np
 import os.path
 
-# use a non-interactive back-end to generate high-quality raster graphics
+# Use a non-interactive back-end to generate high-quality raster graphics
 import matplotlib
 if matplotlib.get_backend().lower() != "agg": matplotlib.use("agg")
 import matplotlib.pyplot as plt
 
-from pts.moviefile import MovieFile
+# Import the relevant PTS classes and modules
+from pts.core.basics import MovieFile
 
 # -----------------------------------------------------------------
 

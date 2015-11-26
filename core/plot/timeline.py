@@ -24,9 +24,9 @@ import matplotlib
 if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 
-# Import relevant PTS modules
-from ..pts.log import Log
-from ..pts.simulation import createsimulations
+# Import the relevant PTS classes and modules
+from ..basics import Log
+from ..simulation import createsimulations
 
 # -----------------------------------------------------------------
 

@@ -19,8 +19,8 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from reportlab.pdfgen import canvas
 
-# Import the relevant PTS modules
-from ..pts import archive as arch
+# Import the relevant PTS classes and modules
+from ..tools import archive as arch
 
 # -----------------------------------------------------------------
 

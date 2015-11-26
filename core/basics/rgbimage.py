@@ -11,6 +11,7 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import os
 import os.path
 import types
@@ -19,6 +20,8 @@ import pyfits
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from PIL import Image
+
+# Import the relevant PTS classes and modules
 import pts.core.tools.archive as arch
 
 # -----------------------------------------------------------------

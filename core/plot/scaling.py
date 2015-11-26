@@ -17,10 +17,8 @@ import os.path
 from collections import defaultdict
 from scipy.optimize import curve_fit
 
-# -----------------------------------------------------------------
-
-# Import the relevant PTS classes
-from pts.log import Log
+# Import the relevant PTS classes and modules
+from ..basics import Log
 
 # -----------------------------------------------------------------
 

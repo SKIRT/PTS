@@ -24,8 +24,8 @@ import matplotlib
 if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 
-# Import the relevant PTS modules
-from ..pts import archive as arch
+# Import the relevant PTS classes and modules
+from ..tools import archive as arch
 
 # -----------------------------------------------------------------
 

@@ -12,15 +12,17 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import numpy as np
 import math
 import time
 
-# use an interactive back-end that supports animation
+# Use an interactive back-end that supports animation
 import matplotlib
 if matplotlib.get_backend().lower() != "tkagg": matplotlib.use("tkagg")
 import matplotlib.pyplot as plt
 
+# Import the relevant PTS classes and modules
 from pts.core.tools.geometry import Transform
 
 # -----------------------------------------------------------------

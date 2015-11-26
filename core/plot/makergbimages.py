@@ -21,9 +21,9 @@ import numpy as np
 # Import astronomical modules
 import pyfits
 
-# Import the relevant PTS modules
-from ..pts.rgbimage import RGBImage
-import ..pts.archive as arch
+# Import the relevant PTS classes and modules
+from ..basics import RGBImage
+from ..tools import archive as arch
 
 # -----------------------------------------------------------------
 

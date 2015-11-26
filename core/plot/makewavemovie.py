@@ -25,10 +25,10 @@ import matplotlib.pyplot as plt
 # Import astronomical modules
 import pyfits
 
-# Import the relevant PTS modules
-from ..pts.moviefile import MovieFile
-from ..pts.rgbimage import RGBImage
-import ..pts.archive as arch
+# Import the relevant PTS classes and modules
+from ..basics import MovieFile
+from ..basics import RGBImage
+from ..tools import archive as arch
 
 # -----------------------------------------------------------------
 

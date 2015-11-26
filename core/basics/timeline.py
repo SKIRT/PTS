@@ -13,8 +13,10 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import numpy as np
-import math
+
+# Import the relevant PTS classes and modules
 import pts.core.tools.geometry as g
 
 # -----------------------------------------------------------------

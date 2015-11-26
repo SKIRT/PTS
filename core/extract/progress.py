@@ -12,9 +12,9 @@ from __future__ import absolute_import, division, print_function
 import argparse
 from datetime import datetime
 
-# Import relevant PTS modules
-from ..core.simulation import SkirtSimulation
-from ..core import archive as arch
+# Import the relevant PTS classes and modules
+from ..simulation import SkirtSimulation
+from ..tools import archive as arch
 
 # *****************************************************************
 

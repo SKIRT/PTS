@@ -14,6 +14,7 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import os
 import os.path
 import sys
