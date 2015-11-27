@@ -18,17 +18,13 @@ from __future__ import absolute_import, division, print_function
 import os
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import Configurable
-from .skirtexec import SkirtExec, FitSkirtExec
-from ..core.parameters import SkirtParameters
-from ..performance.resources import ResourceEstimator
-from ..extract.progress import ProgressExtractor
-from ..extract.timeline import TimeLineExtractor
-from ..extract.memory import MemoryExtractor
+from ..simulation import SkirtExec, FitSkirtExec
+from ..simulation import SkirtParameters
+from ..basics import Configurable
+from ..test import ResourceEstimator
+from ..extract import ProgressExtractor, TimeLineExtractor, MemoryExtractor
+from ..plot import ProgressPlotter, TimeLinePlotter, MemoryPlotter
 from ..tools import monitoring
-from ..plotting.progress import ProgressPlotter
-from ..plotting.timeline import TimeLinePlotter
-from ..plotting.memory import MemoryPlotter
 
 # -----------------------------------------------------------------
 
@@ -154,7 +150,7 @@ class SkirtLauncher(Configurable):
         """
 
         # Call the setup function of the base class
-        super(SkirtLauncher, self).__init__()
+        super(SkirtLauncher, self).setup()
 
         # Set the paths
         self.base_path = os.path.dirname(self.config.parameters.ski_pattern) if "/" in self.config.parameters.ski_pattern else os.getcwd()
@@ -467,7 +463,7 @@ class SkirtLauncher(Configurable):
 
 # -----------------------------------------------------------------
 
-class FitSkirtLauncher(object):
+class FitSkirtLauncher(Configurable):
 
     """
     This class ...
@@ -481,17 +477,8 @@ class FitSkirtLauncher(object):
         :return:
         """
 
-        ## Configuration
-
-        self.config = configuration.set("fitskirtlauncher", config)
-
-        ## Logging
-
-        # Set the log level
-        log.setLevel(self.config.logging.level)
-
-        # Set log file path
-        if self.config.logging.path is not None: astropy.logger.conf.log_file_path = self.config.logging.path.decode('unicode--escape')
+        # Call the constructor of the base class
+        super(FitSkirtLauncher, self).__init__(config)
 
         ## Attributes
 

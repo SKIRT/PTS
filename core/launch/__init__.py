@@ -6,11 +6,5 @@
 # *****************************************************************
 
 # Import classes to make them available at the level of this subpackage
-from execute import SkirtExec, FitSkirtExec
-from jobscript import JobScript
-from logfile import LogFile
-from parameters import SkirtParameters, FitSkirtParameters
-from remote import SkirtRemote
-from simulation import SkirtSimulation, createsimulations
-from skifile import SkiFile
-from units import SkirtUnits
+from launcher import SkirtLauncher, FitSkirtLauncher
+from remotelauncher import SkirtRemoteLauncher

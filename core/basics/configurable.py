@@ -14,12 +14,8 @@ This module ...
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import os
-import logging
-
 # Import the relevant PTS classes and modules
-from pts.core.tools import configuration
+from ..tools import configuration, logging
 
 # -----------------------------------------------------------------
 

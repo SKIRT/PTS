@@ -22,7 +22,7 @@ from matplotlib.figure import Figure
 from PIL import Image
 
 # Import the relevant PTS classes and modules
-import pts.core.tools.archive as arch
+from ..tools import archive as arch
 
 # -----------------------------------------------------------------
 #  RGBImage class

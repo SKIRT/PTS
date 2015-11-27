@@ -77,7 +77,7 @@ class MemoryExtractor(object):
         for i in range(len(self.log_files[0].contents)):
 
             # Check whether memory (de)allocation is reported in this entry
-            if not allocation_logging and "GB at" in self.log_files[0].contents["Message"][i]:
+            if not allocation_logging and "GB for" in self.log_files[0].contents["Message"][i]:
                 allocation_logging = True
                 break
 
@@ -111,7 +111,7 @@ class MemoryExtractor(object):
 
                     # Test whether this log entry contains information about memory (de)allocation
                     message = log_file.contents["Message"][j]
-                    if "GB at" in message:
+                    if "GB for" in message:
 
                         # Get the amount of memory (de)allocated (in GB)
                         if log_file.contents["Message"][j][0] == "+": delta = float(message.split("+")[1].split(" GB")[0])
@@ -119,7 +119,7 @@ class MemoryExtractor(object):
                         else: raise ValueError("Cannot determine the amount of memory (de)allocation")
 
                         # Get the address of the associated Array
-                        address = log_file.contents["Message"][j].split("at ")[1]
+                        address = log_file.contents["Message"][j].split("for ")[1]
 
                         # If the address was not yet encountered, assign a new unique id to it (an simple integer)
                         if address not in address_to_id:
@@ -150,7 +150,7 @@ class MemoryExtractor(object):
         self.table = Table(data, names=names)
         self.table["Simulation time"].unit = "s"
         self.table["Memory usage"].unit = "GB"
-        self.table["Array (de)allocation"].unit = "GB"
+        if allocation_logging: self.table["Array (de)allocation"].unit = "GB"
 
     # -----------------------------------------------------------------
 

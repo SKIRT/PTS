@@ -17,8 +17,8 @@ from datetime import datetime
 from lxml import etree
 
 # Import the relevant PTS classes and modules
-from pts.core.simulation import SkirtUnits
-from pts.core.tools import archive as arch
+from .units import SkirtUnits
+from ..tools import archive as arch
 
 # -----------------------------------------------------------------
 #  SkiFile class

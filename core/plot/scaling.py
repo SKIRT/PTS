@@ -14,6 +14,7 @@
 import math
 import numpy as np
 import os.path
+import matplotlib
 from collections import defaultdict
 from scipy.optimize import curve_fit
 
@@ -22,12 +23,6 @@ from ..basics import Log
 
 # -----------------------------------------------------------------
 
-# Use a non-interactive back-end to generate high-quality vector graphics
-import matplotlib
-if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
-import matplotlib.pyplot as plt
-
-import matplotlib.ticker
 
 # -----------------------------------------------------------------
 
@@ -288,6 +283,11 @@ class ScalingPlotter(object):
     #
     def plottimes(self, figsize=(12,8), xlim=None, ylim=None):
 
+        # Use a non-interactive back-end to generate high-quality vector graphics
+        if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
+        import matplotlib.pyplot as plt
+        import matplotlib.ticker
+
         # Inform the user of the fact that the runtimes are being plotted
         self._log.info("Plotting the runtimes...")
 
@@ -352,6 +352,11 @@ class ScalingPlotter(object):
     #  - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
     #
     def plotspeedups(self, figsize=(12,8), xlim=None, ylim=None, plotfit=False):
+
+        # Use a non-interactive back-end to generate high-quality vector graphics
+        if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
+        import matplotlib.pyplot as plt
+        import matplotlib.ticker
 
         # Inform the user of the fact that the speedups are being calculated and plotted
         self._log.info("Calculating and plotting the speedups...")
@@ -487,6 +492,11 @@ class ScalingPlotter(object):
     #  - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
     #
     def ploteffs(self, figsize=(12,8), xlim=None, ylim=None):
+
+        # Use a non-interactive back-end to generate high-quality vector graphics
+        if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
+        import matplotlib.pyplot as plt
+        import matplotlib.ticker
 
         # Inform the user of the fact that the efficiencies are being calculated and plotted
         self._log.info("Calculating and plotting the efficiencies...")

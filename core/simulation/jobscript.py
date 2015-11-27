@@ -60,7 +60,57 @@ class JobScript(object):
     #              other HPC users). Do not set this flag if you don't care about the reproducibility of your simulation
     #              in terms of computation time.
     #
-    def __init__(self, path, skifilepath, cluster, nodes, ppn, threadspp, inputpath, outputpath, walltime, mail=False, brief=False, verbose=False, fullnode=False):
+    def __init__(self, path, parameters, walltime):
+
+        """
+        The constructor ...
+        :return:
+        """
+
+        # Set the file path
+        self._path = path
+
+        # Open the job script file
+        self._script = open(path, 'w')
+
+        # Write a general header to the job script
+        self._script.write("#!/bin/sh\n")
+        self._script.write("# Batch script for running SKIRT on a remote system\n")
+        self._script.write("#\n")
+
+        # Determine the walltime in "hours, minutes and seconds" format
+        m, s = divmod(walltime, 60)
+        h, m = divmod(m, 60)
+
+        # Determine an appropriate name for this job
+        name = self._skifilename + "_" + str(nodes) + "_" + str(ppn)
+
+        # Set the environment variables
+        self._script.write("#PBS -N " + name + "\n")
+        self._script.write("#PBS -o output_" + name + ".txt\n")
+        self._script.write("#PBS -e error_" + name + ".txt\n")
+        self._script.write("#PBS -l walltime=%d:%02d:%02d\n" % (h, m, s))
+        self._script.write("#PBS -l nodes=" + str(nodes) + ":ppn=" + str(ppn) + "\n")
+        #if mail: self._script.write("#PBS -m bae\n")
+        self._script.write("#\n")
+        self._script.write("\n")
+
+        # Load cluster modules
+        self._script.write("# Load the necessary modules\n")
+        self._script.write("module load jobs\n")
+        self._script.write("module load lxml/3.4.2-intel-2015a-Python-2.7.9\n")
+        self._script.write("\n")
+
+        # Run the simulation
+        self._script.write("# Run the simulation\n")
+        #self._script.write("cd " + self._directorypath + "\n")
+
+        # Write the command string to the job script
+        self._script.write(parameters.to_command() + "\n")
+
+    # -----------------------------------------------------------------
+
+    def old__init__(self, path, skifilepath, cluster, nodes, ppn, threadspp, inputpath, outputpath, walltime, mail=False, brief=False, verbose=False, fullnode=False):
 
         # Set the name of the cluster
         self._clustername = cluster

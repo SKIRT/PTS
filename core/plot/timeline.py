@@ -17,12 +17,8 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os.path
 import numpy as np
-from collections import defaultdict
-
-# Use a non-interactive back-end to generate high-quality vector graphics
 import matplotlib
-if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
-import matplotlib.pyplot as plt
+from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from ..basics import Log
@@ -274,6 +270,10 @@ class TimeLinePlotter(object):
     ## This function actually plots the timeline based on a data structure containing the starttimes and endtimes
     #  for the different simulation phases
     def _createplot(self, data, plotfilepath, procranks, figsize=(12,8), percentages=False, totals=False, unordered=False, numberofproc=False, cpu=False):
+
+        # Use a non-interactive back-end to generate high-quality vector graphics
+        if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
+        import matplotlib.pyplot as plt
 
         # If the file already exists, skip the plotting procedure
         if os.path.isfile(plotfilepath) and not self._force: return

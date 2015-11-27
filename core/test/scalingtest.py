@@ -26,8 +26,8 @@ import shutil
 from astropy import log
 
 # Import the relevant PTS classes and modules
-from pts.core.simulation import SkiFile, SkirtExec, JobScript
-from pts.core.extract.scaling import extract
+from ..simulation import SkiFile, SkirtExec, JobScript
+from ..extract.scaling import extract
 
 # -----------------------------------------------------------------
 

@@ -17,11 +17,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
-
-# Use a non-interactive back-end to generate high-quality vector graphics
 import matplotlib
-if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
-import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
 from ..tools import archive as arch
@@ -61,6 +57,11 @@ def plotseds(simulation, figsize=(10,6), xlim=None, ylim=None):
 # - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
 #
 def plotseds_impl(sedfiles, plotfile, labels=None, fluxlabel="Flux", figsize=(10,6), xlim=None, ylim=None):
+
+    # Use a non-interactive back-end to generate high-quality vector graphics
+    if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
+    import matplotlib.pyplot as plt
+
     assert plotfile.endswith(".pdf")
     if labels == None: labels = sedfiles
 

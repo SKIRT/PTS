@@ -27,6 +27,9 @@ def new_log(name, level):
     # Create the logger
     log = logger.AstropyLogger(name)
 
+    # Initialize the logger
+    log._set_defaults()
+
     # Set the log level
     log.setLevel(level)
 

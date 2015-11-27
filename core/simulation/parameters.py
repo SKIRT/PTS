@@ -19,8 +19,8 @@ import os
 import fnmatch
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import configuration
-from pts.core.simulation import SkirtSimulation
+from ..tools import configuration
+from .simulation import SkirtSimulation
 
 # -----------------------------------------------------------------
 
@@ -86,6 +86,73 @@ class SkirtParameters(object):
 
         # Else, just return the list of simulations (even when containing only one item)
         else: return simulations
+
+    # -----------------------------------------------------------------
+
+    def to_command(self, skirt_path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the argument list
+        arguments = skirt_command(self.parallel.processes)
+
+        ## Parallelization
+
+        if self.parallel.threads > 0: arguments += ["-t", str(self.parallel.threads)]
+        if self.parallel.simulations > 1 and self.parallel.processes <= 1: arguments += ["-s", str(self.parallel.simulations)]
+
+        ## Logging
+
+        if self.logging.brief: arguments += ["-b"]
+        if self.logging.verbose: arguments += ["-v"]
+        if self.logging.memory: arguments += ["-m"]
+        if self.logging.allocation: arguments += ["-l ", str(self.logging.allocation_limit)]
+
+        ## Input and output
+
+        if self.input_path is not None: arguments += ["-i", self.input_path]
+        if self.output_path is not None: arguments += ["-o", self.output_path]
+
+        ## Other options
+
+        if self.emulate: arguments += ["-e"]
+
+        ## Ski file pattern
+
+        if self.relative: arguments += ["-k"]
+        if self.recursive: arguments += ["-r"]
+        if isinstance(self.ski_pattern, basestring): arguments += [self.ski_pattern]
+        elif isinstance(self.ski_pattern, list): arguments += self.ski_pattern
+        else: raise ValueError("The ski pattern must consist of either a string or a list of strings")
+
+        # Create the final command string for this simulation
+        command = " ".join(arguments)
+
+        # Return the command string
+        return command
+
+# -----------------------------------------------------------------
+
+def skirt_command(skirt_path, mpi_command, processes, scheduler):
+
+    """
+    This function ...
+    :param processes:
+    :return:
+    """
+
+    # Multiprocessing mode
+    if processes > 1:
+
+        # Determine the command based on whether or not a scheduling system is used
+        if scheduler: return [mpi_command, skirt_path]
+        else: return [mpi_command, "-np", str(processes), skirt_path]
+
+    # Singleprocessing mode
+    else: return [skirt_path]
 
 # -----------------------------------------------------------------
 

@@ -83,10 +83,10 @@ else: matches = []
 # If there is a unique match, execute the script
 # (after adjusting the command line arguments so that it appears that the script was executed directly)
 if len(matches) == 1:
-    target = os.path.join(path, matches[0] + ".py")
+    target = os.path.join(path, matches[0][0], matches[0][1])
     sys.argv[0] = target
     del sys.argv[1]
-    print "Executing: " + matches[0] + " " + " ".join(sys.argv[1:])
+    print "Executing: " + matches[0][0] + "/" + matches[0][1] + " " + " ".join(sys.argv[1:])
     exec open(target)
 
 elif len(matches) == 0:

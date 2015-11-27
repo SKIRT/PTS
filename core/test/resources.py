@@ -17,9 +17,9 @@ import os
 import shutil
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import Configurable
-from pts.core.simulation import SkiFile, SkirtExec, SkirtParameters
-from pts.core.extract import TimeLineExtractor
+from ..basics import Configurable
+from ..simulation import SkiFile, SkirtExec, SkirtParameters
+from ..extract import TimeLineExtractor
 
 # -----------------------------------------------------------------
 
@@ -93,7 +93,7 @@ class ResourceEstimator(Configurable):
         """
 
         # Call the setup function of the base class
-        super(ResourceEstimator, self).__init__()
+        #super(ResourceEstimator, self).setup()
 
         # Adjust settings
         self.ski_file = SkiFile(ski_path)

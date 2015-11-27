@@ -17,7 +17,7 @@
 import numpy as np
 
 # Import the relevant PTS classes and modules
-import pts.core.tools.geometry as g
+from ..tools import geometry as g
 
 # -----------------------------------------------------------------
 

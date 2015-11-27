@@ -18,11 +18,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 import pyfits
-
-# Use a non-interactive back-end to generate high-quality vector graphics
 import matplotlib
-if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
-import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
 from ..tools import archive as arch
@@ -37,6 +33,11 @@ from ..tools import archive as arch
 # - simulation: the SkirtSimulation object representing the simulation to be handled
 # - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
 def plotpolarization(simulation, figsize=(10,6)):
+
+    # Use a non-interactive back-end to generate high-quality vector graphics
+    if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
+    import matplotlib.pyplot as plt
+
     for fileI, fileQ, fileU, fileV in simulation.stokesfitspaths():
 
         # setup the figure

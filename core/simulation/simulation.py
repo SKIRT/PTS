@@ -19,8 +19,9 @@ import types
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from pts.core.simulation import SkiFile, LogFile
-from pts.core.tools import archive as arch
+from .skifile import SkiFile
+from .logfile import LogFile
+from ..tools import archive as arch
 
 # -----------------------------------------------------------------
 
@@ -199,7 +200,7 @@ class SkirtSimulation:
         return self._parameters
 
     @property
-    def skifile(self):
+    def ski_file(self):
         return self.parameters()
 
     ## This function returns a SkirtUnits object representing the default SKIRT units for this simulation.

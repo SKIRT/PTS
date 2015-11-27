@@ -18,8 +18,8 @@ import os.path
 import subprocess
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import Log
-from pts.core.simulation import SkirtParameters
+from ..basics import Log
+from .parameters import SkirtParameters
 
 # -----------------------------------------------------------------
 #  SkirtExec class
@@ -31,10 +31,14 @@ from pts.core.simulation import SkirtParameters
 class SkirtExec:
 
     ## The constructor accepts a single argument specifying the path to the <tt>SKIRT</tt> executable to be used.
-    # The path may or may not include the "skirt" filename and if not, it may or may not include the final "/" of a
-    # directory path. The path may be absolute, relative to a user's home folder, or relative to the current
-    # working directory.
-    # The default value is the empty path, which means <tt>SKIRT</tt> is looked for in the standard system path \c $PATH.
+    # - The path may or may not include the "skirt" filename and if not, it may or may not include the final "/" of a
+    #   directory path. The path may be absolute, relative to a user's home folder, or relative to the current
+    #   working directory.
+    #   The default value is the empty path, which means <tt>SKIRT</tt> is looked for in the standard system path \c $PATH.
+    # - mpistyle: the method or style to invoke the mpirun command; currently supported values are 'generic' (the
+    #   default), which uses the standard -np switch useful for launching a number of MPI processes on a single
+    #   computing node, and 'lsf', which uses the -lsf switch supported by platform MPI under the LSF cluster queueing
+    #   system.
     def __init__(self, path="", log="", mpi_style="generic"):
 
         # Set the SKIRT path
@@ -54,26 +58,6 @@ class SkirtExec:
         # Set the MPI style
         self.mpi_style = mpi_style.lower()
 
-    ## This function returns the command for calling SKIRT, the mpirun command is added if MPI is present on the
-    #  system and if the number of processes is greater than one.
-    def skirt_command(self, processes):
-
-        # Multiprocessing mode
-        if processes > 1:
-
-            # Check whether MPI is installed on the system
-            if not self.mpi:
-                self._log.warning("No mpirun executable: skipping simulations")
-                return None
-
-            # Determine the command based on the MPI style
-            # For 'lsf', the number of processes and hosts is derived from environment variables
-            if self.mpi_style == 'lsf': return ["mpirun", "-lsf", self._path]
-            else: return ["mpirun", "-np", str(processes), self._path]
-
-        # Singleprocessing mode
-        else: return [self._path]
-
     ## This function invokes the <tt>SKIRT</tt> executable with the simulations and command line options corresponding to the
     #  values of the function arguments:
     #
@@ -92,16 +76,18 @@ class SkirtExec:
     # - processes: the number of parallel MPI processes to be launched. The default value is one, which means MPI
     #   is not used. If the specified number of processes is larger than one, the value of \em parallel argument is
     #   ignored (i.e. you can't run multiple simulations in parallel when using MPI).
-    # - mpistyle: the method or style to invoke the mpirun command; currently supported values are 'generic' (the
-    #   default), which uses the standard -np switch useful for launching a number of MPI processes on a single
-    #   computing node, and 'lsf', which uses the -lsf switch supported by platform MPI under the LSF cluster queueing
-    #   system.
     # - verbose: This option has effect only if the number of processes is larger than one. If set to \c True, each
     #   process creates its own complete log file. If missing or set to \em False, only the root process creates a
     #   full log file, and the other processes only create a log file when there are errors or warnings.
+    # - memory: This option enables memory logging for SKIRT.
+    # - allocation: This option enables memory allocation logging for SKIRT.
+    # - emulate: This option can be switched on to run SKIRT in 'emulation' mode to estimate the memory consumption.
+    # - single: if \c True, only a single simulation is expected from the passed ski pattern, and the function returns
+    #   a single SkirtSimulation object instead of a list.
     # - wait: if \c True or missing, the function waits until <tt>SKIRT</tt> execution completes and sends the brief
     #   SKIRT log to the standard console; if \c False the function returns immediately without waiting for SKIRT,
     #   and SKIRT's log messages are sent to the null device.
+    # - silent: if \c True or missing, the SKIRT output will not be visible on the console.
     #
     # The function returns a list of SkirtSimulation instances corresponding to the simulations to be performed
     # (after processing any wildcards in the ski filenames), in arbitrary order.
@@ -145,45 +131,29 @@ class SkirtExec:
     ## This function does the same as the execute function, but obtains its arguments from a SkirtParameters object
     def run(self, parameters, wait=True, silent=False):
 
-        # Create the argument list
-        arguments = self.skirt_command(parameters.parallel.processes)
-        if arguments is None: return []
+        # Check whether MPI is present on this system if multiple processe are requested
+        if parameters.parallel.processes > 1 and not self.mpi:
+            self._log.warning("No mpirun executable: skipping simulations")
+            return []
 
-        ## Parallelization
+        # Determine the MPI command
+        if self.mpi_style == "lsf":
+            scheduler = True
+            mpi_command = "mpirun -lsf"
+        elif self.mpi_style == "generic":
+            scheduler = False
+            mpi_command = "mpirun"
+        else: raise ValueError("Invalid MPI style")
 
-        if parameters.parallel.threads > 0: arguments += ["-t", str(parameters.parallel.threads)]
-        if parameters.parallel.simulations > 1 and parameters.parallel.processes <= 1: arguments += ["-s", str(parameters.parallel.simulations)]
-
-        ## Logging
-
-        if parameters.logging.brief: arguments += ["-b"]
-        if parameters.logging.verbose: arguments += ["-v"]
-        if parameters.logging.memory: arguments += ["-m"]
-        if parameters.logging.allocation: arguments += ["-l ", str(parameters.logging.allocation_limit)]
-
-        ## Input and output
-
-        if parameters.input_path is not None: arguments += ["-i", parameters.input_path]
-        if parameters.output_path is not None: arguments += ["-o", parameters.output_path]
-
-        ## Other options
-
-        if parameters.emulate: arguments += ["-e"]
-
-        ## Ski file pattern
-
-        if parameters.relative: arguments += ["-k"]
-        if parameters.recursive: arguments += ["-r"]
-        if isinstance(parameters.ski_pattern, basestring): arguments += [parameters.ski_pattern]
-        elif isinstance(parameters.ski_pattern, list): arguments += parameters.ski_pattern
-        else: raise ValueError("The ski pattern must consist of either a string or a list of strings")
+        # Get the command string
+        command = parameters.to_command(self._path, mpi_command, scheduler)
 
         # Launch the SKIRT command
         if wait:
             self._process = None
-            if silent: subprocess.call(" ".join(arguments), shell=True, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
-            else: subprocess.call(" ".join(arguments), shell=True)
-        else: self._process = subprocess.Popen(arguments, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
+            if silent: subprocess.call(command, shell=True, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
+            else: subprocess.call(command, shell=True)
+        else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
 
         # Return the list of simulations so that their results can be followed up
         return parameters.simulations()

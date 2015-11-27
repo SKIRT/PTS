@@ -5,9 +5,9 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.plottimeline Plot a timeline of a simulation, for the different parallel processes, from
-#  a text file containing the timeline information extracted from the simulation's log files.
-#
+"""
+This module ...
+"""
 
 # -----------------------------------------------------------------
 
@@ -15,19 +15,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from astropy.table import Table
-
-# Use a non-interactive back-end to generate high-quality vector graphics
 import matplotlib
-if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
-import matplotlib.pyplot as plt
 
-# -----------------------------------------------------------------
-
-# Ignore warnings, otherwise Canopy would give a UserWarning on top of the error encountered when a progress
-# file does not contain any data (an error which is catched an produces an error message).
-import warnings
-warnings.filterwarnings("ignore")
+# Import astronomical modules
+from astropy.table import Table
 
 # -----------------------------------------------------------------
 
@@ -82,6 +73,19 @@ class MemoryPlotter(object):
         #plt.show()
 
         pass
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Use a non-interactive back-end to generate high-quality vector graphics
+        if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
+        import matplotlib.pyplot as plt
 
 # -----------------------------------------------------------------
 
