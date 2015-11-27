@@ -21,44 +21,11 @@ import matplotlib.pyplot as plt
 # import standard modules
 import os.path
 import numpy as np
-from scipy.optimize import curve_fit
 
 # import pts modules
 import pts.archive as arch
 from pts.filter import Filter
-
-# ----------------------------------------------------------------------
-
-# universal constants and units
-c = 2.99792458e8        # m/s
-h = 6.62606957e-34      # J s
-k = 1.3806488e-23       # J/K
-pc = 3.08567758e16      # m
-Msun = 1.9891e30        # kg
-
-# global configuration values
-beta = 2
-kappa350 = 0.192        # m2/kg (Cortese)
-nu350 = c/350e-6        # Hz
-D = 1e6 * pc            # m  (instrument distance in ski file)
-
-# returns grey body flux in Jy for wavelength(s) specified in micron,
-# for given temperature T (K) and dust mass M (Msun),
-# with global beta, kappa, and distance
-def greybody(wave, T, M):
-    nu = c / (wave * 1e-6)                                  # Hz
-    kappa = kappa350 * (nu/nu350)**beta                     # m2/kg
-    Bnu = 2*h*nu**3/ c**2 / (np.exp((h*nu)/(k*T)) - 1)      # W/m2/Hz
-    flux = M * Msun * kappa * Bnu / D**2                    # W/m2/Hz
-    return flux * 1e26                                      # Jy
-
-# ----------------------------------------------------------------------
-
-# returns temperature T (K) and dust mass M (Msun) for best fit with given data points and uncertainties
-def fitgreybody(lambdav, fluxv, sigmav):
-    # optimize the fit
-    popt, pcov = curve_fit(greybody, lambdav, fluxv, p0=(17,1e7), sigma=sigmav, absolute_sigma=False, maxfev=5000)
-    return popt
+from pts.greybody import GreyBody, kappa350_Cortese
 
 # ----------------------------------------------------------------------
 
@@ -110,8 +77,9 @@ def plotgreybodyfit(skirtrun):
     plt.scatter(waves, fluxes, color='r', marker='*', label="Mock PACS/SPIRE fluxes")
 
     # fit a grey body to the Herschel fluxes and plot the result
-    T,M = fitgreybody(waves, fluxes, sigmas)
-    plt.plot(lambdav[plot], greybody(lambdav[plot], T,M), color='m',
+    greybody = GreyBody(simulation.instrumentdistance(), 2, kappa350_Cortese)
+    T,M = greybody.fit(waves, fluxes, sigmas)
+    plt.plot(lambdav[plot], greybody(lambdav[plot], T, M), color='m',
         label=r"Grey body fit $T={:.2f},\,M_\mathrm{{dust}}={:.2e}\,M_\odot$".format(T,M))
 
     # add axis labels, legend and title

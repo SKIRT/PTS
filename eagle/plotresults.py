@@ -24,6 +24,7 @@ import matplotlib.pyplot as plt
 
 from pts.skirtunits import SkirtUnits
 from pts.filter import Filter
+from pts.greybody import Bnu, GreyBody, kappa350_Cortese
 import eagle.config as config
 
 # -----------------------------------------------------------------
@@ -78,31 +79,23 @@ axistypes = {
     'fmax': ( r"$f_{\nu,\mathrm{max}}\,[\mathrm{kJy}]$",
         lambda: np.maximum(instr_xy_fluxdensity_maximum,instr_xz_fluxdensity_maximum,instr_yz_fluxdensity_maximum)/1e3 ),
 
-    # ratios of flux densities using unlimited continuum fluxes (Jy/Jy)
+    # ratios of flux densities (Jy/Jy)
     'logf250/f500': ( r"$\log_{10}(f_{250}/f_{500})$",
-        lambda: log_divide_if_positive(instr_fluxdensity_spire_psw_continuum,instr_fluxdensity_spire_plw_continuum) ),
+        lambda: log_divide_if_positive(instr_fluxdensity_spire_psw_limited,instr_fluxdensity_spire_plw_limited) ),
     'logf250/fNUV': ( r"$f_{250}/f_\mathrm{NUV}$",
-        lambda: log_divide_if_positive(instr_fluxdensity_spire_psw_continuum,instr_fluxdensity_galex_nuv) ),
+        lambda: log_divide_if_positive(instr_fluxdensity_spire_psw_limited,instr_fluxdensity_galex_nuv) ),
     'f250/f350': ( r"$f_{250}/f_{350}$",
-        lambda: divide_if_positive(instr_fluxdensity_spire_psw_continuum,instr_fluxdensity_spire_pmw_continuum) ),
-    'f250/f500': ( r"$f_{250}/f_{500}$",
-        lambda: divide_if_positive(instr_fluxdensity_spire_psw_continuum,instr_fluxdensity_spire_plw_continuum) ),
-    'f350/f500': ( r"$f_{350}/f_{500}$",
-        lambda: divide_if_positive(instr_fluxdensity_spire_pmw_continuum,instr_fluxdensity_spire_plw_continuum) ),
-
-    # ratios of flux densities using limited continuum fluxes (Jy/Jy)
-    'f250/f350.lim': ( r"$f_{250,\mathrm{lim}}/f_{350,\mathrm{lim}}$",
         lambda: divide_if_positive(instr_fluxdensity_spire_psw_limited,instr_fluxdensity_spire_pmw_limited) ),
-    'f250/f500.lim': ( r"$f_{250,\mathrm{lim}}/f_{500,\mathrm{lim}}$",
+    'f250/f500': ( r"$f_{250}/f_{500}$",
         lambda: divide_if_positive(instr_fluxdensity_spire_psw_limited,instr_fluxdensity_spire_plw_limited) ),
-    'f350/f500.lim': ( r"$f_{350,\mathrm{lim}}/f_{500,\mathrm{lim}}$",
+    'f350/f500': ( r"$f_{350}/f_{500}$",
         lambda: divide_if_positive(instr_fluxdensity_spire_pmw_limited,instr_fluxdensity_spire_plw_limited) ),
 
     # luminosities in specific bands
     'logLk': ( r"$\log_{10}(L_\mathrm{K})\,[L_{\odot,\mathrm{K}}]$",
         lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_2mass_k,setup_distance_instrument,'W/Hz')/LsunK) ),
     'logL250': ( r"$\log_{10}(L_{250})\,[\mathrm{W}/\mathrm{Hz}]$",
-        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_spire_psw_continuum,setup_distance_instrument,'W/Hz')) ),
+        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_spire_psw_limited,setup_distance_instrument,'W/Hz')) ),
     'logLdust': ( r"$\log_{10}(L_{dust})\,[L_\odot]$",
         lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_uniform_8_1000,setup_distance_instrument,'W/micron',
                                                         wavelength=np.sqrt(8*1000))*(1000-8)/Lsun) ),
@@ -111,22 +104,34 @@ axistypes = {
 
     # other ratios
     'logMdust/f350/D2' : ( r"$\log_{10}(M_\mathrm{dust}/(f_{350}D^2))\,[\mathrm{kg}\,\mathrm{W}^{-1}\,\mathrm{Hz}]$",
-        lambda: log_divide_if_positive(setup_mass_dust*Msun,instr_fluxdensity_spire_pmw_continuum*1e-26*(setup_distance_instrument*pc)**2) ),
+        lambda: log_divide_if_positive(setup_mass_dust*Msun,instr_fluxdensity_spire_pmw_limited*1e-26*(setup_distance_instrument*pc)**2) ),
 
     # observationally derived mass properties
     'logMstar.zib': ( r"$\log_{10}(M_{*,\mathrm{zib}})\,[M_\odot]$", lambda: log_stellar_mass_as_zibetti() ),
-    'logMdust.fit': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit}})\,[M_\odot]$", lambda: log_dust_mass_from_grey_body_fit("continuum") ),
-    'logMdust.fit.lim': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit},\mathrm{lim}})\,[M_\odot]$", lambda: log_dust_mass_from_grey_body_fit("limited") ),
+    'logMdust.fit.unlim': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit},\mathrm{unlim}})\,[M_\odot]$",
+        lambda: log_if_positive(dust_temperature_and_mass_from_grey_body_fit("continuum")[1]) ),
+    'logMdust.fit': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit}})\,[M_\odot]$",
+        lambda: log_if_positive(dust_temperature_and_mass_from_grey_body_fit("limited")[1]) ),
+    'logMdust.hii.fit': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{HII},\mathrm{fit}})\,[M_\odot]$",
+        lambda: log_if_positive(dust_temperature_and_mass_from_grey_body_fit("limited")[1] * dust_fraction_in_hii_regions()) ),
+    'logMdust.other.fit': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{other},\mathrm{fit}})\,[M_\odot]$",
+        lambda: log_if_positive(dust_temperature_and_mass_from_grey_body_fit("limited")[1] * (1 - dust_fraction_in_hii_regions())) ),
+    'Mdust.hii.fit/Mdust.fit': ( r"$M_{\mathrm{dust},\mathrm{hii},\mathrm{fit}}/M_{\mathrm{dust},\mathrm{fit}}$",
+        lambda: dust_fraction_in_hii_regions() ),
+    'Mdust.hii.fit/Mhii': ( r"$M_{\mathrm{dust},\mathrm{hii},\mathrm{fit}}/M_{\mathrm{HII}}$",
+            lambda: divide_if_positive(dust_temperature_and_mass_from_grey_body_fit("limited")[1] * dust_fraction_in_hii_regions(), setup_mass_hii_regions) ),
     'logMdust.cort': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{cort}})\,[M_\odot]$", lambda: log_dust_mass_as_cortese() ),
     'logMdust.grid': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{grid}})\,[M_\odot]$", lambda: log_dust_mass_from_grid_temperature() ),
     'logMdust.fit/Mstar.zib': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit}}/M_{*,\mathrm{zib}})$",
-        lambda: log_dust_mass_from_grey_body_fit() - log_stellar_mass_as_zibetti() ),
+        lambda: log_if_positive(dust_temperature_and_mass_from_grey_body_fit("limited")[1]) - log_stellar_mass_as_zibetti() ),
     'logMdust.cort/Mstar.zib': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{cort}}/M_{*,\mathrm{zib}})$",
         lambda: log_dust_mass_as_cortese() - log_stellar_mass_as_zibetti() ),
 
     # dust temperature
-    'Tdust.fit': ( r"$T_{\mathrm{dust},\mathrm{fit}}\,[\mathrm{K}]$", lambda: dust_temperature_from_grey_body_fit("continuum") ),
-    'Tdust.fit.lim': ( r"$T_{\mathrm{dust},\mathrm{fit},\mathrm{lim}}\,[\mathrm{K}]$", lambda: dust_temperature_from_grey_body_fit("limited") ),
+    'Tdust.fit.unlim': ( r"$T_{\mathrm{dust},\mathrm{fit},\mathrm{unlim}}\,[\mathrm{K}]$",
+        lambda: dust_temperature_and_mass_from_grey_body_fit("continuum")[0] ),
+    'Tdust.fit': ( r"$T_{\mathrm{dust},\mathrm{fit}}\,[\mathrm{K}]$",
+        lambda: dust_temperature_and_mass_from_grey_body_fit("limited")[0] ),
     'Tdust.grid': ( r"$T_{\mathrm{dust},\mathrm{grid}}\,[\mathrm{K}]$", lambda: probe_average_temperature_dust ),
 }
 
@@ -139,11 +144,6 @@ Msun = units.convert(1., from_unit='Msun', to_unit='kg')
 Lsun = units.convert(1., from_unit='Lsun', to_unit='W')
 LsunK = 10**((34.1-5.19)/2.5)  # solar luminosity in K band expressed in W/Hz  (AB magnitude is 5.19)
 LsunH = 10**((34.1-4.71)/2.5)  # solar luminosity in H band expressed in W/Hz  (AB magnitude is 4.71)
-Zsun = 0.0127
-
-c = 2.99792458e8;
-h = 6.62606957e-34;
-k = 1.3806488e-23;
 
 # -----------------------------------------------------------------
 
@@ -184,60 +184,40 @@ def log_stellar_mass_as_zibetti():
     logLi = (4.54 - instr_magnitude_sdss_i) / 2.5   # solar AB magnitude in i band is 4.54
     return logUpsi + logLi
 
-# returns black body emission B_nu(nu,T)
-def Bnu(nu,T):
-    return (2*h*nu**3/c**2) / (np.exp(h*nu/k/T) - 1)
-
-# returns grey body flux in Jy for wavelength(s) specified in micron,
-# for given temperature T (K) and dust mass M (Msun), using global distance and beta=2
-def greybody(wave, T, M):
-    beta = 2
-    kappa350 = 0.192                                        # m2/kg (Cortese)
-    nu350 = c/350e-6                                        # Hz
-    nu = c / (wave * 1e-6)                                  # Hz
-    kappa = kappa350 * (nu/nu350)**beta                     # m2/kg
-    D = setup_distance_instrument[0] * pc                   # m      !!! assumes that distance is same for all galaxies in the collection
-    flux = M * Msun * kappa * Bnu(nu,T) / D**2              # W/m2/Hz
-    return flux * 1e26                                      # Jy
-
-# returns the Herschel 160, 250, 350, 500 data points as a tuple (N, waves, fluxes, sigmas)
-# with shapes (), (4,) (4, N) (4,) where N is the number of galaxies in the collection
-def herschel_data(fluxtype):
+# returns dust temperature (in K) and mass (in Msun) for best fit with Herschel 160, 250, 350, 500 data points
+# of the specified flux type, using beta and kappa as set by the greybody() function above
+def dust_temperature_and_mass_from_grey_body_fit(fluxtype):
+    # get the Herschel 160, 250, 350, 500 data points
     waves = np.array( [ Filter(fs).pivotwavelength() for fs in ("Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW")] )
+    sigmas = np.array(( 3,1,1,3 ))      # pacs is less sensitive; longer wavelength fluxes are harder to measure
     fluxstring = '''( instr_fluxdensity_pacs_red_{0}, instr_fluxdensity_spire_psw_{0},
                       instr_fluxdensity_spire_pmw_{0}, instr_fluxdensity_spire_plw_{0} )'''.format(fluxtype)
     fluxes = np.array(eval(fluxstring))
-    sigmas = np.array(( 3,1,1,3 ))      # pacs is less sensitive; longer wavelength fluxes are harder to measure
-    return fluxes.shape[1], waves, fluxes, sigmas
+    N = fluxes.shape[1]
 
-# returns temperature T (K) for best fit with Herschel 160, 250, 350, 500 data points
-# using beta and kappa as set by the greybody() function above
-def dust_temperature_from_grey_body_fit(fluxtype="continuum"):
-    N, waves, fluxes, sigmas = herschel_data(fluxtype)
+    # do the fit
     T = np.zeros(N)
-    for i in range(N):
-        if fluxes[-1,i]>0:
-            (T[i],M),dummy = curve_fit(greybody, waves, fluxes[:,i], p0=(17,1e7), sigma=sigmas, absolute_sigma=False, maxfev=5000)
-    return T
-
-# dust mass M (Msun) for best fit with Herschel 160, 250, 350, 500 data points
-# using beta and kappa as set by the greybody() function above
-# returns log10 of dust mass in solar units
-def log_dust_mass_from_grey_body_fit(fluxtype="continuum"):
-    N, waves, fluxes, sigmas = herschel_data(fluxtype)
     M = np.zeros(N)
     for i in range(N):
-        if fluxes[-1,i]>0:
-            (T,M[i]),dummy = curve_fit(greybody, waves, fluxes[:,i], p0=(17,1e7), sigma=sigmas, absolute_sigma=False, maxfev=5000)
-    return log_if_positive(M)
+        greybody = GreyBody(setup_distance_instrument[i], 2, kappa350_Cortese)
+        T[i],M[i] = greybody.fit(waves, fluxes[:,i], sigmas)
+    return T,M
+
+# returns fraction of total observed dust mass contributed by HII regions (in range 0..1),
+# calculated from the continuum fluxes through a best fit with Herschel 160, 250, 350, 500 data points
+# using beta and kappa as set by the greybody() function above
+def dust_fraction_in_hii_regions():
+    T,Mhii = dust_temperature_and_mass_from_grey_body_fit("hii_continuum")
+    T,Mother = dust_temperature_and_mass_from_grey_body_fit("other_continuum")
+    return divide_if_positive(Mhii, Mhii+Mother)
 
 # dust mass according to Cortese et al 2012, appendix B, using beta=2 for extended sources
 # returns log10 of dust mass in solar units
 def log_dust_mass_as_cortese():
-    x = log_divide_if_positive(instr_fluxdensity_spire_psw_continuum,instr_fluxdensity_spire_plw_continuum)
+    x = log_divide_if_positive(instr_fluxdensity_spire_psw_limited,instr_fluxdensity_spire_plw_limited)
     logMFD = 16.880 - 1.559*x + 0.160*x**2 - 0.079*x**3 - 0.363*x**4
     logD = np.log10(setup_distance_instrument/1e6)
-    logF = log_if_positive(instr_fluxdensity_spire_pmw_continuum)
+    logF = log_if_positive(instr_fluxdensity_spire_pmw_limited)
     logDust = logMFD + 2*logD + logF - 11.32
     #logDust += np.log10( 0.192 / 0.330 )     # kappa at 350 micron assumed in Cortese vs actual for Zubko
     return logDust
@@ -245,14 +225,11 @@ def log_dust_mass_as_cortese():
 # dust mass based on the dust temperature probed in the dust grid and the 350 micron flux
 # returns log10 of dust mass in solar units
 def log_dust_mass_from_grid_temperature():
-    nu350 = c / 350e-6                                      # Hz
-    kappa350 = 0.192                                        # m2/kg (Cortese)
-    #kappa350 = 0.330                                        # m2/kg  (Zubko)
-    f350 = instr_fluxdensity_spire_pmw_continuum * 1e-26    # W/m2
+    f350 = instr_fluxdensity_spire_pmw_limited * 1e-26      # W/m2
     D = setup_distance_instrument * pc                      # m
     T = probe_average_temperature_dust                      # K
     T[T<1] = 1
-    return log_divide_if_positive(f350*D*D, kappa350 * Bnu(nu350,T) * Msun)
+    return log_divide_if_positive(f350*D*D, kappa350_Cortese * Bnu(350,T) * Msun)
 
 # -----------------------------------------------------------------
 
