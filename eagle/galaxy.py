@@ -498,6 +498,11 @@ class Galaxy:
 
         # ---- resample star forming regions
 
+        # define HII region age constants (in years)
+        young_age = 1e8     # 100 Myr  -- particles below this age are resampled <==> lifetime of an HII region
+        infant_age = 1e7    # 10 Myr   -- resampled particles below this age are converted to HII regions
+                            #             resampled particles above this age are converted young stars
+
         # set up GALAXEV array
         bcstars = np.column_stack([[],[],[],[],[],[],[]])
 
@@ -509,7 +514,7 @@ class Galaxy:
 
         # index for particles to resample
         issf = gdat['sfr'] > 0.
-        isyoung = sdat['t'] < 1e8   # 100 Myr
+        isyoung = sdat['t'] < young_age
 
         # append older stars to GALAXEV array
         if (~isyoung).any():
@@ -533,7 +538,7 @@ class Galaxy:
             sdat['sfr']       = sf.getSFR(sdat['rho_born'], sdat['im'], self.snapshot.schmidtpars)
 
             ms, ts, idxs, mdiffs = sf.stochResamp(sdat['sfr'], sdat['im'])
-            isinfant = ts < 1e7
+            isinfant = ts < infant_age
 
             if (~isinfant).any():
                 yngstars['r']  = sdat['r'][idxs][~isinfant]
@@ -549,12 +554,11 @@ class Galaxy:
             if (isinfant).any():
                 hiiregions['r']     = sdat['r'][idxs][isinfant]
                 hiiregions['h']     = sdat['h'][idxs][isinfant]
-                hiiregions['SFR']   = ms[isinfant] * 1e-7               # Assume constant SFR over 10 Myr, so sfr =  mcl / 10 Myr
+                hiiregions['SFR']   = ms[isinfant] / young_age          # Assume constant SFR over HII region lifetime
                 hiiregions['Z']     = sdat['Z'][idxs][isinfant]
                 hiiregions['P']     = sdat['P'][idxs][isinfant] * 0.1   # Convert to Pa for output
                 hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
                 hiiregions['h_mapp']  = (ms[isinfant] / (sdat['rho_born'][idxs][isinfant] * densconv))**(1/3.)
-                #hiiregions['fPDR']  = 1 - (ts[isinfant]/1e7)            # Covering fraction goes from 1 to 0 over HII region lifetime
                 hiiregions['fPDR']  = np.zeros_like(ts[isinfant]) + 0.2  # Covering fraction is set to fiducial constant value
 
                 # randomly shift the positions of the HII regions
@@ -583,7 +587,7 @@ class Galaxy:
                 gdat[k] = gdat[k][issf].copy()
 
             ms, ts, idxs, mdiffs = sf.stochResamp(gdat['sfr'], gdat['m'])
-            isinfant = ts < 1.e7
+            isinfant = ts < infant_age
 
             if (~isinfant).any():
                 yngstars['r']  = gdat['r'][idxs][~isinfant]
@@ -599,12 +603,11 @@ class Galaxy:
             if (isinfant).any():
                 hiiregions['r']     = gdat['r'][idxs][isinfant]
                 hiiregions['h']     = gdat['h'][idxs][isinfant]
-                hiiregions['SFR']   = ms[isinfant] * 1e-7               # Assume constant SFR over 10 Myr, so sfr =  mcl / 10 Myr
+                hiiregions['SFR']   = ms[isinfant] / young_age          # Assume constant SFR over HII region lifetime
                 hiiregions['Z']     = gdat['Z'][idxs][isinfant]
                 hiiregions['P']     = gdat['P'][idxs][isinfant] * 0.1     # convert to Pa
                 hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
                 hiiregions['h_mapp'] = (ms[isinfant] / (gdat['rho'][idxs][isinfant] * densconv))**(1/3.)
-                #hiiregions['fPDR']  = 1 - (ts[isinfant]/1e7)            # Covering fraction goes from 1 to 0 over HII region lifetime
                 hiiregions['fPDR']  = np.zeros_like(ts[isinfant]) + 0.2  # Covering fraction is set to fiducial constant value
 
                 # randomly shift the positions of the HII regions
