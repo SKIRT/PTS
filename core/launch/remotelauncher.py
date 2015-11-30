@@ -16,15 +16,18 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import numpy as np
+
+# Import astronomical modules
+from astropy.io import ascii
 
 # Import the relevant PTS classes and modules
+from .analyser import SimulationAnalyser
 from ..simulation import SkirtRemote
 from ..simulation import SkirtParameters
 from ..basics import Configurable
 from ..test import ResourceEstimator
-from ..extract import ProgressExtractor, TimeLineExtractor, MemoryExtractor
-from ..plot import ProgressPlotter, TimeLinePlotter, MemoryPlotter
-from ..tools import monitoring
+from ..tools import inspection
 
 # -----------------------------------------------------------------
 
@@ -50,6 +53,9 @@ class SkirtRemoteLauncher(Configurable):
         # Create the SKIRT remote execution context
         self.remote = SkirtRemote()
 
+        # Create a SimulationAnalyser instance
+        self.analyser = SimulationAnalyser()
+
         # Initialize a list to contain the retreived finished simulations
         self.simulations = []
 
@@ -59,11 +65,6 @@ class SkirtRemoteLauncher(Configurable):
         self.output_path = None
         self.extr_path = None
         self.plot_path = None
-
-        # Tables
-        #self.progress = None
-        #self.timeline = None
-        #self.memory = None
 
     # -----------------------------------------------------------------
 
@@ -83,6 +84,9 @@ class SkirtRemoteLauncher(Configurable):
         # Logging (no options here yet)
         # ...
 
+        # Remote ID
+        launcher.config.remote = arguments.remote
+
         # Ski file
         launcher.config.parameters.ski_pattern = arguments.filepath
 
@@ -91,6 +95,11 @@ class SkirtRemoteLauncher(Configurable):
         launcher.config.parameters.logging.verbose = arguments.verbose
         launcher.config.parameters.logging.memory = arguments.memory
         launcher.config.parameters.logging.allocation = arguments.allocation
+
+        # Parallelization
+        if arguments.parallel is not None:
+            launcher.config.parameters.parallel.processes = arguments.parallel[0]
+            launcher.config.parameters.parallel.threads = arguments.parallel[1]
 
         # Other simulation parameters
         launcher.config.parameters.emulate = arguments.emulate
@@ -126,7 +135,7 @@ class SkirtRemoteLauncher(Configurable):
         self.setup()
 
         # 2. Set the parallelization scheme
-        self.set_parallelization()
+        if not self.has_parallelization: self.set_parallelization()
 
         # 3. Run the simulation
         self.simulate()
@@ -134,14 +143,21 @@ class SkirtRemoteLauncher(Configurable):
         # 4. Retrieve the simulations that are finished
         self.retreive()
 
-        # 5. Extract information from the simulation's log files
-        self.extract()
+        # 5. Analyse the output of the retreived simulations
+        self.analyse()
 
-        # 6. Make plots based on the simulation output
-        self.plot()
+    # -----------------------------------------------------------------
 
-        # 7. Advanced output
-        self.advanced()
+    @property
+    def has_parallelization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the number of processes and the number of threads are both defined
+        return self.config.parameters.parallel.processes is not None and self.config.parameters.parallel.threads is not None
 
     # -----------------------------------------------------------------
 
@@ -154,6 +170,26 @@ class SkirtRemoteLauncher(Configurable):
 
         # Call the setup function of the base class
         super(SkirtRemoteLauncher, self).setup()
+
+        # Open the file that defines the remote hosts
+        host_file_path = os.path.join(inspection.pts_user_dir, "hosts.txt")
+        table = ascii.read(host_file_path, fill_values=('--', '0', 'Password'))
+        for entry in table:
+            if entry["Host identifier"] == self.config.remote:
+                self.remote.config.host_id = self.config.remote
+                self.remote.config.host = entry["Host name"]
+                self.remote.config.user = entry["User name"]
+                password = entry["Password"]
+                if isinstance(password, np.ma.core.MaskedConstant): password = None
+                self.remote.config.password = password
+                self.remote.config.output_path = entry["Output path"]
+                self.remote.config.scheduler = entry["Scheduler"] == "True"
+                self.remote.config.mpi_command = entry["MPI command"]
+                break
+        else: raise ValueError("The remote could not be find in the hosts.txt file")
+
+        # Setup the remote execution context
+        self.remote.setup()
 
         # Set the paths
         self.base_path = os.path.dirname(self.config.parameters.ski_pattern) if "/" in self.config.parameters.ski_pattern else os.getcwd()
@@ -190,6 +226,13 @@ class SkirtRemoteLauncher(Configurable):
         :return:
         """
 
+        self.log.info("free cores: " + str(self.remote.free_cores))
+        self.log.info("free memory: " + str(self.remote.free_memory))
+        self.log.info("free space: " + str(self.remote.free_space))
+        self.log.info("cores: " + str(self.remote.cores))
+        self.log.info("cpu load: " + str(self.remote.cpu_load))
+        self.log.info("memory load: " + str(self.remote.memory_load))
+
         # Inform the user
         self.log.info("Determining the parallelization scheme by estimating the memory requirements...")
 
@@ -198,7 +241,7 @@ class SkirtRemoteLauncher(Configurable):
         estimator.run(self.config.parameters.ski_pattern)
 
         # Calculate the maximum number of processes based on the memory requirements
-        processes = int(monitoring.memory() / estimator.memory)
+        processes = int(self.remote.free_memory / estimator.memory)
 
         # If there is too little free memory for the simulation, the number of processes will be smaller than one
         if processes < 1:
@@ -208,12 +251,12 @@ class SkirtRemoteLauncher(Configurable):
             exit()
 
         # Calculate the maximum number of threads per process based on the current cpu load of the system
-        threads = int(monitoring.cpu() / processes)
+        threads = int(self.remote.free_cores / processes)
 
         # If there are too little free cpus for the amount of processes, the number of threads will be smaller than one
         if threads < 1:
 
-            processes = int(monitoring.cpu())
+            processes = int(self.remote.free_cores)
             threads = 1
 
         # Set the parallelization options
@@ -232,9 +275,32 @@ class SkirtRemoteLauncher(Configurable):
         # Inform the user
         self.log.info("Performing the simulation...")
 
+        print(self.config.parameters.input_path)
+        print(self.config.parameters.output_path)
+
         # Run the simulation
         parameters = SkirtParameters(self.config.parameters)
-        self.remote.run(parameters)
+        simulation_file_path = self.remote.run(parameters)
+
+        # Add additional information to the simulation file
+        simulation_file = open(simulation_file_path, 'a')
+        simulation_file.write("extract progress: " + str(self.config.extraction.progress) + "\n")
+        simulation_file.write("extract timeline: " + str(self.config.extraction.timeline) + "\n")
+        simulation_file.write("extract memory: " + str(self.config.extraction.memory) + "\n")
+        simulation_file.write("plot seds: " + str(self.config.plotting.seds) + "\n")
+        simulation_file.write("plot grids: " + str(self.config.plotting.grids) + "\n")
+        simulation_file.write("plot progress: " + str(self.config.plotting.progress) + "\n")
+        simulation_file.write("plot timeline: " + str(self.config.plotting.timeline) + "\n")
+        simulation_file.write("plot memory: " + str(self.config.plotting.memory) + "\n")
+        simulation_file.write("make rgb images: " + str(self.config.advanced.rgb) + "\n")
+        simulation_file.write("make wave movie: " + str(self.config.advanced.wavemovie) + "\n")
+        simulation_file.write("remove remote input: " + str(False) + "\n")
+        simulation_file.write("remove remote output: " + str(False) + "\n")
+        simulation_file.write("extraction directory: " + self.extr_path + "\n")
+        simulation_file.write("plotting directory: " + self.plot_path + "\n")
+
+        # Close the file
+        simulation_file.close()
 
     # -----------------------------------------------------------------
 
@@ -250,239 +316,20 @@ class SkirtRemoteLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def extract(self):
+    def analyse(self):
 
         """
         This function ...
         :return:
         """
 
-        # Loop over the different retreived simulations
+        # Loop over the list of simulations and analyse them
         for simulation in self.simulations:
 
-            # Extract the progress information
-            if self.config.extraction.progress: self.extract_progress()
-
-            # Extract the timeline information
-            if self.config.extraction.timeline: self.extract_timeline()
-
-            # Extract the memory information
-            if self.config.extraction.memory: self.extract_memory()
-
-    # -----------------------------------------------------------------
-
-    def plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Loop over the different retreived simulations
-        for simulation in self.simulations:
-
-            # If requested, plot the SED's
-            if self.config.plotting.seds: self.plot_seds()
-
-            # If requested, make plots of the dust grid
-            if self.config.plotting.grids: self.plot_grids()
-
-            # If requested, plot the simulation progress as a function of time
-            if self.config.plotting.progress: self.plot_progress()
-
-            # If requested, plot a timeline of the different simulation phases
-            if self.config.plotting.timeline: self.plot_timeline()
-
-            # If requested, plot the memory usage as a function of time
-            if self.config.plotting.memory: self.plot_memory()
-
-    # -----------------------------------------------------------------
-
-    def advanced(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Loop over the different retreived simulations
-        for simulation in self.simulations:
-
-            # If requested, make RGB images of the output FITS files
-            if self.config.advanced.rgb: self.make_rgb()
-
-            # If requested, make wave movies from the ouput FITS files
-            if self.config.advanced.wavemovie: self.make_wave()
-
-    # -----------------------------------------------------------------
-
-    def extract_progress(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Extracting the progress information...")
-
-        # Determine the path to the progress file
-        path = os.path.join(self.extr_path, "progress.dat")
-
-        # Create and run a ProgressExtractor object
-        extractor = ProgressExtractor()
-        extractor.run(self.simulation, path)
-
-        # Set the table
-        #self.progress = extractor.table
-
-    # -----------------------------------------------------------------
-
-    def extract_timeline(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Extracting the timeline information...")
-
-        # Determine the path to the timeline file
-        path = os.path.join(self.extr_path, "timeline.dat")
-
-        # Create and run a TimeLineExtractor object
-        extractor = TimeLineExtractor()
-        extractor.run(self.simulation, path)
-
-        # Set the table
-        #self.timeline = extractor.table
-
-    # -----------------------------------------------------------------
-
-    def extract_memory(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Extracting the memory information...")
-
-        # Determine the path to the memory file
-        path = os.path.join(self.extr_path, "memory.dat")
-
-        # Create and run a MemoryExtractor object
-        extractor = MemoryExtractor()
-        extractor.run(self.simulation, path)
-
-        # Set the table
-        self.memory = extractor.table
-
-    # -----------------------------------------------------------------
-
-    def plot_seds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Plotting SEDs...")
-
-    # -----------------------------------------------------------------
-
-    def plot_grids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Plotting grids...")
-
-    # -----------------------------------------------------------------
-
-    def plot_progress(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Plotting the progress information...")
-
-        # Determine the path to the progress plot file
-        path = os.path.join(self.plot_path, "progress.pdf")
-
-        # Create and run a ProgressPlotter object
-        plotter = ProgressPlotter()
-        #plotter.run(self.progress, path)
-
-    # -----------------------------------------------------------------
-
-    def plot_timeline(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Plotting the timeline...")
-
-        # Determine the path to the timeline plot file
-        path = os.path.join(self.plot_path, "timeline.pdf")
-
-        # Create and run a TimeLinePlotter object
-        #plotter = TimeLinePlotter()
-        #plotter.run(self.timeline, path)
-
-    # -----------------------------------------------------------------
-
-    def plot_memory(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Plotting the memory information...")
-
-        # Determine the path to the memory plot file
-        path = os.path.join(self.plot_path, "memory.pdf")
-
-        # Create and run a MemoryPlotter object
-        plotter = MemoryPlotter()
-        plotter.run(self.memory, path)
-
-    # -----------------------------------------------------------------
-
-    def make_rgb(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Making RGB images...")
-
-    # -----------------------------------------------------------------
-
-    def make_wave(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Making wave movies...")
+            # Run the analyser on the simulation
+            self.analyser.run(simulation)
+
+            # Clear the analyser
+            self.analyser.clear()
 
 # -----------------------------------------------------------------

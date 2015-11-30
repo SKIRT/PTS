@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.status Check the status of running SKIRT simulations on the cluster
+## \package do.status Check the status of SKIRT simulations running remotely
 
 # -----------------------------------------------------------------
 
@@ -22,8 +22,7 @@ from collections import defaultdict
 from distutils.spawn import find_executable
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import Log
-from pts.core.simulation import SkirtSimulation
+from pts.core.simulation import SkirtRemote
 
 # -----------------------------------------------------------------
 
@@ -53,16 +52,6 @@ def int_list(string):
 
     else: raise argparse.ArgumentTypeError("Values must be seperated by commas or by a '-' in the case of a range")
 
-# This private helper function returns the datetime object corresponding to the time stamp in a line
-def _timestamp(line):
-
-    date, time = line.split(" ", 2)
-    day, month, year = date.split('/')
-    hour, minute, second = time.split(':')
-    second, microsecond = second.split('.')
-    return datetime(year=int(year), month=int(month), day=int(day),
-                    hour=int(hour), minute=int(minute), second=int(second), microsecond=int(microsecond))
-
 # -----------------------------------------------------------------
 
 # Create the command-line parser
@@ -70,12 +59,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--delete', type=int_list)
 
 # Parse the command line arguments
-args = parser.parse_args()
-delete = args.delete
-
-# Create a logger
-log = Log()
-
-
+arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
+
+# Create the SKIRT remote execution context
+remote = SkirtRemote()
+
+# Get the status
+status = remote.status()
+

@@ -6,5 +6,5 @@
 # *****************************************************************
 
 # Import classes to make them available at the level of this subpackage
-from launcher import SkirtLauncher, FitSkirtLauncher
+from launcher import SkirtLauncher
 from remotelauncher import SkirtRemoteLauncher

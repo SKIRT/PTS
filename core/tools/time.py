@@ -5,7 +5,9 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package tools.time Useful functions for generating timestamps etc.
+"""
+This module provides useful functions for generating timestamps etc.
+"""
 
 # -----------------------------------------------------------------
 
@@ -17,7 +19,23 @@ from datetime import datetime
 
 # -----------------------------------------------------------------
 
-def parse(line):
+def parse(timestamp):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    # Parse the timestamp
+    date, time = timestamp.split()
+
+    # Combine the date and time stamp to a datetime object
+    return parse_date_time(date, time)
+
+# -----------------------------------------------------------------
+
+def parse_line(line):
 
     """
     This function returns the datetime object corresponding to a certain time stamp (as a string)
@@ -27,6 +45,21 @@ def parse(line):
 
     # Parse the line
     date, time, dummy = line.split(None, 2)
+
+    # Combine the date and time stamp to a datetime object
+    return parse_date_time(date, time)
+
+# -----------------------------------------------------------------
+
+def parse_date_time(date, time):
+
+    """
+    This function ...
+    :param date:
+    :param time:
+    :return:
+    """
+
     try: day, month, year = date.split('/')
     except ValueError: return None
     hour, minute, second = time.split(':')
@@ -46,11 +79,10 @@ def parse(line):
 
 # -----------------------------------------------------------------
 
-def timestamp(time):
+def timestamp():
 
     """
     This function generates a timestamp (as a string) from a datetime object
-    :param time:
     :return:
     """
 
@@ -67,6 +99,6 @@ def unique_name(name):
     :return:
     """
 
-    return name + datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+    return name + "_" + datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
 
 # -----------------------------------------------------------------

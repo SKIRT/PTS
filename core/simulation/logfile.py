@@ -195,7 +195,7 @@ def parse(path):
             line = line[:-1]
 
             # Get the date and time information of the current line
-            t = time.parse(line)
+            t = time.parse_line(line)
             times.append(t)
 
             # Check whether the log file was created in verbose logging mode

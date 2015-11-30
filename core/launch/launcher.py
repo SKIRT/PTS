@@ -18,12 +18,11 @@ from __future__ import absolute_import, division, print_function
 import os
 
 # Import the relevant PTS classes and modules
-from ..simulation import SkirtExec, FitSkirtExec
+from .analyser import SimulationAnalyser
+from ..simulation import SkirtExec
 from ..simulation import SkirtParameters
 from ..basics import Configurable
 from ..test import ResourceEstimator
-from ..extract import ProgressExtractor, TimeLineExtractor, MemoryExtractor
-from ..plot import ProgressPlotter, TimeLinePlotter, MemoryPlotter
 from ..tools import monitoring
 
 # -----------------------------------------------------------------
@@ -50,6 +49,9 @@ class SkirtLauncher(Configurable):
         # Create the SKIRT execution context
         self.skirt = SkirtExec()
 
+        # Create a SimulationAnalyser instance
+        self.analyser = SimulationAnalyser()
+
         # Set the simulation instance to None initially
         self.simulation = None
 
@@ -59,11 +61,6 @@ class SkirtLauncher(Configurable):
         self.output_path = None
         self.extr_path = None
         self.plot_path = None
-
-        # Tables
-        self.progress = None
-        self.timeline = None
-        self.memory = None
 
     # -----------------------------------------------------------------
 
@@ -91,6 +88,11 @@ class SkirtLauncher(Configurable):
         launcher.config.parameters.logging.verbose = arguments.verbose
         launcher.config.parameters.logging.memory = arguments.memory
         launcher.config.parameters.logging.allocation = arguments.allocation
+
+        # Parallelization
+        if arguments.parallel is not None:
+            launcher.config.parameters.parallel.processes = arguments.parallel[0]
+            launcher.config.parameters.parallel.threads = arguments.parallel[1]
 
         # Other simulation parameters
         launcher.config.parameters.emulate = arguments.emulate
@@ -126,19 +128,26 @@ class SkirtLauncher(Configurable):
         self.setup()
 
         # 2. Set the parallelization scheme
-        self.set_parallelization()
+        if not self.has_parallelization: self.set_parallelization()
 
         # 3. Run the simulation
         self.simulate()
 
-        # 4. Extract information from the simulation's log files
-        self.extract()
+        # 4. Analyse the simulation output
+        self.analyse()
 
-        # 5. Make plots based on the simulation output
-        self.plot()
+    # -----------------------------------------------------------------
 
-        # 6. Advanced output
-        self.advanced()
+    @property
+    def has_parallelization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the number of processes and the number of threads are both defined
+        return self.config.parameters.parallel.processes is not None and self.config.parameters.parallel.threads is not None
 
     # -----------------------------------------------------------------
 
@@ -195,7 +204,7 @@ class SkirtLauncher(Configurable):
         estimator.run(self.config.parameters.ski_pattern)
 
         # Calculate the maximum number of processes based on the memory requirements
-        processes = int(monitoring.memory() / estimator.memory)
+        processes = int(monitoring.free_memory() / estimator.memory)
 
         # If there is too little free memory for the simulation, the number of processes will be smaller than one
         if processes < 1:
@@ -205,12 +214,12 @@ class SkirtLauncher(Configurable):
             exit()
 
         # Calculate the maximum number of threads per process based on the current cpu load of the system
-        threads = int(monitoring.cpu() / processes)
+        threads = int(monitoring.free_cpus() / processes)
 
         # If there are too little free cpus for the amount of processes, the number of threads will be smaller than one
         if threads < 1:
 
-            processes = int(monitoring.cpu())
+            processes = int(monitoring.free_cpus())
             threads = 1
 
         # Set the parallelization options
@@ -235,64 +244,7 @@ class SkirtLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def extract(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Extract the progress information
-        if self.config.extraction.progress: self.extract_progress()
-
-        # Extract the timeline information
-        if self.config.extraction.timeline: self.extract_timeline()
-
-        # Extract the memory information
-        if self.config.extraction.memory: self.extract_memory()
-
-    # -----------------------------------------------------------------
-
-    def plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # If requested, plot the SED's
-        if self.config.plotting.seds: self.plot_seds()
-
-        # If requested, make plots of the dust grid
-        if self.config.plotting.grids: self.plot_grids()
-
-        # If requested, plot the simulation progress as a function of time
-        if self.config.plotting.progress: self.plot_progress()
-
-        # If requested, plot a timeline of the different simulation phases
-        if self.config.plotting.timeline: self.plot_timeline()
-
-        # If requested, plot the memory usage as a function of time
-        if self.config.plotting.memory: self.plot_memory()
-
-    # -----------------------------------------------------------------
-
-    def advanced(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # If requested, make RGB images of the output FITS files
-        if self.config.advanced.rgb: self.make_rgb()
-
-        # If requested, make wave movies from the ouput FITS files
-        if self.config.advanced.wavemovie: self.make_wave()
-
-    # -----------------------------------------------------------------
-
-    def extract_progress(self):
+    def analyse(self):
 
         """
         This function ...
@@ -300,238 +252,24 @@ class SkirtLauncher(Configurable):
         """
 
         # Inform the user
-        self.log.info("Extracting the progress information...")
-
-        # Determine the path to the progress file
-        path = os.path.join(self.extr_path, "progress.dat")
-
-        # Create and run a ProgressExtractor object
-        extractor = ProgressExtractor()
-        extractor.run(self.simulation, path)
-
-        # Set the table
-        #self.progress = extractor.table
-
-    # -----------------------------------------------------------------
-
-    def extract_timeline(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Extracting the timeline information...")
-
-        # Determine the path to the timeline file
-        path = os.path.join(self.extr_path, "timeline.dat")
-
-        # Create and run a TimeLineExtractor object
-        extractor = TimeLineExtractor()
-        extractor.run(self.simulation, path)
-
-        # Set the table
-        #self.timeline = extractor.table
-
-    # -----------------------------------------------------------------
-
-    def extract_memory(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Extracting the memory information...")
-
-        # Determine the path to the memory file
-        path = os.path.join(self.extr_path, "memory.dat")
-
-        # Create and run a MemoryExtractor object
-        extractor = MemoryExtractor()
-        extractor.run(self.simulation, path)
-
-        # Set the table
-        self.memory = extractor.table
-
-    # -----------------------------------------------------------------
-
-    def plot_seds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Plotting SEDs...")
-
-    # -----------------------------------------------------------------
-
-    def plot_grids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Plotting grids...")
-
-    # -----------------------------------------------------------------
-
-    def plot_progress(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Plotting the progress information...")
-
-        # Determine the path to the progress plot file
-        path = os.path.join(self.plot_path, "progress.pdf")
-
-        # Create and run a ProgressPlotter object
-        plotter = ProgressPlotter()
-        #plotter.run(self.progress, path)
-
-    # -----------------------------------------------------------------
-
-    def plot_timeline(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Plotting the timeline...")
-
-        # Determine the path to the timeline plot file
-        path = os.path.join(self.plot_path, "timeline.pdf")
-
-        # Create and run a TimeLinePlotter object
-        #plotter = TimeLinePlotter()
-        #plotter.run(self.timeline, path)
-
-    # -----------------------------------------------------------------
-
-    def plot_memory(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Plotting the memory information...")
-
-        # Determine the path to the memory plot file
-        path = os.path.join(self.plot_path, "memory.pdf")
-
-        # Create and run a MemoryPlotter object
-        plotter = MemoryPlotter()
-        plotter.run(self.memory, path)
-
-    # -----------------------------------------------------------------
-
-    def make_rgb(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Making RGB images...")
-
-    # -----------------------------------------------------------------
-
-    def make_wave(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Making wave movies...")
-
-# -----------------------------------------------------------------
-
-class FitSkirtLauncher(Configurable):
-
-    """
-    This class ...
-    """
-
-    def __init__(self, config=None):
-
-        """
-        The constructor ...
-        :param config:
-        :return:
-        """
-
-        # Call the constructor of the base class
-        super(FitSkirtLauncher, self).__init__(config)
-
-        ## Attributes
-
-        # Create the FitSKIRT execution context
-        self.fitskirt = FitSkirtExec()
-
-        # Set the simulation instance to None initially
-        self.simulation = None
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new FitSkirtLauncher instance
-        launcher = cls()
-
-        ## Adjust the configuration settings according to the command-line arguments
-        # ...
-
-        # Return the new launcher
-        return launcher
-
-    # -----------------------------------------------------------------
-
-    def run(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # 1. Call the setup function
-        self.setup()
-
-        # 2. Run the simulation
-        self.simulate()
-
-    # -----------------------------------------------------------------
-
-    def simulate(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        simulation = self.fitskirt.run()
+        self.log.info("Analysing the simulation output...")
+
+        # Set simulation analysis options
+        self.simulation.extract_progress = self.config.extraction.progress
+        self.simulation.extract_timeline = self.config.extraction.timeline
+        self.simulation.extract_memory = self.config.extraction.memory
+        self.simulation.plot_seds = self.config.plotting.seds
+        self.simulation.plot_grids = self.config.plotting.grids
+        self.simulation.plot_progress = self.config.plotting.progress
+        self.simulation.plot_timeline = self.config.plotting.timeline
+        self.simulation.plot_memory = self.config.plotting.memory
+        self.simulation.make_rgb = self.config.advanced.rgb
+        self.simulation.make_wave = self.config.advanced.wavemovie
+
+        self.simulation.extraction_path = self.config.extr_path
+        self.simulation.plot_path = self.config.plot_path
+
+        # Run the analyser on the simulation
+        self.analyser.run(self.simulation)
 
 # -----------------------------------------------------------------

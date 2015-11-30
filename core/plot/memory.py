@@ -20,6 +20,7 @@ import matplotlib
 # Import astronomical modules
 from astropy.table import Table
 
+
 # -----------------------------------------------------------------
 
 class MemoryPlotter(object):
@@ -35,7 +36,8 @@ class MemoryPlotter(object):
         :return:
         """
 
-        pass
+        # Set the table to None initially
+        self.table = None
 
     # -----------------------------------------------------------------
 
@@ -47,10 +49,13 @@ class MemoryPlotter(object):
         """
 
         # If the input is a Table object
-        if isinstance(input, Table): pass
+        if isinstance(input, Table): self.table = input
 
         # If the input is a string
-        elif isinstance(input, basestring): pass
+        elif isinstance(input, basestring):
+
+            fill_values = [('--', '0', 'Simulation phase'), ('--', '0', 'Array (de)allocation'), ('--', '0', 'Array ID')]
+            #self.table = ascii.read("memory.dat", fill_values=fill_values)
 
         # Invalid input
         else: raise ValueError("Input must be either an Astropy Table object or a filename (e.g. memory.dat)")

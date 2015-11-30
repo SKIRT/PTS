@@ -89,7 +89,7 @@ class SkirtParameters(object):
 
     # -----------------------------------------------------------------
 
-    def to_command(self, skirt_path):
+    def to_command(self, skirt_path, mpi_command, scheduler):
 
         """
         This function ...
@@ -97,7 +97,7 @@ class SkirtParameters(object):
         """
 
         # Create the argument list
-        arguments = skirt_command(self.parallel.processes)
+        arguments = skirt_command(skirt_path, mpi_command, self.parallel.processes, scheduler)
 
         ## Parallelization
 

@@ -6,7 +6,7 @@
 # *****************************************************************
 
 # Import classes to make them available at the level of this subpackage
-from execute import SkirtExec, FitSkirtExec
+from execute import SkirtExec
 from jobscript import JobScript
 from logfile import LogFile
 from parameters import SkirtParameters, FitSkirtParameters

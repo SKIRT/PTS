@@ -5,6 +5,12 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
+"""
+This module is used to extract simulation progress information from the simulation's log file
+"""
+
+# -----------------------------------------------------------------
+
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
@@ -16,7 +22,7 @@ from datetime import datetime
 from ..simulation import SkirtSimulation
 from ..tools import archive as arch
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 class ProgressExtractor(object):
 
@@ -33,7 +39,7 @@ class ProgressExtractor(object):
 
         pass
 
-    # *****************************************************************
+    # -----------------------------------------------------------------
 
     def run(self, simulation, output_path):
 
@@ -44,11 +50,11 @@ class ProgressExtractor(object):
 
         pass
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 phaseindices = {'stellar': 0, 'spectra': 1, 'dust': 2}
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 ## This function extracts the progress from the simulation log files and writes them to file.
 #  It takes the following arguments:
@@ -225,3 +231,5 @@ if __name__ == "__main__":
 
     # Extract the timings
     extract(skifilepath, outputpath, progressfilepath)
+
+# -----------------------------------------------------------------

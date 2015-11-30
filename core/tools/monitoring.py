@@ -7,7 +7,7 @@
 
 ## \package tools.monitoring
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
@@ -17,18 +17,18 @@ import psutil
 import multiprocessing
 import numpy as np
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
-def memory():
+def free_memory():
     
     # Get the currently available virtual memory (in gigabytes)
     memory = psutil.virtual_memory().available / 1e9
     
     return memory
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
-def cpu():
+def free_cpus():
     
     # Get the total number of processors on this system
     total = multiprocessing.cpu_count()
@@ -44,4 +44,4 @@ def cpu():
     
     return free
 
-# *****************************************************************
+# -----------------------------------------------------------------

@@ -9,6 +9,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import sys
 import logging
 
 # Import astronomical modules
@@ -16,7 +17,7 @@ from astropy import logger
 
 # -----------------------------------------------------------------
 
-def new_log(name, level):
+def new_log(name, level, style="astropy"):
 
     """
     This function ...
@@ -27,11 +28,31 @@ def new_log(name, level):
     # Create the logger
     log = logger.AstropyLogger(name)
 
-    # Initialize the logger
-    log._set_defaults()
+    # Astropy logging style
+    if style == "astropy":
 
-    # Set the log level
-    log.setLevel(level)
+        # Initialize the logger
+        log._set_defaults()
+        # Set the log level
+        log.setLevel(level)
+
+    # SKIRT logging style
+    elif style == "skirt":
+
+        # Create a stream handler
+        sh = logging.StreamHandler(sys.stdout)
+        if level == "INFO": sh.setLevel(logging.INFO)
+        elif level == "DEBUG": sh.setLevel(logging.DEBUG)
+        elif level == "WARNING": sh.setLevel(logging.WARNING)
+        elif level == "ERROR": sh.setLevel(logging.ERROR)
+        else: raise ValueError("Unknown log level")
+
+        # Create and set the formatter
+        formatter = logging.Formatter("%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s (%(origin)s)", "%d/%m/%Y %H:%M:%S")
+        sh.setFormatter(formatter)
+
+        # Add the stream handler
+        log.addHandler(sh)
 
     # Return the logger
     return log

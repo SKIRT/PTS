@@ -18,7 +18,23 @@ import os
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.core.launch import SkirtLauncher, FitSkirtLauncher
+from pts.core.launch import SkirtLauncher, SkirtRemoteLauncher
+
+# -----------------------------------------------------------------
+
+def tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try:
+        a, b = map(int, argument.split(','))
+        return a, b
+    except:
+        raise argparse.ArgumentTypeError("Tuple must be of format a,b")
 
 # -----------------------------------------------------------------
 
@@ -27,7 +43,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("file", type=str, help="the name of the ski/fski file")
 parser.add_argument("--input", type=str, help="the simulation input path")
 parser.add_argument("--output", type=str, help="the simulation output path")
-parser.add_argument("--remote", action="store_true", help="run the simulation remotely")
+parser.add_argument("--remote", type=str, help="run the simulation remotely")
+parser.add_argument("--parallel", type=tuple, help="specify the parallelization scheme (processes, threads per process)")
 parser.add_argument("--relative", action="store_true", help="treats the given input and output paths as being relative to the ski/fski file")
 parser.add_argument("--brief", action="store_true", help="enable brief console logging")
 parser.add_argument("--verbose", action="store_true", help="enable verbose logging mode")
@@ -60,16 +77,17 @@ if arguments.output is not None: arguments.output_path = os.path.abspath(argumen
 # If the parameter file describes a SKIRT simulation
 if arguments.filepath.endswith(".ski"):
 
-    # Create a SkirtLauncher instance and run it
-    launcher = SkirtLauncher.from_arguments(arguments)
+    # Either create a SkirtRemoteLauncher or a SkirtLauncher
+    if arguments.remote: launcher = SkirtRemoteLauncher.from_arguments(arguments)
+    else: launcher = SkirtLauncher.from_arguments(arguments)
+
+    # Run the launcher (the simulation is performed locally or remotely depending on which launcher is used)
     launcher.run()
 
 # If the parameter file describes a FitSKIRT simulation
 elif arguments.filepath.endswith(".fski"):
 
-    # Create a FitSkirtLauncher instance and run it
-    launcher = FitSkirtLauncher.from_arguments(arguments)
-    launcher.run()
+    raise ValueError("Launching FitSkirt simulation is not supported yet")
 
 # If the parameter file has a different extension
 else: raise argparse.ArgumentError("The parameter file is not a ski or fski file")
