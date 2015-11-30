@@ -149,27 +149,30 @@ LsunH = 10**((34.1-4.71)/2.5)  # solar luminosity in H band expressed in W/Hz  (
 
 # some generic functions used in the axis type definitions
 
-# return log10(x), or smallest other result for x=0
+# return log10(x), or NaN for x<=0
 def log_if_positive(x):
-    result = np.zeros_like(x)
     positive = x>0
+    result = np.empty_like(x)
     result[positive] = np.log10(x[positive])
-    result[~positive] = result[positive].min()
+    result[~positive] = np.nan
     return result
 
-# return x/y, or zero for y<=0
+# return x/y, or NaN for y<=0
 def divide_if_positive(x,y):
-    result = np.zeros_like(x)
-    result[y>0] = x[y>0] / y[y>0]
+    positive = y>0
+    result = np.empty_like(x)
+    result[positive] = x[positive] / y[positive]
+    result[~positive] = np.nan
     return result
 
-# return log10(x/y), or smallest other result for x<=0 or y<=0
+# return log10(x/y), or NaN for x<=0 or y<=0
 def log_divide_if_positive(x,y):
     result = np.zeros_like(x)
-    result[y>0] = x[y>0] / y[y>0]
+    positive = y>0
+    result[positive] = x[positive] / y[positive]
     positive = result>0
     result[positive] = np.log10(result[positive])
-    result[~positive] = result[positive].min()
+    result[~positive] = np.nan
     return result
 
 # -----------------------------------------------------------------
@@ -219,7 +222,7 @@ def log_dust_mass_as_cortese():
     logD = np.log10(setup_distance_instrument/1e6)
     logF = log_if_positive(instr_fluxdensity_spire_pmw_limited)
     logDust = logMFD + 2*logD + logF - 11.32
-    #logDust += np.log10( 0.192 / 0.330 )     # kappa at 350 micron assumed in Cortese vs actual for Zubko
+    #logDust += np.log10( kappa350_Cortese / kappa350_Zubko )    # compensate for kappa assumed in Cortese vs Zubko
     return logDust
 
 # dust mass based on the dust temperature probed in the dust grid and the 350 micron flux
@@ -251,6 +254,10 @@ class Collection:
         infile = open(infilepath, "r")
         self.info['any'] = pickle.load(infile)
         infile.close()
+
+        # replace infinities (signifiying a non-detection) by NaNs
+        for value in self.info['any'].values():
+            value[np.isinf(value)] = np.nan
 
         # construct filtered dicts for each instrument name
         names = set([ key.split("_")[1] for key in filter(lambda key: key.startswith("instr_"), self.info['any'].keys()) ])
@@ -296,6 +303,7 @@ class Collection:
 #| diag | optional | if present and True, a dashed diagonal is drawn from (xmin,ymin) to (xmax,ymax)
 #
 def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,11.693), title=None):
+    np.seterr(invalid='ignore')
 
     # setup the figure
     figure = plt.figure(figsize=pagesize)
@@ -337,19 +345,22 @@ def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,1
                 globals().update(collection.info[yinstr])
                 y = yvalue()
 
+                # create a mask that excludes invalid data (i.e. NaN for one of the axes)
+                valid = ~(np.isnan(x) | np.isnan(y))
+
                 # plot the relation
-                plt.scatter(x, y, marker='o', s=10, alpha=0.5, edgecolors='k', linewidths=(1,), facecolors=color)
+                plt.scatter(x[valid], y[valid], marker='o', s=10, alpha=0.5, edgecolors='k', linewidths=(1,), facecolors=color)
 
                 # fit a line through the data and plot it
-                xmin = plotdef.get('xmin', x.min())
-                xmax = plotdef.get('xmax', x.max())
+                xmin = plotdef.get('xmin', x[valid].min())
+                xmax = plotdef.get('xmax', x[valid].max())
                 if xmin>xmax: xmin,xmax = xmax,xmin
-                ymin = plotdef.get('ymin', y.min())
-                ymax = plotdef.get('ymax', y.max())
+                ymin = plotdef.get('ymin', y[valid].min())
+                ymax = plotdef.get('ymax', y[valid].max())
                 if ymin>ymax: ymin,ymax = ymax,ymin
-                mask = (x>=xmin) & (x<=xmax) & (y>=ymin) & (y<=ymax)
-                if np.any(mask):
-                    rico, y0 = np.polyfit(x[mask], y[mask], 1)
+                valid = valid & (x>=xmin) & (x<=xmax) & (y>=ymin) & (y<=ymax)
+                if np.any(valid):
+                    rico, y0 = np.polyfit(x[valid], y[valid], 1)
                     x1 = xmin
                     x2 = xmax
                     y1 = y0 + rico*x1
