@@ -42,8 +42,8 @@ axistypes = {
     'Ncells': ( r"$N_\mathrm{cells}/10^6$", lambda: setup_cells_dust_grid/1e6 ),
     'taumax': ( r"$\tau_\mathrm{V,max}$", lambda: setup_optical_depth_maximum ),
     'tau90': ( r"$\tau_\mathrm{V,90}$", lambda: setup_optical_depth_percentile90 ),
-    'dusterror': ( r"$\mathrm{1-(M_\mathrm{grid}/M_\mathrm{dust})\,[\%]}$",
-        lambda: 100*divide_if_positive(setup_mass_dust-setup_mass_dust_grid,setup_mass_dust) ),
+    'dusterror': ( r"$\mathrm{|1-(M_\mathrm{grid}/M_\mathrm{dust})|\,[\%]}$",
+        lambda: 100*divide_if_positive(np.abs(setup_mass_dust-setup_mass_dust_grid),setup_mass_dust) ),
 
     # intrinsic properties
     'logMstar': ( r"$\log_{10}(M_*)\,[M_\odot]$", lambda: log_if_positive(original_mass_stars) ),
@@ -390,11 +390,14 @@ def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,1
                 globals().update(collection.info[xinstr])
                 x = xvalue()
 
+                # create a mask that excludes invalid data (i.e. NaN)
+                valid = ~np.isnan(x)
+
                 # the plt.hist() function does not support square axes with mixed linear/log scale;
                 # so, compute the histogram
-                xmin = plotdef.get('xmin', x.min())
-                xmax = plotdef.get('xmax', x.max())
-                counts,binedges = np.histogram(x, bins=bins, range=(xmin,xmax))
+                xmin = plotdef.get('xmin', x[valid].min())
+                xmax = plotdef.get('xmax', x[valid].max())
+                counts,binedges = np.histogram(x[valid], bins=bins, range=(xmin,xmax))
                 if log:
                     counts[counts<1] = 1
                     counts = np.log10(counts)
