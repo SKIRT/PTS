@@ -20,6 +20,7 @@ import subprocess
 # Import the relevant PTS classes and modules
 from ..basics import Log
 from .parameters import SkirtParameters
+from ..tools import inspection
 
 # -----------------------------------------------------------------
 #  SkirtExec class
@@ -129,7 +130,7 @@ class SkirtExec:
     def run(self, parameters, wait=True, silent=False):
 
         # Check whether MPI is present on this system if multiple processe are requested
-        if parameters.parallel.processes > 1 and not self.mpi:
+        if parameters.parallel.processes > 1 and not inspection.has_mpi():
             self._log.warning("No mpirun executable: skipping simulations")
             return []
 

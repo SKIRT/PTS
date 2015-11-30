@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
-import os.path
 import argparse
 
 # Import the relevant PTS classes and modules

@@ -31,94 +31,24 @@
 # Import standard modules
 import sys
 import os.path
-from operator import itemgetter
+
+# Import the relevant PTS modules
+from pts.core.tools import inspection
 
 # -----------------------------------------------------------------
-
-# Get the path to the 'do' directory
-path = os.path.dirname(sys.argv[0])
-
-# Loop over the directories within the 'do' subpackage
-scripts = []
-for item in os.listdir(path):
-
-    # Get the full path to the item
-    item_path = os.path.join(path, item)
-
-    # Skip items that are not directories
-    if not os.path.isdir(item_path): continue
-
-    # Loop over the files in the directory
-    for name in os.listdir(item_path):
-
-        # Get the full name to the file
-        file_path = os.path.join(item_path, name)
-
-        # Skip items that are not files
-        if not os.path.isfile(file_path): continue
-
-        # Add the file path
-        if file_path.endswith(".py") and "__init__" not in file_path: scripts.append((item, name))
-
-# Sort the script names
-scripts = sorted(scripts, key=itemgetter(1))
 
 # Get the name of the script to execute
 script_name = sys.argv[1] if len(sys.argv) > 1 else None
 
-# Get a list of the script names that match the first command line argument, if there is one
-if "/" in script_name:
+# Find matching scripts
+match = inspection.find_matching_script(script_name)
+if match is None: exit()
 
-    matches = []
-    dir_name = script_name.split("/")[0]
-    script_name = script_name.split("/")[1]
-
-    # Loop over all found items
-    for item in scripts:
-        if item[0] == dir_name and item[1].startswith(script_name): matches.append(item)
-
-elif script_name is not None: matches = filter(lambda item: item[1].startswith(script_name), scripts)
-else: matches = []
-
-# If there is a unique match, execute the script
-# (after adjusting the command line arguments so that it appears that the script was executed directly)
-if len(matches) == 1:
-    target = os.path.join(path, matches[0][0], matches[0][1])
-    sys.argv[0] = target
-    del sys.argv[1]
-    print "Executing: " + matches[0][0] + "/" + matches[0][1] + " " + " ".join(sys.argv[1:])
-    exec open(target)
-
-elif len(matches) == 0:
-
-    print "No match found. Available scripts:"
-
-    # Sort on the 'do' subfolder name
-    scripts = sorted(scripts, key=itemgetter(0))
-
-    current_dir = None
-    for script in scripts:
-
-        if current_dir == script[0]:
-            print " "*len(current_dir) + "/" + script[1]
-        else:
-            print script[0] + "/" + script[1]
-            current_dir = script[0]
-
-else:
-
-    print "The command you provided is ambiguous. Possible matches:"
-
-    # Sort on the 'do' subfolder name
-    matches = sorted(matches, key=itemgetter(0))
-
-    current_dir = None
-    for script in matches:
-
-        if current_dir == script[0]:
-            print " "*len(current_dir) + "/" + script[1]
-        else:
-            print script[0] + "/" + script[1]
-            current_dir = script[0]
+# Execute the matching script, after adjusting the command line arguments so that it appears that the script was executed directly
+target = os.path.join(inspection.pts_do_dir, match[0], match[1])
+sys.argv[0] = target
+del sys.argv[1]
+print "Executing: " + match[0] + "/" + match[1] + " " + " ".join(sys.argv[1:])
+exec open(target)
 
 # -----------------------------------------------------------------

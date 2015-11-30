@@ -88,9 +88,9 @@ if arguments.filepath.endswith(".ski"):
 # If the parameter file describes a FitSKIRT simulation
 elif arguments.filepath.endswith(".fski"):
 
-    raise ValueError("Launching FitSkirt simulation is not supported yet")
+    raise ValueError("Launching FitSkirt simulations is not supported yet")
 
 # If the parameter file has a different extension
-else: raise argparse.ArgumentError("The parameter file is not a ski or fski file")
+else: raise argparse.ArgumentError(arguments.filepath, "The parameter file is not a ski or fski file")
 
 # -----------------------------------------------------------------

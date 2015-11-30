@@ -17,6 +17,9 @@ from __future__ import absolute_import, division, print_function
 import os
 import argparse
 
+# Import the relevant PTS classes and modules
+from pts.core.tools import inspection
+
 # -----------------------------------------------------------------
 
 # Create the command-line parser
@@ -28,9 +31,14 @@ arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
-# Determine the full path to the parameter file
-ski_path = os.path.abspath(arguments.file)
+# Find matching scripts under the 'do' directory
+match = inspection.find_matching_script(arguments.script)
+if match is None: exit()
 
+# Determine the full path to the matching script
+script_path = os.path.join(inspection.pts_do_dir, match[0], match[1])
 
+# List the dependencies of the matching script
+inspection.list_dependencies(script_path)
 
 # -----------------------------------------------------------------
