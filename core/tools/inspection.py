@@ -88,7 +88,7 @@ def skirt_version():
 
 # -----------------------------------------------------------------
 
-def list_dependencies(script_path):
+def list_dependencies(script_path, prefix=""):
 
     """
     This function ...
@@ -99,7 +99,7 @@ def list_dependencies(script_path):
     if not script_path.endswith(".py"): raise ValueError("Not a valid script path")
 
     # Initialize a set to contain the required modules
-    dependencies = set()
+    packages = []
 
     # Read the lines of the script file
     for line in open(script_path, 'r'):
@@ -116,15 +116,25 @@ def list_dependencies(script_path):
 
                 number_of_dots = len(splitted[1]) - len(after_dots)
 
-                # Determine the path to the PTS module
-                module_dir = script_path
+                # Determine the path to the PTS subpackage
+                subpackage_dir = script_path
                 for i in range(number_of_dots):
-                    module_dir = os.path.dirname(module_dir)
+                    subpackage_dir = os.path.dirname(subpackage_dir)
 
-                module_name = after_dots.split(".")[0]
-                module_path = os.path.join(module_dir, module_name)
+                subpackage_name = after_dots.split(".")[0]
+                subpackage_path = os.path.join(subpackage_dir, subpackage_name)
 
-                print("module path: ", module_path)
+                module_name = splitted[3]
+
+                if os.path.isfile(subpackage_path + ".py"):
+                    #print(prefix + subpackage_path + ".py:")
+                    print(prefix + line)
+                    list_dependencies(subpackage_path + ".py", prefix=prefix + "  ")
+                elif os.path.isfile(os.path.join(subpackage_path, "__init__.py")):
+                    #print(prefix + subpackage_path + ":")
+                    print(prefix + line)
+                    list_dependencies(os.path.join(subpackage_path, "__init__.py"), prefix=prefix + " ")
+                else: raise ValueError("Don't know how to get further with " + subpackage_path + " and " + module_name)
 
             # Absolute import of a pts class or module
             elif splitted[1].startswith("pts"):
@@ -137,17 +147,15 @@ def list_dependencies(script_path):
 
                 module_name = splitted[3]
 
-                # Check if a module with that name exists in the directory
-                if os.path.isfile(os.path.join(module_dir, module_name + ".py")): print("module path: ", os.path.join(module_dir, module_name + ".py"))
-                else:
-
-                    # Open the subpackage's __init__ file
-                    init_path = os.path.join(module_dir, "__init__.py")
-
-                    # List the dependencies of the init file
-                    list_dependencies(init_path)
-
-                    #print("module path: ", module_dir, module_name)
+                if os.path.isfile(module_dir + ".py"):
+                    #print(prefix + module_dir + ".py")
+                    print(prefix + line)
+                    list_dependencies(module_dir + ".py", prefix=prefix + " ")
+                elif os.path.isfile(os.path.join(module_dir, "__init__.py")):
+                    #print(prefix + module_dir + ":")
+                    print(prefix + line)
+                    list_dependencies(os.path.join(module_dir, "__init__.py"), prefix=prefix + " ")
+                else: raise ValueError("Don't know how to get further with " + module_dir + " and " + module_name)
 
             # External module
             else:
@@ -163,13 +171,7 @@ def list_dependencies(script_path):
                     found = False
                     message = "not found!"
 
-                print(module, ":", message)
-
-            # Get the path of the script, relative to the 'PTS/git' directory
-            #rel_filepath = script_path.split("PTS/pts/")[1]
-
-            # Add the module
-            #dependencies.add(module)
+                print(prefix + module, ":", message)
 
 # -----------------------------------------------------------------
 
