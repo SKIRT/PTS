@@ -1,0 +1,224 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+"""
+This module can be used to synchronize remote SKIRT simulations
+"""
+
+# -----------------------------------------------------------------
+
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
+import os
+import numpy as np
+
+# Import astronomical modules
+from astropy.io import ascii
+
+# Import the relevant PTS classes and modules
+from .analyser import SimulationAnalyser
+from ..basics import Configurable
+from ..simulation import SkirtRemote
+from ..tools import inspection
+
+# -----------------------------------------------------------------
+
+class RemoteSynchronizer(Configurable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, config=None):
+
+        """
+        The constructor ...
+        :param config:
+        :return:
+        """
+
+        # Call the constructor of the base class
+        super(RemoteSynchronizer, self).__init__(config)
+
+        ## Attributes
+
+        # Initialize a list to contain different SkirtRemote instances for the different remote hosts
+        self.remotes = []
+
+        # The simulation results analyser
+        self.analyser = SimulationAnalyser()
+
+        # Initialize a list to contain the retreived simulations
+        self.simulations = []
+
+        # Set the delete list to None initially
+        self.delete = None
+
+    # -----------------------------------------------------------------
+
+    def run(self, delete):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup(delete)
+
+        # 1. Extract information from the simulation's log files
+        self.retreive()
+
+        # 2. Analyse
+        self.analyse()
+
+        # 3. Announce the status of the simulations
+        self.announce()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, delete):
+
+        """
+        This function ...
+        :param delete:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(RemoteSynchronizer, self).setup()
+
+        # Set the delete list
+        self.delete = delete
+
+        # Add the remotes
+        # Open the file that defines the remote hosts
+        host_file_path = os.path.join(inspection.pts_user_dir, "hosts.txt")
+        table = ascii.read(host_file_path, fill_values=('--', '0', 'Password'))
+        for entry in table:
+
+            # Create a remote SKIRT execution context
+            remote = SkirtRemote()
+
+            # Set configuration settings
+            remote.config.host_id = entry["Host identifier"]
+            remote.config.host = entry["Host name"]
+            remote.config.user = entry["User name"]
+            password = entry["Password"]
+            if isinstance(password, np.ma.core.MaskedConstant): password = None
+            remote.config.password = password
+            remote.config.output_path = entry["Output path"]
+            remote.config.scheduler = entry["Scheduler"] == "True"
+            remote.config.mpi_command = entry["MPI command"]
+
+            # Setup the remote execution context
+            remote.setup()
+
+            # Add the remote to the list of remote objects
+            self.remotes.append(remote)
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Clearing the synchronizer")
+
+        # Set default values for attributes
+        self.simulations = []
+        self.delete = None
+
+    # -----------------------------------------------------------------
+
+    def retreive(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Retreiving the output of finished simulations")
+
+        # Loop over the different remotes
+        for remote in self.remotes:
+
+            # Retreive simulations
+            self.simulations += remote.retreive()
+
+    # -----------------------------------------------------------------
+
+    def analyse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Analysing the output of retreived simulations")
+
+        # Loop over the list of simulations and analyse them
+        for simulation in self.simulations:
+
+            # Run the analyser on the simulation
+            self.analyser.run(simulation)
+
+            # Clear the analyser
+            self.analyser.clear()
+
+    # -----------------------------------------------------------------
+
+    def announce(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the different remotes
+        for remote in self.remotes:
+
+            # Show the name of the current remote
+            self.log.info("Simulations on remote " + remote.host_name + ":")
+
+            # Get the status of the different simulations
+            for entry in remote.status:
+
+                # The path to the simulation file
+                path = entry[0]
+
+                # The ski file path
+                ski_path = entry[1]
+
+                # The remote output path
+                remote_output_path = entry[2]
+
+                # The simulation status
+                simulation_status = entry[3]
+
+                # Get the ski file name (the simulation prefix)
+                prefix = os.path.basename(ski_path).split(".")[0]
+
+                # If this simulation has already finished, check whether the results of this simulation have been retreived
+                if simulation_status == "finished":
+                    simulation_file = open(path, 'r')
+                    lines = simulation_file.readlines()
+                    last = lines[len(lines)-1]
+                    if "retreived at" in last: simulation_status = "retreived"
+
+                # Show the status of the current simulation
+                self.log.info("  - " + prefix + ": " + simulation_status)
+
+# -----------------------------------------------------------------

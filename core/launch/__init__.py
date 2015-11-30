@@ -8,3 +8,5 @@
 # Import classes to make them available at the level of this subpackage
 from launcher import SkirtLauncher
 from remotelauncher import SkirtRemoteLauncher
+from analyser import SimulationAnalyser
+from synchronizer import RemoteSynchronizer

@@ -52,9 +52,6 @@ class SkirtExec:
         # Set the log mechanism
         self._log = log if log else Log()
 
-        # Check whether MPI is present on this system
-        self.mpi = mpi_present()
-
         # Set the MPI style
         self.mpi_style = mpi_style.lower()
 

@@ -299,9 +299,20 @@ class SkirtRemote(Configurable):
         #scp your_username@remote.edu:/some/remote/directory/\{a,b,c\} ./
 
         # Construct the command string
-        copy_command = "scp " + self.config.user + "@" + self.config.host + ":" + origin
-        copy_command += destination
-        self.log.info("Copy command: " + copy_command)
+        copy_command = "scp "
+
+        # Check whether the origin represents a file or a directory
+        file_or_directory = self.file_or_directory(origin)
+
+        # Add the user name, host name and origin to the command
+        if file_or_directory == "file": copy_command += self.config.user + "@" + self.config.host + ":" + origin + " "
+        elif file_or_directory == "directory": copy_command += "-r " + self.config.user + "@" + self.config.host + ":" + origin + "/* "
+        else: raise ValueError("The origin does not represent an existing remote file or directory")
+
+        # Add the destination path to the command
+        copy_command += destination + "/"
+
+        self.log.debug("Copy command: " + copy_command)
 
         # Temporary file for output of the scp command
         temp_file_path = tempfile.mktemp()
@@ -312,7 +323,7 @@ class SkirtRemote(Configurable):
         child.expect(['password: '])
         child.sendline(self.config.password)
         child.logfile = temp_file
-        child.expect(pexpect.EOF)
+        child.expect(pexpect.EOF, timeout=None)
         child.close()
 
         # Close the temporary output file
@@ -326,7 +337,7 @@ class SkirtRemote(Configurable):
         # Raise an error if something went wrong
         if child.exitstatus != 0: raise RuntimeError(stdout)
 
-        self.log.info("Copy stdout: " + str(stdout))
+        self.log.debug("Copy stdout: " + str(stdout))
 
     # -----------------------------------------------------------------
 
@@ -347,7 +358,7 @@ class SkirtRemote(Configurable):
             if os.path.isfile(origin): copy_command += origin + " "
 
             # Check if it represents a directory
-            elif os.path.isdir(origin): copy_command += "-r " + origin + " "
+            elif os.path.isdir(origin): copy_command += "-r " + origin + "/ "
 
             # The origin does not exist
             else: raise ValueError("The specified path " + origin + " does not represent an existing directory or file")
@@ -367,7 +378,7 @@ class SkirtRemote(Configurable):
 
         # Add the host address and the destination directory
         copy_command += self.config.user + "@" + self.config.host + ":" + destination + "/"
-        self.log.info("Copy command: " + copy_command)
+        self.log.debug("Copy command: " + copy_command)
 
         # Temporary file for output of the scp command
         temp_file_path = tempfile.mktemp()
@@ -392,7 +403,7 @@ class SkirtRemote(Configurable):
         # Raise an error if something went wrong
         if child.exitstatus != 0: raise RuntimeError(stdout)
 
-        self.log.info("Copy stdout: " + str(stdout))
+        self.log.debug("Copy stdout: " + str(stdout))
 
     # -----------------------------------------------------------------
 
@@ -447,6 +458,8 @@ class SkirtRemote(Configurable):
                 extraction_directory = None
                 plotting_directory = None
 
+                retreived = False
+
                 # Get simulation properties
                 with open(path) as simulation_file:
 
@@ -471,9 +484,17 @@ class SkirtRemote(Configurable):
                         elif "remove remote output" in line: remove_remote_output = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
                         elif "extraction directory" in line: extraction_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "plotting directory" in line: plotting_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "retreived at" in line: retreived = True
+
+                # If the simulation has already been retreived, skip it
+                if retreived: continue
 
                 # Download the simulation output
                 self.download(remote_output_path, local_output_path)
+
+                # If retreival was succesful, add this information to the simulation file
+                with open(path, "a") as simulation_file:
+                    simulation_file.write("retreived at: " + time.timestamp())
 
                 # Remove the remote input, if requested
                 if remove_remote_input:
@@ -631,6 +652,64 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
+    def file_or_directory(self, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Launch a bash command to check whether the path exists as either a file or a directory on the remote file system
+        output = self.execute("if [ -f " + path + " ]; then echo file; elif [ -d " + path + " ]; then echo directory; else echo None; fi")
+
+        # Return the result
+        if output[0] == "None": return None
+        else: return output[0]
+
+    # -----------------------------------------------------------------
+
+    def is_directory(self, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Launch a bash command to check whether the path exists as a directory on the remote file system
+        output = self.execute("if [ -d " + path + " ]; then echo True; else echo False; fi")
+
+        # Return the result
+        return output[0] == "True"
+
+    # -----------------------------------------------------------------
+
+    def is_file(self, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Launch a bash command to check whether the path exists as a regular file on the remote file system
+        output = self.execute("if [ -f " + path + " ]; then echo True; else echo False; fi")
+
+        # Return the result
+        return output[0] == "True"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def host_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.host_id
+
+    # -----------------------------------------------------------------
+
     @property
     def status(self):
 
@@ -672,7 +751,7 @@ class SkirtRemote(Configurable):
             remote_log_file_path = os.path.join(remote_output_path, ski_name + "_log.txt")
 
             # Check whether the log file exists remotely
-            output = self.execute("if [ -e " + remote_log_file_path + " ]; then echo True; else echo False; fi")
+            output = self.execute("if [ -f " + remote_log_file_path + " ]; then echo True; else echo False; fi")
 
             # If the log file does not exist, the simulation has not started yet
             simulation_status = None
@@ -681,8 +760,6 @@ class SkirtRemote(Configurable):
 
                 # Get the last two lines of the remote log file
                 output = self.execute("tail -2 " + remote_log_file_path)
-
-                print(output)
 
                 # Get the last line of the actual simulation
                 if " Available memory: " in output[1]: last = output[0]

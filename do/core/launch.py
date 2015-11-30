@@ -59,6 +59,7 @@ parser.add_argument("--plottimeline", action="store_true", help="make a plot of 
 parser.add_argument("--plotmemory", action="store_true", help="make a plot of the memory consumption as a function of time")
 parser.add_argument("--makergb", action="store_true", help="add this option to make RGB images from the SKIRT output")
 parser.add_argument("--makewave", action="store_true", help="add this option to make a wave movie from the SKIRT output")
+parser.add_argument("--debug", action="store_true", help="add this option to enable debug output for the launch procedure")
 
 # Parse the command line arguments
 arguments = parser.parse_args()

@@ -14,15 +14,9 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import argparse
-import os.path
-import subprocess
-from datetime import datetime
-from operator import itemgetter
-from collections import defaultdict
-from distutils.spawn import find_executable
 
 # Import the relevant PTS classes and modules
-from pts.core.simulation import SkirtRemote
+from pts.core.launch import RemoteSynchronizer
 
 # -----------------------------------------------------------------
 
@@ -63,9 +57,10 @@ arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
-# Create the SKIRT remote execution context
-remote = SkirtRemote()
+# Create a RemoteSynchronizer instance
+synchronizer = RemoteSynchronizer()
 
-# Get the status
-status = remote.status()
+# Run the synchronizer
+synchronizer.run(arguments.delete)
 
+# -----------------------------------------------------------------

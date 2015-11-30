@@ -17,6 +17,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 import inspect
+import subprocess
 from distutils.spawn import find_executable
 
 # -----------------------------------------------------------------
@@ -46,6 +47,22 @@ skirt_run_dir = os.path.join(skirt_root_dir, "run")
 
 # -----------------------------------------------------------------
 
+def has_mpi():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Try opening the 'mpirun' executable
+    try:
+        devnull = open(os.devnull)
+        subprocess.Popen("mpirun", stdout=devnull, stderr=devnull).communicate()
+        return True
+    except: return False
+
+# -----------------------------------------------------------------
+
 def dependencies(module):
 
     """
@@ -54,6 +71,6 @@ def dependencies(module):
     :return:
     """
 
-
+    pass
 
 # -----------------------------------------------------------------
