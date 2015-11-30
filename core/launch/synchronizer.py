@@ -199,6 +199,9 @@ class RemoteSynchronizer(Configurable):
                 # The path to the simulation file
                 path = entry[0]
 
+                # Get the simulation rank
+                simulation_rank = os.path.basename(path).split(".")[0]
+
                 # The ski file path
                 ski_path = entry[1]
 
@@ -219,6 +222,6 @@ class RemoteSynchronizer(Configurable):
                     if "retreived at" in last: simulation_status = "retreived"
 
                 # Show the status of the current simulation
-                self.log.info("  - " + prefix + ": " + simulation_status)
+                self.log.info("  [" + str(simulation_rank) + "] " + prefix + ": " + simulation_status)
 
 # -----------------------------------------------------------------

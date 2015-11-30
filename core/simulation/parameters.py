@@ -89,7 +89,7 @@ class SkirtParameters(object):
 
     # -----------------------------------------------------------------
 
-    def to_command(self, skirt_path, mpi_command, scheduler):
+    def to_command(self, skirt_path, mpi_command, scheduler, to_string=False):
 
         """
         This function ...
@@ -128,11 +128,17 @@ class SkirtParameters(object):
         elif isinstance(self.ski_pattern, list): arguments += self.ski_pattern
         else: raise ValueError("The ski pattern must consist of either a string or a list of strings")
 
-        # Create the final command string for this simulation
-        command = " ".join(arguments)
+        # If requested, convert the argument list into a string
+        if to_string:
 
-        # Return the command string
-        return command
+            # Create the final command string for this simulation
+            command = " ".join(arguments)
+
+            # Return the command string
+            return command
+
+        # Otherwise, return the list of argument values
+        else: return arguments
 
 # -----------------------------------------------------------------
 
@@ -153,38 +159,5 @@ def skirt_command(skirt_path, mpi_command, processes, scheduler):
 
     # Singleprocessing mode
     else: return [skirt_path]
-
-# -----------------------------------------------------------------
-
-class FitSkirtParameters(object):
-
-    """
-    This class ...
-    """
-
-    def __init__(self, parameters):
-
-        """
-        The constructor ...
-        :param parameters:
-        :return:
-        """
-
-        # Load a configuration object according to the default template and the passed parameters
-        config = configuration.set("fitskirt", parameters)
-
-        # Set the configuration entries as attributes of the object
-        for entry in config: setattr(self, entry, config[entry])
-
-    # -----------------------------------------------------------------
-
-    def simulations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pass
 
 # -----------------------------------------------------------------

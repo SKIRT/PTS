@@ -21,7 +21,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os.path
-import sys
 import argparse
 
 # Import the relevant PTS classes and modules
@@ -35,9 +34,11 @@ parser.add_argument('subsuite', type=str, help='a name identifying the subsuite'
 parser.add_argument('-p', '--parallel', action='store_true', help='execute the test cases in parallel mode')
 
 # Parse the command line arguments
-args = parser.parse_args()
-subsuite = args.subsuite
-parallel = args.parallel
+arguments = parser.parse_args()
+subsuite = arguments.subsuite
+parallel = arguments.parallel
+
+# -----------------------------------------------------------------
 
 # Create the full path to the SKIRTtests directory
 suitename = "SKIRTtests"

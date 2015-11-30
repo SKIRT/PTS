@@ -123,7 +123,7 @@ class SkirtExec:
         parameters.single = single
 
         # Run SKIRT with the specified parameters
-        self.run(parameters, wait, silent)
+        return self.run(parameters, wait, silent)
 
     ## This function does the same as the execute function, but obtains its arguments from a SkirtParameters object
     def run(self, parameters, wait=True, silent=False):
@@ -144,6 +144,8 @@ class SkirtExec:
 
         # Get the command string
         command = parameters.to_command(self._path, mpi_command, scheduler)
+
+        #print(command)
 
         # Launch the SKIRT command
         if wait:
@@ -168,7 +170,7 @@ class SkirtExec:
     def version(self):
         # execute skirt with incorrect argument list and get its output
         process = subprocess.Popen([self._path, "-version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        output = process.communicate()[0];
+        output = process.communicate()[0]
 
         # return the relevant portion of the output
         return "SKIRT" + output.splitlines()[0].partition("SKIRT")[2]
