@@ -105,12 +105,14 @@ def add_dependencies(dependencies, script_path, prefix=""):
         # If the current line does not contain an 'import yyy' or 'from yyy import zzz' statement, skip it
         if not (line.startswith("import ") or (line.startswith("from ") and "import" in line)): continue
 
-        # Get the path to the module that is being imported in the current line
-        module = get_module(line, script_path)
+        # Get the path to the modules that are being imported in the current line
+        modules = get_modules(line, script_path)
 
-        # Check if the imported module refers to a PTS module or an external package
-        if module.startswith("/"): add_dependencies(dependencies, module, prefix=prefix+"  ")
-        else: dependencies[module].add(script_path)
+        for module in modules:
+
+            # Check if the imported module refers to a PTS module or an external package
+            if module.startswith("/"): add_dependencies(dependencies, module, prefix=prefix+"  ")
+            else: dependencies[module].add(script_path)
 
 # -----------------------------------------------------------------
 
@@ -129,7 +131,7 @@ def is_present(package):
 
 # -----------------------------------------------------------------
 
-def get_module(import_statement, script_path):
+def get_modules(import_statement, script_path):
 
     """
     This function ...
@@ -139,9 +141,20 @@ def get_module(import_statement, script_path):
 
     splitted = import_statement.split()
 
-    #print(splitted)
+    if len(splitted) <= 2: imported = []
 
-    imported = splitted[3] if len(splitted) > 2 else None
+    elif "," in splitted[3]:
+
+        imported = [splitted[3][:-1]]
+
+        for more in splitted[4:]:
+
+            if "," in more: more = more[:-1]
+            imported.append(more)
+
+    else: imported = [splitted[3]]
+
+    which = []
 
     # Check if this line denotes a relative import statement
     if splitted[1].startswith("."):
@@ -160,7 +173,7 @@ def get_module(import_statement, script_path):
         subpackage_name = after_dots.split(".")[0]
         subpackage_path = os.path.join(subpackage_dir, subpackage_name)
 
-        return which_module(subpackage_path, imported)
+        for name in imported: which.append(which_module(subpackage_path, name))
 
     # Absolute import of a pts class or module
     elif splitted[1].startswith("pts"):
@@ -173,7 +186,7 @@ def get_module(import_statement, script_path):
         for part in parts:
             subpackage_dir = os.path.join(subpackage_dir, part)
 
-        return which_module(subpackage_dir, imported)
+        for name in imported: which.append(which_module(subpackage_dir, name))
 
     # External module
     else:
@@ -185,12 +198,14 @@ def get_module(import_statement, script_path):
 
         # Check whether the module is present on this system
 
-        return module
+        which.append(module)
 
         #packages.add(module)
 
         #if is_present(module): print(prefix + module, ": present")
         #else: print(prefix + module, ": not found")
+
+    return which
 
 # -----------------------------------------------------------------
 
@@ -203,7 +218,10 @@ def which_module(subpackage, name):
     :return:
     """
 
-    if os.path.isfile(subpackage + ".py"):
+    if "," in name: print(name)
+    if name.islower() and os.path.isfile(os.path.join(subpackage, name + ".py")): return os.path.join(subpackage, name + ".py")
+
+    elif os.path.isfile(subpackage + ".py"):
 
         #print("  " + subpackage + ".py")
         return subpackage + ".py"
