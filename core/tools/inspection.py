@@ -107,10 +107,10 @@ def add_dependencies(dependencies, script_path, prefix=""):
 
         # Get the path to the module that is being imported in the current line
         module = get_module(line, script_path)
-        #print(prefix, module)
 
+        # Check if the imported module refers to a PTS module or an external package
         if module.startswith("/"): add_dependencies(dependencies, module, prefix=prefix+"  ")
-        else: dependencies.add(module)
+        else: dependencies[module].add(script_path)
 
 # -----------------------------------------------------------------
 

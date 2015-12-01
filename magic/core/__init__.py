@@ -5,7 +5,7 @@
 # *****************************************************************
 
 # Import classes to make them available at the level of this subpackage
-from box import Box
-from frame import Frame
-from image import Image
-from source import Source
+from .box import Box
+from .frame import Frame
+from .image import Image
+from .source import Source

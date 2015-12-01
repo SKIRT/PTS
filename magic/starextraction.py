@@ -36,7 +36,7 @@ from .sky import Star
 from .tools import statistics, fitting, regions, masks
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import Configurable
+from ..core.basics import Configurable
 
 # -----------------------------------------------------------------
 

@@ -5,8 +5,8 @@
 # *****************************************************************
 
 # Import classes to make them available at the level of this subpackage
-from vector import Position, Extent
-from layers import Layers
-from mask import Mask
-from region import Region
-from trackrecord import TrackRecord
+from .vector import Position, Extent
+from .layers import Layers
+from .mask import Mask
+from .region import Region
+from .trackrecord import TrackRecord

@@ -14,7 +14,7 @@ This module ...
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import Configurable
+from ..core.basics import Configurable
 
 # -----------------------------------------------------------------
 

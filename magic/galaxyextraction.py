@@ -29,10 +29,10 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 from .basics import Mask, Region, Position, Extent
 from .core import Source
 from .sky import Galaxy
-from .tools import catalogs, regions, logging
+from .tools import catalogs, regions
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import Configurable
+from ..core.basics import Configurable
 
 # -----------------------------------------------------------------
 

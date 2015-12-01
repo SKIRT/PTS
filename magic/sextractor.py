@@ -20,7 +20,7 @@ from astropy.table import Table
 from .core import Frame
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import Configurable
+from ..core.basics import Configurable
 
 # -----------------------------------------------------------------
 

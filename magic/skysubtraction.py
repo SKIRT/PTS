@@ -22,7 +22,7 @@ from .core import Frame
 from .tools import statistics, interpolation, plotting
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import Configurable
+from ..core.basics import Configurable
 
 # -----------------------------------------------------------------
 
