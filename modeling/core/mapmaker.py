@@ -20,17 +20,14 @@ import numpy as np
 import copy
 
 # Import astronomical modules
-from astropy import log
-import astropy.logger
 from photutils import detect_sources
 
 # Import the relevant AstroMagic classes and modules
-from astromagic import Image
-from astromagic.core.frames import Frame
-from astromagic.core.masks import Mask
+from ...magic.basics import Mask
+from ...magic.core import Image, Frame
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import Configurable
+from ...core.basics import Configurable
 
 # -----------------------------------------------------------------
 
@@ -49,7 +46,7 @@ class MapMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(MapMaker, self).__init__(config, "mapmaker")
+        super(MapMaker, self).__init__(config)
 
         ## Attributes
 
@@ -294,7 +291,7 @@ class MapMaker(Configurable):
         """
 
         # Inform the user
-        log.info("Saving input images set to zero outside the low signal-to-noise contour level")
+        self.log.info("Saving input images set to zero outside the low signal-to-noise contour level")
 
         # Save each of the frames
         self.h.save(self.config.saving.h_cutoff_path)
@@ -371,7 +368,7 @@ class MapMaker(Configurable):
         """
 
         # Inform the user
-        log.info("Creating the dust attenuation map")
+        self.log.info("Creating the dust attenuation map")
 
         # Dust = FUV attenuation = ratio of TIR and FUV luminosity
 
@@ -597,7 +594,7 @@ class MapMaker(Configurable):
         """
 
         # Inform the user
-        log.info("Creating old stars map")
+        self.log.info("Creating old stars map")
 
         # Old stars = IRAC3.6 - bulge
         # From the IRAC 3.6 micron map, we must subtract the bulge component to only retain the disk emission
@@ -646,7 +643,7 @@ class MapMaker(Configurable):
         """
 
         # Inform the user
-        log.info("Creating the ionizing young stars map")
+        self.log.info("Creating the ionizing young stars map")
 
         ## HA HAS BEEN CONVERTED TO LSUN (ABOVE)
 
@@ -693,7 +690,7 @@ class MapMaker(Configurable):
         """
 
         # Inform the user
-        log.info("Creating the specific star formation map")
+        self.log.info("Creating the specific star formation map")
 
         # Young non-ionizing stars (specific star formation rate) = GALEXFUV - H
         #fuv_h = -2.5*(np.log10(self.fuv) - np.log10(self.h))
@@ -736,7 +733,7 @@ class MapMaker(Configurable):
         """
 
         # Inform the user
-        log.info("Creating the TIR map")
+        self.log.info("Creating the TIR map")
 
         ### MIPS, PACSBLUE AND PACSRED CONVERTED TO LSUN (ABOVE)
 
@@ -769,7 +766,7 @@ class MapMaker(Configurable):
 
         # Assert flux calculation is correct
         #assert int(flux_fuv) == int(self_flux_fuv), "FLUX FUV DOES NOT MATCH: " + str(flux_fuv) + " =/= " + str(self_flux_fuv)
-        #log.warning("Flux FUV = " + str(flux_fuv) + " <> " + str(self_flux_fuv))
+        #self.log.warning("Flux FUV = " + str(flux_fuv) + " <> " + str(self_flux_fuv))
 
         #typisch 20% en 35% respectievelijk
         #48% voor MIPS 24 komt van Lu et al. 2014
@@ -815,7 +812,7 @@ class MapMaker(Configurable):
 
         # Assert flux calculation is correct
         #assert int(flux_mips) == int(self_flux_mips), "FLUX MIPS DOES NOT MATCH: " + str(flux_mips) + " =/= " + str(self_flux_mips)
-        #log.warning("Flux 24 micron = " + str(flux_mips) + " <> " + str(self_flux_mips))
+        #self.log.warning("Flux 24 micron = " + str(flux_mips) + " <> " + str(self_flux_mips))
 
         #typisch 20% en 35% respectievelijk
         #48% voor MIPS 24 komt van Lu et al. 2014

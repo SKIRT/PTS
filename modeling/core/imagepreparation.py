@@ -22,12 +22,12 @@ import numpy as np
 import astropy.units as u
 
 # Import the relevant AstroMagic classes and modules
-from pts.magic.core import Frame
-from pts.magic import StarExtractor, GalaxyExtractor, SkySubtractor
-from pts.magic.tools import regions, cropping
+from ...magic.core import Frame
+from ...magic import StarExtractor, GalaxyExtractor, SkySubtractor
+from ...magic.tools import regions, cropping
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import Configurable
+from ...core.basics import Configurable
 
 # -----------------------------------------------------------------
 
@@ -46,7 +46,7 @@ class ImagePreparation(Configurable):
         """
 
         # Call the constructor of the base class
-        super(ImagePreparation, self).__init__(config, "imagepreparation")
+        super(ImagePreparation, self).__init__(config)
 
         ## Temporary
 

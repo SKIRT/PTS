@@ -6,6 +6,6 @@
 # *****************************************************************
 
 # Import classes to make them available at the level of this subpackage
-from resources import ResourceEstimator
-from scalingtest import ScalingTest
-from testsuite import SkirtTestSuite
+from .resources import ResourceEstimator
+from .scalingtest import ScalingTest
+from .testsuite import SkirtTestSuite

@@ -88,7 +88,7 @@ def skirt_version():
 
 # -----------------------------------------------------------------
 
-def list_dependencies(script_path, prefix=""):
+def add_dependencies(dependencies, script_path, prefix=""):
 
     """
     This function ...
@@ -96,82 +96,124 @@ def list_dependencies(script_path, prefix=""):
     :return:
     """
 
+    # Skip files that are not python scripts
     if not script_path.endswith(".py"): raise ValueError("Not a valid script path")
-
-    # Initialize a set to contain the required modules
-    packages = []
 
     # Read the lines of the script file
     for line in open(script_path, 'r'):
 
-        # Look for an 'import yyy' or 'from yyy import zzz' statement
-        if line.startswith("import ") or (line.startswith("from ") and "import" in line):
+        # If the current line does not contain an 'import yyy' or 'from yyy import zzz' statement, skip it
+        if not (line.startswith("import ") or (line.startswith("from ") and "import" in line)): continue
 
-            splitted = line.split()
+        # Get the path to the module that is being imported in the current line
+        module = get_module(line, script_path)
+        #print(prefix, module)
 
-            # Check if this line denotes a relative import statement
-            if splitted[1].startswith("."):
+        if module.startswith("/"): add_dependencies(dependencies, module, prefix=prefix+"  ")
+        else: dependencies.add(module)
 
-                after_dots = splitted[1].lstrip(".")
+# -----------------------------------------------------------------
 
-                number_of_dots = len(splitted[1]) - len(after_dots)
+def is_present(package):
 
-                # Determine the path to the PTS subpackage
-                subpackage_dir = script_path
-                for i in range(number_of_dots):
-                    subpackage_dir = os.path.dirname(subpackage_dir)
+    """
+    This function ...
+    :return:
+    """
 
-                subpackage_name = after_dots.split(".")[0]
-                subpackage_path = os.path.join(subpackage_dir, subpackage_name)
+    try:
+        imp.find_module(package)
+        return True
+    except ImportError:
+        return False
 
-                module_name = splitted[3]
+# -----------------------------------------------------------------
 
-                if os.path.isfile(subpackage_path + ".py"):
-                    #print(prefix + subpackage_path + ".py:")
-                    print(prefix + line)
-                    list_dependencies(subpackage_path + ".py", prefix=prefix + "  ")
-                elif os.path.isfile(os.path.join(subpackage_path, "__init__.py")):
-                    #print(prefix + subpackage_path + ":")
-                    print(prefix + line)
-                    list_dependencies(os.path.join(subpackage_path, "__init__.py"), prefix=prefix + " ")
-                else: raise ValueError("Don't know how to get further with " + subpackage_path + " and " + module_name)
+def get_module(import_statement, script_path):
 
-            # Absolute import of a pts class or module
-            elif splitted[1].startswith("pts"):
+    """
+    This function ...
+    :param import_statement:
+    :return:
+    """
 
-                parts = splitted[1].split(".")[1:]
+    splitted = import_statement.split()
 
-                module_dir = pts_package_dir
-                for part in parts:
-                    module_dir = os.path.join(module_dir, part)
+    #print(splitted)
 
-                module_name = splitted[3]
+    imported = splitted[3] if len(splitted) > 2 else None
 
-                if os.path.isfile(module_dir + ".py"):
-                    #print(prefix + module_dir + ".py")
-                    print(prefix + line)
-                    list_dependencies(module_dir + ".py", prefix=prefix + " ")
-                elif os.path.isfile(os.path.join(module_dir, "__init__.py")):
-                    #print(prefix + module_dir + ":")
-                    print(prefix + line)
-                    list_dependencies(os.path.join(module_dir, "__init__.py"), prefix=prefix + " ")
-                else: raise ValueError("Don't know how to get further with " + module_dir + " and " + module_name)
+    # Check if this line denotes a relative import statement
+    if splitted[1].startswith("."):
 
-            # External module
-            else:
+        after_dots = splitted[1].lstrip(".")
 
-                # Get the name of the module
-                module = line.split()[1].split(".")[0]
+        #print("  ", after_dots)
 
-                # Check whether the module is present on this system
-                try:
-                    imp.find_module(module)
-                    message = "present"
-                except ImportError:
-                    found = False
-                    message = "not found!"
+        number_of_dots = len(splitted[1]) - len(after_dots)
 
-                print(prefix + module, ":", message)
+        # Determine the path to the PTS subpackage
+        subpackage_dir = script_path
+        for i in range(number_of_dots):
+            subpackage_dir = os.path.dirname(subpackage_dir)
+
+        subpackage_name = after_dots.split(".")[0]
+        subpackage_path = os.path.join(subpackage_dir, subpackage_name)
+
+        return which_module(subpackage_path, imported)
+
+    # Absolute import of a pts class or module
+    elif splitted[1].startswith("pts"):
+
+        parts = splitted[1].split(".")[1:]
+
+        #print("  ", parts)
+
+        subpackage_dir = pts_package_dir
+        for part in parts:
+            subpackage_dir = os.path.join(subpackage_dir, part)
+
+        return which_module(subpackage_dir, imported)
+
+    # External module
+    else:
+
+        # Get the name of the module
+        module = splitted[1].split(".")[0]
+
+        #print("  ", module)
+
+        # Check whether the module is present on this system
+
+        return module
+
+        #packages.add(module)
+
+        #if is_present(module): print(prefix + module, ": present")
+        #else: print(prefix + module, ": not found")
+
+# -----------------------------------------------------------------
+
+def which_module(subpackage, name):
+
+    """
+    This function ...
+    :param subpackage:
+    :param name:
+    :return:
+    """
+
+    if os.path.isfile(subpackage + ".py"):
+
+        #print("  " + subpackage + ".py")
+        return subpackage + ".py"
+
+    elif os.path.isfile(os.path.join(subpackage, "__init__.py")):
+
+        #print("  " + subpackage + ":")
+        return os.path.join(subpackage, "__init__.py")
+
+    else: raise ValueError("Don't know how to get further with " + subpackage + " and " + name)
 
 # -----------------------------------------------------------------
 

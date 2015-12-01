@@ -6,7 +6,7 @@
 # *****************************************************************
 
 # Import classes to make them available at the level of this subpackage
-from galaxydecomposer import GalaxyDecomposer
-from imagepreparation import ImagePreparation
-from mapmaker import MapMaker
-from sedfitter import SEDFitter
+from .galaxydecomposer import GalaxyDecomposer
+from .imagepreparation import ImagePreparation
+from .mapmaker import MapMaker
+from .sedfitter import SEDFitter

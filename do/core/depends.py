@@ -19,6 +19,7 @@ import argparse
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import inspection
+from pts.core.basics import Log
 
 # -----------------------------------------------------------------
 
@@ -31,6 +32,9 @@ arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
+# Create a logger
+log = Log()
+
 # Find matching scripts under the 'do' directory
 match = inspection.find_matching_script(arguments.script)
 if match is None: exit()
@@ -39,6 +43,13 @@ if match is None: exit()
 script_path = os.path.join(inspection.pts_do_dir, match[0], match[1])
 
 # List the dependencies of the matching script
-inspection.list_dependencies(script_path)
+dependencies = set()
+inspection.add_dependencies(dependencies, script_path)
+
+# Loop over the packages and report their presence
+for dependency in sorted(dependencies, key=str.lower):
+
+    if inspection.is_present(dependency): log.success(dependency + ": present")
+    else: log.failure(dependency + ": not found")
 
 # -----------------------------------------------------------------

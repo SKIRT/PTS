@@ -6,4 +6,4 @@
 # *****************************************************************
 
 # Import classes to make them available at the level of this subpackage
-from galaxymodeler import GalaxyModeler
+from .galaxymodeler import GalaxyModeler
