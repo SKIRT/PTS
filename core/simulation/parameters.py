@@ -19,12 +19,12 @@ import os
 import fnmatch
 
 # Import the relevant PTS classes and modules
-from ..tools import configuration
 from .simulation import SkirtSimulation
+from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
-class SkirtParameters(object):
+class SkirtArguments(object):
 
     """
     This class ...
@@ -42,6 +42,35 @@ class SkirtParameters(object):
 
         # Set the configuration entries as attributes of the object
         for entry in config: setattr(self, entry, config[entry])
+
+        ## Set the attributes of the object to default values
+
+        # Options for the ski file pattern
+        self.ski_pattern = None
+        self.recursive = None
+        self.relative = None
+
+        # The input and output paths
+        self.input_path = None
+        self.output_path = None
+
+        # Other options
+        self.emulate = False    # Run in emulation mode
+        self.single = False     # True if only a single simulation is expected
+
+        # Options for logging
+        self.logging = Map()
+        self.logging.brief = False      # Brief console logging
+        self.logging.verbose = False    # Verbose logging
+        self.logging.memory = False     # State the amount of used memory with each log message
+        self.logging.allocation = False # Write log messages with the amount of (de)allocated memory
+        self.logging.allocation_limit = 1e-5    # The lower limit for the amount of (de)allocated memory to be logged
+
+        # Options for parallelization
+        self.parallel = Map()
+        self.parallel.simulations = None  # The number of parallel simulations
+        self.parallel.threads = None      # The number of parallel threads per simulation
+        self.parallel.processes = None    # The number of parallel processes per simulation
 
     # -----------------------------------------------------------------
 

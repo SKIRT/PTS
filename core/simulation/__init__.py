@@ -9,7 +9,7 @@
 from .execute import SkirtExec
 from .jobscript import JobScript
 from .logfile import LogFile
-from .parameters import SkirtParameters
+from .parameters import SkirtArguments
 from .remote import SkirtRemote
 from .simulation import SkirtSimulation, createsimulations
 from .skifile import SkiFile

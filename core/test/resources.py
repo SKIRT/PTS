@@ -18,7 +18,7 @@ import shutil
 
 # Import the relevant PTS classes and modules
 from ..basics import Configurable
-from ..simulation import SkiFile, SkirtExec, SkirtParameters
+from ..simulation import SkiFile, SkirtExec, SkirtArguments
 from ..extract import TimeLineExtractor
 
 # -----------------------------------------------------------------
@@ -53,8 +53,8 @@ class ResourceEstimator(Configurable):
         # Set the log file instance to None initially
         self.log_file = None
 
-        # Set the parameters to None initially
-        self.parameters = None
+        # Set the arguments to None initially
+        self.arguments = None
 
         # Set the path to the temporary directory to None initially
         self.temp_path = None
@@ -125,19 +125,19 @@ class ResourceEstimator(Configurable):
         :return:
         """
 
-        # Create a SkirtParameters object
-        self.parameters = SkirtParameters()
+        # Create a SkirtArguments object
+        self.arguments = SkirtArguments()
 
         # Adjust the parameters
-        self.parameters.ski_pattern = self.ski_file.path
-        self.parameters.parallel.processes = self.processes
-        self.parameters.parallel.threads = self.threads
-        self.parameters.output_path = self.temp_path
-        self.parameters.emulate = True
-        self.parameters.logging.verbose = False
-        self.parameters.logging.memory = False
-        self.parameters.logging.allocation = False
-        self.parameters.single = True
+        self.arguments.ski_pattern = self.ski_file.path
+        self.arguments.parallel.processes = self.processes
+        self.arguments.parallel.threads = self.threads
+        self.arguments.output_path = self.temp_path
+        self.arguments.emulate = True
+        self.arguments.logging.verbose = False
+        self.arguments.logging.memory = False
+        self.arguments.logging.allocation = False
+        self.arguments.single = True
 
     # -----------------------------------------------------------------
 
@@ -149,7 +149,7 @@ class ResourceEstimator(Configurable):
         """
 
         # Run SKIRT in emulation mode
-        self.simulation = self.skirt.run(self.parameters, silent=True)
+        self.simulation = self.skirt.run(self.arguments, silent=True)
 
         # Get the simulation's ski file and log file
         self.log_file = self.simulation.log_file

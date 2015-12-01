@@ -24,7 +24,7 @@ from astropy.io import ascii
 # Import the relevant PTS classes and modules
 from .analyser import SimulationAnalyser
 from ..simulation import SkirtRemote
-from ..simulation import SkirtParameters
+from ..simulation import SkirtArguments
 from ..basics import Configurable
 from ..test import ResourceEstimator
 from ..tools import inspection
@@ -279,7 +279,7 @@ class SkirtRemoteLauncher(Configurable):
         print(self.config.parameters.output_path)
 
         # Run the simulation
-        parameters = SkirtParameters(self.config.parameters)
+        parameters = SkirtArguments(self.config.parameters)
         simulation_file_path = self.remote.run(parameters)
 
         # Add additional information to the simulation file

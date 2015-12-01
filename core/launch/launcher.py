@@ -20,7 +20,7 @@ import os
 # Import the relevant PTS classes and modules
 from .analyser import SimulationAnalyser
 from ..simulation import SkirtExec
-from ..simulation import SkirtParameters
+from ..simulation import SkirtArguments
 from ..basics import Configurable
 from ..test import ResourceEstimator
 from ..tools import monitoring
@@ -239,8 +239,8 @@ class SkirtLauncher(Configurable):
         self.log.info("Performing the simulation...")
 
         # Run the simulation
-        parameters = SkirtParameters(self.config.parameters)
-        self.simulation = self.skirt.run(parameters, silent=True)
+        arguments = SkirtArguments(self.config.parameters)
+        self.simulation = self.skirt.run(arguments, silent=True)
 
     # -----------------------------------------------------------------
 

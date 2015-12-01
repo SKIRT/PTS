@@ -19,7 +19,7 @@ import subprocess
 
 # Import the relevant PTS classes and modules
 from ..basics import Log
-from .parameters import SkirtParameters
+from .parameters import SkirtArguments
 from ..tools import inspection
 
 # -----------------------------------------------------------------
@@ -96,41 +96,41 @@ class SkirtExec:
 
         self.mpi_style = mpistyle
 
-        # Create a SkirtParameters object
-        parameters = SkirtParameters()
+        # Create a SkirtArguments object
+        arguments = SkirtArguments()
 
         # The ski file pattern
-        parameters.ski_pattern = skipattern
-        parameters.recursive = recursive
-        parameters.relative = skirel
+        arguments.ski_pattern = skipattern
+        arguments.recursive = recursive
+        arguments.relative = skirel
 
         # Input and output
-        parameters.input_path = inpath
-        parameters.output_path = outpath
+        arguments.input_path = inpath
+        arguments.output_path = outpath
 
         # Parallelization settings
-        parameters.parallel.threads = threads
-        parameters.parallel.processes = processes
-        parameters.parallel.simulations = parallel
+        arguments.parallel.threads = threads
+        arguments.parallel.processes = processes
+        arguments.parallel.simulations = parallel
 
         # Logging settings
-        parameters.logging.brief = brief
-        parameters.logging.verbose = verbose
-        parameters.logging.memory = memory
-        parameters.logging.allocation = allocation
+        arguments.logging.brief = brief
+        arguments.logging.verbose = verbose
+        arguments.logging.memory = memory
+        arguments.logging.allocation = allocation
 
         # Other settings
-        parameters.emulate = emulate
-        parameters.single = single
+        arguments.emulate = emulate
+        arguments.single = single
 
         # Run SKIRT with the specified parameters
-        return self.run(parameters, wait, silent)
+        return self.run(arguments, wait, silent)
 
     ## This function does the same as the execute function, but obtains its arguments from a SkirtParameters object
-    def run(self, parameters, wait=True, silent=False):
+    def run(self, arguments, wait=True, silent=False):
 
         # Check whether MPI is present on this system if multiple processe are requested
-        if parameters.parallel.processes > 1 and not inspection.has_mpi():
+        if arguments.parallel.processes > 1 and not inspection.has_mpi():
             self._log.warning("No mpirun executable: skipping simulations")
             return []
 
@@ -144,9 +144,7 @@ class SkirtExec:
         else: raise ValueError("Invalid MPI style")
 
         # Get the command string
-        command = parameters.to_command(self._path, mpi_command, scheduler)
-
-        #print(command)
+        command = arguments.to_command(self._path, mpi_command, scheduler)
 
         # Launch the SKIRT command
         if wait:
@@ -156,7 +154,7 @@ class SkirtExec:
         else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
 
         # Return the list of simulations so that their results can be followed up
-        return parameters.simulations()
+        return arguments.simulations()
 
     ## This function returns True if the previously started SKIRT process is still running, False otherwise
     def isrunning(self):
