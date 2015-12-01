@@ -20,7 +20,7 @@ from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import inspection
-from pts.core.basics import Log
+from pts.core.basics.log import Log
 
 # -----------------------------------------------------------------
 

@@ -18,7 +18,8 @@ import os
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.core.launch import SkirtLauncher, SkirtRemoteLauncher
+from pts.core.launch.launcher import SkirtLauncher
+from pts.core.launch.remotelauncher import SkirtRemoteLauncher
 
 # -----------------------------------------------------------------
 

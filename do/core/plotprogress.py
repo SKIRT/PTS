@@ -33,11 +33,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import argparse
 
-# Import astronomical modules
-from astropy import log
-
 # Import the relevant PTS classes and modules
-from pts.core.plot import ProgressPlotter
+from pts.core.plot.progress import ProgressPlotter
+from pts.core.tools import logging
 
 # -----------------------------------------------------------------
 
@@ -45,6 +43,8 @@ from pts.core.plot import ProgressPlotter
 phases = ['stellar', 'dust', 'spectra']
 
 # -----------------------------------------------------------------
+
+log = logging.new_log(None, "INFO")
 
 # Inform the user
 log.info("Running plotprogress...")

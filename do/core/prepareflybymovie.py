@@ -32,7 +32,7 @@ pixels = 1000
 # -----------------------------------------------------------------
 
 # construct the requested timeline
-from pts.core.basics import Timeline
+from pts.core.basics.timeline import Timeline
 timeline = Timeline(rate=rate, lengthunit=(1 if interactive else width), shape=(pixels,pixels))
 
 if timelinename == "circle":
@@ -54,7 +54,7 @@ else: raise ValueError("Unsupported timeline name")
 
 # show interactively
 if interactive:
-    from pts.core.basics import ViewAngles
+    from pts.core.basics.viewangles import ViewAngles
     view = ViewAngles()
     view.flyby(timeline)
     view.close()

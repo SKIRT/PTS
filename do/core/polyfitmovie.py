@@ -18,8 +18,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import RGBImage
-from pts.core.basics import MovieFile
+from pts.core.basics.rgbimage import RGBImage
+from pts.core.basics.moviefile import MovieFile
 
 # ------------------------------------------------------------------
 

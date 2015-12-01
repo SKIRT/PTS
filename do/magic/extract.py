@@ -17,12 +17,9 @@ from __future__ import absolute_import, division, print_function
 import os
 import argparse
 
-# Import astronomical modules
-from astropy import log
-
 # Import the relevant AstroMagic classes and modules
-from astromagic.core import Image
-from astromagic import GalaxyExtractor, StarExtractor
+from pts.magic.core import Image
+from pts.magic import GalaxyExtractor, StarExtractor
 
 # -----------------------------------------------------------------
 

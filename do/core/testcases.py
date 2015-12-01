@@ -24,7 +24,7 @@ import os.path
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.core.test import SkirtTestSuite
+from pts.core.test.testsuite import SkirtTestSuite
 
 # -----------------------------------------------------------------
 

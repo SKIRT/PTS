@@ -11,22 +11,19 @@
 # The in/out filenames and other parameters are hardcoded in the script.
 #
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import matplotlib
 import matplotlib.colors as col
 import matplotlib.cm as cm
-import matplotlib.pyplot as plt
-import numpy as np
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import RGBImage
+from pts.core.basics.rgbimage import RGBImage
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # wavelengths and names of reference images used during fit; number of output simulations
 residualsname="ranges_Residual_64_"
@@ -58,7 +55,7 @@ def discrete_cmap(N=8):
     cmap_i8 = col.ListedColormap(cpool[0:N], 'i8')
     cm.register_cmap(cmap=cmap_i8)
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # build a list of residual images
 resImages = []
@@ -82,7 +79,7 @@ for i in range(1,len(resImages)):
 
 fullRes.saveto("residuals.png")
 
-# *****************************************************************
+# -----------------------------------------------------------------
 
 # build a list of reference images
 refImages = []
@@ -130,4 +127,4 @@ fullRef.saveto("compare.png")
 fullRef.addright(fullRes)
 fullRef.saveto("compare_residuals.png")
 
-# *****************************************************************
+# -----------------------------------------------------------------

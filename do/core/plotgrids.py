@@ -22,7 +22,7 @@
 import sys
 
 # Import the relevant PTS classes and modules
-from pts.core.simulation import createsimulations
+from pts.core.simulation.simulation import createsimulations
 from pts.core.plot.grids import plotgrids
 
 # -----------------------------------------------------------------

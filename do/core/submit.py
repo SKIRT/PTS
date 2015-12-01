@@ -19,9 +19,9 @@ import os.path
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import Log
-from pts.core.simulation import SkiFile
-from pts.core.simulation import JobScript
+from pts.core.basics.log import Log
+from pts.core.simulation.skifile import SkiFile
+from pts.core.simulation.jobscript import JobScript
 
 # -----------------------------------------------------------------
 

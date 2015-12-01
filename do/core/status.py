@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.core.launch import RemoteSynchronizer
+from pts.core.launch.synchronizer import RemoteSynchronizer
 
 # -----------------------------------------------------------------
 
