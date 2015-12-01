@@ -49,11 +49,12 @@ axistypes = {
     'logMstar': ( r"$\log_{10}(M_*)\,[M_\odot]$", lambda: log_if_positive(original_mass_stars) ),
     'logMdust': ( r"$\log_{10}(M_\mathrm{dust})\,[M_\odot]$", lambda: log_if_positive(setup_mass_dust) ),
     'logMdust/Mstar': ( r"$\log_{10}(M_\mathrm{dust}/M_*)$", lambda: log_divide_if_positive(setup_mass_dust,original_mass_stars) ),
-    'logMhii': ( r"$\log_{10}(M_\mathrm{HII})\,[M_\odot]$", lambda: log_if_positive(setup_mass_hii_regions) ),
+    'logMhii': ( r"$\log_{10}(M_\mathrm{HII})\,[M_\odot]$", lambda: log_if_positive(exported_mass_hii_regions) ),
+    'logMhii.exp': ( r"$\log_{10}(M_\mathrm{HII})\,[M_\odot]$", lambda: log_if_positive(exported_mass_hii_regions) ),
     'fracMhii.fromgas': ( r"$M_{\mathrm{HII},\mathrm{from gas}}/M_{\mathrm{HII},\mathrm{total}}$",
         lambda: divide_if_positive(exported_mass_hii_regions_from_gas,exported_mass_hii_regions) ),
     'logMdust+hii': ( r"$\log_{10}(M_\mathrm{dust}+\frac{1}{100}M_\mathrm{HII})\,[M_\odot]$",
-        lambda: log_if_positive(setup_mass_dust+0.01*setup_mass_hii_regions) ),
+        lambda: log_if_positive(setup_mass_dust+0.01*exported_mass_hii_regions) ),
 
     'logLtot': ( r"$\log_{10}(L_\mathrm{tot})\,[L_\odot]$", lambda: log_if_positive(setup_luminosity_stars+setup_luminosity_hii_regions) ),
     'logLhii': ( r"$\log_{10}(L_\mathrm{HII})\,[L_\odot]$", lambda: log_if_positive(setup_luminosity_hii_regions) ),
@@ -63,7 +64,7 @@ axistypes = {
     'fracMgas': ( r"$M_\mathrm{gas}/(M_*+M_\mathrm{gas})$", lambda: divide_if_positive(setup_mass_cold_gas,original_mass_stars+setup_mass_cold_gas) ),
     'logM/L': ( r"$\log_{10}(M_*/L_\mathrm{tot})\,[M_\odot/L_\odot]$",
         lambda: log_divide_if_positive(original_mass_stars,setup_luminosity_stars+setup_luminosity_hii_regions) ),
-    'Mgas/Mhii': ( r"$M_\mathrm{gas}/M_\mathrm{HII}$", lambda: divide_if_positive(setup_mass_cold_gas,setup_mass_hii_regions) ),
+    'Mgas/Mhii': ( r"$M_\mathrm{gas}/M_\mathrm{HII}$", lambda: divide_if_positive(setup_mass_cold_gas,exported_mass_hii_regions) ),
 
     # magnitudes and colors
     'g': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g ),
@@ -119,7 +120,7 @@ axistypes = {
     'Mdust.hii.fit/Mdust.fit': ( r"$M_{\mathrm{dust},\mathrm{hii},\mathrm{fit}}/M_{\mathrm{dust},\mathrm{fit}}$",
         lambda: dust_fraction_in_hii_regions() ),
     'Mdust.hii.fit/Mhii': ( r"$M_{\mathrm{dust},\mathrm{hii},\mathrm{fit}}/M_{\mathrm{HII}}$",
-            lambda: divide_if_positive(dust_temperature_and_mass_from_grey_body_fit("limited")[1] * dust_fraction_in_hii_regions(), setup_mass_hii_regions) ),
+            lambda: divide_if_positive(dust_temperature_and_mass_from_grey_body_fit("limited")[1] * dust_fraction_in_hii_regions(), exported_mass_hii_regions) ),
     'logMdust.cort': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{cort}})\,[M_\odot]$", lambda: log_dust_mass_as_cortese() ),
     'logMdust.grid': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{grid}})\,[M_\odot]$", lambda: log_dust_mass_from_grid_temperature() ),
     'logMdust.fit/Mstar.zib': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit}}/M_{*,\mathrm{zib}})$",
