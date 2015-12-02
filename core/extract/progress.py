@@ -19,7 +19,7 @@ import argparse
 from datetime import datetime
 
 # Import the relevant PTS classes and modules
-from ..simulation import SkirtSimulation
+from ..simulation.simulation import SkirtSimulation
 from ..tools import archive as arch
 
 # -----------------------------------------------------------------

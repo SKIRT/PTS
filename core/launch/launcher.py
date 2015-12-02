@@ -19,10 +19,10 @@ import os
 
 # Import the relevant PTS classes and modules
 from .analyser import SimulationAnalyser
-from ..simulation import SkirtExec
-from ..simulation import SkirtArguments
-from ..basics import Configurable
-from ..test import ResourceEstimator
+from ..simulation.execute import SkirtExec
+from ..simulation.arguments import SkirtArguments
+from ..basics.configurable import Configurable
+from ..test.resources import ResourceEstimator
 from ..tools import monitoring
 
 # -----------------------------------------------------------------

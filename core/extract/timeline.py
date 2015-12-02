@@ -20,7 +20,7 @@ from datetime import datetime
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
-from ..simulation import SkirtSimulation
+from ..simulation.simulation import SkirtSimulation
 
 # -----------------------------------------------------------------
 

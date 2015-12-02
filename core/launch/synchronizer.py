@@ -19,8 +19,8 @@ import os
 
 # Import the relevant PTS classes and modules
 from .analyser import SimulationAnalyser
-from ..basics import Configurable
-from ..simulation import SkirtRemote
+from ..basics.configurable import Configurable
+from ..simulation.remote import SkirtRemote
 from ..tools import inspection
 
 # -----------------------------------------------------------------
@@ -93,17 +93,15 @@ class RemoteSynchronizer(Configurable):
         # Set the delete list
         self.delete = delete
 
-        # Add the remotes
-        # Open the file that defines the remote hosts
-        host_file_path = os.path.join(inspection.pts_user_dir, "hosts.txt")
-        host_file = open(host_file_path, 'r')
-        for line in host_file:
+        # Search for files that define remote host configurations
+        hosts_directory = os.path.join(inspection.pts_user_dir, "hosts")
+        for filename in os.listdir(hosts_directory):
 
-            # Ignore the header of the file
-            if line.startswith("#"): continue
+            # Ignore directories and hidden files
+            if filename.startswith(".") or not os.path.isfile(filename): continue
 
             # Get the host id for this line
-            host_id = line.split(None, 1)[0]
+            host_id = filename.split(".")[0]
 
             # Create a remote SKIRT execution context
             remote = SkirtRemote()

@@ -21,8 +21,8 @@ import matplotlib
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
-from ..basics import Log
-from ..simulation import createsimulations
+from ..basics.log import Log
+from ..simulation.simulation import createsimulations
 
 # -----------------------------------------------------------------
 

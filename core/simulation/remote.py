@@ -300,7 +300,7 @@ class SkirtRemote(Configurable):
 
         # Send the command to the remote machine using a screen session so that we can safely detach from the
         # remote shell
-        command = arguments.to_command(self.skirt_path, self.config.mpi_command, self.config.scheduler)
+        command = arguments.to_command(self.skirt_path, self.config.mpi_command, self.config.scheduler, to_string=True)
         self.execute("screen -d -m " + command, output=False)
 
         # Check the contents of the local run directory to see which simulation id's are currently in use

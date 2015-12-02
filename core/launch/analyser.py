@@ -18,9 +18,13 @@ from __future__ import absolute_import, division, print_function
 import os
 
 # Import the relevant PTS classes and modules
-from ..basics import Configurable
-from ..extract import ProgressExtractor, TimeLineExtractor, MemoryExtractor
-from ..plot import ProgressPlotter, TimeLinePlotter, MemoryPlotter
+from ..basics.configurable import Configurable
+from ..extract.progress import ProgressExtractor
+from ..extract.timeline import TimeLineExtractor
+from ..extract.memory import MemoryExtractor
+from ..plot.progress import ProgressPlotter
+from ..plot.timeline import TimeLinePlotter
+from ..plot.memory import MemoryPlotter
 
 # -----------------------------------------------------------------
 
