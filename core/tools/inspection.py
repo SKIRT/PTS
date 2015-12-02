@@ -80,7 +80,7 @@ def skirt_version():
     """
 
     # Execute skirt with incorrect argument list and get its output
-    process = subprocess.Popen([skirt_path, "-version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    process = subprocess.Popen([skirt_path, "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     output = process.communicate()[0]
 
     # Return the relevant portion of the output

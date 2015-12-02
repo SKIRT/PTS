@@ -30,47 +30,51 @@ class SkirtArguments(object):
     This class ...
     """
 
-    def __init__(self, parameters=None):
+    def __init__(self, config=None):
 
         """
         The constructor ...
         :return:
         """
 
-        # Load a configuration object according to the default template and the passed parameters
-        config = configuration.set("skirt", parameters)
+        # If the set of arguments is passed to the constructor as a configuration mapping, set the
+        # attributes of this object according to the configuration settings
+        if config is not None:
 
-        # Set the configuration entries as attributes of the object
-        for entry in config: setattr(self, entry, config[entry])
+            # Loop over the entries in the configuration and create an attribute with the same name
+            for entry in config: setattr(self, entry, config[entry])
 
-        ## Set the attributes of the object to default values
+        # If no configuration mapping is passed to this object, set all attributes to default values
+        else:
 
-        # Options for the ski file pattern
-        self.ski_pattern = None
-        self.recursive = None
-        self.relative = None
+            ## Set the attributes of the object to default values
 
-        # The input and output paths
-        self.input_path = None
-        self.output_path = None
+            # Options for the ski file pattern
+            self.ski_pattern = None
+            self.recursive = None
+            self.relative = None
 
-        # Other options
-        self.emulate = False    # Run in emulation mode
-        self.single = False     # True if only a single simulation is expected
+            # The input and output paths
+            self.input_path = None
+            self.output_path = None
 
-        # Options for logging
-        self.logging = Map()
-        self.logging.brief = False      # Brief console logging
-        self.logging.verbose = False    # Verbose logging
-        self.logging.memory = False     # State the amount of used memory with each log message
-        self.logging.allocation = False # Write log messages with the amount of (de)allocated memory
-        self.logging.allocation_limit = 1e-5    # The lower limit for the amount of (de)allocated memory to be logged
+            # Other options
+            self.emulate = False    # Run in emulation mode
+            self.single = False     # True if only a single simulation is expected
 
-        # Options for parallelization
-        self.parallel = Map()
-        self.parallel.simulations = None  # The number of parallel simulations
-        self.parallel.threads = None      # The number of parallel threads per simulation
-        self.parallel.processes = None    # The number of parallel processes per simulation
+            # Options for logging
+            self.logging = Map()
+            self.logging.brief = False      # Brief console logging
+            self.logging.verbose = False    # Verbose logging
+            self.logging.memory = False     # State the amount of used memory with each log message
+            self.logging.allocation = False # Write log messages with the amount of (de)allocated memory
+            self.logging.allocation_limit = 1e-5    # The lower limit for the amount of (de)allocated memory to be logged
+
+            # Options for parallelization
+            self.parallel = Map()
+            self.parallel.simulations = None  # The number of parallel simulations
+            self.parallel.threads = None      # The number of parallel threads per simulation
+            self.parallel.processes = None    # The number of parallel processes per simulation
 
     # -----------------------------------------------------------------
 

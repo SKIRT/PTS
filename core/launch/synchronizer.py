@@ -16,10 +16,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
-import numpy as np
-
-# Import astronomical modules
-from astropy.io import ascii
 
 # Import the relevant PTS classes and modules
 from .analyser import SimulationAnalyser
@@ -100,25 +96,20 @@ class RemoteSynchronizer(Configurable):
         # Add the remotes
         # Open the file that defines the remote hosts
         host_file_path = os.path.join(inspection.pts_user_dir, "hosts.txt")
-        table = ascii.read(host_file_path, fill_values=('--', '0', 'Password'))
-        for entry in table:
+        host_file = open(host_file_path, 'r')
+        for line in host_file:
+
+            # Ignore the header of the file
+            if line.startswith("#"): continue
+
+            # Get the host id for this line
+            host_id = line.split(None, 1)[0]
 
             # Create a remote SKIRT execution context
             remote = SkirtRemote()
 
-            # Set configuration settings
-            remote.config.host_id = entry["Host identifier"]
-            remote.config.host = entry["Host name"]
-            remote.config.user = entry["User name"]
-            password = entry["Password"]
-            if isinstance(password, np.ma.core.MaskedConstant): password = None
-            remote.config.password = password
-            remote.config.output_path = entry["Output path"]
-            remote.config.scheduler = entry["Scheduler"] == "True"
-            remote.config.mpi_command = entry["MPI command"]
-
             # Setup the remote execution context
-            remote.setup()
+            remote.setup(host_id)
 
             # Add the remote to the list of remote objects
             self.remotes.append(remote)

@@ -16,282 +16,329 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
-import os.path
-import multiprocessing
-import datetime
 import numpy as np
 import shutil
 
-# Import astronomical modules
-from astropy import log
-
 # Import the relevant PTS classes and modules
-from ..simulation import SkiFile, SkirtExec, JobScript
-from ..extract.scaling import extract
+from ..simulation.arguments import SkirtArguments
+from .scalinganalyser import ScalingAnalyser
+from ..basics.configurable import Configurable
+from ..simulation.remote import SkirtRemote
+from ..tools import time
 
 # -----------------------------------------------------------------
 
-# Ignore warnings, otherwise Canopy would give a UserWarning on top of the error encountered when a scaling
-# test results file does not contain any data (an error which is catched an produces an error message).
-import warnings
-warnings.filterwarnings("ignore")
-
-# -----------------------------------------------------------------
-
-cores = {'delcatty': 16, 'gulpin': 32, 'cosma': 16}
-
-# -----------------------------------------------------------------
-
-class ScalingTest(object):
+class ScalingTest(Configurable):
 
     """
     An instance of the ScalingTest class represents a SKIRT scaling benchmark test for a particular ski file.
     """
 
-    def __init__(self, path, simulation, system, mode):
+    def __init__(self, config=None):
 
         """
-        The constructor accepts the following arguments:
-        :param path: the path of the directory used for SKIRT scaling benchmark tests. This directory should contain
-                     different folders, each containing a particular ski file
-        :param simulation: this string indicates which of the simulations or subfolders of the path (see above) should
-                           be used for this scaling test. This string should match the name of one of the subdirectories
-                           of the path
-        :param system: a string identifying the system on which this scaling test is carried out. This system name is
-                       used in the name of the scaling test results file. If the system name has a particular value,
-                       for example "delcatty" or "cosma", the scaling test will automatically switch to a mode where
-                       simulations are scheduled instead of executed immediately
-        :param mode: the mode in which to run the scaling test. This can be either "mpi", "threads" or "hybrid".
-        :return:
+        The constructor ...
         """
 
-        # Set the path
-        self._path = path
+        # Call the constructor of the base class
+        super(ScalingTest, self).__init__(config)
 
-        # Scaling benchmark name (="SKIRTscaling")
-        self._name = os.path.basename(os.path.normpath(self._path))
+        ## Attributes
 
-        # Set the simulation name (subdirectory of self._path) and the simulation path
-        self._simulationname = simulation
-        self._simulationpath = os.path.join(self._path, self._simulationname)
+        # Create the SKIRT remote execution context
+        self.remote = SkirtRemote()
 
-        # Check whether the simulation path exists
-        if not os.path.exists(self._simulationpath):
-            log.error("No directory called " + self._simulationname + " was found in " + self._path)
-            exit()
+        # Create a ScalingAnalyser instance
+        self.analyser = ScalingAnalyser()
 
-        # Set the input, output, result and visualisation paths
-        self._inpath = os.path.join(self._simulationpath, "in")
-        self._outpath = os.path.join(self._simulationpath, "out")
-        self._respath = os.path.join(self._simulationpath, "res")
-        self._vispath = os.path.join(self._simulationpath, "vis")
-
-        # Create the output directories if they do not already exist
-        try: os.mkdir(self._outpath)
-        except OSError: pass
-        try: os.mkdir(self._respath)
-        except OSError: pass
-        
-        # Set the system name
-        self._system = system
-
-        # Determine whether we are dealing with a scheduling system or we can launch simulations right away
-        if self._system in cores.keys():
-
-            # Indicate that we are working with a scheduling system
-            self._scheduler = True
-
-            # Get the number of cores (per node) on this system from a pre-defined dictionary
-            self._cores = cores[self._system]
-
-        else:
-
-            # Indicate that we are not dealing with a scheduling system
-            self._scheduler = False
-
-            # Determine the number of cores (per node) on this system
-            self._cores = multiprocessing.cpu_count()
-
-        # Set the dataoutputpath
-        if self._scheduler:
-
-            # Check that we are indeed on the UGent HPC system: look for the VSC_SCRATCH or alternatively the VSC_DATA
-            # directory (we need it to store the SKIRT output)
-            vscdatapath = os.getenv("VSC_SCRATCH_" + self._system.upper())
-
-            # If no VSC_SCRATCH directory could be found for this cluster (we are not using delcatty or gulpin), then use
-            # the VSC_DATA directory
-            if vscdatapath is None: vscdatapath = os.getenv("VSC_DATA")
-
-            # If VSC_DATA is not found, we are not on the HPC infrastructure
-            if vscdatapath is None:
-
-                log.error("Can't find $VSC_DATA (Are you on indeed on the HPC infrastructure?)")
-                exit()
-
-            # All the output generated by SKIRT is placed in a directory within VSC_SCRATCH or VSC_DATA, identified by
-            # the scaling benchmark name (="SKIRTScaling") and the simulation name
-            self._dataoutputpath = os.path.join(vscdatapath, self._name, self._simulationname)
-
-        else:
-
-            self._dataoutputpath = self._outpath
-
-        # Set the mode
-        self._mode = mode
-
-        # Search the ski file that is in the specified simulation path
-        self._skifilename = ""
-        for filename in os.listdir(self._simulationpath):
-            if filename.endswith(".ski") and not filename.startswith("."):
-                self._skifilename = filename[:-4]
-                break
-
-        # Check whether a ski file is found
-        if not self._skifilename:
-            log.error("No ski file was found in the simulation path " + self._simulationpath)
-            exit()
-
-        # The path of the ski file
-        self._skifilepath = os.path.join(self._simulationpath, self._skifilename + ".ski")
-
-        # Create SKIRT execution context
-        self._skirt = SkirtExec()
+        # Initialize a list to contain the retreived simulations
+        self.simulations = []
 
     # -----------------------------------------------------------------
 
-    ## When this function is invoked, the scaling test is started. This function takes the following arguments:
-    #
-    #  - maxnodes: the maximum number of 'nodes' to be used for this scaling test. On a desktop system, a node is
-    #              considered to be the entire set of processors. This number can range from zero to infinity, and
-    #              can be a fractional number. To use 2 processors on a system with 4 processors (per node) for example,
-    #              a value of 0.5 can be used for maxnodes.
-    #  - minnodes: the minimum number of 'nodes' to be used for this scaling test. The usage is similar as with
-    #              maxnodes. The default value of minnodes is zero, denoting no lower limit on the number of nodes.
-    #              The minimum number of processors used for the scaling test will then equal one.
-    #              In hybrid mode, minnodes also defines the number of parallel threads per process.
-    #  - manual: a flag indicating whether the job script should be submitted from within this script, or just saved
-    #            so that the user can inspect it and launch it manually.
-    #  - keepoutput: this optional argument indicates whether the output of the SKIRT simulations has to be kept
-    #                or can be deleted from the disk.
-    #  - extractprogress: a flag indicating whether the progress of the different SKIRT processes should be extracted
-    #                     from the simulation's log files or not
-    #  - extracttimeline: a flag indicating whether timeline information of the different SKIRT processes should be
-    #                     extracted from the simulation's log files or not
-    #  - weak: a flag indicating whether a weak or a strong scaling test should be performed
-    #
-    def run(self, maxnodes, minnodes, manual=False, keepoutput=False, extractprogr=False, extracttimeline=False, weak=False):
+    @classmethod
+    def from_arguments(cls, arguments):
 
-        # Set the properties of the scaling test
-        self._manual = manual
-        self._keepoutput = keepoutput
-        self._extractprogr = extractprogr
-        self._extracttimeline = extracttimeline
-        self._weak = weak
+        """
+        This function ...
+        :param arguments:
+        :return:
+        """
 
-        # Set a string specifying whether this scaling test is 'strong' or 'weak'
-        scalingtype = "weak" if self._weak else "strong"
+        # Create a new ScalingTest instance
+        test = cls()
 
-        # Log the system name, the test mode and the version of SKIRT used for this test
-        log.info("Starting " + scalingtype + " scaling benchmark for " + self._system + " in " + self._mode + " mode")
-        log.info("Using " + self._skirt.version())
+        ## Adjust the configuration settings according to the command-line arguments
 
-        # Generate a timestamp identifying this particular run for the scaling test
-        self._timestamp = datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+        # Logging
+        if arguments.debug: test.config.logging.level = "DEBUG"
+
+        # Ski file
+        test.config.ski_path = arguments.filepath
+
+        # Remote host and cluster (if applicable)
+        test.config.remote = arguments.remote
+        test.config.cluster = arguments.cluster
+
+        # Parallelization mode
+        test.config.mode = arguments.mode
+
+        # Maximum and minimum number of nodes
+        test.config.min_nodes = arguments.minnodes
+        test.config.max_nodes = arguments.maxnodes
+
+        # Other options
+        test.config.manual = arguments.manual
+        test.config.keep_output = arguments.keep
+
+        # Extraction
+        test.config.extraction.progress = arguments.progress
+        test.config.extraction.timeline = arguments.timeline
+        test.config.extraction.memory = arguments.memory
+
+        # Plotting
+        test.config.plotting.progress = arguments.progress
+        test.config.plotting.timeline = arguments.timeline
+        test.config.plotting.memory = arguments.memory
+
+        # Return the new scaling test
+        return test
+
+    # -----------------------------------------------------------------
+
+    def run(self):
+
+        """
+        When this function is called, the scaling test is started.
+        """
+
+        # Log the remote host name, the parallelization mode and the version of SKIRT used for this test
+        self.log.info("Starting scaling test run for " + self.config.remote + " in " + self.config.mode + " mode")
+        self.log.info("Using " + self.remote.skirt_version)
+
+        # 1. Call the setup function
+        self.setup()
+
+        # 2. Perform the simulations as a part of the scaling test
+        self.perform()
+
+        # 3. Retreive the output of finished simulations (of other scaling test runs)
+        self.retreive()
+
+        # 3. Analyse the output of the retreived simulations
+        self.analyse()
+
+        # End with some log messages
+        self.log.success("Finished scaling test run")
+        self.log.info("The results are / will be written to " + self.scaling_file_path)
+
+    # -----------------------------------------------------------------
+
+    def setup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(ScalingTest, self).setup()
+
+        # Set the input, output, result and visualisation paths
+        self.base_path = os.path.dirname(self.config.ski_path) if "/" in self.config.ski_path else os.getcwd()
+        self.input_path = os.path.join(self.base_path, "in")
+        self.output_path = os.path.join(self.base_path, "out")
+        self.result_path = os.path.join(self.base_path, "res")
+        self.plot_path = os.path.join(self.base_path, "plot")
+
+        # Check if an input directory exists
+        if not os.path.isdir(self.input_path): self.input_path = None
+
+        # Create the output, result and plot directories if necessary
+        if not os.path.isdir(self.output_path): os.makedirs(self.output_path)
+        if not os.path.isdir(self.result_path): os.makedirs(self.result_path)
+        if not os.path.isdir(self.plot_path): os.makedirs(self.plot_path)
+
+        # Setup the remote execution context
+        self.remote.setup(self.config.remote, self.config.cluster)
+
+        # Determine whether we are dealing with a scheduling system or we can launch simulations right away
+        self.scheduler = self.remote.config.scheduler
+
+        # Get the number of cores (per node) on this system from a pre-defined dictionary
+        self.cores = self.remote.cores
+
+        # Determine the simulation prefix
+        self.prefix = os.path.basename(self.config.ski_path).split(".")[0]
+
+        ## Set the minimum and maximum number of processors and the number of threads per process (for hybrid mode)
 
         # Calculate the maximum number of processors to use for the scaling test (maxnodes can be a decimal number)
-        maxprocessors = int(maxnodes * self._cores)
+        self.max_processors = int(self.config.max_nodes * self.cores)
 
         # Calculate the minimum number of processors to use for the scaling test and set this as the value
         # to start the loop below with. The default setting is minnodes and minprocessors both equal to zero. If
         # this is the case, the starting value for the loop is set to one
-        minprocessors = int(minnodes * self._cores)
-        if minprocessors == 0: minprocessors = 1
-        processors = minprocessors
+        self.min_processors = int(self.config.min_nodes * self.cores)
+        if self.minprocessors == 0: self.minprocessors = 1
 
         # In hybrid mode, the minimum number of processors also represents the number of threads per process
-        self._threadspp = 1
-        if self._mode == "hybrid": self._threadspp = minprocessors
+        self.threads_per_process = 1
+        if self.config.mode == "hybrid": self.threads_per_process = self.min_processors
 
         # If hybrid mode is selected, add the number of threads per process to the name of the results directory
-        hybridinfo = str(self._threadspp) if self._mode == "hybrid" else ""
+        hybridinfo = str(self.threads_per_process) if self.config.mode == "hybrid" else ""
+
+        ## Names, directories
 
         # Define a name identifying this scaling test run
-        self._scalingrunname = self._system + "_" + self._mode + hybridinfo + "_" + str(maxnodes) + "_" + str(minnodes) + "_" + self._timestamp
+        self.scaling_run_name = time.unique_name(self.config.remote + "_" + self.config.mode + hybridinfo + "_" + str(self.config.max_nodes) + "_" + str(self.config.min_nodes))
 
-        # Create a directory that will contain the output of the simulations that are part of this scaling test run
-        self._runoutputdir = self._createrunoutputdir()
+        # Determine the paths to the directories that will contain the output, results and plots of this particular scaling test run
+        self.output_path_run = os.path.join(self.output_path, self.scaling_run_name)
+        self.result_path_run = os.path.join(self.result_path, self.scaling_run_name)
+        self.plot_path_run = os.path.join(self.plot_path, self.scaling_run_name)
 
-        # Create a directory to contain the results (scaling, progress and timeline data) for this scaling test
-        self._resultsdirpath = self._createresultsdir()
+        # Create the output, result and plot directories for this run if necessary
+        if not os.path.isdir(self.output_path_run): os.makedirs(self.output_path_run)
+        if not os.path.isdir(self.result_path_run): os.makedirs(self.result_path_run)
+        if not os.path.isdir(self.plot_path_run): os.makedirs(self.plot_path_run)
 
-        # Inside this directory, create a file named 'scaling.dat' to contain the runtimes from which the scaling
-        # behaviour can be inferred
-        self._scalingfilepath = self._createscalingfile()
+        # Inside the results directory of this run, create a file named 'scaling.dat' to contain the runtimes
+        # from which the scaling behaviour can be inferred
+        self.create_scaling_file()
 
-        # Create a file which gives useful information about this scaling test run
-        self._infofilepath = self._createinfofile(maxnodes, minnodes, maxprocessors, minprocessors)
+        # Inide the results directory of this run, create a file which gives useful information about this run
+        self.create_info_file()
 
-        # Create a directory to contain the job scripts for this scaling test run (if necessary)
-        localoutdirectory = os.path.join(self._outpath, self._scalingrunname)
-        self._jobscriptsoutdir = None
-        if self._scheduler:
 
-            os.mkdir(localoutdirectory)
-            self._jobscriptsoutdir = localoutdirectory
+        ### SKIRT arguments
+
+        self.arguments = SkirtArguments()
+
+        # Ski file options
+        self.arguments.ski_pattern = self.config.ski_path
+        self.arguments.recursive = False
+        self.arguments.relative = False
+
+        # Input path for the simulation
+        self.arguments.input_path = self.input_path
+
+        # The output path is adjusted seperately for each simulation
+
+        # Other options
+        self.arguments.emulate = False
+        self.arguments.single = True
+
+        # Options for logging
+        self.arguments.logging.brief = False
+        self.arguments.logging.verbose = True
+        if self.config.extraction.memory:
+            self.arguments.logging.memory = True
+            self.arguments.logging.allocation = True
+            self.arguments.logging.allocation_limit = 1e-5
+
+        # Options for parallelization are adjusted seperately for each simulation
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Clearing for the next scaling test run")
+
+        # Set default values for attributes
+        self.simulations = []
+
+        # Clear the scaling analyser
+        self.analyser.clear()
+
+        # Other ...
+
+    # -----------------------------------------------------------------
+
+    def perform(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Perform the simulations with increasing number of processors
-        while processors <= maxprocessors:
+        processors = self.min_processors
+        while processors <= self.max_processors:
 
             # Perform this run
-            self._do(processors)
+            self.launch(processors)
 
             # The next run will be performed with double the amount of processors
             processors *= 2
 
-        # End with some log messages
-        log.success("Finished parallel scaling benchmark script")
-        log.info("The results are / will be written to " + self._scalingfilepath)
+    # -----------------------------------------------------------------
+
+    def retreive(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get a list of the simulations that have been succesfully retreived
+        self.simulations = self.remote.retreive()
 
     # -----------------------------------------------------------------
 
-    ## This function performs one run of the scaling test for a particular number of processors
-    def _do(self, processors):
+    def analyse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Run the scaling analyser for the current ski file
+        self.analyser.run(self.config.ski_path)
+
+    # -----------------------------------------------------------------
+
+    def launch(self, processors):
+
+        """
+        This function performs one simulation of the scaling test with a particular number of processors
+        :param processors:
+        :return:
+        """
 
         # Open the info file
-        infofile = open(self._infofilepath, 'a')
+        infofile = open(self.info_file_path, 'a')
 
         # Determine the number of processes and threads per process
-        processes, threads = self._getmapping(processors)
+        processes, threads = self.get_mapping(processors)
 
-        # Set the path of the ski file used for this run
-        skifilepath = self._skifilepath
+        # Determine the paths to the simulation's output, result and plot directories
+        self.output_path_simulation = os.path.join(self.output_path_run, str(processors))
+        self.result_path_simulation = os.path.join(self.result_path_run, str(processors))
+        self.plot_path_simulation = os.path.join(self.plot_path_run, str(processors))
 
-        # Create a seperate output directory for this simulation (different simulations can be executed simultaneously)
-        simulationoutputpath = self._createskirtoutputdir(processors)
-
-        # If a 'weak' scaling test is performed, create a ski file that is adjusted to the current number of processors
-        if self._weak and processors > 1:
-
-            # Open the original ski file and adjust the number of photon packages and the number of dust cells
-            skifile = SkiFile(self._skifilepath)
-            skifile.increasepackages(processors)
-            skifile.increasedustcells(processors)
-
-            # Save the adjusted ski file in the output path for this simulation
-            skifilepath = os.path.join(simulationoutputpath, self._skifilename + ".ski")
-            skifile.saveto(skifilepath)
+        # Create the output, result and plot directories for this run if necessary
+        if not os.path.isdir(self.output_path_simulation): os.makedirs(self.output_path_simulation)
+        if not os.path.isdir(self.result_path_simulation): os.makedirs(self.result_path_simulation)
+        if not os.path.isdir(self.plot_path_simulation): os.makedirs(self.plot_path_simulation)
 
         # Write some information about this simulation to the info file
         infofile.write("Simulation performed on " + str(processors) + " processors\n")
-        infofile.write(" - ski file: " + skifilepath + "\n")
-        infofile.write(" - output directory: " + simulationoutputpath + "\n")
+        infofile.write(" - ski file: " + self.config.ski_path + "\n")
+        infofile.write(" - output directory: " + self.output_path_simulation + "\n")
         infofile.write(" - number of processes: " + str(processes) + "\n")
         infofile.write(" - number of threads per processes: " + str(threads) + "\n")
 
         # Schedule or launch the simulation
-        if self._scheduler: self._schedule(processors, processes, threads, skifilepath, simulationoutputpath, infofile)
-        else: self._launch(processors, processes, threads, skifilepath, simulationoutputpath, infofile)
+        if self.config.scheduler: self.schedule(processors, processes, threads, infofile)
+        else: self.execute(processors, processes, threads, infofile)
 
         # Close the info file
         infofile.write("\n")
@@ -299,40 +346,76 @@ class ScalingTest(object):
 
     # -----------------------------------------------------------------
 
-    ## This functions schedules a simulation on the cluster. This function takes the following arguments:
-    #
-    #  - processors: the total number of processors to be used for this run
-    #
-    def _schedule(self, processors, processes, threads, skifilepath, dataoutputpath, infofile):
+    def schedule(self, processors, processes, threads, infofile):
+
+        """
+        This function schedules a simulation on the cluster. This function takes the following arguments:
+        :param processors: the total number of processors to be used for this run
+        :param processes:
+        :param threads:
+        :param skifilepath:
+        :param dataoutputpath:
+        :param infofile:
+        :return:
+        """
 
         # Determine the number of nodes and processors per node
-        nodes, ppn = self._getrequirements(processors)
+        nodes, ppn = self.get_requirements(processors)
 
         # In threads mode, show a warning message if the number of threads > the number of cores per node
         # (we can't use multiple nodes in threads mode)
-        if self._mode == "threads" and threads > self._cores:
+        if self.config.mode == "threads" and threads > self.cores:
 
             # Show a warning and return immediately
-            log.warning("The number of threads " + str(threads) + " exceeds the number of cores on this system: skipping")
+            self.log.warning("The number of threads " + str(threads) + " exceeds the number of cores per node: skipping")
             return
 
         # Inform the user about the number of processors, processes, threads per process, nodes and processors per node
-        log.info("Scheduling simulation with:")
-        log.info(" - total number of processors = " + str(processors))
-        log.info(" - number of parallel processes = " + str(processes))
-        log.info(" - number of parallel threads per process = " + str(threads))
-        log.info(" - number of nodes = " + str(nodes))
-        log.info(" - number of requested processors per node = " + str(ppn))
+        self.log.info("Scheduling simulation with:")
+        self.log.info(" - total number of processors = " + str(processors))
+        self.log.info(" - number of parallel processes = " + str(processes))
+        self.log.info(" - number of parallel threads per process = " + str(threads))
+        self.log.info(" - number of nodes = " + str(nodes))
+        self.log.info(" - number of requested processors per node = " + str(ppn))
 
         # Write the number of nodes and processors per node to the info file
         infofile.write(" - number of used nodes: " + str(nodes) + "\n")
         infofile.write(" - number of requested processors per node: " + str(ppn) + "\n")
 
         # The path of the log file for this simulation run
-        logfilepath = os.path.join(dataoutputpath, self._skifilename + "_log.txt")
+        #logfilepath = os.path.join(dataoutputpath, self._skifilename + "_log.txt")
 
         # Calculate the expected walltime for this number of processors
-        walltime = self._estimatewalltime(processors)
+        walltime = self.estimate_walltime(processors)
+
+        ###
+
+        # Adjust the SKIRT command-line arguments
+        self.arguments.parallel.processes = processes
+        self.arguments.parallel.threads = threads
+
+        # Create a unique name for this simulation, based on the scaling run name and the current number of processors
+        simulation_name = self.scaling_run_name + "_" + str(processors)
+
+        # Run the simulation
+        simulation_file_path = self.remote.run(self.arguments, walltime, simulation_name)
+
+        # Add additional information to the simulation file
+        simulation_file = open(simulation_file_path, 'a')
+        simulation_file.write("extract progress: " + str(self.config.extraction.progress) + "\n")
+        simulation_file.write("extract timeline: " + str(self.config.extraction.timeline) + "\n")
+        simulation_file.write("extract memory: " + str(self.config.extraction.memory) + "\n")
+        simulation_file.write("plot progress: " + str(self.config.plotting.progress) + "\n")
+        simulation_file.write("plot timeline: " + str(self.config.plotting.timeline) + "\n")
+        simulation_file.write("plot memory: " + str(self.config.plotting.memory) + "\n")
+        simulation_file.write("remove remote input: " + str(False) + "\n")
+        simulation_file.write("remove remote output: " + str(False) + "\n")
+        simulation_file.write("extraction directory: " + self.result_path_simulation + "\n")
+        simulation_file.write("plotting directory: " + self.plot_path_simulation + "\n")
+        simulation_file.write("part of scaling test " + self.scaling_run_name + "\n")
+
+        # Close the file
+        simulation_file.close()
 
         # Create the job script. The name of the script indicates the mode in which we run this scaling test and
         # the current number of processors used. We enable the SKIRT verbose logging mode to be able to compare
@@ -340,69 +423,35 @@ class ScalingTest(object):
         # processes to end up on different nodes or the SKIRT processes sensing interference from other programs,
         # we set the 'fullnode' flag to True, which makes sure we always request at least one full node, even when
         # the current number of processors is less than the number of cores per node
-        jobscriptpath = os.path.join(self._jobscriptsoutdir, "job_" + self._mode + "_" + str(processors) + ".sh")
-        jobscript = JobScript(jobscriptpath, skifilepath, self._system, nodes, ppn, threads, self._inpath, dataoutputpath, walltime, brief=True, verbose=True, fullnode=True)
+        #jobscriptpath = os.path.join(self._jobscriptsoutdir, "job_" + self._mode + "_" + str(processors) + ".sh")
+        #jobscript = JobScript(jobscriptpath, skifilepath, self._system, nodes, ppn, threads, self._inpath, dataoutputpath, walltime, brief=True, verbose=True, fullnode=True)
 
-        # Add the command to go the the PTS do directory
-        jobscript.addcommand("cd $VSC_HOME/PTS/git/do", comment="Navigate to the PTS do directory")
+        # Add information about the path to the directory where the extracted data will be placed
+        if self.config.extraction.progress: infofile.write(" - progress information will be extracted to: " + self.result_path_simulation + "\n")
+        if self.config.extraction.timeline: infofile.write(" - timeline information will be extracted to: " + self.result_path_simulation + "\n")
+        if self.config.extraction.memory: infofile.write(" - memory information will be extract to: " + self.result_path_simulation)
 
-        # Add the PTS command to extract the timings of this run
-        command = "python extractscaling.py " + logfilepath + " " + str(processes) + " " + str(threads) + " " + self._scalingfilepath
-        jobscript.addcommand(command, comment="Extract the results")
-
-        # Add the command to extract the progress information after the job finished, if requested
-        if self._extractprogr and processes > 1:
-
-            # Create the file to contain the progress information of this run
-            progressfilepath = self._createprogressfile(processes)
-
-            # Add the command to the jobscript to extract the progress
-            command = "python extractprogress.py " + self._skifilename + " " + dataoutputpath + " " + progressfilepath
-            jobscript.addcommand(command, comment="Extract the progress of the different processes")
-
-            # Write the path of the progress file to the info file
-            infofile.write(" - progress information extracted to: " + progressfilepath + "\n")
-
-        # Add the command to extract the timeline information after the job finished, if requested
-        if self._extracttimeline:
-
-            # Create the file to contain the timeline information for this run
-            timelinefilepath = self._createtimelinefile(processes)
-
-            # Add the command to the jobscript to extract the timeline data
-            command = "python extracttimeline.py " + self._skifilename + " " + dataoutputpath + " " + timelinefilepath
-            jobscript.addcommand(command, comment="Extract the timeline information for the different processes")
-
-            # Write the path of the timeline file to the info file
-            infofile.write(" - timeline information extracted to: " + timelinefilepath + "\n")
-
-        # Add the command to remove the output directory of this run
-        if not self._keepoutput:
-
-            # Add the command to the jobscript
-            command = "cd; rm -rf " + dataoutputpath
-            jobscript.addcommand(command, comment="Remove the temporary output directory")
-
-        # Change the directory to the jobscripts output directory for the 'output.txt' and 'error.txt' files
-        os.chdir(self._jobscriptsoutdir)
-
-        # Submit the job script to the cluster scheduler
-        if not self._manual: jobscript.submit()
-
-        # Remove this job script (it has been submitted)
-        if not self._manual and not self._keepoutput: jobscript.remove()
+        # Add information about the path to the directory where the plots will be placed
+        if self.config.plotting.progress: infofile.write(" - progress data will be plotted to: " + self.plot_path_simulation + "\n")
+        if self.config.plotting.timeline: infofile.write(" - timeline data will be plotted to: " + self.plot_path_simulation + "\n")
+        if self.config.plotting.memory: infofile.write(" - memory data will be plotted to: " + self.plot_path_simulation + "\n")
 
     # -----------------------------------------------------------------
 
-    ## This function launches the simulation once with the specified number of threads,
-    #  and writes the timing results to the specified file object. This function takes the following arguments:
-    #
-    #  - processors: the number of processors to be used for this run
-    #
-    def _launch(self, processors, processes, threads, skifilepath, dataoutputpath, infofile):
+    def execute(self, processors, processes, threads, infofile):
+
+        """
+        This function executes the simulation once with the specified number of processes and threads and writes
+        the timing results to the specified file object. This function takes the following arguments:
+        :param processors:
+        :param processes:
+        :param threads:
+        :param infofile:
+        :return:
+        """
 
         # Inform the user about the number of processes and threads used for this run
-        log.info("Launching simulation with " + str(processes) + " process(es), each consisting of " + str(threads) + " thread(s)")
+        self.log.info("Launching simulation with " + str(processes) + " process(es), each consisting of " + str(threads) + " thread(s)")
 
         # Run the simulation
         simulation = self._skirt.execute(skipattern=skifilepath, inpath=self._inpath, outpath=dataoutputpath, threads=threads, processes=processes, brief=True, verbose=True)[0]
@@ -417,7 +466,7 @@ class ScalingTest(object):
         if self._extractprogr and processes > 1:
 
             # Create the file to contain the progress information of this run
-            progressfilepath = self._createprogressfile(processes)
+            progressfilepath = self.create_progress_file(processes)
 
             # Load the extractprogress module
             from ..extract import progress
@@ -448,94 +497,47 @@ class ScalingTest(object):
 
     # -----------------------------------------------------------------
 
-    ## This function creates the directory containing the results of the scaling benchmark test and creates the file
-    #  'scaling.dat' inside this directory that will contain the runtimes of the test. This function takes the
-    #  maximum and minimum number of nodes, as given to the command line, as arguments. These numbers are used in
-    #  the name of the results directory, to identify this particular scaling test.
-    def _createresultsdir(self):
+    def create_info_file(self):
 
-        # Create a new directory, whose name includes the system identifier, the scaling test mode, the maximum
-        # and minium number of nodes and a timestamp
-        resultsdirpath = os.path.join(self._respath, self._scalingrunname)
-        os.mkdir(resultsdirpath)
+        """
+        This function creates a file containing general information about the current scaling test run
+        :return:
+        """
 
-        # Return the path to the newly created directory
-        return resultsdirpath
-
-    # -----------------------------------------------------------------
-
-    ## This function creates the directory containing the output of this scaling test run
-    def _createrunoutputdir(self):
-
-        # Create the new directory
-        runoutputpath = os.path.join(self._dataoutputpath, self._scalingrunname)
-        os.makedirs(runoutputpath)
-
-        # Return the path to the run output directory
-        return runoutputpath
-
-    # -----------------------------------------------------------------
-
-    ## This function creates a directory to contain the output of a certain simulation during a scaling test run.
-    #  The name of the directory includes the mode in which the scaling test was run and the used number of
-    #  processors. This function takes the following arguments:
-    #
-    #  - processors: the number of processors for this run of the scaling test
-    #
-    def _createskirtoutputdir(self, processors):
-
-        # The path of the output directory to be created
-        skirtoutputpath = os.path.join(self._runoutputdir, "out_" + self._mode + "_" + str(processors))
-
-        # Create a seperate output directory for this simulation (different simulations can be executed simultaneously)
-        log.info("The output of this simulation will be placed in " + skirtoutputpath)
-        os.makedirs(skirtoutputpath)
-
-        # Return the path to the SKIRT output directory
-        return skirtoutputpath
-
-    # -----------------------------------------------------------------
-
-    ## This function creates a file containing general information about the current scaling test run
-    def _createinfofile(self, maxnodes, minnodes, maxprocessors, minprocessors):
-
-        # Create the file
-        infofilepath = os.path.join(self._resultsdirpath, "info.txt")
-        infofile = open(infofilepath, "w")
-
-        # Set a string specifying whether this scaling test is 'strong' or 'weak'
-        scalingtype = "weak" if self._weak else "strong"
+        # Create the file and set the path
+        self.info_file_path = os.path.join(self.result_path, "info.txt")
+        infofile = open(self.info_file_path, "w")
 
         # If hybrid mode is selected, add the number of threads per process to the name of the results directory
-        hybridinfo = " with " + str(self._threadspp) + " threads per process" if self._mode == "hybrid" else ""
+        hybridinfo = " with " + str(self.threads_per_process) + " threads per process" if self.config.mode == "hybrid" else ""
 
         # Write some useful information to the file
-        infofile.write("Scaling benchmark test " + self._scalingrunname + "\n")
-        infofile.write("Scaling type: " + scalingtype + "\n")
-        infofile.write("System: " + self._system + "\n")
-        infofile.write("SKIRT version: " + self._skirt.version() + "\n")
-        infofile.write("Mode: " + self._mode + hybridinfo + "\n")
-        infofile.write("Maximum number of nodes: " + str(maxnodes) + "(" + str(maxprocessors) + " processors)\n")
-        infofile.write("Minimum number of nodes: " + str(minnodes) + "(" + str(minprocessors) + " processors)\n")
+        infofile.write("Scaling benchmark test " + self.scaling_run_name + "\n")
+        infofile.write("Remote host: " + self.config.remote + "\n")
+        infofile.write("SKIRT version: " + self.remote.skirt_version + "\n")
+        infofile.write("Parallelization mode: " + self.config.mode + hybridinfo + "\n")
+        infofile.write("Maximum number of nodes: " + str(self.config.max_nodes) + "(" + str(self.max_processors) + " processors)\n")
+        infofile.write("Minimum number of nodes: " + str(self.config.min_nodes) + "(" + str(self.min_processors) + " processors)\n")
         infofile.write("\n")
 
         # Close the info file (information on specific simulations will be appended)
         infofile.close()
 
-        # Return the path of the info file
-        return infofilepath
-
     # -----------------------------------------------------------------
 
-    ## This function creates the file containing the scaling information
-    def _createscalingfile(self):
+    def create_scaling_file(self):
 
-        # Create the file
-        scalingfilepath = os.path.join(self._resultsdirpath, "scaling.dat")
-        scalingfile = open(scalingfilepath, "w")
+        """
+        This function creates the file to contain the information about the scaling behaviour
+        :return:
+        """
+
+        # Create the file and set the path
+        self.scaling_file_path = os.path.join(self.result_path_run, "scaling.dat")
+        scalingfile = open(self.scaling_file_path, "w")
 
         # Write a header to this new file which contains some general info about its contents
-        scalingfile.write("# Timing results for scaling benchmark test " + self._scalingrunname + "\n")
+        scalingfile.write("# Timing results for scaling benchmark test " + self.scaling_run_name + "\n")
         scalingfile.write("# Column 1: Number of processes p\n")
         scalingfile.write("# Column 2: Number of threads per process t\n")
         scalingfile.write("# Column 3: Total number of threads (t*p)\n")
@@ -549,133 +551,71 @@ class ScalingTest(object):
         # Close the scaling results file (results will be appended)
         scalingfile.close()
 
-        # Return the path of the scaling results file
-        return scalingfilepath
-
     # -----------------------------------------------------------------
 
-    ## This function creates the file containing the progress information
-    def _createprogressfile(self, processes):
+    def get_mapping(self, processors):
 
-        # Create a new file whose name includes the current number of processors
-        filepath = os.path.join(self._resultsdirpath, "progress_" + str(processes) + ".dat")
-        progressfile = open(filepath, 'w')
-
-        # Write a header to this new file which contains some general info about its contents
-        progressfile.write("# Progress results for scaling benchmark test " + self._scalingrunname + "\n")
-        progressfile.write("# Column 1: Simulation phase (0=stellar, 1=spectra, 2=dust)\n")
-        progressfile.write("# Column 2: Process rank\n")
-        progressfile.write("# Column 3: Execution time (s)\n")
-        progressfile.write("# Column 4: Progress (%)\n")
-
-        # Close the progress file (results will be appended)
-        progressfile.close()
-
-        # Return the path of the newly created progress file
-        return filepath
-
-    # -----------------------------------------------------------------
-
-    ## This function creates the file containing the timeline information
-    def _createtimelinefile(self, processes):
-
-        # Create a new file whose name includes the current number of processors
-        filepath = os.path.join(self._resultsdirpath, "timeline_" + str(processes) + ".dat")
-        timelinefile = open(filepath, 'w')
-
-        # Write a header to this new file which contains some general info about its contents
-        timelinefile.write("# Timeline results for scaling benchmark test " + self._scalingrunname + "\n")
-
-        # Close the timeline file (results will be appended)
-        timelinefile.close()
-
-        # Return the path of the newly created timeline data file
-        return filepath
-
-    # -----------------------------------------------------------------
-
-    ## This function calculates the number of processes and the number of threads (per process) for
-    #  a certain number of processors, depending on the mode in which this scaling test is run.
-    #  In other words, this function determines the 'mapping' from a set of processors to an appropriate
-    #  set of threads and processes. This function takes the number of processors as the sole argument.
-    def _getmapping(self, processors):
+        """
+        This function calculates the number of processes and the number of threads (per process) for
+        a certain number of processors, depending on the mode in which this scaling test is run.
+        In other words, this function determines the 'mapping' from a set of processors to an appropriate
+        set of threads and processes. This function takes the number of processors as the sole argument.
+        :param processors:
+        :return:
+        """
 
         # Set default values for the number of threads and processes
         threads = 1
         processes = 1
 
         # In mpi mode, each processor runs a different process
-        if self._mode == "mpi":
-
-            processes = processors
+        if self.config.mode == "mpi": processes = processors
 
         # In threads mode, each processor runs a seperate thread within the same process
-        if self._mode == "threads":
-
-            threads = processors
+        if self.config.mode == "threads": threads = processors
 
         # In hybrid mode, the number of processes depends on how many threads are requested per process
         # and the current number of processors
-        if self._mode == "hybrid":
+        if self.config.mode == "hybrid":
 
-            threads = self._threadspp
-            processes = processors / self._threadspp
+            threads = self.threads_per_process
+            processes = processors // self.threads_per_process
 
         # Return the number of processes and the number of threads
         return processes, threads
 
     # -----------------------------------------------------------------
 
-    ## This function calculates the required amount of nodes and processors per node, given a certain number
-    #  of processors. This function is only used when on a cluster with a scheduling system.
-    def _getrequirements(self, processors):
+    def get_requirements(self, processors):
+
+        """
+        This function calculates the required amount of nodes and processors per node, given a certain number of
+        processors.
+        :param processors:
+        :return:
+        """
 
         # Calculate the necessary amount of nodes
-        nodes = processors/self._cores + (processors % self._cores > 0)
+        nodes = processors // self.cores + (processors % self.cores > 0)
 
         # Determine the number of processors per node
-        ppn = processors if nodes == 1 else self._cores
+        ppn = processors if nodes == 1 else self.cores
 
         # Return the number of nodes and processors per node
         return nodes, ppn
 
     # -----------------------------------------------------------------
 
-    ## This function estimates the total runtime (or walltime) for the current simulation, number of processors,
-    #  system and scaling test mode. This function takes the following arguments:
-    #
-    #  - processors: the number of processors (or total threads) used for this run of the simulation
-    #  - factor: this optional argument determines how much the upper limit on the walltime should deviate from
-    #            a previous run of this simulation.
-    #
-    def _estimatewalltime(self, processors, factor=1.5):
+    def estimate_walltime(self, processors, factor=1.5):
 
-        # If the scaling test is weak, use the total runtime on one processor as the reference
-        if self._weak:
-
-            # Get the runtime for one processor, add a surplus of one percent per processor and apply the extra factor
-            runtimes = self._getruntimes(1)
-
-            if runtimes is not None:
-
-                totaltime = runtimes["total"] * (1.0 + 0.01*processors)
-                return int(totaltime*factor)
-
-            else:
-
-                # The path of the log file
-                logfilepath = os.path.join(self._simulationpath, self._skifilename + "_log.txt")
-
-                # TODO: don't assume the logfile was created by a simulation with only 1 process!
-
-                # Check whether such a file exists
-                if os.path.exists(logfilepath):
-
-                    # If such a log file is present, extract the timings from it
-                    runtimes = extract(logfilepath)
-
-                    totaltime = runtimes["total"] * (1.0 + 0.01*processors)
-                    return int(totaltime*factor)
+        """
+        This function estimates the total runtime (walltime) for the current simulation, number of processors,
+        system and parallelization mode. This function takes the following arguments:
+        :param processors: the number of processors (or total threads) used for this run of the simulation
+        :param factor: this optional argument determines how much the upper limit on the walltime should deviate from
+            a previous run of the same simulation.
+        :return:
+        """
 
         # Try to get the runtimes for this number of processors
         runtimes = self._getruntimes(processors)

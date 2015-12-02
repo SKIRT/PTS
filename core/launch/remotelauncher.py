@@ -16,10 +16,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
-import numpy as np
-
-# Import astronomical modules
-from astropy.io import ascii
 
 # Import the relevant PTS classes and modules
 from .analyser import SimulationAnalyser
@@ -27,7 +23,6 @@ from ..simulation import SkirtRemote
 from ..simulation import SkirtArguments
 from ..basics import Configurable
 from ..test import ResourceEstimator
-from ..tools import inspection
 
 # -----------------------------------------------------------------
 
@@ -84,26 +79,27 @@ class SkirtRemoteLauncher(Configurable):
         # Logging
         if arguments.debug: launcher.config.logging.level = "DEBUG"
 
-        # Remote ID
+        # Remote host and cluster (if applicable)
         launcher.config.remote = arguments.remote
+        launcher.config.cluster = arguments.cluster
 
         # Ski file
-        launcher.config.parameters.ski_pattern = arguments.filepath
+        launcher.config.arguments.ski_pattern = arguments.filepath
 
         # Simulation logging
-        launcher.config.parameters.logging.brief = arguments.brief
-        launcher.config.parameters.logging.verbose = arguments.verbose
-        launcher.config.parameters.logging.memory = arguments.memory
-        launcher.config.parameters.logging.allocation = arguments.allocation
+        launcher.config.arguments.logging.brief = arguments.brief
+        launcher.config.arguments.logging.verbose = arguments.verbose
+        launcher.config.arguments.logging.memory = arguments.memory
+        launcher.config.arguments.logging.allocation = arguments.allocation
 
         # Parallelization
         if arguments.parallel is not None:
-            launcher.config.parameters.parallel.processes = arguments.parallel[0]
-            launcher.config.parameters.parallel.threads = arguments.parallel[1]
+            launcher.config.arguments.parallel.processes = arguments.parallel[0]
+            launcher.config.arguments.parallel.threads = arguments.parallel[1]
 
-        # Other simulation parameters
-        launcher.config.parameters.emulate = arguments.emulate
-        launcher.config.parameters.single = True  # For now, we only allow single simulations
+        # Other simulation arguments
+        launcher.config.arguments.emulate = arguments.emulate
+        launcher.config.arguments.single = True  # For now, we only allow single simulations
 
         # Extraction
         launcher.config.extraction.memory = arguments.extractmemory
@@ -157,7 +153,7 @@ class SkirtRemoteLauncher(Configurable):
         """
 
         # Check whether the number of processes and the number of threads are both defined
-        return self.config.parameters.parallel.processes is not None and self.config.parameters.parallel.threads is not None
+        return self.config.arguments.parallel.processes is not None and self.config.arguments.parallel.threads is not None
 
     # -----------------------------------------------------------------
 
@@ -171,28 +167,11 @@ class SkirtRemoteLauncher(Configurable):
         # Call the setup function of the base class
         super(SkirtRemoteLauncher, self).setup()
 
-        # Open the file that defines the remote hosts
-        host_file_path = os.path.join(inspection.pts_user_dir, "hosts.txt")
-        table = ascii.read(host_file_path, fill_values=('--', '0', 'Password'))
-        for entry in table:
-            if entry["Host identifier"] == self.config.remote:
-                self.remote.config.host_id = self.config.remote
-                self.remote.config.host = entry["Host name"]
-                self.remote.config.user = entry["User name"]
-                password = entry["Password"]
-                if isinstance(password, np.ma.core.MaskedConstant): password = None
-                self.remote.config.password = password
-                self.remote.config.output_path = entry["Output path"]
-                self.remote.config.scheduler = entry["Scheduler"] == "True"
-                self.remote.config.mpi_command = entry["MPI command"]
-                break
-        else: raise ValueError("The remote could not be find in the hosts.txt file")
-
         # Setup the remote execution context
-        self.remote.setup()
+        self.remote.setup(self.config.remote)
 
         # Set the paths
-        self.base_path = os.path.dirname(self.config.parameters.ski_pattern) if "/" in self.config.parameters.ski_pattern else os.getcwd()
+        self.base_path = os.path.dirname(self.config.arguments.ski_pattern) if "/" in self.config.arguments.ski_pattern else os.getcwd()
         self.input_path = os.path.join(self.base_path, "in")
         self.output_path = os.path.join(self.base_path, "out")
         self.extr_path = os.path.join(self.base_path, "extr")
@@ -202,8 +181,8 @@ class SkirtRemoteLauncher(Configurable):
         if not os.path.isdir(self.input_path): self.input_path = None
 
         # Set the paths for the simulation
-        self.config.parameters.input_path = self.input_path
-        self.config.parameters.output_path = self.output_path
+        self.config.arguments.input_path = self.input_path
+        self.config.arguments.output_path = self.output_path
 
         # Create the output directory if necessary
         if not os.path.isdir(self.output_path): os.makedirs(self.output_path)
@@ -238,7 +217,7 @@ class SkirtRemoteLauncher(Configurable):
 
         # Calculate the amount of required memory for this simulation
         estimator = ResourceEstimator()
-        estimator.run(self.config.parameters.ski_pattern)
+        estimator.run(self.config.arguments.ski_pattern)
 
         # Calculate the maximum number of processes based on the memory requirements
         processes = int(self.remote.free_memory / estimator.memory)
@@ -275,12 +254,9 @@ class SkirtRemoteLauncher(Configurable):
         # Inform the user
         self.log.info("Performing the simulation...")
 
-        print(self.config.parameters.input_path)
-        print(self.config.parameters.output_path)
-
         # Run the simulation
-        parameters = SkirtArguments(self.config.parameters)
-        simulation_file_path = self.remote.run(parameters)
+        arguments = SkirtArguments(self.config.arguments)
+        simulation_file_path = self.remote.run(arguments)
 
         # Add additional information to the simulation file
         simulation_file = open(simulation_file_path, 'a')

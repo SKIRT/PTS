@@ -72,7 +72,7 @@ class SkirtLauncher(Configurable):
         :return:
         """
 
-        # Create and a new SkirtLauncher instance
+        # Create a new SkirtLauncher instance
         launcher = cls()
 
         ## Adjust the configuration settings according to the command-line arguments
@@ -81,22 +81,22 @@ class SkirtLauncher(Configurable):
         if arguments.debug: launcher.config.logging.level = "DEBUG"
 
         # Ski file
-        launcher.config.parameters.ski_pattern = arguments.filepath
+        launcher.config.arguments.ski_pattern = arguments.filepath
 
         # Simulation logging
-        launcher.config.parameters.logging.brief = arguments.brief
-        launcher.config.parameters.logging.verbose = arguments.verbose
-        launcher.config.parameters.logging.memory = arguments.memory
-        launcher.config.parameters.logging.allocation = arguments.allocation
+        launcher.config.arguments.logging.brief = arguments.brief
+        launcher.config.arguments.logging.verbose = arguments.verbose
+        launcher.config.arguments.logging.memory = arguments.memory
+        launcher.config.arguments.logging.allocation = arguments.allocation
 
         # Parallelization
         if arguments.parallel is not None:
-            launcher.config.parameters.parallel.processes = arguments.parallel[0]
-            launcher.config.parameters.parallel.threads = arguments.parallel[1]
+            launcher.config.arguments.parallel.processes = arguments.parallel[0]
+            launcher.config.arguments.parallel.threads = arguments.parallel[1]
 
-        # Other simulation parameters
-        launcher.config.parameters.emulate = arguments.emulate
-        launcher.config.parameters.single = True  # For now, we only allow single simulations
+        # Other simulation arguments
+        launcher.config.arguments.emulate = arguments.emulate
+        launcher.config.arguments.single = True  # For now, we only allow single simulations
 
         # Extraction
         launcher.config.extraction.memory = arguments.extractmemory
@@ -201,7 +201,7 @@ class SkirtLauncher(Configurable):
 
         # Calculate the amount of required memory for this simulation
         estimator = ResourceEstimator()
-        estimator.run(self.config.parameters.ski_pattern)
+        estimator.run(self.config.arguments.ski_pattern)
 
         # Calculate the maximum number of processes based on the memory requirements
         processes = int(monitoring.free_memory() / estimator.memory)
@@ -239,7 +239,7 @@ class SkirtLauncher(Configurable):
         self.log.info("Performing the simulation...")
 
         # Run the simulation
-        arguments = SkirtArguments(self.config.parameters)
+        arguments = SkirtArguments(self.config.arguments)
         self.simulation = self.skirt.run(arguments, silent=True)
 
     # -----------------------------------------------------------------

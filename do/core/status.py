@@ -50,6 +50,7 @@ def int_list(string):
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
+parser.add_argument('remote', nargs='?', default=None, help="(optional) the name of the remote host")
 parser.add_argument('-d', '--delete', type=int_list)
 
 # Parse the command line arguments

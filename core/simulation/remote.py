@@ -19,13 +19,16 @@ import os
 import re
 import pxssh
 import pexpect
+import numpy as np
 import tempfile
-
 from operator import itemgetter
 from collections import defaultdict
 
+# Import astronomical modules
+from astropy.io import ascii
+
 # Import the relevant PTS classes and modules
-from ..basics import Configurable
+from ..basics.configurable import Configurable
 from .jobscript import JobScript
 from ..tools import time, inspection
 from .simulation import SkirtSimulation
@@ -54,6 +57,9 @@ class SkirtRemote(Configurable):
         # Create the SSH interface
         self.ssh = pxssh.pxssh()
 
+        # Set the host configuration to None initially
+        self.host = None
+
         # Set the connected flag to False initially
         self.connected = False
 
@@ -68,7 +74,7 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, host_id, cluster=None):
 
         """
         This function ...
@@ -77,6 +83,21 @@ class SkirtRemote(Configurable):
 
         # Call the setup function of the base class
         super(SkirtRemote, self).setup()
+
+        # Determine the path to the configuration file for the specified host and check if it is present
+        host_file_path = os.path.join(inspection.pts_user_dir, "hosts", host_id + ".cfg")
+        if not os.path.isfile(host_file_path): raise ValueError("The configuration settings for remote host " + host_id + " could not be found in the PTS/user/hosts directory")
+
+        # Open the host configuration file
+        from ..tools import configuration
+        self.host = configuration.open(host_file_path)
+
+        # Set the host ID and cluster name (if a scheduling system is used)
+        self.config.host_id = host_id
+        if self.config.scheduler: # If no scheduling system is used, self.config.cluster_name stays at None
+            if cluster is None:  # If no cluster name is given, use the default cluster (defined in host configuration file)
+                self.config.cluster_name = self.host.clusters.default
+            else: self.config.cluster_name = cluster
 
         # Make the connection
         self.login()
@@ -99,6 +120,11 @@ class SkirtRemote(Configurable):
         # Create the local SKIRT run directory for this host if it doesn't already exist
         if not os.path.isdir(self.local_skirt_host_run_dir): os.makedirs(self.local_skirt_host_run_dir)
 
+        # Give a warning if the remote SKIRT version is different from the local SKIRT version
+        local_version = inspection.skirt_version().split("built on")[0]
+        remote_version = self.skirt_version.split("built on")[0]
+        if remote_version != local_version: self.log.warning("Remote SKIRT version is different from local SKIRT version")
+
     # -----------------------------------------------------------------
 
     def login(self):
@@ -112,7 +138,7 @@ class SkirtRemote(Configurable):
         self.log.info("Logging in to the remote SKIRT environment")
 
         # Connect to the remote host
-        self.connected = self.ssh.login(self.config.host, self.config.user, self.config.password)
+        self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password)
 
         # Check whether connection was succesful
         if not self.connected: raise RuntimeError("Connection failed")
@@ -134,7 +160,7 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, parameters):
+    def run(self, arguments, walltime=None, name=None):
 
         """
         This function ...
@@ -145,7 +171,7 @@ class SkirtRemote(Configurable):
         if not self.connected: raise RuntimeError("Not connected to the remote")
 
         # Create a unique name for the simulation directory
-        skifile_name = os.path.basename(parameters.ski_pattern).split(".ski")[0]
+        skifile_name = os.path.basename(arguments.ski_pattern).split(".ski")[0]
         remote_simulation_name = time.unique_name(skifile_name)
 
         # Determine the full path of the simulation directory on the remote system
@@ -161,13 +187,13 @@ class SkirtRemote(Configurable):
         # Change the parameters to accomodate for the fact that we are running remotely
         # but store the paths to the local output directory because we want to copy the
         # results later
-        local_input_path = parameters.input_path
-        local_output_path = parameters.output_path
+        local_input_path = arguments.input_path
+        local_output_path = arguments.output_path
 
         if local_input_path is None: remote_input_path = None
 
-        parameters.input_path = remote_input_path
-        parameters.output_path = remote_output_path
+        arguments.input_path = remote_input_path
+        arguments.output_path = remote_output_path
 
         # Create the remote input directory if necessary
         if remote_input_path is not None: self.execute("mkdir " + remote_output_path, output=False)
@@ -175,10 +201,10 @@ class SkirtRemote(Configurable):
         # Create the remote output directory
         self.execute("mkdir " + remote_output_path, output=False)
 
-        local_ski_path = parameters.ski_pattern
+        local_ski_path = arguments.ski_pattern
         ski_name = os.path.basename(local_ski_path)
         remote_ski_path = os.path.join(remote_simulation_path, ski_name)
-        parameters.ski_pattern = remote_ski_path
+        arguments.ski_pattern = remote_ski_path
 
         # Copy the input directory and the ski file to the remote host
         self.upload(local_ski_path, remote_simulation_path)
@@ -191,25 +217,29 @@ class SkirtRemote(Configurable):
             # Inform the suer
             self.log.info("Scheduling simulation on the remote host")
 
-            # Create a jobscript
-            #jobscript_path = None
-            #walltime = None
-            #jobscript = JobScript(path, parameters, walltime)
+            # We want to estimate the wall time here if it is not passed to this function
+            if walltime is None: pass
 
-            # Copy the job script and ski file to the remote system
-            #copy_command = ["scp"]
-            #copy_command += [jobscript_path, skifile_path]
-            #copy_command += destination
-            #process = subprocess.Popen(copy_command)
+            # Create a job script next to the (local) simulation's ski file
+            local_simulation_path = os.path.dirname(local_ski_path)
+            local_jobscript_path = os.path.join(local_simulation_path, "job.sh")
+            jobscript = JobScript(local_jobscript_path, arguments, self.host.clusters[self.config.cluster_name], self.skirt_path, self.config.mpi_command, walltime, nodes, ppn, name=name)
 
-            # Launch the job script on the remote machine
-            #self.ssh.sendline("qsub " + path)
+            exit()
 
-            # Read the job ID from the qsub output
-            #job_id = int(output.split(".")[0])
-            job_id = None
+            # Copy the job script to the remote simulation directory
+            remote_jobscript_path = os.path.join(remote_simulation_path, "job.sh")
+            self.upload(local_jobscript_path, remote_simulation_path)
 
-            simulation_id = job_id
+            ## Swap clusters
+            # Then, swap to the desired cluster and launch the job script
+            #output = subprocess.check_output("module swap cluster/" + self._clustername + "; qsub " + self._path, shell=True, stderr=subprocess.STDOUT)
+
+            # Submit the job script to the remote scheduling system
+            output = self.execute("qsub " + remote_jobscript_path)
+
+            # The queu number of the submitted job is used to identify this simulation
+            simulation_id = int(output[0])
 
         # No scheduling system
         else:
@@ -219,7 +249,7 @@ class SkirtRemote(Configurable):
 
             # Send the command to the remote machine using a screen session so that we can safely detach from the
             # remote shell
-            command = parameters.to_command(self.skirt_path, self.config.mpi_command, self.config.scheduler)
+            command = arguments.to_command(self.skirt_path, self.config.mpi_command, self.config.scheduler)
             self.execute("screen -d -m " + command, output=False)
 
             # Check the contents of the local run directory to see which simulation id's are currently in use
@@ -251,7 +281,7 @@ class SkirtRemote(Configurable):
         simulation_file = open(simulation_file_path, 'w')
 
         # Add the simulation information
-        simulation_file.write("skifile path: " + parameters.ski_pattern + "\n")
+        simulation_file.write("skifile path: " + arguments.ski_pattern + "\n")
         simulation_file.write("local input directory: " + str(local_input_path) + "\n") # can be None
         simulation_file.write("local output directory: " + local_output_path + "\n")
         simulation_file.write("remote input directory: " + str(remote_input_path) + "\n") # can be None
@@ -305,8 +335,8 @@ class SkirtRemote(Configurable):
         file_or_directory = self.file_or_directory(origin)
 
         # Add the user name, host name and origin to the command
-        if file_or_directory == "file": copy_command += self.config.user + "@" + self.config.host + ":" + origin + " "
-        elif file_or_directory == "directory": copy_command += "-r " + self.config.user + "@" + self.config.host + ":" + origin + "/* "
+        if file_or_directory == "file": copy_command += self.host.user + "@" + self.host.name + ":" + origin + " "
+        elif file_or_directory == "directory": copy_command += "-r " + self.host.user + "@" + self.host.name + ":" + origin + "/* "
         else: raise ValueError("The origin does not represent an existing remote file or directory")
 
         # Add the destination path to the command
@@ -321,7 +351,7 @@ class SkirtRemote(Configurable):
         # Execute the command
         child = pexpect.spawn(copy_command, timeout=timeout)
         child.expect(['password: '])
-        child.sendline(self.config.password)
+        child.sendline(self.host.password)
         child.logfile = temp_file
         child.expect(pexpect.EOF, timeout=None)
         child.close()
@@ -377,7 +407,7 @@ class SkirtRemote(Configurable):
         else: raise ValueError("The origin must be a string or a list of strings")
 
         # Add the host address and the destination directory
-        copy_command += self.config.user + "@" + self.config.host + ":" + destination + "/"
+        copy_command += self.host.user + "@" + self.host.name + ":" + destination + "/"
         self.log.debug("Copy command: " + copy_command)
 
         # Temporary file for output of the scp command
@@ -387,7 +417,7 @@ class SkirtRemote(Configurable):
         # Execute the command
         child = pexpect.spawn(copy_command, timeout=timeout)
         child.expect(['password: '])
-        child.sendline(self.config.password)
+        child.sendline(self.host.password)
         child.logfile = temp_file
         child.expect(pexpect.EOF)
         child.close()
@@ -528,6 +558,22 @@ class SkirtRemote(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def skirt_version(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Execute SKIRT with incorrect argument list and get its output
+        output = self.execute("skirt --version")
+
+        # Return the relevant portion of the output
+        return "SKIRT" + output[0].partition("SKIRT")[2]
+
+    # -----------------------------------------------------------------
+
+    @property
     def free_cores(self):
 
         """
@@ -598,16 +644,22 @@ class SkirtRemote(Configurable):
         :return:
         """
 
-        # Use the 'lscpu' command to obtain the number of CPU's (hardware threads)
-        output = self.execute("lscpu | grep '^CPU(s)'")
-        cpus = float(output[0].split(":")[1])
+        # If the remote host uses a scheduling system, the number of cores on the computing nodes is defined in the configuration
+        if self.config.scheduler: return self.config.cores
 
-        # Use the 'lscpu' command to get the number of hardware threads per core
-        output = self.execute("lscpu | grep '^Thread(s) per core'")
-        threads_per_core = float(output[0].split(":")[1])
+        # If no scheduler is used, the computing node is the actual node we are logged in to
+        else:
 
-        # Return the number of physical cores
-        return cpus / threads_per_core
+            # Use the 'lscpu' command to obtain the number of CPU's (hardware threads)
+            output = self.execute("lscpu | grep '^CPU(s)'")
+            cpus = float(output[0].split(":")[1])
+
+            # Use the 'lscpu' command to get the number of hardware threads per core
+            output = self.execute("lscpu | grep '^Thread(s) per core'")
+            threads_per_core = float(output[0].split(":")[1])
+
+            # Return the number of physical cores
+            return cpus / threads_per_core
 
     # -----------------------------------------------------------------
 
