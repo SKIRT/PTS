@@ -86,6 +86,7 @@ class SkirtRemote(Configurable):
 
         # Determine the path to the configuration file for the specified host and check if it is present
         host_file_path = os.path.join(inspection.pts_user_dir, "hosts", host_id + ".cfg")
+        print(host_file_path)
         if not os.path.isfile(host_file_path): raise ValueError("The configuration settings for remote host " + host_id + " could not be found in the PTS/user/hosts directory")
 
         # Open the host configuration file
@@ -137,6 +138,8 @@ class SkirtRemote(Configurable):
         # Inform the user
         self.log.info("Logging in to the remote SKIRT environment")
 
+        #print(self.host.name, self.host.user, self.host.password)
+
         # Connect to the remote host
         self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password)
 
@@ -160,7 +163,7 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, arguments, walltime=None, name=None):
+    def run(self, arguments, walltime=None, name=None, jobscript_path=None):
 
         """
         This function ...
@@ -201,6 +204,8 @@ class SkirtRemote(Configurable):
         # Create the remote output directory
         self.execute("mkdir " + remote_output_path, output=False)
 
+        print(arguments.ski_pattern)
+
         local_ski_path = arguments.ski_pattern
         ski_name = os.path.basename(local_ski_path)
         remote_ski_path = os.path.join(remote_simulation_path, ski_name)
@@ -210,71 +215,11 @@ class SkirtRemote(Configurable):
         self.upload(local_ski_path, remote_simulation_path)
         if local_input_path is not None: self.upload(local_input_path, remote_input_path)
 
-        # If the remote has a scheduling system for launching jobs
-        simulation_id = None
-        if self.config.scheduler:
+        # If the host has a scheduling system for launching jobs, create and submit a job script
+        if self.config.scheduler: simulation_id = self.schedule(arguments, local_ski_path, remote_simulation_path, walltime, name, jobscript_path)
 
-            # Inform the suer
-            self.log.info("Scheduling simulation on the remote host")
-
-            # We want to estimate the wall time here if it is not passed to this function
-            if walltime is None: pass
-
-            # Create a job script next to the (local) simulation's ski file
-            local_simulation_path = os.path.dirname(local_ski_path)
-            local_jobscript_path = os.path.join(local_simulation_path, "job.sh")
-            jobscript = JobScript(local_jobscript_path, arguments, self.host.clusters[self.config.cluster_name], self.skirt_path, self.config.mpi_command, walltime, nodes, ppn, name=name)
-
-            exit()
-
-            # Copy the job script to the remote simulation directory
-            remote_jobscript_path = os.path.join(remote_simulation_path, "job.sh")
-            self.upload(local_jobscript_path, remote_simulation_path)
-
-            ## Swap clusters
-            # Then, swap to the desired cluster and launch the job script
-            #output = subprocess.check_output("module swap cluster/" + self._clustername + "; qsub " + self._path, shell=True, stderr=subprocess.STDOUT)
-
-            # Submit the job script to the remote scheduling system
-            output = self.execute("qsub " + remote_jobscript_path)
-
-            # The queu number of the submitted job is used to identify this simulation
-            simulation_id = int(output[0])
-
-        # No scheduling system
-        else:
-
-            # Inform the user
-            self.log.info("Starting simulation on the remote host")
-
-            # Send the command to the remote machine using a screen session so that we can safely detach from the
-            # remote shell
-            command = arguments.to_command(self.skirt_path, self.config.mpi_command, self.config.scheduler)
-            self.execute("screen -d -m " + command, output=False)
-
-            # Check the contents of the local run directory to see which simulation id's are currently in use
-            current_ids = []
-            for item in os.listdir(self.local_skirt_host_run_dir):
-
-                # Determine the full path to this item
-                path = os.path.join(self.local_skirt_host_run_dir, item)
-
-                # If this item is a directory or it is hidden, skip it
-                if os.path.isdir(path) or item.startswith("."): continue
-
-                # If the file has the 'sim' extension, get the simulation ID and add it to the list
-                current_ids.append(int(item.split(".sim")[0]))
-
-            # Sort the current simulation ID's and find the lowest 'missing' integer number
-            if len(current_ids) > 0:
-                current_ids = sorted(current_ids)
-                simulation_id = max(current_ids)
-                for index in range(max(current_ids)):
-                    if current_ids[index] != index:
-                        simulation_id = index
-                        break
-
-            if simulation_id is None: simulation_id = 0
+        # If no scheduling system is used, start the simulation immediately
+        else: simulation_id = self.start(arguments)
 
         # Create the simulation file
         simulation_file_path = os.path.join(self.local_skirt_host_run_dir, str(simulation_id) + ".sim")
@@ -293,6 +238,97 @@ class SkirtRemote(Configurable):
 
         # Return the path to the simulation file
         return simulation_file_path
+
+    # -----------------------------------------------------------------
+
+    def schedule(self, arguments, local_ski_path, remote_simulation_path, walltime=None, name=None, jobscript_path=None):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the suer
+        self.log.info("Scheduling simulation on the remote host")
+
+        # Set the simulation ID to None initially
+        simulation_id = None
+
+        # We want to estimate the wall time here if it is not passed to this function
+        if walltime is None: pass
+
+        # Create a job script next to the (local) simulation's ski file
+        if jobscript_path is None:
+            local_simulation_path = os.path.dirname(local_ski_path)
+            local_jobscript_path = os.path.join(local_simulation_path, "job.sh")
+        else: local_jobscript_path = jobscript_path
+        jobscript = JobScript(local_jobscript_path, arguments, self.host.clusters[self.config.cluster_name], self.skirt_path, self.config.mpi_command, walltime, nodes, ppn, name=name)
+
+        exit()
+
+        # Copy the job script to the remote simulation directory
+        remote_jobscript_path = os.path.join(remote_simulation_path, "job.sh")
+        self.upload(local_jobscript_path, remote_simulation_path)
+
+        ## Swap clusters
+        # Then, swap to the desired cluster and launch the job script
+        #output = subprocess.check_output("module swap cluster/" + self._clustername + "; qsub " + self._path, shell=True, stderr=subprocess.STDOUT)
+
+        # Submit the job script to the remote scheduling system
+        output = self.execute("qsub " + remote_jobscript_path)
+
+        # The queu number of the submitted job is used to identify this simulation
+        simulation_id = int(output[0])
+
+        # Return the simulation ID
+        return simulation_id
+
+    # -----------------------------------------------------------------
+
+    def start(self, arguments):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Starting simulation on the remote host")
+
+        # Set the simulation ID to None initially
+        simulation_id = None
+
+        # Send the command to the remote machine using a screen session so that we can safely detach from the
+        # remote shell
+        command = arguments.to_command(self.skirt_path, self.config.mpi_command, self.config.scheduler)
+        self.execute("screen -d -m " + command, output=False)
+
+        # Check the contents of the local run directory to see which simulation id's are currently in use
+        current_ids = []
+        for item in os.listdir(self.local_skirt_host_run_dir):
+
+            # Determine the full path to this item
+            path = os.path.join(self.local_skirt_host_run_dir, item)
+
+            # If this item is a directory or it is hidden, skip it
+            if os.path.isdir(path) or item.startswith("."): continue
+
+            # If the file has the 'sim' extension, get the simulation ID and add it to the list
+            current_ids.append(int(item.split(".sim")[0]))
+
+        # Sort the current simulation ID's and find the lowest 'missing' integer number
+        if len(current_ids) > 0:
+            current_ids = sorted(current_ids)
+            simulation_id = max(current_ids)
+            for index in range(max(current_ids)):
+                if current_ids[index] != index:
+                    simulation_id = index
+                    break
+
+        if simulation_id is None: simulation_id = 0
+
+        # Return the simulation ID
+        return simulation_id
 
     # -----------------------------------------------------------------
 
@@ -335,12 +371,12 @@ class SkirtRemote(Configurable):
         file_or_directory = self.file_or_directory(origin)
 
         # Add the user name, host name and origin to the command
-        if file_or_directory == "file": copy_command += self.host.user + "@" + self.host.name + ":" + origin + " "
-        elif file_or_directory == "directory": copy_command += "-r " + self.host.user + "@" + self.host.name + ":" + origin + "/* "
+        if file_or_directory == "file": copy_command += self.host.user + "@" + self.host.name + ":" + origin.replace(" ", "\ ") + " "
+        elif file_or_directory == "directory": copy_command += "-r " + self.host.user + "@" + self.host.name + ":" + origin.replace(" ", "\ ") + "/* "
         else: raise ValueError("The origin does not represent an existing remote file or directory")
 
         # Add the destination path to the command
-        copy_command += destination + "/"
+        copy_command += destination.replace(" ", "\ ") + "/"
 
         self.log.debug("Copy command: " + copy_command)
 
@@ -385,10 +421,10 @@ class SkirtRemote(Configurable):
         if isinstance(origin, basestring):
 
             # Check if the origin represents a file
-            if os.path.isfile(origin): copy_command += origin + " "
+            if os.path.isfile(origin): copy_command += origin.replace(" ", "\ ") + " "
 
             # Check if it represents a directory
-            elif os.path.isdir(origin): copy_command += "-r " + origin + "/ "
+            elif os.path.isdir(origin): copy_command += "-r " + origin.replace(" ", "\ ") + "/ "
 
             # The origin does not exist
             else: raise ValueError("The specified path " + origin + " does not represent an existing directory or file")
@@ -400,6 +436,9 @@ class SkirtRemote(Configurable):
             for file_path in origin:
                 if not os.path.isfile(origin): raise ValueError("The file " + file_path + " does not exist")
 
+            # Escape possible space characters
+            origin = [path.replace(" ", "\ ") for path in origin]
+
             # Add the file paths to the command string
             copy_command += " ".join(origin)
 
@@ -407,7 +446,7 @@ class SkirtRemote(Configurable):
         else: raise ValueError("The origin must be a string or a list of strings")
 
         # Add the host address and the destination directory
-        copy_command += self.host.user + "@" + self.host.name + ":" + destination + "/"
+        copy_command += self.host.user + "@" + self.host.name + ":" + destination.replace(" ", "\ ") + "/"
         self.log.debug("Copy command: " + copy_command)
 
         # Temporary file for output of the scp command
