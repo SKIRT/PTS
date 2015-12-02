@@ -17,15 +17,12 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 import re
+import copy
 import pxssh
 import pexpect
-import numpy as np
 import tempfile
 from operator import itemgetter
 from collections import defaultdict
-
-# Import astronomical modules
-from astropy.io import ascii
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
@@ -71,6 +68,9 @@ class SkirtRemote(Configurable):
 
         # Generate a regular expression object to be used on the remote console output
         self.ansi_escape = re.compile(r'\x1b[^m]*m')
+
+        # Initialize an empty list for the simulation queue
+        self.queue = []
 
     # -----------------------------------------------------------------
 
@@ -138,8 +138,6 @@ class SkirtRemote(Configurable):
         # Inform the user
         self.log.info("Logging in to the remote SKIRT environment")
 
-        #print(self.host.name, self.host.user, self.host.password)
-
         # Connect to the remote host
         self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password)
 
@@ -163,6 +161,59 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
+    def add_to_queue(self, arguments):
+
+        """
+        This function ...
+        :param arguments:
+        :return:
+        """
+
+        # Add a copy of the SkirtArguments object to the queue
+        self.queue.append(copy.deepcopy(arguments))
+
+    # -----------------------------------------------------------------
+
+    def start_queue(self, script_path=None):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Raise an error if a connection to the remote has not been made
+        if not self.connected: raise RuntimeError("Not connected to the remote")
+
+        # If the path for the shell script is not given, create a named temporary file
+        if script_path is None:
+            script_file = tempfile.NamedTemporaryFile()
+            script_path = script_file.name
+
+        # If a path is given, create a script file at the specified location
+        else: script_file = open(script_path, 'w')
+
+        # Write a general header to the job script
+        script_file.write("#!/bin/sh\n")
+        script_file.write("# Batch script for running SKIRT on a remote system\n")
+
+        # Loop over the items in the queue
+        for arguments in self.queue:
+
+            # Write the command string to the job script
+            script_file.write(arguments.to_command(skirt_path, mpi_command, scheduler=False, to_string=True) + "\n")
+
+
+        # Copy the script to the remote host
+
+
+        # Launch the
+
+
+        # Close the script file (if it is temporary it will automatically be removed)
+        script_file.close()
+
+    # -----------------------------------------------------------------
+
     def run(self, arguments, walltime=None, name=None, jobscript_path=None):
 
         """
@@ -173,6 +224,31 @@ class SkirtRemote(Configurable):
         # Raise an error if a connection to the remote has not been made
         if not self.connected: raise RuntimeError("Not connected to the remote")
 
+        # Create the remote simulation directory
+        remote_simulation_path = self.create_simulation_directory(arguments)
+
+        # Make preparations for this simulation
+        local_ski_path, local_input_path, local_output_path = self.prepare(arguments, remote_simulation_path)
+
+        # If the host has a scheduling system for launching jobs, create and submit a job script
+        if self.config.scheduler: simulation_id = self.schedule(arguments, local_ski_path, remote_simulation_path, walltime, name, jobscript_path)
+
+        # If no scheduling system is used, start the simulation immediately
+        else: simulation_id = self.start(arguments)
+
+        # Return the path to the simulation file
+        simulation_file_path = self.create_simulation_file(arguments, simulation_id, local_input_path, local_output_path)
+        return simulation_file_path
+
+    # -----------------------------------------------------------------
+
+    def create_simulation_directory(self, arguments):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Create a unique name for the simulation directory
         skifile_name = os.path.basename(arguments.ski_pattern).split(".ski")[0]
         remote_simulation_name = time.unique_name(skifile_name)
@@ -182,6 +258,18 @@ class SkirtRemote(Configurable):
 
         # Create the remote simulation directory
         self.execute("mkdir " + remote_simulation_path, output=False)
+
+        # Return the path to the remote simulation directory
+        return remote_simulation_path
+
+    # -----------------------------------------------------------------
+
+    def prepare(self, arguments, remote_simulation_path):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Determine the full paths to the input and output directories on the remote system
         remote_input_path = os.path.join(remote_simulation_path, "in")
@@ -204,8 +292,6 @@ class SkirtRemote(Configurable):
         # Create the remote output directory
         self.execute("mkdir " + remote_output_path, output=False)
 
-        print(arguments.ski_pattern)
-
         local_ski_path = arguments.ski_pattern
         ski_name = os.path.basename(local_ski_path)
         remote_ski_path = os.path.join(remote_simulation_path, ski_name)
@@ -215,11 +301,17 @@ class SkirtRemote(Configurable):
         self.upload(local_ski_path, remote_simulation_path)
         if local_input_path is not None: self.upload(local_input_path, remote_input_path)
 
-        # If the host has a scheduling system for launching jobs, create and submit a job script
-        if self.config.scheduler: simulation_id = self.schedule(arguments, local_ski_path, remote_simulation_path, walltime, name, jobscript_path)
+        # Return the paths of the local ski file and the local input and output directories
+        return local_ski_path, local_input_path, local_output_path
 
-        # If no scheduling system is used, start the simulation immediately
-        else: simulation_id = self.start(arguments)
+    # -----------------------------------------------------------------
+
+    def create_simulation_file(self, arguments, simulation_id, local_input_path, local_output_path):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Create the simulation file
         simulation_file_path = os.path.join(self.local_skirt_host_run_dir, str(simulation_id) + ".sim")
@@ -229,15 +321,12 @@ class SkirtRemote(Configurable):
         simulation_file.write("skifile path: " + arguments.ski_pattern + "\n")
         simulation_file.write("local input directory: " + str(local_input_path) + "\n") # can be None
         simulation_file.write("local output directory: " + local_output_path + "\n")
-        simulation_file.write("remote input directory: " + str(remote_input_path) + "\n") # can be None
-        simulation_file.write("remote output directory: " + remote_output_path + "\n")
+        simulation_file.write("remote input directory: " + str(arguments.input_path) + "\n") # can be None
+        simulation_file.write("remote output directory: " + arguments.output_path + "\n")
         simulation_file.write("submitted at: " + time.timestamp() + "\n")
 
         # Close the file
         simulation_file.close()
-
-        # Return the path to the simulation file
-        return simulation_file_path
 
     # -----------------------------------------------------------------
 
