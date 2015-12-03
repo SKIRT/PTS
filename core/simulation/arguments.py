@@ -173,6 +173,48 @@ class SkirtArguments(object):
         # Otherwise, return the list of argument values
         else: return arguments
 
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function creates a copy of this SkirtArguments object
+        :return:
+        """
+
+        # Create a new SkirtArguments object
+        arguments = SkirtArguments()
+
+        ## Set options identical to this instance
+
+        # Options for the ski file pattern
+        arguments.ski_pattern = self.ski_pattern
+        arguments.recursive = self.recursive
+        arguments.relative = self.relative
+
+        # The input and output paths
+        arguments.input_path = self.input_path
+        arguments.output_path = self.output_path
+
+        # Other options
+        arguments.emulate = self.emulate    # Run in emulation mode
+        arguments.single = self.single     # True if only a single simulation is expected
+
+        # Options for logging
+        arguments.logging.brief = self.logging.brief            # Brief console logging
+        arguments.logging.verbose = self.logging.verbose        # Verbose logging
+        arguments.logging.memory = self.logging.memory          # State the amount of used memory with each log message
+        arguments.logging.allocation = self.logging.allocation  # Write log messages with the amount of (de)allocated memory
+        arguments.logging.allocation_limit = self.logging.allocation_limit  # The lower limit for the amount of (de)allocated memory to be logged
+
+        # Options for parallelization
+        arguments.parallel.simulations = self.parallel.simulations  # The number of parallel simulations
+        arguments.parallel.threads = self.parallel.threads          # The number of parallel threads per simulation
+        arguments.parallel.processes = self.parallel.processes      # The number of parallel processes per simulation
+
+        # Return the new object
+        return arguments
+
 # -----------------------------------------------------------------
 
 def skirt_command(skirt_path, mpi_command, processes, scheduler):

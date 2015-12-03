@@ -99,6 +99,7 @@ def unique_name(name):
     :return:
     """
 
-    return name + "_" + datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+    # Add a timestamp accurate up to the millisecond to the passed name
+    return name + "_" + datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f")[:-3]
 
 # -----------------------------------------------------------------

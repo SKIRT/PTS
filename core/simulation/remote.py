@@ -161,7 +161,7 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_to_queue(self, arguments):
+    def add_to_queue(self, arguments, walltime=None, name=None, jobscript_path=None, mail=False, full_node=False):
 
         """
         This function ...
@@ -169,60 +169,11 @@ class SkirtRemote(Configurable):
         :return:
         """
 
-        # Add a copy of the SkirtArguments object to the queue
-        self.queue.append(copy.deepcopy(arguments))
+        # Inform the user
+        self.log.info("Adding simulation to the queue...")
 
-    # -----------------------------------------------------------------
-
-    def start_queue(self, script_path=None):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Raise an error if a connection to the remote has not been made
-        if not self.connected: raise RuntimeError("Not connected to the remote")
-
-        # If the path for the shell script is not given, create a named temporary file
-        if script_path is None:
-            script_file = tempfile.NamedTemporaryFile()
-            script_path = script_file.name
-
-        # If a path is given, create a script file at the specified location
-        else: script_file = open(script_path, 'w')
-
-        # Write a general header to the job script
-        script_file.write("#!/bin/sh\n")
-        script_file.write("# Batch script for running SKIRT on a remote system\n")
-
-        # Loop over the items in the queue
-        for arguments in self.queue:
-
-            # Write the command string to the job script
-            script_file.write(arguments.to_command(skirt_path, mpi_command, scheduler=False, to_string=True) + "\n")
-
-
-        # Copy the script to the remote host
-
-
-        # Launch the
-
-
-        # Close the script file (if it is temporary it will automatically be removed)
-        script_file.close()
-
-    # -----------------------------------------------------------------
-
-    def run(self, arguments, walltime=None, name=None, jobscript_path=None):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Raise an error if a connection to the remote has not been made
-        if not self.connected: raise RuntimeError("Not connected to the remote")
+        # First create a copy of the arguments
+        arguments = arguments.copy()
 
         # Create the remote simulation directory
         remote_simulation_path = self.create_simulation_directory(arguments)
@@ -230,14 +181,124 @@ class SkirtRemote(Configurable):
         # Make preparations for this simulation
         local_ski_path, local_input_path, local_output_path = self.prepare(arguments, remote_simulation_path)
 
-        # If the host has a scheduling system for launching jobs, create and submit a job script
-        if self.config.scheduler: simulation_id = self.schedule(arguments, local_ski_path, remote_simulation_path, walltime, name, jobscript_path)
+        # If the remote host uses a scheduling system, submit the simulation right away
+        if self.config.scheduler:
 
-        # If no scheduling system is used, start the simulation immediately
-        else: simulation_id = self.start(arguments)
+            # Submit the simulation to the remote scheduling system
+            simulation_id = self.schedule(arguments, local_ski_path, remote_simulation_path, walltime, name, jobscript_path, mail, full_node)
+
+        # If no scheduling system is used, just store the SKIRT arguments in a list for now and execute the complete
+        # list of simulations later on (when 'start_queue' is called)
+        else:
+
+            # Add the SkirtArguments object to the queue
+            self.queue.append(arguments)
+
+            # Generate a new simulation ID based on the ID's currently in use
+            simulation_id = self._new_simulation_id()
+
+        # Create a simulation file and return its path
+        simulation_file_path = self.create_simulation_file(arguments, simulation_id, local_input_path, local_output_path)
+        return simulation_file_path
+
+    # -----------------------------------------------------------------
+
+    def start_queue(self, screen_name=None, local_script_path=None):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Raise an error if a connection to the remote has not been made
+        if not self.connected: raise RuntimeError("Not connected to the remote")
+
+        # If a scheduling system is used by the remote host, we don't need to do anything, simulations added to the queue
+        # are already waiting to be executed (or are already being executed)
+        if self.config.scheduler:
+            self.log.warning("The remote host uses its own scheduling system so calling 'start_queue' will have no effect")
+            return
+
+        # Inform the user
+        self.log.info("Starting the queued simulations remotely...")
+
+        # If the path for the shell script is not given, create a named temporary file
+        if local_script_path is None:
+            script_file = tempfile.NamedTemporaryFile()
+            local_script_path = script_file.name
+
+        # If a path is given, create a script file at the specified location
+        else: script_file = open(local_script_path, 'w')
+
+        # Write a general header to the batch script
+        script_file.write("#!/bin/sh\n")
+        script_file.write("# Batch script for running SKIRT on a remote system\n")
+        script_file.write("\n")
+
+        # Loop over the items in the queue
+        for arguments in self.queue:
+
+            # Write the command string to the job script
+            script_file.write(arguments.to_command(self.skirt_path, self.host.mpi_command, scheduler=False, to_string=True) + "\n")
+
+        # Write to disk
+        script_file.flush()
+
+        # Copy the script to the remote host
+        script_name = os.path.basename(local_script_path)
+        remote_script_path = os.path.join(self.skirt_run_dir, script_name)
+        self.upload(local_script_path, self.skirt_run_dir)
+
+        # Close the script file (if it is temporary it will automatically be removed)
+        script_file.close()
+
+        # Make the shell script executable and launch it
+        self.execute("chmod +x " + remote_script_path, output=False)
+        if screen_name is None: screen_name = time.unique_name("SKIRT")
+        self.execute("screen -S " + screen_name + " -d -m " + remote_script_path, output=False)
+
+        # Remove the remote shell script
+        self.execute("rm " + remote_script_path, output=False)
+
+        # Clear the queue
+        self.clear_queue()
+
+        # Return the screen name
+        return screen_name
+
+    # -----------------------------------------------------------------
+
+    def clear_queue(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.queue = []
+
+    # -----------------------------------------------------------------
+
+    def run(self, arguments, walltime=None, name=None, jobscript_path=None, mail=False, full_node=False):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Raise an error if a connection to the remote has not been made
+        if not self.connected: raise RuntimeError("Not connected to the remote")
+
+        # Raise an error if there are other simulations currently waiting in the queue
+        if len(self.queue) > 0: raise RuntimeError("The simulation queue is not empty")
+
+        # Add the simulation arguments to the queue
+        simulation_file_path = self.add_to_queue(arguments, walltime, name, jobscript_path, mail, full_node)
+
+        # Start the queue if that is not left up to the remote's own scheduling system
+        if not self.config.scheduler: self.start_queue(name)
 
         # Return the path to the simulation file
-        simulation_file_path = self.create_simulation_file(arguments, simulation_id, local_input_path, local_output_path)
         return simulation_file_path
 
     # -----------------------------------------------------------------
@@ -328,9 +389,12 @@ class SkirtRemote(Configurable):
         # Close the file
         simulation_file.close()
 
+        # Return the path to the simulation file
+        return simulation_file_path
+
     # -----------------------------------------------------------------
 
-    def schedule(self, arguments, local_ski_path, remote_simulation_path, walltime=None, name=None, jobscript_path=None):
+    def schedule(self, arguments, local_ski_path, remote_simulation_path, walltime=None, name=None, jobscript_path=None, mail=False, full_node=False):
 
         """
         This function ...
@@ -351,7 +415,7 @@ class SkirtRemote(Configurable):
             local_simulation_path = os.path.dirname(local_ski_path)
             local_jobscript_path = os.path.join(local_simulation_path, "job.sh")
         else: local_jobscript_path = jobscript_path
-        jobscript = JobScript(local_jobscript_path, arguments, self.host.clusters[self.config.cluster_name], self.skirt_path, self.config.mpi_command, walltime, nodes, ppn, name=name)
+        jobscript = JobScript(local_jobscript_path, arguments, self.host.clusters[self.config.cluster_name], self.skirt_path, self.host.mpi_command, walltime, nodes, ppn, name=name, mail=mail, full_node=full_node)
 
         exit()
 
@@ -384,13 +448,25 @@ class SkirtRemote(Configurable):
         # Inform the user
         self.log.info("Starting simulation on the remote host")
 
-        # Set the simulation ID to None initially
-        simulation_id = None
-
         # Send the command to the remote machine using a screen session so that we can safely detach from the
         # remote shell
-        command = arguments.to_command(self.skirt_path, self.config.mpi_command, self.config.scheduler, to_string=True)
+        command = arguments.to_command(self.skirt_path, self.host.mpi_command, self.config.scheduler, to_string=True)
         self.execute("screen -d -m " + command, output=False)
+
+        # Generate a new simulation ID based on the ID's currently in use
+        simulation_id = self._new_simulation_id()
+
+        # Return the simulation ID
+        return simulation_id
+
+    # -----------------------------------------------------------------
+
+    def _simulation_ids_in_use(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Check the contents of the local run directory to see which simulation id's are currently in use
         current_ids = []
@@ -405,19 +481,73 @@ class SkirtRemote(Configurable):
             # If the file has the 'sim' extension, get the simulation ID and add it to the list
             current_ids.append(int(item.split(".sim")[0]))
 
+        # Return the list of currently used ID's
+        return current_ids
+
+    # -----------------------------------------------------------------
+
+    def _new_simulation_id(self):
+
+        """
+        This function ...
+        :param count:
+        :return:
+        """
+
+        # Get a list of the ID's currently in use
+        current_ids = self._simulation_ids_in_use()
+
         # Sort the current simulation ID's and find the lowest 'missing' integer number
         if len(current_ids) > 0:
             current_ids = sorted(current_ids)
-            simulation_id = max(current_ids)
+            simulation_id = max(current_ids)+1
             for index in range(max(current_ids)):
                 if current_ids[index] != index:
                     simulation_id = index
                     break
 
-        if simulation_id is None: simulation_id = 0
+            # Return the simulation ID
+            return simulation_id
 
-        # Return the simulation ID
-        return simulation_id
+        # If no simulation ID's are currently in use, return 0
+        else: return 0
+
+    # -----------------------------------------------------------------
+
+    def _new_simulation_ids(self, count):
+
+        """
+        This function ...
+        :param count:
+        :return:
+        """
+
+        # Get a list of the ID's currently in use
+        current_ids = self._simulation_ids_in_use()
+
+        # Initialize a list to contain the new ID's
+        new_ids = []
+
+        # Sort the current simulation ID's and find the lowest 'missing' integer number
+        if len(current_ids) > 0:
+            current_ids = sorted(current_ids)
+            for index in range(max(current_ids)):
+                if current_ids[index] != index:
+                    new_ids.append(index)
+                    if len(new_ids) == count: return new_ids
+
+            # Complement with new ID's
+            max_id = max(new_ids)
+            missing = count - len(new_ids)
+
+            for index in range(max_id+1, max_id+1+missing):
+
+                new_ids.append(index)
+
+            return new_ids
+
+        # If no simulation ID's are currently in use, return a list of the integers from 0 to count-1
+        else: return range(count)
 
     # -----------------------------------------------------------------
 
@@ -780,11 +910,11 @@ class SkirtRemote(Configurable):
 
             # Use the 'lscpu' command to obtain the number of CPU's (hardware threads)
             output = self.execute("lscpu | grep '^CPU(s)'")
-            cpus = float(output[0].split(":")[1])
+            cpus = int(float(output[0].split(":")[1]))
 
             # Use the 'lscpu' command to get the number of hardware threads per core
             output = self.execute("lscpu | grep '^Thread(s) per core'")
-            threads_per_core = float(output[0].split(":")[1])
+            threads_per_core = int(float(output[0].split(":")[1]))
 
             # Return the number of physical cores
             return cpus / threads_per_core

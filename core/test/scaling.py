@@ -17,7 +17,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 import numpy as np
-import shutil
 
 # Import the relevant PTS classes and modules
 from ..simulation.arguments import SkirtArguments
@@ -285,6 +284,10 @@ class ScalingTest(Configurable):
             # The next run will be performed with double the amount of processors
             processors *= 2
 
+        if not self.scheduler:
+            shell_script_path = os.path.join(self.temp_path_run, "simulations.sh")
+            self.remote.start_queue(self.scaling_run_name, shell_script_path)
+
     # -----------------------------------------------------------------
 
     def retreive(self):
@@ -409,12 +412,24 @@ class ScalingTest(Configurable):
         self.arguments.parallel.processes = processes
         self.arguments.parallel.threads = threads
 
+        # The local output path
+        self.arguments.output_path = self.output_path_simulation
+
         # Create a unique name for this simulation, based on the scaling run name and the current number of processors
         simulation_name = self.scaling_run_name + "_" + str(processors)
 
         # Run the simulation
-        jobscript_path = os.path.join(self.temp_path_run, "job_" + str(processors) + ".sh")
-        simulation_file_path = self.remote.run(self.arguments, walltime, simulation_name, jobscript_path)
+        if self.scheduler:
+            # Create the job script. The name of the script indicates the mode in which we run this scaling test and
+            # the current number of processors used. We enable the SKIRT verbose logging mode to be able to compare
+            # the progress of the different parallel processes afterwards. Because for scaling tests, we don't want
+            # processes to end up on different nodes or the SKIRT processes sensing interference from other programs,
+            # we set the 'fullnode' flag to True, which makes sure we always request at least one full node, even when
+            # the current number of processors is less than the number of cores per node
+            jobscript_path = os.path.join(self.temp_path_run, "job_" + str(processors) + ".sh")
+            simulation_file_path = self.remote.run(self.arguments, walltime, simulation_name, jobscript_path, mail=False, full_node=True)
+        else:
+            simulation_file_path = self.remote.add_to_queue(self.arguments)
 
         # Add additional information to the simulation file
         simulation_file = open(simulation_file_path, 'a')
@@ -432,15 +447,6 @@ class ScalingTest(Configurable):
 
         # Close the file
         simulation_file.close()
-
-        # Create the job script. The name of the script indicates the mode in which we run this scaling test and
-        # the current number of processors used. We enable the SKIRT verbose logging mode to be able to compare
-        # the progress of the different parallel processes afterwards. Because for scaling tests, we don't want
-        # processes to end up on different nodes or the SKIRT processes sensing interference from other programs,
-        # we set the 'fullnode' flag to True, which makes sure we always request at least one full node, even when
-        # the current number of processors is less than the number of cores per node
-        #jobscriptpath = os.path.join(self._jobscriptsoutdir, "job_" + self._mode + "_" + str(processors) + ".sh")
-        #jobscript = JobScript(jobscriptpath, skifilepath, self._system, nodes, ppn, threads, self._inpath, dataoutputpath, walltime, brief=True, verbose=True, fullnode=True)
 
         # Add information about the path to the directory where the extracted data will be placed
         if self.config.extraction.progress: infofile.write(" - progress information will be extracted to: " + self.result_path_simulation + "\n")
