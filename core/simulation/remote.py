@@ -74,7 +74,7 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, host_id, cluster=None):
+    def setup(self, host_id, cluster=None, pre_installation=False):
 
         """
         This function ...
@@ -104,25 +104,28 @@ class SkirtRemote(Configurable):
         # Obtain some information about the SKIRT installation on the remote machine
         output = self.execute("which skirt")
 
-        # Determine the path to the SKIRT executable
-        self.skirt_path = output[0]  # only one line is expected
+        # Skip some steps in the setup when SKIRT has yet to be installed on the remote system
+        if not pre_installation:
 
-        # Determine the path to the SKIRT directory
-        self.skirt_dir = self.skirt_path.split("/release")[0]
+            # Determine the path to the SKIRT executable
+            self.skirt_path = output[0]  # only one line is expected
 
-        # Determine the path to the SKIRT run directory
-        self.skirt_run_dir = os.path.join(self.skirt_dir, "run")
+            # Determine the path to the SKIRT directory
+            self.skirt_dir = self.skirt_path.split("/release")[0]
 
-        # Determine the path to the local SKIRT run directory
-        self.local_skirt_host_run_dir = os.path.join(inspection.skirt_run_dir, self.config.host_id)
+            # Determine the path to the SKIRT run directory
+            self.skirt_run_dir = os.path.join(self.skirt_dir, "run")
 
-        # Create the local SKIRT run directory for this host if it doesn't already exist
-        if not os.path.isdir(self.local_skirt_host_run_dir): os.makedirs(self.local_skirt_host_run_dir)
+            # Determine the path to the local SKIRT run directory
+            self.local_skirt_host_run_dir = os.path.join(inspection.skirt_run_dir, self.config.host_id)
 
-        # Give a warning if the remote SKIRT version is different from the local SKIRT version
-        local_version = inspection.skirt_version().split("built on")[0]
-        remote_version = self.skirt_version.split("built on")[0]
-        if remote_version != local_version: self.log.warning("Remote SKIRT version is different from local SKIRT version")
+            # Create the local SKIRT run directory for this host if it doesn't already exist
+            if not os.path.isdir(self.local_skirt_host_run_dir): os.makedirs(self.local_skirt_host_run_dir)
+
+            # Give a warning if the remote SKIRT version is different from the local SKIRT version
+            local_version = inspection.skirt_version().split("built on")[0]
+            remote_version = self.skirt_version.split("built on")[0]
+            if remote_version != local_version: self.log.warning("Remote SKIRT version is different from local SKIRT version")
 
     # -----------------------------------------------------------------
 
@@ -328,7 +331,10 @@ class SkirtRemote(Configurable):
         simulation_file_path = self.add_to_queue(arguments, walltime, name, jobscript_path, mail, full_node)
 
         # Start the queue if that is not left up to the remote's own scheduling system
-        if not self.config.scheduler: self.start_queue(name)
+        if not self.config.scheduler:
+            screen_name = self.start_queue(name)
+            with open(simulation_file_path, 'a') as simulation_file:
+                simulation_file.write("Launched within screen session " + screen_name)
 
         # Return the path to the simulation file
         return simulation_file_path
@@ -1089,6 +1095,7 @@ class SkirtRemote(Configurable):
             # Open the file
             ski_path = None
             remote_output_path = None
+            screen_name = None
             with open(path) as simulation_file:
 
                 # Loop over the lines in the file
@@ -1096,6 +1103,7 @@ class SkirtRemote(Configurable):
 
                     if "skifile path" in line: ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                     elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                    elif "Launched within screen session" in line: screen_name = line.split("session ")[1].replace('\n', ' ').replace('\r', '').strip()
 
                 if ski_path is None: raise ValueError("Not a valid simulation file")
                 if remote_output_path is None: raise ValueError("Not a valid simulation file")
@@ -1111,7 +1119,10 @@ class SkirtRemote(Configurable):
 
             # If the log file does not exist, the simulation has not started yet
             simulation_status = None
-            if output[0] == "False": simulation_status = "not started"
+            if output[0] == "False":
+                # The simulation has not started or it's screen session has been cancelled
+                if self.is_active_screen(screen_name): simulation_status = "not started"
+                else: simulation_status = "cancelled"
             else:
 
                 # Get the last two lines of the remote log file
@@ -1124,7 +1135,10 @@ class SkirtRemote(Configurable):
                 # Interpret the content of the last line
                 if " Finished simulation " + ski_name in last: simulation_status = "finished"
                 elif " *** Error: " in last: simulation_status = "crashed"
-                else: simulation_status = "running"
+                else:
+                    # The simulation is either still running or has been aborted
+                    if self.is_active_screen(screen_name): simulation_status = "running"
+                    else: simulation_status = "aborted"
 
             # Add the simulation properties to the list
             simulation = (path, ski_path, remote_output_path, simulation_status)
