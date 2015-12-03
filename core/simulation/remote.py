@@ -85,27 +85,6 @@ class SkirtRemote(Configurable):
         super(SkirtRemote, self).setup()
 
         # Determine the path to the configuration file for the specified host and check if it is present
-        hosts_directory = os.path.join(inspection.pts_user_dir, "hosts")
-        if not os.path.isdir(hosts_directory): os.makedirs(hosts_directory)
-
-        # If the hosts directory is empty, place a template host configuration file there and exit with an error
-        if len(os.listdir(hosts_directory)) == 0:
-            config = configuration.new()
-
-            config.name = "server.institute.com"
-            config.user = "user000"
-            config.password = None
-            config.output_path = "~/DATA/SKIRT"
-            config.scheduler = True
-            config.mpi_command = "mpirun"
-            config.clusters.default = "cluster_a"
-            config.clusters.cluster_a.cores = 16
-            config.clusters.cluster_b.cores = 32
-
-            config_file_path = os.path.join(hosts_directory, "template.cfg")
-            config_file = open(config_file_path, 'w')
-            config.save(config_file)
-
         host_file_path = os.path.join(inspection.pts_user_dir, "hosts", host_id + ".cfg")
         if not os.path.isfile(host_file_path): raise ValueError("The configuration settings for remote host " + host_id + " could not be found in the PTS/user/hosts directory")
 
@@ -295,6 +274,40 @@ class SkirtRemote(Configurable):
         """
 
         self.queue = []
+
+    # -----------------------------------------------------------------
+
+    def kill_screen(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Quit the specified screen session
+        self.execute("screen -S " + name + " -X quit", output=False)
+
+    # -----------------------------------------------------------------
+
+    def is_active_screen(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        output = self.execute("screen -ls | grep Detached")
+
+        # Loop over the different screen sessions that are in 'Detached' state
+        for entry in output:
+
+            # If the specified screen name is in the list, return True
+            if name in entry: return True
+
+        # If the specified screen name was not encountered, return False (the screen session has finished or aborted)
+        return False
 
     # -----------------------------------------------------------------
 
@@ -831,6 +844,20 @@ class SkirtRemote(Configurable):
 
         # Return the list of retreived simulations
         return simulations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def system_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        name = self.config.host_id
+        if self.config.scheduler: name += "_" + self.config.cluster_name
+        return name
 
     # -----------------------------------------------------------------
 

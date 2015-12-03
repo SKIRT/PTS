@@ -189,7 +189,8 @@ class ScalingTest(Configurable):
         ## Names, directories
 
         # Define a name identifying this scaling test run
-        self.scaling_run_name = time.unique_name(self.config.remote + "_" + self.config.mode + hybridinfo + "_" + str(self.config.max_nodes) + "_" + str(self.config.min_nodes))
+        self.scaling_run_name = time.unique_name(self.remote.system_name + "_" + self.config.mode + hybridinfo + "_" + str(self.config.max_nodes) + "_" + str(self.config.min_nodes))
+        self.long_scaling_run_name = "SKIRT_scaling_" + self.scaling_run_name
 
         # Determine the paths to the directories that will contain the output, results, plots and temporary files of this particular scaling test run
         self.output_path_run = os.path.join(self.output_path, self.scaling_run_name)
@@ -269,8 +270,7 @@ class ScalingTest(Configurable):
 
         # Log the remote host name, the parallelization mode and the version of SKIRT used for this test
         self.log.info("Starting scaling test run " + self.scaling_run_name + ":")
-        self.log.info("  - remote host: " + self.config.remote)
-        if self.config.scheduler: self.log.info("  - cluster: " + self.config.cluster)
+        self.log.info("  - remote host: " + self.remote.system_name)
         self.log.info("  - parallelization mode: " + self.config.mode)
         self.log.info("Using " + self.remote.skirt_version)
 
@@ -286,7 +286,7 @@ class ScalingTest(Configurable):
 
         if not self.scheduler:
             shell_script_path = os.path.join(self.temp_path_run, "simulations.sh")
-            self.remote.start_queue(self.scaling_run_name, shell_script_path)
+            self.remote.start_queue(self.long_scaling_run_name, shell_script_path)
 
     # -----------------------------------------------------------------
 
@@ -444,6 +444,7 @@ class ScalingTest(Configurable):
         simulation_file.write("extraction directory: " + self.result_path_simulation + "\n")
         simulation_file.write("plotting directory: " + self.plot_path_simulation + "\n")
         simulation_file.write("part of scaling test " + self.scaling_run_name + "\n")
+        if not self.scheduler: simulation_file.write("Launched within screen session " + self.long_scaling_run_name + "\n")
 
         # Close the file
         simulation_file.close()
@@ -476,7 +477,7 @@ class ScalingTest(Configurable):
 
         # Write some useful information to the file
         infofile.write("Scaling benchmark test " + self.scaling_run_name + "\n")
-        infofile.write("Remote host: " + self.config.remote + "\n")
+        infofile.write("Remote host: " + self.remote.system_name + "\n")
         infofile.write("SKIRT version: " + self.remote.skirt_version + "\n")
         infofile.write("Parallelization mode: " + self.config.mode + hybridinfo + "\n")
         infofile.write("Maximum number of nodes: " + str(self.config.max_nodes) + " (" + str(self.max_processors) + " processors)\n")

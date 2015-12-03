@@ -21,7 +21,7 @@ import os
 from .analyser import SimulationAnalyser
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
-from ..tools import inspection
+from ..tools import inspection, configuration
 
 # -----------------------------------------------------------------
 
@@ -95,6 +95,32 @@ class RemoteSynchronizer(Configurable):
 
         # Search for files that define remote host configurations
         hosts_directory = os.path.join(inspection.pts_user_dir, "hosts")
+        if not os.path.isdir(hosts_directory): os.makedirs(hosts_directory)
+
+        # If the hosts directory is empty, place a template host configuration file there and exit with an error
+        print([item for item in os.listdir(hosts_directory) if os.path.isfile(os.path.join(hosts_directory, item))])
+        if len([item for item in os.listdir(hosts_directory) if os.path.isfile(os.path.join(hosts_directory, item))]) == 0:
+            config = configuration.new()
+
+            config.name = "server.institute.com"
+            config.user = "user000"
+            config.password = None
+            config.output_path = "~/DATA/SKIRT"
+            config.scheduler = True
+            config.mpi_command = "mpirun"
+            config.clusters.default = "cluster_a"
+            config.clusters.cluster_a.cores = 16
+            config.clusters.cluster_b.cores = 32
+
+            config_file_path = os.path.join(hosts_directory, "template.cfg")
+            config_file = open(config_file_path, 'w')
+            config.save(config_file)
+
+            self.log.error("No remote configuration files were found. Placing a template into PTS/user/hosts. Adjust it"
+                           " for the remote hosts you want to use before using 'pts launch' or 'pts status'.")
+            exit()
+
+        # Loop over the configuration files in the hosts directory
         for filename in os.listdir(hosts_directory):
 
             # Determine the full path to the host file
