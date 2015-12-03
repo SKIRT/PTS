@@ -97,8 +97,11 @@ class RemoteSynchronizer(Configurable):
         hosts_directory = os.path.join(inspection.pts_user_dir, "hosts")
         for filename in os.listdir(hosts_directory):
 
+            # Determine the full path to the host file
+            file_path = os.path.join(hosts_directory, filename)
+
             # Ignore directories and hidden files
-            if filename.startswith(".") or not os.path.isfile(filename): continue
+            if filename.startswith(".") or not os.path.isfile(file_path): continue
 
             # Get the host id for this line
             host_id = filename.split(".")[0]

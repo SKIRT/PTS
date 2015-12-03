@@ -17,7 +17,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 import re
-import copy
 import pxssh
 import pexpect
 import tempfile
@@ -29,6 +28,7 @@ from ..basics.configurable import Configurable
 from .jobscript import JobScript
 from ..tools import time, inspection
 from .simulation import SkirtSimulation
+from ..tools import configuration
 
 # -----------------------------------------------------------------
 
@@ -90,7 +90,6 @@ class SkirtRemote(Configurable):
         if not os.path.isfile(host_file_path): raise ValueError("The configuration settings for remote host " + host_id + " could not be found in the PTS/user/hosts directory")
 
         # Open the host configuration file
-        from ..tools import configuration
         self.host = configuration.open(host_file_path)
 
         # Set the host ID and cluster name (if a scheduling system is used)
