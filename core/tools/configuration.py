@@ -34,6 +34,17 @@ Mapping.__getattr__ = special
 
 # -----------------------------------------------------------------
 
+def new():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return Config()
+
+# -----------------------------------------------------------------
+
 def set(classname, config=None):
 
     """
