@@ -71,15 +71,18 @@ def runids_in_range(runidspec):
 class SkirtRun:
 
     ## The constructor takes a SKIRT run-id and determines the corresponding absolute directory path.
+    # By default the SKIRT-run directory will be located in the results path defined in the current configuration;
+    # this can be overriden by specifying a value for the \em alternate_results_path argument.
     # If the \em create flag is true, the relevant directories are created (including the input, output
     # and visualization subdirectories).
-    def __init__(self, runid, create=False):
+    def __init__(self, runid, create=False, alternate_results_path=None):
         self._runid = int(runid)
         if self._runid<=0 or self._runid>9999999:
             raise ValueError("SKIRT run-id exceeds implementation limits: " + str(runid))
         topdir = "g-{0:04}".format(self._runid//1000)
         botdir = "r-{0:04}-{1:03}".format(self._runid//1000, self._runid%1000)
-        self._runpath = os.path.join(config.results_path, topdir, botdir)
+        resultspath = config.results_path if alternate_results_path==None else alternate_results_path
+        self._runpath = os.path.join(resultspath, topdir, botdir)
 
         if create:
             _createdir(self.inpath())
