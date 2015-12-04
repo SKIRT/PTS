@@ -17,9 +17,11 @@ import os
 import shutil
 
 # Import the relevant PTS classes and modules
-from ..basics import Configurable
-from ..simulation import SkiFile, SkirtExec, SkirtArguments
-from ..extract import TimeLineExtractor
+from ..basics.configurable import Configurable
+from ..simulation.skifile import SkiFile
+from ..simulation.execute import SkirtExec
+from ..simulation.arguments import SkirtArguments
+from ..extract.timeline import TimeLineExtractor
 
 # -----------------------------------------------------------------
 

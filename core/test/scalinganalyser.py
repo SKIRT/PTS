@@ -43,15 +43,19 @@ class ScalingAnalyser(Configurable):
 
         ## Attributes
 
-        # Set the ski file path to None initially
-        self.ski_path = None
+        # Set the simulation object to None initially
+        self.simulation = None
 
-        # Tables
+        # Set the input timeline and memory tables to None initially
+        self.timeline = None
+        self.memory = None
+
+        # Set the output scaling table to None initially
         self.scaling = None
 
     # -----------------------------------------------------------------
 
-    def run(self, ski_path):
+    def run(self, simulation, timeline, memory):
 
         """
         This function ...
@@ -59,9 +63,9 @@ class ScalingAnalyser(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup(ski_path)
+        self.setup(simulation, timeline, memory)
 
-        # 1. Extract scaling information from the simulations' log files
+        # 1. Extract scaling information
         self.extract()
 
         # 2. Make the scaling plots
@@ -69,7 +73,7 @@ class ScalingAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, ski_path):
+    def setup(self, simulation, timeline, memory):
 
         """
         This function ...
@@ -79,8 +83,12 @@ class ScalingAnalyser(Configurable):
         # Call the setup function of the base class
         super(ScalingAnalyser, self).setup()
 
-        # Make a local reference to the ski file path
-        self.ski_path = ski_path
+        # Make a local reference to the simulation object
+        self.simulation = simulation
+
+        # Make local references to the input tables
+        self.timeline = timeline
+        self.memory = memory
 
     # -----------------------------------------------------------------
 
@@ -91,11 +99,12 @@ class ScalingAnalyser(Configurable):
         :return:
         """
 
-        # Set the ski file path to None
-        self.ski_path = None
+        # Set the input tables to None
+        self.timeline = None
+        self.memory = None
 
-        # Set the scaling table to None
-        self.table = None
+        # Set the output table to None
+        self.scaling = None
 
     # -----------------------------------------------------------------
 
@@ -109,12 +118,9 @@ class ScalingAnalyser(Configurable):
         # Inform the user
         self.log.info("Extracting the scaling information...")
 
-        # Determine the path to the scaling data file
-        path = os.path.join(self.extraction_path, "scaling.dat")
-
         # Create and run a ScalingExtractor object
         extractor = ScalingExtractor()
-        extractor.run(self.ski_path, path)
+        extractor.run(self.timeline, self.memory, self.simulation.scaling_file_path)
 
         # Set the table
         self.scaling = extractor.table

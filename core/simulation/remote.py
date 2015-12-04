@@ -307,7 +307,7 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
-    def is_active_screen(self, name):
+    def screen_state(self, name):
 
         """
         This function ...
@@ -315,16 +315,58 @@ class SkirtRemote(Configurable):
         :return:
         """
 
-        output = self.execute("screen -ls | grep Detached")
+        # Execute the 'screen -ls' command
+        output = self.execute("screen -ls")
 
-        # Loop over the different screen sessions that are in 'Detached' state
+        # Loop over the different active screen sessions
         for entry in output:
 
-            # If the specified screen name is in the list, return True
-            if name in entry: return True
+            # Check if the specified screen name corresponds to the current entry
+            if name in entry:
 
-        # If the specified screen name was not encountered, return False (the screen session has finished or aborted)
-        return False
+                # Check the state of this screen session
+                if "Detached" in entry: return "detached"
+                elif "Attached" in entry: return "attached"
+                else: raise ValueError("Screen " + name + " in unkown state")
+
+        # If the screen name was not encountered, return None (the screen session has finished or has been aborted)
+        return None
+
+    # -----------------------------------------------------------------
+
+    def is_active_screen(self, name):
+
+        """
+        This function ...
+        :return:
+        """
+
+        state = self.screen_state(name)
+        return state == "detached" or state == "attached"
+
+    # -----------------------------------------------------------------
+
+    def is_attached_screen(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.screen_state(name) == "attached"
+
+    # -----------------------------------------------------------------
+
+    def is_detached_screen(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.screen_state(name) == "detached"
 
     # -----------------------------------------------------------------
 
@@ -348,7 +390,7 @@ class SkirtRemote(Configurable):
         if not self.host.scheduler:
             screen_name = self.start_queue(name)
             with open(simulation_file_path, 'a') as simulation_file:
-                simulation_file.write("Launched within screen session " + screen_name)
+                simulation_file.write("launched within screen session " + screen_name + "\n")
 
         # Return the path to the simulation file
         return simulation_file_path
@@ -813,6 +855,8 @@ class SkirtRemote(Configurable):
                 remove_remote_output = None
                 extraction_directory = None
                 plotting_directory = None
+                scaling_test = None
+                screen_session = None
 
                 retreived = False
 
@@ -840,6 +884,9 @@ class SkirtRemote(Configurable):
                         elif "remove remote output" in line: remove_remote_output = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
                         elif "extraction directory" in line: extraction_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "plotting directory" in line: plotting_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "part of scaling test" in line: scaling_test = line.split("scaling test ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "launched within screen session" in line: screen_session = line.split("screen session ")[1].replace('\n', ' ').replace('\r', '').strip()
+
                         elif "retreived at" in line: retreived = True
 
                 # If the simulation has already been retreived, skip it
@@ -876,6 +923,9 @@ class SkirtRemote(Configurable):
                 simulation.make_wave = make_wave
                 simulation.extraction_path = extraction_directory
                 simulation.plot_path = plotting_directory
+                simulation.scaling_test = scaling_test
+                simulation.screen_session = screen_session
+
                 simulations.append(simulation)
 
         # Return the list of retreived simulations
@@ -1136,7 +1186,7 @@ class SkirtRemote(Configurable):
                         if "simulation name" in line: name = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "skifile path" in line: ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "Launched within screen session" in line: screen_name = line.split("session ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "launched within screen session" in line: screen_name = line.split("session ")[1].replace('\n', ' ').replace('\r', '').strip()
 
                     if ski_path is None: raise ValueError("Not a valid simulation file")
                     if remote_output_path is None: raise ValueError("Not a valid simulation file")

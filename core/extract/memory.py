@@ -175,4 +175,14 @@ class MemoryExtractor(object):
 
         self.table = None
 
+    @property
+    def peak(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return max(self.table["Memory usage"])
+
 # -----------------------------------------------------------------

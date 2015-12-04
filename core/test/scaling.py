@@ -91,14 +91,20 @@ class ScalingTest(Configurable):
         test.config.keep_output = arguments.keep
 
         # Extraction
-        test.config.extraction.progress = arguments.progress
-        test.config.extraction.timeline = arguments.timeline
-        test.config.extraction.memory = arguments.memory
+        #test.config.extraction.progress = arguments.progress
+        #test.config.extraction.timeline = arguments.timeline
+        #test.config.extraction.memory = arguments.memory
+        test.config.extraction.progress = True
+        test.config.extraction.timeline = True
+        test.config.extraction.memory = True
 
         # Plotting
-        test.config.plotting.progress = arguments.progress
-        test.config.plotting.timeline = arguments.timeline
-        test.config.plotting.memory = arguments.memory
+        #test.config.plotting.progress = arguments.progress
+        #test.config.plotting.timeline = arguments.timeline
+        #test.config.plotting.memory = arguments.memory
+        test.config.plotting.progress = True
+        test.config.plotting.timeline = True
+        test.config.plotting.memory = True
 
         # Return the new scaling test
         return test
@@ -455,7 +461,7 @@ class ScalingTest(Configurable):
         simulation_file.write("extraction directory: " + self.result_path_simulation + "\n")
         simulation_file.write("plotting directory: " + self.plot_path_simulation + "\n")
         simulation_file.write("part of scaling test " + self.scaling_run_name + "\n")
-        if not self.scheduler: simulation_file.write("Launched within screen session " + self.long_scaling_run_name + "\n")
+        if not self.scheduler: simulation_file.write("launched within screen session " + self.long_scaling_run_name + "\n")
 
         # Close the file
         simulation_file.close()
@@ -516,12 +522,15 @@ class ScalingTest(Configurable):
         scalingfile.write("# Column 1: Number of processes p\n")
         scalingfile.write("# Column 2: Number of threads per process t\n")
         scalingfile.write("# Column 3: Total number of threads (t*p)\n")
-        scalingfile.write("# Column 4: Execution time for the setup (s)\n")
-        scalingfile.write("# Column 5: Execution time for the stellar emission phase (s)\n")
-        scalingfile.write("# Column 6: Execution time for the dust self-absorption phase (s)\n")
-        scalingfile.write("# Column 7: Execution time for the dust emission phase (s)\n")
-        scalingfile.write("# Column 8: Execution time for the writing phase (s)\n")
-        scalingfile.write("# Column 9: Execution time for the simulation (s)\n")
+        scalingfile.write("# Column 4: Time spent in simulation setup (s)\n")
+        scalingfile.write("# Column 5: Time spent shooting stellar photon packages (s)\n")
+        scalingfile.write("# Column 6: Time spent in calculation of dust emission spectra (s)\n")
+        scalingfile.write("# Column 7: Time spent shooting dust emission photon packages (s)\n")
+        scalingfile.write("# Column 8: Time spent writing to disk (s)\n")
+        scalingfile.write("# Column 9: Time spent waiting for other processes (s)\n")
+        scalingfile.write("# Column 10: Time spent in inter-process communication (s)\n")
+        scalingfile.write("# Column 11: Total simulation time (s)\n")
+        scalingfile.write("# Column 12: Peak memory usage (GB)\n")
 
         # Close the scaling results file (results will be appended)
         scalingfile.close()

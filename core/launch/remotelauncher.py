@@ -19,10 +19,10 @@ import os
 
 # Import the relevant PTS classes and modules
 from .analyser import SimulationAnalyser
-from ..simulation import SkirtRemote
-from ..simulation import SkirtArguments
-from ..basics import Configurable
-from ..test import ResourceEstimator
+from ..simulation.remote import SkirtRemote
+from ..simulation.arguments import SkirtArguments
+from ..basics.configurable import Configurable
+from ..test.resources import ResourceEstimator
 
 # -----------------------------------------------------------------
 
@@ -85,6 +85,8 @@ class SkirtRemoteLauncher(Configurable):
 
         # Ski file
         launcher.config.arguments.ski_pattern = arguments.filepath
+        launcher.config.arguments.recursive = False
+        launcher.config.arguments.relative = False
 
         # Simulation logging
         launcher.config.arguments.logging.brief = arguments.brief
@@ -168,7 +170,7 @@ class SkirtRemoteLauncher(Configurable):
         super(SkirtRemoteLauncher, self).setup()
 
         # Setup the remote execution context
-        self.remote.setup(self.config.remote)
+        self.remote.setup(self.config.remote, self.config.cluster)
 
         # Set the paths
         self.base_path = os.path.dirname(self.config.arguments.ski_pattern) if "/" in self.config.arguments.ski_pattern else os.getcwd()

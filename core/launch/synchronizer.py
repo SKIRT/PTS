@@ -19,6 +19,7 @@ import os
 
 # Import the relevant PTS classes and modules
 from .analyser import SimulationAnalyser
+from ..test.scalinganalyser import ScalingAnalyser
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
 from ..tools import inspection, configuration
@@ -49,6 +50,9 @@ class RemoteSynchronizer(Configurable):
 
         # The simulation results analyser
         self.analyser = SimulationAnalyser()
+
+        # The scaling results analyser
+        self.scalinganalyser = ScalingAnalyser()
 
         # Initialize a list to contain the retreived simulations
         self.simulations = []
@@ -192,6 +196,13 @@ class RemoteSynchronizer(Configurable):
 
             # Run the analyser on the simulation
             self.analyser.run(simulation)
+
+            # If this simulation is part of a scaling test, run the scalinganalyser
+            if simulation.scaling_test is not None:
+
+                # Run the scaling analyser and clear it afterwards
+                self.scalinganalyser.run(simulation, self.analyser.timeline, self.analyser.memory)
+                self.scalinganalyser.clear()
 
             # Clear the analyser
             self.analyser.clear()

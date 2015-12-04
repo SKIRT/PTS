@@ -37,7 +37,9 @@ class ProgressExtractor(object):
         :return:
         """
 
-        pass
+        ## Attributes
+
+        self.table = None
 
     # -----------------------------------------------------------------
 
