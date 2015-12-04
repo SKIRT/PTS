@@ -160,7 +160,7 @@ class ScalingTest(Configurable):
         self.remote.setup(self.config.remote, self.config.cluster)
 
         # Determine whether we are dealing with a scheduling system or we can launch simulations right away
-        self.scheduler = self.remote.config.scheduler
+        self.scheduler = self.remote.host.scheduler
 
         # Get the number of cores (per node) on this system from a pre-defined dictionary
         self.cores = self.remote.cores
@@ -419,7 +419,9 @@ class ScalingTest(Configurable):
         simulation_name = self.scaling_run_name + "_" + str(processors)
 
         # Run the simulation
+        scheduling_options = None
         if self.scheduler:
+
             # Create the job script. The name of the script indicates the mode in which we run this scaling test and
             # the current number of processors used. We enable the SKIRT verbose logging mode to be able to compare
             # the progress of the different parallel processes afterwards. Because for scaling tests, we don't want
@@ -427,9 +429,18 @@ class ScalingTest(Configurable):
             # we set the 'fullnode' flag to True, which makes sure we always request at least one full node, even when
             # the current number of processors is less than the number of cores per node
             jobscript_path = os.path.join(self.temp_path_run, "job_" + str(processors) + ".sh")
-            simulation_file_path = self.remote.run(self.arguments, walltime, simulation_name, jobscript_path, mail=False, full_node=True)
-        else:
-            simulation_file_path = self.remote.add_to_queue(self.arguments)
+
+            # Adjust the scheduling options
+            scheduling_options = {}
+            scheduling_options["nodes"] = nodes
+            scheduling_options["ppn"] = ppn
+            scheduling_options["walltime"] = walltime
+            scheduling_options["jobscript_path"] = jobscript_path
+            scheduling_options["mail"] = False
+            scheduling_options["full_node"] = True
+
+        # Add the simulation to the remote queue
+        simulation_file_path = self.remote.add_to_queue(self.arguments, simulation_name, scheduling_options)
 
         # Add additional information to the simulation file
         simulation_file = open(simulation_file_path, 'a')

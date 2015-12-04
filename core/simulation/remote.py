@@ -93,7 +93,7 @@ class SkirtRemote(Configurable):
 
         # Set the host ID and cluster name (if a scheduling system is used)
         self.config.host_id = host_id
-        if self.config.scheduler: # If no scheduling system is used, self.config.cluster_name stays at None
+        if self.host.scheduler: # If no scheduling system is used, self.config.cluster_name stays at None
             if cluster is None:  # If no cluster name is given, use the default cluster (defined in host configuration file)
                 self.config.cluster_name = self.host.clusters.default
             else: self.config.cluster_name = cluster
@@ -101,11 +101,16 @@ class SkirtRemote(Configurable):
         # Make the connection
         self.login()
 
-        # Obtain some information about the SKIRT installation on the remote machine
-        output = self.execute("which skirt")
+        # Load the necessary modules
+        if self.host.scheduler:
+            self.log.info("Loading necessary modules...")
+            self.execute("module load " + " ".join(self.host.modules), output=False)
 
         # Skip some steps in the setup when SKIRT has yet to be installed on the remote system
         if not pre_installation:
+
+            # Obtain some information about the SKIRT installation on the remote machine
+            output = self.execute("which skirt")
 
             # Determine the path to the SKIRT executable
             self.skirt_path = output[0]  # only one line is expected
@@ -137,7 +142,7 @@ class SkirtRemote(Configurable):
         """
 
         # Inform the user
-        self.log.info("Logging in to the remote SKIRT environment")
+        self.log.info("Logging in to the remote SKIRT environment on host " + self.host.name)
 
         # Connect to the remote host
         self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password)
@@ -162,7 +167,7 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_to_queue(self, arguments, walltime=None, name=None, jobscript_path=None, mail=False, full_node=False):
+    def add_to_queue(self, arguments, name=None, scheduling_options=None):
 
         """
         This function ...
@@ -183,10 +188,11 @@ class SkirtRemote(Configurable):
         local_ski_path, local_input_path, local_output_path = self.prepare(arguments, remote_simulation_path)
 
         # If the remote host uses a scheduling system, submit the simulation right away
-        if self.config.scheduler:
+        if self.host.scheduler:
 
             # Submit the simulation to the remote scheduling system
-            simulation_id = self.schedule(arguments, local_ski_path, remote_simulation_path, walltime, name, jobscript_path, mail, full_node)
+            print("scheduling options", scheduling_options)
+            simulation_id = self.schedule(arguments, name, scheduling_options, local_ski_path, remote_simulation_path) #local_ski_path, remote_simulation_path, walltime, name, jobscript_path, mail, full_node)
 
         # If no scheduling system is used, just store the SKIRT arguments in a list for now and execute the complete
         # list of simulations later on (when 'start_queue' is called)
@@ -216,7 +222,7 @@ class SkirtRemote(Configurable):
 
         # If a scheduling system is used by the remote host, we don't need to do anything, simulations added to the queue
         # are already waiting to be executed (or are already being executed)
-        if self.config.scheduler:
+        if self.host.scheduler:
             self.log.warning("The remote host uses its own scheduling system so calling 'start_queue' will have no effect")
             return
 
@@ -314,7 +320,7 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, arguments, walltime=None, name=None, jobscript_path=None, mail=False, full_node=False):
+    def run(self, arguments, name=None, scheduling_options=None):
 
         """
         This function ...
@@ -328,10 +334,10 @@ class SkirtRemote(Configurable):
         if len(self.queue) > 0: raise RuntimeError("The simulation queue is not empty")
 
         # Add the simulation arguments to the queue
-        simulation_file_path = self.add_to_queue(arguments, walltime, name, jobscript_path, mail, full_node)
+        simulation_file_path = self.add_to_queue(arguments, name, scheduling_options)
 
         # Start the queue if that is not left up to the remote's own scheduling system
-        if not self.config.scheduler:
+        if not self.host.scheduler:
             screen_name = self.start_queue(name)
             with open(simulation_file_path, 'a') as simulation_file:
                 simulation_file.write("Launched within screen session " + screen_name)
@@ -432,7 +438,7 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
-    def schedule(self, arguments, local_ski_path, remote_simulation_path, walltime=None, name=None, jobscript_path=None, mail=False, full_node=False):
+    def schedule(self, arguments, name, scheduling_options, local_ski_path, remote_simulation_path):
 
         """
         This function ...
@@ -442,20 +448,24 @@ class SkirtRemote(Configurable):
         # Inform the suer
         self.log.info("Scheduling simulation on the remote host")
 
-        # Set the simulation ID to None initially
-        simulation_id = None
-
         # We want to estimate the wall time here if it is not passed to this function
-        if walltime is None: pass
+        if "walltime" not in scheduling_options: walltime=None
+        else: walltime = scheduling_options["walltime"]
+
+        if "nodes" not in scheduling_options: raise ValueError("The number of nodes is not defined in the scheduling options")
+        if "ppn" not in scheduling_options: raise ValueError("The number of processors per node is not defined in the scheduling options")
+        nodes = scheduling_options["nodes"]
+        ppn = scheduling_options["ppn"]
+
+        mail = scheduling_options["mail"] if "mail" in scheduling_options else False
+        full_node = scheduling_options["full_node"] if "full_node" in scheduling_options else False
 
         # Create a job script next to the (local) simulation's ski file
-        if jobscript_path is None:
+        if "jobscript_path" not in scheduling_options:
             local_simulation_path = os.path.dirname(local_ski_path)
             local_jobscript_path = os.path.join(local_simulation_path, "job.sh")
-        else: local_jobscript_path = jobscript_path
-        jobscript = JobScript(local_jobscript_path, arguments, self.host.clusters[self.config.cluster_name], self.skirt_path, self.host.mpi_command, walltime, nodes, ppn, name=name, mail=mail, full_node=full_node)
-
-        exit()
+        else: local_jobscript_path = scheduling_options["jobscript_path"]
+        jobscript = JobScript(local_jobscript_path, arguments, self.host.clusters[self.config.cluster_name], self.skirt_path, self.host.mpi_command, self.host.modules, walltime, nodes, ppn, name=name, mail=mail, full_node=full_node)
 
         # Copy the job script to the remote simulation directory
         remote_jobscript_path = os.path.join(remote_simulation_path, "job.sh")
@@ -470,6 +480,9 @@ class SkirtRemote(Configurable):
 
         # The queu number of the submitted job is used to identify this simulation
         simulation_id = int(output[0])
+
+        print(simulation_id)
+        exit()
 
         # Return the simulation ID
         return simulation_id
@@ -488,7 +501,7 @@ class SkirtRemote(Configurable):
 
         # Send the command to the remote machine using a screen session so that we can safely detach from the
         # remote shell
-        command = arguments.to_command(self.skirt_path, self.host.mpi_command, self.config.scheduler, to_string=True)
+        command = arguments.to_command(self.skirt_path, self.host.mpi_command, self.host.scheduler, to_string=True)
         self.execute("screen -d -m " + command, output=False)
 
         # Generate a new simulation ID based on the ID's currently in use
@@ -643,8 +656,9 @@ class SkirtRemote(Configurable):
 
         # Execute the command
         child = pexpect.spawn(copy_command, timeout=timeout)
-        child.expect(['password: '])
-        child.sendline(self.host.password)
+        if self.host.password is not None:
+            child.expect(['password: '])
+            child.sendline(self.host.password)
         child.logfile = temp_file
         child.expect(pexpect.EOF, timeout=None)
         child.close()
@@ -712,10 +726,14 @@ class SkirtRemote(Configurable):
 
         # Execute the command
         child = pexpect.spawn(copy_command, timeout=timeout)
-        child.expect(['password: '])
-        child.sendline(self.host.password)
+        if self.host.password is not None:
+            child.expect(['password: '])
+            child.sendline(self.host.password)
         child.logfile = temp_file
-        child.expect(pexpect.EOF)
+        try:
+            child.expect(pexpect.EOF, timeout=None)
+        except pexpect.EOF:
+            pass
         child.close()
 
         # Close the temporary output file
@@ -862,7 +880,7 @@ class SkirtRemote(Configurable):
         """
 
         name = self.config.host_id
-        if self.config.scheduler: name += "_" + self.config.cluster_name
+        if self.host.scheduler: name += "-" + self.config.cluster_name
         return name
 
     # -----------------------------------------------------------------
@@ -955,7 +973,7 @@ class SkirtRemote(Configurable):
         """
 
         # If the remote host uses a scheduling system, the number of cores on the computing nodes is defined in the configuration
-        if self.config.scheduler: return self.config.cores
+        if self.host.scheduler: return self.host.clusters[self.config.cluster_name].cores
 
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:
@@ -1080,75 +1098,77 @@ class SkirtRemote(Configurable):
         :return:
         """
 
-        # Initialize a list to contain the
-        simulations = []
+        if not self.host.scheduler:
 
-        # Search for files in the local SKIRT run/host_id directory
-        for item in os.listdir(self.local_skirt_host_run_dir):
+            # Initialize a list to contain the simulations
+            simulations = []
 
-            # If the item is not a simulation file or it is hidden, skip it
-            if not item.endswith(".sim") or item.startswith("."): continue
+            # Search for files in the local SKIRT run/host_id directory
+            for item in os.listdir(self.local_skirt_host_run_dir):
 
-            # Determine the full path to the simulation file
-            path = os.path.join(self.local_skirt_host_run_dir, item)
+                # If the item is not a simulation file or it is hidden, skip it
+                if not item.endswith(".sim") or item.startswith("."): continue
 
-            # Open the file
-            ski_path = None
-            remote_output_path = None
-            screen_name = None
-            with open(path) as simulation_file:
+                # Determine the full path to the simulation file
+                path = os.path.join(self.local_skirt_host_run_dir, item)
 
-                # Loop over the lines in the file
-                for line in simulation_file:
+                # Open the file
+                ski_path = None
+                remote_output_path = None
+                screen_name = None
+                with open(path) as simulation_file:
 
-                    if "skifile path" in line: ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                    elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                    elif "Launched within screen session" in line: screen_name = line.split("session ")[1].replace('\n', ' ').replace('\r', '').strip()
+                    # Loop over the lines in the file
+                    for line in simulation_file:
 
-                if ski_path is None: raise ValueError("Not a valid simulation file")
-                if remote_output_path is None: raise ValueError("Not a valid simulation file")
+                        if "skifile path" in line: ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "Launched within screen session" in line: screen_name = line.split("session ")[1].replace('\n', ' ').replace('\r', '').strip()
 
-            # The name of the ski file (the simulation prefix)
-            ski_name = os.path.basename(ski_path).split(".")[0]
+                    if ski_path is None: raise ValueError("Not a valid simulation file")
+                    if remote_output_path is None: raise ValueError("Not a valid simulation file")
 
-            # The path to the simulation log file
-            remote_log_file_path = os.path.join(remote_output_path, ski_name + "_log.txt")
+                # The name of the ski file (the simulation prefix)
+                ski_name = os.path.basename(ski_path).split(".")[0]
 
-            # Check whether the log file exists remotely
-            output = self.execute("if [ -f " + remote_log_file_path + " ]; then echo True; else echo False; fi")
+                # The path to the simulation log file
+                remote_log_file_path = os.path.join(remote_output_path, ski_name + "_log.txt")
 
-            # If the log file does not exist, the simulation has not started yet
-            simulation_status = None
-            if output[0] == "False":
-                # The simulation has not started or it's screen session has been cancelled
-                if self.is_active_screen(screen_name): simulation_status = "not started"
-                else: simulation_status = "cancelled"
-            else:
+                # Check whether the log file exists remotely
+                output = self.execute("if [ -f " + remote_log_file_path + " ]; then echo True; else echo False; fi")
 
-                # Get the last two lines of the remote log file
-                output = self.execute("tail -2 " + remote_log_file_path)
-
-                # Get the last line of the actual simulation
-                if " Available memory: " in output[1]: last = output[0]
-                else: last = output[1]
-
-                # Interpret the content of the last line
-                if " Finished simulation " + ski_name in last: simulation_status = "finished"
-                elif " *** Error: " in last: simulation_status = "crashed"
+                # If the log file does not exist, the simulation has not started yet
+                simulation_status = None
+                if output[0] == "False":
+                    # The simulation has not started or it's screen session has been cancelled
+                    if self.is_active_screen(screen_name): simulation_status = "not started"
+                    else: simulation_status = "cancelled"
                 else:
-                    # The simulation is either still running or has been aborted
-                    if self.is_active_screen(screen_name): simulation_status = "running"
-                    else: simulation_status = "aborted"
 
-            # Add the simulation properties to the list
-            simulation = (path, ski_path, remote_output_path, simulation_status)
-            simulations.append(simulation)
+                    # Get the last two lines of the remote log file
+                    output = self.execute("tail -2 " + remote_log_file_path)
 
-        # Return the list of simulation properties
-        return simulations
+                    # Get the last line of the actual simulation
+                    if " Available memory: " in output[1]: last = output[0]
+                    else: last = output[1]
+
+                    # Interpret the content of the last line
+                    if " Finished simulation " + ski_name in last: simulation_status = "finished"
+                    elif " *** Error: " in last: simulation_status = "crashed"
+                    else:
+                        # The simulation is either still running or has been aborted
+                        if self.is_active_screen(screen_name): simulation_status = "running"
+                        else: simulation_status = "aborted"
+
+                # Add the simulation properties to the list
+                simulation = (path, ski_path, remote_output_path, simulation_status)
+                simulations.append(simulation)
+
+            # Return the list of simulation properties
+            return simulations
 
         # If the remote has a scheduling system for launching jobs
-        if self.config.scheduler:
+        else:
 
             # Obtain job status information through the 'qstat' command
             output = self.execute("qstat")
@@ -1182,7 +1202,7 @@ class SkirtRemote(Configurable):
             for itemname in os.listdir(self.local_skirt_host_run_dir):
 
                 # Define the full path to this item
-                itempath = os.path.join(rundir, itemname)
+                itempath = os.path.join(self.local_skirt_host_run_dir, itemname)
 
                 # Check whether this item is a txt file and it is not hidden
                 if os.path.isfile(itempath) and itemname.endswith(".txt") and not itemname.startswith("."):
@@ -1211,7 +1231,7 @@ class SkirtRemote(Configurable):
 
                         # Get the time of submitting
                         timestamp = lines[4].split("submitted at: ")[1]
-                        time = _timestamp(timestamp)
+                        submit_time = time.parse(timestamp)
 
                     # Get the job ID from the file name
                     jobid = int(os.path.splitext(itemname)[0])
@@ -1247,7 +1267,7 @@ class SkirtRemote(Configurable):
                         else: status = "unknown"
 
                     # Append the properties of this job to the list
-                    jobs.append([skifilename, scalingtest, run, simulationid, time, status, itempath])
+                    jobs.append([skifilename, scalingtest, run, simulationid, submit_time, status, itempath])
 
             # Sort the total list of jobs based on the time (the oldest has index 0)
             jobs.sort(key=itemgetter(4))
@@ -1270,7 +1290,7 @@ class SkirtRemote(Configurable):
             # Finally print out the information
             for scalingtest, simulations in scalingtests.items():
 
-                log.info(scalingtest + ":")
+                self.log.info(scalingtest + ":")
 
                 for simulation in simulations:
 
@@ -1294,35 +1314,34 @@ class SkirtRemote(Configurable):
 
                         # TODO: figure out what to do when queued jobs should be deleted
 
-                        log.info(tag + run + " > " + sim + ": " + status)
+                        self.log.info(tag + run + " > " + sim + ": " + status)
 
                     elif status == "running":
 
                         # TODO: figure out what to do when running jobs should be deleted
 
-                        log.warning(tag + run + " > " + sim + ": " + status)
+                        self.log.warning(tag + run + " > " + sim + ": " + status)
 
                     elif status == "finished":
 
                         # Delete the job file if requested
                         if deletethisfile: os.remove(jobfilepath)
 
-                        log.success(tag + run + " > " + sim + ": " + status)
+                        self.log.success(tag + run + " > " + sim + ": " + status)
 
                     elif status == "crashed":
 
                         # Delete the job file if requested
                         if deletethisfile: os.remove(jobfilepath)
 
-                        log.failure(tag + run + " > " + sim + ": " + status)
+                        self.log.failure(tag + run + " > " + sim + ": " + status)
 
                     elif status == "unknown":
 
                         # TODO: figure out what to do when jobs with unknown status should be deleted
 
-                        log.failure(tag + run + " > " + sim + ": " + status)
+                        self.log.failure(tag + run + " > " + sim + ": " + status)
 
-        # No scheduling system
-        else: pass
+            return []
 
 # -----------------------------------------------------------------

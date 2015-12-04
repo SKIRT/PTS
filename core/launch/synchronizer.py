@@ -108,6 +108,7 @@ class RemoteSynchronizer(Configurable):
             config.output_path = "~/DATA/SKIRT"
             config.scheduler = True
             config.mpi_command = "mpirun"
+            config.modules = ["examplemodule/2016/version2", "examplemodule2/2016/version0.1.3"]
             config.clusters.default = "cluster_a"
             config.clusters.cluster_a.cores = 16
             config.clusters.cluster_b.cores = 32
@@ -208,11 +209,14 @@ class RemoteSynchronizer(Configurable):
         # Loop over the different remotes
         for remote in self.remotes:
 
+            # Get the status of the different simulations
+            status = remote.status
+
             # Show the name of the current remote
-            self.log.info("Simulations on remote " + remote.host_name + ":")
+            if len(status) > 0: self.log.info("Simulations on remote " + remote.host_name + ":")
 
             # Get the status of the different simulations
-            for entry in remote.status:
+            for entry in status:
 
                 # The path to the simulation file
                 path = entry[0]
