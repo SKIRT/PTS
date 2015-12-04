@@ -18,7 +18,9 @@
 import os
 import os.path
 from datetime import datetime
-from pts.skifile import SkiFile
+
+# Import the relevant PTS classes and modules
+from pts.core.simulation.skifile import SkiFile
 
 # -----------------------------------------------------------------
 

@@ -29,6 +29,7 @@ from .jobscript import JobScript
 from ..tools import time, inspection
 from .simulation import SkirtSimulation
 from ..tools import configuration
+from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -205,12 +206,12 @@ class SkirtRemote(Configurable):
             simulation_id = self._new_simulation_id()
 
         # Create a simulation file and return its path
-        simulation_file_path = self.create_simulation_file(arguments, simulation_id, local_input_path, local_output_path)
+        simulation_file_path = self.create_simulation_file(arguments, name, simulation_id, local_input_path, local_output_path)
         return simulation_file_path
 
     # -----------------------------------------------------------------
 
-    def start_queue(self, screen_name=None, local_script_path=None):
+    def start_queue(self, screen_name=None, local_script_path=None, screen_output_path=None):
 
         """
         This function ...
@@ -259,9 +260,16 @@ class SkirtRemote(Configurable):
         # Close the script file (if it is temporary it will automatically be removed)
         script_file.close()
 
-        # Make the shell script executable and launch it
+        # Make the shell script executable
         self.execute("chmod +x " + remote_script_path, output=False)
+
+        # Create a unique screen name indicating we are running SKIRT simulations if none is given
         if screen_name is None: screen_name = time.unique_name("SKIRT")
+
+        # Record the screen output: 'script' command
+        if screen_output_path is not None: self.execute("script " + screen_output_path)
+
+        # Create the screen session and execute the batch script
         self.execute("screen -S " + screen_name + " -d -m " + remote_script_path, output=False)
 
         # Remove the remote shell script
@@ -411,7 +419,7 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_simulation_file(self, arguments, simulation_id, local_input_path, local_output_path):
+    def create_simulation_file(self, arguments, name, simulation_id, local_input_path, local_output_path):
 
         """
         This function ...
@@ -422,7 +430,11 @@ class SkirtRemote(Configurable):
         simulation_file_path = os.path.join(self.local_skirt_host_run_dir, str(simulation_id) + ".sim")
         simulation_file = open(simulation_file_path, 'w')
 
+        # Determine the simulation name from the ski file name if none is given
+        if name is None: name = os.path.basename(arguments.ski_pattern).split(".")[0]
+
         # Add the simulation information
+        simulation_file.write("simulation name: " + name + "\n")
         simulation_file.write("skifile path: " + arguments.ski_pattern + "\n")
         simulation_file.write("local input directory: " + str(local_input_path) + "\n") # can be None
         simulation_file.write("local output directory: " + local_output_path + "\n")
@@ -768,16 +780,16 @@ class SkirtRemote(Configurable):
         for entry in self.status:
 
             # The path to the simulation file
-            path = entry[0]
+            path = entry.file_path
 
             # The ski file path
-            ski_path = entry[1]
+            ski_path = entry.ski_path
 
             # The remote output path
-            remote_output_path = entry[2]
+            remote_output_path = entry.remote_output_path
 
             # The simulation status
-            simulation_status = entry[3]
+            simulation_status = entry.status
 
             if simulation_status == "finished":
 
@@ -1121,7 +1133,8 @@ class SkirtRemote(Configurable):
                     # Loop over the lines in the file
                     for line in simulation_file:
 
-                        if "skifile path" in line: ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        if "simulation name" in line: name = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "skifile path" in line: ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "Launched within screen session" in line: screen_name = line.split("session ")[1].replace('\n', ' ').replace('\r', '').strip()
 
@@ -1161,7 +1174,12 @@ class SkirtRemote(Configurable):
                         else: simulation_status = "aborted"
 
                 # Add the simulation properties to the list
-                simulation = (path, ski_path, remote_output_path, simulation_status)
+                simulation = Map()
+                simulation.file_path = path
+                simulation.name = name
+                simulation.ski_path = ski_path
+                simulation.remote_output_path = remote_output_path
+                simulation.status = simulation_status
                 simulations.append(simulation)
 
             # Return the list of simulation properties

@@ -98,7 +98,6 @@ class RemoteSynchronizer(Configurable):
         if not os.path.isdir(hosts_directory): os.makedirs(hosts_directory)
 
         # If the hosts directory is empty, place a template host configuration file there and exit with an error
-        print([item for item in os.listdir(hosts_directory) if os.path.isfile(os.path.join(hosts_directory, item))])
         if len([item for item in os.listdir(hosts_directory) if os.path.isfile(os.path.join(hosts_directory, item))]) == 0:
             config = configuration.new()
 
@@ -219,22 +218,22 @@ class RemoteSynchronizer(Configurable):
             for entry in status:
 
                 # The path to the simulation file
-                path = entry[0]
+                path = entry.file_path
 
                 # Get the simulation rank
                 simulation_rank = os.path.basename(path).split(".")[0]
 
+                # The simulation name
+                simulation_name = entry.name
+
                 # The ski file path
-                ski_path = entry[1]
+                ski_path = entry.ski_path
 
                 # The remote output path
-                remote_output_path = entry[2]
+                remote_output_path = entry.remote_output_path
 
                 # The simulation status
-                simulation_status = entry[3]
-
-                # Get the ski file name (the simulation prefix)
-                prefix = os.path.basename(ski_path).split(".")[0]
+                simulation_status = entry.status
 
                 # If this simulation has already finished, check whether the results of this simulation have been retreived
                 if simulation_status == "finished":
@@ -244,6 +243,6 @@ class RemoteSynchronizer(Configurable):
                     if "retreived at" in last: simulation_status = "retreived"
 
                 # Show the status of the current simulation
-                self.log.info("  [" + str(simulation_rank) + "] " + prefix + ": " + simulation_status)
+                self.log.info("  [" + str(simulation_rank) + "] " + simulation_name + ": " + simulation_status)
 
 # -----------------------------------------------------------------
