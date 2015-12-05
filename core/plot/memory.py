@@ -15,10 +15,15 @@ This module ...
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import matplotlib
+import numpy as np
+from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.pyplot as plt
 
 # Import astronomical modules
 from astropy.table import Table
+from astropy.io import ascii
+
+# Import the relevant PTS classes and modules
 
 
 # -----------------------------------------------------------------
@@ -55,42 +60,45 @@ class MemoryPlotter(object):
         elif isinstance(input, basestring):
 
             fill_values = [('--', '0', 'Simulation phase'), ('--', '0', 'Array (de)allocation'), ('--', '0', 'Array ID')]
-            #self.table = ascii.read("memory.dat", fill_values=fill_values)
+            self.table = ascii.read(input, fill_values=fill_values)
 
         # Invalid input
         else: raise ValueError("Input must be either an Astropy Table object or a filename (e.g. memory.dat)")
 
-        # Calculate the number of wavelengths and dust cells
-        #Nlambda = skifile.nwavelengths()
-        #Ncells = skifile.ncells()
-        #Ndoubles = Nlambda * Ncells
-
-        #plt.plot(seconds_list, memory_list)
-
-        #totals = np.cumsum(deltas)
-
-        #for i in range(len(times)):
-        #    print times[i], totals[i]
-
-        #plt.step(times, totals)
-        #plt.fill_between(times, totals, color='green')
-        #plt.bar(times, totals, color='r')
-        #plt.show()
-
-        pass
+        # Create the plots
+        self.plot(output_path)
 
     # -----------------------------------------------------------------
 
-    def plot(self):
+    def plot(self, path):
 
         """
         This function ...
         :return:
         """
 
-        # Use a non-interactive back-end to generate high-quality vector graphics
-        if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
-        import matplotlib.pyplot as plt
+        # Create a PDF Pages object
+        pp = PdfPages(path)
+
+        # Initialize figure
+        plt.figure()
+        plt.clf()
+
+        # Plot the memory usage
+        plt.plot(self.table["Simulation time"], self.table["Memory usage"])
+
+        if "Array (de)allocation" in self.table.colnames:
+
+            # Calculate the cumulative allocated memory
+            totals = np.cumsum(self.table["Array (de)allocation"])
+
+            #plt.step(times, totals)
+            plt.fill_between(self.table["Simulation time"], totals, color='green')
+            #plt.bar(times, totals, color='r')
+
+        # Save the figure
+        pp.savefig()
+        pp.close()
 
 # -----------------------------------------------------------------
 

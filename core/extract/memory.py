@@ -175,6 +175,8 @@ class MemoryExtractor(object):
 
         self.table = None
 
+    # -----------------------------------------------------------------
+
     @property
     def peak(self):
 

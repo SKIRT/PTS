@@ -19,9 +19,6 @@ from datetime import datetime
 # Import astronomical modules
 from astropy.table import Table
 
-# Import the relevant PTS classes and modules
-from ..simulation.simulation import SkirtSimulation
-
 # -----------------------------------------------------------------
 
 class TimeLineExtractor(object):

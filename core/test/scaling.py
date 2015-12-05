@@ -461,6 +461,8 @@ class ScalingTest(Configurable):
         simulation_file.write("extraction directory: " + self.result_path_simulation + "\n")
         simulation_file.write("plotting directory: " + self.plot_path_simulation + "\n")
         simulation_file.write("part of scaling test " + self.scaling_run_name + "\n")
+        simulation_file.write("scaling data file: " + self.scaling_file_path + "\n")
+        simulation_file.write("scaling run plot path: " + self.plot_path_run + "\n")
         if not self.scheduler: simulation_file.write("launched within screen session " + self.long_scaling_run_name + "\n")
 
         # Close the file

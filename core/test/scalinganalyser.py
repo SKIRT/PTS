@@ -50,12 +50,12 @@ class ScalingAnalyser(Configurable):
         self.timeline = None
         self.memory = None
 
-        # Set the output scaling table to None initially
+        # Set the scaling table to None initially
         self.scaling = None
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, timeline, memory):
+    def run(self, simulation, timeline_extractor, memory_extractor):
 
         """
         This function ...
@@ -63,7 +63,7 @@ class ScalingAnalyser(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup(simulation, timeline, memory)
+        self.setup(simulation, timeline_extractor, memory_extractor)
 
         # 1. Extract scaling information
         self.extract()
@@ -73,7 +73,7 @@ class ScalingAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation, timeline, memory):
+    def setup(self, simulation, timeline_extractor, memory_extractor):
 
         """
         This function ...
@@ -86,9 +86,9 @@ class ScalingAnalyser(Configurable):
         # Make a local reference to the simulation object
         self.simulation = simulation
 
-        # Make local references to the input tables
-        self.timeline = timeline
-        self.memory = memory
+        # Make local references to the timeline and memory extractors
+        self.te = timeline_extractor
+        self.me = memory_extractor
 
     # -----------------------------------------------------------------
 
@@ -120,7 +120,7 @@ class ScalingAnalyser(Configurable):
 
         # Create and run a ScalingExtractor object
         extractor = ScalingExtractor()
-        extractor.run(self.timeline, self.memory, self.simulation.scaling_file_path)
+        extractor.run(self.simulation, self.te, self.me)
 
         # Set the table
         self.scaling = extractor.table
@@ -137,11 +137,8 @@ class ScalingAnalyser(Configurable):
         # Inform the user
         self.log.info("Plotting the scaling information...")
 
-        # Determine the path to the plot directory
-        #path = os.path.join(self.plot_path, ...)
-
         # Create and run a ScalingPlotter object
         plotter = ScalingPlotter()
-        plotter.run(self.scaling, path)
+        plotter.run(self.scaling, self.simulation.scaling_run_plot_path)
 
 # -----------------------------------------------------------------

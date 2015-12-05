@@ -15,281 +15,111 @@ import math
 import numpy as np
 import os.path
 import matplotlib
-from collections import defaultdict
 from scipy.optimize import curve_fit
+from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.pyplot as plt
+
+# Import astronomical modules
+from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from ..basics.log import Log
 
 # -----------------------------------------------------------------
 
-# Ignore warnings, otherwise Canopy would give a UserWarning on top of the error encountered when a scaling
-# test results file does not contain any data (an error which is catched and produces an error message).
-import warnings
-warnings.filterwarnings("ignore")
-
-# -----------------------------------------------------------------
-
-# Define which column in the scaling test results file defines which quantity
-columns = {'threads': 2, 'setup': 3, 'stellar': 4, 'dustselfabs': 5, 'dustem': 6, 'writing': 7, 'total': 8}
-
-# For each different phase, define its full name
-fullnames = {'setup': 'Setup', 'stellar': 'Stellar emission', 'dustselfabs': 'Dust self-absorption',
-             'dustem': 'Dust emission', 'writing': 'Writing', 'total': 'Total simulation'}
-
-# -----------------------------------------------------------------
-
-## An instance of the ScalingPlotter is used to create plots of the runtimes, speedups and efficiencies as a function
-#  of the number of threads, based on the results of (multiple) SKIRT scaling benchmark tests.
-#
 class ScalingPlotter(object):
 
-    ## The constructor accepts the following arguments:
-    #
-    #  - directory: the path of the directory where the result files are located and where the plots should be created
-    #  - phase: the phase of the simulation for which the scaling should be plotted. This argument can take the
-    #           following values:
-    #               * 'setup': for the setup of the simulation
-    #               * 'stellar': for the stellar emission phase
-    #               * 'dustselfabs': for the dust selfabsorption phase
-    #               * 'dustem': for the dust emission phase
-    #               * 'writing': for the writing phase
-    #               * 'total': for the total simulation
-    #  - system: the system for which to plot the statistics. If no system is given, plots are created with different
-    #            curves for all the different systems (and modes) for which a results file is found.
-    #
-    def __init__(self, directory, phase, system=""):
+    """
+    An instance of the ScalingPlotter is used to create plots of the runtimes, speedups and efficiencies as a function
+    of the number of threads, based on the results of (multiple) SKIRT scaling benchmark tests.
+    """
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        :return:
+        """
+
+        # Set the table to None initially
+        self.table = None
+
+        # Set the output path to None initially
+        self.output_path = None
 
         # Create a logger
-        self._log = Log()
-
-        # Set the results and visualization paths
-        self._respath = os.path.join(directory, "res")
-        self._vispath = os.path.join(directory, "vis")
-
-        # Set the phase
-        self._phase = phase
-
-        # Set the system name
-        self._system = system
-
-        # Create a list of all scaling results files ('scaling.dat') found in a subdirectory of the results path,
-        # ordered in a dictionary keyed on a combination of the system and mode in which the scaling test was run.
-        # Each key in the dictionary will correspond to a different curve in the plots.
-        filepaths = defaultdict(list)
-        self._log.info("Gathering the data files...")
-        for itemname in os.listdir(self._respath):
-
-            # Define the full path to this item
-            itempath = os.path.join(self._respath, itemname)
-
-            # Check whether this item is a directory and it is not hidden
-            if os.path.isdir(itempath) and not itemname.startswith("."):
-
-                # Split the file name into its segments
-                segments = itemname.split("_")
-
-                # Get the system name in which the scaling test was run for this results file
-                systemname = segments[0]
-
-                # If no system is specified, or the system corresponds with the system of the file, we proceed
-                # In the former case, all files will pass through
-                if not self._system or systemname == self._system:
-
-                    # Get the mode in which the scaling test was run for this results file
-                    mode = segments[1]
-
-                    # Define the name of the scaling results file inside this directory
-                    filepath = os.path.join(itempath, "scaling.dat")
-
-                    # If this file exists, add its path to the library at the correct key (the name of the
-                    # system + the mode), if necessary, this will create a new key
-                    if os.path.isfile(filepath): filepaths[(systemname,mode)].append(filepath)
-
-        # Show an error if no files were found (for the specified system)
-        if len(filepaths) == 0: self._log.error("No results file found for system " + self._system)
-
-        # Create a dictionary to contain the statistics (timings with error bars for different thread counts)
-        # with the keys equal to the keys of the filenames dictionary (systemname, mode).
-        self._statistics = dict.fromkeys(filepaths.keys(), 0)
-
-        # For each different system and mode in which the scaling test has been performed
-        for (systemname, mode), filelist in filepaths.items():
-
-            # A dictionary containing the runtimes for different amount of threads for this system and mode
-            runtimes = defaultdict(list)
-
-            # For every scaling results file in this run
-            for filepath in filelist:
-
-                # Get the values from this results file. If no data could be found in the file, we skip it.
-                try:
-                    threadcounts, times = np.loadtxt(filepath, usecols=(columns['threads'],columns[phase]), unpack=True)
-                except ValueError:
-                    self._log.warning("The file " + filepath + " does not contain any data")
-                    continue
-
-                # If there was only one entry in the results file, make lists of the number of threads and the runtime
-                if isinstance(threadcounts, float):
-                    threadcounts = [threadcounts]
-                    times = [times]
-
-                # Put these in a dictionary, with the keys being the number of threads
-                for threadcount, time in zip(threadcounts, times):
-
-                    runtimes[threadcount].append(time)
-
-            # Check whether any valid data file was found for this system and mode. Otherwise, show a warning
-            # and remove the corresponding key from the dictionary.
-            if not runtimes:
-                self._log.warning("No valid data was found for " + systemname + " in " + mode + " mode")
-                self._statistics.pop((systemname, mode))
-                continue
-
-            # Make a list of the different threadcounts, order them from lowest to highest
-            nthreads = sorted(runtimes.keys())
-
-            # Now we want a list of the mean runtimes and a list of their standard deviations,
-            # corresponding with the threadcounts in the 'nthreads' list.
-            meantimes = []
-            errortimes = []
-
-            self._log.info("Calculating the average runtimes and standard deviations for " + systemname + " in " + mode + " mode...")
-
-            # For each number of threads (lowest to highest)
-            for threadcount in nthreads:
-
-                # Get the timings for this threadcount from the dictionary
-                times = runtimes[threadcount]
-
-                # Calculate the mean runtime for this number of threads
-                meantime = np.mean(times)
-
-                # Add the mean runtime to the list
-                meantimes.append(meantime)
-
-                # Check whether we have more than one timing for this number of threads
-                if len(times) > 1:
-
-                    # If this is the case, calculate the sample standard deviation and add it to the list
-                    errortimes.append(np.std(times, ddof=1))
-
-                else:
-
-                    # If only one timing was available, set the standard deviation to infinity.
-                    # No error bars will be plotted for an data point with infinite standard deviation.
-                    errortimes.append(float("inf"))
-
-            # Add the statistics for this system and mode
-            self._statistics[(systemname,mode)] = [nthreads, meantimes, errortimes]
-
-        # Make dictionaries to store the average serial runtime and its standard deviation for each system
-        self._serialruntime = dict()
-        self._serialerror = dict()
-
-        # Use a dictionary to temporarily store the serial runtimes for each different system
-        serialruntimes = defaultdict(list)
-
-        # For each system, average the serial (1 process, 1 threads) runtimes over the different modes
-        for (systemname, mode), [nthreads, times, _] in self._statistics.items():
-
-            try:
-
-                # Try to find the index of the entry corresponding with a total number of threads equal to 1
-                serialindex = nthreads.index(1)
-
-                # For this serial run, get the runtime
-                serialtime = times[serialindex]
-
-                # Add this serial runtime to the dictionary, corresponding to the appropriate system name
-                serialruntimes[systemname].append(serialtime)
-
-            except ValueError:
-                    # Try the next (systemname, mode): no serial runtime could be found for this combination
-                    pass
-
-        # If the dictionary with serial runtimes is empty, exit with an error
-        if not serialruntimes:
-
-            self._log.error("No serial runtimes could be found for the simulation; required to normalize the speedups"
-                            " and the efficiencies")
-            exit()
-
-        # For each system, calculate the average serial runtime and the standard deviation
-        for systemname, serialtimes in serialruntimes.items():
-
-            # Try to calculate the mean
-            mean = np.mean(serialtimes)
-
-            # If the result is NaN, the simulation was never run on one thread for this system
-            if np.isnan(mean):
-
-                # Exit with an error message
-                self._log.error("Could not find the " + phase + " runtime for one thread on this system")
-                exit()
-
-            # Check whether we have more than one serial timing for this system
-            if len(serialtimes) > 1:
-
-                # If this is the case, calculate the sample standard deviation
-                error = np.std(serialtimes, ddof=1)
-
-            else:
-
-                # If only one timing was available, set the standard deviation to infinity.
-                error = float("inf")
-
-            # Add the mean value and the standard deviation to the dictionary
-            self._serialruntime[systemname] = mean
-            self._serialerror[systemname] = error
-
-        # For each system, replace the serial runtime in every mode by the mean average runtime for that system
-        for (systemname, mode), [nthreads, _, _] in self._statistics.items():
-
-            try:
-
-                # Try to find the index of the entry corresponding with a total number of threads equal to 1
-                serialindex = nthreads.index(1)
-
-                # Replace the serial runtimes for this system and this mode
-                self._statistics[(systemname, mode)][1][serialindex] = self._serialruntime[systemname]
-                self._statistics[(systemname, mode)][2][serialindex] = self._serialerror[systemname]
-
-            except ValueError:
-
-                # For this configuration no runtime was recorded with only one thread, so we add an entry
-                # with the appropriate serial runtime and its error, if the mode is 'threads' or 'mpi' and not hybrid
-                # (because the curve for hybrid should only start for a number of processors = threads per process)
-                # Basically, this procedure lets us use the average runtime on 1 processor as part of an 'mpi' mode
-                # scaling test as the runtime on 1 processor for the 'threads' mode scaling relation, if we didn't
-                # have this runtime available from the 'threads' mode scaling test results file
-                if mode == "threads" or mode == "mpi":
-
-                    self._statistics[(systemname, mode)][0].insert(0, 1)
-                    self._statistics[(systemname, mode)][1].insert(0, self._serialruntime[systemname])
-                    self._statistics[(systemname, mode)][2].insert(0, self._serialerror[systemname])
+        self.log = Log()
 
     # -----------------------------------------------------------------
 
-    ## This function creates a PDF plot showing the execution time in function of thread count.
-    #  The function takes the following (optional) arguments:
-    #
-    #  - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
-    #  - xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
-    #  - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
-    #
-    def plottimes(self, figsize=(12,8), xlim=None, ylim=None):
+    def run(self, input, output_path):
 
-        # Use a non-interactive back-end to generate high-quality vector graphics
-        if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
-        import matplotlib.pyplot as plt
-        import matplotlib.ticker
+        """
+        This function ...
+        :return:
+        """
+
+        # If the input is a Table object
+        if isinstance(input, Table): self.table = input
+
+        # If the input is a string
+        elif isinstance(input, basestring): self.table = Table.read(input, format="ascii")
+
+        # Invalid input
+        else: raise ValueError("Input must be either an Astropy Table object or a filename (e.g. memory.dat)")
+
+        # Set the path to the output directory
+        self.output_path = output_path
+
+        # Make the plots
+        self.plot()
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot the scaling relation of the runtime
+        self.plot_times()
+
+        # Plot the scaling relation of the speedup
+        self.plot_speedups()
+
+        # Plot the scaling relation of the efficiency
+        self.plot_efficiencies()
+
+        # Plot the scaling relation of the memory usage
+        self.plot_memory()
+
+    # -----------------------------------------------------------------
+
+    def plot_times(self, figsize=(12,8), xlim=None, ylim=None):
+
+        """
+        This function creates a PDF plot showing the execution time as a function of the number of threads.
+        It takes the following arguments:
+        :param figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
+        :param xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
+        :param ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
+        :return:
+        """
 
         # Inform the user of the fact that the runtimes are being plotted
-        self._log.info("Plotting the runtimes...")
+        self.log.info("Plotting the runtimes...")
 
-        # Initialize a figure with the appropriate size
+        # Determine the file path for this plot
+        file_path = os.path.join(self.output_path, "times.pdf")
+
+        # Create a PDF Pages object
+        pp = PdfPages(file_path)
+
+        # Initialize figure with the appropriate size
         plt.figure(figsize=figsize)
+        plt.clf()
 
         # Create a set that stores the tick labels for the plot
         ticks = set()
@@ -332,34 +162,40 @@ class ScalingPlotter(object):
         plt.legend(title="Modes") if self._system else plt.legend(title="Systems")
 
         # Save the figure
-        systemidentifier = self._system + "_" if self._system else ""
-        filename = "scaling_" + self._phase + "_" + systemidentifier + "times.pdf"
-        filepath = os.path.join(self._vispath, filename)
-        plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
-        plt.close()
+        #systemidentifier = self._system + "_" if self._system else ""
+        #filename = "scaling_" + self._phase + "_" + systemidentifier + "times.pdf"
+
+        # Save the figure
+        pp.savefig()
+        pp.close()
 
     # -----------------------------------------------------------------
 
-    ## This function creates a PDF plot showing the speedup in function of thread count.
-    #  The speedup is defined as T(1)/T(N). It is a dimensionless quantity, theoretically it is >= 1.
-    #  The function takes the following (optional) arguments:
-    #
-    #  - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
-    #  - xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
-    #  - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
-    #
-    def plotspeedups(self, figsize=(12,8), xlim=None, ylim=None, plotfit=False):
+    def plot_speedups(self, figsize=(12,8), xlim=None, ylim=None, plotfit=False):
 
-        # Use a non-interactive back-end to generate high-quality vector graphics
-        if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
-        import matplotlib.pyplot as plt
-        import matplotlib.ticker
+        """
+        This function creates a PDF plot showing the speedup as a function of the number of threads.
+        The speedup is defined as T(1)/T(N). It is a dimensionless quantity, theoretically it is >= 1.
+        This function takes the following (optional) arguments:
+        :param figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
+        :param xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
+        :param ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
+        :param plotfit:
+        :return:
+        """
 
         # Inform the user of the fact that the speedups are being calculated and plotted
-        self._log.info("Calculating and plotting the speedups...")
+        self.log.info("Calculating and plotting the speedups...")
 
-        # Initialize a figure with the appropriate size
+        # Determine the file path for this plot
+        file_path = os.path.join(self.output_path, "speedups.pdf")
+
+        # Create a PDF Pages object
+        pp = PdfPages(file_path)
+
+        # Initialize figure with the appropriate size
         plt.figure(figsize=figsize)
+        plt.clf()
 
         # Create a set that stores the tick labels for the plot
         ticks = set()
@@ -474,32 +310,39 @@ class ScalingPlotter(object):
         plt.legend(title="Modes") if self._system else plt.legend(title="Systems")
 
         # Save the figure
-        systemidentifier = self._system + "_" if self._system else ""
-        filename = "scaling_" + self._phase + "_" + systemidentifier + "speedups.pdf"
-        filepath = os.path.join(self._vispath, filename)
-        plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
-        plt.close()
+        #systemidentifier = self._system + "_" if self._system else ""
+        #filename = "scaling_" + self._phase + "_" + systemidentifier + "speedups.pdf"
 
-    ## This function creates a PDF plot showing the efficiency in function of thread count.
-    #  Efficiency is defined as T(1)/T(N)/N. It is a dimensionless quantity <= 1.
-    #  The function takes the following (optional) arguments:
-    #
-    #  - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
-    #  - xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
-    #  - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
-    #
-    def ploteffs(self, figsize=(12,8), xlim=None, ylim=None):
+        # Save the figure
+        pp.savefig()
+        pp.close()
 
-        # Use a non-interactive back-end to generate high-quality vector graphics
-        if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
-        import matplotlib.pyplot as plt
-        import matplotlib.ticker
+    # -----------------------------------------------------------------
+
+    def plot_efficiencies(self, figsize=(12,8), xlim=None, ylim=None):
+
+        """
+        This function creates a PDF plot showing the efficiency as a function of the number of threads.
+        Efficiency is defined as T(1)/T(N)/N. It is a dimensionless quantity <= 1.
+        The function takes the following (optional) arguments:
+        :param figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
+        :param xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
+        :param ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
+        :return:
+        """
 
         # Inform the user of the fact that the efficiencies are being calculated and plotted
-        self._log.info("Calculating and plotting the efficiencies...")
+        self.log.info("Calculating and plotting the efficiencies...")
 
-        # Initialize a figure with the appropriate size
+        # Determine the file path for this plot
+        file_path = os.path.join(self.output_path, "efficiencies.pdf")
+
+        # Create a PDF Pages object
+        pp = PdfPages(file_path)
+
+        # Initialize figure with the appropriate size
         plt.figure(figsize=figsize)
+        plt.clf()
 
         # Create a set that stores the tick labels for the plot
         ticks = set()
@@ -553,22 +396,47 @@ class ScalingPlotter(object):
         plt.legend(title="Modes") if self._system else plt.legend(title="Systems")
 
         # Save the figure
-        systemidentifier = self._system + "_" if self._system else ""
-        filename = "scaling_" + self._phase + "_" + systemidentifier + "efficiencies.pdf"
-        filepath = os.path.join(self._vispath, filename)
-        plt.savefig(filepath, bbox_inches='tight', pad_inches=0.25)
-        plt.close()
+        #systemidentifier = self._system + "_" if self._system else ""
+        #filename = "scaling_" + self._phase + "_" + systemidentifier + "efficiencies.pdf"
+
+        # Save the figure
+        pp.savefig()
+        pp.close()
+
+    # -----------------------------------------------------------------
+
+    def plot_memory(self, figsize=(12,8)):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Plotting the memory scaling...")
+
+        # Determine the file path for this plot
+        file_path = os.path.join(self.output_path, "times.pdf")
+
+        # Create a PDF Pages object
+        pp = PdfPages(file_path)
+
+        # Initialize figure with the appropriate size
+        plt.figure(figsize=figsize)
+        plt.clf()
+
+        # ...
+
+        # Save the figure
+        pp.savefig()
+        pp.close()
 
 # -----------------------------------------------------------------
 
 ## This function defines Amdahl's law for the speedup
-def Amdahl(n, p):
-
-    return 1.0/(1 - p + p/n)
+def Amdahl(n, p): return 1.0/(1 - p + p/n)
 
 # This function defines a modified version of Amdahl's law, which accounts for different kinds of overhead
-def modAmdahl(n, p, a, b, c):
-
-    return 1.0/(1 - p + p/n + a + b*n + c*n**2)
+def modAmdahl(n, p, a, b, c): return 1.0/(1 - p + p/n + a + b*n + c*n**2)
 
 # -----------------------------------------------------------------

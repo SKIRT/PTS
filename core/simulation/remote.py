@@ -856,6 +856,8 @@ class SkirtRemote(Configurable):
                 extraction_directory = None
                 plotting_directory = None
                 scaling_test = None
+                scaling_file_path = None
+                scaling_run_plot_path = None
                 screen_session = None
 
                 retreived = False
@@ -885,6 +887,8 @@ class SkirtRemote(Configurable):
                         elif "extraction directory" in line: extraction_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "plotting directory" in line: plotting_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "part of scaling test" in line: scaling_test = line.split("scaling test ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "scaling data file" in line: scaling_file_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "scaling run plot path" in line: scaling_run_plot_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "launched within screen session" in line: screen_session = line.split("screen session ")[1].replace('\n', ' ').replace('\r', '').strip()
 
                         elif "retreived at" in line: retreived = True
@@ -924,6 +928,8 @@ class SkirtRemote(Configurable):
                 simulation.extraction_path = extraction_directory
                 simulation.plot_path = plotting_directory
                 simulation.scaling_test = scaling_test
+                simulation.scaling_file_path = scaling_file_path
+                simulation.scaling_run_plot_path = scaling_run_plot_path
                 simulation.screen_session = screen_session
 
                 simulations.append(simulation)
