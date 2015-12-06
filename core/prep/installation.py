@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.installation
+## \package pts.core.prep.installation
 #
 
 # -----------------------------------------------------------------
@@ -17,9 +17,12 @@ from __future__ import absolute_import, division, print_function
 import os
 import urllib
 
+# Import the relevant PTS classes and modules
+from ..basics.configurable import Configurable
+
 # -----------------------------------------------------------------
 
-class SkirtInstallation(object):
+class SkirtInstaller(Configurable):
     
     """
     This class ...
@@ -30,7 +33,12 @@ class SkirtInstallation(object):
         """
         The constructor ...
         """
-        
+
+        # Call the constructor of the base class
+        super(SkirtInstaller, self).__init__()
+
+        ## Attributes
+
         self.has_qt = False
         
     # -----------------------------------------------------------------
@@ -41,12 +49,19 @@ class SkirtInstallation(object):
         This function ...
         """
 
+        # 1. Call the setup function
+        self.setup()
+
+        # 2.
         self.check_qt()
 
+        # 3.
         if not self.has_qt: self.install_qt()
 
+        # 4.
         self.get()
 
+        # 5.
         self.install()
 
     # -----------------------------------------------------------------
