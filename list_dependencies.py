@@ -40,8 +40,10 @@ for directory, subdirs, files in os.walk(os.getcwd()):
                 # Get the name of the module
                 module = line.split()[1].split(".")[0]
                     
+                print(filepath)    
+                
                 # Get the path of the script, relative to the 'PTS/git' directory
-                rel_filepath = filepath.split("PTS/git/")[1]
+                rel_filepath = filepath.split("PTS/pts/")[1]
                     
                 # Add the module name to the list
                 if module: modules[module].append(rel_filepath)
