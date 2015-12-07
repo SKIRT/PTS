@@ -49,7 +49,7 @@ class LogFile(object):
 
         # Determine the process rank associated with this log file
         try: self.process = int(name.split("_logP")[1].split(".txt")[0])
-        except IndexError: self.process = 1
+        except IndexError: self.process = 0
 
         # Parse the log file
         self.contents = parse(path)
@@ -61,7 +61,7 @@ class LogFile(object):
     # -----------------------------------------------------------------
 
     @property
-    def t0(self):
+    def t_0(self):
 
         """
         This function ...
@@ -70,6 +70,19 @@ class LogFile(object):
 
         # Return the time of the first log message
         return self.contents["Time"][0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def t_last(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the time of the last log message
+        return self.contents["Time"][-1]
 
     # -----------------------------------------------------------------
 

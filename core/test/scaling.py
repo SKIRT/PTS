@@ -447,7 +447,9 @@ class ScalingTest(Configurable):
         infofile.write(" - number of requested processors per node: " + str(ppn) + "\n")
 
         # Calculate the expected walltime for this number of processors if a scheduling system is used
-        if self.scheduler: walltime = self.estimate_walltime(processors)
+        if self.scheduler:
+            walltime = self.estimate_walltime(processors)
+            self.log.info(" - expected walltime: " + str(walltime) + " seconds")
         else: walltime = None
 
         ###
@@ -551,8 +553,13 @@ class ScalingTest(Configurable):
         :return:
         """
 
-        # Create the file and set the path
+        # Set the path to the scaling file for the current system (remote host - cluster)
         self.scaling_file_path = os.path.join(self.result_path_system, "scaling.dat")
+
+        # If the file has already been created, return
+        if os.path.isfile(self.scaling_file_path): return
+
+        # Otherwise, create the file
         scalingfile = open(self.scaling_file_path, "w")
 
         # Write a header to this new file which contains some general info about its contents

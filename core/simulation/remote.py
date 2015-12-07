@@ -193,8 +193,8 @@ class SkirtRemote(Configurable):
         if self.host.scheduler:
 
             # Submit the simulation to the remote scheduling system
-            print("scheduling options", scheduling_options)
-            simulation_id = self.schedule(arguments, name, scheduling_options, local_ski_path, remote_simulation_path) #local_ski_path, remote_simulation_path, walltime, name, jobscript_path, mail, full_node)
+            #print("scheduling options", scheduling_options)
+            simulation_id = self.schedule(arguments, name, scheduling_options, local_ski_path, remote_simulation_path)
 
         # If no scheduling system is used, just store the SKIRT arguments in a list for now and execute the complete
         # list of simulations later on (when 'start_queue' is called)
@@ -407,7 +407,7 @@ class SkirtRemote(Configurable):
 
         # Create a unique name for the simulation directory
         skifile_name = os.path.basename(arguments.ski_pattern).split(".ski")[0]
-        remote_simulation_name = time.unique_name(skifile_name)
+        remote_simulation_name = time.unique_name(skifile_name, separator="__")
 
         # Determine the full path of the simulation directory on the remote system
         remote_simulation_path = os.path.join(self.skirt_run_dir, remote_simulation_name)
@@ -520,10 +520,11 @@ class SkirtRemote(Configurable):
             local_simulation_path = os.path.dirname(local_ski_path)
             local_jobscript_path = os.path.join(local_simulation_path, "job.sh")
         else: local_jobscript_path = scheduling_options["jobscript_path"]
+        jobscript_name = os.path.basename(local_jobscript_path)
         jobscript = JobScript(local_jobscript_path, arguments, self.host.clusters[self.config.cluster_name], self.skirt_path, self.host.mpi_command, self.host.modules, walltime, nodes, ppn, name=name, mail=mail, full_node=full_node)
 
         # Copy the job script to the remote simulation directory
-        remote_jobscript_path = os.path.join(remote_simulation_path, "job.sh")
+        remote_jobscript_path = os.path.join(remote_simulation_path, jobscript_name)
         self.upload(local_jobscript_path, remote_simulation_path)
 
         ## Swap clusters
@@ -531,13 +532,10 @@ class SkirtRemote(Configurable):
         #output = subprocess.check_output("module swap cluster/" + self._clustername + "; qsub " + self._path, shell=True, stderr=subprocess.STDOUT)
 
         # Submit the job script to the remote scheduling system
-        output = self.execute("qsub " + remote_jobscript_path)
+        output = self.execute("qsub " + remote_jobscript_path, contains_extra_eof=True)
 
         # The queu number of the submitted job is used to identify this simulation
-        simulation_id = int(output[0])
-
-        print(simulation_id)
-        exit()
+        simulation_id = int(output[0].split(".")[0])
 
         # Return the simulation ID
         return simulation_id
@@ -657,7 +655,7 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
-    def execute(self, command, output=True, expect_eof=True):
+    def execute(self, command, output=True, expect_eof=True, contains_extra_eof=False):
 
         """
         This function ...
@@ -671,11 +669,19 @@ class SkirtRemote(Configurable):
         # Retreive the output if requested
         eof = self.ssh.prompt()
 
+        # If an extra EOF is used before the actual output line (don't ask me why but I encounter this on the HPC UGent infrastructure), do prompt() again
+        if contains_extra_eof: eof = self.ssh.prompt()
+
         # If the command could not be sent, raise an error
         if not eof and expect_eof: raise RuntimeError("The command could not be sent")
 
+        if "job_" in command: print(self.ssh.before)
+
         # Ignore the first and the last line (the first is the command itself, the last is always empty)
-        if output: return self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
+        if output:
+            # Trial and error to get it right for HPC UGent login nodes; don't know what is happening
+            if contains_extra_eof: return self.ssh.before.replace('\x1b[K', '').split("\r\n")[1:-1]
+            else: return self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
 
     # -----------------------------------------------------------------
 

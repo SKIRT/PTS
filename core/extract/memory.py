@@ -82,9 +82,9 @@ class MemoryExtractor(object):
                 break
 
         # Loop over all log files to determine the earliest recorded time
-        t0 = datetime.now()
+        t_0 = datetime.now()
         for log_file in self.log_files:
-            if log_file.t0 < t0: t0 = log_file.t0
+            if log_file.t_0 < t_0: t_0 = log_file.t_0
 
         # Loop over the log files again and fill the column lists
         for log_file in self.log_files:
@@ -99,7 +99,7 @@ class MemoryExtractor(object):
             for j in range(len(log_file.contents)):
 
                 # Calculate the number of seconds that have passed since the earliest recorded log time
-                seconds = (log_file.contents["Time"][j] - t0).total_seconds()
+                seconds = (log_file.contents["Time"][j] - t_0).total_seconds()
 
                 # Fill in the column lists
                 process_list.append(process)

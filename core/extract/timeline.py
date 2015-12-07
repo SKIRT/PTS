@@ -91,9 +91,9 @@ class TimeLineExtractor(object):
         end_list = []
 
         # Loop over all log files to determine the earliest recorded time
-        t0 = datetime.now()
+        t_0 = datetime.now()
         for log_file in self.log_files:
-            if log_file.t0 < t0: t0 = log_file.t0
+            if log_file.t_0 < t_0: t_0 = log_file.t_0
 
         # Loop over the log files again and fill the column lists
         for log_file in self.log_files:
@@ -105,7 +105,7 @@ class TimeLineExtractor(object):
             current_phase = log_file.contents["Phase"][0]
             process_list.append(process)
             phase_list.append(current_phase)
-            start_list.append(log_file.t0)
+            start_list.append(log_file.t_0)
 
             # Loop over all log file entries
             for j in range(len(log_file.contents)):
@@ -129,6 +129,9 @@ class TimeLineExtractor(object):
 
                     # Update the current phase
                     current_phase = phase
+
+            # Add the last recorded time in the log file as the end of the last simulation phase
+            end_list.append(log_file.t_last)
 
         # Create the table data structures
         names = ['Process rank', 'Simulation phase', 'Start time', 'End time']
@@ -189,13 +192,13 @@ class TimeLineExtractor(object):
         # Keep track of the total amount of time spent in the specified phase
         total = 0.0
 
-        assert self.table["Process"][0] == 0
+        assert self.table["Process rank"][0] == 0
 
         # Loop over the table rows
         for i in range(len(self.table)):
 
             # Only add the contributions from the root process
-            if self.table["Process"][i] > 0: break
+            if self.table["Process rank"][i] > 0: break
 
             # Check whether the current entry corresponds to the desired phase
             if self.table["Simulation phase"][i] == phase:
@@ -205,8 +208,8 @@ class TimeLineExtractor(object):
                 end = self.table["End time"][i]
 
                 # Calculate the time duration for this phase, returning it if single=True, otherwise add it to the total
-                if single: return end - start
-                else: total += end - start
+                if single: return (end - start).total_seconds()
+                else: total += (end - start).total_seconds()
 
         # Return the total amount of time spent in the specified phase
         return total
@@ -230,13 +233,13 @@ class TimeLineExtractor(object):
         # Keep track of the total amount of time spent in phases other than the specified phase
         total = 0.0
 
-        assert self.table["Process"][0] == 0
+        assert self.table["Process rank"][0] == 0
 
         # Loop over the table rows
         for i in range(len(self.table)):
 
             # Only add the contributions from the root process
-            if self.table["Process"][i] > 0: break
+            if self.table["Process rank"][i] > 0: break
 
             # Check whether the current entry corresponds to a phase different from the specified phase
             if self.table["Simulation phase"][i] not in phases:
@@ -246,7 +249,7 @@ class TimeLineExtractor(object):
                 end = self.table["End time"][i]
 
                 # Add the duration to the total
-                total += end - start
+                total += (end - start).total_seconds()
 
         # Return the total amount of time spent in phases other than the specified phase
         return total
@@ -326,7 +329,7 @@ class TimeLineExtractor(object):
         for i in reversed(range(len(self.table))):
 
             # Only add the contributions from the root process
-            if self.table["Process"][i] > 0: break
+            if self.table["Process rank"][i] > 0: break
 
             # Check whether the current entry corresponds to the desired phase
             if self.table["Simulation phase"][i] == "dust":
@@ -336,7 +339,7 @@ class TimeLineExtractor(object):
                 end = self.table["End time"][i]
 
                 # Calculate the time duration for the dust emission phase (only the shooting part)
-                return end - start
+                return (end - start).total_seconds()
 
     # -----------------------------------------------------------------
 

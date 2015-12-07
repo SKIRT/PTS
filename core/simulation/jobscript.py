@@ -102,8 +102,9 @@ class JobScript(object):
             self.script.write("# Load the necessary modules\n")
             #self.script.write("module load jobs\n")
             for module_name in modules:
-                self.script.write("module load " + module_name)
+                self.script.write("module load " + module_name + "\n")
 
+        # Add whiteline
         self.script.write("\n")
 
         # Run the simulation

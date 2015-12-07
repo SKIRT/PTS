@@ -177,6 +177,7 @@ class SkirtSimulation:
                         if "with" in line:
                             self._processes = int(line.split(' with ')[1].split()[0])
                         else: self._processes = 1
+            if self._processes is None: raise ValueError("Cannot determine the number of processes from the log file")
         return self._processes
 
     ## This function returns the number of threads used for this simulation
@@ -190,7 +191,7 @@ class SkirtSimulation:
                         triggered = True
                         max_thread_number = int(line.split("thread number ")[1].split(" with seed")[0])
                     elif triggered: self._threads = max_thread_number+1
-                raise ValueError("Cannot determine the number of threads from the log file")
+            if self._threads is None: raise ValueError("Cannot determine the number of threads from the log file")
         return self._threads
 
     ## This function returns a SkiFile object representing the parameter file for this simulation.

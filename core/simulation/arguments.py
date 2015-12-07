@@ -142,7 +142,7 @@ class SkirtArguments(object):
         if self.logging.brief: arguments += ["-b"]
         if self.logging.verbose: arguments += ["-v"]
         if self.logging.memory: arguments += ["-m"]
-        if self.logging.allocation: arguments += ["-l ", str(self.logging.allocation_limit)]
+        if self.logging.allocation: arguments += ["-l", str(self.logging.allocation_limit)]
 
         ## Input and output
 
