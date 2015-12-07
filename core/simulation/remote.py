@@ -532,7 +532,8 @@ class SkirtRemote(Configurable):
         #output = subprocess.check_output("module swap cluster/" + self._clustername + "; qsub " + self._path, shell=True, stderr=subprocess.STDOUT)
 
         # Submit the job script to the remote scheduling system
-        output = self.execute("qsub " + remote_jobscript_path, contains_extra_eof=True)
+        #output = self.execute("qsub " + remote_jobscript_path, contains_extra_eof=True)
+        output = self.execute("qsub " + remote_jobscript_path)
 
         # The queu number of the submitted job is used to identify this simulation
         simulation_id = int(output[0].split(".")[0])
@@ -673,9 +674,7 @@ class SkirtRemote(Configurable):
         if contains_extra_eof: eof = self.ssh.prompt()
 
         # If the command could not be sent, raise an error
-        if not eof and expect_eof: raise RuntimeError("The command could not be sent")
-
-        if "job_" in command: print(self.ssh.before)
+        if not eof and expect_eof and not contains_extra_eof: raise RuntimeError("The command could not be sent")
 
         # Ignore the first and the last line (the first is the command itself, the last is always empty)
         if output:
@@ -1297,6 +1296,7 @@ class SkirtRemote(Configurable):
         :return:
         """
 
+        # If the remote host does not use a scheduling system
         if not self.host.scheduler:
 
             # Initialize a list to contain the simulations
