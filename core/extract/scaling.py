@@ -45,7 +45,7 @@ class ScalingExtractor():
         """
 
         # Set the parallelization mode
-        self.mode = simulation.scaling_run_name.split("_")[4]
+        self.mode = simulation.scaling_run_name.split("__")[4]
 
         # Set the number of processes and threads
         self.processes = simulation.processes

@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
-import numpy as np
+import json
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
@@ -95,7 +95,7 @@ class ScalingTest(Configurable):
 
         # Other options
         test.config.manual = arguments.manual
-        test.config.keep_output = arguments.keep
+        test.config.keep = arguments.keep
 
         # Return the new scaling test
         return test
@@ -172,8 +172,8 @@ class ScalingTest(Configurable):
 
         # Define a name identifying this scaling test run
         #self.scaling_run_name = time.unique_name(self.mode_info + "_" + str(self.config.max_nodes) + "_" + str(self.config.min_nodes))
-        self.scaling_run_name = time.unique_name(self.mode_info)
-        self.long_scaling_run_name = "SKIRT_scaling_" + self.prefix + "_" + self.remote.system_name + "_" + self.scaling_run_name
+        self.scaling_run_name = time.unique_name(self.mode_info, separator="__")
+        self.long_scaling_run_name = "SKIRT__scaling__" + self.prefix + "__" + self.remote.system_name + "__" + self.scaling_run_name
 
         # Create the input, output, result, plot and temp directories
         self.create_directory_structure()
@@ -395,7 +395,7 @@ class ScalingTest(Configurable):
         self.create_simulation_directories(processors)
 
         # Write some information about this simulation to the info file
-        infofile.write("Simulation performed on " + str(processors) + " processors\n")
+        infofile.write("Simulation performed on " + str(processors) + " processor(s)\n")
         infofile.write(" - ski file: " + self.config.ski_path + "\n")
         infofile.write(" - output directory: " + self.output_path_simulation + "\n")
         infofile.write(" - number of processes: " + str(processes) + "\n")
@@ -494,8 +494,9 @@ class ScalingTest(Configurable):
         simulation_file.write("plot progress: " + str(True) + "\n")
         simulation_file.write("plot timeline: " + str(True) + "\n")
         simulation_file.write("plot memory: " + str(True) + "\n")
-        simulation_file.write("remove remote input: " + str(False) + "\n")
-        simulation_file.write("remove remote output: " + str(False) + "\n")
+        simulation_file.write("remove remote input: " + str(not self.config.keep) + "\n")
+        simulation_file.write("remove remote output: " + str(not self.config.keep) + "\n")
+        simulation_file.write("retreive types: " + json.dumps(["log"]) + "\n")
         simulation_file.write("extraction directory: " + self.result_path_simulation + "\n")
         simulation_file.write("plotting directory: " + self.plot_path_simulation + "\n")
         simulation_file.write("part of scaling test run " + self.long_scaling_run_name + "\n")
@@ -535,7 +536,7 @@ class ScalingTest(Configurable):
         infofile.write("SKIRT version: " + self.remote.skirt_version + "\n")
         infofile.write("Parallelization mode: " + self.mode_info_long + "\n")
         infofile.write("Maximum number of nodes: " + str(self.config.max_nodes) + " (" + str(self.max_processors) + " processors)\n")
-        infofile.write("Minimum number of nodes: " + str(self.config.min_nodes) + " (" + str(self.min_processors) + " processors)\n")
+        infofile.write("Minimum number of nodes: " + str(self.config.min_nodes) + " (" + str(self.min_processors) + " processor(s))\n")
         infofile.write("\n")
 
         # Close the info file (information on specific simulations will be appended)

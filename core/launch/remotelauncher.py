@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import json
 
 # Import the relevant PTS classes and modules
 from .analyser import SimulationAnalyser
@@ -116,6 +117,12 @@ class SkirtRemoteLauncher(Configurable):
         # Advanced options
         launcher.config.advanced.rgb = arguments.makergb
         launcher.config.advanced.wavemovie = arguments.makewave
+
+        # Keep remote input and output
+        launcher.config.keep = arguments.keep
+
+        # Retreive types
+        launcher.config.retreive_types = arguments.retreive
 
         # Return the new launcher
         return launcher
@@ -272,8 +279,9 @@ class SkirtRemoteLauncher(Configurable):
         simulation_file.write("plot memory: " + str(self.config.plotting.memory) + "\n")
         simulation_file.write("make rgb images: " + str(self.config.advanced.rgb) + "\n")
         simulation_file.write("make wave movie: " + str(self.config.advanced.wavemovie) + "\n")
-        simulation_file.write("remove remote input: " + str(False) + "\n")
-        simulation_file.write("remove remote output: " + str(False) + "\n")
+        simulation_file.write("remove remote input: " + str(not self.config.keep) + "\n")
+        simulation_file.write("remove remote output: " + str(not self.config.keep) + "\n")
+        simulation_file.write("retreive types: " + json.dumps(self.config.retreive_types) + "\n")
         simulation_file.write("extraction directory: " + self.extr_path + "\n")
         simulation_file.write("plotting directory: " + self.plot_path + "\n")
 

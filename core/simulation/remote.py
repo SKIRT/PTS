@@ -17,6 +17,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 import re
+import json
 import pxssh
 import pexpect
 import tempfile
@@ -678,6 +679,30 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
+    def directories_in_path(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return self.execute("for i in $(ls -d */); do echo ${i%%/}; done")
+
+    # -----------------------------------------------------------------
+
+    def files_in_path(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return self.execute("for f in *; do [[ -d $f ]] || echo $f; done")
+
+    # -----------------------------------------------------------------
+
     def download(self, origin, destination, timeout=30):
 
         """
@@ -853,6 +878,7 @@ class SkirtRemote(Configurable):
                 make_wave = None
                 remove_remote_input = None
                 remove_remote_output = None
+                retreive_types = None
                 extraction_directory = None
                 plotting_directory = None
                 scaling_run_name = None
@@ -883,6 +909,7 @@ class SkirtRemote(Configurable):
                         elif "make wave movie" in line: make_wave = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
                         elif "remove remote input" in line: remove_remote_input = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
                         elif "remove remote output" in line: remove_remote_output = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
+                        elif "retreive types" in line: retreive_types = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "extraction directory" in line: extraction_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "plotting directory" in line: plotting_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "part of scaling test run" in line: scaling_run_name = line.split("scaling test run ")[1].replace('\n', ' ').replace('\r', '').strip()
@@ -895,8 +922,54 @@ class SkirtRemote(Configurable):
                 # If the simulation has already been retreived, skip it
                 if retreived: continue
 
-                # Download the simulation output
-                self.download(remote_output_path, local_output_path)
+                # If retreive file types are not defined, download the complete output directory
+                if retreive_types is None or retreive_types == "None":
+
+                    # Download the simulation output
+                    self.download(remote_output_path, local_output_path)
+
+                # If retreive file types are defined, download these files seperately to the local filesystem
+                else:
+
+                    # Try to create a list from the string that represents the retreive types
+                    try: retreive_types_list = json.loads(retreive_types)
+                    except ValueError: raise ValueError("The format of the retreive types string is invalid")
+
+                    # Create a list for the paths of the files that have to be copied to the local filesystem
+                    copy_paths = []
+
+                    # Loop over the files that are present in the remoute output directory
+                    for filename in self.files_in_path(remote_output_path):
+
+                        # Determine the full path to the output file
+                        filepath = os.path.join(local_output_path, filename)
+
+                        # Loop over the different possible file types and add the filepath if the particular type is in the list of types to retreive
+                        if filename.endswith("_ds_isrf.dat"):
+                            if "isrf" in retreive_types_list: copy_paths.append(filepath)
+                        elif "_ds_temp" in filename and filename.endswith(".fits"):
+                            if "temp" in retreive_types_list: copy_paths.append(filepath)
+                        elif filename.endswith("_sed.dat"):
+                            if "sed" in retreive_types_list: copy_paths.append(filepath)
+                        elif filename.endswith("_total.fits"):
+                            if "image" in retreive_types_list: copy_paths.append(filepath)
+                        elif filename.endswith("_ds_celltemps.dat"):
+                            if "celltemp" in retreive_types_list: copy_paths.append(filepath)
+                        elif filename.endswith("_log.txt"):
+                            if "log" in retreive_types_list: copy_paths.append(filepath)
+                        elif filename.endswith("_wavelengths.dat"):
+                            if "wavelengths" in retreive_types_list: copy_paths.append(filepath)
+                        elif "_ds_grid" in filename and filename.endswith(".dat"):
+                            if "grid" in retreive_types_list: copy_paths.append(filepath)
+                        elif "_ds_grho" in filename and filename.endswith(".fits"):
+                            if "grho" in retreive_types_list: copy_paths.append(filepath)
+                        elif "_ds_trho" in filename and filename.endswith(".fits"):
+                            if "trho" in retreive_types_list: copy_paths.append(filepath)
+                        elif filename.endswith("_ds_convergence.dat"):
+                            if "convergence" in retreive_types_list: copy_paths.append(filepath)
+
+                    # Download the list of files to the local output directory
+                    self.download(copy_paths, local_output_path)
 
                 # If retreival was succesful, add this information to the simulation file
                 with open(path, "a") as simulation_file:

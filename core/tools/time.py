@@ -91,7 +91,7 @@ def timestamp():
 
 # -----------------------------------------------------------------
 
-def unique_name(name):
+def unique_name(name, separator="_"):
 
     """
     This function ...
@@ -100,6 +100,6 @@ def unique_name(name):
     """
 
     # Add a timestamp accurate up to the millisecond to the passed name
-    return name + "_" + datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f")[:-3]
+    return name + separator + datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f")[:-3]
 
 # -----------------------------------------------------------------

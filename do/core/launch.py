@@ -39,6 +39,18 @@ def tuple(argument):
 
 # -----------------------------------------------------------------
 
+def string_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return argument.split(",")
+
+# -----------------------------------------------------------------
+
 # Create the command-line parser
 parser = argparse.ArgumentParser()
 parser.add_argument("file", type=str, help="the name of the ski/fski file")
@@ -62,6 +74,8 @@ parser.add_argument("--plotmemory", action="store_true", help="make a plot of th
 parser.add_argument("--makergb", action="store_true", help="add this option to make RGB images from the SKIRT output")
 parser.add_argument("--makewave", action="store_true", help="add this option to make a wave movie from the SKIRT output")
 parser.add_argument("--debug", action="store_true", help="add this option to enable debug output for the launch procedure")
+parser.add_argument("--keep", action="store_true", help="add this option to keep the remote input and output")
+parser.add_argument("--retreive", type=string_list, help="specify the types of output files that have to be retreived")
 
 # Parse the command line arguments
 arguments = parser.parse_args()
