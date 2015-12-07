@@ -14,13 +14,12 @@
 
 # Import standard modules
 import os
-import os.path
 import subprocess
 
 # Import the relevant PTS classes and modules
 from ..basics.log import Log
 from .arguments import SkirtArguments
-from ..tools import inspection
+from ..tools import inspection, filesystem
 
 # -----------------------------------------------------------------
 #  SkirtExec class
@@ -46,6 +45,8 @@ class SkirtExec:
         self._path = path if path is not None else ""
         if not self._path.endswith("skirt"): self._path = os.path.join(self._path, "skirt")
         if self._path != "skirt": self._path = os.path.realpath(os.path.expanduser(self._path))
+
+        if self._path == "skirt": self._path = inspection.skirt_path
 
         # Indicate no simulations are running yet
         self._process = None
@@ -168,14 +169,61 @@ class SkirtExec:
     # object. The function invokes SKIRT with an incorrect command line argument to obtain this information.
     def version(self):
         # execute skirt with incorrect argument list and get its output
-        process = subprocess.Popen([self._path, "-version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        process = subprocess.Popen([self._path, "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         output = process.communicate()[0]
 
         # return the relevant portion of the output
         return "SKIRT" + output.splitlines()[0].partition("SKIRT")[2]
 
     ## This function returns a string with the path of the SKIRT directory that is used, for example: HOME/SKIRT
-    def directory(self):
+    @property
+    def root_directory(self):
         return os.path.dirname(os.path.dirname(os.path.dirname(self._path)))
+
+    ## This function returns the path to the SKIRT repository directory (SKIRT/git)
+    @property
+    def repo_directory(self):
+        return os.path.join(self.root_directory, "git")
+
+    ## This function returns the path to the SKIRT run directory (SKIRT/run)
+    @property
+    def run_directory(self):
+        return os.path.join(self.root_directory, "run")
+
+    ## This function installs SKIRT
+    def install(self, private=False):
+
+        # Determine the path to the home directory
+        home_dir = os.path.expanduser("~")
+
+        # Create the SKIRT directory
+        root_dir = os.path.join(home_dir, "SKIRT")
+        os.mkdir(root_dir)
+
+        # Create the SKIRT run, git and release directories
+        run_dir = os.path.join(root_dir, "run")
+        repo_dir = os.path.join(root_dir, "git")
+        release_dir = os.path.join(root_dir, "release")
+        filesystem.create_directories([run_dir, repo_dir, release_dir])
+
+        #  Clone the SKIRT repository
+        if private: subprocess.call("git clone git@github.ugent.be:SKIRT/SKIRT.git git", cwd=root_dir)
+
+        else: subprocess.call("git clone https://github.com/SKIRT/SKIRT.git git", cwd=root_dir)
+
+        # Compile the SKIRT code
+        subprocess.call("./makeSKIRT.sh", cwd=repo_dir)
+
+        # Put SKIRT in the PATH environment variable
+
+
+    ## This function updates the SKIRT executable
+    def update(self):
+
+        # Call the appropriate git command at the SKIRT repository directory
+        subprocess.call(["git", "pull", "origin", "master"], cwd=self.repo_directory)
+
+        # Recompile SKIRT
+        subprocess.call("./makeSKIRT.sh", cwd=self.repo_directory, shell=True)
 
 # -----------------------------------------------------------------

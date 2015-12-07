@@ -140,6 +140,21 @@ class ScalingTest(Configurable):
         # Get the number of cores (per node) on this system from a pre-defined dictionary
         self.cores = self.remote.cores
 
+        ## The minimum and maximum number of processors
+
+        # Calculate the maximum number of processors to use for the scaling test (maxnodes can be a decimal number)
+        self.max_processors = int(self.config.max_nodes * self.cores)
+
+        # Calculate the minimum number of processors to use for the scaling test and set this as the value
+        # to start the loop below with. The default setting is minnodes and minprocessors both equal to zero. If
+        # this is the case, the starting value for the loop is set to one
+        self.min_processors = int(self.config.min_nodes * self.cores)
+        if self.min_processors == 0: self.min_processors = 1
+
+        # In hybrid mode, the minimum number of processors also represents the number of threads per process
+        self.threads_per_process = 1
+        if self.config.mode == "hybrid": self.threads_per_process = self.min_processors
+
         ## Directory structure
 
         # Determine the simulation prefix
@@ -161,21 +176,6 @@ class ScalingTest(Configurable):
 
         # Inide the results directory of this run, create a file which gives useful information about this run
         self.create_info_file()
-
-        ## The minimum and maximum number of processors
-
-        # Calculate the maximum number of processors to use for the scaling test (maxnodes can be a decimal number)
-        self.max_processors = int(self.config.max_nodes * self.cores)
-
-        # Calculate the minimum number of processors to use for the scaling test and set this as the value
-        # to start the loop below with. The default setting is minnodes and minprocessors both equal to zero. If
-        # this is the case, the starting value for the loop is set to one
-        self.min_processors = int(self.config.min_nodes * self.cores)
-        if self.min_processors == 0: self.min_processors = 1
-
-        # In hybrid mode, the minimum number of processors also represents the number of threads per process
-        self.threads_per_process = 1
-        if self.config.mode == "hybrid": self.threads_per_process = self.min_processors
 
         ## SKIRT arguments
 
@@ -242,10 +242,10 @@ class ScalingTest(Configurable):
         ## Scaling run - level directories
 
         # Determine the paths to the directories that will contain the output, results, plots and temporary files of this particular scaling test run
-        self.output_path_run = os.path.join(self.output_path, self.scaling_run_name)
-        self.result_path_run = os.path.join(self.result_path, self.scaling_run_name)
-        self.plot_path_run = os.path.join(self.plot_path, self.scaling_run_name)
-        self.temp_path_run = os.path.join(self.temp_path, self.scaling_run_name)
+        self.output_path_run = os.path.join(self.output_path_system, self.scaling_run_name)
+        self.result_path_run = os.path.join(self.result_path_system, self.scaling_run_name)
+        self.plot_path_run = os.path.join(self.plot_path_system, self.scaling_run_name)
+        self.temp_path_run = os.path.join(self.temp_path_system, self.scaling_run_name)
 
         # Create the output, result, plot and temp directories for this run if necessary
         filesystem.create_directories([self.output_path_run, self.result_path_run, self.plot_path_run, self.temp_path_run])
@@ -321,7 +321,7 @@ class ScalingTest(Configurable):
             self.remote.start_queue(self.long_scaling_run_name, shell_script_path)
 
         # End with some log messages
-        self.log.success("Finished scaling test run")
+        self.log.info("Finished scaling test run")
         self.log.info("The results are / will be written to " + self.scaling_file_path)
 
     # -----------------------------------------------------------------
@@ -501,7 +501,7 @@ class ScalingTest(Configurable):
         # Add information about the path to the directory where the extracted data will be placed
         infofile.write(" - progress information will be extracted to: " + self.result_path_simulation + "\n")
         infofile.write(" - timeline information will be extracted to: " + self.result_path_simulation + "\n")
-        infofile.write(" - memory information will be extract to: " + self.result_path_simulation)
+        infofile.write(" - memory information will be extract to: " + self.result_path_simulation + "\n")
 
         # Add information about the path to the directory where the plots will be placed
         infofile.write(" - progress data will be plotted to: " + self.plot_path_simulation + "\n")
@@ -633,15 +633,33 @@ class ScalingTest(Configurable):
         :return:
         """
 
+        for (dirpath, dirnames, filenames) in os.walk(self.result_path):
+
+            pass
+
+        # 1. Try to find an extracted timeline for the system and parallelization mode of this run and the current
+        #    number of processors
+
+
+        # 2. Try to find an extracted timeline for the system of this run and the current number of processors, but
+        #    a different parallelization mode
+
+        # 3. Try to find an extracted timeline for the current number of processors, but for a different system
+
+
+        # 4. Try to find a log file placed next to the ski file used for the scaling test
+
+
+
+
+
         # Try to get the runtimes for this number of processors
         runtimes = self.get_runtimes(processors)
 
         # If these runtimes could be found, use the total runtime times a surplus of 1.5 as an upper limit to the
         # walltime for this run
-        if runtimes is not None:
-
-            # Return the estimated walltime (as an integer number in seconds)
-            return int(runtimes["total"]*factor)
+        # Return the estimated walltime (as an integer number in seconds)
+        if runtimes is not None: return int(runtimes["total"]*factor)
 
         # If runtimes for this number of processors could not be found, we estimate the walltime by getting the
         # runtimes from a serial run of the simulation

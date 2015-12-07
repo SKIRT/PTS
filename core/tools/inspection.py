@@ -20,7 +20,6 @@ import imp
 import inspect
 import subprocess
 from operator import itemgetter
-from collections import defaultdict
 from distutils.spawn import find_executable
 
 # -----------------------------------------------------------------
@@ -43,16 +42,16 @@ pts_do_dir = os.path.join(pts_package_dir, "do")
 skirt_path = find_executable("skirt")
 
 # The path to the root SKIRT directory
-skirt_root_dir = skirt_path.split("/release")[0]
+skirt_root_dir = skirt_path.split("/release")[0] if skirt_path is not None else None
 
 # The path to the SKIRT repository
-skirt_repo_dir = os.path.join(skirt_root_dir, "git")
+skirt_repo_dir = os.path.join(skirt_root_dir, "git") if skirt_path is not None else None
 
 # The path to the SKIRT release directory
-skirt_release_dir = os.path.join(skirt_root_dir, "release")
+skirt_release_dir = os.path.join(skirt_root_dir, "release") if skirt_path is not None else None
 
 # The path to the SKIRT run directory
-skirt_run_dir = os.path.join(skirt_root_dir, "run")
+skirt_run_dir = os.path.join(skirt_root_dir, "run") if skirt_path is not None else None
 
 # -----------------------------------------------------------------
 
@@ -161,8 +160,6 @@ def get_modules(import_statement, script_path):
 
         after_dots = splitted[1].lstrip(".")
 
-        #print("  ", after_dots)
-
         number_of_dots = len(splitted[1]) - len(after_dots)
 
         # Determine the path to the PTS subpackage
@@ -180,8 +177,6 @@ def get_modules(import_statement, script_path):
 
         parts = splitted[1].split(".")[1:]
 
-        #print("  ", parts)
-
         subpackage_dir = pts_package_dir
         for part in parts:
             subpackage_dir = os.path.join(subpackage_dir, part)
@@ -194,16 +189,7 @@ def get_modules(import_statement, script_path):
         # Get the name of the module
         module = splitted[1].split(".")[0]
 
-        #print("  ", module)
-
-        # Check whether the module is present on this system
-
         which.append(module)
-
-        #packages.add(module)
-
-        #if is_present(module): print(prefix + module, ": present")
-        #else: print(prefix + module, ": not found")
 
     return which
 

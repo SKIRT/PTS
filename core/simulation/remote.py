@@ -656,7 +656,7 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
-    def execute(self, command, output=True):
+    def execute(self, command, output=True, expect_eof=True):
 
         """
         This function ...
@@ -665,13 +665,13 @@ class SkirtRemote(Configurable):
         """
 
         # Send the command
-        success = self.ssh.sendline(command)
-
-        # If the command could not be sent, raise an error
-        if not success: raise RuntimeError("The command could not be sent")
+        self.ssh.sendline(command)
 
         # Retreive the output if requested
-        self.ssh.prompt()
+        eof = self.ssh.prompt()
+
+        # If the command could not be sent, raise an error
+        if not eof and expect_eof: raise RuntimeError("The command could not be sent")
 
         # Ignore the first and the last line (the first is the command itself, the last is always empty)
         if output: return self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
@@ -871,7 +871,6 @@ class SkirtRemote(Configurable):
                         if "local input directory" in line: local_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "local output directory" in line: local_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote input directory" in line: remote_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        #elif "submitted at" in line: submit_time = time.parse(line.split(": ")[1])
                         elif "extract progress" in line: extract_progress = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
                         elif "extract timeline" in line: extract_timeline = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
                         elif "extract memory" in line: extract_memory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
@@ -927,15 +926,67 @@ class SkirtRemote(Configurable):
                 simulation.make_wave = make_wave
                 simulation.extraction_path = extraction_directory
                 simulation.plot_path = plotting_directory
-                simulation.scaling_test = scaling_test
-                simulation.scaling_file_path = scaling_file_path
-                simulation.scaling_run_plot_path = scaling_run_plot_path
-                simulation.screen_session = screen_session
+                if scaling_test is not None: simulation.scaling_test = scaling_test
+                if scaling_file_path is not None: simulation.scaling_file_path = scaling_file_path
+                if scaling_run_plot_path is not None: simulation.scaling_run_plot_path = scaling_run_plot_path
+                if screen_session is not None: simulation.screen_session = screen_session
 
                 simulations.append(simulation)
 
         # Return the list of retreived simulations
         return simulations
+
+    # -----------------------------------------------------------------
+
+    def install(self, private=False, key_password=None):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Navigate to the home directory
+        self.execute("cd ~", output=False)
+
+        # Create the SKIRT directory
+        self.execute("mkdir SKIRT", output=False)
+
+        # In the SKIRT directory, create the necessary subdirectories
+        self.execute("cd SKIRT", output=False)
+        self.execute("mkdir git run release", output=False)
+
+        # Clone the SKIRT repository
+        if private:
+            output = self.execute("git clone git@github.ugent.be:SKIRT/SKIRT.git git", expect_eof=False)
+            self.ssh.expect(['id_rsa: '])
+            self.ssh.sendline(key_password)
+
+        else: self.execute("git clone https://github.com/SKIRT/SKIRT.git git", output=False)
+
+        # Compile the SKIRT code
+        self.execute("./makeSKIRT.sh", output=False)
+
+        # Put SKIRT in the PATH environment variable
+
+
+    # -----------------------------------------------------------------
+
+    def update(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Navigate to the SKIRT repository directory
+        skirt_repo_dir = os.path.join(self.skirt_dir, "git")
+        self.execute("cd " + skirt_repo_dir, output=False)
+
+        # Update SKIRT
+        self.execute("git pull origin master", output=False)
+
+        # Compile the SKIRT code
+        self.execute("./makeSKIRT.sh", output=False)
 
     # -----------------------------------------------------------------
 

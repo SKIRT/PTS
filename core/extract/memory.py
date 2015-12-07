@@ -178,6 +178,18 @@ class MemoryExtractor(object):
     # -----------------------------------------------------------------
 
     @property
+    def processes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return max(self.table["Process rank"])+1
+
+    # -----------------------------------------------------------------
+
+    @property
     def peak(self):
 
         """
@@ -185,6 +197,18 @@ class MemoryExtractor(object):
         :return:
         """
 
-        return max(self.table["Memory usage"])
+        return self.peak_per_process * self.processes
+
+    # -----------------------------------------------------------------
+
+    @property
+    def peak_per_process(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return(max(self.table["Memory usage"]))
 
 # -----------------------------------------------------------------

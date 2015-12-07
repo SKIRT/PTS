@@ -163,7 +163,7 @@ class SkirtTestSuite(object):
 
         # Inform the user of the fact that the test suite has been initiated
         self._log.info("Starting report for test suite " + self._subsuitepath)
-        self._log.info("Using " + self._skirt.version() + " in " + self._skirt.directory())
+        self._log.info("Using " + self._skirt.version() + " in " + self._skirt.root_directory)
 
         # Create a report file to contain a detailed report of the test run
         self._createreportfile()
@@ -228,7 +228,7 @@ class SkirtTestSuite(object):
         self._report.write("<html>\n<head>\n</head>\n<body>\n")
         self._report.write(csscommands + "\n")
         self._report.write("Report file for test suite " + self._subsuitepath + "<br>\n")
-        self._report.write("Using " + self._skirt.version() + " in " + self._skirt.directory() + "<br>\n")
+        self._report.write("Using " + self._skirt.version() + " in " + self._skirt.root_directory + "<br>\n")
 
     ## This function cleans up the contents of all "out" directories that reside next to a ski file
     def _clean(self):
