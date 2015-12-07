@@ -173,6 +173,7 @@ class MemoryExtractor(object):
         :return:
         """
 
+        # Set the table to None
         self.table = None
 
     # -----------------------------------------------------------------

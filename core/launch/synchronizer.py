@@ -198,7 +198,7 @@ class RemoteSynchronizer(Configurable):
             self.analyser.run(simulation)
 
             # If this simulation is part of a scaling test, run the scalinganalyser
-            if simulation.scaling_test is not None:
+            if simulation.scaling_run_name is not None:
 
                 # Run the scaling analyser and clear it afterwards
                 self.scalinganalyser.run(simulation, self.analyser.timeline, self.analyser.memory)

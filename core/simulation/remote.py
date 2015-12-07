@@ -855,7 +855,7 @@ class SkirtRemote(Configurable):
                 remove_remote_output = None
                 extraction_directory = None
                 plotting_directory = None
-                scaling_test = None
+                scaling_run_name = None
                 scaling_file_path = None
                 scaling_run_plot_path = None
                 screen_session = None
@@ -885,7 +885,7 @@ class SkirtRemote(Configurable):
                         elif "remove remote output" in line: remove_remote_output = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
                         elif "extraction directory" in line: extraction_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "plotting directory" in line: plotting_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "part of scaling test" in line: scaling_test = line.split("scaling test ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "part of scaling test run" in line: scaling_run_name = line.split("scaling test run ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "scaling data file" in line: scaling_file_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "scaling run plot path" in line: scaling_run_plot_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "launched within screen session" in line: screen_session = line.split("screen session ")[1].replace('\n', ' ').replace('\r', '').strip()
@@ -926,11 +926,12 @@ class SkirtRemote(Configurable):
                 simulation.make_wave = make_wave
                 simulation.extraction_path = extraction_directory
                 simulation.plot_path = plotting_directory
-                if scaling_test is not None: simulation.scaling_test = scaling_test
+                if scaling_run_name is not None: simulation.scaling_run_name = scaling_run_name
                 if scaling_file_path is not None: simulation.scaling_file_path = scaling_file_path
                 if scaling_run_plot_path is not None: simulation.scaling_run_plot_path = scaling_run_plot_path
                 if screen_session is not None: simulation.screen_session = screen_session
 
+                # Add the simulation to the list of retreived simulations
                 simulations.append(simulation)
 
         # Return the list of retreived simulations

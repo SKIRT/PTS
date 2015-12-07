@@ -40,6 +40,25 @@ class TimeLineExtractor(object):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def open_table(cls, filepath):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a new TimeLineExtractor instance
+        extractor = cls()
+
+        # Set the table attribute
+        extractor.table = Table.read(filepath, format="ascii.commented_header")
+
+        # Return the new TimeLineExtractor instance
+        return extractor
+
+    # -----------------------------------------------------------------
+
     def run(self, simulation, output_path=None):
 
         """
@@ -132,6 +151,30 @@ class TimeLineExtractor(object):
 
         # Write the table to file
         self.table.write(output_path, format="ascii.commented_header")
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set the table to None
+        self.table = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def processes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return max(self.table["Process rank"])+1
 
     # -----------------------------------------------------------------
 

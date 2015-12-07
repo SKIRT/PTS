@@ -44,6 +44,9 @@ class ScalingExtractor():
         :return:
         """
 
+        # Set the parallelization mode
+        self.mode = simulation.scaling_run_name.split("_")[4]
+
         # Set the number of processes and threads
         self.processes = simulation.processes
         self.threads = simulation.threads
@@ -75,10 +78,11 @@ class ScalingExtractor():
         resultfile = open(self.output_path, 'a')
 
         # Add a line to the output file containing the runtimes for the current simulation
-        resultfile.write(str(self.processes) + ' ' + str(self.threads) + ' ' + str(self.processes*self.threads) + ' '
-                         + str(self.te.setup) + ' ' + str(self.te.stellar) + ' ' + str(self.te.spectra)
-                         + ' ' + str(self.te.dust) + ' ' + str(self.te.writing) + ' ' + str(self.te.waiting) + ' '
-                         + str(self.te.communication) + ' ' + str(self.te.total) + ' ' + str(self.me.peak) + '\n')
+        resultfile.write(self.mode + ' ' + str(self.processes) + ' ' + str(self.threads) + ' '
+                         + str(self.processes*self.threads) + ' ' + str(self.te.setup) + ' ' + str(self.te.stellar)
+                         + ' ' + str(self.te.spectra) + ' ' + str(self.te.dust) + ' ' + str(self.te.writing) + ' '
+                         + str(self.te.waiting) + ' ' + str(self.te.communication) + ' ' + str(self.te.total) + ' '
+                         + str(self.me.peak) + '\n')
 
         # Close the output file
         resultfile.close()

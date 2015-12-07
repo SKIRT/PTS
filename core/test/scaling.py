@@ -17,13 +17,16 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 import numpy as np
+from collections import defaultdict
 
 # Import the relevant PTS classes and modules
+from ..simulation.simulation import SkirtSimulation
 from ..simulation.arguments import SkirtArguments
 from ..launch.analyser import SimulationAnalyser
 from .scalinganalyser import ScalingAnalyser
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
+from ..extract.timeline import TimeLineExtractor
 from ..tools import time, filesystem
 
 # -----------------------------------------------------------------
@@ -155,6 +158,10 @@ class ScalingTest(Configurable):
         self.threads_per_process = 1
         if self.config.mode == "hybrid": self.threads_per_process = self.min_processors
 
+        # Create a string that identifies the parallelization mode, where the number of threads per process has been appended for hybrid mode
+        self.mode_info = self.config.mode + "-" + str(self.threads_per_process) if self.config.mode == "hybrid" else self.config.mode
+        self.mode_info_long = self.config.mode + " mode with " + str(self.threads_per_process) + " threads per process" if self.config.mode == "hybrid" else self.config.mode + " mode"
+
         ## Directory structure
 
         # Determine the simulation prefix
@@ -164,8 +171,9 @@ class ScalingTest(Configurable):
         self.base_path = os.path.dirname(self.config.ski_path) if "/" in self.config.ski_path else os.getcwd()
 
         # Define a name identifying this scaling test run
-        self.scaling_run_name = time.unique_name(self.config.mode + "_" + str(self.config.max_nodes) + "_" + str(self.config.min_nodes))
-        self.long_scaling_run_name = "SKIRT_scaling_" + self.remote.system_name + "_" + self.scaling_run_name
+        #self.scaling_run_name = time.unique_name(self.mode_info + "_" + str(self.config.max_nodes) + "_" + str(self.config.min_nodes))
+        self.scaling_run_name = time.unique_name(self.mode_info)
+        self.long_scaling_run_name = "SKIRT_scaling_" + self.prefix + "_" + self.remote.system_name + "_" + self.scaling_run_name
 
         # Create the input, output, result, plot and temp directories
         self.create_directory_structure()
@@ -300,7 +308,7 @@ class ScalingTest(Configurable):
         # Log the remote host name, the parallelization mode and the version of SKIRT used for this test
         self.log.info("Starting scaling test run " + self.scaling_run_name + ":")
         self.log.info("  - remote host: " + self.remote.system_name)
-        self.log.info("  - parallelization mode: " + self.config.mode)
+        self.log.info("  - parallelization mode: " + self.mode_info_long)
         self.log.info("Using " + self.remote.skirt_version)
 
         # Perform the simulations with increasing number of processors
@@ -358,7 +366,7 @@ class ScalingTest(Configurable):
             self.analyser.run(simulation)
 
             # If this simulation is part of a scaling test, run the scalinganalyser
-            if simulation.scaling_test is not None:
+            if simulation.scaling_run_name is not None:
 
                 # Run the scaling analyser and clear it afterwards
                 self.scalinganalyser.run(simulation, self.analyser.timeline, self.analyser.memory)
@@ -452,7 +460,7 @@ class ScalingTest(Configurable):
         self.arguments.output_path = self.output_path_simulation
 
         # Create a unique name for this simulation, based on the scaling run name and the current number of processors
-        simulation_name = self.scaling_run_name + "_" + str(processors)
+        simulation_name = self.long_scaling_run_name + "_" + str(processors)
 
         # Run the simulation
         scheduling_options = None
@@ -490,7 +498,7 @@ class ScalingTest(Configurable):
         simulation_file.write("remove remote output: " + str(False) + "\n")
         simulation_file.write("extraction directory: " + self.result_path_simulation + "\n")
         simulation_file.write("plotting directory: " + self.plot_path_simulation + "\n")
-        simulation_file.write("part of scaling test " + self.scaling_run_name + "\n")
+        simulation_file.write("part of scaling test run " + self.long_scaling_run_name + "\n")
         simulation_file.write("scaling data file: " + self.scaling_file_path + "\n")
         simulation_file.write("scaling run plot path: " + self.plot_path_run + "\n")
         if not self.scheduler: simulation_file.write("launched within screen session " + self.long_scaling_run_name + "\n")
@@ -521,14 +529,11 @@ class ScalingTest(Configurable):
         self.info_file_path = os.path.join(self.result_path_run, "info.txt")
         infofile = open(self.info_file_path, "w")
 
-        # If hybrid mode is selected, add the number of threads per process to the name of the results directory
-        hybridinfo = " with " + str(self.threads_per_process) + " threads per process" if self.config.mode == "hybrid" else ""
-
         # Write some useful information to the file
         infofile.write("Scaling benchmark test " + self.scaling_run_name + "\n")
         infofile.write("Remote host: " + self.remote.system_name + "\n")
         infofile.write("SKIRT version: " + self.remote.skirt_version + "\n")
-        infofile.write("Parallelization mode: " + self.config.mode + hybridinfo + "\n")
+        infofile.write("Parallelization mode: " + self.mode_info_long + "\n")
         infofile.write("Maximum number of nodes: " + str(self.config.max_nodes) + " (" + str(self.max_processors) + " processors)\n")
         infofile.write("Minimum number of nodes: " + str(self.config.min_nodes) + " (" + str(self.min_processors) + " processors)\n")
         infofile.write("\n")
@@ -550,7 +555,7 @@ class ScalingTest(Configurable):
         scalingfile = open(self.scaling_file_path, "w")
 
         # Write a header to this new file which contains some general info about its contents
-        scalingfile.write("# Column 1: Scaling run name\n")
+        scalingfile.write("# Column 1: Parallelization mode\n")
         scalingfile.write("# Column 2: Number of processes p\n")
         scalingfile.write("# Column 3: Number of threads per process t\n")
         scalingfile.write("# Column 4: Total number of threads (t*p)\n")
@@ -622,7 +627,7 @@ class ScalingTest(Configurable):
 
     # -----------------------------------------------------------------
 
-    def estimate_walltime(self, processors, factor=1.5):
+    def estimate_walltime(self, processors, factor=1.2):
 
         """
         This function estimates the total runtime (walltime) for the current simulation, number of processors,
@@ -633,174 +638,87 @@ class ScalingTest(Configurable):
         :return:
         """
 
+        # Create a dictionary to contain the paths to timeline data files found for the ski file,
+        # indexed on (system_name, mode, processors)
+        timeline_paths = defaultdict(list)
+
+        # Recursively search for files contained in the result directory
         for (dirpath, dirnames, filenames) in os.walk(self.result_path):
 
-            pass
+            # Loop over all files found in the current (sub)directory
+            for filename in filenames:
+
+                # Skip files that do not contain timeline data
+                if filename != "timeline.dat": continue
+
+                filepath = os.path.join(dirpath, filename)
+
+                processors = int(os.path.dirname(dirpath))
+                scaling_run_name = os.path.basename(os.path.dirname(dirpath))
+                system_name = os.path.basename(os.path.dirname(os.path.dirname(dirpath)))
+                mode = scaling_run_name.split("_")[0]
+
+                # Add the timeline file path to the dictionary
+                timeline_paths[(system_name, mode, processors)].append(filepath)
 
         # 1. Try to find an extracted timeline for the system and parallelization mode of this run and the current
         #    number of processors
+        key = (self.remote.system_name, self.mode_info, processors)
+        if key in timeline_paths:
 
+            # Create a TimeLineExtractor instance
+            extractor = TimeLineExtractor.open_table(timeline_paths[key])
+
+            # Return the total runtime (multiplied by the specified factor)
+            return extractor.total * factor
 
         # 2. Try to find an extracted timeline for the system of this run and the current number of processors, but
         #    a different parallelization mode
+        for key in timeline_paths:
+
+            # Check whether the system name and number of processors in the key correspond to those of the current scaling test run
+            if key[0] == self.remote.system_name and key[2] == processors:
+
+                # Create a TimeLineExtractor instance
+                extractor = TimeLineExtractor.open_table(timeline_paths[key])
+
+                # Return the total runtime (multiplied by the specified factor)
+                return extractor.total * factor
 
         # 3. Try to find an extracted timeline for the current number of processors, but for a different system
+        for key in timeline_paths:
 
+            # Check whether the number of processors in the key corresponds to the current one
+            if key[2] == processors:
+
+                # Create a TimeLineExtractor instance
+                extractor = TimeLineExtractor.open_table(timeline_paths[key])
+
+                # Return the total runtime (multiplied by the specified factor)
+                return extractor.total * factor
 
         # 4. Try to find a log file placed next to the ski file used for the scaling test
+        log_file_path = os.path.join(self.base_path, self.prefix + "_log.txt")
+        if os.path.isfile(log_file_path):
 
+            # Create a SkirtSimulation object
+            simulation = SkirtSimulation(self.prefix, self.input_path, self.base_path)
 
+            # Create a new TimeLineExtractor instance
+            extractor = TimeLineExtractor()
+            extractor.run(simulation)
 
+            # Determine the number of threads and processes for the log file
+            log_processes = simulation.processes()
+            log_threads = simulation.threads()
 
+            # Determine the number of used processors (assuming each single threads was run on a seperate processor)
+            log_processors = log_processes * log_threads
 
-        # Try to get the runtimes for this number of processors
-        runtimes = self.get_runtimes(processors)
+            # Return the estimated total runtime for the current number of processors (assuming the overhead increases linearly with the number of processors)
+            return (extractor.serial + extractor.parallel * log_processors / processors + extractor.overhead / log_processors * processors) * factor
 
-        # If these runtimes could be found, use the total runtime times a surplus of 1.5 as an upper limit to the
-        # walltime for this run
-        # Return the estimated walltime (as an integer number in seconds)
-        if runtimes is not None: return int(runtimes["total"]*factor)
-
-        # If runtimes for this number of processors could not be found, we estimate the walltime by getting the
-        # runtimes from a serial run of the simulation
-        else:
-
-            # Get the runtimes for this simulation, ran on 1 processor (with one thread), and don't look at
-            # the system name or scaling test mode.
-            runtimes = self.get_runtimes(1, anysystem=True, anymode=True)
-
-        # Check if finding the serial runtimes was successfull or not
-        if runtimes is not None:
-
-            # Calculate the portion of the total runtime spent in serial and parallel parts of the code
-            serialtime = runtimes['setup'] + runtimes['writing']
-            paralleltime = runtimes['stellar'] + runtimes['dustselfabs'] + runtimes['dustem']
-
-            # Estimate the total runtime for this number of processors, by taking an overhead of 1 percent per
-            # parallel process
-            totaltime = (serialtime + paralleltime / processors) * (1.0 + 0.01*processors)
-
-            # Calculate and return the expected walltime (as an integer number in seconds)
-            return int(totaltime*factor)
-
-        # As a last resort, look for a log file that was placed next to the ski file of this scaling test
-        else:
-
-            # The path of the log file
-            logfilepath = os.path.join(self.base_path, self.config.ski_path + "_log.txt")
-
-            # Check whether such a file exists
-            if os.path.exists(logfilepath):
-
-                # Initially, set the number of processes and threads from the log file to one
-                logfileprocesses = 1
-                logfilethreads = 1
-
-                # Check with how many processes and threads this simulation was run, by reading each line of the
-                # specified log file and searching for indications of multiple processes and/or multiple threads
-                for line in open(logfilepath):
-
-                    if 'Starting simulation ' + os.path.basename(self.config.ski_path).split(".")[0] + ' with' in line:
-
-                        logfileprocesses = int(line.split(' with ')[1].split()[0])
-
-                    elif 'Initializing random number generator for thread number' in line:
-
-                        # The last such line that is found states the rank of the last (highest-ranked) thread
-                        logfilethreads = int(line.split(' for thread number ')[1].split()[0]) + 1
-
-                # Calculate the total number of used processors used to create the log file
-                logfileprocessors = logfileprocesses * logfilethreads
-
-                # If such a log file is present, extract the timings from it
-                runtimes = extract(logfilepath)
-
-                # Calculate the portion of the total runtime spent in serial and parallel parts of the code
-                serialtime = runtimes['setup'] + runtimes['writing']
-                paralleltime = runtimes['stellar']*logfileprocessors \
-                             + runtimes['dustselfabs']*logfileprocessors \
-                             + runtimes['dustem']*logfileprocessors
-
-                # Estimate the total runtime for this number of processors, by taking an overhead of 1 percent per
-                # parallel process
-                totaltime = (serialtime + paralleltime / processors) * (1.0 + 0.01*processors)
-
-                # Calculate and return the expected walltime (as an integer number in seconds)
-                return int(totaltime*factor)
-
-            # If not, exit with an error
-            else:
-
-                self.log.error("The walltime could not be estimated for a run with " + str(processors) + " processors.")
-                exit()
-
-    # -----------------------------------------------------------------
-
-    def get_runtimes(self, processors, anysystem=False, anymode=False):
-
-        """
-        This function extracts the timings for the current simulation from a scaling test results file that was
-        created earlier for the current simulation. This function takes the following arguments:
-        :param processors: the number of processors (or total threads) for which to look up the runtimes
-        :param anysystem: this flag tells whether we must look for results of any system, or only from the system
-                we are currently running on
-        :param anymode: this flag tells whether we must look for results created with any mode, or only with the mode
-                in which we are running the current scaling test
-        :return:
-        """
-
-        # Search for a scaling results file corresponding with this system and the current mode
-        for itemname in os.listdir(self.result_path):
-
-            # Define the full path to this item
-            itempath = os.path.join(self.result_path, itemname)
-
-            # Check whether this item is a directory and it is not hidden
-            if not os.path.isdir(itempath) or itemname.startswith("."): continue
-
-            # Define the name of the scaling results file inside this directory
-            filepath = os.path.join(itempath, "scaling.dat")
-
-            # Split the directory name into its segments
-            segments = itemname.split("_")
-
-            # Get the system name in which the scaling test was run for this results file
-            systemname = segments[0]
-
-            # Get the mode in which the scaling test was run for this results file
-            mode = segments[1]
-
-            # Check whether this results file corresponds to a test on this system and the current mode
-            if (anysystem or systemname == self.config.remote) and (anymode or mode.startswith(self.config.mode)):
-
-                # Try extracting the columns from the data file
-                try:
-                    threads, setup, stellar, dustselfabs, dustem, writing, total = np.loadtxt(filepath, usecols=(2,3,4,5,6,7,8), unpack=True)
-                except (IndexError, ValueError):
-                    # Try the next file, this one is probably empty
-                    continue
-
-                # Look for an entry corresponding to the current number of processors (the total number of threads)
-                try:
-                    index = [int(nthreads) for nthreads in threads].index(processors)
-
-                    # Create a dictionary specifying the serial runtime of each of the different simulation phases
-                    runtimes = dict()
-                    runtimes['setup'] = setup[index]
-                    runtimes['stellar'] = stellar[index]
-                    runtimes['dustselfabs'] = dustselfabs[index]
-                    runtimes['dustem'] = dustem[index]
-                    runtimes['writing'] = writing[index]
-                    runtimes['total'] = total[index]
-
-                    # Return the runtimes
-                    return runtimes
-
-                except ValueError:
-                    # Try the next file, no entry for a serial run could be found in this one
-                    pass
-
-        # Return None if no file was found for this system and/or mode, or with the timings for this number of processors
-        return None
+        # If the walltime could not be estimated by any of the above methods, exit with an error
+        raise RuntimeError("The walltime could not be estimated. Place a simulation log file next to the ski file.")
 
 # -----------------------------------------------------------------
