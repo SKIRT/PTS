@@ -273,10 +273,10 @@ class RemoteSynchronizer(Configurable):
             for entry in status:
 
                 # The path to the simulation file
-                path = entry.file_path
+                simulation_file_path = entry.file_path
 
                 # Get the simulation rank
-                simulation_rank = os.path.basename(path).split(".")[0]
+                simulation_rank = os.path.basename(simulation_file_path).split(".")[0]
 
                 # The simulation name
                 simulation_name = entry.name
@@ -292,19 +292,30 @@ class RemoteSynchronizer(Configurable):
 
                 # If this simulation has already finished, check whether the results of this simulation have been retreived
                 if simulation_status == "finished":
-                    simulation_file = open(path, 'r')
+                    simulation_file = open(simulation_file_path, 'r')
                     lines = simulation_file.readlines()
                     last = lines[len(lines)-1]
                     if "retreived at" in last: simulation_status = "retreived"
 
+                prefix = " - "
+                tag = "[" + str(simulation_rank) + "]"
+
                 if self.config.delete is not None and entry.id in self.config.delete[remote.config.host_id]:
 
-                    print(format.FAIL + "  [ X ] " + simulation_name + ": " + simulation_status + format.END)
+                    tag = "[ X ]"
 
-                else:
+                    # Remove the simulation file
+                    os.remove(simulation_file_path)
 
-                    # Show the status of the current simulation
-                    print(format.GREEN + "  [" + str(simulation_rank) + "] " + simulation_name + ": " + simulation_status + format.END)
+                if simulation_status == "finished": formatter = format.BLUE
+                elif simulation_status == "retreived": formatter = format.GREEN
+                elif simulation_status == "running": formatter = format.END
+                elif simulation_status == "crashed": formatter = format.FAIL
+                elif simulation_status == "cancelled": formatter = format.WARNING
+                else: formatter = format.END
+
+                # Show the status of the current simulation
+                print(formatter + prefix + tag + " " + simulation_name + ": " + simulation_status + format.END)
 
         print()
 
