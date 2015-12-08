@@ -17,6 +17,7 @@ from datetime import datetime
 
 # Import astronomical modules
 from astropy.table import Table
+from astropy.io import ascii
 
 # -----------------------------------------------------------------
 
@@ -36,6 +37,27 @@ class MemoryExtractor(object):
         ## Attributes
 
         self.table = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def open_table(cls, filepath):
+
+        """
+        This function ...
+        :param filepath:
+        :return:
+        """
+
+        # Create a new MemoryExtractor instance
+        extractor = cls()
+
+        # Set the table attribute
+        fill_values = [('--', '0', 'Simulation phase'), ('--', '0', 'Array (de)allocation'), ('--', '0', 'Array ID')]
+        extractor.table = ascii.read(filepath, fill_values=fill_values)
+
+        # Return the new MemoryExtractor instance
+        return extractor
 
     # -----------------------------------------------------------------
 

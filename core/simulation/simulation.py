@@ -33,7 +33,7 @@ from ..tools import archive as arch
 # - simulation object: the simulation represented by the specified object
 # - list of strings and/or simulation objects: all simulations in the listed objects, as defined above
 #
-def createsimulations(source=""):
+def createsimulations(source="", single=False):
     simulations = [ ]
     sourcelist = source if isinstance(source, (types.TupleType,types.ListType)) else [ source ]
     for source in sourcelist:
@@ -50,7 +50,15 @@ def createsimulations(source=""):
             simulations.append(source)
         else:
             raise ValueError("Unsupported source type for simulation")
-    return simulations
+
+    # If a single simulation is expected
+    if single:
+
+        if not len(simulations) == 1: raise ValueError("Multiple simulations were found")
+        else: return simulations[0]
+
+    # If multiple simulations are expected
+    else: return simulations
 
 # -----------------------------------------------------------------
 #  SkirtSimulation class

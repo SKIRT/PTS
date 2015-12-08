@@ -218,15 +218,10 @@ def parse(path):
             if verbose_logging is None: verbose_logging = "[P" in line
 
             # Check whether the log file was created in memory logging mode
-            if memory_logging is None:
-
-                print("GB)" in line)
-                memory_logging = "GB)" in line
+            if memory_logging is None: memory_logging = "GB)" in line
 
             # Get the memory usage at the current line, if memory logging was enabled for the simulation
             if memory_logging:
-
-                print(line.split(" (")[1])
                 memory = float(line.split(" (")[1].split(" GB)")[0])
                 memories.append(memory)
 

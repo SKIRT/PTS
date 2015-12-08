@@ -1038,7 +1038,7 @@ class SkirtRemote(Configurable):
                             if "image" in retreive_types_list: copy_paths.append(filepath)
                         elif filename.endswith("_ds_celltemps.dat"):
                             if "celltemp" in retreive_types_list: copy_paths.append(filepath)
-                        elif filename.endswith("_log.txt"):
+                        elif "_log" in filename and filename.endswith(".txt"):
                             if "log" in retreive_types_list: copy_paths.append(filepath)
                         elif filename.endswith("_wavelengths.dat"):
                             if "wavelengths" in retreive_types_list: copy_paths.append(filepath)

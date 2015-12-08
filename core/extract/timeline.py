@@ -13,11 +13,11 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import argparse
 from datetime import datetime
 
 # Import astronomical modules
 from astropy.table import Table
+from astropy.io import ascii
 
 # -----------------------------------------------------------------
 
@@ -45,6 +45,7 @@ class TimeLineExtractor(object):
 
         """
         This function ...
+        :param filepath:
         :return:
         """
 
@@ -52,7 +53,8 @@ class TimeLineExtractor(object):
         extractor = cls()
 
         # Set the table attribute
-        extractor.table = Table.read(filepath, format="ascii.commented_header")
+        fill_values = ('--', '0', 'Simulation phase')
+        extractor.table = ascii.read(filepath, fill_values=fill_values)
 
         # Return the new TimeLineExtractor instance
         return extractor
@@ -105,7 +107,7 @@ class TimeLineExtractor(object):
             current_phase = log_file.contents["Phase"][0]
             process_list.append(process)
             phase_list.append(current_phase)
-            start_list.append(log_file.t_0)
+            start_list.append((log_file.t_0 - t_0).total_seconds())
 
             # Loop over all log file entries
             for j in range(len(log_file.contents)):
@@ -117,7 +119,7 @@ class TimeLineExtractor(object):
                 if phase != current_phase:
 
                     # Determine the current time
-                    seconds = log_file.contents["Time"][j]
+                    seconds = (log_file.contents["Time"][j] - t_0).total_seconds()
 
                     # Mark the end of the previous phase
                     end_list.append(seconds)
@@ -131,15 +133,16 @@ class TimeLineExtractor(object):
                     current_phase = phase
 
             # Add the last recorded time in the log file as the end of the last simulation phase
-            end_list.append(log_file.t_last)
+            end_list.append((log_file.t_last - t_0).total_seconds())
 
         # Create the table data structures
-        names = ['Process rank', 'Simulation phase', 'Start time', 'End time']
+        names = ["Process rank", "Simulation phase", "Start time", "End time"]
         data = [process_list, phase_list, start_list, end_list]
 
         # Create the table
         self.table = Table(data, names=names)
         self.table["Start time"].unit = "s"
+        self.table["End time"].unit = "s"
         self.table["End time"].unit = "GB"
 
     # -----------------------------------------------------------------
@@ -208,8 +211,8 @@ class TimeLineExtractor(object):
                 end = self.table["End time"][i]
 
                 # Calculate the time duration for this phase, returning it if single=True, otherwise add it to the total
-                if single: return (end - start).total_seconds()
-                else: total += (end - start).total_seconds()
+                if single: return end - start
+                else: total += end - start
 
         # Return the total amount of time spent in the specified phase
         return total
@@ -249,7 +252,7 @@ class TimeLineExtractor(object):
                 end = self.table["End time"][i]
 
                 # Add the duration to the total
-                total += (end - start).total_seconds()
+                total += end - start
 
         # Return the total amount of time spent in phases other than the specified phase
         return total
@@ -339,7 +342,7 @@ class TimeLineExtractor(object):
                 end = self.table["End time"][i]
 
                 # Calculate the time duration for the dust emission phase (only the shooting part)
-                return (end - start).total_seconds()
+                return end - start
 
     # -----------------------------------------------------------------
 

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.core.plottimeline Plot a timeline for the different simulation phases of a SKIRT simulation
+## \package do.plotmemory Make plots of the memory usage for a SKIRT simulation
 #
 
 # -----------------------------------------------------------------
@@ -18,35 +18,35 @@ import os
 
 # Import the relevant PTS classes and modules
 from pts.core.simulation.simulation import createsimulations
-from pts.core.extract.timeline import TimeLineExtractor
-from pts.core.plot.timeline import TimeLinePlotter
+from pts.core.extract.memory import MemoryExtractor
+from pts.core.plot.memory import MemoryPlotter
 
 # -----------------------------------------------------------------
 
-# Look for a file in the current working directory that contains extracted timeline information
-timeline_file_path = os.path.join(os.getcwd(), "timeline.dat")
-if os.path.isfile(timeline_file_path):
+# Look for a file in the current working directory that contains extracted memory information
+memory_file_path = os.path.join(os.getcwd(), "memory.dat")
+if os.path.isfile(memory_file_path):
 
-    # Create a TimeLineExtractor instance from the saved timeline data
-    extractor = TimeLineExtractor.open_table(timeline_file_path)
+    # Create a MemoryExtractor instance from the saved memory data
+    extractor = MemoryExtractor.open_table(memory_file_path)
 
-# If extracted timeline information is not present, first perform the extraction
+# If extracted memory information is not present, first perform the extraction
 else:
 
     # Create a SkirtSimulation object based on a log file present in the current working directory
     simulation = createsimulations(single=True)
 
-    # Create a new TimeLineExtractor instance
-    extractor = TimeLineExtractor()
+    # Create a new MemoryExtractor instance
+    extractor = MemoryExtractor()
 
     # Run the extractor
     extractor.run(simulation)
 
 # Determine the path to the plot file
-plot_path = os.path.join(os.getcwd(), "timeline.pdf")
+plot_path = os.path.join(os.getcwd(), "memory.pdf")
 
 # Create a MemoryPlotter instance
-plotter = TimeLinePlotter()
+plotter = MemoryPlotter()
 
 # Run the memory plotter
 plotter.run(extractor.table, plot_path)

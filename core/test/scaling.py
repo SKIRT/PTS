@@ -661,7 +661,7 @@ class ScalingTest(Configurable):
 
                 filepath = os.path.join(dirpath, filename)
 
-                processors = int(os.path.dirname(dirpath))
+                processors = int(os.path.basename(dirpath))
                 scaling_run_name = os.path.basename(os.path.dirname(dirpath))
                 system_name = os.path.basename(os.path.dirname(os.path.dirname(dirpath)))
                 mode = scaling_run_name.split("_")[0]
@@ -674,8 +674,8 @@ class ScalingTest(Configurable):
         key = (self.remote.system_name, self.mode_info, processors)
         if key in timeline_paths:
 
-            # Create a TimeLineExtractor instance
-            extractor = TimeLineExtractor.open_table(timeline_paths[key])
+            # Create a TimeLineExtractor instance (from the first timeline file in the list)
+            extractor = TimeLineExtractor.open_table(timeline_paths[key][0])
 
             # Return the total runtime (multiplied by the specified factor)
             return extractor.total * factor
@@ -687,8 +687,8 @@ class ScalingTest(Configurable):
             # Check whether the system name and number of processors in the key correspond to those of the current scaling test run
             if key[0] == self.remote.system_name and key[2] == processors:
 
-                # Create a TimeLineExtractor instance
-                extractor = TimeLineExtractor.open_table(timeline_paths[key])
+                # Create a TimeLineExtractor instance (from the first timeline file in the list)
+                extractor = TimeLineExtractor.open_table(timeline_paths[key][0])
 
                 # Return the total runtime (multiplied by the specified factor)
                 return extractor.total * factor
@@ -699,8 +699,8 @@ class ScalingTest(Configurable):
             # Check whether the number of processors in the key corresponds to the current one
             if key[2] == processors:
 
-                # Create a TimeLineExtractor instance
-                extractor = TimeLineExtractor.open_table(timeline_paths[key])
+                # Create a TimeLineExtractor instance (from the first timeline file in the list)
+                extractor = TimeLineExtractor.open_table(timeline_paths[key][0])
 
                 # Return the total runtime (multiplied by the specified factor)
                 return extractor.total * factor

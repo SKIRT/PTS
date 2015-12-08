@@ -290,8 +290,8 @@ class SimulationAnalyser(Configurable):
         path = os.path.join(self.simulation.plot_path, "timeline.pdf")
 
         # Create and run a TimeLinePlotter object
-        #plotter = TimeLinePlotter()
-        #plotter.run(self.timeline, path)
+        plotter = TimeLinePlotter()
+        plotter.run(self.timeline, path)
 
     # -----------------------------------------------------------------
 

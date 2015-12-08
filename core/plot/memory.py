@@ -23,9 +23,6 @@ import matplotlib.pyplot as plt
 from astropy.table import Table
 from astropy.io import ascii
 
-# Import the relevant PTS classes and modules
-
-
 # -----------------------------------------------------------------
 
 class MemoryPlotter(object):
@@ -87,17 +84,27 @@ class MemoryPlotter(object):
         # Plot the memory usage
         plt.plot(self.table["Simulation time"], self.table["Memory usage"])
 
+        # Check whether (de)allocation information is present in the memory table
         if "Array (de)allocation" in self.table.colnames:
 
-            # Calculate the cumulative allocated memory
-            totals = np.cumsum(self.table["Array (de)allocation"])
+            # Get the mask covering entries that do not contain array (de)allocation information
+            mask = self.table["Array (de)allocation"].mask
 
-            #plt.step(times, totals)
-            plt.fill_between(self.table["Simulation time"], totals, color='green')
+            # Get the compressed (de)allocation data
+            allocation = self.table["Array (de)allocation"].compressed()
+
+            # Get the compressed time data
+            times = np.ma.masked_array(self.table["Simulation time"], mask=mask).compressed()
+
+            # Calculate the cumulative allocated memory
+            totals = np.cumsum(allocation)
+
+            plt.step(times, totals)
+            #plt.fill_between(self.table["Simulation time"], 0, totals, color='green')
             #plt.bar(times, totals, color='r')
 
         # Save the figure
-        pp.savefig()
+        pp.savefig(bbox_inches="tight")
         pp.close()
 
 # -----------------------------------------------------------------
