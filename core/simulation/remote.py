@@ -117,6 +117,12 @@ class SkirtRemote(Configurable):
             # Determine the path to the SKIRT executable
             self.skirt_path = output[0]  # only one line is expected
 
+            # We want absolute paths
+            if self.skirt_path.startswith("~"):
+
+                # Change the SKIRT path to the full, absolute path
+                self.skirt_path = os.path.join(self.home_directory, self.skirt_path[2:])
+
             # Determine the path to the SKIRT directory
             self.skirt_dir = self.skirt_path.split("/release")[0]
 
@@ -1080,6 +1086,20 @@ class SkirtRemote(Configurable):
         name = self.config.host_id
         if self.host.scheduler: name += "-" + self.config.cluster_name
         return name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def home_directory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Find out the path to the user's home directory and return it
+        output = self.execute("echo $HOME")
+        return output[0]
 
     # -----------------------------------------------------------------
 

@@ -92,7 +92,7 @@ class JobScript(object):
         # Set the environment variables
         self.script.write("#PBS -N " + name + "\n")
         self.script.write("#PBS -o " + output_file_path + "\n")
-        self.script.write("#PBS -e error_" + error_file_path + "\n")
+        self.script.write("#PBS -e " + error_file_path + "\n")
         self.script.write("#PBS -l walltime=%d:%02d:%02d\n" % (hours, minutes, seconds))
         self.script.write("#PBS -l nodes=" + str(nodes) + ":ppn=" + str(ppn) + "\n")
         if mail: self.script.write("#PBS -m bae\n")
@@ -112,7 +112,7 @@ class JobScript(object):
         self.script.write("# Run the simulation\n")
 
         # Add the appropriate syntax for hybrid / multithreaded runs
-        if arguments.parallel.threads > 1 or full_node: mpi_command += " --hybrid " + str(hybrid_processes) + " "
+        if arguments.parallel.threads > 1 or full_node: mpi_command += " --hybrid " + str(hybrid_processes)
 
         # Write the command string to the job script
         self.script.write(arguments.to_command(skirt_path, mpi_command, scheduler=True, to_string=True) + "\n")
