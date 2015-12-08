@@ -1296,11 +1296,11 @@ class SkirtRemote(Configurable):
         :return:
         """
 
+        # Initialize a list to contain the simulations
+        simulations = []
+
         # If the remote host does not use a scheduling system
         if not self.host.scheduler:
-
-            # Initialize a list to contain the simulations
-            simulations = []
 
             # Search for files in the local SKIRT run/host_id directory
             for item in os.listdir(self.local_skirt_host_run_dir):
@@ -1311,7 +1311,11 @@ class SkirtRemote(Configurable):
                 # Determine the full path to the simulation file
                 path = os.path.join(self.local_skirt_host_run_dir, item)
 
+                # Determine the simulation ID
+                simulation_id = int(os.path.basename(path).split(".sim")[0])
+
                 # Open the file
+                name = None
                 ski_path = None
                 remote_output_path = None
                 screen_name = None
@@ -1334,34 +1338,12 @@ class SkirtRemote(Configurable):
                 # The path to the simulation log file
                 remote_log_file_path = os.path.join(remote_output_path, ski_name + "_log.txt")
 
-                # Check whether the log file exists remotely
-                output = self.execute("if [ -f " + remote_log_file_path + " ]; then echo True; else echo False; fi")
-
-                # If the log file does not exist, the simulation has not started yet
-                simulation_status = None
-                if output[0] == "False":
-                    # The simulation has not started or it's screen session has been cancelled
-                    if self.is_active_screen(screen_name): simulation_status = "not started"
-                    else: simulation_status = "cancelled"
-                else:
-
-                    # Get the last two lines of the remote log file
-                    output = self.execute("tail -2 " + remote_log_file_path)
-
-                    # Get the last line of the actual simulation
-                    if " Available memory: " in output[1]: last = output[0]
-                    else: last = output[1]
-
-                    # Interpret the content of the last line
-                    if " Finished simulation " + ski_name in last: simulation_status = "finished"
-                    elif " *** Error: " in last: simulation_status = "crashed"
-                    else:
-                        # The simulation is either still running or has been aborted
-                        if self.is_active_screen(screen_name): simulation_status = "running"
-                        else: simulation_status = "aborted"
+                # Get the simulation status from the remote log file
+                simulation_status = self.status_from_log_file(remote_log_file_path, screen_name, ski_name)
 
                 # Add the simulation properties to the list
                 simulation = Map()
+                simulation.id = simulation_id
                 simulation.file_path = path
                 simulation.name = name
                 simulation.ski_path = ski_path
@@ -1379,7 +1361,7 @@ class SkirtRemote(Configurable):
             output = self.execute("qstat")
 
             # Create a dictionary that contains the status of the different jobs that are scheduled or running on the cluster
-            qstat = dict()
+            queue_status = dict()
 
             # Check every line in the output
             for line in output:
@@ -1390,163 +1372,163 @@ class SkirtRemote(Configurable):
                     # Get the job ID
                     jobid = int(line.split(".")[0])
 
-                    parsedline = line.split(" ")
+                    # Split the line
+                    splitted_line = line.split(" ")
 
                     # Get the status (Q=queued, R=running)
-                    if "short" in parsedline: position = parsedline.index("short")
-                    if "long" in parsedline: position = parsedline.index("long")
-                    jobstatus = parsedline[position-1]
+                    if "short" in splitted_line: position = splitted_line.index("short")
+                    elif "long" in splitted_line: position = splitted_line.index("long")
+                    else: continue
+                    jobstatus = splitted_line[position-1]
 
                     # Add the status of this job to the dictionary
-                    qstat[jobid] = jobstatus
-
-            # Create a list that contains the status of all the jobs (scheduled, running or finished)
-            jobs = []
+                    queue_status[jobid] = jobstatus
 
             # Search for files in the SKIRT run directory
-            for itemname in os.listdir(self.local_skirt_host_run_dir):
+            for item in os.listdir(self.local_skirt_host_run_dir):
 
-                # Define the full path to this item
-                itempath = os.path.join(self.local_skirt_host_run_dir, itemname)
+                # If the item is not a simulation file or it is hidden, skip it
+                if not item.endswith(".sim") or item.startswith("."): continue
 
-                # Check whether this item is a txt file and it is not hidden
-                if os.path.isfile(itempath) and itemname.endswith(".txt") and not itemname.startswith("."):
+                # Determine the full path to the simulation file
+                path = os.path.join(self.local_skirt_host_run_dir, item)
 
-                    # Open the file
-                    with open(itempath) as jobfile:
+                # Open the file
+                name = None
+                ski_path = None
+                remote_output_path = None
+                with open(path) as simulation_file:
 
-                        # Get the lines
-                        lines = jobfile.read().splitlines()
+                    # Loop over the lines in the file
+                    for line in simulation_file:
 
-                        # Get the name of the ski file
-                        skifilename = lines[0].split("ski file name: ")[1]
+                        if "simulation name" in line: name = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "skifile path" in line: ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
 
-                        # Get the path of the ski file
-                        skifiledir = lines[1].split("ski file directory: ")[1]
+                    if ski_path is None: raise ValueError("Not a valid simulation file")
+                    if remote_output_path is None: raise ValueError("Not a valid simulation file")
 
-                        # Get the output directory of the simulation
-                        simulationoutputdir = lines[3].split("output directory: ")[1]
-                        simulationid = os.path.basename(simulationoutputdir)
+                # The name of the ski file (the simulation prefix)
+                ski_name = os.path.basename(ski_path).split(".")[0]
 
-                        # Get the name of the scaling test and the name of the specific run of that test
-                        runoutputdir = os.path.dirname(simulationoutputdir)
-                        run = os.path.basename(runoutputdir)
-                        scalingoutdir = os.path.dirname(runoutputdir)
-                        scalingtest = os.path.basename(scalingoutdir)
+                # The path to the simulation log file
+                remote_log_file_path = os.path.join(remote_output_path, ski_name + "_log.txt")
 
-                        # Get the time of submitting
-                        timestamp = lines[4].split("submitted at: ")[1]
-                        submit_time = time.parse(timestamp)
+                # Get the job ID from the name of the simulation file
+                job_id = int(os.path.splitext(item)[0])
 
-                    # Get the job ID from the file name
-                    jobid = int(os.path.splitext(itemname)[0])
+                # Check if the job ID is in the list of queued or running jobs
+                if job_id in queue_status:
 
-                    # Check if the job ID is in the list of queued or running jobs
-                    if jobid in qstat:
+                    # Check the status of this simulation
+                    job_status = queue_status[job_id]
 
-                        # Check the status of this job
-                        stat = qstat[jobid]
+                    # This simulation is still queued
+                    if job_status == 'Q': simulation_status = "queued"
 
-                        # This simulation is still queued
-                        if stat == 'Q': status = "queued"
+                    # This simulation is currently running
+                    elif job_status == 'R': simulation_status = "running"
 
-                        # This simulation is currently running
-                        elif stat == 'R': status = "running"
+                    # If the job has been cancelled, check whether some part of the log file was already present
+                    # (the simulation was running but was aborted) or the log file is not present (the simulation is cancelled)
+                    elif job_status == "C":
 
-                        # This simulation has an unknown status
-                        else: status = "unknown"
+                        if self.is_file(remote_log_file_path): simulation_status = "aborted"
+                        else: simulation_status = "cancelled"
 
-                    else:
+                    # This simulation has an unknown status, check the log file
+                    else: simulation_status = self.status_from_log_file_job(remote_log_file_path, ski_name)
 
-                        # Check the status from the simulation's log file (finished or crashed)
-                        simulation = SkirtSimulation(prefix=skifilename+".ski", outpath=simulationoutputdir)
-                        stat = simulation.status()
+                # If the simulation is not in the list of jobs
+                else: simulation_status = self.status_from_log_file_job(remote_log_file_path, ski_name)
 
-                        # This simulation has sucessfullly finished
-                        if stat == "Finished": status = "finished"
+                # Add the simulation properties to the list
+                simulation = Map()
+                simulation.id = job_id
+                simulation.file_path = path
+                simulation.name = name
+                simulation.ski_path = ski_path
+                simulation.remote_output_path = remote_output_path
+                simulation.status = simulation_status
+                simulations.append(simulation)
 
-                        # This simulation has crashed with an error
-                        elif stat == "Crashed": status = "crashed"
+            # Return the list of simulation properties
+            return simulations
 
-                        # This simulation has an unkown status
-                        else: status = "unknown"
+    # -----------------------------------------------------------------
 
-                    # Append the properties of this job to the list
-                    jobs.append([skifilename, scalingtest, run, simulationid, submit_time, status, itempath])
+    def status_from_log_file(self, file_path, screen_name, simulation_prefix):
 
-            # Sort the total list of jobs based on the time (the oldest has index 0)
-            jobs.sort(key=itemgetter(4))
+        """
+        This function ...
+        :param file_path:
+        :return:
+        """
 
-            # Loop over all the jobs and put them in a dictionary based on the scaling test
-            scalingtests = defaultdict(list)
+        # If the log file exists
+        if self.is_file(file_path):
 
-            # Iterate over the jobs and get the index (from the ordering)
-            for rank, job in enumerate(jobs):
+            # Get the last two lines of the remote log file
+            output = self.execute("tail -2 " + file_path)
 
-                test = job[1]
-                run = job[2]
-                simulation = job[3]
-                status = job[5]
-                jobfilepath = job[6]
+            # Get the last line of the actual simulation
+            if " Available memory: " in output[1]: last = output[0]
+            else: last = output[1]
 
-                # Add the information to the dictionary
-                scalingtests[test].append([run, simulation, status, rank, jobfilepath])
+            # Interpret the content of the last line
+            if " Finished simulation " + simulation_prefix in last: simulation_status = "finished"
+            elif " *** Error: " in last: simulation_status = "crashed"
+            else:
+                # The simulation is either still running or has been aborted
+                if self.is_active_screen(screen_name): simulation_status = "running"
+                else: simulation_status = "aborted"
 
-            # Finally print out the information
-            for scalingtest, simulations in scalingtests.items():
+        # If the log file does not exist, the simulation has not started yet or has been cancelled
+        else:
 
-                self.log.info(scalingtest + ":")
+            # The simulation has not started or it's screen session has been cancelled
+            if self.is_active_screen(screen_name): simulation_status = "not started"
+            else: simulation_status = "cancelled"
 
-                for simulation in simulations:
+        # Return the string that indicates the simulation status
+        return simulation_status
 
-                    run = simulation[0]
-                    sim = simulation[1]
-                    status = simulation[2]
-                    rank = simulation[3]
-                    jobfilepath = simulation[4]
+    # -----------------------------------------------------------------
 
-                    if delete is not None and rank in delete:
+    def status_from_log_file_job(self, file_path, simulation_prefix):
 
-                        tag = "    [X] "
-                        deletethisfile = True
+        """
+        This function ...
+        :param file_path:
+        :param job_id:
+        :param simulation_prefix:
+        :return:
+        """
 
-                    else:
+        # Check whether the log file exists
+        if self.is_file(file_path):
 
-                        tag = "    [" + str(rank) + "] "
-                        deletethisfile = False
+            # Get the last two lines of the remote log file
+            output = self.execute("tail -2 " + file_path)
 
-                    if status == "queued":
+            # Get the last line of the actual simulation
+            if " Available memory: " in output[1]: last = output[0]
+            else: last = output[1]
 
-                        # TODO: figure out what to do when queued jobs should be deleted
+            # Interpret the content of the last line
+            if " Finished simulation " + simulation_prefix in last: simulation_status = "finished"
+            elif " *** Error: " in last: simulation_status = "crashed"
 
-                        self.log.info(tag + run + " > " + sim + ": " + status)
+            # The simulation cannot be running because we would have seen it in the qstat output
+            # So with a partial log file, it must have been aborted
+            else: simulation_status = "aborted"
 
-                    elif status == "running":
+        # If the log file does not exist, the simulation has been cancelled (if it would just be still scheduled
+        # we would have encountered it's job ID in the qstat output)
+        else: simulation_status = "cancelled"
 
-                        # TODO: figure out what to do when running jobs should be deleted
-
-                        self.log.warning(tag + run + " > " + sim + ": " + status)
-
-                    elif status == "finished":
-
-                        # Delete the job file if requested
-                        if deletethisfile: os.remove(jobfilepath)
-
-                        self.log.success(tag + run + " > " + sim + ": " + status)
-
-                    elif status == "crashed":
-
-                        # Delete the job file if requested
-                        if deletethisfile: os.remove(jobfilepath)
-
-                        self.log.failure(tag + run + " > " + sim + ": " + status)
-
-                    elif status == "unknown":
-
-                        # TODO: figure out what to do when jobs with unknown status should be deleted
-
-                        self.log.failure(tag + run + " > " + sim + ": " + status)
-
-            return []
+        # Return the string that indicates the simulation status
+        return simulation_status
 
 # -----------------------------------------------------------------

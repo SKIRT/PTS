@@ -26,6 +26,18 @@ from ..tools import inspection, configuration
 
 # -----------------------------------------------------------------
 
+class format:
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    END = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+# -----------------------------------------------------------------
+
 class RemoteSynchronizer(Configurable):
 
     """
@@ -62,7 +74,33 @@ class RemoteSynchronizer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, delete):
+    @classmethod
+    def from_arguments(cls, arguments):
+
+        """
+        This function ...
+        :param arguments:
+        :return:
+        """
+
+        # Create a new RemoteSynchronizer instance
+        synchronizer = cls()
+
+        ## Adjust the configuration settings according to the command-line arguments
+
+        # Logging
+        if arguments.debug: synchronizer.config.logging.level = "DEBUG"
+
+        # Set the remote name and the delete dictionary
+        synchronizer.config.remote = arguments.remote
+        synchronizer.config.delete = arguments.delete
+
+        # Return the new synchronizer
+        return synchronizer
+
+    # -----------------------------------------------------------------
+
+    def run(self):
 
         """
         This function ...
@@ -70,7 +108,7 @@ class RemoteSynchronizer(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup(delete)
+        self.setup()
 
         # 1. Extract information from the simulation's log files
         self.retreive()
@@ -83,19 +121,15 @@ class RemoteSynchronizer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, delete):
+    def setup(self):
 
         """
         This function ...
-        :param delete:
         :return:
         """
 
         # Call the setup function of the base class
         super(RemoteSynchronizer, self).setup()
-
-        # Set the delete list
-        self.delete = delete
 
         # Search for files that define remote host configurations
         hosts_directory = os.path.join(inspection.pts_user_dir, "hosts")
@@ -127,6 +161,9 @@ class RemoteSynchronizer(Configurable):
         # Loop over the configuration files in the hosts directory
         for filename in os.listdir(hosts_directory):
 
+            # Skip the template configuration file
+            if filename == "template.cfg": continue
+
             # Determine the full path to the host file
             file_path = os.path.join(hosts_directory, filename)
 
@@ -135,6 +172,12 @@ class RemoteSynchronizer(Configurable):
 
             # Get the host id for this line
             host_id = filename.split(".")[0]
+
+            # Check whether there are simulation files corresponding to this host ID
+            host_run_dir = os.path.join(inspection.skirt_run_dir, host_id)
+
+            # If there are no simulation files for this host, skip it
+            if len([item for item in os.listdir(host_run_dir) if item.endswith(".sim") and not item.startswith(".")]) == 0: continue
 
             # Create a remote SKIRT execution context
             remote = SkirtRemote()
@@ -224,6 +267,7 @@ class RemoteSynchronizer(Configurable):
 
             # Show the name of the current remote
             if len(status) > 0: self.log.info("Simulations on remote " + remote.host_name + ":")
+            print()
 
             # Get the status of the different simulations
             for entry in status:
@@ -253,7 +297,69 @@ class RemoteSynchronizer(Configurable):
                     last = lines[len(lines)-1]
                     if "retreived at" in last: simulation_status = "retreived"
 
-                # Show the status of the current simulation
-                self.log.info("  [" + str(simulation_rank) + "] " + simulation_name + ": " + simulation_status)
+                if self.config.delete is not None and entry.id in self.config.delete[remote.config.host_id]:
+
+                    print(format.FAIL + "  [ X ] " + simulation_name + ": " + simulation_status + format.END)
+
+                else:
+
+                    # Show the status of the current simulation
+                    print(format.GREEN + "  [" + str(simulation_rank) + "] " + simulation_name + ": " + simulation_status + format.END)
+
+        print()
+
+        """
+        self.log.info(scalingtest + ":")
+
+        for simulation in simulations:
+
+            run = simulation[0]
+            sim = simulation[1]
+            status = simulation[2]
+            rank = simulation[3]
+            jobfilepath = simulation[4]
+
+            if delete is not None and rank in delete:
+
+                tag = "    [X] "
+                deletethisfile = True
+
+            else:
+
+                tag = "    [" + str(rank) + "] "
+                deletethisfile = False
+
+            if status == "queued":
+
+                # TODO: figure out what to do when queued jobs should be deleted
+
+                self.log.info(tag + run + " > " + sim + ": " + status)
+
+            elif status == "running":
+
+                # TODO: figure out what to do when running jobs should be deleted
+
+                self.log.warning(tag + run + " > " + sim + ": " + status)
+
+            elif status == "finished":
+
+                # Delete the job file if requested
+                if deletethisfile: os.remove(jobfilepath)
+
+                self.log.success(tag + run + " > " + sim + ": " + status)
+
+            elif status == "crashed":
+
+                # Delete the job file if requested
+                if deletethisfile: os.remove(jobfilepath)
+
+                self.log.failure(tag + run + " > " + sim + ": " + status)
+
+            elif status == "unknown":
+
+                # TODO: figure out what to do when jobs with unknown status should be deleted
+
+                self.log.failure(tag + run + " > " + sim + ": " + status)
+        """
 
 # -----------------------------------------------------------------

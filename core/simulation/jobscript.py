@@ -14,8 +14,6 @@ This module is used for managing a jobscript for executing SKIRT in a remote sch
 # Import standard modules
 import os
 
-# Import the relevant PTS classes and modules
-
 # -----------------------------------------------------------------
 
 class JobScript(object):
@@ -87,22 +85,25 @@ class JobScript(object):
             # Set the requested number of processors on the node to the maximum (a full node)
             ppn = cluster.cores
 
+        # Determine the paths to the output and error files
+        output_file_path = os.path.join(arguments.output_path, "output_" + name + ".txt")
+        error_file_path = os.path.join(arguments.output_path, "error_" + name + ".txt")
+
         # Set the environment variables
         self.script.write("#PBS -N " + name + "\n")
-        self.script.write("#PBS -o output_" + name + ".txt\n")
-        self.script.write("#PBS -e error_" + name + ".txt\n")
+        self.script.write("#PBS -o " + output_file_path + "\n")
+        self.script.write("#PBS -e error_" + error_file_path + "\n")
         self.script.write("#PBS -l walltime=%d:%02d:%02d\n" % (hours, minutes, seconds))
         self.script.write("#PBS -l nodes=" + str(nodes) + ":ppn=" + str(ppn) + "\n")
         if mail: self.script.write("#PBS -m bae\n")
         self.script.write("#\n")
         self.script.write("\n")
 
-        # Load cluster modules
+        # Load cluster modules if specified
         if modules:
+
             self.script.write("# Load the necessary modules\n")
-            #self.script.write("module load jobs\n")
-            for module_name in modules:
-                self.script.write("module load " + module_name + "\n")
+            for module_name in modules: self.script.write("module load " + module_name + "\n")
 
         # Add whiteline
         self.script.write("\n")
