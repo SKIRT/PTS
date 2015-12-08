@@ -204,6 +204,9 @@ def parse(path):
         # Loop over all lines in the log file
         for line in f:
 
+            # If the line contains an error, skip it (e.g. when convergence has not been reached after a certain number of dust-selfabsorption cycles)
+            if "*** Error:" in line: continue
+
             # Remove the line ending
             line = line[:-1]
 
@@ -215,15 +218,17 @@ def parse(path):
             if verbose_logging is None: verbose_logging = "[P" in line
 
             # Check whether the log file was created in memory logging mode
-            if memory_logging is None: memory_logging = "GB)" in line
+            if memory_logging is None:
+
+                print("GB)" in line)
+                memory_logging = "GB)" in line
 
             # Get the memory usage at the current line, if memory logging was enabled for the simulation
             if memory_logging:
-                try:
-                    memory = float(line.split(" (")[1].split(" GB)")[0])
-                    memories.append(memory)
-                except IndexError:
-                    memory_logging = False
+
+                print(line.split(" (")[1])
+                memory = float(line.split(" (")[1].split(" GB)")[0])
+                memories.append(memory)
 
             if memory_logging:
                 message = line.split("GB) ")[1]
@@ -245,8 +250,8 @@ def parse(path):
             phases.append(current_phase)
 
     # Set the contents variable
-    if memory_logging: return Table([times, phases, messages, types, memories], names=('Time', 'Phase', 'Message', 'Type', 'Memory'), meta={"name": "the contents of the simulation's log file"})
-    else: return Table([times, phases, messages, types], names=('Time', 'Phase', 'Message', 'Type'), meta={"name": "the contents of the simulation's log file"})
+    if memory_logging: return Table([times, phases, messages, types, memories], names=("Time", "Phase", "Message", "Type", "Memory"), meta={"name": "the contents of the simulation's log file"})
+    else: return Table([times, phases, messages, types], names=("Time", "Phase", "Message", "Type"), meta={"name": "the contents of the simulation's log file"})
 
 # -----------------------------------------------------------------
 

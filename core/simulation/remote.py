@@ -21,8 +21,6 @@ import json
 import pxssh
 import pexpect
 import tempfile
-from operator import itemgetter
-from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
@@ -107,6 +105,9 @@ class SkirtRemote(Configurable):
         if self.host.scheduler:
             self.log.info("Loading necessary modules...")
             self.execute("module load " + " ".join(self.host.modules), output=False)
+
+        # Check whether the output directory exists
+        if not self.is_directory(self.host.output_path): raise ValueError("The specified output path does not exist")
 
         # Skip some steps in the setup when SKIRT has yet to be installed on the remote system
         if not pre_installation:
@@ -435,7 +436,16 @@ class SkirtRemote(Configurable):
 
         # Determine the full paths to the input and output directories on the remote system
         remote_input_path = os.path.join(remote_simulation_path, "in")
-        remote_output_path = os.path.join(remote_simulation_path, "out")
+
+        # If an output path is defined in the remote host configuration file, use it for the simulation output
+        if self.host.output_path is not None:
+
+            # Get the name of the remote simulation directory and use use that name for the output directory
+            remote_simulation_name = os.path.basename(remote_simulation_path)
+            remote_output_path = os.path.join(self.host.output_path, remote_simulation_name)
+
+        # If an output path is not specified by the user, place a directory called 'out' next to the simulation's 'in' directory
+        else: remote_output_path = os.path.join(remote_simulation_path, "out")
 
         # Change the parameters to accomodate for the fact that we are running remotely
         # but store the paths to the local output directory because we want to copy the
@@ -690,6 +700,18 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
+    def change_cwd(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        self.execute("cd " + path)
+
+    # -----------------------------------------------------------------
+
     def directories_in_path(self, path):
 
         """
@@ -698,7 +720,20 @@ class SkirtRemote(Configurable):
         :return:
         """
 
-        return self.execute("for i in $(ls -d */); do echo ${i%%/}; done")
+        # Get the path to the current working directory
+        working_directory = self.working_directory
+
+        # Change the working directory to the provided path
+        self.change_cwd(path)
+
+        # List the directories in the provided path
+        output = self.execute("for i in $(ls -d */); do echo ${i%%/}; done")
+
+        # Change the working directory back to the original working directory
+        self.change_cwd(working_directory)
+
+        # Return the list of directories
+        return output
 
     # -----------------------------------------------------------------
 
@@ -710,7 +745,20 @@ class SkirtRemote(Configurable):
         :return:
         """
 
-        return self.execute("for f in *; do [[ -d $f ]] || echo $f; done")
+        # Get the path to the current working directory
+        working_directory = self.working_directory
+
+        # Change the working directory to the provided path
+        self.change_cwd(path)
+
+        # List the files in the provided path
+        output = self.execute("for f in *; do [[ -d $f ]] || echo $f; done")
+
+        # Change the working directory back to the original working directory
+        self.change_cwd(working_directory)
+
+        # Return the list of directories
+        return output
 
     # -----------------------------------------------------------------
 
@@ -721,19 +769,43 @@ class SkirtRemote(Configurable):
         :return:
         """
 
-        # Download only certain files from remote to local
-        #scp your_username@remote.edu:/some/remote/directory/\{a,b,c\} ./
-
         # Construct the command string
         copy_command = "scp "
 
-        # Check whether the origin represents a file or a directory
-        file_or_directory = self.file_or_directory(origin)
+        # Add the host address
+        copy_command += self.host.user + "@" + self.host.name + ":"
 
-        # Add the user name, host name and origin to the command
-        if file_or_directory == "file": copy_command += self.host.user + "@" + self.host.name + ":" + origin.replace(" ", "\ ") + " "
-        elif file_or_directory == "directory": copy_command += "-r " + self.host.user + "@" + self.host.name + ":" + origin.replace(" ", "\ ") + "/* "
-        else: raise ValueError("The origin does not represent an existing remote file or directory")
+        # If the origin is a string, we assume it represents a single file path or directory path
+        if isinstance(origin, basestring):
+
+            # Check if the origin represents a file
+            if self.is_file(origin): copy_command += origin.replace(" ", "\ ") + " "
+
+            # Check if it represents a directory
+            elif self.is_directory(origin): copy_command += origin.replace(" ", "\ ") + "/* " + "-r "
+
+            # The origin does not exist
+            else: raise ValueError("The specified path " + origin + " does not represent an existing directory or file on the remote host")
+
+        # If the origin is a list, we assume it contains multiple file paths
+        elif isinstance(origin, list):
+
+            # Check whether the files exist remotely
+            for file_path in origin:
+                if not self.is_file(file_path): raise ValueError("The file " + file_path + " does not exist on the remote host")
+
+            # Escape possible space characters
+            origin = [path.replace(" ", "\ ") for path in origin]
+
+            # Add a quotation mark character because the seperate file paths are going to be separated by spaces
+            # (the command is going to be of the form scp username@ip.of.server.copyfrom:"file1.log file2.log" "~/yourpathtocopy")
+            copy_command += '"'
+
+            # Add the file paths to the command string
+            copy_command += " ".join(origin)
+
+            # Add another quotation mark to identify the end of the filepath list
+            copy_command += '" '
 
         # Add the destination path to the command
         copy_command += destination.replace(" ", "\ ") + "/"
@@ -795,13 +867,13 @@ class SkirtRemote(Configurable):
 
             # Check whether the files exist locally
             for file_path in origin:
-                if not os.path.isfile(origin): raise ValueError("The file " + file_path + " does not exist")
+                if not os.path.isfile(file_path): raise ValueError("The file " + file_path + " does not exist")
 
             # Escape possible space characters
             origin = [path.replace(" ", "\ ") for path in origin]
 
             # Add the file paths to the command string
-            copy_command += " ".join(origin)
+            copy_command += " ".join(origin) + " "
 
         # Invalid argument
         else: raise ValueError("The origin must be a string or a list of strings")
@@ -953,7 +1025,7 @@ class SkirtRemote(Configurable):
                     for filename in self.files_in_path(remote_output_path):
 
                         # Determine the full path to the output file
-                        filepath = os.path.join(local_output_path, filename)
+                        filepath = os.path.join(remote_output_path, filename)
 
                         # Loop over the different possible file types and add the filepath if the particular type is in the list of types to retreive
                         if filename.endswith("_ds_isrf.dat"):
@@ -1099,6 +1171,20 @@ class SkirtRemote(Configurable):
 
         # Find out the path to the user's home directory and return it
         output = self.execute("echo $HOME")
+        return output[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def working_directory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Find out the path to the current working directory and return it
+        output = self.execute("echo $PWD")
         return output[0]
 
     # -----------------------------------------------------------------
@@ -1256,6 +1342,8 @@ class SkirtRemote(Configurable):
         This function ...
         :return:
         """
+
+        print(path)
 
         # Launch a bash command to check whether the path exists as either a file or a directory on the remote file system
         output = self.execute("if [ -f " + path + " ]; then echo file; elif [ -d " + path + " ]; then echo directory; else echo None; fi")
@@ -1448,7 +1536,7 @@ class SkirtRemote(Configurable):
                     if job_status == 'Q': simulation_status = "queued"
 
                     # This simulation is currently running
-                    elif job_status == 'R': simulation_status = "running"
+                    elif job_status == 'R': simulation_status = self.running_status_from_log_file(remote_log_file_path)
 
                     # If the job has been cancelled, check whether some part of the log file was already present
                     # (the simulation was running but was aborted) or the log file is not present (the simulation is cancelled)
@@ -1501,7 +1589,7 @@ class SkirtRemote(Configurable):
             elif " *** Error: " in last: simulation_status = "crashed"
             else:
                 # The simulation is either still running or has been aborted
-                if self.is_active_screen(screen_name): simulation_status = "running"
+                if self.is_active_screen(screen_name): simulation_status = self.running_status_from_log_file(file_path)
                 else: simulation_status = "aborted"
 
         # If the log file does not exist, the simulation has not started yet or has been cancelled
@@ -1550,5 +1638,66 @@ class SkirtRemote(Configurable):
 
         # Return the string that indicates the simulation status
         return simulation_status
+
+    # -----------------------------------------------------------------
+
+    def read_text_file(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Load the text file into a variable
+        self.execute("value='cat " + path + "'")
+
+        # Print the variable to the console, and obtain the output
+        return self.execute('echo "$($value)"')
+
+    # -----------------------------------------------------------------
+
+    def running_status_from_log_file(self, file_path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.read_text_file(file_path)
+
+        phase = None
+        cycle = None
+        progress = None
+
+        for line in output:
+
+            if "Starting setup" in line: phase = "setup"
+            elif "Starting the stellar emission phase" in line: phase = "stellar"
+            elif "Launched stellar emission photon packages" in line: progress = float(line.split("packages: ")[1].split("%"))
+            elif "Starting the first-stage dust self-absorption cycle" in line: phase = "self-absorption1"
+            elif "Launched first-stage dust self-absorption cycle" in line:
+
+                cycle = int(line.split("cycle ")[1].split(" photon packages"))
+                progress = float(line.split("packages: ")[1].split("%"))
+
+            elif "Starting the second-stage dust self-absorption cycle" in line: phase = "self-absorption2"
+            elif "Launched second-stage dust self-absorption cycle" in line:
+
+                cycle = int(line.split("cycle ")[1].split(" photon packages"))
+                progress = float(line.split("packages: ")[1].split("%"))
+
+            elif "Starting the last-stage dust self-absorption cycle" in line: phase = "self-absorption3"
+            elif "Launched last-stage dust self-absorption cycle" in line:
+
+                cycle = int(line.split("cycle ")[1].split(" photon packages"))
+                progress = float(line.split("packages: ")[1].split("%"))
+
+            elif "Starting the dust emission phase" in line: phase = "dust-emission"
+            elif "Launched dust emission photon packages" in line: progress = float(line.split("packages: ")[1].split("%"))
+            elif "Starting writing results" in line: phase = "writing"
+
+        if "self-absorption" in phase: return "running (" + str(phase) + "," + str(cycle) + " " + str(progress) + "%"
+        else: return "running (" + str(phase) + " " + str(progress) + "%"
 
 # -----------------------------------------------------------------

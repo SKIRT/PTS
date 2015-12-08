@@ -105,6 +105,7 @@ class MemoryExtractor(object):
                 process_list.append(process)
                 phase_list.append(log_file.contents["Phase"][j])
                 seconds_list.append(seconds)
+
                 memory_list.append(log_file.contents["Memory"][j])
 
                 if allocation_logging:
