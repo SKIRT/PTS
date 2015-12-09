@@ -966,7 +966,11 @@ class SkirtRemote(Configurable):
             # The simulation status
             simulation_status = entry.status
 
-            if simulation_status == "finished":
+            # Skip already retreived simulations
+            if simulation_status == "retreived": continue
+
+            # Finished simulations
+            elif simulation_status == "finished":
 
                 prefix = os.path.basename(ski_path).split(".")[0]
 
@@ -994,8 +998,6 @@ class SkirtRemote(Configurable):
                 scaling_file_path = None
                 scaling_run_plot_path = None
                 screen_session = None
-
-                retreived = False
 
                 # Get simulation properties
                 with open(path) as simulation_file:
@@ -1026,11 +1028,6 @@ class SkirtRemote(Configurable):
                         elif "scaling data file" in line: scaling_file_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "scaling run plot path" in line: scaling_run_plot_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "launched within screen session" in line: screen_session = line.split("screen session ")[1].replace('\n', ' ').replace('\r', '').strip()
-
-                        elif "retreived at" in line: retreived = True
-
-                # If the simulation has already been retreived, skip it
-                if retreived: continue
 
                 # If retreive file types are not defined, download the complete output directory
                 if retreive_types is None or retreive_types == "None":
@@ -1454,6 +1451,9 @@ class SkirtRemote(Configurable):
                 ski_path = None
                 remote_output_path = None
                 screen_name = None
+
+                retreived = False
+
                 with open(path) as simulation_file:
 
                     # Loop over the lines in the file
@@ -1464,6 +1464,8 @@ class SkirtRemote(Configurable):
                         elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "launched within screen session" in line: screen_name = line.split("session ")[1].replace('\n', ' ').replace('\r', '').strip()
 
+                        elif "retreived at" in line: retreived = True
+
                     if ski_path is None: raise ValueError("Not a valid simulation file")
                     if remote_output_path is None: raise ValueError("Not a valid simulation file")
 
@@ -1473,8 +1475,10 @@ class SkirtRemote(Configurable):
                 # The path to the simulation log file
                 remote_log_file_path = os.path.join(remote_output_path, ski_name + "_log.txt")
 
-                # Get the simulation status from the remote log file
-                simulation_status = self.status_from_log_file(remote_log_file_path, screen_name, ski_name)
+                if retreived: simulation_status = "retreived"
+                else:
+                    # Get the simulation status from the remote log file
+                    simulation_status = self.status_from_log_file(remote_log_file_path, screen_name, ski_name)
 
                 # Add the simulation properties to the list
                 simulation = Map()
@@ -1532,6 +1536,9 @@ class SkirtRemote(Configurable):
                 name = None
                 ski_path = None
                 remote_output_path = None
+
+                retreived = False
+
                 with open(path) as simulation_file:
 
                     # Loop over the lines in the file
@@ -1540,6 +1547,8 @@ class SkirtRemote(Configurable):
                         if "simulation name" in line: name = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "skifile path" in line: ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+
+                        elif "retreived at" in line: retreived = True
 
                     if ski_path is None: raise ValueError("Not a valid simulation file")
                     if remote_output_path is None: raise ValueError("Not a valid simulation file")
@@ -1553,8 +1562,11 @@ class SkirtRemote(Configurable):
                 # Get the job ID from the name of the simulation file
                 job_id = int(os.path.splitext(item)[0])
 
+                # Check if the simulation has already been retreived
+                if retreived: simulation_status = "retreived"
+
                 # Check if the job ID is in the list of queued or running jobs
-                if job_id in queue_status:
+                elif job_id in queue_status:
 
                     # Check the status of this simulation
                     job_status = queue_status[job_id]
