@@ -29,6 +29,7 @@ from ..tools import time, inspection
 from .simulation import SkirtSimulation
 from ..tools import configuration
 from ..basics.map import Map
+from ..test.resources import ResourceEstimator
 
 # -----------------------------------------------------------------
 
@@ -192,6 +193,10 @@ class SkirtRemote(Configurable):
 
         # Create the remote simulation directory
         remote_simulation_path = self.create_simulation_directory(arguments)
+        remote_simulation_name = os.path.basename(remote_simulation_path)
+
+        # Set the name if none is given
+        if name is None: name = remote_simulation_name
 
         # Make preparations for this simulation
         local_ski_path, local_input_path, local_output_path = self.prepare(arguments, remote_simulation_path)
@@ -200,7 +205,6 @@ class SkirtRemote(Configurable):
         if self.host.scheduler:
 
             # Submit the simulation to the remote scheduling system
-            #print("scheduling options", scheduling_options)
             simulation_id = self.schedule(arguments, name, scheduling_options, local_ski_path, remote_simulation_path)
 
         # If no scheduling system is used, just store the SKIRT arguments in a list for now and execute the complete
@@ -503,7 +507,7 @@ class SkirtRemote(Configurable):
         simulation_file = open(simulation_file_path, 'w')
 
         # Determine the simulation name from the ski file name if none is given
-        if name is None: name = os.path.basename(arguments.ski_pattern).split(".")[0]
+        #if name is None: name = os.path.basename(arguments.ski_pattern).split(".")[0]
 
         # Add the simulation information
         simulation_file.write("simulation name: " + name + "\n")
@@ -533,8 +537,31 @@ class SkirtRemote(Configurable):
         # Inform the suer
         self.log.info("Scheduling simulation on the remote host")
 
-        # We want to estimate the wall time here if it is not passed to this function
-        if "walltime" not in scheduling_options: walltime=None
+        if scheduling_options is None:
+
+            processors = arguments.parallel.processes * arguments.parallel.threads
+            nodes, ppn = self.get_requirements(processors)
+
+            scheduling_options = {}
+            scheduling_options["nodes"] = nodes
+            scheduling_options["ppn"] = ppn
+            #scheduling_options["walltime"] = ...
+            #scheduling_options["jobscript_path"] = ...
+            scheduling_options["mail"] = False
+            scheduling_options["full_node"] = True
+
+        # We want to estimate the walltime here if it is not passed to this function
+        if "walltime" not in scheduling_options:
+
+            factor = 1.2
+
+            # Create and run a ResourceEstimator instance
+            estimator = ResourceEstimator()
+            estimator.run(local_ski_path, arguments.parallel.processes, arguments.parallel.threads)
+
+            # Return the estimated walltime
+            walltime = estimator.walltime * factor
+
         else: walltime = scheduling_options["walltime"]
 
         if "nodes" not in scheduling_options: raise ValueError("The number of nodes is not defined in the scheduling options")
@@ -593,6 +620,26 @@ class SkirtRemote(Configurable):
 
         # Return the simulation ID
         return simulation_id
+
+    # -----------------------------------------------------------------
+
+    def get_requirements(self, processors):
+
+        """
+        This function calculates the required amount of nodes and processors per node, given a certain number of
+        processors.
+        :param processors:
+        :return:
+        """
+
+        # Calculate the necessary amount of nodes
+        nodes = processors // self.cores + (processors % self.cores > 0)
+
+        # Determine the number of processors per node
+        ppn = processors if nodes == 1 else self.cores
+
+        # Return the number of nodes and processors per node
+        return nodes, ppn
 
     # -----------------------------------------------------------------
 

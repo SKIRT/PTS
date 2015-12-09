@@ -449,7 +449,7 @@ class ScalingTest(Configurable):
 
         # Calculate the expected walltime for this number of processors if a scheduling system is used
         if self.scheduler:
-            walltime = self.estimate_walltime(processors)
+            walltime = self.estimate_walltime(processes, threads)
             self.log.info(" - expected walltime: " + str(walltime) + " seconds")
         else: walltime = None
 
@@ -636,7 +636,7 @@ class ScalingTest(Configurable):
 
     # -----------------------------------------------------------------
 
-    def estimate_walltime(self, processors, factor=1.2):
+    def estimate_walltime(self, processes, threads, factor=1.2):
 
         """
         This function estimates the total runtime (walltime) for the current simulation, number of processors,
@@ -646,6 +646,8 @@ class ScalingTest(Configurable):
             a previous run of the same simulation.
         :return:
         """
+
+        processors = processes * threads
 
         # Create a dictionary to contain the paths to timeline data files found for the ski file,
         # indexed on (system_name, mode, processors)
@@ -732,9 +734,9 @@ class ScalingTest(Configurable):
 
             # Create and run a ResourceEstimator instance
             estimator = ResourceEstimator()
-            estimator.run(self.arguments.ski_pattern)
+            estimator.run(self.arguments.ski_pattern, processes, threads)
 
-        # If the walltime could not be estimated by any of the above methods, exit with an error
-        #raise RuntimeError("The walltime could not be estimated. Place a simulation log file next to the ski file.")
+            # Return the estimated walltime
+            return estimator.walltime * factor
 
 # -----------------------------------------------------------------

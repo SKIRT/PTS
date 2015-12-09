@@ -99,6 +99,8 @@ class SkirtLauncher(Configurable):
         launcher.config.arguments.single = True  # For now, we only allow single simulations
 
         # Extraction
+        launcher.config.extraction.progress = arguments.extractprogress
+        launcher.config.extraction.timeline = arguments.extracttimeline
         launcher.config.extraction.memory = arguments.extractmemory
 
         # Plotting

@@ -185,7 +185,7 @@ class SimulationAnalyser(Configurable):
         extractor.run(self.simulation, path)
 
         # Set the table
-        #self.progress = extractor.table
+        self.progress = extractor.table
 
     # -----------------------------------------------------------------
 

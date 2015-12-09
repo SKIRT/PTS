@@ -150,8 +150,8 @@ class SkirtExec:
         # Launch the SKIRT command
         if wait:
             self._process = None
-            if silent: subprocess.call(command, shell=True, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
-            else: subprocess.call(command, shell=True)
+            if silent: subprocess.call(command, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
+            else: subprocess.call(command)
         else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
 
         # Return the list of simulations so that their results can be followed up

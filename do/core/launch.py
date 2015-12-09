@@ -65,6 +65,8 @@ parser.add_argument("--verbose", action="store_true", help="enable verbose loggi
 parser.add_argument("--memory", action="store_true", help="enable memory logging mode")
 parser.add_argument("--allocation", action="store_true", help="enable memory (de)allocation logging mode")
 parser.add_argument("--emulate", action="store_true", help="emulate the simulation while limiting computation")
+parser.add_argument("--extractprogress", action="store_true", help="extract the progress from the log files")
+parser.add_argument("--extracttimeline", action="store_true", help="extract the timeline from the log files")
 parser.add_argument("--extractmemory", action="store_true", help="extract the memory usage from the log files")
 parser.add_argument("--plotseds", action="store_true", help="make plots of the output SEDs")
 parser.add_argument("--plotgrids", action="store_true", help="make plots of the dust grid")
