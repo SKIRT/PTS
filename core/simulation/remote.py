@@ -315,6 +315,19 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
+    def kill_job(self, id):
+
+        """
+        This function ...
+        :param id:
+        :return:
+        """
+
+        # Stop the job with the specified ID
+        self.execute("qdel " + str(id), output=False)
+
+    # -----------------------------------------------------------------
+
     def screen_state(self, name):
 
         """
@@ -1449,7 +1462,9 @@ class SkirtRemote(Configurable):
                 # Open the file
                 name = None
                 ski_path = None
+                remote_input_path = None
                 remote_output_path = None
+                remote_simulation_path = None
                 screen_name = None
 
                 retreived = False
@@ -1461,7 +1476,9 @@ class SkirtRemote(Configurable):
 
                         if "simulation name" in line: name = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "skifile path" in line: ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "remote input directory" in line: remote_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "remote simulation directory" in line: remote_simulation_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "launched within screen session" in line: screen_name = line.split("session ")[1].replace('\n', ' ').replace('\r', '').strip()
 
                         elif "retreived at" in line: retreived = True
@@ -1486,7 +1503,9 @@ class SkirtRemote(Configurable):
                 simulation.file_path = path
                 simulation.name = name
                 simulation.ski_path = ski_path
+                simulation.remote_input_path = remote_input_path
                 simulation.remote_output_path = remote_output_path
+                simulation.remote_simulation_path = remote_simulation_path
                 simulation.status = simulation_status
                 simulations.append(simulation)
 
@@ -1535,7 +1554,9 @@ class SkirtRemote(Configurable):
                 # Open the file
                 name = None
                 ski_path = None
+                remote_input_path = None
                 remote_output_path = None
+                remote_simulation_path = None
 
                 retreived = False
 
@@ -1546,7 +1567,9 @@ class SkirtRemote(Configurable):
 
                         if "simulation name" in line: name = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "skifile path" in line: ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "remote input directory" in line: remote_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "remote simulation directory" in line: remote_simulation_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
 
                         elif "retreived at" in line: retreived = True
 
@@ -1596,7 +1619,9 @@ class SkirtRemote(Configurable):
                 simulation.file_path = path
                 simulation.name = name
                 simulation.ski_path = ski_path
+                simulation.remote_input_path = remote_input_path
                 simulation.remote_output_path = remote_output_path
+                simulation.remote_simulation_path = remote_simulation_path
                 simulation.status = simulation_status
                 simulations.append(simulation)
 
@@ -1635,7 +1660,7 @@ class SkirtRemote(Configurable):
         else:
 
             # The simulation has not started or it's screen session has been cancelled
-            if self.is_active_screen(screen_name): simulation_status = "not started"
+            if self.is_active_screen(screen_name): simulation_status = "queued"
             else: simulation_status = "cancelled"
 
         # Return the string that indicates the simulation status

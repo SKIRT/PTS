@@ -284,34 +284,128 @@ class RemoteSynchronizer(Configurable):
                 # The ski file path
                 ski_path = entry.ski_path
 
-                # The remote output path
+                # The remote input and output paths and the simulation directory path
+                remote_input_path = entry.remote_input_path
                 remote_output_path = entry.remote_output_path
+                remote_simulation_path = entry.remote_simulation_path
 
                 # The simulation status
                 simulation_status = entry.status
 
-                # If this simulation has already finished, check whether the results of this simulation have been retreived
-                if simulation_status == "finished":
-                    simulation_file = open(simulation_file_path, 'r')
-                    lines = simulation_file.readlines()
-                    last = lines[len(lines)-1]
-                    if "retreived at" in last: simulation_status = "retreived"
-
                 prefix = " - "
                 tag = "[" + str(simulation_rank) + "]"
 
-                if self.config.delete is not None and entry.id in self.config.delete[remote.config.host_id]:
+                # Finished, but not yet retreived simulation
+                if simulation_status == "finished":
 
-                    tag = "[ X ]"
+                    if self.config.delete is not None and entry.id in self.config.delete[remote.config.host_id]:
 
-                    # Remove the simulation file
-                    os.remove(simulation_file_path)
+                        self.log.warning("The simulation with ID " + str(entry.id) + " has finished, but has not been"
+                                         " retreived yet. Deleting it now would mean all simulation output is lost. Run "
+                                         " 'pts status' again to retreive the simulation output.")
 
-                if simulation_status == "finished": formatter = format.BLUE
-                elif simulation_status == "retreived": formatter = format.GREEN
-                elif simulation_status == "running": formatter = format.END
-                elif simulation_status == "crashed": formatter = format.FAIL
-                elif simulation_status == "cancelled": formatter = format.WARNING
+                    formatter = format.BLUE
+
+                # Finished and retreived simulation (remote output has already been removed, if requested)
+                elif simulation_status == "retreived":
+
+                    if self.config.delete is not None and entry.id in self.config.delete[remote.config.host_id]:
+
+                        tag = "[ X ]"
+
+                        # Remove the simulation file
+                        os.remove(simulation_file_path)
+
+                    formatter = format.GREEN
+
+                # Running simulation
+                elif simulation_status == "running":
+
+                    if self.config.delete is not None and entry.id in self.config.delete[remote.config.host_id]:
+
+                        if remote.host.scheduler:
+
+                            tag = "[ X ]"
+
+                            remote.kill_job(entry.id)
+
+                            # Remove the simulation file
+                            os.remove(simulation_file_path)
+
+                            # Remove the remote input, output and simulation directory
+                            remote.remove_directory(remote_input_path)
+                            remote.remove_directory(remote_output_path)
+                            remote.remove_directory(remote_simulation_path)
+
+                            simulation_status += " -> aborted"
+
+                        else: self.log.warning("Aborting simulations not running on a host with a scheduling system is not"
+                                               " implemented yet. ")
+
+                    formatter = format.END
+
+                # Crashed simulation
+                elif simulation_status == "crashed":
+
+                    if self.config.delete is not None and entry.id in self.config.delete[remote.config.host_id]:
+
+                        tag = "[ X ]"
+
+                        # Remove the simulation file
+                        os.remove(simulation_file_path)
+
+                        # Remove the remote input, output and simulation directory
+                        remote.remove_directory(remote_input_path)
+                        remote.remove_directory(remote_output_path)
+                        remote.remove_directory(remote_simulation_path)
+
+                    formatter = format.FAIL
+
+                # Cancelled simulation
+                elif simulation_status == "cancelled":
+
+                    if self.config.delete is not None and entry.id in self.config.delete[remote.config.host_id]:
+
+                        tag = "[ X ]"
+
+                        # Remove the simulation file
+                        os.remove(simulation_file_path)
+
+                        # Remove the remote input, output and simulation directory
+                        remote.remove_directory(remote_input_path)
+                        remote.remove_directory(remote_output_path)
+                        remote.remove_directory(remote_simulation_path)
+
+                    formatter = format.WARNING
+
+                # Queued simulation
+                elif simulation_status == "queued":
+
+                    if self.config.delete is not None and entry.id in self.config.delete[remote.config.host_id]:
+
+                        if remote.host.scheduler:
+
+                            tag = "[ X ]"
+
+                            # Stop the simulation
+                            remote.stop_job(entry.id)
+
+                            # Remove the simulation file
+                            os.remove(simulation_file_path)
+
+                            # Remove the remote input, output and simulation directory
+                            remote.remove_directory(remote_input_path)
+                            remote.remove_directory(remote_output_path)
+                            remote.remove_directory(remote_simulation_path)
+
+                            simulation_status += " -> cancelled"
+
+                        else: self.log.warning("Cancelling simulations not running on a host with a scheduling system is not"
+                                               " implemented yet. ")
+
+                    formatter = format.END
+
+                # Other
                 else: formatter = format.END
 
                 # Show the status of the current simulation
