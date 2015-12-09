@@ -27,8 +27,14 @@ from astropy.io import ascii
 # -----------------------------------------------------------------
 
 # Define the colors for the different simulation phases in the plot
-# (setup = red, stellar = green, comm = orange, spectra = magenta, dust = cyan, writing = yellow, waiting = blue)
-colors = {"setup": 'r', "stellar": 'g', "comm": '#FF7626', "spectra": 'm', "dust": 'c', "write": 'y', "wait": 'b', "other": 'k'}
+colors = {"setup": 'r',         # setup -> red
+          "stellar": 'g',       # stellar emission -> green
+          "comm": '#FF7626',    # communication -> orange
+          "spectra": 'm',       # spectra calculation -> magenta
+          "dust": 'c',          # dust emission -> cyan
+          "write": 'y',         # writing -> yellow
+          "wait": 'b',          # waiting -> blue
+          "other": 'k'}         # other -> black
 
 # -----------------------------------------------------------------
 
@@ -113,21 +119,6 @@ class TimeLinePlotter(object):
                 data[i%nphases][2].append(self.table["End time"][i])
 
         self.create_plot(data, path, ranks)
-
-        # Plot a graph comparing the timeline for the runs with a different number of processes
-        #for scalingtest, data in cpudata.items():
-
-            #plotpath = os.path.join(self._vispath, scalingtest)
-            #plotfilepath = os.path.join(plotpath, "timeline.pdf")
-
-            # Check whether this scaling test was weak
-            #weak = weaktests[scalingtest]
-
-            # Get the list of number of processes for this scaling test
-            #nprocs_list = nprocs_dict[scalingtest]
-
-            # Create the plot
-            #self._createplot(data, plotfilepath, nprocs_list, percentages=True, totals=True, unordered=True, numberofproc=True, cpu=(not weak))
 
     # -----------------------------------------------------------------
 

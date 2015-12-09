@@ -17,15 +17,15 @@ import os
 import shutil
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import Configurable
 from ..simulation.skifile import SkiFile
 from ..simulation.execute import SkirtExec
 from ..simulation.arguments import SkirtArguments
 from ..extract.timeline import TimeLineExtractor
+from ..tools import time
 
 # -----------------------------------------------------------------
 
-class ResourceEstimator(Configurable):
+class ResourceEstimator(object):
 
     """
     This class...
@@ -37,9 +37,6 @@ class ResourceEstimator(Configurable):
         The constructor ...
         :return:
         """
-
-        # Call the constructor of the base class
-        #super(ResourceEstimator, self).__init__(config)
 
         ## Attributes
 
@@ -94,9 +91,6 @@ class ResourceEstimator(Configurable):
         :return:
         """
 
-        # Call the setup function of the base class
-        #super(ResourceEstimator, self).setup()
-
         # Adjust settings
         self.ski_file = SkiFile(ski_path)
         self.processes = processes
@@ -113,7 +107,8 @@ class ResourceEstimator(Configurable):
 
         # Determine the path to the temporary directory
         base_path = os.path.dirname(ski_path) if "/" in ski_path else os.getcwd()
-        self.temp_path = os.path.join(base_path, "temp")
+        temp_name = time.unique_name("temp")
+        self.temp_path = os.path.join(base_path, temp_name)
 
         # Create the temporary directory if necessary
         if not os.path.exists(self.temp_path): os.makedirs(self.temp_path)

@@ -18,6 +18,8 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 # Import the relevant PTS classes and modules
 from ..tools import archive as arch
@@ -59,14 +61,22 @@ def plotseds(simulation, figsize=(10,6), xlim=None, ylim=None):
 def plotseds_impl(sedfiles, plotfile, labels=None, fluxlabel="Flux", figsize=(10,6), xlim=None, ylim=None):
 
     # Use a non-interactive back-end to generate high-quality vector graphics
-    if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
-    import matplotlib.pyplot as plt
+    #if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
+    #import matplotlib.pyplot as plt
 
     assert plotfile.endswith(".pdf")
+
+    # Create a PDF Pages object
+    pp = PdfPages(plotfile)
+
+    # Initialize figure with the appropriate size
+    plt.figure(figsize=figsize)
+    plt.clf()
+
     if labels == None: labels = sedfiles
 
     # setup the figure
-    figure = plt.figure(figsize=figsize)
+    #figure = plt.figure(figsize=figsize)
     plt.grid(True)
 
     # loop over sed files and labels
@@ -87,11 +97,13 @@ def plotseds_impl(sedfiles, plotfile, labels=None, fluxlabel="Flux", figsize=(10
     plt.ylabel(fluxlabel, fontsize='large')
     plt.legend()
 
-    # save the figure
-    plt.savefig(plotfile, bbox_inches='tight', pad_inches=0.25)
+    # Save the figure
+    pp.savefig(bbox_inches='tight', pad_inches=0.25)
 
     # close things
-    plt.close()
+    #plt.close()
+    pp.close()
+
     return True
 
 # -----------------------------------------------------------------

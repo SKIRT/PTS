@@ -405,6 +405,29 @@ class ScalingPlotter(object):
 
     # -----------------------------------------------------------------
 
+    def plot_timeline(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+        # Plot a graph comparing the timeline for the runs with a different number of processes
+        #for scalingtest, data in cpudata.items():
+
+            #plotpath = os.path.join(self._vispath, scalingtest)
+            #plotfilepath = os.path.join(plotpath, "timeline.pdf")
+
+            # Get the list of number of processes for this scaling test
+            #nprocs_list = nprocs_dict[scalingtest]
+
+            # Create the plot
+            #self.create_plot(data, plotfilepath, nprocs_list, percentages=True, totals=True, unordered=True, numberofproc=True, cpu=(not weak))
+
+    # -----------------------------------------------------------------
+
     def plot_memory(self, figsize=(12,8)):
 
         """

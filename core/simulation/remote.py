@@ -214,7 +214,7 @@ class SkirtRemote(Configurable):
             simulation_id = self._new_simulation_id()
 
         # Create a simulation file and return its path
-        simulation_file_path = self.create_simulation_file(arguments, name, simulation_id, local_input_path, local_output_path)
+        simulation_file_path = self.create_simulation_file(arguments, name, simulation_id, remote_simulation_path, local_input_path, local_output_path)
         return simulation_file_path
 
     # -----------------------------------------------------------------
@@ -478,7 +478,7 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_simulation_file(self, arguments, name, simulation_id, local_input_path, local_output_path):
+    def create_simulation_file(self, arguments, name, simulation_id, remote_simulation_path, local_input_path, local_output_path):
 
         """
         This function ...
@@ -498,6 +498,7 @@ class SkirtRemote(Configurable):
         simulation_file.write("local input directory: " + str(local_input_path) + "\n") # can be None
         simulation_file.write("local output directory: " + local_output_path + "\n")
         simulation_file.write("remote input directory: " + str(arguments.input_path) + "\n") # can be None
+        simulation_file.write("remote simulation directory: " + str(remote_simulation_path) + "\n")
         simulation_file.write("remote output directory: " + arguments.output_path + "\n")
         simulation_file.write("submitted at: " + time.timestamp() + "\n")
 
@@ -697,6 +698,30 @@ class SkirtRemote(Configurable):
             # Trial and error to get it right for HPC UGent login nodes; don't know what is happening
             if contains_extra_eof: return self.ssh.before.replace('\x1b[K', '').split("\r\n")[1:-1]
             else: return self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
+
+    # -----------------------------------------------------------------
+
+    def remove_directory(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        self.execute("rm -rf " + path, output=False)
+
+    # -----------------------------------------------------------------
+
+    def remove_file(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        self.execute("rm " + path, output=False)
 
     # -----------------------------------------------------------------
 
@@ -949,6 +974,7 @@ class SkirtRemote(Configurable):
                 local_input_path = None
                 local_output_path = None
                 remote_input_path = None
+                remote_simulation_path = None
                 extract_progress = None
                 extract_timeline = None
                 extract_memory = None
@@ -980,6 +1006,7 @@ class SkirtRemote(Configurable):
                         if "local input directory" in line: local_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "local output directory" in line: local_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote input directory" in line: remote_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "remote simulation directory" in line: remote_simulation_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "extract progress" in line: extract_progress = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
                         elif "extract timeline" in line: extract_timeline = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
                         elif "extract memory" in line: extract_memory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
@@ -1059,14 +1086,14 @@ class SkirtRemote(Configurable):
                     simulation_file.write("retreived at: " + time.timestamp())
 
                 # Remove the remote input, if requested
-                if remove_remote_input:
-                    remove_command = "rm -rf " + remote_input_path
-                    self.execute(remove_command)
+                if remove_remote_input: self.remove_directory(remote_input_path)
 
                 # Remove the remote output, if requested
-                if remove_remote_output:
-                    remove_command = "rm -rf " + remote_output_path
-                    self.execute(remove_command)
+                if remove_remote_output: self.remove_directory(remote_output_path)
+
+                # If both the input and output directories have to be removed, the remote simulation directory
+                # can be removed too
+                if remove_remote_input and remove_remote_output: self.remove_directory(remote_simulation_path)
 
                 # Create a simulation object and add it to the list
                 simulation = SkirtSimulation(prefix, inpath=local_input_path, outpath=local_output_path)

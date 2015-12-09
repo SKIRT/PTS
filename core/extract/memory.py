@@ -36,6 +36,7 @@ class MemoryExtractor(object):
 
         ## Attributes
 
+        self.log_files = None
         self.table = None
 
     # -----------------------------------------------------------------
@@ -65,6 +66,8 @@ class MemoryExtractor(object):
 
         """
         This function ...
+        :param simulation:
+        :param output_path:
         :return:
         """
 
@@ -233,6 +236,6 @@ class MemoryExtractor(object):
         :return:
         """
 
-        return(max(self.table["Memory usage"]))
+        return max(self.table["Memory usage"])
 
 # -----------------------------------------------------------------

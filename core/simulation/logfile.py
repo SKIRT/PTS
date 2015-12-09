@@ -54,10 +54,6 @@ class LogFile(object):
         # Parse the log file
         self.contents = parse(path)
 
-        # Determine the number of processes and threads
-        self.processes = get_processes(self.contents)
-        self.threads = get_threads(self.contents)
-
     # -----------------------------------------------------------------
 
     @property
@@ -140,40 +136,65 @@ class LogFile(object):
         # Invalid option
         else: raise ValueError("Phase must be either 'stellar' or 'dustem'")
 
-# -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-def get_processes(table):
+    @property
+    def processes(self):
 
-    """
-    This function ...
-    :param table:
-    :return:
-    """
+        """
+        This function ...
+        :return:
+        """
 
-    for message in table["Message"]:
-        if "Starting simulation" in message:
-            if "with" in message: return int(message.split(' with ')[1].split()[0])
-            else: return 1
-    raise ValueError("Cannot determine the number of processes from the log file")
+        # Loop over all the log file entries
+        for i in range(len(self.contents)):
 
-# -----------------------------------------------------------------
+            # Get the current log message
+            message = self.contents["Message"][i]
 
-def get_threads(table):
+            # Look for the message that indicates the start of the simulation
+            if "Starting simulation" in message:
 
-    """
-    This function ...
-    :param table:
-    :return:
-    """
+                if "with" in message: return int(message.split(' with ')[1].split()[0])
+                else: return 1
 
-    triggered = False
-    max_thread_number = 0
-    for message in table["Message"]:
-        if "Initializing random number generator" in message:
-            triggered = True
-            max_thread_number = int(message.split("thread number ")[1].split(" with seed")[0])
-        elif triggered: return max_thread_number+1
-    raise ValueError("Cannot determine the number of threads from the log file")
+        # We should not get here
+        raise ValueError("The number of processes could not be determined from the log file")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def threads(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Indicate
+        triggered = False
+        max_thread_index = 0
+
+        # Loop over all the log file entries
+        for i in range(len(self.contents)):
+
+            # Get the current log message
+            message = self.contents["Message"][i]
+
+            # Look for the message that indicates the start of the simulation
+            if "Initializing random number generator" in message:
+
+                triggered = True
+                max_thread_index = int(message.split("thread number ")[1].split(" with seed")[0])
+
+            # If the interesting log messages have been encountered, but the current log message doesn't state a thread
+            # index, return the number of threads
+            elif triggered: return max_thread_index + 1
+
+            # If none of the above, we are still in the part before the setup of the Random class
+
+        # We should not get here
+        raise ValueError("The number of threads could not be determined from the log file")
 
 # -----------------------------------------------------------------
 

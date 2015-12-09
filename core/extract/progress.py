@@ -14,13 +14,9 @@ This module is used to extract simulation progress information from the simulati
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import argparse
-from datetime import datetime
-
-# Import the relevant PTS classes and modules
-from ..simulation.simulation import SkirtSimulation
-from ..tools import archive as arch
+# Import astronomical modules
+from astropy.table import Table
+from astropy.io import ascii
 
 # -----------------------------------------------------------------
 
@@ -39,199 +35,258 @@ class ProgressExtractor(object):
 
         ## Attributes
 
+        self.log_files = None
         self.table = None
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, output_path):
+    @classmethod
+    def open_table(cls, filepath):
+
+        """
+        This function ...
+        :param filepath:
+        :return:
+        """
+
+        # Create a new ProgressExtractor instance
+        extractor = cls()
+
+        # Set the table attribute
+        extractor.table = ascii.read(filepath)
+
+        # Return the new ProgressExtractor instance
+        return extractor
+
+    # -----------------------------------------------------------------
+
+    def run(self, simulation, output_path=None):
 
         """
         This function ...
         :return:
         """
 
-        pass
+        # Obtain the log files created by the simulation
+        self.log_files = simulation.logfiles()
 
-# -----------------------------------------------------------------
+        # Determine whether the emission spectra calculation was performed using a staggered assignment scheme
+        self.staggered = simulation.parameters().staggered()
 
-phaseindices = {'stellar': 0, 'spectra': 1, 'dust': 2}
+        # Perform the extraction
+        self.extract()
 
-# -----------------------------------------------------------------
+        # Write the results
+        if output_path is not None: self.write(output_path)
 
-## This function extracts the progress from the simulation log files and writes them to file.
-#  It takes the following arguments:
-#
-#  - simulationpath: the path to the simulation's log file
-#  - progressfilepath: the path to a file that to where the runtimes should be written
-#
-def extract(skifilename, outputpath, progressfilepath):
+    # -----------------------------------------------------------------
 
-    # Open the progress file
-    progressfile = open(progressfilepath, 'a')
+    def extract(self):
 
-    # Create a simulation object from the simulation's output path
-    simulation = SkirtSimulation(prefix=skifilename, outpath=outputpath)
+        """
+        This function ...
+        :return:
+        """
 
-    # Get the list of logfiles for this simulation
-    logfilepaths = simulation.logfilepaths()
+        number_of_processes = None
 
-    # Extract the progress of shooting stellar emission photons
-    _extractphotonprogress(logfilepaths, progressfile, 'stellar')
+        # Initialize lists for the columns
+        process_list = []
+        phase_list = []
+        seconds_list = []
+        progress_list = []
 
-    # Extract the progress of calculating the dust emission spectra
-    _extractspectraprogress(logfilepaths, progressfile, simulation.staggered())
+        # Loop over the log files again and fill the column lists
+        for log_file in self.log_files:
 
-    # Extract the progress of shooting dust emission photons
-    _extractphotonprogress(logfilepaths, progressfile, 'dust')
+            # Get the total number of processes
+            if number_of_processes is None: number_of_processes = log_file.processes
+            else: assert number_of_processes == log_file.processes
 
-    # Close the progress file
-    progressfile.close()
+            # Get the process rank associated with this log file
+            process = log_file.process
 
-## This function
-def _extractphotonprogress(logfiles, progressfile, phase):
+            stellar_start = None
+            spectra_start = None
+            dust_start = None
 
-    # For the log file of each process
-    for logfile in logfiles:
+            first_spectra_phase = True
+            last_dust_phase = False
 
-        # Initialize empty lists to contain the runtimes and corresponding percentages
-        times = []
-        percentages = []
+            total_entries = None
+            entries_per_process = None
 
-        # Get the rank of the process that created this log file (for the process with rank zero finding this rank will
-        # not succeed, therefore use the try-except statements
-        processrank = 0
-        try: processrank = int(logfile[-7:-4])
-        except ValueError: pass
+            # Loop over the entries in the log file
+            for i in range(len(log_file.contents)):
 
-        # We use the 'triggered' variable to indicate whether we are currently in the part of the log file
-        # that is of interest for the progress of launching stellar/dust emission photons
-        triggered = False
+                # Get the description of the current simulation phase
+                phase = log_file.contents["Phase"][i]
 
-        # For each line in this log file
-        for line in arch.opentext(logfile):
+                # The log file entries corresponding to the stellar emission phase
+                if phase == "stellar":
 
-            # Check if this line signals the start of the stellar/dust emission phase
-            if not triggered and "Starting the {} emission phase".format(phase) in line: triggered = True
+                    # The current log message
+                    message = log_file.contents["Message"][i]
 
-            # If the emission phase has been triggered, check whether the shooting of photon packages has started
-            if triggered and " photon packages for " in line: startline = line
+                    # If this is the log message that marks the very start of the stellar emission phase, record the associated time
+                    if "photon packages for" in message: stellar_start = log_file.contents["Time"][i]
 
-            # If the emission phase has been triggered, acquire the progress of shooting photon packages
-            if triggered and " photon packages: " in line and "Launched" in line:
+                    # If this is one of the log messages that log stellar emission progress
+                    elif "Launched stellar emission photon packages" in message:
 
-                percentages.append( float(line.split()[-1][:-1]) )
-                times.append(_timelapse(startline,line))
+                        # Add the process rank and phase entries
+                        process_list.append(process)
+                        phase_list.append(phase)
 
-            # If the emission phase has been triggered, look for the line that signals the end of this phase
-            if triggered and " Finished the {} emission phase".format(phase) in line: break
+                        # Add the seconds entry
+                        seconds = (log_file.contents["Time"][i] - stellar_start).total_seconds()
+                        seconds_list.append(seconds)
 
-        # Add a line to the progress file for each (runtime, percentage) pair
-        for runtime, percentage in zip(times, percentages):
+                        # Get the progress and add it to the list
+                        progress = float(message.split("packages: ")[1].split("%"))
+                        progress_list.append(progress)
 
-            # Write the runtime and percentage to the progress file, with the process rank in the first column and
-            # the simulation phase in the second column
-            progressfile.write(str(phaseindices[phase]) + ' ' + str(processrank) + ' ' + str(runtime) + ' ' + str(percentage) + '\n')
+                    elif "Finished the stellar emission phase" in message:
 
-## This function
-def _extractspectraprogress(logfiles, progressfile, staggered=False):
+                        # Add the process rank and phase entries
+                        process_list.append(process)
+                        phase_list.append(phase)
 
-    # Determine the number of processes used for the simulation
-    numprocesses = len(logfiles)
+                        # Add the seconds entry
+                        seconds = (log_file.contents["Time"][i] - stellar_start).total_seconds()
+                        seconds_list.append(seconds)
 
-    # For the log file of each process
-    for logfile in logfiles:
+                        # Add 100% progress to the list
+                        progress_list.append(100.0)
 
-        # Initialize empty lists to contain the runtimes and corresponding percentages
-        times = []
-        percentages = []
+                # The log file entries corresponding to the stellar emission phase
+                elif phase == "spectra" and first_spectra_phase:
 
-        # Get the rank of the process that created this log file (for the process with rank zero finding this rank will
-        # not succeed, therefore use the try-except statements
-        processrank = 0
-        try: processrank = int(logfile[-7:-4])
-        except ValueError: pass
+                    # The current log message
+                    message = log_file.contents["Message"][i]
 
-        # We use the 'triggered' variable to indicate whether we are currently in the part of the log file
-        # that is of interest for the progress of the dust emission spectra calculation
-        triggered = False
+                    # If this is the log message that marks the very start of the spectra calculation, record the associated time
+                    if "Calculating dust emission spectra" in message: spectra_start = log_file.contents["Time"][i]
 
-        # For each line in this log file
-        for line in arch.opentext(logfile):
+                    # If this log message states the total number of library entries that are used, record this number
+                    elif "Library entries in use" in message:
 
-            # Check if this line signals the start of the dust emission phase
-            if not triggered and "Starting the dust emission phase" in line: triggered = True
+                        # Get the total number of library entries in use and the number of entries per process
+                        total_entries = int(message.split("use: ")[1].split(" out of")[0])
+                        entries_per_process = total_entries / number_of_processes
 
-            # If the dust emission phase has been triggered, check whether we are now at the calculation of the spectra
-            if triggered and " Calculating dust emission spectra" in line: startline = line
+                    elif "Calculating emission for" in message:
 
-            # If the dust emission phase has been triggered, look for the total number of library entries
-            if triggered and " Library entries in use: " in line:
+                        entry = float(message.split()[-1][:-3])
 
-                totalentries = float(line.split()[-1])
-                entriesperprocess = totalentries/numprocesses
+                        # Determine the progress
+                        if self.staggered: fraction = entry / total_entries
+                        else: fraction = (entry - process * entries_per_process) / entries_per_process
 
-            # If the dust emission phase has been triggered, acquire the progress of the spectra calculation
-            if triggered and " Calculating emission for " in line:
+                        # Add the process rank and phase entries
+                        process_list.append(process)
+                        phase_list.append(phase)
 
-                entry = float(line.split()[-1][:-3])
+                        # Add the seconds entry
+                        seconds = (log_file.contents["Time"][i] - spectra_start).total_seconds()
+                        seconds_list.append(seconds)
 
-                if staggered: fraction = entry/totalentries
-                else: fraction = (entry - processrank*entriesperprocess)/entriesperprocess
+                        # Get the progress and add it to the list
+                        progress = float(fraction*100.0)
+                        progress_list.append(progress)
 
-                percentages.append(100*fraction)
-                times.append(_timelapse(startline,line))
+                    elif "Dust emission spectra calculated" in message:
 
-            # If the dust emission phase has been triggered, look for the line that signals the end of the dust emission phase
-            if triggered and " Dust emission spectra calculated" in line: break
+                        # Add the process rank and phase entries
+                        process_list.append(process)
+                        phase_list.append(phase)
 
-         # Add a line to the progress file for each (runtime, percentage) pair
-        for runtime, percentage in zip(times, percentages):
+                        # Add the seconds entry
+                        seconds = (log_file.contents["Time"][i] - spectra_start).total_seconds()
+                        seconds_list.append(seconds)
 
-            # Write the runtime and percentage to the progress file, with the process rank in the first column and
-            # the simulation phase in the second column
-            progressfile.write(str(phaseindices['spectra']) + ' ' + str(processrank) + ' ' + str(runtime) + ' ' + str(percentage) + '\n')
+                        # Add 100% progress to the list
+                        progress_list.append(100.0)
 
-# -----------------------------------------------------------------
+                        # Indicate that the first spectra phase has already been processed (subsequent spectra phases can be ignored)
+                        first_spectra_phase = False
 
-# This private helper function returns the datetime object corresponding to the time stamp in a line
-def _timestamp(line):
+                # The log file entries corresponding to the dust emission phase
+                elif phase == "dust":
 
-    date, time, dummy = line.split(None, 2)
-    day, month, year = date.split('/')
-    hour, minute, second = time.split(':')
-    second, microsecond = second.split('.')
-    return datetime(year=int(year), month=int(month), day=int(day),
-                    hour=int(hour), minute=int(minute), second=int(second), microsecond=int(microsecond))
+                    # The current log message
+                    message = log_file.contents["Message"][i]
 
-# This private helper function returns the difference in seconds between the time stamps in the two lines
-def _timelapse(line1, line2):
+                    # Look for messages indicating whether this dust photon shooting phase corresponds to
+                    # one of the dust self-absorption cycles or the actual dust emission phase
+                    if "dust self-absorption cycle" in message: last_dust_phase = False
+                    elif "Starting the dust emission phase" in message: last_dust_phase = True
 
-    return (_timestamp(line2)-_timestamp(line1)).total_seconds()
+                    # We only want to record the progress of the 'last' dust emission phase
+                    if last_dust_phase:
 
-# -----------------------------------------------------------------
+                        # If this is the log message that marks the very start of the dust emission phase, record the associated time
+                        if "photon packages for" in message: dust_start = log_file.contents["Time"][i]
 
-# Execute the statements below if this script is run from the command line
-if __name__ == "__main__":
+                        # If this is one of the log messages that log dust emission progress
+                        elif "Launched dust emission photon packages" in message:
 
-    # Create the command-line parser and a set of subparsers
-    parser = argparse.ArgumentParser()
-    parser.add_argument('skifilepath', type=str, help='the path to the ski file of the simulation')
-    parser.add_argument('outputpath', type=str, help='the path to the simulation output directory')
-    parser.add_argument('progressfilepath', type=str, help='the path to the progress file')
+                            # Add the process rank and phase entries
+                            process_list.append(process)
+                            phase_list.append(phase)
 
-    # Parse the command line arguments
-    args = parser.parse_args()
+                            # Add the seconds entry
+                            seconds = (log_file.contents["Time"][i] - dust_start).total_seconds()
+                            seconds_list.append(seconds)
 
-    # Set the path to the simulation's ski file
-    skifilepath = args.skifilepath
+                            # Get the progress and add it to the list
+                            progress = float(message.split("packages: ")[1].split("%"))
+                            progress_list.append(progress)
 
-    # Set the path of the simulation output directory
-    outputpath = args.outputpath
+                        elif "Finished the dust emission phase" in message:
 
-    # Set the path to the results file
-    progressfilepath = args.progressfilepath
+                            # Add the process rank and phase entries
+                            process_list.append(process)
+                            phase_list.append(phase)
 
-    # Extract the timings
-    extract(skifilepath, outputpath, progressfilepath)
+                            # Add the seconds entry
+                            seconds = (log_file.contents["Time"][i] - dust_start).total_seconds()
+                            seconds_list.append(seconds)
+
+                            # Add 100% progress to the list
+                            progress_list.append(100.0)
+
+        # Create the table data structures
+        names = ["Process rank", "Simulation phase", "Time", "Progress"]
+        data = [process_list, phase_list, seconds_list, progress_list]
+
+        # Create the table
+        self.table = Table(data, names=names)
+        self.table["Time"].unit = "s"
+        self.table["Progress"].unit = "%"
+
+    # -----------------------------------------------------------------
+
+    def write(self, output_path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write the table to file
+        self.table.write(output_path, format="ascii.commented_header")
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set the table to None
+        self.table = None
 
 # -----------------------------------------------------------------

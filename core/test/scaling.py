@@ -24,6 +24,7 @@ from ..simulation.simulation import SkirtSimulation
 from ..simulation.arguments import SkirtArguments
 from ..launch.analyser import SimulationAnalyser
 from .scalinganalyser import ScalingAnalyser
+from .resources import ResourceEstimator
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
 from ..extract.timeline import TimeLineExtractor
@@ -726,7 +727,14 @@ class ScalingTest(Configurable):
             # Return the estimated total runtime for the current number of processors (assuming the overhead increases linearly with the number of processors)
             return (extractor.serial + extractor.parallel * log_processors / processors + extractor.overhead / log_processors * processors) * factor
 
+        # 5. Try to estimate the runtime by using the ResourceEstimator class
+        else:
+
+            # Create and run a ResourceEstimator instance
+            estimator = ResourceEstimator()
+            estimator.run(self.arguments.ski_pattern)
+
         # If the walltime could not be estimated by any of the above methods, exit with an error
-        raise RuntimeError("The walltime could not be estimated. Place a simulation log file next to the ski file.")
+        #raise RuntimeError("The walltime could not be estimated. Place a simulation log file next to the ski file.")
 
 # -----------------------------------------------------------------

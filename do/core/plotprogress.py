@@ -31,37 +31,41 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import argparse
+import os
 
 # Import the relevant PTS classes and modules
+from pts.core.simulation.simulation import createsimulations
+from pts.core.extract.progress import ProgressExtractor
 from pts.core.plot.progress import ProgressPlotter
-from pts.core.tools import logging
 
 # -----------------------------------------------------------------
 
-# The choices for the simulation phase
-phases = ['stellar', 'dust', 'spectra']
+# Look for a file in the current working directory that contains extracted progress information
+progress_file_path = os.path.join(os.getcwd(), "progress.dat")
+if os.path.isfile(progress_file_path):
 
-# -----------------------------------------------------------------
+    # Create a ProgressExtractor instance from the saved progress data
+    extractor = ProgressExtractor.open_table(progress_file_path)
 
-log = logging.new_log(None, "INFO")
+# If extracted timeline information is not present, first perform the extraction
+else:
 
-# Inform the user
-log.info("Running plotprogress...")
+    # Create a SkirtSimulation object based on a log file present in the current working directory
+    simulation = createsimulations(single=True)
 
-# Create the command-line parser
-parser = argparse.ArgumentParser()
-parser.add_argument('simulations', type=str, help='a string identifying the simulation(s)', nargs='?', default="")
-parser.add_argument('phase', type=str, help='the simulation phase for which you want to plot the progress', choices=phases)
+    # Create a new ProgressExtractor instance
+    extractor = ProgressExtractor()
 
-# Parse the command line arguments
-args = parser.parse_args()
+    # Run the extractor
+    extractor.run(simulation)
 
-# Create and run the progress plotter
+# Determine the path to the plot file
+plot_path = os.path.join(os.getcwd(), "progress.pdf")
+
+# Create a ProgressPlotter instance
 plotter = ProgressPlotter()
-plotter.run(args.simulations, args.phase)
 
-# Inform the user
-log.info("Finished plotprogress")
+# Run the progress plotter
+plotter.run(extractor.table, plot_path)
 
 # -----------------------------------------------------------------

@@ -199,7 +199,7 @@ class SkirtLauncher(Configurable):
         # Inform the user
         self.log.info("Determining the parallelization scheme by estimating the memory requirements...")
 
-        # Calculate the amount of required memory for this simulation
+        # Create and run a ResourceEstimator instance
         estimator = ResourceEstimator()
         estimator.run(self.config.arguments.ski_pattern)
 

@@ -36,6 +36,7 @@ class TimeLineExtractor(object):
 
         ## Attributes
 
+        self.log_files = None
         self.table = None
 
     # -----------------------------------------------------------------
@@ -180,7 +181,7 @@ class TimeLineExtractor(object):
         :return:
         """
 
-        return max(self.table["Process rank"])+1
+        return max(self.table["Process rank"]) + 1
 
     # -----------------------------------------------------------------
 

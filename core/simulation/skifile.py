@@ -214,6 +214,14 @@ class SkiFile:
     def dustemission(self):
         return len(self.tree.xpath("//dustEmissivity"))
 
+    @property
+    def emission_boost(self):
+        try:
+            pandustsystem = self.tree.xpath("//PanDustSystem")[0]
+            return float(pandustsystem.attrib["emissionBoost"])
+        except:
+            raise ValueError("Not a panchromatic simulation")
+
     ## This function returns whether dust selfabsorption is enabled
     def dustselfabsorption(self):
         try:
