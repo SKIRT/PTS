@@ -58,6 +58,9 @@ class ResourceEstimator(object):
         # Set the path to the temporary directory to None initially
         self.temp_path = None
 
+        # Set the timeline extractor to None initially
+        self.extractor = None
+
     # -----------------------------------------------------------------
 
     def run(self, ski_path, processes=1, threads=1):
@@ -79,7 +82,10 @@ class ResourceEstimator(object):
         # 4. Run the simulation
         self.simulate()
 
-        # 5. Remove the output
+        # 5. Extract the timeline information
+        self.extract()
+
+        # 6. Remove the output
         self.clear()
 
     # -----------------------------------------------------------------
@@ -154,6 +160,19 @@ class ResourceEstimator(object):
 
     # -----------------------------------------------------------------
 
+    def extract(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a TimeLineExtractor instance
+        self.extractor = TimeLineExtractor()
+        self.extractor.run(self.simulation)
+
+    # -----------------------------------------------------------------
+
     def clear(self):
 
         """
@@ -187,21 +206,32 @@ class ResourceEstimator(object):
         :return:
         """
 
-        # Create a TimeLineExtractor instance
-        extractor = TimeLineExtractor()
-        extractor.run(self.simulation)
+        walltime_emission, walltime_other = self.splitted_walltime
+
+        # Return an estimation for the walltime
+        return walltime_other + walltime_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def splitted_walltime(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Determine the number of photon packages defined in the ski file
-        packages = self.ski_file.packages
+        packages = self.ski_file.packages()
 
         # Calculate the rate of photon packages launched per second
-        rate = self.log_file.packages("stellar") / extractor.stellar
+        rate = self.log_file.packages("stellar") / self.extractor.stellar
 
-        # Calculate the rate of photon pakcages launched per second without recording absorption
-        rate_noabsorption = self.log_file.packages("dustem") / extractor.dustem
+        # Calculate the rate of photon packages launched per second without recording absorption
+        rate_noabsorption = self.log_file.packages("dustem") / self.extractor.dustem
 
         # Estimate the walltime for the stellar emission phase
-        stellar_walltime = self.ski_file.packages / rate
+        stellar_walltime = packages / rate
 
         # Estimate the walltime for the dust self-absorption phase
         factors = [1./10., 1./3., 1.]
@@ -210,9 +240,26 @@ class ResourceEstimator(object):
         selfabs_walltime = total_pp * rate
 
         # Estimate the walltime for the dust emission phase
-        dustem_walltime = self.ski_file.packages * self.ski_file.emission_boost / rate_noabsorption
+        dustem_walltime = packages * self.ski_file.emission_boost / rate_noabsorption
+
+        return stellar_walltime + selfabs_walltime + dustem_walltime, self.extractor.duration_without(["stellar", "dust"])
+
+    # -----------------------------------------------------------------
+
+    def walltime_for(self, processes, threads):
+
+        """
+        This function ...
+        :param processes:
+        :param threads:
+        :return:
+        """
+
+        walltime_emission, walltime_other = self.splitted_walltime
+
+        processors = processes * threads
 
         # Return an estimation for the walltime
-        return extractor.duration_without(["stellar", "dust"]) + stellar_walltime + selfabs_walltime + dustem_walltime
+        return walltime_other + walltime_emission / processors
 
 # -----------------------------------------------------------------

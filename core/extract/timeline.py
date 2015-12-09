@@ -144,7 +144,6 @@ class TimeLineExtractor(object):
         self.table = Table(data, names=names)
         self.table["Start time"].unit = "s"
         self.table["End time"].unit = "s"
-        self.table["End time"].unit = "GB"
 
     # -----------------------------------------------------------------
 
@@ -195,6 +194,8 @@ class TimeLineExtractor(object):
 
         # Keep track of the total amount of time spent in the specified phase
         total = 0.0
+
+        print(self.table)
 
         assert self.table["Process rank"][0] == 0
 

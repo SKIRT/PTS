@@ -557,10 +557,12 @@ class SkirtRemote(Configurable):
 
             # Create and run a ResourceEstimator instance
             estimator = ResourceEstimator()
-            estimator.run(local_ski_path, arguments.parallel.processes, arguments.parallel.threads)
+            #estimator.run(local_ski_path, arguments.parallel.processes, arguments.parallel.threads)
+            estimator.run(local_ski_path, 1, 1)
 
             # Return the estimated walltime
-            walltime = estimator.walltime * factor
+            #walltime = estimator.walltime * factor
+            walltime = estimator.walltime_for(arguments.parallel.processes, arguments.parallel.threads) * factor
 
         else: walltime = scheduling_options["walltime"]
 
