@@ -266,7 +266,7 @@ class RemoteSynchronizer(Configurable):
             status = remote.status
 
             # Show the name of the current remote
-            if len(status) > 0: self.log.info("Simulations on remote " + remote.host_name + ":")
+            if len(status) > 0: self.log.info("Simulations on remote '" + remote.host_name + "':")
             print()
 
             # Get the status of the different simulations
@@ -411,6 +411,6 @@ class RemoteSynchronizer(Configurable):
                 # Show the status of the current simulation
                 print(formatter + prefix + tag + " " + simulation_name + ": " + simulation_status + format.END)
 
-        print()
+        if len(self.remotes) > 0: print()
 
 # -----------------------------------------------------------------

@@ -151,7 +151,7 @@ class SkirtRemote(Configurable):
         """
 
         # Inform the user
-        self.log.info("Logging in to the remote SKIRT environment on host " + self.host.name)
+        self.log.info("Logging in to the remote SKIRT environment on host '" + self.config.host_id + "'")
 
         # Connect to the remote host
         self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password)
