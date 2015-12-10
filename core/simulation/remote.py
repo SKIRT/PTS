@@ -1022,7 +1022,7 @@ class SkirtRemote(Configurable):
             path = entry.file_path
 
             # The ski file path
-            ski_path = entry.ski_path
+            remote_ski_path = entry.remote_ski_path
 
             # The remote output path
             remote_output_path = entry.remote_output_path
@@ -1036,7 +1036,7 @@ class SkirtRemote(Configurable):
             # Finished simulations
             elif simulation_status == "finished":
 
-                prefix = os.path.basename(ski_path).split(".")[0]
+                prefix = os.path.basename(remote_ski_path).split(".")[0]
 
                 # Properties obtained from the simulation file
                 local_ski_path = None
