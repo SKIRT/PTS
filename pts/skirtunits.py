@@ -37,7 +37,7 @@ import numpy as np
 #| mass | | g, kg, Msun
 #| luminosity | | W, Lsun
 #| luminositydensity | wavelength | W/m, W/micron, Lsun/micron
-#| luminositydensity | frequency | W/Hz, Lsun/Hz
+#| luminositydensity | frequency | W/Hz, erg/s/Hz, Lsun/Hz
 #| fluxdensity | neutral | W/m2
 #| fluxdensity | wavelength | W/m3, W/m2/micron
 #| fluxdensity | frequency | W/m2/Hz, Jy, mJy, MJy, erg/s/cm2/Hz
@@ -229,6 +229,7 @@ _quantity = { 'A': 'length', 'nm': 'length', 'micron': 'length', 'mm': 'length',
               'W/micron': 'wavelengthluminositydensity',
               'Lsun/micron': 'wavelengthluminositydensity',
               'W/Hz': 'frequencyluminositydensity',
+              'erg/s/Hz': 'frequencyluminositydensity',
               'Lsun/Hz': 'frequencyluminositydensity',
               'W/m2': 'neutralfluxdensity',
               'W/m2/sr': 'neutralsurfacebrightness',
@@ -260,7 +261,7 @@ _conversion = { 'A': 1e-10, 'nm': 1e-9, 'micron': 1e-6, 'mm': 1e-3, 'cm': 1e-2,
                 'g': 1e-3, 'kg': 1., 'Msun': _Msun,
                 'W': 1., 'Lsun': _Lsun,
                 'W/m': 1., 'W/micron': 1e6, 'Lsun/micron': _Lsun*1e6,
-                'W/Hz': 1., 'Lsun/Hz': _Lsun,
+                'W/Hz': 1., 'Lsun/Hz': _Lsun, "erg/s/Hz": 1e-7,
                 'W/m2': 1.,
                 'W/m2/sr': 1.,
                 'W/m2/arcsec2': 1./_arcsec2,

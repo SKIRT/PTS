@@ -40,7 +40,7 @@ _filterspecs = ( \
 
 # private list of uniform filters for which integrated fluxes should be calculated;
 # for each filter, specify the filter spec and the wavelength range in micron)
-_uniformfilters = ( ("Uniform_8_1000",8,1000), )
+_uniformfilters = ( ("Uniform_8_1000",8,1000), ("Uniform_3_1100",3,1100))
 
 # private global dictionary to hold filter objects: (key,value) = (filterspec, Filter object)
 _filters = { }
@@ -114,16 +114,28 @@ def makeinfofile(skirtrun):
     # --> convert to MJy/sr
     h_flux_limits = np.array(h_flux_limits) / np.array(h_beam_areas) * (648000/np.pi)**2 * 1e-9
 
+    # wavelength ranges and masks for the H-alpha emission line and the continuum immediately next to it
+    wline0 = 0.6565
+    wline1, wline2 = 0.6520, 0.6610
+    wcont1, wcont2 = 0.6420, 0.6700   # upper limit should be 0.6650 for more accurate results with finer grid
+    linemask = ((wavelengths>=wline1) & (wavelengths<=wline2))
+    contmask = ((wavelengths>=wcont1) & (wavelengths<=wline1)) | ((wavelengths>=wline2) & (wavelengths<=wcont2))
+
+    # create uniform filter over the wavelength range of the H-alpha emission peak
+    halpha_filter = Filter((0.6500,0.6631))     # limits so that pivot wavelength coincides with peak
+    # create a mask that removes the H-alpha emission peak from the continuum emission
+    halpha_mask = np.abs(wavelengths-0.6565)>0.0010
+
     # gather statistics on fluxes received by each instrument
     for name in simulation.instrumentnames():
         # maximum flux in Jy
         fluxdensities = simulation.fluxdensities(name, unit='Jy')
         info["instr_"+name+"_fluxdensity_maximum"] = fluxdensities.max()
 
-        #  for each filter, calculate integrated flux density and absolute magnitude
+        # for each filter, calculate integrated flux density and absolute magnitude
         for filterspec,filterobject in _filters.iteritems():
             fluxdensity = regularfluxdensity(simulation, name, [1], wavelengths, None, filterobject)
-            addfluxinfo(info, simulation, name, filterspec, fluxdensity, "")
+            addfluxinfo(info, simulation, name, filterspec, fluxdensity)
 
         # for the Herschel filters, calculate flux and magnitude excluding the carbon line emission peaks
         for filterspec in ("Pacs.blue","Pacs.green","Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW"):
@@ -139,6 +151,15 @@ def makeinfofile(skirtrun):
         for filterspec,fwhm,fluxlimit in zip(h_filterspecs, h_beam_fwhms, h_flux_limits):
             fluxdensity = limitedfluxdensity(simulation, name, wavelengths, cmask, _filters[filterspec], fwhm, fluxlimit)
             addfluxinfo(info, simulation, name, filterspec, fluxdensity, "limited")
+
+        # calculate the H-alpha flux density
+        fluxdensities = simulation.fluxdensities(name, unit='W/m2/micron')
+        rico, f0 = np.polyfit(wavelengths[contmask], fluxdensities[contmask], 1)
+        linefluxdensities = fluxdensities - (f0 + rico*wavelengths)
+        linefluxdensities[linefluxdensities<0] = 0
+        linefluxdensity = np.trapz(x=wavelengths[linemask], y=linefluxdensities[linemask]) / wline0
+        linefluxdensity = simulation.convert(linefluxdensity, from_unit='W/m2/micron', to_unit='Jy', wavelength=wline0)
+        addfluxinfo(info, simulation, name, "halpha", linefluxdensity)
 
     # estimate a representative temperature and corresponding standard deviation
     info["probe_average_temperature_dust"], info["probe_stddev_temperature_dust"],  \
@@ -176,7 +197,7 @@ def makeinfofile(skirtrun):
 #  - \em fluxdensity: the flux density to be added to the dictionary, in Jy. If None, the function does nothing.
 #  - \em fluxtype: a string specifying the flux type (no underscore); for use in constructing the info dictionary key.
 #
-def addfluxinfo(info, simulation, instrumentname, filterspec, fluxdensity, fluxtype):
+def addfluxinfo(info, simulation, instrumentname, filterspec, fluxdensity, fluxtype=""):
     if not fluxdensity is None:
         magnitude = simulation.absolutemagnitude(fluxdensity, simulation.instrumentdistance(unit='pc'),
                                                  fluxdensity_unit='Jy', distance_unit='pc')

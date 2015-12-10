@@ -26,6 +26,7 @@ from pts.skirtunits import SkirtUnits
 from pts.filter import Filter
 from pts.greybody import Bnu, GreyBody, kappa350_Cortese
 import eagle.config as config
+import eagle.database
 
 # -----------------------------------------------------------------
 
@@ -75,6 +76,7 @@ axistypes = {
     'i-H': ( r"$\mathrm{i}-\mathrm{H}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_i - instr_magnitude_2mass_h ),
     'i-H.zib': ( r"$\mathrm{i}-\mathrm{H}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_i - instr_magnitude_2mass_h + 1.39 ),
     'NUV-r': ( r"$\mathrm{NUV}-\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_galex_nuv - instr_magnitude_sdss_r ),
+    'K': ( r"$M_\mathrm{K}\,[\mathrm{mag}]$", lambda: instr_magnitude_2mass_k ),
 
     # flux densities (Jy)
     'fmax': ( r"$f_{\nu,\mathrm{max}}\,[\mathrm{kJy}]$",
@@ -95,6 +97,8 @@ axistypes = {
     # luminosities in specific bands
     'logLk': ( r"$\log_{10}(L_\mathrm{K})\,[L_{\odot,\mathrm{K}}]$",
         lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_2mass_k,setup_distance_instrument,'W/Hz')/LsunK) ),
+    'logL24': ( r"$\log_{10}(L_{24})\,[\mathrm{W}/\mathrm{Hz}]$",
+        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_mips_24,setup_distance_instrument,'W/Hz')) ),
     'logL250': ( r"$\log_{10}(L_{250})\,[\mathrm{W}/\mathrm{Hz}]$",
         lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_spire_psw_limited,setup_distance_instrument,'W/Hz')) ),
     'logLdust': ( r"$\log_{10}(L_{dust})\,[L_\odot]$",
@@ -134,6 +138,30 @@ axistypes = {
     'Tdust.fit': ( r"$T_{\mathrm{dust},\mathrm{fit}}\,[\mathrm{K}]$",
         lambda: dust_temperature_and_mass_from_grey_body_fit("limited")[0] ),
     'Tdust.grid': ( r"$T_{\mathrm{dust},\mathrm{grid}}\,[\mathrm{K}]$", lambda: probe_average_temperature_dust ),
+
+    # public EAGLE database fields (provided through addfields() function)
+    'K.db': ( r"$M_\mathrm{K,db}\,[\mathrm{mag}]$", lambda: public_database_magnitude_ukidss_k ),
+    'logLk.db': ( r"$\log_{10}(L_\mathrm{K,db})\,[L_{\odot,\mathrm{K}}]$", lambda: public_database_logluminosity_ukidss_k ),
+    'logMstar.db': ( r"$\log_{10}(M_{*,\mathrm{db}})\,[M_\odot]$", lambda: log_if_positive(public_database_mass_stars) ),
+    'logSFR.db': ( r"$\log_{10}(\mathrm{SFR}_\mathrm{db})\,[M_\odot\,\mathrm{year}^{-1}]$",
+        lambda: log_if_positive(public_database_mass_stars*public_database_specific_star_formation_rate) ),
+    'logSSFR.db': ( r"$\log_{10}(\mathrm{SFR}_\mathrm{db}/M_{*,\mathrm{db}})\,[\mathrm{year}^{-1}]$",
+        lambda: log_if_positive(public_database_specific_star_formation_rate) ),
+
+    # Star-formation-rate predictions from observations (see Kennicutt-Evans 2012 table 1)
+    'logSFR.NUV': ( r"$\log_{10}(\mathrm{SFR}_\mathrm{NUV})\,[M_\odot\,\mathrm{year}^{-1}]$",
+        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_galex_nuv,setup_distance_instrument,'erg/s/Hz') \
+                  * c / (1e-6*Filter("GALEX.NUV").pivotwavelength())) - 43.17 ),
+    'logSFR.24': ( r"$\log_{10}(\mathrm{SFR}_{24\mu\mathrm{m}})\,[M_\odot\,\mathrm{year}^{-1}]$",
+        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_mips_24,setup_distance_instrument,'erg/s/Hz') \
+                * c / (1e-6*Filter("MIPS.24").pivotwavelength())) - 42.69 ),
+    'logSFR.TIR': ( r"$\log_{10}(\mathrm{SFR}_\mathrm{TIR})\,[M_\odot\,\mathrm{year}^{-1}]$",
+        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_uniform_3_1100,setup_distance_instrument,'W/micron',
+                    wavelength=np.sqrt(3*1100))*(1100-3)*1e7) - 43.41 ),
+    'logSFR.Halpha': ( r"$\log_{10}(\mathrm{SFR}_{\mathrm{H}\alpha})\,[M_\odot\,\mathrm{year}^{-1}]$",
+        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_halpha,setup_distance_instrument,'erg/s/Hz') \
+                * c / 0.6565e-6) - 41.27 ),
+
 }
 
 # -----------------------------------------------------------------
@@ -145,6 +173,7 @@ Msun = units.convert(1., from_unit='Msun', to_unit='kg')
 Lsun = units.convert(1., from_unit='Lsun', to_unit='W')
 LsunK = 10**((34.1-5.19)/2.5)  # solar luminosity in K band expressed in W/Hz  (AB magnitude is 5.19)
 LsunH = 10**((34.1-4.71)/2.5)  # solar luminosity in H band expressed in W/Hz  (AB magnitude is 4.71)
+c = 2.99792458e8    # speed of light in m/s
 
 # -----------------------------------------------------------------
 
@@ -273,6 +302,30 @@ class Collection:
                         self.info[name][cleankey] = value
                 else:
                     self.info[name][key] = value
+
+    ## This function adds information from the specified data files to the "any" portion of the collection.
+    # The first column in each file contains a public EAGLE database galaxy id, and subsequent columns contain
+    # the extra information about that galaxy in the order specified by the fieldnames. The files are concatenated.
+    def addfields(self, filenames, fieldnames):
+        # read the extra fields from the input files, and store them keyed on galaxy id
+        galaxies = {}
+        for filename in filenames:
+            for row in np.loadtxt(filename):
+                galaxies[ int(row[0]) ] = row[1:]
+
+        # create appropriate collection entries for the new fields
+        info = self.info['any']
+        for field in fieldnames:
+            info[field] = np.zeros_like(info["skirt_run_id"])
+
+        # copy the field values for each galaxy in the collection
+        db = eagle.database.Database()
+        for runindex in range(len(info["skirt_run_id"])):
+            runid = int(info["skirt_run_id"][runindex])
+            galaxyid = int(db.select("runid=?", (runid,))[0]["galaxyid"])
+            for field, value in zip(fieldnames, galaxies[galaxyid]):
+                info[field][runindex] = value
+        db.close()
 
 # -----------------------------------------------------------------
 
