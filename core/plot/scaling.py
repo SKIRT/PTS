@@ -63,7 +63,7 @@ class ScalingPlotter(object):
         if isinstance(input, Table): self.table = input
 
         # If the input is a string
-        elif isinstance(input, basestring): self.table = Table.read(input, format="ascii")
+        elif isinstance(input, basestring): self.table = Table.read(input, format="ascii.commented_header")
 
         # Invalid input
         else: raise ValueError("Input must be either an Astropy Table object or a filename (e.g. memory.dat)")
@@ -94,6 +94,9 @@ class ScalingPlotter(object):
 
         # Plot the scaling relation of the memory usage
         self.plot_memory()
+
+        # Plot a timeline of the CPU time spent in the different simulationn phases
+        self.plot_timeline()
 
     # -----------------------------------------------------------------
 
@@ -128,8 +131,9 @@ class ScalingPlotter(object):
         for (systemname, mode), [nthreads, times, errors] in self._statistics.items():
 
             # Determine a label to identify this curve
-            if "hybrid" in mode: mode = "hybrid " + mode.strip('hybrid') + ":1"
-            label = mode if self._system else systemname + " (" + mode + ")"
+            #if "hybrid" in mode: mode = "hybrid " + mode.strip('hybrid') + ":1"
+            #label = mode if self._system else systemname + " (" + mode + ")"
+            label = mode
 
             # Plot the data points for this curve
             plt.errorbar(nthreads, times, errors, marker='.', label=label)

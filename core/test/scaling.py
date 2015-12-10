@@ -19,6 +19,9 @@ import os
 import json
 from collections import defaultdict
 
+# Import astronomical modules
+from astropy.table import Table
+
 # Import the relevant PTS classes and modules
 from ..simulation.simulation import SkirtSimulation
 from ..simulation.arguments import SkirtArguments
@@ -208,8 +211,8 @@ class ScalingTest(Configurable):
         self.arguments.logging.brief = False
         self.arguments.logging.verbose = True
         self.arguments.logging.memory = True
-        self.arguments.logging.allocation = True
-        self.arguments.logging.allocation_limit = 1e-5
+        #self.arguments.logging.allocation = True
+        #self.arguments.logging.allocation_limit = 1e-6
 
         # Options for parallelization are adjusted seperately for each simulation
 
@@ -557,29 +560,38 @@ class ScalingTest(Configurable):
         # Set the path to the scaling file for the current system (remote host - cluster)
         self.scaling_file_path = os.path.join(self.result_path_system, "scaling.dat")
 
-        # If the file has already been created, return
+        # If the file has already been created, skip the rest of the function
         if os.path.isfile(self.scaling_file_path): return
 
-        # Otherwise, create the file
-        scalingfile = open(self.scaling_file_path, "w")
+        names = []
+        names.append("Parallelization mode")        # Parallelization mode
+        names.append("Processes")                   # Number of processes p
+        names.append("Threads")                     # Number of threads (per process) t
+        names.append("Setup time")                  # Time spent in simulation setup (s)
+        names.append("Stellar emission time")       # Time spent shooting stellar photon packages (s)
+        names.append("Spectra calculation time")    # Time spent in calculation of dust emission spectra (s)
+        names.append("Dust emission time")          # Time spent shooting dust emission photon packages (s)
+        names.append("Writing time")                # Time spent writing to disk (s)
+        names.append("Waiting time")                # Time spent waiting for other processes (s)
+        names.append("Communication time")          # Time spent in inter-process communication (s)
+        names.append("Total time")                  # Total simulation time (s)
+        names.append("Peak memory usage")           # Peak memory usage (GB)
 
-        # Write a header to this new file which contains some general info about its contents
-        scalingfile.write("# Column 1: Parallelization mode\n")
-        scalingfile.write("# Column 2: Number of processes p\n")
-        scalingfile.write("# Column 3: Number of threads per process t\n")
-        scalingfile.write("# Column 4: Total number of threads (t*p)\n")
-        scalingfile.write("# Column 5: Time spent in simulation setup (s)\n")
-        scalingfile.write("# Column 6: Time spent shooting stellar photon packages (s)\n")
-        scalingfile.write("# Column 7: Time spent in calculation of dust emission spectra (s)\n")
-        scalingfile.write("# Column 8: Time spent shooting dust emission photon packages (s)\n")
-        scalingfile.write("# Column 9: Time spent writing to disk (s)\n")
-        scalingfile.write("# Column 10: Time spent waiting for other processes (s)\n")
-        scalingfile.write("# Column 11: Time spent in inter-process communication (s)\n")
-        scalingfile.write("# Column 12: Total simulation time (s)\n")
-        scalingfile.write("# Column 13: Peak memory usage (GB)\n")
+        # Create an empty table (it just has the header)
+        table = Table(names=names)
 
-        # Close the scaling results file (results will be appended)
-        scalingfile.close()
+        table["Setup time"].unit = "s"
+        table["Stellar emission time"].unit = "s"
+        table["Spectra calculation time"].unit = "s"
+        table["Dust emission time"].unit = "s"
+        table["Writing time"].unit = "s"
+        table["Waiting time"].unit = "s"
+        table["Communication time"].unit = "s"
+        table["Total time"].unit = "s"
+        table["Peak memory usage"].unit = "GB"
+
+        # Write the table to file
+        table.write(self.scaling_file_path, format="ascii.commented_header")
 
     # -----------------------------------------------------------------
 

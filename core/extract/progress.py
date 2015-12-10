@@ -76,8 +76,6 @@ class ProgressExtractor(object):
         # Perform the extraction
         self.extract()
 
-        self.write("progress.dat")
-
         # Write the results
         if output_path is not None: self.write(output_path)
 

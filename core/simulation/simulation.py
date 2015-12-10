@@ -95,7 +95,7 @@ class SkirtSimulation:
     # - outpath: the output path of the simulation; the path may be absolute, relative to a user's home folder,
     #   or relative to the current working directory. A missing or empty outpath means the current working directory.
     #
-    def __init__(self, prefix="", inpath="", outpath=""):
+    def __init__(self, prefix="", inpath="", outpath="", ski_path=None):
         self._inpath = os.path.realpath(os.path.expanduser(inpath)) if inpath is not None else None
         self._outpath = os.path.realpath(os.path.expanduser(outpath))
         self._prefix = prefix
@@ -108,7 +108,7 @@ class SkirtSimulation:
             self._prefix = logfiles[0][0:len(logfiles[0])-len("_log.txt")]
 
         # provide placeholders for caching frequently-used objects
-        self._parameters = None
+        self._parameters = None if ski_path is None else SkiFile(ski_path)
         self._units = None
         self._processes = None
         self._threads = None

@@ -218,7 +218,7 @@ class SkirtRemote(Configurable):
             simulation_id = self._new_simulation_id()
 
         # Create a simulation file and return its path
-        simulation_file_path = self.create_simulation_file(arguments, name, simulation_id, remote_simulation_path, local_input_path, local_output_path)
+        simulation_file_path = self.create_simulation_file(arguments, name, simulation_id, remote_simulation_path, local_ski_path, local_input_path, local_output_path)
         return simulation_file_path
 
     # -----------------------------------------------------------------
@@ -495,7 +495,7 @@ class SkirtRemote(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_simulation_file(self, arguments, name, simulation_id, remote_simulation_path, local_input_path, local_output_path):
+    def create_simulation_file(self, arguments, name, simulation_id, remote_simulation_path, local_ski_path, local_input_path, local_output_path):
 
         """
         This function ...
@@ -511,7 +511,8 @@ class SkirtRemote(Configurable):
 
         # Add the simulation information
         simulation_file.write("simulation name: " + name + "\n")
-        simulation_file.write("skifile path: " + arguments.ski_pattern + "\n")
+        simulation_file.write("local skifile path: " + local_ski_path + "\n")
+        simulation_file.write("remote skifile path: " + arguments.ski_pattern + "\n")
         simulation_file.write("local input directory: " + str(local_input_path) + "\n") # can be None
         simulation_file.write("local output directory: " + local_output_path + "\n")
         simulation_file.write("remote input directory: " + str(arguments.input_path) + "\n") # can be None
@@ -1038,6 +1039,7 @@ class SkirtRemote(Configurable):
                 prefix = os.path.basename(ski_path).split(".")[0]
 
                 # Properties obtained from the simulation file
+                local_ski_path = None
                 local_input_path = None
                 local_output_path = None
                 remote_input_path = None
@@ -1068,6 +1070,7 @@ class SkirtRemote(Configurable):
                     # Loop over the lines in the file
                     for line in simulation_file:
 
+                        if "local ski path" in line: local_ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         if "local input directory" in line: local_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "local output directory" in line: local_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote input directory" in line: remote_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
@@ -1156,7 +1159,7 @@ class SkirtRemote(Configurable):
                 if remove_remote_input and remove_remote_output: self.remove_directory(remote_simulation_path)
 
                 # Create a simulation object and add it to the list
-                simulation = SkirtSimulation(prefix, inpath=local_input_path, outpath=local_output_path)
+                simulation = SkirtSimulation(prefix, inpath=local_input_path, outpath=local_output_path, ski_path=local_ski_path)
                 simulation.extract_progress = extract_progress
                 simulation.extract_timeline = extract_timeline
                 simulation.extract_memory = extract_memory
@@ -1511,7 +1514,8 @@ class SkirtRemote(Configurable):
 
                 # Open the file
                 name = None
-                ski_path = None
+                local_ski_path = None
+                remote_ski_path = None
                 remote_input_path = None
                 remote_output_path = None
                 remote_simulation_path = None
@@ -1525,7 +1529,8 @@ class SkirtRemote(Configurable):
                     for line in simulation_file:
 
                         if "simulation name" in line: name = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "skifile path" in line: ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "local skifile path" in line: local_ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "remote skifile path" in line: remote_ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote input directory" in line: remote_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote simulation directory" in line: remote_simulation_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
@@ -1533,11 +1538,11 @@ class SkirtRemote(Configurable):
 
                         elif "retreived at" in line: retreived = True
 
-                    if ski_path is None: raise ValueError("Not a valid simulation file")
+                    if remote_ski_path is None: raise ValueError("Not a valid simulation file")
                     if remote_output_path is None: raise ValueError("Not a valid simulation file")
 
                 # The name of the ski file (the simulation prefix)
-                ski_name = os.path.basename(ski_path).split(".")[0]
+                ski_name = os.path.basename(remote_ski_path).split(".")[0]
 
                 # The path to the simulation log file
                 remote_log_file_path = os.path.join(remote_output_path, ski_name + "_log.txt")
@@ -1552,7 +1557,8 @@ class SkirtRemote(Configurable):
                 simulation.id = simulation_id
                 simulation.file_path = path
                 simulation.name = name
-                simulation.ski_path = ski_path
+                simulation.local_ski_path = local_ski_path
+                simulation.remote_ski_path = remote_ski_path
                 simulation.remote_input_path = remote_input_path
                 simulation.remote_output_path = remote_output_path
                 simulation.remote_simulation_path = remote_simulation_path
@@ -1603,7 +1609,8 @@ class SkirtRemote(Configurable):
 
                 # Open the file
                 name = None
-                ski_path = None
+                local_ski_path = None
+                remote_ski_path = None
                 remote_input_path = None
                 remote_output_path = None
                 remote_simulation_path = None
@@ -1616,18 +1623,19 @@ class SkirtRemote(Configurable):
                     for line in simulation_file:
 
                         if "simulation name" in line: name = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "skifile path" in line: ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "local skifile path" in line: local_ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "remote skifile path" in line: remote_ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote input directory" in line: remote_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote simulation directory" in line: remote_simulation_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
 
                         elif "retreived at" in line: retreived = True
 
-                    if ski_path is None: raise ValueError("Not a valid simulation file")
+                    if remote_ski_path is None: raise ValueError("Not a valid simulation file")
                     if remote_output_path is None: raise ValueError("Not a valid simulation file")
 
                 # The name of the ski file (the simulation prefix)
-                ski_name = os.path.basename(ski_path).split(".")[0]
+                ski_name = os.path.basename(remote_ski_path).split(".")[0]
 
                 # The path to the simulation log file
                 remote_log_file_path = os.path.join(remote_output_path, ski_name + "_log.txt")
@@ -1668,7 +1676,8 @@ class SkirtRemote(Configurable):
                 simulation.id = job_id
                 simulation.file_path = path
                 simulation.name = name
-                simulation.ski_path = ski_path
+                simulation.local_ski_path = local_ski_path
+                simulation.remote_ski_path = remote_ski_path
                 simulation.remote_input_path = remote_input_path
                 simulation.remote_output_path = remote_output_path
                 simulation.remote_simulation_path = remote_simulation_path
