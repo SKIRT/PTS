@@ -132,7 +132,7 @@ class ProgressPlotter(object):
         plt.clf()
 
         # Loop over all the different process ranks for which we have data
-        for rank in data:
+        for rank in range(len(data)):
 
             # Name of the current process
             process = "P" + str(rank)
