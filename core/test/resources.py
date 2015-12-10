@@ -242,6 +242,13 @@ class ResourceEstimator(object):
         # Estimate the walltime for the dust emission phase
         dustem_walltime = packages * self.ski_file.emission_boost / rate_noabsorption
 
+        print("stellar walltime: ", stellar_walltime)
+        print("selfabs walltime: ", selfabs_walltime)
+        print("dustem walltime: ", dustem_walltime)
+        print("without stellar and dust: ", self.extractor.duration_without(["stellar", "dust"]))
+
+        #exit()
+
         return stellar_walltime + selfabs_walltime + dustem_walltime, self.extractor.duration_without(["stellar", "dust"])
 
     # -----------------------------------------------------------------

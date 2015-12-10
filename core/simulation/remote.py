@@ -869,7 +869,8 @@ class SkirtRemote(Configurable):
             if self.is_file(origin): copy_command += origin.replace(" ", "\ ") + " "
 
             # Check if it represents a directory
-            elif self.is_directory(origin): copy_command += origin.replace(" ", "\ ") + "/* " + "-r "
+            #elif self.is_directory(origin): copy_command += origin.replace(" ", "\ ") + "/* " + "-r "
+            elif self.is_directory(origin): copy_command += origin.replace(" ", "\ ") + "/* "
 
             # The origin does not exist
             else: raise ValueError("The specified path " + origin + " does not represent an existing directory or file on the remote host")
@@ -1092,7 +1093,7 @@ class SkirtRemote(Configurable):
                         elif "launched within screen session" in line: screen_session = line.split("screen session ")[1].replace('\n', ' ').replace('\r', '').strip()
 
                 # If retreive file types are not defined, download the complete output directory
-                if retreive_types is None or retreive_types == "None":
+                if retreive_types is None or retreive_types == "None" or retreive_types == "null": # 'null' is what json makes of 'None'
 
                     # Download the simulation output
                     self.download(remote_output_path, local_output_path)
