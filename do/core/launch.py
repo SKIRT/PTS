@@ -51,20 +51,38 @@ def string_list(argument):
 
 # -----------------------------------------------------------------
 
+def duration(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    # Calculate the walltime in seconds
+    hours, minutes, seconds = argument.split(':')
+    duration = int(hours)*3600 + int(minutes)*60 + int(seconds)
+
+    # Return the duration in seconds
+    return duration
+
+# -----------------------------------------------------------------
+
 # Create the command-line parser
 parser = argparse.ArgumentParser()
 parser.add_argument("file", type=str, help="the name of the ski/fski file")
-parser.add_argument("--input", type=str, help="the simulation input path")
-parser.add_argument("--output", type=str, help="the simulation output path")
-parser.add_argument("--remote", type=str, help="run the simulation remotely")
-parser.add_argument("--cluster", type=str, help="add the name of the cluster if different from the default")
-parser.add_argument("--parallel", type=tuple, help="specify the parallelization scheme (processes, threads per process)")
+parser.add_argument("-i", "--input", type=str, help="the simulation input path")
+parser.add_argument("-o", "--output", type=str, help="the simulation output path")
+parser.add_argument("-r", "--remote", type=str, help="run the simulation remotely")
+parser.add_argument("-c", "--cluster", type=str, help="add the name of the cluster if different from the default")
+parser.add_argument("-p", "--parallel", type=tuple, help="specify the parallelization scheme (processes, threads per process)")
+parser.add_argument("-t", "--walltime", type=duration, help="specify an estimate for the walltime of the simulation for the specified parallelization scheme")
 parser.add_argument("--relative", action="store_true", help="treats the given input and output paths as being relative to the ski/fski file")
 parser.add_argument("--brief", action="store_true", help="enable brief console logging")
-parser.add_argument("--verbose", action="store_true", help="enable verbose logging mode")
-parser.add_argument("--memory", action="store_true", help="enable memory logging mode")
-parser.add_argument("--allocation", action="store_true", help="enable memory (de)allocation logging mode")
-parser.add_argument("--emulate", action="store_true", help="emulate the simulation while limiting computation")
+parser.add_argument("-v", "--verbose", action="store_true", help="enable verbose logging mode")
+parser.add_argument("-m", "--memory", action="store_true", help="enable memory logging mode")
+parser.add_argument("-a", "--allocation", action="store_true", help="enable memory (de)allocation logging mode")
+parser.add_argument("-e", "--emulate", action="store_true", help="emulate the simulation while limiting computation")
 parser.add_argument("--extractprogress", action="store_true", help="extract the progress from the log files")
 parser.add_argument("--extracttimeline", action="store_true", help="extract the timeline from the log files")
 parser.add_argument("--extractmemory", action="store_true", help="extract the memory usage from the log files")
