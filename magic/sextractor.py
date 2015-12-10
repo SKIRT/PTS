@@ -20,7 +20,7 @@ from astropy.table import Table
 from .core import Frame
 
 # Import the relevant PTS classes and modules
-from ..core.basics import Configurable
+from ..core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -39,7 +39,7 @@ class SExtractor(Configurable):
         """
 
         # Call the constructor of the base class
-        super(SExtractor, self).__init__(config)
+        super(SExtractor, self).__init__(config, "magic")
 
         ## Attributes
 

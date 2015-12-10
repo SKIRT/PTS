@@ -22,7 +22,7 @@ from .core import Frame
 from .tools import statistics, interpolation, plotting
 
 # Import the relevant PTS classes and modules
-from ..core.basics import Configurable
+from ..core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -41,7 +41,7 @@ class SkySubtractor(Configurable):
         """
 
         # Call the constructor of the base class
-        super(SkySubtractor, self).__init__(config)
+        super(SkySubtractor, self).__init__(config, "magic")
 
         ## Attributes
 

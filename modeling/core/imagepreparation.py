@@ -46,7 +46,7 @@ class ImagePreparation(Configurable):
         """
 
         # Call the constructor of the base class
-        super(ImagePreparation, self).__init__(config)
+        super(ImagePreparation, self).__init__(config, "modeling")
 
         ## Temporary
 

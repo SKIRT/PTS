@@ -14,7 +14,7 @@ This module ...
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..core.basics import Configurable
+from ..core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -33,7 +33,7 @@ class WCSFinder(Configurable):
         """
 
         # Call the constructor of the base class
-        super(WCSFinder, self).__init__(config)
+        super(WCSFinder, self).__init__(config, "magic")
 
     # -----------------------------------------------------------------
 

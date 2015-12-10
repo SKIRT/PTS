@@ -36,7 +36,7 @@ from .sky import Star
 from .tools import statistics, fitting, regions, masks
 
 # Import the relevant PTS classes and modules
-from ..core.basics import Configurable
+from ..core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -53,7 +53,7 @@ class StarExtractor(Configurable):
         """
 
         # Call the constructor of the base class
-        super(StarExtractor, self).__init__(config)
+        super(StarExtractor, self).__init__(config, "magic")
 
         ## Attributes
 

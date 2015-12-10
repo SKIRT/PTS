@@ -26,7 +26,7 @@ from pts.core.basics.log import Log
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
-parser.add_argument("script", type=str, help="the name of the PTS do script for which to determine the dependencies")
+parser.add_argument("script", type=str, nargs="?", help="the name of the PTS do script for which to determine the dependencies")
 parser.add_argument("-v", "--verbose", action="store_true", help="show all output")
 
 # Parse the command line arguments
@@ -36,6 +36,14 @@ arguments = parser.parse_args()
 
 # Create a logger
 log = Log()
+
+# If no script name is given, execute the "list_dependencies.py" script to list all dependencies of PTS and the
+# PTS modules that use them
+if arguments.script is None:
+
+    path = os.path.join(inspection.pts_package_dir, "list_dependencies.py")
+    exec open(path)
+    exit()
 
 # Find matching scripts under the 'do' directory
 match = inspection.find_matching_script(arguments.script)

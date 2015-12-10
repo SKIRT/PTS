@@ -45,7 +45,7 @@ def new():
 
 # -----------------------------------------------------------------
 
-def set(classname, config=None):
+def set(subpackage_name, class_name, config=None):
 
     """
     This function ...
@@ -55,8 +55,8 @@ def set(classname, config=None):
     """
 
     # Determine the path to the default configuration file
-    directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-    default_config = os.path.join(directory, "config", classname + ".cfg")
+    subpackage_directory = os.path.join(inspect.getfile(inspect.currentframe()).split("/core")[0], subpackage_name)
+    default_config = os.path.join(subpackage_directory, "config", class_name + ".cfg")
 
     # Open the default configuration if no configuration file is specified, otherwise adjust the default
     # settings according to the user defined configuration file

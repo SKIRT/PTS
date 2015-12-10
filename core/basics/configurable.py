@@ -25,10 +25,10 @@ class Configurable(object):
     This class ...
     """
 
-    def __init__(self, config):
+    def __init__(self, config, subpackage):
 
         # Set the configuration object
-        self.config = configuration.set(self.name, config)
+        self.config = configuration.set(subpackage, self.name, config)
         
         # Set the logger to None initially
         self.log = None

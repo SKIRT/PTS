@@ -33,7 +33,7 @@ class SkirtUpdater(Configurable):
         """
         
         # Call the constructor of the base class
-        super(SkirtUpdater, self).__init__(config)
+        super(SkirtUpdater, self).__init__(config, "core")
 
         # Create the SKIRT execution context
         self.skirt = SkirtExec()

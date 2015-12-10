@@ -34,7 +34,7 @@ class GalaxyDecomposer(Configurable):
         """
 
         # Call the constructor of the base class
-        super(GalaxyDecomposer, self).__init__(config)
+        super(GalaxyDecomposer, self).__init__(config, "modeling")
 
     # -----------------------------------------------------------------
 

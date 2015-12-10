@@ -58,7 +58,7 @@ class GalaxyModeler(Configurable):
         """
 
         # Call the constructor of the base class
-        super(ImagePreparation, self).__init__(config, "galaxymodeler")
+        super(ImagePreparation, self).__init__(config, "modeling")
 
         ## Temporary
 

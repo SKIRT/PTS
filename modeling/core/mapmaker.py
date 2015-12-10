@@ -46,7 +46,7 @@ class MapMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(MapMaker, self).__init__(config)
+        super(MapMaker, self).__init__(config, "modeling")
 
         ## Attributes
 

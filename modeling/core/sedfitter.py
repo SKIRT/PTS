@@ -28,7 +28,7 @@ class SEDFitter(Configurable):
         """
 
         # Call the constructor of the base class
-        super(SEDFitter, self).__init__(config)
+        super(SEDFitter, self).__init__(config, "modeling")
 
     # -----------------------------------------------------------------
 

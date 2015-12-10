@@ -43,7 +43,7 @@ class SimulationAnalyser(Configurable):
         """
 
         # Call the constructor of the base class
-        super(SimulationAnalyser, self).__init__(config)
+        super(SimulationAnalyser, self).__init__(config, "core")
 
         ## Attributes
 

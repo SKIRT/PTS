@@ -37,7 +37,7 @@ class SkirtInstaller(Configurable):
         """
 
         # Call the constructor of the base class
-        super(SkirtInstaller, self).__init__(config)
+        super(SkirtInstaller, self).__init__(config, "core")
 
         ## Attributes
 

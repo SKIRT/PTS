@@ -18,7 +18,7 @@ from astropy import units as u
 from astropy import log
 
 # Import the relevant PTS modules and classes
-from ...core.basics import Filter
+from ...core.basics.filter import Filter
 
 # -----------------------------------------------------------------
 

@@ -42,7 +42,7 @@ class SkirtLauncher(Configurable):
         """
 
         # Call the constructor of the base class
-        super(SkirtLauncher, self).__init__(config)
+        super(SkirtLauncher, self).__init__(config, "core")
 
         ## Attributes
 

@@ -32,7 +32,7 @@ from .sky import Galaxy
 from .tools import catalogs, regions
 
 # Import the relevant PTS classes and modules
-from ..core.basics import Configurable
+from ..core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -49,7 +49,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Call the constructor of the base class
-        super(GalaxyExtractor, self).__init__(config)
+        super(GalaxyExtractor, self).__init__(config, "magic")
 
         ## Attributes
 

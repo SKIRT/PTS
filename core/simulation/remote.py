@@ -48,7 +48,7 @@ class SkirtRemote(Configurable):
         """
 
         # Call the constructor of the base class
-        super(SkirtRemote, self).__init__(config)
+        super(SkirtRemote, self).__init__(config, "core")
 
         ## Attributes
 
