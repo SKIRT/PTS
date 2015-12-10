@@ -44,7 +44,7 @@ def createsimulations(source="", single=False):
                 for logfile in logfiles:
                     simulations.append(SkirtSimulation(prefix=logfile[:-8], outpath=dirpath))
             else:
-                if os.path.exists(source+"_log.txt"):
+                if os.path.exists(source + "_log.txt"):
                     simulations.append(SkirtSimulation(prefix=source))
         elif isinstance(source,SkirtSimulation):
             simulations.append(source)

@@ -59,8 +59,8 @@ else:
     # Run the extractor
     extractor.run(simulation)
 
-# Determine the path to the plot file
-plot_path = os.path.join(os.getcwd(), "progress.pdf")
+# Determine the path to the plotting directory
+plot_path = os.path.join(os.getcwd())
 
 # Create a ProgressPlotter instance
 plotter = ProgressPlotter()

@@ -15,6 +15,7 @@ This module ...
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import os
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
@@ -62,20 +63,26 @@ class MemoryPlotter(object):
         # Invalid input
         else: raise ValueError("Input must be either an Astropy Table object or a filename (e.g. memory.dat)")
 
+        # Set the path to the output directory
+        self.output_path = output_path
+
         # Create the plots
-        self.plot(output_path)
+        self.plot()
 
     # -----------------------------------------------------------------
 
-    def plot(self, path):
+    def plot(self):
 
         """
         This function ...
         :return:
         """
 
+        # Determine the path to the plot file
+        plot_path = os.path.join(self.output_path, "memory.pdf")
+
         # Create a PDF Pages object
-        pp = PdfPages(path)
+        pp = PdfPages(plot_path)
 
         # Initialize figure
         plt.figure()

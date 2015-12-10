@@ -14,10 +14,16 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import numpy as np
+from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.pyplot as plt
+
+# Import astronomical modules
+from astropy.table import Table
+from astropy.io import ascii
 
 # Import the relevant PTS classes and modules
-from ..simulation.simulation import createsimulations
-#from performance.plotprogress import plotprogress
+from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -33,101 +39,118 @@ class ProgressPlotter(object):
         The constructor ...
         """
 
-        pass
+        # Set the table to None initially
+        self.table = None
 
     # -----------------------------------------------------------------
 
-    def run(self, simulations, phase):
+    def run(self, input, output_path):
         
         """
         This function ...
         """
-        
-        # Initialize an empty list to contain the paths of progress files
-        progressfiles = []
 
-        # Find .dat files that contain extracted progress information
-        for root, dirs, filenames in os.walk(os.getcwd()):
+        # If the input is a Table object
+        if isinstance(input, Table): self.table = input
 
-            # For each file in the current (sub)directory
-            for filename in filenames:
+        # If the input is a string
+        elif isinstance(input, basestring):
 
-                # Check if this is a progress data file
-                if filename.endswith('.dat') and not filename.startswith(".") and "progress" in filename:
+            fill_values = ('--', '0', 'Simulation phase')
+            self.table = ascii.read(input, fill_values=fill_values)
 
-                    # Add this file to the list of progress files
-                    progressfiles.append((root, filename))
+        # Invalid input
+        else: raise ValueError("Input must be either an Astropy Table object or a filename (e.g. memory.dat)")
 
-        # If the progressfiles list is not empty
-        if progressfiles:
+        # Set the path to the output directory
+        self.output_path = output_path
 
-            # Determine the full path to the visualization directory
-            vispath = os.path.join(os.getcwd(), "vis")
+        # Create the plots
+        self.plot()
 
-            # For each progress file in the list
-            for directory, filename in progressfiles:
+    # -----------------------------------------------------------------
 
-                # Determine the full path to the progress file
-                progressfilepath = os.path.join(directory, filename)
+    def plot(self):
 
-                # Determine the path to the directory that will contain the plot from this progress file
-                resdirname = os.path.basename(os.path.dirname(directory))
-                plotpath = os.path.join(vispath, os.path.basename(directory)) if resdirname == "res" else os.getcwd()
+        """
+        This function ...
+        :return:
+        """
 
-                # Create this directory, if it didn't already exist
-                try: os.makedirs(plotpath)
-                except OSError: pass
+        # Get the number of processes
+        ranks = np.unique(self.table["Process rank"])
 
-                # Determine the path to the plot file
-                plotfilepath = os.path.join(plotpath, os.path.splitext(filename)[0] + "_" + phase + ".pdf")
+        assert len(ranks) == max(ranks) + 1
+        processes = len(ranks)
 
-                # If the file already exists, skip the plotting procedure
-                if os.path.isfile(plotfilepath): continue
+        # Loop over the different phases
+        for phase in "stellar", "spectra", "dust":
 
-                # Plot the progress information in this file
-                plotprogress(progressfilepath, plotfilepath, phase)
+            # Initialize a data structure to contain the progress information in plottable format
+            data = [Map({"times": [], "progress": []}) for i in range(processes)]
 
-        # If no extracted progress information could be found, create a list of simulations from the current directory or
-        # a string given as a command-line argument and first extract the progress for these simulations into a temporary
-        # progress data file
-        else:
+            # Determine the path to the plot file for this phase
+            plot_path = os.path.join(self.output_path, "progress_" + phase + ".pdf")
 
-            # Initialize an empty list to contain the paths of progress files
-            progressfiles = []
+            # Determine the title for the plot
+            title = phase + " progress"
 
-            # Construct the list of simulation objects and make the plots
-            for simulation in createsimulations(simulations):
+            # Loop over the different entries in the progress table
+            for i in range(len(self.table)):
 
-                # Load the extract function to extract progress information from simulation log files
-                from ..extract.progress import extract
+                # Skip entries that do not belong to the current simulation phase
+                if not self.table["Simulation phase"][i] == phase: continue
 
-                # Create a temporaray progress file
-                progressfilepath = os.path.join(os.getcwd(), "progress_" + simulation.prefix() + ".dat")
-                progressfile = open(progressfilepath, 'w')
+                # Get the process rank
+                rank = self.table["Process rank"][i]
 
-                # Write a header to this new file which contains some general info about its contents
-                progressfile.write("# Progress results for simulation " + simulation.prefix() + "\n")
-                progressfile.write("# Column 1: Process rank\n")
-                progressfile.write("# Column 2: Simulation phase (stellar, dust or spectra)\n")
-                progressfile.write("# Column 3: Execution time (s)\n")
-                progressfile.write("# Column 4: Progress (%)\n")
+                # Get the time and progress
+                time = self.table["Time"][i]
+                progress = self.table["Progress"][i]
 
-                # Close the progress file (results will be appended)
-                progressfile.close()
+                # Add the data point to the data structure
+                data[rank].times.append(time)
+                data[rank].progress.append(progress)
 
-                # Determine the name of the ski file for this simulation
-                skifilename = simulation.prefix() + ".ski"
+            # Create the plot for this simulation phase
+            self.create_plot(data, plot_path, title)
 
-                # Determine the output path of this simulation
-                outputpath = simulation.outpath()
+    # -----------------------------------------------------------------
 
-                # Extract the progress information
-                extract(skifilename, outputpath, progressfilepath)
+    def create_plot(self, data, path, title):
 
-                # Determine the path to the plot file
-                plotfilepath = "progress_" + simulation.prefix() + "_" + phase + ".pdf"
+        """
+        This function ...
+        :return:
+        """
 
-                # Plot the progress for this simulation
-                plotprogress(progressfilepath, plotfilepath, phase)
+        # Create a PDF Pages object
+        pp = PdfPages(path)
+
+        # Initialize figure
+        plt.figure()
+        plt.clf()
+
+        # Loop over all the different process ranks for which we have data
+        for rank in data:
+
+            # Name of the current process
+            process = "P" + str(rank)
+
+            # Add the progress of the current process to the figure
+            plt.plot(data[rank].times, data[rank].progress, label=process)
+
+        plt.xlim(0)
+        plt.grid('on')
+        plt.xlabel("Time (s)", fontsize='large')
+        plt.ylabel("Progress (%)", fontsize='large')
+        plt.title(title)
+
+        if len(data) > 16: plt.legend(loc='upper center', ncol=8, bbox_to_anchor=(0.5,-0.1), prop={'size':8})
+        else: plt.legend(loc='lower right', ncol=4, prop={'size':8})
+
+        # Save the figure
+        pp.savefig(bbox_inches="tight", pad_inches=0.25)
+        pp.close()
         
 # -----------------------------------------------------------------

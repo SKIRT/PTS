@@ -15,7 +15,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os.path
+import os
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
@@ -76,12 +76,15 @@ class TimeLinePlotter(object):
         # Invalid input
         else: raise ValueError("Input must be either an Astropy Table object or a filename (e.g. memory.dat)")
 
+        # Set the path to the output directory
+        self.output_path = output_path
+
         # Create the plots
-        self.plot(output_path)
+        self.plot()
 
     # -----------------------------------------------------------------
 
-    def plot(self, path):
+    def plot(self):
 
         """
         This function ...
@@ -95,9 +98,6 @@ class TimeLinePlotter(object):
         # Initialize a data structure to contain the start times and endtimes for the different processes,
         # indexed on the phase
         data = []
-
-        # Loop over the different process ranks
-        #for rank in ranks:
 
         # Iterate over the different entries in the timeline table
         for i in range(len(self.table)):
@@ -118,11 +118,13 @@ class TimeLinePlotter(object):
                 data[i%nphases][1].append(self.table["Start time"][i])
                 data[i%nphases][2].append(self.table["End time"][i])
 
-        self.create_plot(data, path, ranks)
+        # Create the plot
+        plot_path = os.path.join(self.output_path, "timeline.pdf")
+        self.create_plot(data, plot_path, ranks)
 
     # -----------------------------------------------------------------
 
-    def create_plot(self, data, plotfilepath, procranks, figsize=(12,8), percentages=False, totals=False, unordered=False, numberofproc=False, cpu=False):
+    def create_plot(self, data, path, procranks, figsize=(12,8), percentages=False, totals=False, unordered=False, numberofproc=False, cpu=False):
 
         """
         This function actually plots the timeline based on a data structure containing the starttimes and endtimes
@@ -140,7 +142,7 @@ class TimeLinePlotter(object):
         """
 
         # Create a PDF Pages object
-        pp = PdfPages(plotfilepath)
+        pp = PdfPages(path)
 
         # Initialize figure
         plt.figure(figsize=figsize)
@@ -242,10 +244,6 @@ class TimeLinePlotter(object):
 
         # Put a legend below current axis
         ax.legend(legendEntries, legendNames, loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False, ncol=4, prop={'size':12})
-
-        # Save the figure
-        #plt.savefig(plotfilepath, bbox_inches='tight', pad_inches=0.40)
-        #self._log.info("Created PDF timeline " + plotfilepath)
 
         # Save the figure
         pp.savefig(bbox_inches="tight", pad_inches=0.40)

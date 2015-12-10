@@ -272,7 +272,7 @@ class SimulationAnalyser(Configurable):
 
         # Create and run a ProgressPlotter object
         plotter = ProgressPlotter()
-        #plotter.run(self.progress, path)
+        plotter.run(self.progress, path)
 
     # -----------------------------------------------------------------
 

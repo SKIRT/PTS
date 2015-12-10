@@ -42,8 +42,8 @@ else:
     # Run the extractor
     extractor.run(simulation)
 
-# Determine the path to the plot file
-plot_path = os.path.join(os.getcwd(), "timeline.pdf")
+# Determine the path to the plotting directory
+plot_path = os.path.join(os.getcwd())
 
 # Create a MemoryPlotter instance
 plotter = TimeLinePlotter()

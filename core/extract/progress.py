@@ -76,6 +76,8 @@ class ProgressExtractor(object):
         # Perform the extraction
         self.extract()
 
+        self.write("progress.dat")
+
         # Write the results
         if output_path is not None: self.write(output_path)
 
@@ -122,14 +124,26 @@ class ProgressExtractor(object):
                 # Get the description of the current simulation phase
                 phase = log_file.contents["Phase"][i]
 
+                # The current log message
+                message = log_file.contents["Message"][i]
+
                 # The log file entries corresponding to the stellar emission phase
                 if phase == "stellar":
 
-                    # The current log message
-                    message = log_file.contents["Message"][i]
-
                     # If this is the log message that marks the very start of the stellar emission phase, record the associated time
-                    if "photon packages for" in message: stellar_start = log_file.contents["Time"][i]
+                    if "photon packages for" in message:
+
+                        stellar_start = log_file.contents["Time"][i]
+
+                        # Add the process rank and phase entries
+                        process_list.append(process)
+                        phase_list.append(phase)
+
+                        # Add the seconds entry
+                        seconds_list.append(0.0)
+
+                        # Get the progress and add it to the list
+                        progress_list.append(0.0)
 
                     # If this is one of the log messages that log stellar emission progress
                     elif "Launched stellar emission photon packages" in message:
@@ -143,37 +157,31 @@ class ProgressExtractor(object):
                         seconds_list.append(seconds)
 
                         # Get the progress and add it to the list
-                        progress = float(message.split("packages: ")[1].split("%"))
+                        progress = float(message.split("packages: ")[1].split("%")[0])
                         progress_list.append(progress)
 
-                    elif "Finished the stellar emission phase" in message:
+                # The log file entries corresponding to the stellar emission phase
+                elif phase == "spectra" and first_spectra_phase:
+
+                    # If this is the log message that marks the very start of the spectra calculation, record the associated time
+                    # If this log message states the total number of library entries that are used, record this number
+                    if "Library entries in use" in message:
+
+                        spectra_start = log_file.contents["Time"][i]
+
+                        # Get the total number of library entries in use and the number of entries per process
+                        total_entries = int(message.split("use: ")[1].split(" out of")[0])
+                        entries_per_process = total_entries / number_of_processes
 
                         # Add the process rank and phase entries
                         process_list.append(process)
                         phase_list.append(phase)
 
                         # Add the seconds entry
-                        seconds = (log_file.contents["Time"][i] - stellar_start).total_seconds()
-                        seconds_list.append(seconds)
+                        seconds_list.append(0.0)
 
-                        # Add 100% progress to the list
-                        progress_list.append(100.0)
-
-                # The log file entries corresponding to the stellar emission phase
-                elif phase == "spectra" and first_spectra_phase:
-
-                    # The current log message
-                    message = log_file.contents["Message"][i]
-
-                    # If this is the log message that marks the very start of the spectra calculation, record the associated time
-                    if "Calculating dust emission spectra" in message: spectra_start = log_file.contents["Time"][i]
-
-                    # If this log message states the total number of library entries that are used, record this number
-                    elif "Library entries in use" in message:
-
-                        # Get the total number of library entries in use and the number of entries per process
-                        total_entries = int(message.split("use: ")[1].split(" out of")[0])
-                        entries_per_process = total_entries / number_of_processes
+                        # Get the progress and add it to the list
+                        progress_list.append(0.0)
 
                     elif "Calculating emission for" in message:
 
@@ -195,11 +203,49 @@ class ProgressExtractor(object):
                         progress = float(fraction*100.0)
                         progress_list.append(progress)
 
-                    elif "Dust emission spectra calculated" in message:
+                # The log file entries corresponding to the dust emission phase
+                # We only want to record the progress of the 'last' dust emission phase
+                elif phase == "dust" and last_dust_phase:
+
+                    # If this is the log message that marks the very start of the dust emission phase, record the associated time
+                    if "photon packages for" in message:
+
+                        dust_start = log_file.contents["Time"][i]
 
                         # Add the process rank and phase entries
                         process_list.append(process)
                         phase_list.append(phase)
+
+                        # Add the seconds entry
+                        seconds_list.append(0.0)
+
+                        # Get the progress and add it to the list
+                        progress_list.append(0.0)
+
+                    # If this is one of the log messages that log dust emission progress
+                    elif "Launched dust emission photon packages" in message:
+
+                        # Add the process rank and phase entries
+                        process_list.append(process)
+                        phase_list.append(phase)
+
+                        # Add the seconds entry
+                        seconds = (log_file.contents["Time"][i] - dust_start).total_seconds()
+                        seconds_list.append(seconds)
+
+                        # Get the progress and add it to the list
+                        progress = float(message.split("packages: ")[1].split("%")[0])
+                        progress_list.append(progress)
+
+                # Record the end of the spectra calculation (the first log message of the emission phase of the self-absorption cycle)
+                elif phase == "dust" and first_spectra_phase:
+
+                    # If this line indicates the end of the dust emission spectra calculation
+                    if "Dust emission spectra calculated" in message:
+
+                        # Add the process rank and phase entries
+                        process_list.append(process)
+                        phase_list.append("spectra")
 
                         # Add the seconds entry
                         seconds = (log_file.contents["Time"][i] - spectra_start).total_seconds()
@@ -211,8 +257,8 @@ class ProgressExtractor(object):
                         # Indicate that the first spectra phase has already been processed (subsequent spectra phases can be ignored)
                         first_spectra_phase = False
 
-                # The log file entries corresponding to the dust emission phase
-                elif phase == "dust":
+                # Log messages that fall in between phases
+                elif phase is None:
 
                     # The current log message
                     message = log_file.contents["Message"][i]
@@ -222,39 +268,31 @@ class ProgressExtractor(object):
                     if "dust self-absorption cycle" in message: last_dust_phase = False
                     elif "Starting the dust emission phase" in message: last_dust_phase = True
 
-                    # We only want to record the progress of the 'last' dust emission phase
-                    if last_dust_phase:
+                    elif "Finished the stellar emission phase" in message:
 
-                        # If this is the log message that marks the very start of the dust emission phase, record the associated time
-                        if "photon packages for" in message: dust_start = log_file.contents["Time"][i]
+                        # Add the process rank and phase entries
+                        process_list.append(process)
+                        phase_list.append("stellar")
 
-                        # If this is one of the log messages that log dust emission progress
-                        elif "Launched dust emission photon packages" in message:
+                        # Add the seconds entry
+                        seconds = (log_file.contents["Time"][i] - stellar_start).total_seconds()
+                        seconds_list.append(seconds)
 
-                            # Add the process rank and phase entries
-                            process_list.append(process)
-                            phase_list.append(phase)
+                        # Add 100% progress to the list
+                        progress_list.append(100.0)
 
-                            # Add the seconds entry
-                            seconds = (log_file.contents["Time"][i] - dust_start).total_seconds()
-                            seconds_list.append(seconds)
+                    elif "Finished the dust emission phase" in message:
 
-                            # Get the progress and add it to the list
-                            progress = float(message.split("packages: ")[1].split("%"))
-                            progress_list.append(progress)
+                        # Add the process rank and phase entries
+                        process_list.append(process)
+                        phase_list.append("dust")
 
-                        elif "Finished the dust emission phase" in message:
+                        # Add the seconds entry
+                        seconds = (log_file.contents["Time"][i] - dust_start).total_seconds()
+                        seconds_list.append(seconds)
 
-                            # Add the process rank and phase entries
-                            process_list.append(process)
-                            phase_list.append(phase)
-
-                            # Add the seconds entry
-                            seconds = (log_file.contents["Time"][i] - dust_start).total_seconds()
-                            seconds_list.append(seconds)
-
-                            # Add 100% progress to the list
-                            progress_list.append(100.0)
+                        # Add 100% progress to the list
+                        progress_list.append(100.0)
 
         # Create the table data structures
         names = ["Process rank", "Simulation phase", "Time", "Progress"]
