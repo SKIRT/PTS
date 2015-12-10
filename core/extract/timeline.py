@@ -141,7 +141,7 @@ class TimeLineExtractor(object):
         data = [process_list, phase_list, start_list, end_list]
 
         # Create the table
-        self.table = Table(data, names=names)
+        self.table = Table(data, names=names, masked=True)
         self.table["Start time"].unit = "s"
         self.table["End time"].unit = "s"
 

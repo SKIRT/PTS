@@ -297,7 +297,7 @@ class ProgressExtractor(object):
         data = [process_list, phase_list, seconds_list, progress_list]
 
         # Create the table
-        self.table = Table(data, names=names)
+        self.table = Table(data, names=names, masked=True)
         self.table["Time"].unit = "s"
         self.table["Progress"].unit = "%"
 
