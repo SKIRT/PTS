@@ -173,10 +173,12 @@ class MemoryExtractor(object):
             names += ["Array (de)allocation", "Array ID"]
 
         # Create the table
-        self.table = Table(data, names=names)
+        self.table = Table(data, names=names, masked=True)
         self.table["Simulation time"].unit = "s"
         self.table["Memory usage"].unit = "GB"
         if allocation_logging: self.table["Array (de)allocation"].unit = "GB"
+
+        print(self.table["Array (de)allocation"].mask)
 
     # -----------------------------------------------------------------
 
