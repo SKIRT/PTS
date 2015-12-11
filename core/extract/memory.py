@@ -178,8 +178,6 @@ class MemoryExtractor(object):
         self.table["Memory usage"].unit = "GB"
         if allocation_logging: self.table["Array (de)allocation"].unit = "GB"
 
-        print(self.table["Array (de)allocation"].mask)
-
     # -----------------------------------------------------------------
 
     def write(self, output_path):

@@ -90,7 +90,7 @@ class LogFile(object):
         :return:
         """
 
-        return float(self.contents["Message"][len(self.contents)-1].split("Peak memory usage: ")[1].split(" GB")[0])
+        return float(self.contents["Message"][len(self.contents) - 1].split("Peak memory usage: ")[1].split(" GB")[0])
 
     # -----------------------------------------------------------------
 
@@ -98,10 +98,9 @@ class LogFile(object):
 
         """
         This function ...
+        :param phase: must be "stellar" or "dustem"
         :return:
         """
-
-        ## Phase must be "stellar" or "dustem"
 
         # Stellar emission phase
         if phase == "stellar":
@@ -114,7 +113,6 @@ class LogFile(object):
 
                 # Search for the line stating the number of photon packages
                 if "photon packages for each of" in self.contents["Message"][i]:
-
                     # Return the number of stellar photon packages
                     return int(self.contents["Message"][i].split("(")[1].split(" photon")[0])
 
@@ -129,7 +127,6 @@ class LogFile(object):
 
                 # Search for the line stating the number of photon packages
                 if "photon packages for each of" in self.contents["Message"][i]:
-
                     # Return the number of dust emission photon packages
                     return int(self.contents["Message"][i].split("(")[1].split(" photon")[0])
 
@@ -155,8 +152,10 @@ class LogFile(object):
             # Look for the message that indicates the start of the simulation
             if "Starting simulation" in message:
 
-                if "with" in message: return int(message.split(' with ')[1].split()[0])
-                else: return 1
+                if "with" in message:
+                    return int(message.split(' with ')[1].split()[0])
+                else:
+                    return 1
 
         # We should not get here
         raise ValueError("The number of processes could not be determined from the log file")
@@ -225,7 +224,8 @@ def parse(path):
         # Loop over all lines in the log file
         for line in f:
 
-            # If the line contains an error, skip it (e.g. when convergence has not been reached after a certain number of dust-selfabsorption cycles)
+            # If the line contains an error, skip it (e.g. when convergence has not been reached after a certain
+            # number of dust-selfabsorption cycles)
             if "*** Error:" in line: continue
 
             # Remove the line ending
@@ -243,15 +243,13 @@ def parse(path):
 
             # Get the memory usage at the current line, if memory logging was enabled for the simulation
             if memory_logging:
+
                 memory = float(line.split(" (")[1].split(" GB)")[0])
                 memories.append(memory)
 
-            if memory_logging:
-                message = line.split("GB) ")[1]
-            elif verbose_logging:
-                message = line.split("] ")[1]
-            else:
-                message = line[26:]
+            if memory_logging: message = line.split("GB) ")[1]
+            elif verbose_logging: message = line.split("] ")[1]
+            else: message = line[26:]
             messages.append(message)
 
             typechar = line[24]
@@ -265,9 +263,18 @@ def parse(path):
             current_phase = get_phase(line, current_phase)
             phases.append(current_phase)
 
-    # Set the contents variable
-    if memory_logging: return Table([times, phases, messages, types, memories], names=("Time", "Phase", "Message", "Type", "Memory"), meta={"name": "the contents of the simulation's log file"})
-    else: return Table([times, phases, messages, types], names=("Time", "Phase", "Message", "Type"), meta={"name": "the contents of the simulation's log file"})
+    # Create the table data structures
+    data = [times, phases, messages, types]
+    names = ["Time", "Phase", "Message", "Type"]
+
+    # If memory logging was enabled, add the 2 additional columns
+    if memory_logging:
+
+        data.append(memories)
+        names.append("Memory")
+
+    # Create the table and return it
+    return Table(data, names=names, meta={"name:" "the contents of the simulation's log file"})
 
 # -----------------------------------------------------------------
 
@@ -276,6 +283,7 @@ def get_phase(line, current):
     """
     This function ...
     :param line:
+    :param current:
     :return:
     """
 
@@ -301,8 +309,7 @@ def search_start(line):
     :return:
     """
 
-    if "Starting simulation" in line: return True
-    else: return False
+    return "Starting simulation" in line
 
 # -----------------------------------------------------------------
 
@@ -380,8 +387,7 @@ def search_stellar(line):
     :return:
     """
 
-    if "Starting the stellar emission phase" in line: return True
-    else: return False
+    return "Starting the stellar emission phase" in line
 
 # -----------------------------------------------------------------
 
@@ -393,8 +399,7 @@ def search_spectra(line):
     :return:
     """
 
-    if "Library entries in use" in line: return True
-    else: return False
+    return "Library entries in use" in line
 
 # -----------------------------------------------------------------
 
@@ -406,8 +411,7 @@ def search_dust(line):
     :return:
     """
 
-    if "Dust emission spectra calculated" in line: return True
-    else: return False
+    return "Dust emission spectra calculated" in line
 
 # -----------------------------------------------------------------
 
@@ -419,7 +423,6 @@ def search_write(line):
     :return:
     """
 
-    if "Starting writing results" in line: return True
-    else: return False
+    return "Starting writing results" in line
 
 # -----------------------------------------------------------------

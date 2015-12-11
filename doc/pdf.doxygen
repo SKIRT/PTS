@@ -743,8 +743,10 @@ WARN_LOGFILE           =
 # spaces.
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = pts \
+INPUT                  = core \
                          eagle \
+                         magic \
+                         modeling \
                          do \
                          doc
 
