@@ -17,7 +17,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 import numpy as np
-from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 
 # Import astronomical modules
@@ -141,9 +140,6 @@ class TimeLinePlotter(object):
         :return:
         """
 
-        # Create a PDF Pages object
-        pp = PdfPages(path)
-
         # Initialize figure
         plt.figure(figsize=figsize)
         plt.clf()
@@ -246,7 +242,7 @@ class TimeLinePlotter(object):
         ax.legend(legendEntries, legendNames, loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False, ncol=4, prop={'size':12})
 
         # Save the figure
-        pp.savefig(bbox_inches="tight", pad_inches=0.40)
-        pp.close()
+        plt.savefig(path, bbox_inches="tight", pad_inches=0.40)
+        plt.close()
 
 # -----------------------------------------------------------------

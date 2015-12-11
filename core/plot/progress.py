@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 import numpy as np
-from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 
 # Import astronomical modules
@@ -124,9 +123,6 @@ class ProgressPlotter(object):
         :return:
         """
 
-        # Create a PDF Pages object
-        pp = PdfPages(path)
-
         # Initialize figure
         plt.figure()
         plt.clf()
@@ -150,7 +146,7 @@ class ProgressPlotter(object):
         else: plt.legend(loc='lower right', ncol=4, prop={'size':8})
 
         # Save the figure
-        pp.savefig(bbox_inches="tight", pad_inches=0.25)
-        pp.close()
+        plt.savefig(path, bbox_inches="tight", pad_inches=0.25)
+        plt.close()
         
 # -----------------------------------------------------------------

@@ -19,7 +19,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 
 # Import the relevant PTS classes and modules
 from ..tools import archive as arch
@@ -66,9 +65,6 @@ def plotseds_impl(sedfiles, plotfile, labels=None, fluxlabel="Flux", figsize=(10
 
     assert plotfile.endswith(".pdf")
 
-    # Create a PDF Pages object
-    pp = PdfPages(plotfile)
-
     # Initialize figure with the appropriate size
     plt.figure(figsize=figsize)
     plt.clf()
@@ -98,11 +94,8 @@ def plotseds_impl(sedfiles, plotfile, labels=None, fluxlabel="Flux", figsize=(10
     plt.legend()
 
     # Save the figure
-    pp.savefig(bbox_inches='tight', pad_inches=0.25)
-
-    # close things
-    #plt.close()
-    pp.close()
+    plt.savefig(plotfile, bbox_inches='tight', pad_inches=0.25)
+    plt.close()
 
     return True
 

@@ -16,7 +16,6 @@ import numpy as np
 import os.path
 import matplotlib
 from scipy.optimize import curve_fit
-from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 
 # Import astronomical modules
@@ -117,9 +116,6 @@ class ScalingPlotter(object):
         # Determine the file path for this plot
         file_path = os.path.join(self.output_path, "times.pdf")
 
-        # Create a PDF Pages object
-        pp = PdfPages(file_path)
-
         # Initialize figure with the appropriate size
         plt.figure(figsize=figsize)
         plt.clf()
@@ -170,8 +166,8 @@ class ScalingPlotter(object):
         #filename = "scaling_" + self._phase + "_" + systemidentifier + "times.pdf"
 
         # Save the figure
-        pp.savefig()
-        pp.close()
+        plt.savefig(file_path)
+        plt.close()
 
     # -----------------------------------------------------------------
 
@@ -193,9 +189,6 @@ class ScalingPlotter(object):
 
         # Determine the file path for this plot
         file_path = os.path.join(self.output_path, "speedups.pdf")
-
-        # Create a PDF Pages object
-        pp = PdfPages(file_path)
 
         # Initialize figure with the appropriate size
         plt.figure(figsize=figsize)
@@ -318,8 +311,8 @@ class ScalingPlotter(object):
         #filename = "scaling_" + self._phase + "_" + systemidentifier + "speedups.pdf"
 
         # Save the figure
-        pp.savefig()
-        pp.close()
+        plt.savefig(file_path)
+        plt.close()
 
     # -----------------------------------------------------------------
 
@@ -340,9 +333,6 @@ class ScalingPlotter(object):
 
         # Determine the file path for this plot
         file_path = os.path.join(self.output_path, "efficiencies.pdf")
-
-        # Create a PDF Pages object
-        pp = PdfPages(file_path)
 
         # Initialize figure with the appropriate size
         plt.figure(figsize=figsize)
@@ -404,8 +394,8 @@ class ScalingPlotter(object):
         #filename = "scaling_" + self._phase + "_" + systemidentifier + "efficiencies.pdf"
 
         # Save the figure
-        pp.savefig()
-        pp.close()
+        plt.savefig(file_path)
+        plt.close()
 
     # -----------------------------------------------------------------
 
@@ -445,9 +435,6 @@ class ScalingPlotter(object):
         # Determine the file path for this plot
         file_path = os.path.join(self.output_path, "times.pdf")
 
-        # Create a PDF Pages object
-        pp = PdfPages(file_path)
-
         # Initialize figure with the appropriate size
         plt.figure(figsize=figsize)
         plt.clf()
@@ -455,8 +442,8 @@ class ScalingPlotter(object):
         # ...
 
         # Save the figure
-        pp.savefig()
-        pp.close()
+        plt.savefig(file_path)
+        plt.close()
 
 # -----------------------------------------------------------------
 

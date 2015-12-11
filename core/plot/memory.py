@@ -17,7 +17,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 import numpy as np
-from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 
 # Import astronomical modules
@@ -81,9 +80,6 @@ class MemoryPlotter(object):
         # Determine the path to the plot file
         plot_path = os.path.join(self.output_path, "memory.pdf")
 
-        # Create a PDF Pages object
-        pp = PdfPages(plot_path)
-
         # Initialize figure
         plt.figure()
         plt.clf()
@@ -111,8 +107,8 @@ class MemoryPlotter(object):
             #plt.bar(times, totals, color='r')
 
         # Save the figure
-        pp.savefig(bbox_inches="tight")
-        pp.close()
+        plt.savefig(plot_path, bbox_inches="tight")
+        plt.close()
 
 # -----------------------------------------------------------------
 
