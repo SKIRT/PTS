@@ -19,7 +19,7 @@ import argparse
 
 # Import the relevant AstroMagic classes and modules
 from pts.magic.core import Image
-from pts.magic import GalaxyExtractor, StarExtractor
+from pts.magic import Extractor
 
 # -----------------------------------------------------------------
 
@@ -39,13 +39,13 @@ arguments = parser.parse_args()
 if arguments.out is not None:
     
     # Determine the full path to the output directory
-    output_path = os.path.abspath(arguments.out)
+    arguments.output_path = os.path.abspath(arguments.out)
     
     # Create the directory if it does not yet exist
-    if not os.path.isdir(output_path): os.makedirs(output_path)
+    if not os.path.isdir(arguments.output_path): os.makedirs(arguments.output_path)
 
 # If no output directory is given, place the output in the current working directory
-else: output_path = os.getcwd()
+else: arguments.output_path = os.getcwd()
 
 # Determine the full path to the image
 image_path = os.path.abspath(arguments.image)
@@ -53,38 +53,12 @@ image_path = os.path.abspath(arguments.image)
 # Open the image
 image = Image(image_path)
 
-# Create GalaxyExtractor, StarExtractor and SkyExtractor objects
-galaxyex = GalaxyExtractor()
-starex = StarExtractor()
-skyex = SkyExtractor()
-
 # -----------------------------------------------------------------
 
-# Set the appropriate configuration settings for saving the region files
-if arguments.regions:
-    
-    galaxyex.config.save_region = True
-    galaxyex.config.saving.region_path = os.path.join(output_path, "galaxies.reg")
-    starex.config.save_region = True
-    starex.config.saving.region_path = os.path.join(output_path, "stars.reg")
+# Create an Extractor instance and configure it according to the command-line arguments
+extractor = Extractor.from_arguments(arguments)
 
-# Set the appropriate configuration settings for saving the masked frames
-if arguments.masks:
-    
-    galaxyex.config.save_masked_frame = True
-    galaxyex.config.saving.masked_frame_path = os.path.join(output_path, "masked_galaxies.fits")
-    starex.config.save_masked_frame = True
-    starex.config.saving.masked_frame_path = os.path.join(output_path, "masked_stars.fits")
-
-# -----------------------------------------------------------------
-
-# Run the galaxy extractor on the primary image frame
-galaxyex.run(image.frames.primary)
-
-# Run the star extractor on the primary image frame, passing the galaxy extractor
-starex.run(image.frames.primary, galaxyex)
-
-# Run the sky extractor on the primary image frame
-skyex.run(image.frames.primary, galaxyex, starex)
+# Run the extractor
+extractor.run(image.frames.primary)
 
 # -----------------------------------------------------------------
