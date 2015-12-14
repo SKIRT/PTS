@@ -54,6 +54,12 @@ class LogFile(object):
         # Parse the log file
         self.contents = parse(path)
 
+        # Cache properties to avoid repeated calculation
+        self._stellar_packages = None
+        self._dust_packages = None
+        self._processes = None
+        self._threads = None
+
     # -----------------------------------------------------------------
 
     @property
@@ -105,6 +111,9 @@ class LogFile(object):
         # Stellar emission phase
         if phase == "stellar":
 
+            # Return the cached value if present
+            if self._stellar_packages is not None: return self._stellar_packages
+
             # Loop over the log entries
             for i in range(len(self.contents)):
 
@@ -114,10 +123,14 @@ class LogFile(object):
                 # Search for the line stating the number of photon packages
                 if "photon packages for each of" in self.contents["Message"][i]:
                     # Return the number of stellar photon packages
-                    return int(self.contents["Message"][i].split("(")[1].split(" photon")[0])
+                    self._stellar_packages = int(self.contents["Message"][i].split("(")[1].split(" photon")[0])
+                    return self._stellar_packages
 
         # Dust emission phase
         elif phase == "dustem":
+
+            # Return the cached value if present
+            if self._stellar_packages is not None: return self._stellar_packages
 
             # Loop over the log entries in reversed order
             for i in reversed(range(len(self.contents))):
@@ -128,7 +141,8 @@ class LogFile(object):
                 # Search for the line stating the number of photon packages
                 if "photon packages for each of" in self.contents["Message"][i]:
                     # Return the number of dust emission photon packages
-                    return int(self.contents["Message"][i].split("(")[1].split(" photon")[0])
+                    self._dust_packages = int(self.contents["Message"][i].split("(")[1].split(" photon")[0])
+                    return self._dust_packages
 
         # Invalid option
         else: raise ValueError("Phase must be either 'stellar' or 'dustem'")
@@ -143,6 +157,9 @@ class LogFile(object):
         :return:
         """
 
+        # Return the cached value if present
+        if self._processes is not None: return self._processes
+
         # Loop over all the log file entries
         for i in range(len(self.contents)):
 
@@ -153,7 +170,8 @@ class LogFile(object):
             if "Starting simulation" in message:
 
                 if "with" in message:
-                    return int(message.split(' with ')[1].split()[0])
+                    self._processes = int(message.split(' with ')[1].split()[0])
+                    return self._processes
                 else:
                     return 1
 
@@ -174,6 +192,9 @@ class LogFile(object):
         triggered = False
         max_thread_index = 0
 
+        # Return the cached value if present
+        if self._threads is not None: return self._threads
+
         # Loop over all the log file entries
         for i in range(len(self.contents)):
 
@@ -188,7 +209,10 @@ class LogFile(object):
 
             # If the interesting log messages have been encountered, but the current log message doesn't state a thread
             # index, return the number of threads
-            elif triggered: return max_thread_index + 1
+            elif triggered:
+
+                self._threads = max_thread_index + 1
+                return self._threads
 
             # If none of the above, we are still in the part before the setup of the Random class
 

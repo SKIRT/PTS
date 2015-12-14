@@ -26,6 +26,7 @@ from pts.magic import Extractor
 # Create the command-line parser
 parser = argparse.ArgumentParser()
 parser.add_argument("image", type=str, help="the name of the input image")
+parser.add_argument('--config', type=str, help='the name of a configuration file', default=None)
 parser.add_argument("--regions", action="store_true", help="save regions")
 parser.add_argument("--masks", action="store_true", help="save masks")
 parser.add_argument("--out", type=str, help="the name of the output directory")

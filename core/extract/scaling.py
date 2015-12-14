@@ -13,7 +13,7 @@ from astropy.table import Table
 
 # -----------------------------------------------------------------
 
-class ScalingExtractor():
+class ScalingExtractor(object):
 
     """
     This class ...
@@ -27,6 +27,16 @@ class ScalingExtractor():
         """
 
         ## Attributes
+
+        # The parallelization mode
+        self.mode = None
+
+        # The number of processes and threads
+        self.processes = None
+        self.threads = None
+
+        # The path to the scaling file
+        self.scaling_file_path = None
 
         # The scaling table
         self.table = None
@@ -42,6 +52,9 @@ class ScalingExtractor():
         """
         This function ...
         :return:
+        :param simulation:
+        :param timeline_extractor:
+        :param memory_extractor:
         """
 
         # Set the parallelization mode
@@ -51,8 +64,8 @@ class ScalingExtractor():
         self.processes = simulation.processes
         self.threads = simulation.threads
 
-        # Set the scaling file path
-        self.output_path = simulation.scaling_file_path
+        # Set the path to the scaling file
+        self.scaling_file_path = simulation.scaling_file_path
 
         # Cache local references to the timeline and memory extractors
         self.te = timeline_extractor
@@ -70,12 +83,11 @@ class ScalingExtractor():
 
         """
         This function ...
-        :param output_path:
         :return:
         """
 
         # Open the output file
-        resultfile = open(self.output_path, 'a')
+        resultfile = open(self.scaling_file_path, 'a')
 
         # Add a line to the output file containing the runtimes for the current simulation
         resultfile.write(self.mode + ' ' + str(self.processes) + ' ' + str(self.threads) + ' ' + str(self.te.setup)
@@ -96,6 +108,6 @@ class ScalingExtractor():
         """
 
         # Read in the scaling data file
-        self.table = Table.read(self.output_path)
+        self.table = Table.read(self.scaling_file_path)
 
 # -----------------------------------------------------------------

@@ -72,10 +72,11 @@ class Extractor(Configurable):
         
         """
         This function ...
+        :param arguments:
         """
 
         # Create a new Extractor instance
-        extractor = cls()
+        extractor = cls(arguments.config)
 
         # Set the output path
         extractor.config.output_path = arguments.output_path

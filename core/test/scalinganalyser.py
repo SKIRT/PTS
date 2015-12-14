@@ -43,9 +43,9 @@ class ScalingAnalyser(Configurable):
         # Set the simulation object to None initially
         self.simulation = None
 
-        # Set the input timeline and memory tables to None initially
-        self.timeline = None
-        self.memory = None
+        # Set the timeline and memory extractors to None initially
+        self.te = None
+        self.me = None
 
         # Set the scaling table to None initially
         self.scaling = None
@@ -57,6 +57,9 @@ class ScalingAnalyser(Configurable):
         """
         This function ...
         :return:
+        :param simulation:
+        :param timeline_extractor:
+        :param memory_extractor:
         """
 
         # 1. Call the setup function

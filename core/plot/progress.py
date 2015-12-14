@@ -38,6 +38,11 @@ class ProgressPlotter(object):
         The constructor ...
         """
 
+        ## Attributes
+
+        # The path to the output directory
+        self.output_path = None
+
         # Set the table to None initially
         self.table = None
 
