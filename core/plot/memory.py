@@ -85,7 +85,8 @@ class MemoryPlotter(object):
         plt.clf()
 
         # Plot the memory usage
-        plt.plot(self.table["Simulation time"], self.table["Memory usage"])
+        plt.plot(self.table["Simulation time"], self.table["Memory usage"], linestyle='--', marker='o')
+        #plt.scatter(self.table["Simulation time"], self.table["Memory usage"])
 
         # Check whether (de)allocation information is present in the memory table
         if "Array (de)allocation" in self.table.colnames:

@@ -129,13 +129,13 @@ class TimeLinePlotter(object):
 
 # -----------------------------------------------------------------
 
-def create_timeline_plot(data, path, procranks, figsize=(12,8), percentages=False, totals=False, unordered=False, numberofproc=False, cpu=False):
+def create_timeline_plot(data, path, procranks, figsize=(12, 8), percentages=False, totals=False, unordered=False, numberofproc=False, cpu=False):
 
     """
     This function actually plots the timeline based on a data structure containing the starttimes and endtimes
     for the different simulation phases
     :param data:
-    :param plotfilepath:
+    :param path:
     :param procranks:
     :param figsize:
     :param percentages:
@@ -163,6 +163,9 @@ def create_timeline_plot(data, path, procranks, figsize=(12,8), percentages=Fals
     if unordered: yticks = np.array(procranks).argsort().argsort()
     else: yticks = procranks
 
+    #print("yticks=", yticks)
+    #print("durations=", durations)
+
     durations_list = []
     totaldurations = np.zeros(nprocs)
     patch_handles = []
@@ -174,9 +177,6 @@ def create_timeline_plot(data, path, procranks, figsize=(12,8), percentages=Fals
         durations_list.append(durations)
 
         totaldurations += durations
-
-        print("yticks=", yticks)
-        print("durations=", durations)
 
         patch_handle = ax.barh(yticks, durations, color=colors[phase], align='center', left=starttimes, alpha=0.8, lw=0)
         patch_handles.append(patch_handle)

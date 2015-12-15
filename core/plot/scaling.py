@@ -628,6 +628,9 @@ class ScalingPlotter(object):
         :return:
         """
 
+        # Inform the user
+        self.log.info("Plotting the scaling timeline...")
+
         # Loop over the different parallelization modes
         for mode in self.data["total"]:
 
@@ -658,20 +661,64 @@ class ScalingPlotter(object):
                 nprocs_list.append(processors)
 
                 total = 0.0
-                data.append(["setup", [total], [total + setup_time]])
-                total += setup_time
-                data.append(["stellar", [total], [total + stellar_time]])
-                total += stellar_time
-                data.append(["spectra", [total], [total + spectra_time]])
-                total += spectra_time
-                data.append(["dust", [total], [total + dust_time]])
-                total += dust_time
-                data.append(["write", [total], [total + writing_time]])
-                total += writing_time
-                data.append(["wait", [total], [total + waiting_time]])
-                total += waiting_time
-                data.append(["comm", [total], [total + communication_time]])
-                total += communication_time
+
+                # For the first processor count
+                if j == 0:
+
+                    data.append(["setup", [total], [total + setup_time]])
+                    total += setup_time
+                    data.append(["stellar", [total], [total + stellar_time]])
+                    total += stellar_time
+                    data.append(["spectra", [total], [total + spectra_time]])
+                    total += spectra_time
+                    data.append(["dust", [total], [total + dust_time]])
+                    total += dust_time
+                    data.append(["write", [total], [total + writing_time]])
+                    total += writing_time
+                    data.append(["wait", [total], [total + waiting_time]])
+                    total += waiting_time
+                    data.append(["comm", [total], [total + communication_time]])
+                    total += communication_time
+
+                else:
+
+                    # Setup
+                    data[0][1].append(total)
+                    total += setup_time
+                    data[0][2].append(total)
+
+                    # Stellar
+                    data[1][1].append(total)
+                    total += stellar_time
+                    data[1][2].append(total)
+
+                    # Spectra
+                    data[2][1].append(total)
+                    total += spectra_time
+                    data[2][2].append(total)
+
+                    # Dust
+                    data[3][1].append(total)
+                    total += dust_time
+                    data[3][2].append(total)
+
+                    # Writing
+                    data[4][1].append(total)
+                    total += writing_time
+                    data[4][2].append(total)
+
+                    # Waiting
+                    data[5][1].append(total)
+                    total += waiting_time
+                    data[5][2].append(total)
+
+                    # Communication
+                    data[6][1].append(total)
+                    total += communication_time
+                    data[6][2].append(total)
+
+            print("data=", data)
+            print("nprocs_list=", nprocs_list)
 
             # Create the plot
             create_timeline_plot(data, plot_file_path, nprocs_list, percentages=True, totals=True, unordered=True, numberofproc=True, cpu=True)
