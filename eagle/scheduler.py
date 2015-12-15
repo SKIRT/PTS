@@ -20,9 +20,10 @@
 
 import os.path
 import subprocess
-import eagle.config as config
-from eagle.database import Database
-from eagle.skirtrun import SkirtRun
+
+from . import config as config
+from .database import Database
+from .skirtrun import SkirtRun
 
 # -----------------------------------------------------------------
 

@@ -59,10 +59,6 @@ def plotseds(simulation, figsize=(10,6), xlim=None, ylim=None):
 #
 def plotseds_impl(sedfiles, plotfile, labels=None, fluxlabel="Flux", figsize=(10,6), xlim=None, ylim=None):
 
-    # Use a non-interactive back-end to generate high-quality vector graphics
-    #if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
-    #import matplotlib.pyplot as plt
-
     assert plotfile.endswith(".pdf")
 
     # Initialize figure with the appropriate size
@@ -72,7 +68,6 @@ def plotseds_impl(sedfiles, plotfile, labels=None, fluxlabel="Flux", figsize=(10
     if labels == None: labels = sedfiles
 
     # setup the figure
-    #figure = plt.figure(figsize=figsize)
     plt.grid(True)
 
     # loop over sed files and labels

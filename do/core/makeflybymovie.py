@@ -26,7 +26,7 @@ import sys
 
 # Import the relevant PTS classes and modules
 from pts.core.simulation.simulation import createsimulations
-from pts.core.plot.makeflybymovie import makeflybymovie
+from pts.core.plot.flybymovie import makeflybymovie
 
 # -----------------------------------------------------------------
 

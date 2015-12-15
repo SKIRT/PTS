@@ -15,7 +15,6 @@
 
 # use a non-interactive back-end to generate high-quality vector graphics
 import matplotlib
-if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 
 # import 3D capabilities
@@ -26,7 +25,7 @@ import os.path
 import numpy as np
 
 # import pts modules
-import pts.archive as arch
+from ..core.tools import archive as arch
 
 # ----------------------------------------------------------------------
 

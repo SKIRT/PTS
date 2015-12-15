@@ -31,11 +31,6 @@
 
 # Import the necessary modules
 import pyfits
-import numpy as np
-import math
-import itertools
-import matplotlib.pyplot as plt
-from scipy import ndimage
 import sys
 
 # Main function, this part actually runs when routine is called

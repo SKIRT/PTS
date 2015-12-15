@@ -56,10 +56,10 @@ import os.path
 import numpy as np
 import h5py
 
-import eagle.config as config
-import eagle.starformation as sf
-from eagle.connection import Connection
-from pts.geometry import Transform
+from . import config as config
+from . import starformation as sf
+from .connection import Connection
+from ..core.tools.geometry import Transform
 
 # -----------------------------------------------------------------
 

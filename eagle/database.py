@@ -76,7 +76,8 @@
 import os.path
 import shutil
 import sqlite3
-import eagle.config as config
+
+from . import config as config
 
 # -----------------------------------------------------------------
 

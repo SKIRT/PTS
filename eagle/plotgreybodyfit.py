@@ -14,8 +14,6 @@
 # ----------------------------------------------------------------------
 
 # use a non-interactive back-end to generate high-quality vector graphics
-import matplotlib
-if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 
 # import standard modules
@@ -24,8 +22,8 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 # import pts modules
-import pts.archive as arch
-from pts.filter import Filter
+from ..core.tools import archive as arch
+from ..core.basics.filter import Filter
 
 # ----------------------------------------------------------------------
 

@@ -23,7 +23,6 @@ from pts.core.plot.scaling import ScalingPlotter
 
 # Create the command-line parser and a set of subparsers
 parser = argparse.ArgumentParser()
-#parser.add_argument('system', nargs='?', type=str, help='the system for which you want to plot the scaling', default="")
 parser.add_argument('--plotfit', action='store_true', help='include the fit to the speedups of a theoretical scaling relation in the plot')
 
 # Parse the command line arguments

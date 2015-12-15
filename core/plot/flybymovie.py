@@ -16,9 +16,9 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..simulation import SkiFile
-from ..basics import RGBImage
-from ..basics import MovieFile
+from ..simulation.skifile import SkiFile
+from ..basics.rgbimage import RGBImage
+from ..basics.moviefile import MovieFile
 
 # -----------------------------------------------------------------
 

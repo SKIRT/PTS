@@ -28,7 +28,7 @@ import sys
 
 # Import the relevant PTS classes and modules
 from pts.core.simulation.simulation import createsimulations
-from pts.core.plot.makewavemovie import makewavemovie
+from pts.core.plot.wavemovie import makewavemovie
 
 # -----------------------------------------------------------------
 

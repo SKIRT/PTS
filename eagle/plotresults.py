@@ -17,14 +17,11 @@ import os.path
 import numpy as np
 from scipy.optimize import curve_fit
 
-# use a non-interactive back-end to generate high-quality vector graphics
-import matplotlib
-if matplotlib.get_backend().lower() != "pdf": matplotlib.use("pdf")
 import matplotlib.pyplot as plt
 
-from pts.skirtunits import SkirtUnits
-from pts.filter import Filter
-import eagle.config as config
+from ..core.simulation.units import SkirtUnits
+from ..core.basics.filter import Filter
+from . import config as config
 
 # -----------------------------------------------------------------
 

@@ -22,7 +22,7 @@ if matplotlib.get_backend().lower() != "agg": matplotlib.use("agg")
 import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
-from pts.core.basics import MovieFile
+from ..basics.moviefile import MovieFile
 
 # -----------------------------------------------------------------
 

@@ -52,7 +52,7 @@ class ScalingAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, timeline_extractor, memory_extractor):
+    def run(self, simulation, timeline_extractor, memory_extractor, plot=True):
 
         """
         This function ...
@@ -69,7 +69,7 @@ class ScalingAnalyser(Configurable):
         self.extract()
 
         # 2. Make the scaling plots
-        self.plot()
+        if plot: self.plot()
 
     # -----------------------------------------------------------------
 
@@ -135,6 +135,6 @@ class ScalingAnalyser(Configurable):
 
         # Create and run a ScalingPlotter object
         plotter = ScalingPlotter()
-        plotter.run(self.scaling, self.simulation.scaling_run_plot_path)
+        plotter.run(self.scaling, self.simulation.scaling_plot_path)
 
 # -----------------------------------------------------------------

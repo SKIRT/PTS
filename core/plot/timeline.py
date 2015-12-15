@@ -175,6 +175,9 @@ def create_timeline_plot(data, path, procranks, figsize=(12,8), percentages=Fals
 
         totaldurations += durations
 
+        print("yticks=", yticks)
+        print("durations=", durations)
+
         patch_handle = ax.barh(yticks, durations, color=colors[phase], align='center', left=starttimes, alpha=0.8, lw=0)
         patch_handles.append(patch_handle)
 

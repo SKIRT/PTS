@@ -43,7 +43,7 @@ class ViewAngles:
     def __init__(self, figsize=(8,8)):
 
         # construct our scene
-        self.scene = Scene();
+        self.scene = Scene()
 
         # setup the figure, using a distant instrument with default angles
         plt.ion()
@@ -302,7 +302,7 @@ class PerspectiveInstrument:
         xout = []
         yout = []
         for i in range(len(x)):
-            xv, yv, zv, wv = self.transf.transform(x[i], y[i], z[i], 1);
+            xv, yv, zv, wv = self.transf.transform(x[i], y[i], z[i], 1)
             if zv > 0:
                 xout += [xv / wv]
                 yout += [yv / wv]

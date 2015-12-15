@@ -22,7 +22,7 @@ import numpy as np
 import pyfits
 
 # Import the relevant PTS classes and modules
-from ..basics import RGBImage
+from ..basics.rgbimage import RGBImage
 from ..tools import archive as arch
 
 # -----------------------------------------------------------------

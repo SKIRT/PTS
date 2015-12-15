@@ -30,12 +30,7 @@
 #
 # -----------------------------------------------------------------
  
-# Import the necessary modules
-import pyfits
-import numpy as np
-import math
-import itertools
-import matplotlib.pyplot as plt
+# Import standard modules
 from scipy import ndimage
 from numpy import *
 import sys

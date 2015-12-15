@@ -11,7 +11,6 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-import math
 import numpy as np
 import os.path
 import matplotlib
@@ -24,9 +23,9 @@ from collections import defaultdict
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
+from ..tools import logging
 from ..basics.quantity import Quantity
 from ..basics.map import Map
-from ..basics.log import Log
 from .timeline import create_timeline_plot
 
 # -----------------------------------------------------------------
@@ -68,7 +67,7 @@ class ScalingPlotter(object):
         self.output_path = None
 
         # Create a logger
-        self.log = Log()
+        self.log = logging.new_log("scalingplotter", "INFO")
 
     # -----------------------------------------------------------------
 
@@ -135,8 +134,8 @@ class ScalingPlotter(object):
             mode = self.table["Parallelization mode"][i]
 
             # Get the number of processes and threads
-            processes = self.table["Processes"]
-            threads = self.table["Threads"]
+            processes = self.table["Processes"][i]
+            threads = self.table["Threads"][i]
             processors = processes * threads
 
             # If the number of processors is 1, add the runtimes for the different simulation phases to the
@@ -218,6 +217,18 @@ class ScalingPlotter(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_serial(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.serial) != 0
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -250,13 +261,16 @@ class ScalingPlotter(object):
         times_path = os.path.join(self.output_path, "times.pdf")
         self.plot_times("total", times_path)
 
-        # Plot the total speedups
-        speedups_path = os.path.join(self.output_path, "speedups.pdf")
-        self.plot_speedups("total", speedups_path)
+        # Plot the speedups and efficiencies if serial runtimes are available
+        if self.has_serial:
 
-        # Plot the total efficiencies
-        efficiencies_path = os.path.join(self.output_path, "efficiencies.pdf")
-        self.plot_efficiencies("total", efficiencies_path)
+            # Plot the total speedups
+            speedups_path = os.path.join(self.output_path, "speedups.pdf")
+            self.plot_speedups("total", speedups_path)
+
+            # Plot the total efficiencies
+            efficiencies_path = os.path.join(self.output_path, "efficiencies.pdf")
+            self.plot_efficiencies("total", efficiencies_path)
 
     # -----------------------------------------------------------------
 
@@ -281,13 +295,16 @@ class ScalingPlotter(object):
             times_path = os.path.join(output_path_phase, "times.pdf")
             self.plot_times(phase, times_path)
 
-            # Plot the total speedups
-            speedups_path = os.path.join(output_path_phase, "speedups.pdf")
-            self.plot_speedups("total", speedups_path)
+            # Plot the speedups and efficiencies if serial runtimes are available
+            if self.has_serial:
 
-            # Plot the total efficiencies
-            efficiencies_path = os.path.join(output_path_phase, "efficiencies.pdf")
-            self.plot_efficiencies("total", efficiencies_path)
+                # Plot the total speedups
+                speedups_path = os.path.join(output_path_phase, "speedups.pdf")
+                self.plot_speedups("total", speedups_path)
+
+                # Plot the total efficiencies
+                efficiencies_path = os.path.join(output_path_phase, "efficiencies.pdf")
+                self.plot_efficiencies("total", efficiencies_path)
 
     # -----------------------------------------------------------------
 
@@ -318,6 +335,10 @@ class ScalingPlotter(object):
             processor_counts = self.data[phase][mode].processor_counts
             times = self.data[phase][mode].times
             errors = self.data[phase][mode].errors
+
+            #print("processor_counts=", processor_counts)
+            #print("times=", times)
+            #print("errors=", errors)
 
             # Plot the data points for this mode
             plt.errorbar(processor_counts, times, errors, marker='.', label=mode)
@@ -376,6 +397,7 @@ class ScalingPlotter(object):
         parameters = dict()
 
         # Get the serial runtime (and error) for this phase (create a Quantity object)
+        print("phase=", phase)
         serial_time = self.serial[phase].time
         serial_error = self.serial[phase].error
         serial = Quantity(serial_time, serial_error)
@@ -395,6 +417,9 @@ class ScalingPlotter(object):
 
                 # Create a quantity for the current runtime
                 time = Quantity(times[i], errors[i])
+
+                print("serial=", serial.value, serial.error)
+                print("time=", time.value, time.error)
 
                 # Calculate the speedup based on the current runtime and the serial runtime
                 speedup = serial / time

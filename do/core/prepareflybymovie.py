@@ -61,7 +61,7 @@ if interactive:
 
 # or adjust ski file
 else:
-    from pts.core.plot.makeflybymovie import prepareflybymovie
+    from pts.core.plot.flybymovie import prepareflybymovie
     prepareflybymovie(skifilepath, timeline)
     print "adjusted " + skifilepath
 

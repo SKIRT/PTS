@@ -83,7 +83,7 @@ class Quantity(object):
         """
 
         value = self.value * quantity.value
-        error = math.sqrt(math.pow(quantity.value * self.error, 2) + math.pow(self.value, quantity.error, 2))
+        error = math.sqrt(math.pow(quantity.value * self.error, 2) + math.pow(self.value * quantity.error, 2))
         return Quantity(value, error)
 
     # -----------------------------------------------------------------

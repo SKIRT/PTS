@@ -21,14 +21,13 @@ import os.path
 import re
 import time
 import datetime
-import random
 import numpy as np
 import multiprocessing
 import pyfits
 
 # Import the relevant PTS classes and modules
-from ..simulation import SkirtExec
-from ..basics import Log
+from ..simulation.execute import SkirtExec
+from ..basics.log import Log
 
 # -----------------------------------------------------------------
 #  SkirtTestSuite class

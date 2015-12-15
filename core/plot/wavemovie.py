@@ -26,8 +26,8 @@ import matplotlib.pyplot as plt
 import pyfits
 
 # Import the relevant PTS classes and modules
-from ..basics import MovieFile
-from ..basics import RGBImage
+from ..basics.moviefile import MovieFile
+from ..basics.rgbimage import RGBImage
 from ..tools import archive as arch
 
 # -----------------------------------------------------------------

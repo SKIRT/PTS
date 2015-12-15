@@ -19,14 +19,14 @@ import os
 import os.path
 import shutil
 
-import eagle.config as config
-from eagle.database import Database
-from eagle.galaxy import Snapshot, Galaxy
-from eagle.skirtrun import SkirtRun
+from . import config as config
+from .database import Database
+from .galaxy import Snapshot, Galaxy
+from .skirtrun import SkirtRun
 
-from pts.skifile import SkiFile
-from ..plotting.seds import plotseds   # import this one first to avoid warnings about setting the matplotlib backend
-from ..misc.makergbimages import makergbimages
+from ..core.simulation.skifile import SkiFile
+from ..core.plot.seds import plotseds
+from ..core.plot.rgbimages import makergbimages
 
 # -----------------------------------------------------------------
 

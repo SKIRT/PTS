@@ -121,7 +121,7 @@ else:
 
 # build density curves
 if vistype=='densities':
-    from eagle.plotdensitycurves import plotdensitycurves
+    from pts.eagle.plotdensitycurves import plotdensitycurves
     print "Building density curves for {} SKIRT-runs".format(len(skirtruns))
     for skirtrun in skirtruns:
         print "Building density curves for SKIRT-run {}...".format(skirtrun.runid())
@@ -131,7 +131,7 @@ if vistype=='densities':
 
 # build grey body fits
 if vistype=='greybodyfit':
-    from eagle.plotgreybodyfit import plotgreybodyfit
+    from pts.eagle.plotgreybodyfit import plotgreybodyfit
     print "Building grey body fits for {} SKIRT-runs".format(len(skirtruns))
     for skirtrun in skirtruns:
         print "Building grey body fit for SKIRT-run {}...".format(skirtrun.runid())
@@ -141,7 +141,7 @@ if vistype=='greybodyfit':
 
 # build info files
 if vistype=='infofile':
-    from eagle.makeinfofile import makeinfofile
+    from pts.eagle.makeinfofile import makeinfofile
     print "Building info files for {} SKIRT-runs".format(len(skirtruns))
     for skirtrun in skirtruns:
         print "Building info file for SKIRT-run {}...".format(skirtrun.runid())
@@ -152,7 +152,7 @@ if vistype=='infofile':
 
 # build gas particle plots
 if vistype=='particles':
-    from eagle.plotgasparticles import plotgasparticles
+    from pts.eagle.plotgasparticles import plotgasparticles
     print "Building gas particle plots for {} SKIRT-runs".format(len(skirtruns))
     for skirtrun in skirtruns:
         print "Building gas particle plot for SKIRT-run {}...".format(skirtrun.runid())
@@ -162,8 +162,8 @@ if vistype=='particles':
 
 # build RGB images
 if vistype=='rgbimages':
-    from misc.makergbimages import makeintegratedrgbimages
-    from pts.filter import Filter
+    from pts.core.plot.rgbimages import makeintegratedrgbimages
+    from pts.core.basics.filter import Filter
     print "Building RGB images for {} SKIRT-runs".format(len(skirtruns))
     filterR = Filter('SDSS.i')
     filterG = Filter('SDSS.r')
@@ -183,7 +183,7 @@ if vistype=='rgbimages':
 
 # build SED plots for each SKIRT-run
 if vistype=='seds':
-    from plotting.seds import plotseds
+    from pts.core.plot.seds import plotseds
     print "Building SED plots for {} SKIRT-runs".format(len(skirtruns))
     for skirtrun in skirtruns:
         print "Building SED plot for SKIRT-run {}...".format(skirtrun.runid())
@@ -194,7 +194,7 @@ if vistype=='seds':
 
 # build temperature histograms
 if vistype=='temperature':
-    from eagle.plottemperature import plottemperature
+    from pts.eagle.plottemperature import plottemperature
     print "Building temperature histograms for {} SKIRT-runs".format(len(skirtruns))
     for skirtrun in skirtruns:
         print "Building temperature histogram for SKIRT-run {}...".format(skirtrun.runid())
@@ -204,7 +204,7 @@ if vistype=='temperature':
 
 # build wavelength movies for each SKIRT-run
 if vistype=='wavemovie':
-    from misc.makewavemovie import makewavemovie
+    from pts.core.plot.wavemovie import makewavemovie
     print "Building wavelength movies for {} SKIRT-runs".format(len(skirtruns))
     for skirtrun in skirtruns:
         print "Building wavelength movie for SKIRT-run {}...".format(skirtrun.runid())

@@ -25,7 +25,7 @@ import sys
 
 # Import the relevant PTS classes and modules
 from pts.core.simulation.simulation import createsimulations
-from pts.core.plot.makergbimages import makergbimages
+from pts.core.plot.rgbimages import makergbimages
 
 # -----------------------------------------------------------------
 

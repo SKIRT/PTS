@@ -20,7 +20,12 @@ import numpy as np
 # -----------------------------------------------------------------
 
 def free_memory():
-    
+
+    """
+    This function ...
+    :return:
+    """
+
     # Get the currently available virtual memory (in gigabytes)
     memory = psutil.virtual_memory().available / 1e9
     
@@ -29,7 +34,12 @@ def free_memory():
 # -----------------------------------------------------------------
 
 def free_cpus():
-    
+
+    """
+    This function ...
+    :return:
+    """
+
     # Get the total number of processors on this system
     total = multiprocessing.cpu_count()
 

@@ -17,8 +17,9 @@
 import os.path
 import numpy as np
 import pyfits
-import pts.archive as arch
-from pts.filter import Filter
+
+from ..core.tools import archive as arch
+from ..core.basics.filter import Filter
 
 # -----------------------------------------------------------------
 

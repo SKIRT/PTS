@@ -18,11 +18,14 @@
 # EXAMPLE:>pts fitskirt_results.py ranges.fski
 ##
 
-# import the relevant PTS classes
+# ------------------------------------------------------------------
+
+# Import standard modules
 import sys
 import glob
 import os
 import math
+
 # ------------------------------------------------------------------
 
 # fski files used to read the labels and units

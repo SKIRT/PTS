@@ -14,9 +14,6 @@
 
 # -----------------------------------------------------------------
 
-# Import standard modules
-import numpy as np
-
 # Import the relevant PTS classes and modules
 from pts.core.prep.sphanalyze import *
 

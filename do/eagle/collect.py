@@ -18,7 +18,6 @@
 
 # Import standard modules
 import sys
-import types
 import os.path
 import pickle
 import numpy as np
