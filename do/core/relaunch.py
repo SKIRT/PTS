@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.status Check the status of SKIRT simulations running remotely
+## \package pts.do.relaunch Relaunch previous simulations
 
 # -----------------------------------------------------------------
 
@@ -89,9 +89,7 @@ def simulation_ids(string):
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
-parser.add_argument('remote', nargs='?', default=None, help="(optional) the name of the remote host")
-parser.add_argument('-d', '--delete', type=simulation_ids, help="the ID's of the simulations to delete")
-parser.add_argument("-c", "--clear", action="store_true", help="clear retreived, crashed, cancelled and aborted simulations")
+parser.add_argument("relaunch", type=simulation_ids, help="the ID's of the simulations to relaunch")
 parser.add_argument("--debug", action="store_true", help="add this option to enable debug output")
 
 # Parse the command line arguments

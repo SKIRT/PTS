@@ -92,6 +92,7 @@ class RemoteSynchronizer(Configurable):
         if hasattr(arguments, "remote"): synchronizer.config.remote = arguments.remote
         if hasattr(arguments, "ids"): synchronizer.config.ids = arguments.ids
         if hasattr(arguments, "statuses"): synchronizer.config.statuses = arguments.status
+        if hasattr(arguments, "relaunch"): synchronizer.config.relaunch = arguments.relaunch
 
         # Return the new synchronizer
         return synchronizer
