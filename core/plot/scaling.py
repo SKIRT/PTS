@@ -649,13 +649,13 @@ class ScalingPlotter(object):
                 processors = self.data["total"][mode].processor_counts[j]
 
                 # Get the average runtimes for the different phases corresponding to the current processor count
-                setup_time = self.data["setup"][mode].times[j]
-                stellar_time = self.data["stellar"][mode].times[j]
-                spectra_time = self.data["spectra"][mode].times[j]
-                dust_time = self.data["dust"][mode].times[j]
-                writing_time = self.data["writing"][mode].times[j]
-                waiting_time = self.data["waiting"][mode].times[j]
-                communication_time = self.data["communication"][mode].times[j]
+                setup_time = self.data["setup"][mode].times[j] * processors
+                stellar_time = self.data["stellar"][mode].times[j] * processors
+                spectra_time = self.data["spectra"][mode].times[j] * processors
+                dust_time = self.data["dust"][mode].times[j] * processors
+                writing_time = self.data["writing"][mode].times[j] * processors
+                waiting_time = self.data["waiting"][mode].times[j] * processors
+                communication_time = self.data["communication"][mode].times[j] * processors
 
                 # Add the processor count
                 nprocs_list.append(processors)
@@ -736,7 +736,7 @@ class ScalingPlotter(object):
         self.log.info("Plotting the memory scaling...")
 
         # Determine the file path for this plot
-        file_path = os.path.join(self.output_path, "times.pdf")
+        file_path = os.path.join(self.output_path, "memory.pdf")
 
         # Initialize figure with the appropriate size
         plt.figure(figsize=figsize)

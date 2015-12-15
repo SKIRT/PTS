@@ -224,7 +224,7 @@ def create_timeline_plot(data, path, procranks, figsize=(12, 8), percentages=Fal
         ax.set_yticklabels(procranks)
 
     # Format the axis ticks and labels
-    if cpu: ax.set_xlabel('CPU time per thread (s)', fontsize='large')
+    if cpu: ax.set_xlabel('CPU time (s)', fontsize='large')
     else: ax.set_xlabel('Time (s)', fontsize='large')
 
     if numberofproc: ax.set_ylabel('Number of processes', fontsize='large')
