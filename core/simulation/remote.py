@@ -1796,31 +1796,35 @@ class SkirtRemote(Configurable):
         for line in output:
 
             if "Starting setup" in line: phase = "setup"
-            elif "Starting the stellar emission phase" in line: phase = "stellar"
-            elif "Launched stellar emission photon packages" in line: progress = float(line.split("packages: ")[1].split("%"))
-            elif "Starting the first-stage dust self-absorption cycle" in line: phase = "self-absorption1"
+            elif "Starting the stellar emission phase" in line: phase = "stellar emission"
+            elif "Launched stellar emission photon packages" in line:
+
+                progress = float(line.split("packages: ")[1].split("%")[0])
+
+            elif "Starting the first-stage dust self-absorption cycle" in line: phase = "self-absorption [stage 1"
             elif "Launched first-stage dust self-absorption cycle" in line:
 
-                cycle = int(line.split("cycle ")[1].split(" photon packages"))
-                progress = float(line.split("packages: ")[1].split("%"))
+                cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
+                progress = float(line.split("packages: ")[1].split("%")[0])
 
-            elif "Starting the second-stage dust self-absorption cycle" in line: phase = "self-absorption2"
+            elif "Starting the second-stage dust self-absorption cycle" in line: phase = "self-absorption [stage 2"
             elif "Launched second-stage dust self-absorption cycle" in line:
 
-                cycle = int(line.split("cycle ")[1].split(" photon packages"))
-                progress = float(line.split("packages: ")[1].split("%"))
+                cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
+                progress = float(line.split("packages: ")[1].split("%")[0])
 
-            elif "Starting the last-stage dust self-absorption cycle" in line: phase = "self-absorption3"
+            elif "Starting the last-stage dust self-absorption cycle" in line: phase = "self-absorption [stage 3"
             elif "Launched last-stage dust self-absorption cycle" in line:
 
-                cycle = int(line.split("cycle ")[1].split(" photon packages"))
-                progress = float(line.split("packages: ")[1].split("%"))
+                cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
+                progress = float(line.split("packages: ")[1].split("%")[0])
 
-            elif "Starting the dust emission phase" in line: phase = "dust-emission"
-            elif "Launched dust emission photon packages" in line: progress = float(line.split("packages: ")[1].split("%"))
+            elif "Starting the dust emission phase" in line: phase = "dust emission"
+            elif "Launched dust emission photon packages" in line: progress = float(line.split("packages: ")[1].split("%")[0])
             elif "Starting writing results" in line: phase = "writing"
 
-        if "self-absorption" in phase: return "running (" + str(phase) + "," + str(cycle) + " " + str(progress) + "%"
-        else: return "running (" + str(phase) + " " + str(progress) + "%"
+        if "self-absorption" in phase: return "running " + str(phase) + ", cycle " + str(cycle) + "] " + str(progress) + "%)"
+        elif "stellar emission" in phase or "dust emission" in phase: return "running (" + str(phase) + " " + str(progress) + "%)"
+        else: return "running (" + str(phase) + ")"
 
 # -----------------------------------------------------------------
