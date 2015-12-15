@@ -102,7 +102,7 @@ class MemoryPlotter(object):
             # Calculate the cumulative allocated memory
             totals = np.cumsum(allocation)
 
-            plt.step(times, totals)
+            plt.step(times, totals, where='post', linestyle='--')  # or linestyle=':'
             #plt.fill_between(self.table["Simulation time"], 0, totals, color='green')
             #plt.bar(times, totals, color='r')
 

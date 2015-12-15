@@ -33,7 +33,8 @@ colors = {"setup": 'r',         # setup -> red
           "dust": 'c',          # dust emission -> cyan
           "write": 'y',         # writing -> yellow
           "wait": 'b',          # waiting -> blue
-          "other": 'k'}         # other -> black
+          "other": 'k',         # other -> black
+          None: 'k'}            # None -> black
 
 # -----------------------------------------------------------------
 
@@ -55,7 +56,7 @@ class TimeLinePlotter(object):
         # The path to the output directory
         self.output_path = None
 
-        # Set the table to None initially
+        # The table containing the timeline information
         self.table = None
 
     # -----------------------------------------------------------------

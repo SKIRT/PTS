@@ -298,7 +298,7 @@ def parse(path):
         names.append("Memory")
 
     # Create the table and return it
-    return Table(data, names=names, meta={"name:" "the contents of the simulation's log file"})
+    return Table(data, names=names, meta={"name": "the contents of the simulation's log file"})
 
 # -----------------------------------------------------------------
 

@@ -50,10 +50,10 @@ class SimulationAnalyser(Configurable):
         # Set the simulation object to None initially
         self.simulation = None
 
-        # Tables
-        self.progress = None
-        self.timeline = None
-        self.memory = None
+        # The extractors
+        self.progress_extractor = ProgressExtractor()
+        self.timeline_extractor = TimeLineExtractor()
+        self.memory_extractor = MemoryExtractor()
 
     # -----------------------------------------------------------------
 
@@ -103,10 +103,10 @@ class SimulationAnalyser(Configurable):
         # Set the simulation to None
         self.simulation = None
 
-        # Set the tables to None
-        self.progress = None
-        self.timeline = None
-        self.memory = None
+        # Clear the extractors
+        self.progress_extractor.clear()
+        self.timeline_extractor.clear()
+        self.memory_extractor.clear()
 
     # -----------------------------------------------------------------
 
@@ -180,12 +180,8 @@ class SimulationAnalyser(Configurable):
         # Determine the path to the progress file
         path = os.path.join(self.simulation.extraction_path, "progress.dat")
 
-        # Create and run a ProgressExtractor object
-        extractor = ProgressExtractor()
-        extractor.run(self.simulation, path)
-
-        # Set the table
-        self.progress = extractor.table
+        # Run the progress extractor
+        self.progress_extractor.run(self.simulation, path)
 
     # -----------------------------------------------------------------
 
@@ -202,12 +198,8 @@ class SimulationAnalyser(Configurable):
         # Determine the path to the timeline file
         path = os.path.join(self.simulation.extraction_path, "timeline.dat")
 
-        # Create and run a TimeLineExtractor object
-        extractor = TimeLineExtractor()
-        extractor.run(self.simulation, path)
-
-        # Set the table
-        self.timeline = extractor.table
+        # Run the timeline extractor
+        self.timeline_extractor.run(self.simulation, path)
 
     # -----------------------------------------------------------------
 
@@ -224,12 +216,8 @@ class SimulationAnalyser(Configurable):
         # Determine the path to the memory file
         path = os.path.join(self.simulation.extraction_path, "memory.dat")
 
-        # Create and run a MemoryExtractor object
-        extractor = MemoryExtractor()
-        extractor.run(self.simulation, path)
-
-        # Set the table
-        self.memory = extractor.table
+        # Run the memory extractor
+        self.memory_extractor.run(self.simulation, path)
 
     # -----------------------------------------------------------------
 
@@ -267,12 +255,9 @@ class SimulationAnalyser(Configurable):
         # Inform the user
         self.log.info("Plotting the progress information...")
 
-        # Determine the path to the progress plot file
-        path = os.path.join(self.simulation.plot_path, "progress.pdf")
-
         # Create and run a ProgressPlotter object
         plotter = ProgressPlotter()
-        plotter.run(self.progress, path)
+        plotter.run(self.progress_extractor.table, self.simulation.plot_path)
 
     # -----------------------------------------------------------------
 
@@ -286,12 +271,9 @@ class SimulationAnalyser(Configurable):
         # Inform the user
         self.log.info("Plotting the timeline...")
 
-        # Determine the path to the timeline plot file
-        path = os.path.join(self.simulation.plot_path, "timeline.pdf")
-
         # Create and run a TimeLinePlotter object
         plotter = TimeLinePlotter()
-        plotter.run(self.timeline, path)
+        plotter.run(self.timeline_extractor.table, self.simulation.plot_path)
 
     # -----------------------------------------------------------------
 
@@ -305,12 +287,9 @@ class SimulationAnalyser(Configurable):
         # Inform the user
         self.log.info("Plotting the memory information...")
 
-        # Determine the path to the memory plot file
-        path = os.path.join(self.simulation.plot_path, "memory.pdf")
-
         # Create and run a MemoryPlotter object
         plotter = MemoryPlotter()
-        plotter.run(self.memory, path)
+        plotter.run(self.memory_extractor.table, self.simulation.plot_path)
 
     # -----------------------------------------------------------------
 

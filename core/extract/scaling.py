@@ -61,8 +61,8 @@ class ScalingExtractor(object):
         self.mode = simulation.scaling_run_name.split("__")[4]
 
         # Set the number of processes and threads
-        self.processes = simulation.processes
-        self.threads = simulation.threads
+        self.processes = simulation.processes()
+        self.threads = simulation.threads()
 
         # Set the path to the scaling file
         self.scaling_file_path = simulation.scaling_file_path
@@ -108,6 +108,6 @@ class ScalingExtractor(object):
         """
 
         # Read in the scaling data file
-        self.table = Table.read(self.scaling_file_path)
+        self.table = Table.read(self.scaling_file_path, format="ascii.commented_header")
 
 # -----------------------------------------------------------------

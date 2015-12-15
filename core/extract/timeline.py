@@ -36,7 +36,10 @@ class TimeLineExtractor(object):
 
         ## Attributes
 
+        # The list of log files created by the simulation
         self.log_files = None
+
+        # The table containing the timeline information
         self.table = None
 
     # -----------------------------------------------------------------

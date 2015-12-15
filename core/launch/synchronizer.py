@@ -198,7 +198,7 @@ class RemoteSynchronizer(Configurable):
         """
 
         # Inform the user
-        self.log.info("Clearing the synchronizer")
+        self.log.info("Clearing the synchronizer...")
 
         # Set default values for attributes
         self.simulations = []
@@ -214,7 +214,7 @@ class RemoteSynchronizer(Configurable):
         """
 
         # Inform the user
-        self.log.info("Retreiving the output of finished simulations")
+        self.log.info("Retreiving the output of finished simulations...")
 
         # Loop over the different remotes
         for remote in self.remotes:
@@ -232,7 +232,7 @@ class RemoteSynchronizer(Configurable):
         """
 
         # Inform the user
-        self.log.info("Analysing the output of retreived simulations")
+        self.log.info("Analysing the output of retreived simulations...")
 
         # Loop over the list of simulations and analyse them
         for simulation in self.simulations:
@@ -244,7 +244,7 @@ class RemoteSynchronizer(Configurable):
             if simulation.scaling_run_name is not None:
 
                 # Run the scaling analyser and clear it afterwards
-                self.scalinganalyser.run(simulation, self.analyser.timeline, self.analyser.memory)
+                self.scalinganalyser.run(simulation, self.analyser.timeline_extractor, self.analyser.memory_extractor)
                 self.scalinganalyser.clear()
 
             # Clear the analyser

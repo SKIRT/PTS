@@ -1070,7 +1070,7 @@ class SkirtRemote(Configurable):
                     # Loop over the lines in the file
                     for line in simulation_file:
 
-                        if "local ski path" in line: local_ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        if "local skifile path" in line: local_ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         if "local input directory" in line: local_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "local output directory" in line: local_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote input directory" in line: remote_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()

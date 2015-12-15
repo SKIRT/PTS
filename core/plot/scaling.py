@@ -62,7 +62,7 @@ class ScalingPlotter(object):
         self.data = defaultdict(lambda: defaultdict(lambda: Map({"processor_counts": [], "times": [], "errors": []})))
 
         # Create an attribute to store the serial runtimes
-        self.serial = defaultdict(Map({"time": None, "error": None}))
+        self.serial = defaultdict(lambda: Map({"time": None, "error": None}))
 
         # Set the output path to None initially
         self.output_path = None

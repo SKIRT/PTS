@@ -99,10 +99,6 @@ class ScalingAnalyser(Configurable):
         :return:
         """
 
-        # Set the input tables to None
-        self.timeline = None
-        self.memory = None
-
         # Set the output table to None
         self.scaling = None
 

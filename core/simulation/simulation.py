@@ -34,7 +34,7 @@ from ..tools import archive as arch
 # - list of strings and/or simulation objects: all simulations in the listed objects, as defined above
 #
 def createsimulations(source="", single=False):
-    simulations = [ ]
+    simulations = []
     sourcelist = source if isinstance(source, (types.TupleType,types.ListType)) else [ source ]
     for source in sourcelist:
         if isinstance(source, types.StringTypes):
@@ -204,7 +204,7 @@ class SkirtSimulation:
 
     ## This function returns a SkiFile object representing the parameter file for this simulation.
     def parameters(self):
-        if self._parameters==None:
+        if self._parameters is None:
             self._parameters = SkiFile(self.outfilepath("parameters.xml"))
         return self._parameters
 
@@ -214,7 +214,7 @@ class SkirtSimulation:
 
     ## This function returns a SkirtUnits object representing the default SKIRT units for this simulation.
     def units(self):
-        if self._units==None:
+        if self._units is None:
             self._units = self.parameters().units()
         return self._units
 
@@ -320,7 +320,7 @@ class SkirtSimulation:
                             return self.units().convert(segments[-2], from_unit=segments[-1], to_unit=units)
                         else:
                             return float(segments[-1])
-        return -1;
+        return -1
 
     ## This function returns the total dust mass in the simulation's configuration space, in solar masses.
     # The function retrieves the 'expected' dust mass value listed in the convergence check data file.
