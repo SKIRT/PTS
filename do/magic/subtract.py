@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.magic.extract Run galaxy, star and sky extraction on an image
+## \package do.magic.subtract Run sky subtraction on an image
 #
 
 # -----------------------------------------------------------------
@@ -18,17 +18,16 @@ import os
 import argparse
 
 # Import the relevant AstroMagic classes and modules
-from pts.magic.core import Image
-from pts.magic import Extractor
+from pts.magic.core import Image, Frame
+from pts.magic import SkySubtractor
 
 # -----------------------------------------------------------------
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
 parser.add_argument("image", type=str, help="the name of the input image")
+parser.add_argument("mask", type=str, help="the name of the mask image")
 parser.add_argument('--config', type=str, help='the name of a configuration file', default=None)
-parser.add_argument("--regions", action="store_true", help="save regions")
-parser.add_argument("--masks", action="store_true", help="save masks")
 parser.add_argument("--out", type=str, help="the name of the output directory")
 
 # Parse the command line arguments
@@ -48,18 +47,26 @@ if arguments.out is not None:
 # If no output directory is given, place the output in the current working directory
 else: arguments.output_path = os.getcwd()
 
+# -----------------------------------------------------------------
+
 # Determine the full path to the image
 image_path = os.path.abspath(arguments.image)
 
 # Open the image
 image = Image(image_path)
 
+# Determine the full path to the mask
+mask_path = os.path.abspath(arguments.mask)
+
+# Open the mask frame
+mask = Frame.from_file(mask_path)
+
 # -----------------------------------------------------------------
 
-# Create an Extractor instance and configure it according to the command-line arguments
-extractor = Extractor.from_arguments(arguments)
+# Create a SkySubtractor instance and configure it according to the command-line arguments
+subtractor = SkySubtractor.from_arguments(arguments)
 
-# Run the extractor
-extractor.run(image.frames.primary)
+# Run the subtractor
+subtractor.run(image.frames.primary, mask)
 
 # -----------------------------------------------------------------

@@ -82,7 +82,7 @@ class GalaxyExtractor(Configurable):
         # 3. If a manual region was specified, remove the corresponding galaxies
         if self.config.manual_region is not None: self.set_and_remove_manual()
 
-        # 4. Writing
+        # 4. Writing phase
         self.write()
 
     # -----------------------------------------------------------------
@@ -95,6 +95,9 @@ class GalaxyExtractor(Configurable):
 
         # Call the setup function of the base class
         super(GalaxyExtractor, self).setup()
+
+        # Inform the user
+        self.log.info("Setting up the galaxy extractor...")
 
         # Make a local reference to the passed frame
         self.frame = frame
@@ -112,7 +115,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Clearing the galaxy extractor")
+        self.log.info("Clearing the galaxy extractor...")
 
         # Clear the list of galaxies
         self.galaxies = []

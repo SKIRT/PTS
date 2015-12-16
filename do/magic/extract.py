@@ -48,6 +48,8 @@ if arguments.out is not None:
 # If no output directory is given, place the output in the current working directory
 else: arguments.output_path = os.getcwd()
 
+# -----------------------------------------------------------------
+
 # Determine the full path to the image
 image_path = os.path.abspath(arguments.image)
 

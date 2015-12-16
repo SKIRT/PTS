@@ -5,11 +5,16 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
+## \package pts.modeling.core.sedfitter Contains the SEDFitter class
+
+# -----------------------------------------------------------------
+
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ...core.basics import Configurable
+from ...core.basics.configurable import Configurable
+from ...core.launch.remotelauncher import SkirtRemoteLauncher
 
 # -----------------------------------------------------------------
 

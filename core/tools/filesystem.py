@@ -19,6 +19,24 @@ import os
 
 # -----------------------------------------------------------------
 
+def create_directory(path, recursive=False):
+
+    """
+    This function ...
+    :param path:
+    :param recursive:
+    :return:
+    """
+
+    # Check whether the directory does not exist yet
+    if not os.path.isdir(path):
+
+        # Create the directory, recursively or not
+        if recursive: os.makedirs(path)
+        else: os.mkdir(path)
+
+# -----------------------------------------------------------------
+
 def create_directories(paths, recursive=False):
     
     """
@@ -26,13 +44,6 @@ def create_directories(paths, recursive=False):
     """
     
     # Loop over the different paths in the list
-    for path in paths:
-        
-        # Check whether the directory does not exist yet
-        if not os.path.isdir(path):
-            
-            # Create the directory, recursively or not
-            if recursive: os.makedirs(path)
-            else: os.mkdir(path)
+    for path in paths: create_directory(path)
 
 # -----------------------------------------------------------------

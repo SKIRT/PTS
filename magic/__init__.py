@@ -5,9 +5,9 @@
 # *****************************************************************
 
 # Import classes to make them available at the level of this subpackage
-from .extractor import Extractor
-from .galaxyextraction import GalaxyExtractor
-from .starextraction import StarExtractor
+from .extraction import Extractor
+#from .galaxyextraction import GalaxyExtractor
+#from .starextraction import StarExtractor
 from .skysubtraction import SkySubtractor
-from .sextractor import SExtractor
-from .wcsfinder import WCSFinder
+#from .sextractor import SExtractor
+#from .wcsfinder import WCSFinder

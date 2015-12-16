@@ -44,15 +44,8 @@ class SkySubtractor(Configurable):
 
         ## Attributes
 
-        # Set the galaxy and star mask to None initialy
-        self.galaxy_mask = None
-        self.star_mask = None
-
-        # Set the extra mask to None initially
-        self.extra_mask = None
-
-        # Set the clipped mask to None initially
-        self.clipped_mask = None
+        # The galaxy and star mask
+        self.mask = None
 
         # Set the frame to None initially
         self.frame = None
@@ -60,12 +53,29 @@ class SkySubtractor(Configurable):
         # Set the sky frame to None initially
         self.sky = None
 
-        # Set the logger to None initially
-        self.log = None
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_arguments(cls, arguments):
+
+        """
+        This function ...
+        :param arguments:
+        :return:
+        """
+
+        # Create a new SkySubtractor instance
+        subtractor = cls(arguments.config)
+
+        # Set the output path
+        subtractor.config.output_path = arguments.output_path
+
+        # Return the new instance
+        return subtractor
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, galaxyextractor, starextractor=None):
+    def run(self, frame, mask):
 
         """
         This function ...
@@ -73,16 +83,16 @@ class SkySubtractor(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup(frame, galaxyextractor, starextractor)
+        self.setup(frame, mask)
 
-        # Set the extra mask
+        # 2. Set the extra mask
         if self.config.extra_region is not None: self.set_extra_mask()
 
-        # Perform sigma-clipping
+        # 3. Perform sigma-clipping
         if self.config.sigma_clip_mask: self.sigma_clip_mask()
 
-        # If requested, estimate the sky
-        if self.config.estimate: self.estimate()
+        # Estimate the sky
+        self.estimate()
 
         # If requested, subtract the sky
         if self.config.subtract: self.subtract()
@@ -92,7 +102,7 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, galaxyextractor, starextractor=None):
+    def setup(self, frame, mask):
 
         """
         This function ...
@@ -105,11 +115,8 @@ class SkySubtractor(Configurable):
         # Make a local reference to the frame
         self.frame = frame
 
-        # Set the galaxy mask
-        self.galaxy_mask = galaxyextractor.mask
-
-        # Set the star mask
-        if starextractor is not None: self.star_mask = starextractor.mask
+        # Set the mask
+        self.mask = mask
 
     # -----------------------------------------------------------------
 
@@ -142,7 +149,7 @@ class SkySubtractor(Configurable):
         log.info("Creating a sigma-clipped mask for the sky")
 
         # Create the sigma-clipped mask
-        self.clipped_mask = statistics.sigma_clip_mask(self.frame, self.config.sigma_clipping.sigma_level, self.mask)
+        #self.clipped_mask = statistics.sigma_clip_mask(self.frame, self.config.sigma_clipping.sigma_level, self.mask)
 
     # -----------------------------------------------------------------
 
@@ -154,7 +161,6 @@ class SkySubtractor(Configurable):
         """
 
         # Plot the frame with the sky subtracted
-        #plotting.plot_box(np.ma.masked_array(self, mask=self.mask))
         plotting.plot_difference(self.frame, self.sky)
 
     # -----------------------------------------------------------------
@@ -176,8 +182,8 @@ class SkySubtractor(Configurable):
         # Create a figure
         fig = plt.figure()
 
-        min = self.mean - 4.0*self.stddev
-        max = self.mean + 4.0*self.stddev
+        min = self.mean - 4.0 * self.stddev
+        max = self.mean + 4.0 * self.stddev
 
         # Plot the histograms
         #b: blue, g: green, r: red, c: cyan, m: magenta, y: yellow, k: black, w: white
@@ -192,28 +198,6 @@ class SkySubtractor(Configurable):
         # Save the figure
         plt.savefig(self.config.writing.histogram_path, bbox_inches='tight', pad_inches=0.25)
         plt.close()
-
-    # -----------------------------------------------------------------
-
-    @property
-    def mask(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create a total mask consisting only of the galaxy mask initially
-        mask = self.galaxy_mask
-
-        # Check whether a star mask is present, if so add it to the total mask
-        if self.star_mask is not None: mask += self.star_mask
-
-        # Check whether an extra mask is present, if so add it to the total mask
-        if self.extra_mask is not None: mask += self.extra_mask
-
-        # Return the total mask
-        return mask
 
     # -----------------------------------------------------------------
 
@@ -306,7 +290,7 @@ class SkySubtractor(Configurable):
 
         # Load the region and create a mask from it
         extra_region = Region.from_file(self.config.extra_region, self.frame.wcs)
-        self.extra_mask = Mask.from_region(extra_region, self.frame.shape)
+        #self.extra_mask = Mask.from_region(extra_region, self.frame.shape)
 
     # -----------------------------------------------------------------
 
@@ -384,10 +368,8 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Clearing the sky extractor")
 
-        # Set the masks to None
-        self.galaxy_mask = None
-        self.star_mask = None
-        self.clipped_mask = None
+        # Set the galaxy and star mask to None
+        self.mask = None
 
         # Set the frames to None
         self.frame = None

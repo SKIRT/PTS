@@ -104,7 +104,7 @@ class StarExtractor(Configurable):
         # 5. If specified, remove manually selected stars
         if self.config.manual_region is not None: self.set_and_remove_manual()
 
-        # 6. Writing
+        # 6. Writing phase
         self.write()
 
     # -----------------------------------------------------------------
