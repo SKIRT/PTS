@@ -65,6 +65,9 @@ class Extractor(Configurable):
         # 4. Run the star extraction
         self.extract_stars()
 
+        # 5. Write the mask
+        self.write()
+
     # -----------------------------------------------------------------
     
     @classmethod
@@ -163,5 +166,20 @@ class Extractor(Configurable):
 
         # Run the star extractor
         self.star_extractor.run(self.frame, self.galaxy_extractor)
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set the galaxy mask
+        galaxy_mask = self.galaxy_extractor.mask
+
+        # Set the star mask
+        star_mask = self.star_extractor.mask
 
 # -----------------------------------------------------------------

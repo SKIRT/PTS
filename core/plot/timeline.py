@@ -19,9 +19,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Import astronomical modules
-from astropy.table import Table
-from astropy.io import ascii
+# Import the relevant PTS classes and modules
+from .plotter import Plotter
 
 # -----------------------------------------------------------------
 
@@ -38,7 +37,7 @@ colors = {"setup": 'r',         # setup -> red
 
 # -----------------------------------------------------------------
 
-class TimeLinePlotter(object):
+class TimeLinePlotter(Plotter):
 
     """
     An instance of the TimeLinePlotter class is used to create timeline diagrams for the different simulation phases
@@ -51,41 +50,43 @@ class TimeLinePlotter(object):
         :return:
         """
 
-        ## Attributes
-
-        # The path to the output directory
-        self.output_path = None
-
-        # The table containing the timeline information
-        self.table = None
+        # Call the constructor of the base class
+        super(TimeLinePlotter, self).__init__()
 
     # -----------------------------------------------------------------
 
-    def run(self, input, output_path):
+    @staticmethod
+    def fill_values():
 
         """
-        This function should be called to invoke the plotting routine, which will create a timeline plot for each
-        file that is found with valid timeline data
+        This function ...
         :return:
         """
 
-        # If the input is a Table object
-        if isinstance(input, Table): self.table = input
+        return ('--', '0', 'Simulation phase')
 
-        # If the input is a string
-        elif isinstance(input, basestring):
+    # -----------------------------------------------------------------
 
-            fill_values = ('--', '0', 'Simulation phase')
-            self.table = ascii.read(input, fill_values=fill_values)
+    @staticmethod
+    def default_input():
 
-        # Invalid input
-        else: raise ValueError("Input must be either an Astropy Table object or a filename (e.g. memory.dat)")
+        """
+        This function ...
+        :return:
+        """
 
-        # Set the path to the output directory
-        self.output_path = output_path
+        return "timeline.dat"
 
-        # Create the plots
-        self.plot()
+    # -----------------------------------------------------------------
+
+    def prepare_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 

@@ -27,6 +27,13 @@ class Configurable(object):
 
     def __init__(self, config, subpackage):
 
+        """
+        The constructor ...
+        :param config:
+        :param subpackage:
+        :return:
+        """
+
         # Set the configuration object
         self.config = configuration.set(subpackage, self.name, config)
         
@@ -55,6 +62,8 @@ class Configurable(object):
         :return:
         """
 
-        return type(self).__name__.lower()
+        name = type(self).__name__.lower()
+        if "plotter" in name: return "plotter"
+        else: return name
 
 # -----------------------------------------------------------------

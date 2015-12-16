@@ -5,10 +5,13 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.plotscaling The class ScalingPlotter in this module makes plots of the results SKIRT
+## \package pts.core.plot.scaling The class ScalingPlotter in this module makes plots of the results SKIRT
 #  scaling benchmark tests performed with the scalingtest module.
 
 # -----------------------------------------------------------------
+
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
@@ -23,7 +26,7 @@ from collections import defaultdict
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
-from ..tools import logging
+from .plotter import Plotter
 from ..basics.quantity import Quantity
 from ..basics.map import Map
 from .timeline import create_timeline_plot
@@ -40,7 +43,7 @@ phase_labels = {"total": "Total runtime", "setup": "Setup time", "stellar": "Ste
 
 # -----------------------------------------------------------------
 
-class ScalingPlotter(object):
+class ScalingPlotter(Plotter):
 
     """
     An instance of the ScalingPlotter is used to create plots of the runtimes, speedups and efficiencies as a function
@@ -54,49 +57,37 @@ class ScalingPlotter(object):
         :return:
         """
 
-        # Set the table to None initially
-        self.table = None
+        # Call the constructor of the base class
+        super(ScalingPlotter, self).__init__()
 
-        # Initialize a data structure to contain the scaling information in plottable format
-        self.data = defaultdict(lambda: defaultdict(lambda: Map({"processor_counts": [], "times": [], "errors": []})))
+        ## Attributes
 
-        # Create an attribute to store the serial runtimes
-        self.serial = defaultdict(lambda: Map({"time": None, "error": None}))
-
-        # Set the output path to None initially
-        self.output_path = None
-
-        # Create a logger
-        self.log = logging.new_log("scalingplotter", "INFO")
+        # A data structure to store the serial runtimes
+        self.serial = None
 
     # -----------------------------------------------------------------
 
-    def run(self, input, output_path):
+    @staticmethod
+    def fill_values():
 
         """
         This function ...
         :return:
-        :param input:
-        :param output_path:
         """
 
-        # If the input is a Table object
-        if isinstance(input, Table): self.table = input
+        return None
 
-        # If the input is a string
-        elif isinstance(input, basestring): self.table = Table.read(input, format="ascii.commented_header")
+    # -----------------------------------------------------------------
 
-        # Invalid input
-        else: raise ValueError("Input must be either an Astropy Table object or a filename (e.g. memory.dat)")
+    @staticmethod
+    def default_input():
 
-        # Set the path to the output directory
-        self.output_path = output_path
+        """
+        This function ...
+        :return:
+        """
 
-        # Prepare the input data into plottable format
-        self.prepare_data()
-
-        # Make the plots
-        self.plot()
+        return "scaling.dat"
 
     # -----------------------------------------------------------------
 
@@ -107,6 +98,15 @@ class ScalingPlotter(object):
         :return:
         """
 
+        # Inform the user
+        self.log.info("Preparing the input data into plottable format...")
+
+        # Initialize a data structure to contain the scaling information in plottable format
+        self.data = defaultdict(lambda: defaultdict(lambda: Map({"processor_counts": [], "times": [], "errors": []})))
+
+        # Create an attribute to store the serial runtimes
+        self.serial = defaultdict(lambda: Map({"time": None, "error": None}))
+
         sigma_level = 1.0
 
         # Create a dictionary to store the runtimes for the different simulation phases of the simulations
@@ -114,7 +114,7 @@ class ScalingPlotter(object):
         serial_times = defaultdict(list)
 
         # Keep track of the different processor counts encountered for the different parallelization modes
-        modes = defaultdict(list)
+        modes = defaultdict(set)
 
         # Create dictionaries to contain the data before it is averaged over the different simulations
         total_times = defaultdict(lambda: defaultdict(list))
@@ -152,7 +152,7 @@ class ScalingPlotter(object):
                 serial_times["communication"].append(self.table["Communication time"][i])
 
             # Add the processor count for this parallelization mode
-            modes[mode].append(processors)
+            modes[mode].add(processors)
 
             # Fill in the runtimes and memory usage at the appropriate place in the dictionaries
             total_times[mode][processors].append(self.table["Total time"][i])
@@ -235,6 +235,9 @@ class ScalingPlotter(object):
         This function ...
         :return:
         """
+
+        # Inform the user
+        self.log.info("Making the plots...")
 
         # Plot the runtimes, speedups and efficiencies for the total simulation
         self.plot_total()
@@ -717,8 +720,7 @@ class ScalingPlotter(object):
                     total += communication_time
                     data[6][2].append(total)
 
-            print("data=", data)
-            print("nprocs_list=", nprocs_list)
+            #print("nprocs_list=", nprocs_list)
 
             # Create the plot
             create_timeline_plot(data, plot_file_path, nprocs_list, percentages=True, totals=True, unordered=True, numberofproc=True, cpu=True)
