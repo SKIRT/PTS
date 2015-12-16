@@ -24,6 +24,12 @@ from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
+full_phase_names = {"stellar": "stellar emission phase",
+                    "spectra": "calculation of dust emission spectra",
+                    "dust": "dust emission phase"}
+
+# -----------------------------------------------------------------
+
 class ProgressPlotter(Plotter):
     
     """
@@ -72,6 +78,9 @@ class ProgressPlotter(Plotter):
         :return:
         """
 
+        # Inform the user
+        self.log.info("Preparing the input data into plottable format...")
+
         # Get the number of processes
         ranks = np.unique(self.table["Process rank"])
 
@@ -110,6 +119,9 @@ class ProgressPlotter(Plotter):
         :return:
         """
 
+        # Inform the user
+        self.log.info("Making the plots...")
+
         # Loop over the different phases in the data structure
         for phase in self.data:
 
@@ -117,7 +129,7 @@ class ProgressPlotter(Plotter):
             plot_path = os.path.join(self.output_path, "progress_" + phase + ".pdf")
 
             # Determine the title for the plot
-            title = phase + " progress"
+            title = "Progress of " + full_phase_names[phase]
 
             # Create the plot for this simulation phase
             create_progress_plot(self.data[phase], plot_path, title)

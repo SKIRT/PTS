@@ -65,6 +65,9 @@ class ScalingPlotter(Plotter):
         # A data structure to store the serial runtimes
         self.serial = None
 
+        # The name of the system used for the scaling test
+        self.system_name = None
+
     # -----------------------------------------------------------------
 
     @staticmethod
@@ -215,6 +218,9 @@ class ScalingPlotter(Plotter):
                 self.data["memory"][mode].times.append(np.mean(memory[mode][processors]))
                 self.data["memory"][mode].errors.append(sigma_level * np.std(memory[mode][processors]))
 
+        # Determine the name of the system used for the scaling test
+        self.system_name = os.path.basename(self.output_path)
+
     # -----------------------------------------------------------------
 
     @property
@@ -339,10 +345,6 @@ class ScalingPlotter(Plotter):
             times = self.data[phase][mode].times
             errors = self.data[phase][mode].errors
 
-            #print("processor_counts=", processor_counts)
-            #print("times=", times)
-            #print("errors=", errors)
-
             # Plot the data points for this mode
             plt.errorbar(processor_counts, times, errors, marker='.', label=mode)
 
@@ -366,8 +368,11 @@ class ScalingPlotter(Plotter):
 
         # Add axis labels and a legend
         plt.xlabel("Number of processors $n$", fontsize='large')
-        plt.ylabel(phase_labels[phase] + " $T$ (s)", fontsize='large')
+        plt.ylabel(phase_labels[phase] + " T (s)", fontsize='large')
         plt.legend(title="Modes")
+
+        # Set the plot title
+        plt.title("Scaling of the " + phase_labels[phase].lower() + " for " + self.system_name)
 
         # Save the figure
         plt.savefig(file_path)
@@ -400,7 +405,6 @@ class ScalingPlotter(Plotter):
         parameters = dict()
 
         # Get the serial runtime (and error) for this phase (create a Quantity object)
-        print("phase=", phase)
         serial_time = self.serial[phase].time
         serial_error = self.serial[phase].error
         serial = Quantity(serial_time, serial_error)
@@ -420,9 +424,6 @@ class ScalingPlotter(Plotter):
 
                 # Create a quantity for the current runtime
                 time = Quantity(times[i], errors[i])
-
-                print("serial=", serial.value, serial.error)
-                print("time=", time.value, time.error)
 
                 # Calculate the speedup based on the current runtime and the serial runtime
                 speedup = serial / time
@@ -532,6 +533,9 @@ class ScalingPlotter(Plotter):
         plt.ylabel(phase_labels[phase] + " speedup $S$", fontsize='large')
         plt.legend(title="Modes")
 
+        # Set the plot title
+        plt.title("Speedup of the " + phase_labels[phase].lower() + " for " + self.system_name)
+
         # Save the figure
         plt.savefig(file_path)
         plt.close()
@@ -617,6 +621,9 @@ class ScalingPlotter(Plotter):
         plt.xlabel("Number of processors $n$", fontsize='large')
         plt.ylabel(phase_labels[phase] + " efficiency $\epsilon$", fontsize='large')
         plt.legend(title="Parallelization modes")
+
+        # Set the plot title
+        plt.title("Efficiency of the " + phase_labels[phase].lower() + " for " + self.system_name)
 
         # Save the figure
         plt.savefig(file_path)
@@ -720,10 +727,11 @@ class ScalingPlotter(Plotter):
                     total += communication_time
                     data[6][2].append(total)
 
-            #print("nprocs_list=", nprocs_list)
+            # Set the plot title
+            title = "Scaling timeline for " + self.system_name
 
             # Create the plot
-            create_timeline_plot(data, plot_file_path, nprocs_list, percentages=True, totals=True, unordered=True, numberofproc=True, cpu=True)
+            create_timeline_plot(data, plot_file_path, nprocs_list, percentages=True, totals=True, unordered=True, numberofproc=True, cpu=True, title=title)
 
     # -----------------------------------------------------------------
 
@@ -780,6 +788,9 @@ class ScalingPlotter(Plotter):
         plt.xlabel("Number of processors $n$", fontsize='large')
         plt.ylabel("Memory usage (GB)", fontsize='large')
         plt.legend(title="Modes")
+
+        # Set the plot title
+        plt.title("Memory scaling for " + self.system_name)
 
         # Save the figure
         plt.savefig(file_path)

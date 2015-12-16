@@ -36,6 +36,7 @@ class ProgressExtractor(object):
         ## Attributes
 
         self.log_files = None
+        self.staggered = None
         self.table = None
 
     # -----------------------------------------------------------------

@@ -32,8 +32,17 @@ colors = {"setup": 'r',         # setup -> red
           "dust": 'c',          # dust emission -> cyan
           "write": 'y',         # writing -> yellow
           "wait": 'b',          # waiting -> blue
-          "other": 'k',         # other -> black
-          None: 'k'}            # None -> black
+          "other": 'k'}         # other -> black
+
+# Define the names identifying the different phases in the plot
+phase_label_names = {"setup": "setup",
+                     "stellar": "stellar",
+                     "comm": "communication",
+                     "spectra": "spectra",
+                     "dust": "dust",
+                     "write": "write",
+                     "wait": "waiting",
+                     "other": "other"}
 
 # -----------------------------------------------------------------
 
@@ -52,6 +61,11 @@ class TimeLinePlotter(Plotter):
 
         # Call the constructor of the base class
         super(TimeLinePlotter, self).__init__()
+
+        ## Attributes
+
+        # A list of the process ranks
+        self.ranks = None
 
     # -----------------------------------------------------------------
 
@@ -86,7 +100,33 @@ class TimeLinePlotter(Plotter):
         :return:
         """
 
-        pass
+        # Get a list of the different process ranks
+        self.ranks = np.unique(self.table["Process rank"])
+
+        # Initialize the data structure to contain the start times and endtimes for the different processes,
+        # indexed on the phase
+        self.data = []
+
+        # Iterate over the different entries in the timeline table
+        for i in range(len(self.table)):
+
+            if self.table["Process rank"][i] == 0:
+
+                phase = self.table["Simulation phase"][i]
+
+                # Few special cases where we want the phase indicator to just say 'other'
+                if phase is None or phase == "start" or isinstance(phase, np.ma.core.MaskedConstant): phase = "other"
+
+                # Add the data
+                self.data.append([phase, [], []])
+                self.data[len(self.data) - 1][1].append(self.table["Start time"][i])
+                self.data[len(self.data) - 1][2].append(self.table["End time"][i])
+
+            else:
+
+                nphases = len(self.data)
+                self.data[i % nphases][1].append(self.table["Start time"][i])
+                self.data[i % nphases][2].append(self.table["End time"][i])
 
     # -----------------------------------------------------------------
 
@@ -98,39 +138,16 @@ class TimeLinePlotter(Plotter):
         :return:
         """
 
-        # Get a list of the different process ranks
-        ranks = np.unique(self.table["Process rank"])
-
-        # Initialize a data structure to contain the start times and endtimes for the different processes,
-        # indexed on the phase
-        data = []
-
-        # Iterate over the different entries in the timeline table
-        for i in range(len(self.table)):
-
-            if self.table["Process rank"][i] == 0:
-
-                phase = self.table["Simulation phase"][i]
-                phase = "other" if isinstance(phase, np.ma.core.MaskedConstant) else phase
-                if phase == "start": phase = "other"
-
-                data.append([phase, [], []])
-                data[len(data) - 1][1].append(self.table["Start time"][i])
-                data[len(data) - 1][2].append(self.table["End time"][i])
-
-            else:
-
-                nphases = len(data)
-                data[i % nphases][1].append(self.table["Start time"][i])
-                data[i % nphases][2].append(self.table["End time"][i])
+        # Inform the user
+        self.log.info("Making the plots...")
 
         # Create the plot
         plot_path = os.path.join(self.output_path, "timeline.pdf")
-        create_timeline_plot(data, plot_path, ranks)
+        create_timeline_plot(self.data, plot_path, self.ranks)
 
 # -----------------------------------------------------------------
 
-def create_timeline_plot(data, path, procranks, figsize=(12, 8), percentages=False, totals=False, unordered=False, numberofproc=False, cpu=False):
+def create_timeline_plot(data, path, procranks, figsize=(12, 8), percentages=False, totals=False, unordered=False, numberofproc=False, cpu=False, title=None):
 
     """
     This function actually plots the timeline based on a data structure containing the starttimes and endtimes
@@ -186,7 +203,7 @@ def create_timeline_plot(data, path, procranks, figsize=(12, 8), percentages=Fal
 
             unique_phases.append(phase)
             legend_entries.append(patch_handle)
-            legend_names.append(phase)
+            legend_names.append(phase_label_names[phase])
 
     if percentages:
 
@@ -246,10 +263,11 @@ def create_timeline_plot(data, path, procranks, figsize=(12, 8), percentages=Fal
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
     # Set the plot title
-    plt.title("Timeline of the different simulation phases")
+    if title is None: plt.title("Timeline of the different simulation phases")
+    else: plt.title(title)
 
     # Put a legend below current axis
-    ax.legend(legend_entries, legend_names, loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False, ncol=4, prop={'size':12})
+    ax.legend(legend_entries, legend_names, loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False, ncol=4, prop={'size': 12})
 
     # Save the figure
     plt.savefig(path, bbox_inches="tight", pad_inches=0.40)

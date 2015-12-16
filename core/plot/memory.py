@@ -79,6 +79,9 @@ class MemoryPlotter(Plotter):
         :return:
         """
 
+        # Inform the user
+        self.log.info("Preparing the input data into plottable format...")
+
         # Get the number of processes
         ranks = np.unique(self.table["Process rank"])
 
@@ -150,6 +153,9 @@ class MemoryPlotter(Plotter):
         This function ...
         :return:
         """
+
+        # Inform the user
+        self.log.info("Making the plots...")
 
         # Make a plot of the memory usage as a function of time
         self.plot_memory()
