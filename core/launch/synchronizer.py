@@ -91,7 +91,7 @@ class RemoteSynchronizer(Configurable):
         # Set the remote name and the delete dictionary
         if hasattr(arguments, "remote"): synchronizer.config.remote = arguments.remote
         if hasattr(arguments, "ids"): synchronizer.config.ids = arguments.ids
-        if hasattr(arguments, "statuses"): synchronizer.config.statuses = arguments.status
+        if hasattr(arguments, "status"): synchronizer.config.statuses = arguments.status
         if hasattr(arguments, "relaunch"): synchronizer.config.relaunch = arguments.relaunch
 
         # Return the new synchronizer
@@ -299,8 +299,8 @@ class RemoteSynchronizer(Configurable):
                 # Finished, but not yet retreived simulation
                 if simulation_status == "finished":
 
-                    if self.config.ids is not None and entry.id in self.config.ids[remote.config.host_id]\
-                            or self.config.statuses is not None and "finished" in self.config.statuses:
+                    if (self.config.ids is not None and entry.id in self.config.ids[remote.config.host_id])\
+                            or (self.config.statuses is not None and "finished" in self.config.statuses):
 
                         self.log.warning("The simulation with ID " + str(entry.id) + " has finished, but has not been"
                                          " retreived yet. Deleting it now would mean all simulation output is lost. Run "
@@ -312,7 +312,7 @@ class RemoteSynchronizer(Configurable):
                 elif simulation_status == "retreived":
 
                     if (self.config.ids is not None and entry.id in self.config.ids[remote.config.host_id])\
-                            or self.config.statuses is not None and "retreived" in self.config.statuses:
+                            or (self.config.statuses is not None and "retreived" in self.config.statuses):
 
                         tag = "[ X ]"
 
@@ -324,8 +324,8 @@ class RemoteSynchronizer(Configurable):
                 # Running simulation
                 elif simulation_status == "running":
 
-                    if self.config.ids is not None and entry.id in self.config.ids[remote.config.host_id]\
-                            or self.config.statuses is not None and "running" in self.config.statuses:
+                    if (self.config.ids is not None and entry.id in self.config.ids[remote.config.host_id])\
+                            or (self.config.statuses is not None and "running" in self.config.statuses):
 
                         if remote.host.scheduler:
 
@@ -352,7 +352,7 @@ class RemoteSynchronizer(Configurable):
                 elif simulation_status == "crashed":
 
                     if (self.config.ids is not None and entry.id in self.config.ids[remote.config.host_id])\
-                            or self.config.statuses is not None and "crashed" in self.config.statuses:
+                            or (self.config.statuses is not None and "crashed" in self.config.statuses):
 
                         tag = "[ X ]"
 
@@ -370,7 +370,7 @@ class RemoteSynchronizer(Configurable):
                 elif simulation_status == "cancelled":
 
                     if (self.config.ids is not None and entry.id in self.config.ids[remote.config.host_id])\
-                            or self.config.statuses is not None and "cancelled" in self.config.statuses:
+                            or (self.config.statuses is not None and "cancelled" in self.config.statuses):
 
                         tag = "[ X ]"
 
@@ -388,7 +388,7 @@ class RemoteSynchronizer(Configurable):
                 elif simulation_status == "aborted":
 
                     if (self.config.ids is not None and entry.id in self.config.ids[remote.config.host_id])\
-                            or self.config.statuses is not None and "aborted" in self.config.statuses:
+                            or (self.config.statuses is not None and "aborted" in self.config.statuses):
 
                         tag = "[ X ]"
 
@@ -405,8 +405,8 @@ class RemoteSynchronizer(Configurable):
                 # Queued simulation
                 elif simulation_status == "queued":
 
-                    if self.config.ids is not None and entry.id in self.config.ids[remote.config.host_id]\
-                            or self.config.statuses is not None and "queued" in self.config.statuses:
+                    if (self.config.ids is not None and entry.id in self.config.ids[remote.config.host_id])\
+                            or (self.config.statuses is not None and "queued" in self.config.statuses):
 
                         if remote.host.scheduler:
 
