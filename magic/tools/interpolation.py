@@ -4,7 +4,7 @@
 # **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
-##  This module is used for interpolating masked areas in an image
+## \package pts.magic.tools.interpolation This module is used for interpolating masked areas in an image.
 #   Parts of it are adapted from the "lib.pyx" module, which can be found at
 #   https://github.com/gasagna/openpiv-python/blob/master/openpiv/src/lib.pyx
 #   written by Davide Lasagna, with slight changes applied described at

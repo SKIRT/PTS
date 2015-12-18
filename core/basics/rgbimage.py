@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.rgbimage Managing a color image in various representations
+## \package pts.core.basics.rgbimage Managing a color image in various representations
 #
 # An instance of the RGBImage class in this module manages a color image in one or more representations.
 

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.clear Clear retreived, crashed, cancelled and aborted simulations
+## \package pts.do.core.clear Clear retreived, crashed, cancelled and aborted simulations
 
 # -----------------------------------------------------------------
 

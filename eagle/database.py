@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package eagle.database Functions to help create, update and query the SKIRT-runs database.
+## \package pts.eagle.database Functions to help create, update and query the SKIRT-runs database.
 #
 # This module describes the SKIRT-runs database, documents how to access it from production code, and
 # defines a class to help manage, update and query the database. Some of the functions are intended

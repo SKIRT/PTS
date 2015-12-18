@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.filter Working with wavelength filters (or bands).
+## \package pts.core.basics.filter Working with wavelength filters (or bands).
 #
 # An instance of the Filter class in this module represents a particular wavelength band, including its response or
 # transmission curve, and allows integrating a given spectrum over the band. A filter instance can be constructed from

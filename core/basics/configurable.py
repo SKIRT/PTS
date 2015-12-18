@@ -5,9 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-"""
-This module ...
-"""
+## \package pts.core.basics.configurable Contains the Configurable class, a class for representing classes that can be
+#  configured with a configuration file.
 
 # -----------------------------------------------------------------
 

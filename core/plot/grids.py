@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package plotting.grids Plot a dust grid wireframe to PDF
+## \package pts.core.plot.grids Plot a dust grid wireframe to PDF
 #
 # The function in this module creates a PDF plot from a sequence of grid coordinates
 # provided as an input text file, directly creating a PDF file (i.e. without using matplotlib).

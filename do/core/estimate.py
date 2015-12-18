@@ -5,8 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.memory Estimate the resource requirements for a certain ski file
-#
+## \package pts.do.core.estimate Estimate the resource requirements for a certain ski file
 
 # -----------------------------------------------------------------
 

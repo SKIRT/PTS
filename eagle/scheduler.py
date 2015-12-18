@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package eagle.scheduler Functions to schedule EAGLE SKIRT jobs from the SKIRT-run database
+## \package pts.eagle.scheduler Functions to schedule EAGLE SKIRT jobs from the SKIRT-run database
 #
 # This module offers some functions to schedule EAGLE SKIRT jobs according to the specifications defined in
 # the SKIRT-run database.

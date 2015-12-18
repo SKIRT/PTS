@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.scaling Test the scaling of SKIRT on a particular system
+## \package pts.do.core.scaling Test the scaling of SKIRT on a particular system
 #
 
 # -----------------------------------------------------------------

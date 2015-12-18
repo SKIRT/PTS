@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.plotpolarization Plot polarization maps for the output of a SKIRT simulation.
+## \package pts.do.core.plotpolarization Plot polarization maps for the output of a SKIRT simulation.
 #
 # This script plots a polarization map based on the SKIRT \c prefix_instr_stokes*.fits output files for a particular
 # instrument, placing a PDF file with the name \c prefix_instr_stokes.pdf next to the original set of files.

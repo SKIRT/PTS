@@ -5,8 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.modelgalaxy Model a galaxy with Astromagic and SKIRT
-#
+## \package pts.do.modeling.modelgalaxy Model a galaxy with Astromagic and SKIRT
 
 # -----------------------------------------------------------------
 

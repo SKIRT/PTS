@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.polyfitmovie Create a movie of the progress during a polychromatic FitSKIRT fit.
+## \package pts.do.core.polyfitmovie Create a movie of the progress during a polychromatic FitSKIRT fit.
 #
 # This script creates a movie of the progress during a polychromatic FitSKIRT fit.
 # The in/out filenames and other parameters are hardcoded in the script.

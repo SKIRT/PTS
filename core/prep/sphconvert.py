@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.sphconvert Converting SPH output data to SKIRT input format.
+## \package pts.core.prep.sphconvert Converting SPH output data to SKIRT input format.
 #
 # The functions in this module allow converting SPH data files in text column
 # format to the SKIRT input format. Currently supported are:

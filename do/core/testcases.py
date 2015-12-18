@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.testcases Perform all or part of the standard SKIRT test suite.
+## \package pts.do.core.testcases Perform all or part of the standard SKIRT test suite.
 #
 # This script performs all or part of the standard SKIRT test suite in directory \c ~/SKIRTtests using the
 # SKIRT executable in directory \c ~/SKIRT/release.

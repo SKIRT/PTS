@@ -5,9 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-"""
-This module ...
-"""
+## \package pts.core.simulation.logfile Contains the LogFile class, providing a convenient way of extracting
+#  information from a simulation's log file.
 
 # -----------------------------------------------------------------
 

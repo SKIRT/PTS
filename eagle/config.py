@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package eagle.config Configuration settings and paths for the eagle package.
+## \package pts.eagle.config Configuration settings and paths for the eagle package.
 #
 # This module defines configuration settings and paths for the eagle package on various computing systems.
 # The settings for each system are bundled in a dictionary with an appropriate name. In addition, the settings

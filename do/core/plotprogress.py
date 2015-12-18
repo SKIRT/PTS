@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.plotprogress Plot progress for the various phases of a SKIRT simulation.
+## \package pts.do.core.plotprogress Plot progress for the various phases of a SKIRT simulation.
 #
 # This script plots the progress in function of time for certain phases of a SKIRT simulation, based on the log
 # messages. A seperate PDF plot is created for each of the following phases, if present in the simulation:

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.eagle_update Update a field for selected records in the EAGLE SKIRT-runs database.
+## \package pts.do.eagle.update Update a field for selected records in the EAGLE SKIRT-runs database.
 #
 # This script updates the value of a field for selected records in the EAGLE SKIRT-runs database.
 # The script expects exactly three command-line arguments specifying respectively:

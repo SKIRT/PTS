@@ -5,8 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.depends List the dependencies for a certain PTS do script
-#
+## \package pts.do.core.depends List the dependencies for a certain PTS do script.
 
 # -----------------------------------------------------------------
 

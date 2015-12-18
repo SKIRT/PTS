@@ -4,6 +4,8 @@
 # **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
+## \package pts.magic.tools.units Provides functions for dealing with units.
+
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 

@@ -5,9 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.plottimeline Plot a timeline of a simulation, for the different parallel processes, from
-#  a text file containing the timeline information extracted from the simulation's log files.
-#
+## \package pts.core.plot.timeline Contains the TimeLinePlotter class, which is used to create timeline diagrams
+#  of the different phases of a SKIRT simulation.
 
 # -----------------------------------------------------------------
 

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package performance.resources Estimate the resources needed for a particular simulation
+## \package pts.core.test.resources Estimate the resources needed for a particular simulation.
 
 # -----------------------------------------------------------------
 

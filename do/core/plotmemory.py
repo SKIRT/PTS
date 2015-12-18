@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.plotmemory Make plots of the memory usage for a SKIRT simulation
+## \package pts.do.core.plotmemory Make plots of the memory usage for a SKIRT simulation
 #
 
 # -----------------------------------------------------------------

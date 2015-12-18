@@ -5,9 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.scalingtest Performing a scaling test for SKIRT
-#
-# An instance of the ScalingTest class represents a SKIRT scaling benchmark test.
+## \package pts.core.test.scaling Contains the ScalingTest class, used for launching a SKIRT scaling test for a
+#  particular ski file.
 
 # -----------------------------------------------------------------
 

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.eagle_schedule Schedule EAGLE SKIRT jobs from the SKIRT-runs database
+## \package pts.do.eagle.schedule Schedule EAGLE SKIRT jobs from the SKIRT-runs database
 #
 # This script schedules EAGLE SKIRT jobs for selected records in the SKIRT-runs database. If the script is executed
 # on the Cosma cluster, it creates and submits actual batch jobs to the queuing system to perform the runs.

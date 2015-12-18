@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.upgradeskifiles Upgrade ski files to the latest format version.
+## \package pts.do.core.upgradeskifiles Upgrade ski files to the latest format version.
 #
 # This script examines a set of ski files and, if needed, upgrades each file the latest format version.
 #

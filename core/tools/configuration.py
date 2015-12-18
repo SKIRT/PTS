@@ -4,6 +4,11 @@
 # **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
+## \package pts.core.tools.configuration Provides convenient functions for creating, reading and writing configuration
+#  settings files.
+
+# -----------------------------------------------------------------
+
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 

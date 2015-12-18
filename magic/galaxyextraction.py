@@ -4,9 +4,7 @@
 # **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
-"""
-This module ...
-"""
+## \package pts.magic.galaxyextraction Contains the GalaxyExtractor class.
 
 # -----------------------------------------------------------------
 

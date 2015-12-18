@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.plotpolarization Plot polarization information contained in \c stokes*.fits files
+## \package pts.core.plot.polarization Plot polarization information contained in \c stokes*.fits files
 #
 # The function in this module creates a PDF polarization map for a set of "prefix_instr_stokes*.fits" files
 # produced by a SKIRT simulation.

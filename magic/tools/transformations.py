@@ -4,6 +4,7 @@
 # **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
+## \package pts.magic.tools.transformations Provides functions for transforming images along with their header.
 # This module was adapted from the FITS_Tools package written by Adam Ginsburg
 # Link: https://github.com/keflavich/FITS_tools
 

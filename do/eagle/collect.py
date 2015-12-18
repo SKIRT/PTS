@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.eagle_collect Collect statistics contained in the info files for a set of SKIRT-runs.
+## \package pts.do.eagle.collect Collect statistics contained in the info files for a set of SKIRT-runs.
 #
 # This script collects the statistics contained in the info files for a set of SKIRT-runs into a single data file,
 # which is placed in the "Collections" directory specified in eagle.config.

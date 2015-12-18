@@ -5,9 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-"""
-This module can be used to launch SKIRT/FitSKIRT simulations in a convenient way
-"""
+## \package pts.core.launch.launcher Contains the SkirtLauncher class, which can be used to launch SKIRT simulations
+#  in a convenient way.
 
 # -----------------------------------------------------------------
 

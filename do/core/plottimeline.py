@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.core.plottimeline Plot a timeline for the different simulation phases of a SKIRT simulation
+## \package pts.do.core.plottimeline Plot a timeline for the different simulation phases of a SKIRT simulation
 #
 
 # -----------------------------------------------------------------

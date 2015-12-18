@@ -5,9 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-"""
-This module ...
-"""
+## \package pts.core.simulation.arguments Contains the SkirtArguments class, used for representing the set of
+#  command-line arguments that can be passed to SKIRT.
 
 # -----------------------------------------------------------------
 

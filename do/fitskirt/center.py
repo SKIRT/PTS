@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.fitskirt_center
+## \package pts.do.fitskirt.center
 # IMPORTANT: should be run after fitskirt_rotate
 #
 # This routine reads in a files list and one coordinate set and two lower bounds.

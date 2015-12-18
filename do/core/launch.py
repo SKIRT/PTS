@@ -5,8 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.run Run a SKIRT or FitSKIRT simulation with the best performance, based on the current load of the
-#  system.
+## \package pts.do.core.launch Launch a SKIRT simulation locally or remotely with the best performance, based on the
+#  current load of the system.
 
 # -----------------------------------------------------------------
 

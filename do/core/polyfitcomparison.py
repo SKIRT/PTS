@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.polyfitcomparison Create a comparison sheet for the results of a polychromatic FitSKIRT fit.
+## \package pts.do.core.polyfitcomparison Create a comparison sheet for the results of a polychromatic FitSKIRT fit.
 #
 # This script creates a comparison sheet (in the form of a PNG image) for the results of a polychromatic FitSKIRT fit.
 # The in/out filenames and other parameters are hardcoded in the script.

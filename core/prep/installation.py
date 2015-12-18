@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.prep.installation
+## \package pts.core.prep.installation Contains the SkirtInstaller class.
 #
 
 # -----------------------------------------------------------------

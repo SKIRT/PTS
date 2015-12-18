@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.skirtunits Working with SKIRT output units.
+## \package pts.core.simulation.units Working with SKIRT output units.
 #
 # An instance of the SkirtUnits class in this module provides support for working with SKIRT input/output units.
 # The constructor arguments specify the name of a SKIRT unit system (SI, stellar, or extragalactic units)

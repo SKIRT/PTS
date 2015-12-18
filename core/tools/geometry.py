@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.geometry Basic 3D geometry calculations
+## \package pts.core.tools.geometry Basic 3D geometry calculations
 #
 # The functions and classes in this module offer some basic 3D geometry calculations.
 

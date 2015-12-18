@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.makergbimages Make RGB images for the output of a SKIRT simulation.
+## \package pts.do.core.makergbimages Make RGB images for the output of a SKIRT simulation.
 #
 # This script combines frames in each SKIRT \c prefix_instr_total.fits output file into
 # an RGB image, placing a PNG file with the same name (but with the ".pdf" extension instead of ".fits")

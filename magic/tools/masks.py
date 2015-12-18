@@ -4,6 +4,10 @@
 # **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
+## \package pts.magic.tools.masks Contains functions for dealing with two-dimensional masks.
+
+# -----------------------------------------------------------------
+
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 

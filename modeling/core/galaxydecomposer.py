@@ -5,9 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-"""
-This module ...
-"""
+## \package pts.modeling.core.galaxydecomposer Contains the GalaxyDecomposer class.
 
 # -----------------------------------------------------------------
 

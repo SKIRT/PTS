@@ -5,9 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-"""
-This module is used to extract simulation progress information from the simulation's log file
-"""
+## \package pts.core.extract.progress Contains the ProgressExtractor class, used for extracting simulation progress
+#  from a simulation's log files.
 
 # -----------------------------------------------------------------
 

@@ -5,8 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.plot.plotter Contains the abstract Plotter class
-#
+## \package pts.core.plot.plotter Contains the abstract Plotter class, from which all other plotter classes inherit.
 
 # -----------------------------------------------------------------
 

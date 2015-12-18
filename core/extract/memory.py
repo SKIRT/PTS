@@ -5,7 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package extract.memory Extract memory information from SKIRT or SkirtMemory output
+## \package pts.core.extract.memory Contains the MemoryExtractor class, used for extracting memory information from SKIRT
+#  simulation log files.
 
 # -----------------------------------------------------------------
 

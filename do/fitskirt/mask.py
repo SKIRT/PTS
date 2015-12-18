@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.fitskirt_mask
+## \package pts.do.fitskirt.mask
 # IMPORTANT: should be run after fitskirt_center
 #
 # this routine reads in a files list and a region list made in ds9

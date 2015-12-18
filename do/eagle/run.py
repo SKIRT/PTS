@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.eagle_run Run a SKIRT simulation on an EAGLE galaxy according to the SKIRT-runs database.
+## \package pts.do.eagle.run Run a SKIRT simulation on an EAGLE galaxy according to the SKIRT-runs database.
 #
 # This script runs a SKIRT simulation on an EAGLE galaxy, according to the specifications defined in a particular
 # SKIRT-runs database record. The script expects a single command-line argument specifying the run-id of the

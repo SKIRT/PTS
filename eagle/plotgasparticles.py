@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package eagle.plotgasparticles Plot the gas particles for an EAGLE SKIRT-run in 3D.
+## \package pts.eagle.plotgasparticles Plot the gas particles for an EAGLE SKIRT-run in 3D.
 
 # The facilities in this module serve to create a 3D plot of the gas particles for
 # a particular EAGLE SKIRT-run, indicating star forming, cold and hot gas in different

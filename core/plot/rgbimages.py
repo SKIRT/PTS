@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.makergbimages Creating RGB images for SKIRT simulation output.
+## \package pts.core.plot.rgbimages Creating RGB images for SKIRT simulation output.
 #
 # The function in this module creates RGB images for the "total.fits" files in the output of a SKIRT simulation.
 # The caller can specify the wavelengths corresponding to the R,G,B frames in the image.

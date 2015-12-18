@@ -5,9 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-"""
-This module ...
-"""
+## \package pts.core.plot.memory Contains the MemoryPlotter class, used for creating plots of the memory consumption
+#  of a SKIRT simulation as a function of time.
 
 # -----------------------------------------------------------------
 

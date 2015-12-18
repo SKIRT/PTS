@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.polygonmovie Create some movies for a particular set of polygon data.
+## \package pts.do.core.polygonmovie Create some movies for a particular set of polygon data.
 #
 # This script creates some movies for a particular set of polygon data.
 # The in/out filenames and other parameters are hardcoded in the script.

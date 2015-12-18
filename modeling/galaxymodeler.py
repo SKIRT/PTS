@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.galaxymodeler Model a galaxy by fitting using Astromagic and SKIRT
+## \package pts.modeling.galaxymodeler Model a galaxy by fitting using Astromagic and SKIRT
 #
 # An instance of the GalaxyModeler class in this module is responsible for taking reduced astronomical image data
 # of a certain galaxy in different photometric filters and creating maps that represent the 2D distribution of

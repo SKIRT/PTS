@@ -5,9 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-"""
-This module can be used to analyse SKIRT simulations
-"""
+## \package pts.core.launch.analyser Contains the SimulationAnalyser class, used for analysing simulation output.
 
 # -----------------------------------------------------------------
 

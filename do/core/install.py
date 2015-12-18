@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.core.install
+## \package pts.do.core.install Install SKIRT on the local system or on a remote host.
 
 # -----------------------------------------------------------------
 

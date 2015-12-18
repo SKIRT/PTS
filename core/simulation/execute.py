@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.skirtexec Executing the SKIRT command line application
+## \package pts.core.simulation.execute Executing the SKIRT command line application
 #
 # An instance of the SkirtExec class in this module represents a particular SKIRT executable,
 # and allows invoking it with given command line arguments.

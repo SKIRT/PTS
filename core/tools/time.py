@@ -5,9 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-"""
-This module provides useful functions for generating timestamps etc.
-"""
+## \package pts.core.tools.time Provides functions for dealing with timestamps etc.
 
 # -----------------------------------------------------------------
 

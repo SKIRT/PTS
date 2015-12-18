@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.plotseds Plot SEDs for the output of a SKIRT simulation.
+## \package pts.do.core.plotseds Plot SEDs for the output of a SKIRT simulation.
 #
 # This script plots SEDs listed in SKIRT \c prefix_instr_sed.dat output files. All SEDs resulting from
 # a particular simulation are plotted on the same axes. The result is saved as a PDF file placed next

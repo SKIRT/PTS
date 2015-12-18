@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.status Check the status of SKIRT simulations running remotely
+## \package pts.do.core.status Check the status of SKIRT simulations running remotely
 
 # -----------------------------------------------------------------
 

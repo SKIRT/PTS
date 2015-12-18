@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.makeflybymovie Create a flyby movie for a SKIRT simulation.
+## \package pts.do.core.makeflybymovie Create a flyby movie for a SKIRT simulation.
 #
 # This script creates a flyby movie for the output of a SKIRT simulation, which is saved next to the simulation output.
 # Each instrument in the simulation represents a single frame in the movie, in order of appearance in the ski file.

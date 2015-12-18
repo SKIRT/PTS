@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package eagle.galaxy Extracting data from EAGLE simulation results.
+## \package pts.eagle.galaxy Extracting data from EAGLE simulation results.
 #
 # EAGLE is a cosmological hydrodynamical simulation conducted by the VIRGO consortium. The simulation
 # includes detailed recipes for star formation, gas cooling, stellar evolution, and feedback from supernovae and AGN.

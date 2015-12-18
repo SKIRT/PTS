@@ -5,6 +5,11 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
+## \package pts.core.extract.scaling Contains the ScalingExtractor class, used for extracting scaling information
+#  from a simulation's log files.
+
+# -----------------------------------------------------------------
+
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 

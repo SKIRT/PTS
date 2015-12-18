@@ -1,13 +1,24 @@
-'''
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       AstroMagic -- the image editor for astronomers        **
+# *****************************************************************
+
+## \package pts.magic.tools.sesame Contains the Sesame class.
+
+# -----------------------------------------------------------------
+
+"""
 Created on Mar 13, 2011
 Sesame class to access Sesame name resolver service
 Based on 2005-06-11 by Shui Hung Kwok 
 See http://cdsweb.u-strasbg.fr/doc/sesame.htx for description of Sesame
 @author: shkwok
-'''
+"""
+
 from urllib2 import urlopen
 #from xparser.XParser import XParser
-from .. import XParser
+#from .. import XParser
 
 # -----------------------------------------------------------------
 
@@ -21,9 +32,9 @@ class Sesame (object):
     OutputOpt = "oxp" # xp for xml as text/plain rather then text/xml (-ox)
     SesameURL = "http://cdsweb.u-strasbg.fr/cgi-bin/nph-sesame"
     
-    def __init__ (self, urn=SesameURL, opt=CatalogOpt, opt1=OutputOpt):
+    def __init__(self, urn=SesameURL, opt=CatalogOpt, opt1=OutputOpt):
         
-        '''
+        """
         Initializes Sesame URL and options
         Default options are SNV for CatalogOpt
         and -oxp for OutputOpt.
@@ -36,18 +47,18 @@ class Sesame (object):
         x : xml output
         p : plain text
         I : include all identifiers
-        '''
+        """
         
         self.catOpt = opt
         self.outOpt = opt1
         self.urn = urn
         # Sesame
 
-    def getCoord (self, node):
+    def getCoord(self, node):
         
-        '''    
+        """
         Helper method to extract ra and dec from node 
-        '''
+        """
         
         res = node.getResource("/Sesame/Target");
         resolvers = res.getChildren ("Resolver")
@@ -62,12 +73,12 @@ class Sesame (object):
             raise Exception, "no ra/dec values found"
         # getCoord
 
-    def getAliases (self):
+    def getAliases(self):
         
-        '''
+        """
         Extracts aliases for the given target.
         Returns a list of names.
-        '''
+        """
         
         res = []
         for resolver in self.xml.root.Sesame.Resolver:
@@ -78,12 +89,12 @@ class Sesame (object):
                 pass
         return res
   
-    def buildQuery (self, name, all=True):
+    def buildQuery(self, name, all=True):
         
-        '''
+        """
         Builds query URL for use with HTTP GET
         If all is true, then all known identifiers shall be returned.
-        '''
+        """
         
         opt = self.catOpt
         opt1 = '-' + self.outOpt
@@ -93,12 +104,12 @@ class Sesame (object):
         queryURL = "%s/%s/%s?%s" % (self.urn, opt1, opt, name)
         return queryURL
 
-    def resolveRaw (self, name, all=True):
+    def resolveRaw(self, name, all=True):
         
-        ''' 
+        """
         Performs a raw query.
         Returns what the server returns.
-        '''
+        """
         
         query = self.buildQuery (name, all)
         print "query=", query
@@ -107,14 +118,14 @@ class Sesame (object):
         hcon.close ()
         return res
     
-    def resolve (self, name, all=True):
+    def resolve(self, name, all=True):
         
-        '''    
+        """
         Performs a query.
         Returns ra and dec 
-        '''
+        """
         
-        query = self.buildQuery (name, all)
-        xp = XParser ()
-        xn = xp.parseFromFile (query)
-        return self.getCoord (xn)
+        query = self.buildQuery(name, all)
+        xp = XParser()
+        xn = xp.parseFromFile(query)
+        return self.getCoord(xn)

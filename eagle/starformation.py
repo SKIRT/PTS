@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package eagle.starformation Post processing data from EAGLE simulation results.
+## \package pts.eagle.starformation Post processing data from EAGLE simulation results.
 #
 # This module incorporates post processing functions to handle EAGLE output, for use in PTS.
 #

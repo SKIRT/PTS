@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package eagle.plotresults Plot histograms and scaling relations for a collection of EAGLE SKIRT-runs.
+## \package pts.eagle.plotresults Plot histograms and scaling relations for a collection of EAGLE SKIRT-runs.
 #
 # The facilities in this module serve to plot histograms and scaling relations for the results in a set of EAGLE
 # SKIRT-runs that have been previously collected in a single data file.

@@ -5,7 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package extract.timeline
+## \package pts.core.extract.timeline Contains the TimeLineExtractor class, used for extracting timeline information
+#  from a simulation's log files.
 
 # -----------------------------------------------------------------
 

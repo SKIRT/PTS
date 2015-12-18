@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.plotseds Plot SED information contained in text files
+## \package pts.core.plot.seds Plot SED information contained in text files
 #
 # The function in this module creates a PDF plot for one or more SEDs, each provided as a sequence
 # of SED data points in a text file.

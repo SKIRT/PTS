@@ -5,8 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.magic.subtract Run sky subtraction on an image
-#
+## \package pts.do.magic.subtract Run sky subtraction on an image
 
 # -----------------------------------------------------------------
 

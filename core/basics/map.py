@@ -5,8 +5,11 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
+## \package pts.core.basics.map Contains the Map class, a dictionary-like object that provides
+#  access to its values by using the 'dot' notation.
+
 """
-With the class in this module you can use the Map object like another dictionary(including json serialization) or with the dot notation.
+With the class in this module you can use the Map object like another dictionary (including json serialization) or with the dot notation.
 Credit: 'epool' (http://stackoverflow.com/questions/2352181/how-to-use-a-dot-to-access-members-of-dictionary)
 """
 

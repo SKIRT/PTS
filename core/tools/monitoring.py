@@ -5,7 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package tools.monitoring
+## \package pts.core.tools.monitoring Provides functions that can report information about the amount of free memory
+#  or cores on the system.
 
 # -----------------------------------------------------------------
 

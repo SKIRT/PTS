@@ -4,9 +4,7 @@
 # **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
-"""
-This module contains the Vector class and the classes Position and Extent that inherit from it.
-"""
+## \package pts.magic.basics.vector Contains the Vector class and the subclasses Position and Extent.
 
 # -----------------------------------------------------------------
 

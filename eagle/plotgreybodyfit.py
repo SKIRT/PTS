@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package eagle.plotgreybodyfit Plot a modified blackbody fit to
+## \package pts.eagle.plotgreybodyfit Plot a modified blackbody fit to
 # the dust continuum emission for an EAGLE SKIRT-run.
 #
 # The facilities in this module serve to plot a modified blackbody fit to

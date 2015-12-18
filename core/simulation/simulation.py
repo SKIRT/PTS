@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.skirtsimulation Representing the files related to a SKIRT simulation
+## \package pts.core.simulation.simulation Representing the files related to a SKIRT simulation
 #
 # An instance of the SkirtSimulation class in this module represents all input and output files
 # related to a single performed SKIRT simulation.

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package eagle.runner Functions to actually perform a SKIRT run from the SKIRT-run database
+## \package pts.eagle.runner Functions to actually perform a SKIRT run from the SKIRT-run database
 #
 # This module offers functions to actually perform a SKIRT simulation on an EAGLE galaxy according to the
 # specifications defined in a particular SKIRT-runs database record.

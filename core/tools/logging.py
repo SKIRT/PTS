@@ -5,6 +5,10 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
+## \package pts.core.tools.logging Provides functions for creating loggers and linking log files to them.
+
+# -----------------------------------------------------------------
+
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.log Support for logging
+## \package pts.core.basics.log Support for logging
 #
 # The class in this module supports logging of time-stamped messages to the console and to a report file.
 

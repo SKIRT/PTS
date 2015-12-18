@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package eagle.connection Accessing the EAGLE public database over the Web
+## \package pts.eagle.connection Accessing the EAGLE public database over the Web
 #
 # This module allows accessing the EAGLE public database over the Web.
 # Slightly adjusted from © John Helly 2015 for the Virgo Consortium.

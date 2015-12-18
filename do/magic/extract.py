@@ -5,8 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.magic.extract Run galaxy, star and sky extraction on an image
-#
+## \package pts.do.magic.extract Run galaxy, star and sky extraction on an image
 
 # -----------------------------------------------------------------
 

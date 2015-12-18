@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.eagle_synchronize Synchronize EAGLE results between remote hosts
+## \package pts.do.eagle.synchronize Synchronize EAGLE results between remote hosts
 #
 # This script copies the EAGLE SKIRT results generated on remote hosts (currently only the Cosma cluster in Durham)
 # to a central place (currently Peter's Mac at work). Only results for jobs with run-status "completed" are copied.

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.fitskirt_skysub
+## \package pts.do.fitskirt.skysub
 # This routine reads in a files list, a region list and a polynome order
 # the fourth and fifth argument are optional and used to change the
 # default values for plotting and linear fitting.

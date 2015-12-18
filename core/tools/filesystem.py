@@ -5,9 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-"""
-This module provides useful functions for manipulating the local file system.
-"""
+## \package pts.core.tools.filesystem Provides useful functions for manipulating the local file system.
 
 # -----------------------------------------------------------------
 
@@ -41,6 +39,8 @@ def create_directories(paths, recursive=False):
     
     """
     This function ...
+    :param paths:
+    :param recursive:
     """
     
     # Loop over the different paths in the list

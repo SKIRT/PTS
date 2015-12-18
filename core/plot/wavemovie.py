@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.makewavemovie Creating a movie that runs through all wavelengths in the SKIRT simulation output.
+## \package pts.core.plot.wavemovie Creating a movie that runs through all wavelengths in the SKIRT simulation output.
 #
 # The function in this module creates a movie for the output of a SKIRT simulation. The movie combines
 # the SEDs (bottom panel) and the pixel frames (top panel, from left to right) for up to three instruments,

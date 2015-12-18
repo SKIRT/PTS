@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.analyze Perform analysis for some specific SPH data file(s).
+## \package pts.do.core.analyze Perform analysis for some specific SPH data file(s).
 #
 # This script performs analysis for some specific SPH data file(s).
 # The in/out filenames and other parameters are hardcoded in the script.

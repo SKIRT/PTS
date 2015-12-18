@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.archive Transparently opening files from a ZIP archive.
+## \package pts.core.tools.archive Transparently opening files from a ZIP archive.
 #
 # The functions in this module allow opening a file contained in a ZIP archive without first extracting the file.
 

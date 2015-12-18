@@ -5,8 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.makemaps Make maps as input for a SKIRT radiative transfer model
-#
+## \package pts.do.modeling.makemaps Make maps as input for a SKIRT radiative transfer model
 
 # -----------------------------------------------------------------
 

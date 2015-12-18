@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.sphanalyze Analyzing SPH output data.
+## \package pts.core.prep.sphanalyze Analyzing SPH output data.
 #
 # SKIRT can import particle lists output from SPH simulations to build
 # star or dust density distributions. To help optimize this process we

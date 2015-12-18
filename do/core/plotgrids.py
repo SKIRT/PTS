@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.plotgrids Plot dust grids for SKIRT output files.
+## \package pts.do.core.plotgrids Plot dust grids for SKIRT output files.
 #
 # This script plots dust grids for SKIRT \c prefix_ds_gridxx.dat output files, placing PDF files with the same
 # name (but with the ".pdf" extension instead of ".dat") next to the original files.

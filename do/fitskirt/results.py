@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.fitskirt_results
+## \package pts.do.fitskirt.results
 # Create a file containing results for a polychromatic FitSKIRT fit.
 # The only input is the fski files used to create the final results.
 # This script creates both the separate result for each fit as well 

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.timeline Timeline for moving a perspective instrument through space
+## \package pts.core.basics.timeline Timeline for moving a perspective instrument through space
 #
 # The class in this module allows constructing a timeline that defines the properties and motion
 # of a perspective instrument through abstract world space. It is typically used to help produce

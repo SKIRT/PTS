@@ -5,9 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-"""
-This module contains the Quantity class
-"""
+## \package pts.core.basics.quantity Contains the Quantity class, representing floating point values with a certain
+#  uncertainty
 
 # -----------------------------------------------------------------
 

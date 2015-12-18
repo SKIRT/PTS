@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package eagle.makeinfofile Creating information files with statistics on EAGLE SKIRT-runs.
+## \package pts.eagle.makeinfofile Creating information files with statistics on EAGLE SKIRT-runs.
 #
 # The main function in this module creates an information file with statistics on the results of an EAGLE SKIRT-run.
 # The information file has a simple text format and includes statistics on the data exported from the EAGLE snapshot

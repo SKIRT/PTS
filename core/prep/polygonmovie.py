@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.polygonmovie Creating a movie from a sequence of polygon coordinates.
+## \package pts.core.prep.polygonmovie Creating a movie from a sequence of polygon coordinates.
 #
 # The function in this module creates a movie from a sequence of polygon coordinates
 # provided as an input file.

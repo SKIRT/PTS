@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.difference Report differences, if any, between the 'out' and 'ref' directories of a test case.
+## \package pts.do.core.difference Report differences, if any, between the 'out' and 'ref' directories of a test case.
 #
 # This script reports the differences, if any, between the contents of the 'out' and 'ref' directories of a test case.
 # The report is more extensive than the single line in the test report produced by the skirttestsuite class.

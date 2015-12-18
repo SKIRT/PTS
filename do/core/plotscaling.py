@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.plotscaling Make plots for the scaling benchmark output
+## \package pts.do.core.plotscaling Make plots for the scaling benchmark output
 #
 
 # -----------------------------------------------------------------

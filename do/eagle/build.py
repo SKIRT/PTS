@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.eagle_build Build visualization files for completed EAGLE SKIRT-runs.
+## \package pts.do.eagle.build Build visualization files for completed EAGLE SKIRT-runs.
 #
 # This script builds plots, images, movies, or info files from the results of completed EAGLE SKIRT-runs.
 # The resulting files are placed in the corresponding \c vis directories, replacing any previous versions.

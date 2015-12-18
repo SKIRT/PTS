@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.fitskirt_psf
+## \package pts.do.fitskirt.psf
 # IMPORTANT: should be run after fitskirt_skysub
 #
 # This routine reads in a files list and a region list and determines the FWHM.

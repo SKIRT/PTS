@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package eagle.plotdensitycurves Plot stellar, gas and dust
+## \package pts.eagle.plotdensitycurves Plot stellar, gas and dust
 # densities in function of the galaxy radius for an EAGLE SKIRT-run.
 #
 # The facilities in this module serve to plot stellar, gas and dust

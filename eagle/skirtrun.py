@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package eagle.skirtrun Managing the files related to a particular SKIRT run for EAGLE.
+## \package pts.eagle.skirtrun Managing the files related to a particular SKIRT run for EAGLE.
 #
 # An instance of the SkirtRun class in this module manages the files related to a particular SKIRT run in
 # the context of the EAGLE project. It also provides access to corresponding SkirtSimulation and SkirtExec objects.

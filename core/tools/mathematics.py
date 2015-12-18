@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.mathematics Useful mathematical and statistical functions
+## \package pts.core.tools.mathematics Useful mathematical and statistical functions
 #
 # The functions in this module are used for ...
 

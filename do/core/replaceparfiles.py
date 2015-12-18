@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.replaceparfiles Copy \c parameters.xml and \c .tex files from \c out to \c ref test suite directories.
+## \package pts.do.core.replaceparfiles Copy \c parameters.xml and \c .tex files from \c out to \c ref test suite directories.
 #
 # This script copies the \c _parameters.xml and \c _parameters.tex files from the \c out to the \c ref test case
 # directories for all or part of the standard SKIRT test suite in directory \c ~/SKIRTtests.

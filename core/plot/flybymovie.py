@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.makeflybymovie Creating a flyby movie for a SKIRT model.
+## \package pts.core.plot.flybymovie Creating a flyby movie for a SKIRT model.
 #
 # The main function in this module creates a flyby movie for the model specified in a particular ski file.
 # The other functions each perform a single stage of the action; they can be called directly if needed.

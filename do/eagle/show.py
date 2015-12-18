@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.eagle_show Show selected records in the EAGLE SKIRT-runs database.
+## \package pts.do.eagle.show Show selected records in the EAGLE SKIRT-runs database.
 #
 # This script prints the contents of selected records in the EAGLE SKIRT-runs database.
 # The script expects a single command-line argument specifying the selection criteria in the form of

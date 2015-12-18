@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.fitskirt_rotate
+## \package pts.do.fitskirt.rotate
 # IMPORTANT: should be run after fitskirt_skysub (or fitskirt_psf)
 #
 # This routine reads in a files list and 2 coordinates sets and then rotates

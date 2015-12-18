@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.eagle_catalog Inspect or build the catalog for a given EAGLE snapshot.
+## \package pts.do.eagle.catalog Inspect or build the catalog for a given EAGLE snapshot.
 #
 # This script lists the basic properties of the galaxies in the catalog for the specified EAGLE snapshot.
 # If the catalog does not yet exist, the script offers to construct it.

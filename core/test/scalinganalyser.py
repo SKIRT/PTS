@@ -5,9 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-"""
-This module can be used to analyse SKIRT simulations
-"""
+## \package pts.core.test.scalinganalyser Contains the ScalingAnalyser class, used for analysing the scaling results
+#  of a SKIRT simulation that is part of a scaling test.
 
 # -----------------------------------------------------------------
 

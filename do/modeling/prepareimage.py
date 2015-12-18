@@ -5,8 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.prepareimage Prepare an image with Astromagic
-#
+## \package pts.do.modeling.prepareimage Prepare an image with Astromagic
 
 # -----------------------------------------------------------------
 

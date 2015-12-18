@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package eagle.plottemperature Plot a histogram of dust mass versus dust temperature for an EAGLE SKIRT-run.
+## \package pts.eagle.plottemperature Plot a histogram of dust mass versus dust temperature for an EAGLE SKIRT-run.
 
 # The facilities in this module serve to plot a histogram of dust mass versus dust
 # temperature for a particular EAGLE SKIRT-run.

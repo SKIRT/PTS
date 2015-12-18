@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.convert Perform data conversion for some specific SPH data file(s).
+## \package pts.do.core.convert Perform data conversion for some specific SPH data file(s).
 #
 # This script performs data conversion (from foreign to SKIRT format) for some specific SPH data file(s).
 # The in/out filenames and other parameters are hardcoded in the script.

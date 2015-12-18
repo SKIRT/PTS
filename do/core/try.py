@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.try Test or experiment with some PTS functionality.
+## \package pts.do.core.try Test or experiment with some PTS functionality.
 #
 # You can use this script as a template to test or experiment with some PTS functionality.
 #

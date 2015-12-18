@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.prepareflybymovie Prepare a flyby movie by adjusting a particular ski file.
+## \package pts.do.core.prepareflybymovie Prepare a flyby movie by adjusting a particular ski file.
 #
 # This script adds the appropriate instruments to the specified ski file to create a flyby movie
 # according to the specifications contained in one of the timelines hardcoded in this script.

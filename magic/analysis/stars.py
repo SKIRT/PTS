@@ -4,6 +4,10 @@
 # **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
+## \package pts.magic.analysis.stars Contains functions for fitting stars.
+
+# -----------------------------------------------------------------
+
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 

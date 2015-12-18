@@ -5,9 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-"""
-This module ...
-"""
+## \package pts.core.tools.inspection Contains some useful variables that store SKIRT and PTS installation directories
+#  and provides functions for checking the presence and use of SKIRT and PTS dependencies.
 
 # -----------------------------------------------------------------
 

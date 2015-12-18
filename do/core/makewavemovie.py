@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.makewavemovie Create a movie that runs through all wavelengths in the SKIRT simulation output.
+## \package pts.do.core.makewavemovie Create a movie that runs through all wavelengths in the SKIRT simulation output.
 #
 # This script creates a movie for the output of each SKIRT simulation specified through the command line argument
 # (see below). The movie combines the SEDs (bottom panel) and the pixel frames (top panel, from left to right)

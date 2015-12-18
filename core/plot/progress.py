@@ -5,7 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.plot.progress Contains the ProgressPlotter class
+## \package pts.core.plot.progress Contains the ProgressPlotter class, used for creating plots of the progress
+#  of different phases of a SKIRT simulation as a function of time.
 
 # -----------------------------------------------------------------
 

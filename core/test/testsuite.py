@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.skirttestsuite Performing a suite of SKIRT test cases
+## \package pts.core.test.testsuite Performing a suite of SKIRT test cases
 #
 # An instance of the SkirtTestSuite class in this module represents a suite of SKIRT test cases, stored as
 # a nested structure of files and directories according to a specific layout, and provides facilities to

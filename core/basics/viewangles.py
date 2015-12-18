@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.viewangles Interactive preview of instrument angles
+## \package pts.core.basics.viewangles Interactive preview of instrument angles
 #
 # The class in this module provides an interactive preview of a simple 3D scene
 # as if recorded through a SKIRT instrument with certain specified attributes.

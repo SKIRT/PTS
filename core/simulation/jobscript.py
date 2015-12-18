@@ -5,9 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-"""
-This module is used for managing a jobscript for executing SKIRT in a remote scheduling environment
-"""
+## \package pts.core.simulation.jobscript Contains the JobScript class, used for managing a jobscript
+#  for executing SKIRT in a remote scheduling environment.
 
 # -----------------------------------------------------------------
 

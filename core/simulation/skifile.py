@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.skifile Reading and updating a SKIRT parameter file.
+## \package pts.core.simulation.skifile Reading and updating a SKIRT parameter file.
 #
 # An instance of the SkiFile class in this module allows reading from and updating an existing ski file.
 

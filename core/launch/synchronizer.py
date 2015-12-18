@@ -5,9 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-"""
-This module can be used to synchronize remote SKIRT simulations
-"""
+## \package pts.core.launch.synchronizer Contains the RemoteSynchronizer class, which can be used to
 
 # -----------------------------------------------------------------
 
@@ -18,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import os
 
 # Import the relevant PTS classes and modules
+from ..basics.map import Map
 from .analyser import SimulationAnalyser
 from ..test.scalinganalyser import ScalingAnalyser
 from ..basics.configurable import Configurable
@@ -26,15 +25,7 @@ from ..tools import inspection, configuration
 
 # -----------------------------------------------------------------
 
-class format:
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    END = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+format = Map({"HEADER": '\033[95m', "BLUE": '\033[94m', "GREEN": '\033[92m', "WARNING": '\033[93m', "FAIL": '\033[91m', "END": '\033[0m', "BOLD": '\033[1m', "UNDERLINE": '\033[4m'})
 
 # -----------------------------------------------------------------
 

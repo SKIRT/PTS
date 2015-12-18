@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.greybody Modified black body radiation function and fitting
+## \package pts.core.basics.greybody Modified black body radiation function and fitting
 #
 # The class in this module implements the modified black body function representing the idealized radiation emitted by
 # a body of dust at long wavelengths, and allows fitting the dust temperature and mass to a number of flux data points.

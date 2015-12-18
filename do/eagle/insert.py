@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package do.eagle_insert Insert selected records into the SKIRT-runs database.
+## \package pts.do.eagle.insert Insert selected records into the SKIRT-runs database.
 #
 # This script populates the SKIRT-runs database with relevant galaxies selected from the public EAGLE database.
 #

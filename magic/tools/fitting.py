@@ -4,6 +4,10 @@
 # **       AstroMagic -- the image editor for astronomers        **
 # *****************************************************************
 
+## \package pts.magic.tools.fitting Contains functions used for fitting models to two-dimensional data.
+
+# -----------------------------------------------------------------
+
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
