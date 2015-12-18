@@ -19,44 +19,11 @@ import matplotlib.pyplot as plt
 # import standard modules
 import os.path
 import numpy as np
-from scipy.optimize import curve_fit
 
 # import pts modules
 from ..core.tools import archive as arch
 from ..core.basics.filter import Filter
-
-# ----------------------------------------------------------------------
-
-# universal constants and units
-c = 2.99792458e8        # m/s
-h = 6.62606957e-34      # J s
-k = 1.3806488e-23       # J/K
-pc = 3.08567758e16      # m
-Msun = 1.9891e30        # kg
-
-# global configuration values
-beta = 2
-kappa350 = 0.192        # m2/kg (Cortese)
-nu350 = c/350e-6        # Hz
-D = 1e6 * pc            # m  (instrument distance in ski file)
-
-# returns grey body flux in Jy for wavelength(s) specified in micron,
-# for given temperature T (K) and dust mass M (Msun),
-# with global beta, kappa, and distance
-def greybody(wave, T, M):
-    nu = c / (wave * 1e-6)                                  # Hz
-    kappa = kappa350 * (nu/nu350)**beta                     # m2/kg
-    Bnu = 2*h*nu**3/ c**2 / (np.exp((h*nu)/(k*T)) - 1)      # W/m2/Hz
-    flux = M * Msun * kappa * Bnu / D**2                    # W/m2/Hz
-    return flux * 1e26                                      # Jy
-
-# ----------------------------------------------------------------------
-
-# returns temperature T (K) and dust mass M (Msun) for best fit with given data points and uncertainties
-def fitgreybody(lambdav, fluxv, sigmav):
-    # optimize the fit
-    popt, pcov = curve_fit(greybody, lambdav, fluxv, p0=(17,1e7), sigma=sigmav, absolute_sigma=False, maxfev=5000)
-    return popt
+from ..core.basics.greybody import GreyBody, kappa350_Cortese
 
 # ----------------------------------------------------------------------
 
@@ -72,11 +39,25 @@ def plotgreybodyfit(skirtrun):
     plt.xscale('log')
     plt.yscale('log')
 
-    # load and plot the SED
+    # load and plot the total SED
     filepath = simulation.seddatpaths()[0]
     lambdav, fluxv = np.loadtxt(arch.opentext(filepath), usecols=(0,1), unpack=True)
+    lambdav = simulation.convert(lambdav, to_unit='micron', quantity='wavelength')
+    fluxv = simulation.convert(fluxv, to_unit='Jy', quantity='fluxdensity', wavelength=lambdav)
     plot = (lambdav>=10) & (lambdav<=1000)
     plt.plot(lambdav[plot], fluxv[plot], color='b', label="SKIRT galaxy SED")
+
+    # load and plot the contributions from HII particles (stellar emission) and gas particles (dust emission)
+    # --> we do this inside a try block because these columns are not always available
+    try:
+        fstrdirv, fstrscav, ftotdusv = np.loadtxt(arch.opentext(filepath), usecols=(2,3,4), unpack=True)
+        fstrdirv = simulation.convert(fstrdirv, to_unit='Jy', quantity='fluxdensity', wavelength=lambdav)
+        fstrscav = simulation.convert(fstrscav, to_unit='Jy', quantity='fluxdensity', wavelength=lambdav)
+        ftotdusv = simulation.convert(ftotdusv, to_unit='Jy', quantity='fluxdensity', wavelength=lambdav)
+        plt.plot(lambdav[plot], fstrdirv[plot]+fstrscav[plot], color='c', ls="dashed", label="  contribution from HII regions")
+        plt.plot(lambdav[plot], ftotdusv[plot], color='y', ls="dashed", label="  contribution from other dust")
+    except:
+        pass
 
     # load and plot the Herschel continuum data points (160, 250, 350, 500 micron)
     info = { }
@@ -94,8 +75,9 @@ def plotgreybodyfit(skirtrun):
     plt.scatter(waves, fluxes, color='r', marker='*', label="Mock PACS/SPIRE fluxes")
 
     # fit a grey body to the Herschel fluxes and plot the result
-    T,M = fitgreybody(waves, fluxes, sigmas)
-    plt.plot(lambdav[plot], greybody(lambdav[plot], T,M), color='m',
+    greybody = GreyBody(simulation.instrumentdistance(), 2, kappa350_Cortese)
+    T,M = greybody.fit(waves, fluxes, sigmas)
+    plt.plot(lambdav[plot], greybody(lambdav[plot], T, M), color='m',
         label=r"Grey body fit $T={:.2f},\,M_\mathrm{{dust}}={:.2e}\,M_\odot$".format(T,M))
 
     # add axis labels, legend and title

@@ -149,6 +149,12 @@ class Database:
             for col in self._con.execute("pragma table_info('" + tablename + "')"):
                 print "    Column: " + col['name'] + " - " + col['type']
 
+    ## This function returns the largest run-id currently in the database (i.e. the run-id of the most
+    # recently inserted row).
+    def maxrunid(self):
+        cursor = self._con.execute("select max(runid) from skirtruns")
+        return cursor.fetchone()[0]
+
     ## This function returns a sequence of row objects representing the set of database records selected by
     # the specified SQL \em where expression. The optional \em params argument provides a sequence of values
     # that will replace the corresponding question marks in the \em where expression.
