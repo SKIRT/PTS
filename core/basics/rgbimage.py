@@ -126,7 +126,7 @@ class RGBImage:
             if data.ndim == 2:
                 self.setarr(np.dstack(( data,data,data )))
             elif data.ndim == 3:
-                if frames==None:
+                if frames is None:
                     n = data.shape[2]
                     frames = (n-1, n//2, 0)
                 self.setarr(np.dstack(( data[:,:,frames[0]],data[:,:,frames[1]],data[:,:,frames[2]] )))
@@ -147,7 +147,7 @@ class RGBImage:
 
     ## This function returns the range of the image's pixel values as a tuple (min, max).
     def pixelrange(self):
-        if self.darr == None: return ( 0, 255.999 )
+        if self.darr is None: return ( 0, 255.999 )
         else: return self.rangearr
 
     ## This function determines the range of the image's pixel values, ignoring zero and negative values, and omitting
@@ -235,7 +235,7 @@ class RGBImage:
     # is adjusted so that the image aspect ratio is preserved.
     def plot(self, fill=False):
         # if we have no array but we have a PIL image, use the PIL image; otherwise use the array
-        if (self.darr == None and self.dpil != None):
+        if (self.darr is None and self.dpil is not None):
             data = self.dpil
         else:
             data = np.rollaxis(self.scaledpixelarray(0,1), 1)
@@ -310,8 +310,8 @@ class RGBImage:
     #  One can specify a new minimum, a new maximum, or both.
     def setrange(self, newmin=None, newmax=None):
         self.ensurearr(invalidate=True)
-        if newmin == None: newmin = self.rangearr[0]
-        if newmax == None: newmax = self.rangearr[1]
+        if newmin is None: newmin = self.rangearr[0]
+        if newmax is None: newmax = self.rangearr[1]
         if newmin > self.rangearr[0] or newmax < self.rangearr[1]:
             np.clip(self.darr, newmin, newmax, out=self.darr)
         self.rangearr = (newmin, newmax)
@@ -389,10 +389,10 @@ class RGBImage:
     ## This private function ensures that there is a valid PIL image representation, converting from
     #  one of the other representations if necessary, and invalidating the other representations if requested.
     def ensurepil(self, invalidate=True):
-        if self.dpil == None:
-            if self.dbuf != None:
+        if self.dpil is None:
+            if self.dbuf is not None:
                 self.dpil = Image.fromstring("RGBA", self.shape, self.dbuf, "raw", "RGBA", 0, 1)
-            elif self.darr != None:
+            elif self.darr is not None:
                 data = self.scaledpixelarray(0,255.999)
                 buf = np.rollaxis(data,1).astype(np.uint8).tostring()
                 self.dpil = Image.fromstring("RGB", self.shape, buf, "raw", "RGB", 0, -1)
@@ -406,10 +406,10 @@ class RGBImage:
     ## This private function ensures that there is a valid buffer representation, converting from
     #  one of the other representations if necessary, and invalidating the other representations if requested.
     def ensurebuf(self, invalidate=True):
-        if self.dbuf == None:
-            if self.dpil != None:
+        if self.dbuf is None:
+            if self.dpil is not None:
                 self.dbuf = self.dpil.tostring("raw", "RGBX", 0, 1)
-            elif self.darr != None:
+            elif self.darr is not None:
                 data = self.scaledpixelarray(0,255.999)
                 self.dbuf = np.dstack(( np.flipud(np.rollaxis(data,1)).astype(np.uint8),
                                         np.zeros(self.shape[::-1],np.uint8) )).tostring()
@@ -423,11 +423,11 @@ class RGBImage:
     ## This private function ensures that there is a valid numpy array representation, converting from
     #  one of the other representations if necessary, and invalidating the other representations if requested.
     def ensurearr(self, invalidate=True):
-        if self.darr == None:
-            if self.dpil != None:
+        if self.darr is None:
+            if self.dpil is not None:
                 self.darr = np.fromstring(self.dpil.tostring("raw", "RGB", 0, -1), np.uint8).astype(np.float64)
                 self.darr = np.rollaxis(np.reshape(self.darr, (self.shape[1], self.shape[0], 3) ), 1)
-            elif self.dbuf != None:
+            elif self.dbuf is not None:
                 self.darr = np.fromstring(self.dbuf, np.uint8).astype(np.float64)
                 self.darr = np.delete(np.reshape(self.darr, (self.shape[1], self.shape[0], 4) ), 3, 2)
                 self.darr = np.rollaxis(np.flipud(self.darr), 1)

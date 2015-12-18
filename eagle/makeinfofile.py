@@ -199,7 +199,7 @@ def makeinfofile(skirtrun):
 #  - \em fluxtype: a string specifying the flux type (no underscore); for use in constructing the info dictionary key.
 #
 def addfluxinfo(info, simulation, instrumentname, filterspec, fluxdensity, fluxtype=""):
-    if not fluxdensity is None:
+    if fluxdensity is not None:
         magnitude = simulation.absolutemagnitude(fluxdensity, simulation.instrumentdistance(unit='pc'),
                                                  fluxdensity_unit='Jy', distance_unit='pc')
         filtername = filterspec.replace(".","_").lower()
