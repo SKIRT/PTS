@@ -559,11 +559,14 @@ class Galaxy:
                 hiiregions['Z']     = sdat['Z'][idxs][isinfant]
                 hiiregions['P']     = sdat['P'][idxs][isinfant] * 0.1   # Convert to Pa for output
                 hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
-                hiiregions['h_mapp']  = (ms[isinfant] / (sdat['rho_born'][idxs][isinfant] * densconv))**(1/3.)
                 hiiregions['fPDR']  = np.zeros_like(ts[isinfant]) + 0.2  # Covering fraction is set to fiducial constant value
 
-                # randomly shift the positions of the HII regions
-                #sf.stochShiftPos(hiiregions['r'], hiiregions['h'], hiiregions['h_mapp'])
+                # calculate the HII region smoothing length from the mass of the surrounding PDR region,
+                # estimated to be 10 times as massive (see Jonsson et al. 2010, MNRAS 403, 17-44),
+                # using SKIRT's standard smoothing kernel mass/size normalization: rho = 8/pi * M/h^3;
+                # and randomly shift the positions of the HII regions within a similarly enlarged range
+                hiiregions['h_mapp'] = (10. * ms[isinfant] / (np.pi/8 * sdat['rho_born'][idxs][isinfant] * densconv))**(1/3.)
+                sf.stochShiftPos(hiiregions['r'], 10.**(1/3.) * hiiregions['h'], hiiregions['h_mapp'])
 
                 # append to MAPPINGSIII array
                 mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
@@ -608,11 +611,14 @@ class Galaxy:
                 hiiregions['Z']     = gdat['Z'][idxs][isinfant]
                 hiiregions['P']     = gdat['P'][idxs][isinfant] * 0.1     # convert to Pa
                 hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
-                hiiregions['h_mapp'] = (ms[isinfant] / (gdat['rho'][idxs][isinfant] * densconv))**(1/3.)
                 hiiregions['fPDR']  = np.zeros_like(ts[isinfant]) + 0.2  # Covering fraction is set to fiducial constant value
 
-                # randomly shift the positions of the HII regions
-                #sf.stochShiftPos(hiiregions['r'], hiiregions['h'], hiiregions['h_mapp'])
+                # calculate the HII region smoothing length from the mass of the surrounding PDR region,
+                # estimated to be 10 times as massive (see Jonsson et al. 2010, MNRAS 403, 17-44),
+                # using SKIRT's standard smoothing kernel mass/size normalization: rho = 8/pi * M/h^3;
+                # and randomly shift the positions of the HII regions within a similarly enlarged range
+                hiiregions['h_mapp'] = (10. * ms[isinfant] / (np.pi/8 * gdat['rho'][idxs][isinfant] * densconv))**(1/3.)
+                sf.stochShiftPos(hiiregions['r'], 10.**(1/3.) * hiiregions['h'], hiiregions['h_mapp'])
 
                 # append to MAPPINGSIII array
                 mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
