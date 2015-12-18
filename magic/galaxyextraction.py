@@ -288,13 +288,18 @@ class GalaxyExtractor(Configurable):
         self.log.info("Fetching galaxy positions from an online catalog")
 
         # Get the range of right ascension and declination of the image
-        center, ra_span, dec_span = self.frame.coordinate_range()
+        try:
+            center, ra_span, dec_span = self.frame.coordinate_range()
+        except AssertionError as error:
+            self.log.warning("The coordinate system and pixelscale do not match")
+            print(error)
+            center, ra_span, dec_span = self.frame.coordinate_range(silent=True)
 
         # Find galaxies in the box defined by the center and RA/DEC ranges
-        for galaxy_name in catalogs.galaxies_in_box(center, ra_span, dec_span):
+        for galaxy_name, position in catalogs.galaxies_in_box(center, ra_span, dec_span):
 
             # Create a Galaxy object and add it to the list
-            self.galaxies.append(Galaxy(galaxy_name))
+            self.galaxies.append(Galaxy(galaxy_name, position=position))
 
         # Define a function that returns the length of the major axis of the galaxy
         def major_axis(galaxy):

@@ -106,7 +106,17 @@ class SkyObject(object):
     # -----------------------------------------------------------------
 
     @abstractmethod
-    def ellipse_parameters(self, wcs, pixelscale, initial_radius): pass
+    def ellipse_parameters(self, wcs, pixelscale, initial_radius):
+
+        """
+        This function ...
+        :param wcs:
+        :param pixelscale:
+        :param initial_radius:
+        :return:
+        """
+
+        return
 
     # -----------------------------------------------------------------
 
@@ -114,9 +124,13 @@ class SkyObject(object):
 
         """
         This function ...
-        :param frame:
+        :param wcs:
         :return:
         """
+
+        #print(self.position.ra.value, self.position.dec.value)
+        #print(self.position.ra.hms)
+        print(self.position.to_string('hmsdms'))
 
         # Get the x and y coordinate of the object's position
         x, y = self.position.to_pixel(wcs, origin=0)

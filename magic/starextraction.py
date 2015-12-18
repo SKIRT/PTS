@@ -251,7 +251,11 @@ class StarExtractor(Configurable):
         else: raise ValueError("Invalid option for 'catalogs', should be a string or a list of strings")
 
         # Get the range of right ascension and declination of this image
-        center, ra_span, dec_span = self.frame.coordinate_range()
+        try:
+            center, ra_span, dec_span = self.frame.coordinate_range()
+        except AssertionError:
+            self.log.warning("The coordinate system and pixelscale do not match")
+            center, ra_span, dec_span = self.frame.coordinate_range(silent=True)
 
         # Create a new Vizier object and set the row limit to -1 (unlimited)
         viz = Vizier(keywords=["stars", "optical"])

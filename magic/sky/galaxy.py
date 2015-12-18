@@ -34,7 +34,7 @@ class Galaxy(SkyObject):
     This class ...
     """
 
-    def __init__(self, name):
+    def __init__(self, name, position=None):
 
         """
         The constructor ...
@@ -43,9 +43,6 @@ class Galaxy(SkyObject):
         :param name:
         :return:
         """
-
-        # Get the properties of this galaxy from online catalogs
-        #self._get_properties(name)
 
         # Obtain more information about this galaxy
         try:
@@ -85,9 +82,6 @@ class Galaxy(SkyObject):
 
             entry = None
 
-            #print("name = ", self.name, " , first ", name)
-            #print(table)
-
             # Some rows don't have names, if no match is found based on the name just take the row that has other names defined
             rows_with_names = []
             for row in table:
@@ -104,6 +98,13 @@ class Galaxy(SkyObject):
 
                     if name.replace(" ", "") in names or self.name.replace(" ", "") in names:
 
+                        entry = row
+                        break
+
+            # If no matches are found, look for the table entry for which the coordinate matches the given position (if any)
+            if position is not None:
+                for row in table:
+                    if row["_RAJ2000"] == position.ra.value and row["_DEJ2000"] == position.dec.value:
                         entry = row
                         break
 

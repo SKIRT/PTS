@@ -48,13 +48,17 @@ def galaxies_in_box(center, ra_span, dec_span):
     # I am baffled by this and I see no reasonable explanation.
     if len(result) == 0:
 
-        ra_span *= 1.0+1e-5
+        ra_span *= 1.0 + 1e-5
         result = viz.query_region(center, width=ra_span, height=dec_span, catalog=["VII/237"])
 
     table = result[0]
 
     # Loop over the rows in the table
-    for entry in table: names.append("PGC " + str(entry["PGC"]))
+    for entry in table:
+        name = "PGC " + str(entry["PGC"])
+        coordinate = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
+        namepluscoordinate = (name, coordinate)
+        names.append(namepluscoordinate)
 
     # Return the list of galaxies
     return names

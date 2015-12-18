@@ -31,22 +31,39 @@ def get_pixelscale(header):
     """
 
     # Search for 'PIXSCALE' keyword
-    if 'PIXSCALE' in header: return header['PIXSCALE'] * u.arcsec
+    if 'PIXSCALE' in header:
+        print('PIXSCALE')
+        return header['PIXSCALE'] * u.arcsec
+
+    # Search for the 'PXSCAL1' and 'PXSCAL2' keywords
+    elif 'PXSCAL1' in header and 'PXSCAL2' in header:
+        print('PXSCAL1')
+        return header['PXSCAL1'] * u.arcsec
 
     # Search for the 'SECPIX' keyword
-    elif 'SECPIX' in header: return header['SECPIX'] * u.arcsec
+    elif 'SECPIX' in header:
+        print('SECPIX')
+        return header['SECPIX'] * u.arcsec
 
     # Search for 'Pixel Field of View' keyword
-    elif 'PFOV' in header: return header['PFOV'] * u.arcsec
+    elif 'PFOV' in header:
+        print('PFOV')
+        return header['PFOV'] * u.arcsec
 
     # Search for the CD matrix elements
-    elif 'CD1_1' in header and 'CD1_2' in header: return math.sqrt(header['CD1_1']**2 + header['CD1_2']**2 ) * 3600.0 * u.arcsec
+    elif 'CD1_1' in header and 'CD1_2' in header:
+        print('CD1_1 and CD1_2')
+        return math.sqrt(header['CD1_1']**2 + header['CD1_2']**2) * 3600.0 * u.arcsec
 
     # Search for the diagonal CD matrix elements
-    elif 'CD1_1' in header: return abs(header['CD1_1']) * 3600.0 * u.arcsec
+    elif 'CD1_1' in header:
+        print('CD1_1')
+        return abs(header['CD1_1']) * 3600.0 * u.arcsec
 
     # Search for the 'CDELT1' keyword
-    elif 'CDELT1' in header: return abs(header['CDELT1']) * 3600.0 * u.arcsec
+    elif 'CDELT1' in header:
+        print('CDELT1')
+        return abs(header['CDELT1']) * 3600.0 * u.arcsec
 
     # If none of the above keywords were found, return None
     else: return None
@@ -68,6 +85,9 @@ def get_filter(name, header):
     if 'INSTRUME' in header: filterid += header['INSTRUME'].lower()
     if 'FILTER' in header: filterid += header['FILTER'].lower()
     if 'FLTRNM' in header: filterid += header['FLTRNM'].lower()
+
+    if "CHNLNUM" in header: channel = int(header["CHNLNUM"])
+    else: channel = None
 
     # Create a filter object from the filterid
     if "fuv" in filterid: return Filter("GALEX.FUV")
@@ -98,9 +118,15 @@ def get_filter(name, header):
         elif '4.5' in filterid or 'i2' in filterid: return Filter("IRAC.I2")
         elif '5.8' in filterid or 'i3' in filterid: return Filter("IRAC.I3")
         elif '8.0' in filterid or 'i4' in filterid: return Filter("IRAC.I4")
-        else:
-            log.warning("Could not determine which IRAC filter was used for this image")
-            return None
+        elif channel is not None:  # Look at the channel number
+
+            if channel == 1: return Filter("IRAC.I1")
+            elif channel == 2: return Filter("IRAC.I2")
+            elif channel == 3: return Filter("IRAC.I3")
+            elif channel == 4: return Filter("IRAC.I4")
+
+        log.warning("Could not determine which IRAC filter was used for this image")
+        return None
 
     elif "alpha" in filterid or "6561" in filterid: return Filter("656_1")
     elif "r" in filterid and "kpno" in filterid: return Filter("KPNO.Mosaic.R")
