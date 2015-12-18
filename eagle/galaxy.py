@@ -499,9 +499,10 @@ class Galaxy:
         # ---- resample star forming regions
 
         # define HII region age constants (in years)
-        young_age = 1e8     # 100 Myr  -- particles below this age are resampled <==> lifetime of an HII region
-        infant_age = 1e7    # 10 Myr   -- resampled particles below this age are converted to HII regions
-                            #             resampled particles above this age are converted young stars
+        young_age = 1e8     # 100 Myr  --> particles below this age are resampled
+        infant_age = 1e7    # 10 Myr   --> resampled particles below this age are converted to HII regions
+                            #              resampled particles above this age are converted young stars
+                            #              <==> lifetime of an HII region
 
         # set up GALAXEV array
         bcstars = np.column_stack([[],[],[],[],[],[],[]])
@@ -554,7 +555,7 @@ class Galaxy:
             if (isinfant).any():
                 hiiregions['r']     = sdat['r'][idxs][isinfant]
                 hiiregions['h']     = sdat['h'][idxs][isinfant]
-                hiiregions['SFR']   = ms[isinfant] / young_age          # Assume constant SFR over HII region lifetime
+                hiiregions['SFR']   = ms[isinfant] / infant_age          # Assume constant SFR over HII region lifetime
                 hiiregions['Z']     = sdat['Z'][idxs][isinfant]
                 hiiregions['P']     = sdat['P'][idxs][isinfant] * 0.1   # Convert to Pa for output
                 hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
@@ -603,7 +604,7 @@ class Galaxy:
             if (isinfant).any():
                 hiiregions['r']     = gdat['r'][idxs][isinfant]
                 hiiregions['h']     = gdat['h'][idxs][isinfant]
-                hiiregions['SFR']   = ms[isinfant] / young_age          # Assume constant SFR over HII region lifetime
+                hiiregions['SFR']   = ms[isinfant] / infant_age          # Assume constant SFR over HII region lifetime
                 hiiregions['Z']     = gdat['Z'][idxs][isinfant]
                 hiiregions['P']     = gdat['P'][idxs][isinfant] * 0.1     # convert to Pa
                 hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
