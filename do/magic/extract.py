@@ -18,6 +18,7 @@ import argparse
 
 # Import the relevant AstroMagic classes and modules
 from pts.magic.core import Image
+from pts.magic.basics import Mask
 from pts.magic import Extractor
 
 # -----------------------------------------------------------------
@@ -57,10 +58,13 @@ image = Image(image_path)
 
 # -----------------------------------------------------------------
 
+# Create a mask for the nans in the primary
+mask = Mask.is_nan(image.frames.primary)
+
 # Create an Extractor instance and configure it according to the command-line arguments
 extractor = Extractor.from_arguments(arguments)
 
 # Run the extractor
-extractor.run(image.frames.primary)
+extractor.run(image.frames.primary, mask)
 
 # -----------------------------------------------------------------

@@ -65,6 +65,9 @@ class StarExtractor(Configurable):
         # Set the frame to None
         self.frame = None
 
+        # The mask covering pixels that should be ignored throughout the entire extraction procedure
+        self.bad_mask = None
+
         # Set the mask to None
         self.mask = None
 
@@ -79,14 +82,14 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, galaxyextractor=None):
+    def run(self, frame, mask, galaxyextractor=None):
 
         """
         This function ...
         """
 
         # 1. Call the setup function
-        self.setup(frame, galaxyextractor)
+        self.setup(frame, mask, galaxyextractor)
 
         # 2. Find and remove the stars
         self.find_fit_and_remove_stars()
@@ -108,7 +111,7 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, galaxyextractor=None):
+    def setup(self, frame, mask, galaxyextractor=None):
 
         """
         This function ...
@@ -117,8 +120,9 @@ class StarExtractor(Configurable):
         # Call the setup function of the base class
         super(StarExtractor, self).setup()
 
-        # Make a local reference to the passed frame
+        # Make a local reference to the frame and 'bad' mask
         self.frame = frame
+        self.bad_mask = mask
 
         # Make a local reference to the galaxy extractor (if any)
         self.galaxyextractor = galaxyextractor
@@ -824,7 +828,11 @@ class StarExtractor(Configurable):
         self.log.info("Searching for other contaminating sources not in the stellar catalog")
 
         # Calculate the total mask
-        mask = masks.union(self.galaxyextractor.mask, self.mask) if self.galaxyextractor is not None else self.mask
+        #mask = masks.union(self.galaxyextractor.mask, self.mask) if self.galaxyextractor is not None else self.mask
+
+        # New: include 'bad' mask
+        mask = self.bad_mask + self.mask
+        if self.galaxyextractor is not None: mask += self.galaxyextractor.mask
 
         # Create the sigma-clipped mask
         clipped_mask = statistics.sigma_clip_mask(self.frame, 3.0, mask)
@@ -836,8 +844,33 @@ class StarExtractor(Configurable):
         # Calculate the detection threshold
         threshold = median + (3.0 * stddev)
 
-        # Create a segmentation map from the frame
-        self.segments = detect_sources(self.frame, threshold, npixels=5, filter_kernel=self.kernel)
+        try:
+            # Create a segmentation map from the frame
+            self.segments = detect_sources(self.frame, threshold, npixels=5, filter_kernel=self.kernel)
+        except RuntimeError:
+
+            print("kernel=", self.kernel)
+            #print("self.frame=", self.frame)
+            print("self.frame.ndim=", self.frame.ndim)
+
+            from scipy import ndimage
+
+            conv_mode = 'constant'
+            conv_val = 0.0
+            image = ndimage.convolve(self.frame, self.kernel.array, mode=conv_mode, cval=conv_val)
+
+            print("median=", median)
+            print("stddev=", stddev)
+
+            #print("image=", image)
+            print("image.ndim=", image.ndim)
+            print("type image=", type(image))
+            print("image.shape=", image.shape)
+            print("threshold=", threshold)
+            image = image > threshold
+            print("image.ndim=", image.ndim)
+            print("type image=", type(image))
+            print("image.shape=", image.shape)
 
         # Write the segmentation map to file
         #Frame(self.segments).save(self.config.writing.other_segments_path[:-5]+"_or.fits")
@@ -1075,7 +1108,8 @@ class StarExtractor(Configurable):
         for star in self.stars:
 
             # Get the center in pixel coordinates
-            x_center, y_center = star.position.to_pixel(self.frame.wcs, origin=0)
+            #x_center, y_center = star.position.to_pixel(self.frame.wcs, origin=0)
+            center = star.pixel_position(self.frame.wcs)
 
             if star.has_source:
 
@@ -1128,11 +1162,11 @@ class StarExtractor(Configurable):
 
                 # Show a circle for the star
                 color_suffix = " # color = " + color
-                print("image;circle({},{},{})".format(x_center, y_center, radius) + color_suffix, file=f)
+                print("image;circle({},{},{})".format(center.x, center.y, radius) + color_suffix, file=f)
 
             # If the FWHM is undefined, simply draw a point for the star's position (e.g. when this function is called
             # after the fetch_stars method)
-            else: print("image;point({},{})".format(x_center, y_center), file=f)
+            else: print("image;point({},{})".format(center.x, center.y), file=f)
 
             # Aperture created from saturation mask
             if star.has_aperture:

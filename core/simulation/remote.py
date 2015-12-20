@@ -32,6 +32,17 @@ from ..test.resources import ResourceEstimator
 
 # -----------------------------------------------------------------
 
+class Remote(object):
+
+    """
+    This function ...
+    """
+
+
+
+
+# -----------------------------------------------------------------
+
 class SkirtRemote(Configurable):
 
     """

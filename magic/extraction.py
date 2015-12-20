@@ -45,8 +45,11 @@ class Extractor(Configurable):
 
         ## Attributes
 
-        # Set the frame to None initially
+        # The image frame on which to perform the extraction
         self.frame = None
+
+        # The mask covering pixels that should be ignored throughout the entire extraction procedure
+        self.mask = None
 
         # The galaxy and star extractors
         self.galaxy_extractor = None
@@ -77,7 +80,7 @@ class Extractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame):
+    def run(self, frame, mask):
 
         """
         This function ...
@@ -85,7 +88,7 @@ class Extractor(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup(frame)
+        self.setup(frame, mask)
 
         # 2. Create the directory that will contain the output
         self.create_output_path()
@@ -101,7 +104,7 @@ class Extractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame):
+    def setup(self, frame, mask):
 
         """
         This function ...
@@ -114,8 +117,9 @@ class Extractor(Configurable):
         # Inform the user
         self.log.info("Setting up the extractor...")
 
-        # Make a local reference to the frame
+        # Make a local reference to the frame and mask
         self.frame = frame
+        self.mask = mask
 
         # Set the paths to the resulting frame and the total mask
         self.config.write_result = True
@@ -214,7 +218,7 @@ class Extractor(Configurable):
         self.log.info("Extracting the galaxies...")
 
         # Run the galaxy extractor
-        self.galaxy_extractor.run(self.frame)
+        self.galaxy_extractor.run(self.frame, self.mask)
     
     # -----------------------------------------------------------------
     
@@ -228,7 +232,7 @@ class Extractor(Configurable):
         self.log.info("Extracting the stars...")
 
         # Run the star extractor
-        self.star_extractor.run(self.frame, self.galaxy_extractor)
+        self.star_extractor.run(self.frame, self.mask, self.galaxy_extractor)
 
     # -----------------------------------------------------------------
 

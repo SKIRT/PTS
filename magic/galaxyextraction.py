@@ -60,19 +60,22 @@ class GalaxyExtractor(Configurable):
         # Set the frame to None
         self.frame = None
 
+        # The mask covering pixels that should be ignored throughout the entire extraction procedure
+        self.bad_mask = None
+
         # Set the mask to None
         self.mask = None
 
     # -----------------------------------------------------------------
 
-    def run(self, frame):
+    def run(self, frame, mask):
 
         """
         This function ...
         """
 
         # 1. Call the setup function
-        self.setup(frame)
+        self.setup(frame, mask)
 
         # 2. Find and remove the galaxies
         self.find_and_remove_galaxies()
@@ -85,7 +88,7 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame):
+    def setup(self, frame, mask):
 
         """
         This function ...
@@ -97,8 +100,9 @@ class GalaxyExtractor(Configurable):
         # Inform the user
         self.log.info("Setting up the galaxy extractor...")
 
-        # Make a local reference to the passed frame
+        # Make a local reference to the frame and 'bad' mask
         self.frame = frame
+        self.bad_mask = mask
 
         # Create a mask with shape equal to the shape of the frame
         self.mask = Mask(np.zeros_like(self.frame))
@@ -142,9 +146,6 @@ class GalaxyExtractor(Configurable):
 
         # Find the sources
         self.find_sources()
-
-        # TEMP
-        self.write_region()
 
         # Find apertures
         if self.config.find_apertures: self.find_apertures()
@@ -307,14 +308,14 @@ class GalaxyExtractor(Configurable):
             # Create a Galaxy object and add it to the list
             self.galaxies.append(Galaxy(galaxy_name, position=position))
 
-        print("len_before=", len(self.galaxies))
+        #print("len_before=", len(self.galaxies))
 
         # Check whether the pixel positions fall within the frame
         for galaxy in self.galaxies:
 
             pixel_position = galaxy.pixel_position(self.frame.wcs)
 
-            print(galaxy.name, "pixel position=", pixel_position)
+            #print(galaxy.name, "pixel position=", pixel_position)
 
             if pixel_position.x < 0.0 or pixel_position.x >= self.frame.xsize:
                 #print("pixelposition.y=", pixel_position.x)
@@ -324,7 +325,7 @@ class GalaxyExtractor(Configurable):
                 #print("pixelposition.x=", pixel_position.y)
                 self.galaxies.remove(galaxy)
 
-        print("len_after=", len(self.galaxies))
+        #print("len_after=", len(self.galaxies))
 
         # Define a function that returns the length of the major axis of the galaxy
         def major_axis(galaxy):

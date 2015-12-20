@@ -54,6 +54,19 @@ class Mask(np.ndarray):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def is_nan(cls, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        return cls(np.isnan(frame))
+
+    # -----------------------------------------------------------------
+
     def __array_finalize__(self, obj):
 
         """
