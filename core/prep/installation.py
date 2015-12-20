@@ -20,7 +20,7 @@ import urllib
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..simulation.execute import SkirtExec
-from ..simulation.remote import SkirtRemote
+from ..simulation.remote import Remote
 
 # -----------------------------------------------------------------
 
@@ -44,8 +44,8 @@ class SkirtInstaller(Configurable):
         # Create the SKIRT execution context
         self.skirt = SkirtExec()
 
-        # Create the SKIRT remote execution context
-        self.remote = SkirtRemote()
+        # Create the remote execution context
+        self.remote = Remote()
 
         #self.has_qt = False
         
@@ -112,7 +112,7 @@ class SkirtInstaller(Configurable):
         super(SkirtInstaller, self).setup()
 
         # Setup the remote execution environment if necessary
-        if self.config.remote is not None: self.remote.setup(self.config.remote, pre_installation=True)
+        if self.config.remote is not None: self.remote.setup(self.config.remote)
 
     # -----------------------------------------------------------------
 

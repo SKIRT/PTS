@@ -450,19 +450,35 @@ class Frame(np.ndarray):
         :return:
         """
 
+        #print("xsize=", self.xsize)
+        #print("ysize=", self.ysize)
+
+        coor1 = self.wcs.wcs_pix2world(0.0, 0.0, 0)
+        coor2 = self.wcs.wcs_pix2world(self.xsize - 1.0, self.ysize - 1.0, 0)
+
+        #print(float(coor1[0]), float(coor1[1]))
+        #print(float(coor2[0]), float(coor2[1]))
+
         # Some pixel coordinates of interest.
-        pixels = np.array([[0, 0], [self.xsize - 1, self.ysize - 1]], dtype=float)
-
-        world = self.wcs.all_pix2world(pixels, 0)  # Convert pixel coordinates to world coordinates (RA and DEC in degrees)
-
+        #pixels = np.array([[0.0, 0.0], [self.xsize - 1.0, self.ysize - 1.0]])
+        #world = self.wcs.all_pix2world(pixels, 0)  # Convert pixel coordinates to world coordinates (RA and DEC in degrees)
         #print(world)
 
-        coordinate1 = world[0]
-        coordinate2 = world[1]
-        ra_range = [coordinate2[0], coordinate1[0]]
-        dec_range = [coordinate2[1], coordinate1[1]]
+        co1 = coord.SkyCoord(ra=float(coor1[0]), dec=float(coor1[1]), unit=(u.deg, u.deg), frame='fk5')
+        co2 = coord.SkyCoord(ra=float(coor2[0]), dec=float(coor2[1]), unit=(u.deg, u.deg), frame='fk5')
 
-        print("ra_range=", ra_range)
+        #print("co1=", co1.to_string('hmsdms'))
+        #print("co2=", co2.to_string('hmsdms'))
+
+        #coordinate1 = world[0]
+        #coordinate2 = world[1]
+        #ra_range = [coordinate2[0], coordinate1[0]]
+        #dec_range = [coordinate2[1], coordinate1[1]]
+
+        ra_range = [co1.ra.value, co2.ra.value]
+        dec_range = [co1.dec.value, co2.dec.value]
+
+        #print("ra_range=", ra_range)
 
         # Determine the center in RA and DEC (in degrees)
         ra_center = 0.5 * (ra_range[0] + ra_range[1])
@@ -490,8 +506,8 @@ class Frame(np.ndarray):
         ra_distance = abs(coordinates.ra_distance(dec_center, ra_begin, ra_end))
         dec_distance = abs(dec_end - dec_begin)
 
-        print("ra_distance=", ra_distance)
-        print("dec_distance=", dec_distance)
+        #print("ra_distance=", ra_distance)
+        #print("dec_distance=", dec_distance)
 
         # Calculate the pixel scale of this image in degrees
         pixelscale = self.pixelscale
@@ -518,9 +534,10 @@ class Frame(np.ndarray):
         ra_span = ra_distance * u.deg
         dec_span = dec_distance * u.deg
 
-        print("center=", center)
-        print("ra_span=", ra_span)
-        print("dec_span=", dec_span)
+        #print("center=", center)
+        #print("center=", center.to_string('hmsdms'))
+        #print("ra_span=", ra_span)
+        #print("dec_span=", dec_span)
 
         # Return the center coordinate and the RA and DEC span
         return center, ra_span, dec_span

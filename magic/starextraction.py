@@ -918,7 +918,7 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Removing the other source from the frame")
+        self.log.info("Removing the other sources from the frame")
 
         # Interpolate over the segments
         mask = self.segments > 0

@@ -303,7 +303,7 @@ class GalaxyExtractor(Configurable):
         # Find galaxies in the box defined by the center and RA/DEC ranges
         for galaxy_name, position in catalogs.galaxies_in_box(center, ra_span, dec_span):
 
-            print(galaxy_name, position)
+            #print(galaxy_name, position)
 
             # Create a Galaxy object and add it to the list
             self.galaxies.append(Galaxy(galaxy_name, position=position))
