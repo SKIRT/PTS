@@ -25,6 +25,7 @@ import aplpy
 import astropy.io.fits as pyfits
 import astropy.units as u
 import astropy.coordinates as coord
+from astropy.wcs.wcs import NoConvergence
 from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
@@ -313,7 +314,7 @@ class Frame(np.ndarray):
         # Do the conversion
         return f_0 * np.power(10.0, - self / 2.5)
 
-     # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
     def convolve(self, kernel):
 
@@ -450,7 +451,7 @@ class Frame(np.ndarray):
         """
 
         # Some pixel coordinates of interest.
-        pixels = np.array([[0,0],[self.xsize-1, self.ysize-1]], dtype=float)
+        pixels = np.array([[0, 0], [self.xsize - 1, self.ysize - 1]], dtype=float)
 
         world = self.wcs.all_pix2world(pixels, 0)  # Convert pixel coordinates to world coordinates (RA and DEC in degrees)
 
@@ -459,27 +460,38 @@ class Frame(np.ndarray):
         coordinate1 = world[0]
         coordinate2 = world[1]
         ra_range = [coordinate2[0], coordinate1[0]]
-        dec_range = [coordinate1[1], coordinate2[1]]
+        dec_range = [coordinate2[1], coordinate1[1]]
+
+        print("ra_range=", ra_range)
 
         # Determine the center in RA and DEC (in degrees)
-        ra_center = 0.5*(ra_range[0] + ra_range[1])
-        dec_center = 0.5*(dec_range[0] + dec_range[1])
+        ra_center = 0.5 * (ra_range[0] + ra_range[1])
+        dec_center = 0.5 * (dec_range[0] + dec_range[1])
+
+        # New
+        dec_begin = dec_range[0]
+        dec_end = dec_range[1]
+        ra_begin = ra_range[0]
+        ra_end = ra_range[1]
 
         # Determine the width in RA and DEC (both in degrees)
-        dec_width = dec_range[1] - dec_range[0]
-        ra_width = ra_range[1] - ra_range[0]   # WRONG!
+        #dec_width = dec_range[1] - dec_range[0]
+        #ra_width = ra_range[1] - ra_range[0]   # WRONG!
 
         # Calculate the start and end RA coordinates (in degrees)
-        ra_begin = ra_center - 0.5*ra_width
-        ra_end = ra_center + 0.5*ra_width
+        #ra_begin = ra_center - 0.5 * ra_width
+        #ra_end = ra_center + 0.5 * ra_width
 
         # Calculate the start and end DEC coordinates (in degrees)
-        dec_begin = dec_center - 0.5*dec_width
-        dec_end = dec_center + 0.5*dec_width
+        #dec_begin = dec_center - 0.5 * dec_width
+        #dec_end = dec_center + 0.5 * dec_width
 
         # Calculate the
-        ra_distance = coordinates.ra_distance(dec_center, ra_begin, ra_end)
-        dec_distance = dec_end - dec_begin
+        ra_distance = abs(coordinates.ra_distance(dec_center, ra_begin, ra_end))
+        dec_distance = abs(dec_end - dec_begin)
+
+        print("ra_distance=", ra_distance)
+        print("dec_distance=", dec_distance)
 
         # Calculate the pixel scale of this image in degrees
         pixelscale = self.pixelscale
@@ -499,8 +511,16 @@ class Frame(np.ndarray):
             assert np.isclose(dec_distance, size_dec_deg, rtol=0.02), "The coordinate system and pixel scale do not match: dec_distance=" + str(dec_distance) + ",size_dec_deg=" + str(size_dec_deg)
 
         center = coord.SkyCoord(ra=ra_center, dec=dec_center, unit=(u.deg, u.deg), frame='fk5')
-        ra_span = size_ra_deg * u.deg
-        dec_span = size_dec_deg * u.deg
+        #ra_span = size_ra_deg * u.deg
+        #dec_span = size_dec_deg * u.deg
+
+        # New
+        ra_span = ra_distance * u.deg
+        dec_span = dec_distance * u.deg
+
+        print("center=", center)
+        print("ra_span=", ra_span)
+        print("dec_span=", dec_span)
 
         # Return the center coordinate and the RA and DEC span
         return center, ra_span, dec_span
@@ -515,10 +535,12 @@ class Frame(np.ndarray):
         :return:
         """
 
-        pixel_coordinate = self.wcs.all_world2pix([[coordinate.ra.value, coordinate.dec.value]], 0)
+        try:
+            x, y = coordinate.to_pixel(self.wcs, origin=0)
+        except NoConvergence:
+            x, y = coordinate.to_pixel(self.wcs, origin=0, mode='wcs')  # Ignore distortions
 
-        x = pixel_coordinate[0][0]
-        y = pixel_coordinate[0][1]
+        #pixel_coordinate = self.wcs.all_world2pix([[coordinate.ra.value, coordinate.dec.value]], 0)
 
         return 0.0 <= x < self.xsize and 0.0 <= y < self.ysize
 

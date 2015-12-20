@@ -299,6 +299,12 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
     # Create a source object
     source = Source(frame, center, radius, angle, config.background_outer_factor)
 
+    # If the source cutout is zero or nan everywhere, return None (no source can be found here)
+    if np.all(np.isnan(source.cutout)) or not np.any(source.cutout): return None
+
+    # If there are any nans, return None ??? yes, do we want this ? (temporary fix)
+    if np.any(np.isnan(source.cutout)): return None
+
     # If always subtract background is enabled
     if config.always_subtract_background:
 

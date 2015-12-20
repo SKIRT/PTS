@@ -199,6 +199,12 @@ class Galaxy(SkyObject):
         :return:
         """
 
+        #print("pixelscale=", pixelscale)
+
+        #print("self.pa=", self.pa)
+        #print("self.major=", self.major)
+        #print("self.minor=", self.minor)
+
         if self.pa is None: angle = Angle(0.0, u.deg)
         else: angle = self.pa
 
@@ -217,8 +223,15 @@ class Galaxy(SkyObject):
             x_radius = 0.5 * self.major.to("arcsec") / pixelscale
             y_radius = 0.5 * self.minor.to("arcsec") / pixelscale
 
+        #print("x_radius=", x_radius)
+        #print("y_radius=", y_radius)
+
+        pixel_position = self.pixel_position(wcs)
+
+        #print("PIXEL_POSITION=", pixel_position)
+
         # Return the parameters
-        return self.pixel_position(wcs), Extent(x=x_radius, y=y_radius), angle
+        return pixel_position, Extent(x=x_radius, y=y_radius), angle
 
     # -----------------------------------------------------------------
 
@@ -232,8 +245,21 @@ class Galaxy(SkyObject):
         # Get the parameters describing the elliptical contour
         center, radius, angle = self.ellipse_parameters(frame.wcs, frame.pixelscale, None)
 
+        #print("center_here=", center)
+
+        if center.x < 0 or center.y < 0:
+            self.source = None
+            return
+
         # Create a source object
         self.source = Source(frame, center, radius*expansion_factor, angle, outer_factor)
+
+        #print(self.source.cutout.shape)
+
+        if self.source.cutout.shape[0] == 0 or self.source.cutout.shape[1] == 0:
+
+            print(self.name)
+            print("radius=", radius)
 
     # -----------------------------------------------------------------
 

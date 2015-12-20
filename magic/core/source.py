@@ -165,9 +165,21 @@ class Source(object):
 
         if not np.all(self.mask):
 
+            #print(box)
+            #print(self.mask)
+
             # Calculate threshold for segmentation
-            mean, median, stddev = statistics.sigma_clipped_statistics(box, mask=self.mask)
-            threshold = mean + stddev * threshold_sigmas
+            try:
+                mean, median, stddev = statistics.sigma_clipped_statistics(box, mask=self.mask)
+                threshold = mean + stddev * threshold_sigmas
+            except TypeError:
+
+                print(box)
+                print(self.mask)
+
+                print("not_nan=", np.sum(np.logical_not(np.isnan(box))))
+
+                exit()
 
         else:
 

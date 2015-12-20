@@ -25,6 +25,7 @@ from astropy.table import Table
 from astroquery.vizier import Vizier
 from astropy.coordinates import Angle
 from photutils import detect_sources
+from astropy.wcs.wcs import NoConvergence
 from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
@@ -315,7 +316,10 @@ class StarExtractor(Configurable):
                     galaxy_position = galaxy.pixel_position(self.frame.wcs)
 
                     # Calculate the distance between the star's position and the galaxy's center
-                    x_center, y_center = position.to_pixel(self.frame.wcs)
+                    try:
+                        x_center, y_center = position.to_pixel(self.frame.wcs)
+                    except NoConvergence:
+                        x_center, y_center = position.to_pixel(self.frame.wcs, mode='wcs')
                     difference = galaxy_position - Position(x=x_center, y=y_center)
 
                     # Add the star-galaxy distance to the list of distances

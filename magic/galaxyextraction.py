@@ -143,6 +143,9 @@ class GalaxyExtractor(Configurable):
         # Find the sources
         self.find_sources()
 
+        # TEMP
+        self.write_region()
+
         # Find apertures
         if self.config.find_apertures: self.find_apertures()
 
@@ -249,11 +252,14 @@ class GalaxyExtractor(Configurable):
                 expansion_factor = self.config.detection.d25_expansion_factor
                 galaxy.source_from_parameters(self.frame, outer_factor, expansion_factor)
 
+                #print("xsize=",galaxy.source.cutout.xsize)
+                #print("ysize=",galaxy.source.cutout.ysize)
+
             else:
 
                 # Find a source
                 try: galaxy.find_source(self.frame, self.config.detection)
-                except Exception:
+                except Exception as e:
                     #import traceback
                     self.log.error("Error when finding source")
                     #print(type(e))
@@ -269,7 +275,7 @@ class GalaxyExtractor(Configurable):
             elif galaxy.companion and not galaxy.has_source and galaxy.has_extent: galaxy.source_from_parameters(self.frame, outer_factor)
 
         # Inform the user
-        self.log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.galaxies), self.have_source/len(self.galaxies)*100.0))
+        self.log.info("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.galaxies), self.have_source/len(self.galaxies)*100.0))
 
     # -----------------------------------------------------------------
 
@@ -296,8 +302,29 @@ class GalaxyExtractor(Configurable):
         # Find galaxies in the box defined by the center and RA/DEC ranges
         for galaxy_name, position in catalogs.galaxies_in_box(center, ra_span, dec_span):
 
+            print(galaxy_name, position)
+
             # Create a Galaxy object and add it to the list
             self.galaxies.append(Galaxy(galaxy_name, position=position))
+
+        print("len_before=", len(self.galaxies))
+
+        # Check whether the pixel positions fall within the frame
+        for galaxy in self.galaxies:
+
+            pixel_position = galaxy.pixel_position(self.frame.wcs)
+
+            print(galaxy.name, "pixel position=", pixel_position)
+
+            if pixel_position.x < 0.0 or pixel_position.x >= self.frame.xsize:
+                #print("pixelposition.y=", pixel_position.x)
+                self.galaxies.remove(galaxy)
+
+            if pixel_position.y < 0.0 or pixel_position.y >= self.frame.ysize:
+                #print("pixelposition.x=", pixel_position.y)
+                self.galaxies.remove(galaxy)
+
+        print("len_after=", len(self.galaxies))
 
         # Define a function that returns the length of the major axis of the galaxy
         def major_axis(galaxy):
@@ -595,7 +622,7 @@ class GalaxyExtractor(Configurable):
         for galaxy in self.galaxies:
 
             # Get the center in pixel coordinates
-            x_center, y_center = galaxy.position.to_pixel(self.frame.wcs, origin=0)
+            center = galaxy.pixel_position(self.frame.wcs)
 
             # Set the angle
             angle = galaxy.pa.degree if galaxy.pa is not None else 0.0
@@ -632,8 +659,8 @@ class GalaxyExtractor(Configurable):
             point_suffix = " # point = x " + text
 
             # Add point for the center
-            print("image;point({},{})".format(x_center, y_center) + point_suffix, file=f)
-            print("image;ellipse({},{},{},{},{})".format(x_center, y_center, x_radius, y_radius, angle) + color_suffix, file=f)
+            print("image;point({},{})".format(center.x, center.y) + point_suffix, file=f)
+            print("image;ellipse({},{},{},{},{})".format(center.x, center.y, x_radius, y_radius, angle) + color_suffix, file=f)
 
             # Add aperture
             if galaxy.has_aperture:

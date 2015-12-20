@@ -36,37 +36,37 @@ def get_pixelscale(header):
 
     # Search for 'PIXSCALE' keyword
     if 'PIXSCALE' in header:
-        print('PIXSCALE')
+        #print('PIXSCALE')
         return header['PIXSCALE'] * u.arcsec
 
     # Search for the 'PXSCAL1' and 'PXSCAL2' keywords
     elif 'PXSCAL1' in header and 'PXSCAL2' in header:
-        print('PXSCAL1')
-        return header['PXSCAL1'] * u.arcsec
+        #print('PXSCAL1')
+        return abs(header['PXSCAL1']) * u.arcsec
 
     # Search for the 'SECPIX' keyword
     elif 'SECPIX' in header:
-        print('SECPIX')
+        #print('SECPIX')
         return header['SECPIX'] * u.arcsec
 
     # Search for 'Pixel Field of View' keyword
     elif 'PFOV' in header:
-        print('PFOV')
+        #print('PFOV')
         return header['PFOV'] * u.arcsec
 
     # Search for the CD matrix elements
     elif 'CD1_1' in header and 'CD1_2' in header:
-        print('CD1_1 and CD1_2')
+        #print('CD1_1 and CD1_2')
         return math.sqrt(header['CD1_1']**2 + header['CD1_2']**2) * 3600.0 * u.arcsec
 
     # Search for the diagonal CD matrix elements
     elif 'CD1_1' in header:
-        print('CD1_1')
+        #print('CD1_1')
         return abs(header['CD1_1']) * 3600.0 * u.arcsec
 
     # Search for the 'CDELT1' keyword
     elif 'CDELT1' in header:
-        print('CDELT1')
+        #print('CDELT1')
         return abs(header['CDELT1']) * 3600.0 * u.arcsec
 
     # If none of the above keywords were found, return None

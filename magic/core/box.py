@@ -116,6 +116,12 @@ class Box(np.ndarray):
         # Find the minimal enclosing box containing the ellipse
         extent = mpl_objects[0].get_extents()
 
+        #print("----")
+        #print("center=", center)
+        #print("radius=", radius)
+        #print("extent=", extent)
+        #print("----")
+
         # Get the minimum and maximum x and y values
         x_min, y_min = extent.min
         x_max, y_max = extent.max

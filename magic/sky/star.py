@@ -264,7 +264,7 @@ class Star(SkyObject):
             mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
 
         # None is a valid removal method
-        elif removal_method is None: pass
+        elif removal_method is None: return
         else: raise ValueError("The valid options for removal methods are 'model', 'interpolation' or None")
 
     # -----------------------------------------------------------------

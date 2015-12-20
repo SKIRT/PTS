@@ -16,6 +16,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 # Import astronomical modules
+from astropy.wcs.wcs import NoConvergence
 from photutils import segment_properties, properties_table
 from photutils import EllipticalAperture
 
@@ -134,10 +135,13 @@ class SkyObject(object):
 
         #print(self.position.ra.value, self.position.dec.value)
         #print(self.position.ra.hms)
-        print(self.position.to_string('hmsdms'))
+        #print(self.position.to_string('hmsdms'))
 
         # Get the x and y coordinate of the object's position
-        x, y = self.position.to_pixel(wcs, origin=0)
+        try:
+            x, y = self.position.to_pixel(wcs, origin=0)
+        except NoConvergence:
+            x, y = self.position.to_pixel(wcs, origin=0, mode='wcs')  # Ignore distortions
 
         # Return the position in pixel coordinates
         return Position(x, y)
@@ -168,6 +172,12 @@ class SkyObject(object):
         This function ...
         :return:
         """
+
+        #print(self.source.cutout.xsize)
+        #print(self.source.cutout.ysize)
+
+        #from ..tools import plotting
+        #plotting.plot_box(self.source.cutout)
 
         props = segment_properties(self.source.cutout, self.source.mask)
         #tbl = properties_table(props)
