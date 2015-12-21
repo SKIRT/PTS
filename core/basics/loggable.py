@@ -5,8 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.basics.configurable Contains the Configurable class, a class for representing classes that can be
-#  configured with a configuration file.
+## \package pts.core.basics.loggable Contains the Loggable class, a class representing all classes that
+#  are capable of logging.
 
 # -----------------------------------------------------------------
 
@@ -14,18 +14,17 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .loggable import Loggable
-from ..tools import configuration
+from ..tools import logging
 
 # -----------------------------------------------------------------
 
-class Configurable(Loggable):
+class Loggable(object):
 
     """
     This class ...
     """
 
-    def __init__(self, config, subpackage):
+    def __init__(self):
 
         """
         The constructor ...
@@ -34,23 +33,37 @@ class Configurable(Loggable):
         :return:
         """
 
-        # Call the constructor of the base class
-        super(Configurable, self).__init__()
-
         ## Attributes
 
-        # Set the configuration object
-        self.config = configuration.set(subpackage, self.name, config)
+        # The logger
+        self.log = None
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, level="INFO", path=None):
         
         """
         This function ...
+        :param level:
+        :param path:
+        """
+    
+        # Create the logger
+        self.log = logging.new_log(self.name, level)
+        if path is not None: logging.link_file_log(self.log, path, level)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def name(self):
+
+        """
+        This function ...
+        :return:
         """
 
-        # Call the setup function of the Loggable base class
-        super(Configurable, self).setup(self.config.logging.level, self.config.logging.path)
+        name = type(self).__name__.lower()
+        if "plotter" in name: return "plotter"
+        else: return name
 
 # -----------------------------------------------------------------

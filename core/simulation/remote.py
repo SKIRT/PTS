@@ -22,51 +22,44 @@ import pexpect
 import tempfile
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import Configurable
+from ..basics.host import Host
+from ..basics.loggable import Loggable
 from .jobscript import JobScript
 from ..tools import time, inspection
 from .simulation import SkirtSimulation
-from ..tools import configuration
 from ..basics.map import Map
 from ..test.resources import ResourceEstimator
 
 # -----------------------------------------------------------------
 
-class Remote(Configurable):
+class Remote(Loggable):
 
     """
     This function ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self):
 
         """
         The constructor ...
-        :param config:
         :return:
         """
 
         # Call the constructor of the base class
-        super(Remote, self).__init__(config, "core")
+        super(Remote, self).__init__()
 
         ## Attributes
 
-        # Create the SSH interface
+        # The SSH interface, an instance of the pxssh class
         self.ssh = pxssh.pxssh()
 
-        # Set the host configuration to None initially
+        # The host instance
         self.host = None
 
-        # Set the connected flag to False initially
+        # A flag indicating whether the connection with the remote has been established
         self.connected = False
 
-        # Set the SKIRT paths to None initially
-        self.skirt_path = None
-        self.skirt_dir = None
-        self.skirt_run_dir = None
-        self.local_skirt_run_dir = None
-
-        # Generate a regular expression object to be used on the remote console output
+        # A regular expression object that strips away special unicode characters, used on the remote console output
         self.ansi_escape = re.compile(r'\x1b[^m]*m')
 
     # -----------------------------------------------------------------
@@ -81,25 +74,15 @@ class Remote(Configurable):
         # Call the setup function of the base class
         super(Remote, self).setup()
 
-        # Determine the path to the configuration file for the specified host and check if it is present
-        host_file_path = os.path.join(inspection.pts_user_dir, "hosts", host_id + ".cfg")
-        if not os.path.isfile(host_file_path): raise ValueError("The configuration settings for remote host " + host_id + " could not be found in the PTS/user/hosts directory")
-
-        # Open the host configuration file
-        self.host = configuration.open(host_file_path)
-
-        # Set the host ID and cluster name (if a scheduling system is used)
-        self.config.host_id = host_id
-        if self.host.scheduler: # If no scheduling system is used, self.config.cluster_name stays at None
-            if cluster is None:  # If no cluster name is given, use the default cluster (defined in host configuration file)
-                self.config.cluster_name = self.host.clusters.default
-            else: self.config.cluster_name = cluster
+        # Create the host object
+        self.host = Host(host_id, cluster)
 
         # Make the connection
         self.login()
 
         # Load the necessary modules
-        if self.host.scheduler:
+        if self.host.modules is not None:
+
             self.log.info("Loading necessary modules...")
             self.execute("module load " + " ".join(self.host.modules), output=False)
 
@@ -116,7 +99,7 @@ class Remote(Configurable):
         """
 
         # Inform the user
-        self.log.info("Logging in to the remote SKIRT environment on host '" + self.config.host_id + "'")
+        self.log.info("Logging in to the remote SKIRT environment on host '" + self.host.id + "'")
 
         # Connect to the remote host
         self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password)
@@ -591,9 +574,7 @@ class Remote(Configurable):
         :return:
         """
 
-        name = self.config.host_id
-        if self.host.scheduler: name += "-" + self.config.cluster_name
-        return name
+        return self.host.system_name
 
     # -----------------------------------------------------------------
 
@@ -697,7 +678,7 @@ class Remote(Configurable):
         """
 
         # If the remote host uses a scheduling system, the number of cores on the computing nodes is defined in the configuration
-        if self.host.scheduler: return self.host.clusters[self.config.cluster_name].cores
+        if self.host.scheduler: return self.host.clusters[self.host.cluster_name].cores
 
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:
@@ -763,8 +744,6 @@ class Remote(Configurable):
         :return:
         """
 
-        print(path)
-
         # Launch a bash command to check whether the path exists as either a file or a directory on the remote file system
         output = self.execute("if [ -f " + path + " ]; then echo file; elif [ -d " + path + " ]; then echo directory; else echo None; fi")
 
@@ -805,14 +784,14 @@ class Remote(Configurable):
     # -----------------------------------------------------------------
 
     @property
-    def host_name(self):
+    def host_id(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.config.host_id
+        return self.host.id
 
 # -----------------------------------------------------------------
 
@@ -822,18 +801,23 @@ class SkirtRemote(Remote):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self):
 
         """
         The constructor ...
-        :param config:
         :return:
         """
 
         # Call the constructor of the base class
-        super(SkirtRemote, self).__init__(config)
+        super(SkirtRemote, self).__init__()
 
         ## Attributes
+
+        # Variables storing paths to the remote SKIRT installation location
+        self.skirt_path = None
+        self.skirt_dir = None
+        self.skirt_run_dir = None
+        self.local_skirt_run_dir = None
 
         # Initialize an empty list for the simulation queue
         self.queue = []
@@ -869,7 +853,7 @@ class SkirtRemote(Remote):
         self.skirt_run_dir = os.path.join(self.skirt_dir, "run")
 
         # Determine the path to the local SKIRT run directory
-        self.local_skirt_host_run_dir = os.path.join(inspection.skirt_run_dir, self.config.host_id)
+        self.local_skirt_host_run_dir = os.path.join(inspection.skirt_run_dir, self.host.id)
 
         # Create the local SKIRT run directory for this host if it doesn't already exist
         if not os.path.isdir(self.local_skirt_host_run_dir): os.makedirs(self.local_skirt_host_run_dir)
@@ -1196,7 +1180,7 @@ class SkirtRemote(Remote):
             local_jobscript_path = os.path.join(local_simulation_path, "job.sh")
         else: local_jobscript_path = scheduling_options["jobscript_path"]
         jobscript_name = os.path.basename(local_jobscript_path)
-        jobscript = JobScript(local_jobscript_path, arguments, self.host.clusters[self.config.cluster_name], self.skirt_path, self.host.mpi_command, self.host.modules, walltime, nodes, ppn, name=name, mail=mail, full_node=full_node)
+        jobscript = JobScript(local_jobscript_path, arguments, self.host.clusters[self.host.cluster_name], self.skirt_path, self.host.mpi_command, self.host.modules, walltime, nodes, ppn, name=name, mail=mail, full_node=full_node)
 
         # Copy the job script to the remote simulation directory
         remote_jobscript_path = os.path.join(remote_simulation_path, jobscript_name)

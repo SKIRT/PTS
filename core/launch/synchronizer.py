@@ -17,11 +17,11 @@ import os
 
 # Import the relevant PTS classes and modules
 from ..basics.map import Map
+from ..basics.host import find_host_ids, has_simulations
 from .analyser import SimulationAnalyser
 from ..test.scalinganalyser import ScalingAnalyser
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
-from ..tools import inspection, configuration
 
 # -----------------------------------------------------------------
 
@@ -121,56 +121,14 @@ class RemoteSynchronizer(Configurable):
         # Call the setup function of the base class
         super(RemoteSynchronizer, self).setup()
 
-        # Search for files that define remote host configurations
-        hosts_directory = os.path.join(inspection.pts_user_dir, "hosts")
-        if not os.path.isdir(hosts_directory): os.makedirs(hosts_directory)
-
-        # If the hosts directory is empty, place a template host configuration file there and exit with an error
-        if len([item for item in os.listdir(hosts_directory) if os.path.isfile(os.path.join(hosts_directory, item))]) == 0:
-            config = configuration.new()
-
-            config.name = "server.institute.com"
-            config.user = "user000"
-            config.password = None
-            config.output_path = "~/DATA/SKIRT"
-            config.scheduler = True
-            config.mpi_command = "mpirun"
-            config.modules = ["examplemodule/2016/version2", "examplemodule2/2016/version0.1.3"]
-            config.clusters.default = "cluster_a"
-            config.clusters.cluster_a.cores = 16
-            config.clusters.cluster_b.cores = 32
-
-            config_file_path = os.path.join(hosts_directory, "template.cfg")
-            config_file = open(config_file_path, 'w')
-            config.save(config_file)
-
-            self.log.error("No remote configuration files were found. Placing a template into PTS/user/hosts. Adjust it"
-                           " for the remote hosts you want to use before using 'pts launch' or 'pts status'.")
-            exit()
-
-        # Loop over the configuration files in the hosts directory
-        for filename in os.listdir(hosts_directory):
-
-            # Skip the template configuration file
-            if filename == "template.cfg": continue
-
-            # Determine the full path to the host file
-            file_path = os.path.join(hosts_directory, filename)
-
-            # Ignore directories and hidden files
-            if filename.startswith(".") or not os.path.isfile(file_path): continue
-
-            # Get the host id for this line
-            host_id = filename.split(".")[0]
+        # Find host ids for which a configuration file has been created by the user
+        for host_id in find_host_ids():
 
             # If a list of remotes is defined and this remote is not in it, skip it
             if self.config.remote is not None and host_id not in self.config.remote: continue
 
-            # Check whether there are simulation files corresponding to this host ID
-            host_run_dir = os.path.join(inspection.skirt_run_dir, host_id)
-
-            # If there are no simulation files for this host, skip it
-            if len([item for item in os.listdir(host_run_dir) if item.endswith(".sim") and not item.startswith(".")]) == 0: continue
+            # If there are currently no simulations corresponding to this host, skip it
+            if not has_simulations(host_id): continue
 
             # Create a remote SKIRT execution context
             remote = SkirtRemote()
@@ -258,7 +216,7 @@ class RemoteSynchronizer(Configurable):
             status = remote.status
 
             # Show the name of the current remote
-            if len(status) > 0: self.log.info("Simulations on remote '" + remote.host_name + "':")
+            if len(status) > 0: self.log.info("Simulations on remote '" + remote.host_id + "':")
             print()
 
             # Get the status of the different simulations

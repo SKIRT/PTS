@@ -30,7 +30,7 @@ from pts.magic.core import Image, Frame
 
 # Import the relevant PTS classes and modules
 from pts.modeling.core import ImagePreparation, MapMaker, SEDFitter, GalaxyDecomposer
-from pts.core.basics import Configurable
+from pts.core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
