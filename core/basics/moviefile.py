@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.basiscs.moviefile Creating a movie from a sequence of stills
+## \package pts.core.basics.moviefile Creating a movie from a sequence of stills
 #
 # An instance of the MovieFile class in this module allows creating a movie file from a sequence of images.
 

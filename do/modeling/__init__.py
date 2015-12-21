@@ -9,8 +9,4 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.core.test Classes for testing and measuring the performance of SKIRT
-#
-# This package contains classes used for testing and measuring the performance of SKIRT, including the
-# procedures for running test cases and test suites.
-#
+## \package pts.do.modeling Python scripts exposing AstroMagic modeling functionality to the command line.

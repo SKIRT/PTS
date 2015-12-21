@@ -9,8 +9,4 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.core.test Classes for testing and measuring the performance of SKIRT
-#
-# This package contains classes used for testing and measuring the performance of SKIRT, including the
-# procedures for running test cases and test suites.
-#
+## \package pts.do.eagle Python scripts exposing EAGLE-related functionality to the command line.

@@ -9,7 +9,7 @@
 # Main module for the do package
 # -----------------------------------------------------------------
 
-## \package do.__main__ Execute one of the scripts in this package from any current directory.
+## \package pts.do.__main__ Execute one of the scripts in this package from any current directory.
 #
 # Before proceeding, ensure that your login script includes the extra lines as described in \ref InstallMacSetUp,
 # and that you have logged in again after that change.

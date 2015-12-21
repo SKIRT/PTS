@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.install
+## \package pts.do.core.update
 
 # -----------------------------------------------------------------
 

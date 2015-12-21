@@ -5,5 +5,16 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
+# -----------------------------------------------------------------
+#  Package initialization file
+# -----------------------------------------------------------------
+
+## \package pts.modeling TO DO
+#
+# This package ...
+#
+
+# -----------------------------------------------------------------
+
 # Import classes to make them available at the level of this subpackage
 from .galaxymodeler import GalaxyModeler

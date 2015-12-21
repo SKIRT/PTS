@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
 # **       PTS -- Python Toolkit for working with SKIRT          **
@@ -6,10 +6,10 @@
 # *****************************************************************
 
 # -----------------------------------------------------------------
-#  pts package initialization file
+#  Package initialization file
 # -----------------------------------------------------------------
 
-## \package eagle Processing and visualizing EAGLE output data with SKIRT.
+## \package pts.eagle Processing and visualizing EAGLE output data with SKIRT.
 #
 # The eagle package provides Python modules that help processing and visualizing EAGLE output data with SKIRT.
 #

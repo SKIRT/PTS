@@ -4,3 +4,9 @@
 # **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
+
+# -----------------------------------------------------------------
+#  Package initialization file
+# -----------------------------------------------------------------
+
+## \package pts.do.fitskirt Python scripts exposing FitSKIRT-related functionality to the command line.

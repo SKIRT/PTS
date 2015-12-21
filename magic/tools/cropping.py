@@ -2,6 +2,7 @@
 # -*- coding: utf8 -*-
 # *****************************************************************
 # **       AstroMagic -- the image editor for astronomers        **
+# **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
 ## \package pts.magic.tools.cropping Contains functions used for cropping two-dimensional data.
