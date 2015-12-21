@@ -9,7 +9,8 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.core.basics TO DO
+## \package pts.core.basics Classes representing basic items not directly related to a SKIRT simulation.
 #
-# This package ...
+# This package contains classes representing basic items that are not directly related to a SKIRT simulation,
+# including bandpass filters, RGB images and movie files.
 #

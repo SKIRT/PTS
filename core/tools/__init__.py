@@ -9,7 +9,7 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.core.tools TO DO
+## \package pts.core.tools Convenience functions for various purposes
 #
-# This package ...
+# This package contains modules with convenience functions for various purposes (no classes).
 #

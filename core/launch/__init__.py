@@ -9,7 +9,8 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.core.launch TO DO
+## \package pts.core.launch Classes that launch SKIRT on local or remote computer systems
 #
-# This package ...
+# This package contains classes that launch a SKIRT execution on any of the supported local or remote
+# computer systems, automatically providing appropriate parallelization options for the selected host.
 #

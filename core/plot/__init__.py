@@ -9,7 +9,8 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.core.plot TO DO
+## \package pts.core.plot Classes and functions to visualize SKIRT output
 #
-# This package ...
+# This package contains classes and functions to visualize SKIRT output, including plots of SEDs, RGB renderings
+# of particular instrument frames, polarization maps, and progress or usage statistics.
 #

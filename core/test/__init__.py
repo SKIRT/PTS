@@ -9,7 +9,8 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.core.test TO DO
+## \package pts.core.test Classes for testing and measuring the performance of SKIRT
 #
-# This package ...
+# This package contains classes used for testing and measuring the performance of SKIRT, including the
+# procedures for running test cases and test suites.
 #

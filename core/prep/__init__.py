@@ -9,7 +9,8 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.core.prep TO DO
+## \package pts.core.prep Utilities to prepare data and ski files for input into SKIRT
 #
-# This package ...
-#
+# This package contains classes and functions to prepare external data for input into SKIRT, and to
+# upgrade ski files to newer versions of SKIRT.
+
