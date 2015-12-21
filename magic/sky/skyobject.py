@@ -138,10 +138,12 @@ class SkyObject(object):
         #print(self.position.to_string('hmsdms'))
 
         # Get the x and y coordinate of the object's position
-        try:
-            x, y = self.position.to_pixel(wcs, origin=0)
-        except NoConvergence:
-            x, y = self.position.to_pixel(wcs, origin=0, mode='wcs')  # Ignore distortions
+        #try:
+        #    x, y = self.position.to_pixel(wcs, origin=0)
+        #except NoConvergence:
+        #    x, y = self.position.to_pixel(wcs, origin=0, mode='wcs')  # Ignore distortions
+
+        x, y = self.position.to_pixel(wcs, origin=0, mode='wcs')
 
         # Return the position in pixel coordinates
         return Position(x, y)

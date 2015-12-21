@@ -457,8 +457,18 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
     # If always subtract background is enabled
     if config.always_subtract_background: source.estimate_background(config.background_est_method, config.sigma_clip_background)
 
+    # Check if a FWHM is defined for convolving the source cutout before looking for peaks
+    if config.convolution_fwhm is not None:
+
+        # Create a Gaussian convolution kernel and return it
+        sigma = config.convolution_fwhm * statistics.fwhm_to_sigma
+        kernel = Gaussian2DKernel(sigma)
+
+    # Else, set the kernel to None
+    else: kernel = None
+
     # Find the location of peaks in the box (do not remove gradient yet for performance reasons)
-    peaks = source.locate_peaks(config.sigma_level)
+    peaks = source.locate_peaks(config.sigma_level, kernel=kernel)
 
     # If no peaks could be detected, remove a potential background gradient from the box before detection
     if len(peaks) == 0 and not config.always_subtract_background:
@@ -473,7 +483,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
         source.estimate_background(config.background_est_method, config.sigma_clip_background)
 
         # Find the location of peaks in the box
-        peaks = source.locate_peaks(config.sigma_level)
+        peaks = source.locate_peaks(config.sigma_level, kernel=kernel)
 
         # Add a snapshot of the source to the track record for debugging
         if track_record is not None: track_record.append(copy.deepcopy(source))

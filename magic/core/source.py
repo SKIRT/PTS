@@ -20,6 +20,7 @@ from astropy.table import Table
 from photutils import find_peaks
 from photutils import detect_sources
 from photutils import detect_threshold
+from astropy.convolution import convolve, convolve_fft
 
 # Import the relevant AstroMagic classes and modules
 from .box import Box
@@ -207,7 +208,7 @@ class Source(object):
 
     # -----------------------------------------------------------------
 
-    def locate_peaks(self, threshold_sigmas):
+    def locate_peaks(self, threshold_sigmas, kernel=None):
 
         """
         This function ...
@@ -217,9 +218,12 @@ class Source(object):
         # If a subtracted box is present, use it to locate the peaks
         box = self.subtracted if self.has_background else self.cutout
 
-        # Calculate the sigma-clipped statistics of the frame and find the peaks
+        # Calculate the sigma-clipped statistics of the box
         mean, median, stddev = statistics.sigma_clipped_statistics(box, sigma=3.0)
         threshold = median + (threshold_sigmas * stddev)
+
+        # Convolve the box with the given kernel, if any
+        if kernel is not None: box = convolve_fft(box, kernel, normalize_kernel=True)
 
         # Find peaks
         peaks = find_peaks(box, threshold, box_size=5)
@@ -239,7 +243,7 @@ class Source(object):
             y = peak['y_peak'] + self.cutout.y_min
 
             # Add the coordinates to the positions list
-            positions.append(Position(x=x,y=y))
+            positions.append(Position(x, y))
 
         # If exactly one peak was found, set the self.peak attribute accordingly
         if len(positions) == 1: self.peak = positions[0]

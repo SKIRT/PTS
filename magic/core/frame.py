@@ -552,12 +552,11 @@ class Frame(np.ndarray):
         :return:
         """
 
-        try:
-            x, y = coordinate.to_pixel(self.wcs, origin=0)
-        except NoConvergence:
-            x, y = coordinate.to_pixel(self.wcs, origin=0, mode='wcs')  # Ignore distortions
-
-        #pixel_coordinate = self.wcs.all_world2pix([[coordinate.ra.value, coordinate.dec.value]], 0)
+        #try:
+        #    x, y = coordinate.to_pixel(self.wcs, origin=0)
+        #except NoConvergence:
+        #    x, y = coordinate.to_pixel(self.wcs, origin=0, mode='wcs')  # Ignore distortions
+        x, y = coordinate.to_pixel(self.wcs, origin=0, mode='wcs')  # Ignore distortions
 
         return 0.0 <= x < self.xsize and 0.0 <= y < self.ysize
 

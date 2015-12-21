@@ -320,10 +320,11 @@ class StarExtractor(Configurable):
                     galaxy_position = galaxy.pixel_position(self.frame.wcs)
 
                     # Calculate the distance between the star's position and the galaxy's center
-                    try:
-                        x_center, y_center = position.to_pixel(self.frame.wcs)
-                    except NoConvergence:
-                        x_center, y_center = position.to_pixel(self.frame.wcs, mode='wcs')
+                    #try:
+                    #    x_center, y_center = position.to_pixel(self.frame.wcs)
+                    #except NoConvergence:
+                    #    x_center, y_center = position.to_pixel(self.frame.wcs, mode='wcs')
+                    x_center, y_center = position.to_pixel(self.frame.wcs, mode='wcs')
                     difference = galaxy_position - Position(x=x_center, y=y_center)
 
                     # Add the star-galaxy distance to the list of distances
@@ -371,7 +372,7 @@ class StarExtractor(Configurable):
                         if "e_"+name in entry.colnames:
 
                             # If so, add it to the mag_errors dictionary
-                            mag_errors[band] = entry["e_"+name] * u.mag
+                            mag_errors[band] = entry["e_" + name] * u.mag
 
                     # Create a star object
                     star = Star(catalog=catalog, id=star_id, position=position, ra_error=ra_error,
