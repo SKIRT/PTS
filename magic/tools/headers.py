@@ -2,6 +2,7 @@
 # -*- coding: utf8 -*-
 # *****************************************************************
 # **       AstroMagic -- the image editor for astronomers        **
+# **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
 ## \package pts.magic.tools.headers Contains functions for extracting information from FITS headers.

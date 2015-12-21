@@ -4,3 +4,12 @@
 # **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
+
+# -----------------------------------------------------------------
+#  Package initialization file
+# -----------------------------------------------------------------
+
+## \package pts.core.basics TO DO
+#
+# This package ...
+#

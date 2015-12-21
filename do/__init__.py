@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
 # **       PTS -- Python Toolkit for working with SKIRT          **
@@ -6,10 +6,10 @@
 # *****************************************************************
 
 # -----------------------------------------------------------------
-#  Initialization file for the do package
+#  Package initialization file
 # -----------------------------------------------------------------
 
-## \package do Python scripts exposing PTS functionality to the command line.
+## \package pts.do Python scripts exposing PTS functionality to the command line.
 #
 # The scripts residing in this directory are intended to be invoked from the Terminal command line, so strictly
 # speaking they are not part of a package since they cannot be imported as a module.

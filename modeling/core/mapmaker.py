@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.mapmaker Contains the MapMaker class.
+## \package pts.modeling.core.mapmaker Contains the MapMaker class.
 
 # -----------------------------------------------------------------
 
@@ -30,7 +30,7 @@ from ...core.basics import Configurable
 # -----------------------------------------------------------------
 
 class MapMaker(Configurable):
-    
+
     """
     This class...
     """

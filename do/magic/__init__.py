@@ -9,7 +9,4 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.core.launch TO DO
-#
-# This package ...
-#
+## \package pts.do.magic Python scripts exposing AstroMagic functionality to the command line.

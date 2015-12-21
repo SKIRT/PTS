@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.relaunch Relaunch previous simulations
+## \package pts.do.core.relaunch Relaunch previous simulations
 
 # -----------------------------------------------------------------
 

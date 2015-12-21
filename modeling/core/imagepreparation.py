@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.imagepreparation Contains the ImagePreparation class.
+## \package pts.modeling.core.imagepreparation Contains the ImagePreparation class.
 
 # -----------------------------------------------------------------
 
@@ -30,7 +30,7 @@ from ...core.basics import Configurable
 # -----------------------------------------------------------------
 
 class ImagePreparation(Configurable):
-    
+
     """
     This class...
     """

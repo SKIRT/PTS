@@ -9,7 +9,4 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.core.launch TO DO
-#
-# This package ...
-#
+## \package pts.do.eagle Python scripts exposing EAGLE-related functionality to the command line.

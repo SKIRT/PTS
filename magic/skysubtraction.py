@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       AstroMagic -- the image editor for Astronomers        **
+# **       AstroMagic -- the image editor for astronomers        **
+# **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.skysybtraction Contains the SkySubtractor class.
+## \package pts.magic.skysubtraction Contains the SkySubtractor class.
 
 # -----------------------------------------------------------------
 
