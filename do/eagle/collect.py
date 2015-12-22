@@ -24,7 +24,7 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 import pts.core.tools.archive as arch
-import pts.eagle.config as config
+from pts.eagle import config
 from pts.eagle.database import Database
 from pts.eagle.skirtrun import SkirtRun
 

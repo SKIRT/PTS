@@ -24,7 +24,7 @@
 import sys
 
 # Import the relevant PTS classes and modules
-import pts.eagle.config as config
+from pts.eagle import config
 from pts.eagle import database
 from pts.eagle.connection import Connection
 from pts.eagle.galaxy import Snapshot
