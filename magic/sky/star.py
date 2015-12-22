@@ -270,7 +270,7 @@ class Star(SkyObject):
 
     # -----------------------------------------------------------------
 
-    def remove_saturation(self, frame, mask, config, default_fwhm):
+    def remove_saturation(self, frame, mask, config, default_fwhm, galaxy_mask=None):
 
         """
         This function ...

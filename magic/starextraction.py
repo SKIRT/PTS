@@ -545,7 +545,6 @@ class StarExtractor(Configurable):
 
         """
         This function ...
-        :param image:
         :return:
         """
 

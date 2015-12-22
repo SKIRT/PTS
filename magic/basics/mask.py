@@ -280,18 +280,20 @@ class Mask(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def remove_appendages(self):
+    def remove_appendages(self, super=False):
 
         """
         This function ...
         :return:
         """
 
-        structure = np.array([[False, True, True, True, False],
-                              [True, True, True, True, True],
-                              [True, True, True, True, True],
-                              [True, True, True, True, True],
-                              [False, True, True, True, False]])
+        if super: structure = morphology.disk(5, dtype=bool)
+        else:
+            structure = np.array([[False, True, True, True, False],
+                                  [True, True, True, True, True],
+                                  [True, True, True, True, True],
+                                  [True, True, True, True, True],
+                                  [False, True, True, True, False]])
 
         mask = self.opening(structure)
 

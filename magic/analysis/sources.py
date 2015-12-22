@@ -362,6 +362,18 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         # Show a plot for debugging
         if config.debug.overlap_after or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask after appendage removal")
 
+    ## NEW: second appendage removal step
+    if masks.overlap(source.background_mask, mask):
+
+        # Show a plot for debugging
+        if config.debug.overlap_before or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask before second appendage removal")
+
+        # Do a second appendage removal
+        mask = mask.remove_appendages(super=True)
+
+        # Show a plot for debugging
+        if config.debug.overlap_after or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask after second appendage removal")
+
     # If the mask extents to the boundary of the cutout box and if enabled, expand the ellipse and repeat the procedure
     if masks.overlap(source.background_mask, mask) and config.expand:
 

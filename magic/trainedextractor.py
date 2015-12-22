@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.sextractor Contains the SExtractor class.
+## \package pts.magic.trainedextractor Contains the TrainedExtractor class.
 
 # -----------------------------------------------------------------
 
@@ -29,7 +29,7 @@ from ..core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class SExtractor(Configurable):
+class TrainedExtractor(Configurable):
 
     """
     This class ...
@@ -44,14 +44,14 @@ class SExtractor(Configurable):
         """
 
         # Call the constructor of the base class
-        super(SExtractor, self).__init__(config, "magic")
+        super(TrainedExtractor, self).__init__(config, "magic")
 
         ## Attributes
 
         # Set the frame to None initially
         self.frame = None
 
-        # Set the path to the dat/SExtractor directory
+        # Set the path to the dat/sextractor directory
         directory = os.path.dirname(inspect.getfile(inspect.currentframe()))
         self.dat_path = os.path.join(directory, "dat", "sextractor")
 

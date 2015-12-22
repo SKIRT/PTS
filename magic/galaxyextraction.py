@@ -264,8 +264,8 @@ class GalaxyExtractor(Configurable):
                 except Exception as e:
                     #import traceback
                     self.log.error("Error when finding source")
-                    #print(type(e))
-                    #print(e)
+                    print(type(e))
+                    print(e)
                     #traceback.print_exc()
                     if self.config.plot_track_record_if_exception:
                         if galaxy.has_track_record: galaxy.track_record.plot()
@@ -298,7 +298,7 @@ class GalaxyExtractor(Configurable):
             center, ra_span, dec_span = self.frame.coordinate_range()
         except AssertionError as error:
             self.log.warning("The coordinate system and pixelscale do not match")
-            print(error)
+            #print(error)
             center, ra_span, dec_span = self.frame.coordinate_range(silent=True)
 
         # Find galaxies in the box defined by the center and RA/DEC ranges
