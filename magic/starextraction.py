@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import os
 import math
 import numpy as np
 import matplotlib.pyplot as plt
@@ -1273,6 +1274,65 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    def write_cutouts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Writing cutout boxes to " + self.config.writing.cutouts_path)
+
+        # Keep track of the number of stars encountered
+        with_source = 0
+        with_model = 0
+        with_saturation = 0
+
+        # Loop over all stars
+        for star in self.stars:
+
+            # Check if saturation has been detected for this star
+            if star.has_saturation:
+
+                data = star.source.cutout
+                data[star.source.background_mask] = 0.0
+
+                # Save the cutout as a FITS file
+                path = os.path.join(self.config.writing.cutouts_path, "star_saturation_" + str(with_saturation) + ".fits")
+                Frame(data).save(path)
+
+                # Increment the counter of the number of stars with saturation
+                with_saturation += 1
+
+            # Check if a model has been found for this star
+            elif star.has_model:
+
+                data = star.source.cutout
+                data[star.source.background_mask] = 0.0
+
+                # Save the cutout as a FITS file
+                path = os.path.join(self.config.writing.cutouts_path, "star_model_" + str(with_model) + ".fits")
+                Frame(data).save(path)
+
+                # Increment the counter of the number of stars with saturation
+                with_model += 1
+
+            # Check if a source was found for this star
+            elif star.has_source:
+
+                data = star.source.cutout
+                data[star.source.background_mask] = 0.0
+
+                # Save the cutout as a FITS file
+                path = os.path.join(self.config.writing.cutouts_path, "star_source_" + str(with_source) + ".fits")
+                Frame(data).save(path)
+
+                # Increment the counter of the number of stars with saturation
+                with_source += 1
+
+    # -----------------------------------------------------------------
+
     def write_result(self):
 
         """
@@ -1572,6 +1632,9 @@ class StarExtractor(Configurable):
 
         # If requested, write out the mask of other sources
         if self.config.write_other_segments: self.write_other_segments()
+
+        # If requested, write out the star cutout boxes
+        if self.config.write_cutouts: self.write_cutouts()
 
         # If requested, write out the result
         if self.config.write_result: self.write_result()

@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import os
 import math
 import numpy as np
 import matplotlib.pylab as plt
@@ -26,7 +27,7 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 
 # Import the relevant AstroMagic classes and modules
 from .basics import Mask, Region, Position, Extent
-from .core import Source
+from .core import Source, Frame
 from .sky import Galaxy
 from .tools import catalogs, regions
 
@@ -714,6 +715,65 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    def write_cutouts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Writing cutout boxes to " + self.config.writing.cutouts_path)
+
+        # Keep track of the number of stars encountered
+        principals = 0
+        companions = 0
+        with_source = 0
+
+        # Loop over all galaxies
+        for galaxy in self.galaxies:
+
+            # Check if this is the principal galaxy
+            if galaxy.principal:
+
+                data = galaxy.source.cutout
+                data[galaxy.source.background_mask] = 0.0
+
+                # Save the cutout as a FITS file
+                path = os.path.join(self.config.writing.cutouts_path, "galaxy_principal_" + str(principals) + ".fits")
+                Frame(data).save(path)
+
+                # Increment the counter of the number of principal galaxies (there should only be one, really...)
+                principals += 1
+
+            # Check if this is a companion galaxy
+            elif galaxy.companion:
+
+                data = galaxy.source.cutout
+                data[galaxy.source.background_mask] = 0.0
+
+                # Save the cutout as a FITS file
+                path = os.path.join(self.config.writing.cutouts_path, "galaxy_companion_" + str(companions) + ".fits")
+                Frame(data).save(path)
+
+                # Increment the counter of the number of companion galaxies
+                companions += 1
+
+            # Check if this galaxy has a source
+            elif galaxy.has_source:
+
+                data = galaxy.source.cutout
+                data[galaxy.source.background_mask] = 0.0
+
+                # Save the cutout as a FITS file
+                path = os.path.join(self.config.writing.cutouts_path, "galaxy_source_" + str(principals) + ".fits")
+                Frame(data).save(path)
+
+                # Increment the counter of the number of galaxies with a source
+                with_source += 1
+
+    # -----------------------------------------------------------------
+
     def write_result(self):
 
         """
@@ -879,6 +939,9 @@ class GalaxyExtractor(Configurable):
 
         # If requested, write out the frame where the galaxies are masked
         if self.config.write_masked_frame: self.write_masked_frame()
+
+        # If requested, write out the galaxy cutout boxes
+        if self.config.write_cutouts: self.write_cutouts()
 
         # If requested, write out the result
         if self.config.write_result: self.write_result()

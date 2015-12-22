@@ -101,7 +101,7 @@ class TrainedExtractor(Configurable):
         """
 
         # Call the setup function of the base class
-        super(SExtractor, self).setup()
+        super(TrainedExtractor, self).setup()
 
         # Make a local reference to the frame
         self.frame = frame
@@ -207,10 +207,10 @@ class TrainedExtractor(Configurable):
         command += " -VERBOSE_TYPE=QUIET"
 
         # Inform the user
-        log.debug("SExtractor command: " + command)
+        self.log.debug("SExtractor command: " + command)
 
         # Inform the user
-        log.info("Running SExtractor...")
+        self.log.info("Running SExtractor...")
 
         # Launch the SExtractor command as a seperate process
         subprocess.call(command, shell=True)

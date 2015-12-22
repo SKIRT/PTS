@@ -769,12 +769,12 @@ class MapMaker(Configurable):
         #typisch 20% en 35% respectievelijk
         #48% voor MIPS 24 komt van Lu et al. 2014
 
-        factor = 0.2*flux_fuv/self.disk.sum()
+        factor = 0.2 * flux_fuv/self.disk.sum()
 
         #print("factor=", factor)
 
         # Subtract the disk contribution to the FUV image
-        new_fuv = self.fuv - factor*self.disk
+        new_fuv = self.fuv - factor * self.disk
 
         # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
         new_fuv[new_fuv < 0.0] = 0.0
