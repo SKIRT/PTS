@@ -15,11 +15,15 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import sys
 import imp
 import inspect
 import subprocess
-from operator import itemgetter
+from operator import itemgetter, methodcaller
+from collections import defaultdict
+from contextlib import contextmanager
 from distutils.spawn import find_executable
+from importlib import import_module
 
 # -----------------------------------------------------------------
 
@@ -83,6 +87,127 @@ def skirt_version():
 
     # Return the relevant portion of the output
     return "SKIRT" + output.splitlines()[0].partition("SKIRT")[2]
+
+# -----------------------------------------------------------------
+
+def get_pip_versions():
+
+    """
+    This function ...
+    :return:
+    """
+
+    packages = dict()
+
+    # Launch the 'pip freeze' command and get the output
+    output = subprocess.check_output(["pip", "freeze"])
+
+    # Loop over the different package names and record the version number
+    for entry in output.split("\n"):
+
+        # Skip empty strings
+        if not entry: continue
+
+        # Get the package name and version
+        name, version = entry.split("==")
+
+        # Add them to the dictionary
+        packages[name.lower()] = version
+
+    # Return the dictionary
+    return packages
+
+# -----------------------------------------------------------------
+
+@contextmanager
+def ignore_site_packages_paths():
+
+    """
+    This function ...
+    :return:
+    """
+
+    paths = sys.path[:]
+    # remove working directory so that all
+    # local imports fail
+    if os.getcwd() in sys.path:
+        sys.path.remove(os.getcwd())
+    # remove all third-party paths
+    # so that only stdlib imports will succeed
+    sys.path = list(set(filter(
+        None,
+        filter(lambda i: all(('site-packages' not in i,
+                              'python' in i or 'pypy' in i)),
+               map(methodcaller('lower'), sys.path))
+    )))
+    yield
+    sys.path = paths
+
+# -----------------------------------------------------------------
+
+def is_std_lib(module):
+
+    """
+    This function ...
+    :param module:
+    :return:
+    """
+
+    if not module:
+        return False
+
+    if module in sys.builtin_module_names:
+        return True
+
+    with ignore_site_packages_paths():
+        imported_module = sys.modules.pop(module, None)
+        try:
+            import_module(module)
+        except ImportError:
+            return False
+        else:
+            return True
+        finally:
+            if imported_module:
+                sys.modules[module] = imported_module
+
+# -----------------------------------------------------------------
+
+def get_all_dependencies():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Create an empty dictionary to contain the required modules together with the places of use
+    modules = defaultdict(list)
+
+    # Recursively loop over all files inside this working directory
+    for directory, subdirs, files in os.walk(pts_package_dir):
+
+        # Loop over all files in the (sub)directory
+        for filename in files:
+
+            # If the file is not a python script, skip it
+            if not filename.endswith(".py"): continue
+
+            # Determine the full path to this file
+            filepath = os.path.join(directory, filename)
+
+            # Read the lines of the script file
+            for line in open(filepath, 'r'):
+
+                # Look for an 'import yyy' or 'from yyy import zzz' statement
+                if line.startswith("import ") or (line.startswith("from ") and "import" in line):
+
+                    # Get the name of the module
+                    module = line.split()[1].split(".")[0]
+
+                    # Add the module name to the list
+                    if module: modules[module].append(filepath)
+
+    return modules
 
 # -----------------------------------------------------------------
 

@@ -26,7 +26,9 @@ from pts.core.basics.log import Log
 # Create the command-line parser
 parser = argparse.ArgumentParser()
 parser.add_argument("script", type=str, nargs="?", help="the name of the PTS do script for which to determine the dependencies")
-parser.add_argument("-v", "--verbose", action="store_true", help="show all output")
+parser.add_argument("-m", "--modules", action="store_true", help="show the PTS modules which import a given package")
+parser.add_argument("-s", "--standard", action="store_true", help="show import packages from the python standard library")
+parser.add_argument("-v", "--version", action="store_true", help="show the version numbers of the required packages")
 
 # Parse the command line arguments
 arguments = parser.parse_args()
@@ -38,32 +40,50 @@ log = Log()
 
 # If no script name is given, execute the "list_dependencies.py" script to list all dependencies of PTS and the
 # PTS modules that use them
-if arguments.script is None:
+if arguments.script is None: dependencies = inspection.get_all_dependencies()
 
-    path = os.path.join(inspection.pts_package_dir, "list_dependencies.py")
-    exec open(path)
-    exit()
+else:
 
-# Find matching scripts under the 'do' directory
-match = inspection.find_matching_script(arguments.script)
-if match is None: exit()
+    # Find matching scripts under the 'do' directory
+    match = inspection.find_matching_script(arguments.script)
+    if match is None: exit()
 
-# Determine the full path to the matching script
-script_path = os.path.join(inspection.pts_do_dir, match[0], match[1])
+    # Determine the full path to the matching script
+    script_path = os.path.join(inspection.pts_do_dir, match[0], match[1])
 
-# List the dependencies of the matching script
-dependencies = defaultdict(set)
-inspection.add_dependencies(dependencies, script_path)
+    # List the dependencies of the matching script
+    dependencies = defaultdict(set)
+    inspection.add_dependencies(dependencies, script_path)
+
+# Get the versions of all installed python packages
+if arguments.version: versions = inspection.get_pip_versions()
+else: versions = None
 
 # Loop over the packages and report their presence
 for dependency in sorted(dependencies, key=str.lower):
 
+    # Get the list of PTS scripts for this dependency
     script_list = dependencies[dependency]
 
-    if inspection.is_present(dependency): log.success(dependency + ": present")
+    # Skip packages from the standard library, unless the appropriate flag is enabled
+    if inspection.is_std_lib(dependency) and not arguments.standard: continue
+
+    # Check whether the current package is present
+    if inspection.is_present(dependency):
+
+        # Check version number
+        if versions is not None and (dependency.lower() in versions): version = versions[dependency.lower()]
+        else: version = None
+
+        # Show package name, whether it's present and version number (if requested)
+        if version is not None: log.success(dependency + ": present (version " + version + ")")
+        else: log.success(dependency + ": present")
+
+    # The package is not present
     else: log.failure(dependency + ": not found")
 
-    if arguments.verbose:
+    # List the PTS modules that have this dependency
+    if arguments.modules:
         for script in script_list: log.info("    " + script.split("PTS/pts/")[1])
 
 # -----------------------------------------------------------------
