@@ -15,9 +15,9 @@ To accomplish this, you will have to add some lines to your \c .bashrc script. T
     
 Add the following lines:
 
-    export PYTHONPATH=~/PTS/git
-    alias pts="python -m do"
-    alias ipts="python -im do"
+    export PYTHONPATH=~/PTS
+    alias pts="python -m pts.do"
+    alias ipts="python -im pts.do"
 
 Note that the first line must be adjusted if your <tt>PTS</tt> directory is in a different place or has another name.
 After you save the file, you must log out an log back in for the changes to have effect.
@@ -28,7 +28,7 @@ To test your installation, run the <tt>PTS</tt> \em try script as follows:
 
     $ pts try me
     Starting try...
-    ['/Users/yourname/PTS/git/do/try.py', 'me']
+    ['/Users/yourname/PTS/pts/do/core/try.py', 'me']
     Finished try.
     $
 

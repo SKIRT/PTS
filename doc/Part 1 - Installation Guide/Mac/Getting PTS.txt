@@ -10,7 +10,7 @@ named as indicated below. Execute the following commands in a Terminal window to
     cd [ENTER]
     mkdir PTS [ENTER]
     cd PTS [ENTER]
-    mkdir run git [ENTER]
+    mkdir run pts [ENTER]
 
 As to which version of <tt>PTS</tt> you want to use, you have two choices:
 
@@ -24,11 +24,11 @@ The most recent stable version of <tt>PTS</tt> is available from the <a href="ht
 repository (even anonymously), only the <tt>SKIRT</tt> team has write access to it. To obtain the code, simply type the following commands in a Terminal window:
 
     cd ~/PTS [ENTER]
-    git clone https://github.com/SKIRT/PTS.git git [ENTER]
+    git clone https://github.com/SKIRT/PTS.git pts [ENTER]
 
 This command will produce different kinds of output. To <em>update</em> your local copy of the source code after changes were made to the repository from which you cloned it, use:
 
-    cd ~/PTS/git [ENTER]
+    cd ~/PTS/pts [ENTER]
     git pull [ENTER]
     
 If you plan to make code contributions, you should create an account at <a href="https://github.com">GitHub.com</a>,
@@ -52,7 +52,7 @@ To obtain this access, first go to the <a href="https://github.ugent.be">github.
 - When your SSH key has been added, you can clone the <tt>PTS</tt> source code from the private repository to your computer:
 
       cd ~/PTS
-      git clone git@github.ugent.be:SKIRT/PTS.git git
+      git clone git@github.ugent.be:SKIRT/PTS.git pts
 
   \note Don't forget to add the extra "git" at the end of the last line!
 
@@ -70,7 +70,7 @@ To obtain this access, first go to the <a href="https://github.ugent.be">github.
       
 - To update your local copy of the source code after changes were made to the repository from which you cloned it, use:
 
-      cd ~/PTS/git
+      cd ~/PTS/pts
       git pull
 
 - You now have a local repository (\em local meaning 'on your own computer') which is a clone of the remote repository (\em remote meaning that it is located on the web).
