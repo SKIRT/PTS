@@ -232,7 +232,7 @@ class SimulationAnalyser(Configurable):
         self.log.info("Plotting SEDs...")
 
         # Plot the SEDs for the simulation
-        plotseds(self.simulation)
+        plotseds(self.simulation, output_path=self.simulation.plot_path)
 
     # -----------------------------------------------------------------
 
@@ -247,7 +247,7 @@ class SimulationAnalyser(Configurable):
         self.log.info("Plotting grids...")
 
         # Plot the dust grid for the simulation
-        plotgrids(self.simulation)
+        plotgrids(self.simulation, output_path=self.simulation.plot_path)
 
     # -----------------------------------------------------------------
 

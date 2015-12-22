@@ -16,6 +16,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import os
 import numpy as np
 from reportlab.pdfgen import canvas
 
@@ -38,9 +39,11 @@ from ..tools import archive as arch
 # - simulation: the SkirtSimulation object representing the simulation to be handled
 # - figsize: the horizontal and vertical size of the output figure in inch (!); default is 8 x 8 inch
 #
-def plotgrids(simulation, figsize=(8,8)):
+def plotgrids(simulation, figsize=(8,8), output_path=None):
     for gridfile in simulation.gridxxdatpaths():
         plotfile = gridfile[:-4] + ".pdf"
+
+        if output_path is not None: plotfile = os.path.join(output_path, plotfile)
 
         # setup the figure with the appropriate size (in points)
         figwidth = 72*figsize[0]

@@ -16,6 +16,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import os
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -33,11 +34,12 @@ from ..tools import archive as arch
 # - figsize: the horizontal and vertical size of the output figure in inch (!); default is 10 x 6 inch
 # - xlim: the lower and upper limits of the x axis, specified as a 2-tuple; if missing the x axis is auto-scaled
 # - ylim: the lower and upper limits of the y axis, specified as a 2-tuple; if missing the y axis is auto-scaled
-def plotseds(simulation, figsize=(10,6), xlim=None, ylim=None):
+def plotseds(simulation, figsize=(10,6), xlim=None, ylim=None, output_path=None):
     sedpaths = simulation.seddatpaths()
     if len(sedpaths) > 0:
         labels = [ path.rsplit("_",2)[1] for path in sedpaths ]
         outpath = sedpaths[0].rsplit("_",2)[0] + "_sed.pdf"
+        if output_path is not None: outpath = os.path.join(output_path, outpath)
         success = plotseds_impl(sedpaths, outpath, labels, simulation.fluxlabel(), figsize=figsize, xlim=xlim, ylim=ylim)
         if success: print("Created PDF SED plot file " + outpath)
 
