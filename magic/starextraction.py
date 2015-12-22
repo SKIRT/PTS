@@ -378,7 +378,7 @@ class StarExtractor(Configurable):
                     # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
                     if self.galaxyextractor is not None:
 
-                        star.on_galaxy = self.galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs, self.config.transformation_method), self.config.transformation_method)
+                        star.on_galaxy = self.galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs, self.config.transformation_method))
 
                     # If requested, enable track record
                     if self.config.track_record: star.enable_track_record()

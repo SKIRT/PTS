@@ -23,6 +23,8 @@ from ..extract.memory import MemoryExtractor
 from ..plot.progress import ProgressPlotter
 from ..plot.timeline import TimeLinePlotter
 from ..plot.memory import MemoryPlotter
+from ..plot.seds import plotseds
+from ..plot.grids import plotgrids
 
 # -----------------------------------------------------------------
 
@@ -229,6 +231,9 @@ class SimulationAnalyser(Configurable):
         # Inform the user
         self.log.info("Plotting SEDs...")
 
+        # Plot the SEDs for the simulation
+        plotseds(self.simulation)
+
     # -----------------------------------------------------------------
 
     def plot_grids(self):
@@ -240,6 +245,9 @@ class SimulationAnalyser(Configurable):
 
         # Inform the user
         self.log.info("Plotting grids...")
+
+        # Plot the dust grid for the simulation
+        plotgrids(self.simulation)
 
     # -----------------------------------------------------------------
 
