@@ -27,7 +27,6 @@ from astropy.table import Table
 from astroquery.vizier import Vizier
 from astropy.coordinates import Angle
 from photutils import detect_sources
-from astropy.wcs.wcs import NoConvergence
 from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
@@ -294,7 +293,7 @@ class StarExtractor(Configurable):
                 position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
 
                 # If this star does not lie within the frame, skip it
-                if not self.frame.contains(position): continue
+                if not self.frame.contains(position, self.config.transformation_method): continue
 
                 # Get the mean error on the right ascension and declination
                 if catalog == "UCAC4" or catalog == "NOMAD":
@@ -322,11 +321,7 @@ class StarExtractor(Configurable):
                     galaxy_position = galaxy.pixel_position(self.frame.wcs)
 
                     # Calculate the distance between the star's position and the galaxy's center
-                    #try:
-                    #    x_center, y_center = position.to_pixel(self.frame.wcs)
-                    #except NoConvergence:
-                    #    x_center, y_center = position.to_pixel(self.frame.wcs, mode='wcs')
-                    x_center, y_center = position.to_pixel(self.frame.wcs, mode='wcs')
+                    x_center, y_center = position.to_pixel(self.frame.wcs, mode=self.config.transformation_method)
                     difference = galaxy_position - Position(x=x_center, y=y_center)
 
                     # Add the star-galaxy distance to the list of distances
@@ -381,7 +376,9 @@ class StarExtractor(Configurable):
                                 dec_error=dec_error, magnitudes=magnitudes, magnitude_errors=mag_errors)
 
                     # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
-                    if self.galaxyextractor is not None: star.on_galaxy = self.galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs))
+                    if self.galaxyextractor is not None:
+
+                        star.on_galaxy = self.galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs, self.config.transformation_method), self.config.transformation_method)
 
                     # If requested, enable track record
                     if self.config.track_record: star.enable_track_record()
@@ -389,7 +386,7 @@ class StarExtractor(Configurable):
                     # If there are already stars in the list, check for correspondances with the current stars
                     if len(self.stars) > 0:
                         for saved_star in self.stars:
-                            difference = saved_star.pixel_position(self.frame.wcs) - star.pixel_position(self.frame.wcs)
+                            difference = saved_star.pixel_position(self.frame.wcs, self.config.transformation_method) - star.pixel_position(self.frame.wcs, self.config.transformation_method)
                             if difference.norm < 3.0:
                                 saved_star.confidence_level += 1
                                 break

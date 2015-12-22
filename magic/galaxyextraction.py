@@ -886,7 +886,7 @@ class GalaxyExtractor(Configurable):
         # Loop over all galaxies
         for galaxy in self.galaxies:
 
-            x_center, y_center = galaxy.position.to_pixel(self.frame.wcs, mode='wcs')
+            x_center, y_center = galaxy.position.to_pixel(self.frame.wcs, mode=self.config.transformation_method)
             x_centers.append(x_center)
             y_centers.append(y_center)
 

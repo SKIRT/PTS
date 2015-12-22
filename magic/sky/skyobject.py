@@ -17,7 +17,6 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 # Import astronomical modules
-from astropy.wcs.wcs import NoConvergence
 from photutils import segment_properties, properties_table
 from photutils import EllipticalAperture
 
@@ -126,7 +125,7 @@ class SkyObject(object):
 
     # -----------------------------------------------------------------
 
-    def pixel_position(self, wcs):
+    def pixel_position(self, wcs, transformation="wcs"):
 
         """
         This function ...
@@ -134,17 +133,8 @@ class SkyObject(object):
         :return:
         """
 
-        #print(self.position.ra.value, self.position.dec.value)
-        #print(self.position.ra.hms)
-        #print(self.position.to_string('hmsdms'))
-
         # Get the x and y coordinate of the object's position
-        #try:
-        #    x, y = self.position.to_pixel(wcs, origin=0)
-        #except NoConvergence:
-        #    x, y = self.position.to_pixel(wcs, origin=0, mode='wcs')  # Ignore distortions
-
-        x, y = self.position.to_pixel(wcs, origin=0, mode='wcs')
+        x, y = self.position.to_pixel(wcs, origin=0, mode=transformation)
 
         # Return the position in pixel coordinates
         return Position(x, y)

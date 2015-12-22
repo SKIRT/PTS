@@ -26,7 +26,6 @@ import aplpy
 import astropy.io.fits as pyfits
 import astropy.units as u
 import astropy.coordinates as coord
-from astropy.wcs.wcs import NoConvergence
 from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
@@ -545,20 +544,16 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def contains(self, coordinate):
+    def contains(self, coordinate, transformation="wcs"):
 
         """
         This function ...
         :param coordinate:
+        :param transformation:
         :return:
         """
 
-        #try:
-        #    x, y = coordinate.to_pixel(self.wcs, origin=0)
-        #except NoConvergence:
-        #    x, y = coordinate.to_pixel(self.wcs, origin=0, mode='wcs')  # Ignore distortions
-        x, y = coordinate.to_pixel(self.wcs, origin=0, mode='wcs')  # Ignore distortions
-
+        x, y = coordinate.to_pixel(self.wcs, origin=0, mode=transformation)
         return 0.0 <= x < self.xsize and 0.0 <= y < self.ysize
 
     # -----------------------------------------------------------------
