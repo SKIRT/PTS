@@ -6,17 +6,30 @@ The table below offers a list of the python packages that are actually used by <
 Future version of <tt>PTS</tt> may rely on other packages, as long as they are included in Enthought Canopy.
 
 <TABLE>
-<TR><TD><B>Package</B></TD> <TD><B>Version</B></TD> <TD><B>Description</B></TD></TR>
-<TR><TD>Python</TD>         <TD>2.7.3</TD>          <TD>Python language environment</TD></TR>
-<TR><TD>numpy</TD>          <TD>1.6.1</TD>          <TD>General-purpose array-processing and math</TD></TR>
-<TR><TD>scipy</TD>          <TD>0.10.1</TD>         <TD>Mathematics, science, and engineering</TD></TR>
-<TR><TD>matplotlib</TD>     <TD>1.1.0</TD>          <TD>Interactive 2D plotting</TD></TR>
-<TR><TD>lxml</TD>           <TD>2.3.4</TD>          <TD>Support for XML and XSLT</TD></TR>
-<TR><TD>PIL</TD>            <TD>1.1.7</TD>          <TD>Basic image processing</TD></TR>
-<TR><TD>pyfits</TD>         <TD>3.0.6</TD>          <TD>Interface to FITS files</TD></TR>
-<TR><TD>h5py</TD>           <TD>2.0.0</TD>          <TD>Interface to HDF5 data files</TD></TR>
-<TR><TD>Reportlab</TD>      <TD>2.5</TD>            <TD>Direct PDF file generator</TD></TR>
-<TR><TD>sqlite3</TD>        <TD>2.6.0/3.7.3</TD>    <TD>Basic SQL database interface</TD></TR>
+<TR><TD><B>Package</B></TD> <TD><B>Versions</B></TD> <TD><B>Description</B></TD></TR>
+<TR><TD>Python</TD>         <TD>>= 2.7.3</TD>          <TD>Python language environment</TD></TR>
+<TR><TD>numpy</TD>          <TD>>= 1.6.1</TD>          <TD>General-purpose array-processing and math</TD></TR>
+<TR><TD>scipy</TD>          <TD>>= 0.10.1</TD>         <TD>Mathematics, science, and engineering</TD></TR>
+<TR><TD>matplotlib</TD>     <TD>>= 1.1.0</TD>          <TD>Interactive 2D plotting</TD></TR>
+<TR><TD>lxml</TD>           <TD>>= 2.3.4</TD>          <TD>Support for XML and XSLT</TD></TR>
+<TR><TD>PIL</TD>            <TD>>= 1.1.7</TD>          <TD>Basic image processing</TD></TR>
+<TR><TD>pyfits</TD>         <TD>>= 3.0.6</TD>          <TD>Interface to FITS files</TD></TR>
+<TR><TD>h5py</TD>           <TD>>= 2.0.0</TD>          <TD>Interface to HDF5 data files</TD></TR>
+<TR><TD>Reportlab</TD>      <TD>>= 2.5</TD>            <TD>Direct PDF file generator</TD></TR>
+<TR><TD>sqlite3</TD>        <TD>2.6.0/3.7.3</TD>        <TD>Basic SQL database interface</TD></TR>
+<TR><TD>astropy</TD>        <TD>>= 1.0.7</TD>            <TD>Community python library for Astronomy</TD></TR>
+<TR><TD>Config</TD>         <TD>>= 0.3.9</TD>            <TD>A hierarchical, easy-to-use, powerful configuration module for Python</TD>
+<TR><TD>pexpect</TD>        <TD>>= 3.3</TD>             <TD>Pexpect makes Python a better tool for controlling other applications.</TD>
+<TR><TD>scikits.image</TD>  <TD>>= 0.11.3</TD>          <TD>Image processing routines for SciPy</TD></TR>
+<TR><TD>psutil</TD>         <TD>>= 2.1.1</TD>           <TD>OS interface to processes and tasks</TD></TR>
+</TABLE>
+
+Packages used by PTS that can't be installed by using the Canopy package manager (but with a simple 'pip install' command) are:
+
+<TABLE>
+<TR><TD>pxssh</TD>     <TD>>=0.3.dev2976</TD>      <TD>This package extends pexpect.spawn to specialize setting up SSH connections</TD>
+<TR><TD>astroquery</TD>     <TD>>=0.3.dev2976</TD>      <TD>Astroquery is a set of tools for querying astronomical web forms and databases.</TD>
+<TR><TD>photutils</TD>      <TD>>=0.2.dev1405</TD>      <TD>Photutils is an in-development affiliated package of Astropy to provide tools for detecting and performing photometry of astronomical sources.</TD>
 </TABLE>
 
 \note Enthought Canopy -- and consequently <tt>PTS</tt> -- is built on Python version 2.7.6. It does not use Python 3 because

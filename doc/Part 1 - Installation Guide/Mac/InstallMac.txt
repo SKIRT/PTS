@@ -19,8 +19,9 @@ called "MEncoder". To install it, read the following guide:
 
 To adjust or expand the <tt>PTS</tt> code, you just need a decent text editor -- preferably one with syntax highlighting
 for Python source code. If you already have the Qt Creator development environment installed, perhaps because
-you also work on the <tt>SKIRT</tt> code, then you can easily configure Qt creator to become your <tt>PTS</tt> development center.
-For instructions on how to install Qt Creator, you can read the topic in the <tt>SKIRT</tt> documentation listed below. How to configure Qt Creator for the development of <tt>PTS</tt> is explained in the second topic. 
+you also work on the <tt>SKIRT</tt> code, then you can easily configure Qt creator to become your <tt>PTS</tt> development environment.
+For instructions on how to install Qt Creator, you can read the topic in the <tt>SKIRT</tt> documentation listed below. How to configure Qt Creator for the development of <tt>PTS</tt> is explained in the second topic. If you plan working on an extensive part of PTS (or really any other python project), we can certainly recommend the PyCharm IDE.
+The PyCharm Community Edition is freely available from the <a href="https://www.jetbrains.com/pycharm/download/">JetBrains</a> website, and contains a lot of powerful tools.
 
 - <a href="http://www.skirt.ugent.be/skirt/_install_mac_qt.html">Installing the Qt development environment</a>
 - \subpage InstallMacConfigureforPTS
