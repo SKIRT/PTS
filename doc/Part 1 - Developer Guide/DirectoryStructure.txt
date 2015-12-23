@@ -2,30 +2,31 @@
 
 \page DevDirs Directory Structure
 
-The <tt>PTS</tt> source code is contained in an online repository and can be obtained as described in the installation guide. 
+The <tt>PTS</tt> source code is contained in an online repository and can be obtained as described in the installation guide.
 The files are organized in a directory structure; your local copy may look as follows:
 
 \verbatim
 ~/PTS
-    git
+    pts
+        core
         do
         doc
         eagle
-        pts
+        ...
     run
 \endverbatim
 
-The \c git directory contains an identical copy of the online <tt>PTS</tt> repository; it is usually placed inside a local
+The \c pts directory contains an identical copy of the online <tt>PTS</tt> repository; it is usually placed inside a local
 directory called \c PTS in your home directory. The \c run directory may contain input/output files involved
 in actually running PTS. This information obviously does not belong
-in the source code repository, which is why the \c run directory is \em not inside the \c git directory.
+in the source code repository, which is why the \c run directory is \em not inside the \c pts directory.
 
-Immediately inside the \c git directory reside some shell scripts used for building and publishing the documentation.
-In addition the \c git directory contains subdirectories holding the source and documentation files:
-  - the \c pts subdirectory contains the Python source code for the core classes and functions offered by PTS;
-  - the \c eagle subdirectory contains Python classes and functions dedicated to the EAGLE project but integrated
-    into the PTS framework;
+Immediately inside the \c pts directory reside some shell scripts used for building and publishing the documentation.
+In addition the \c pts directory contains subdirectories holding the source and documentation files:
+  - the \c core subdirectory contains the Python source code for the core classes and functions offered by PTS;
   - the \c do subdirectory contains a number of Python scripts that use the PTS facilities to perform concrete tasks;
-  - the \c doc subdirectory contains text files with additional documentation that doesn't fit inside the source code.
-  
+  - the \c doc subdirectory contains text files with additional documentation that doesn't fit inside the source code;
+  - the \c eagle subdirectory contains Python classes and functions dedicated to the EAGLE project but integrated
+    into the PTS framework.
+
 */

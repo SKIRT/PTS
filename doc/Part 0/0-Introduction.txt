@@ -27,10 +27,10 @@ The <tt>PTS</tt> manual is structured as follows:
     The "Class Hierarchy" subtab brings you to a graphical representation of the relations between all classes.
     The "Class Members" subtab provides a list of all member functions.
 
-\note This manual assumes that the reader has a working knowledge of <tt>SKIRT</tt>; see the <a href="http://www.skirt.ugent.be/skirt">SKIRT manual</a> for more information.
+\note This manual assumes that the reader has a working knowledge of <tt>SKIRT</tt>;
+see the <a href="http://www.skirt.ugent.be/skirt">SKIRT manual</a> for more information.
 
-The <tt>SKIRT</tt> website can be found at <a href="http://www.skirt.ugent.be">www.skirt.ugent.be</a>. This manual is also
-available in PDF format from <a href="http://www.skirt.ugent.be/downloads">www.skirt.ugent.be/downloads</a>.
+The <tt>SKIRT</tt> website can be found at <a href="http://www.skirt.ugent.be">www.skirt.ugent.be</a>.
 
 Access the \ref LegalInfo page for licensing information, a list of <tt>SKIRT</tt> publications and contact information.
 
