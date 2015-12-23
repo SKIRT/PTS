@@ -51,7 +51,7 @@ class SkirtRemoteLauncher(Configurable):
         # Create a SimulationAnalyser instance
         self.analyser = SimulationAnalyser()
 
-        # Initialize a list to contain the retreived finished simulations
+        # Initialize a list to contain the retrieved finished simulations
         self.simulations = []
 
         # Set the paths to None initialy
@@ -126,7 +126,7 @@ class SkirtRemoteLauncher(Configurable):
         launcher.config.keep = arguments.keep
 
         # Retreive types
-        launcher.config.retreive_types = arguments.retreive
+        launcher.config.retrieve_types = arguments.retrieve
 
         # Return the new launcher
         return launcher
@@ -150,9 +150,9 @@ class SkirtRemoteLauncher(Configurable):
         self.simulate()
 
         # 4. Retrieve the simulations that are finished
-        self.retreive()
+        self.retrieve()
 
-        # 5. Analyse the output of the retreived simulations
+        # 5. Analyse the output of the retrieved simulations
         self.analyse()
 
     # -----------------------------------------------------------------
@@ -285,7 +285,7 @@ class SkirtRemoteLauncher(Configurable):
         simulation_file.write("make wave movie: " + str(self.config.advanced.wavemovie) + "\n")
         simulation_file.write("remove remote input: " + str(not self.config.keep) + "\n")
         simulation_file.write("remove remote output: " + str(not self.config.keep) + "\n")
-        simulation_file.write("retreive types: " + json.dumps(self.config.retreive_types) + "\n")
+        simulation_file.write("retrieve types: " + json.dumps(self.config.retrieve_types) + "\n")
         simulation_file.write("extraction directory: " + self.extr_path + "\n")
         simulation_file.write("plotting directory: " + self.plot_path + "\n")
 
@@ -294,15 +294,15 @@ class SkirtRemoteLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def retreive(self):
+    def retrieve(self):
 
         """
         This function ...
         :return:
         """
 
-        # Get a list of the simulations that have been succesfully retreived
-        self.simulations = self.remote.retreive()
+        # Get a list of the simulations that have been succesfully retrieved
+        self.simulations = self.remote.retrieve()
 
     # -----------------------------------------------------------------
 

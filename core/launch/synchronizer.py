@@ -57,7 +57,7 @@ class RemoteSynchronizer(Configurable):
         # The scaling results analyser
         self.scalinganalyser = ScalingAnalyser()
 
-        # Initialize a list to contain the retreived simulations
+        # Initialize a list to contain the retrieved simulations
         self.simulations = []
 
     # -----------------------------------------------------------------
@@ -101,7 +101,7 @@ class RemoteSynchronizer(Configurable):
         self.setup()
 
         # 2. Extract information from the simulation's log files
-        self.retreive()
+        self.retrieve()
 
         # 3. Analyse
         self.analyse()
@@ -156,7 +156,7 @@ class RemoteSynchronizer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def retreive(self):
+    def retrieve(self):
 
         """
         This function ...
@@ -170,7 +170,7 @@ class RemoteSynchronizer(Configurable):
         for remote in self.remotes:
 
             # Retreive simulations
-            self.simulations += remote.retreive()
+            self.simulations += remote.retrieve()
 
     # -----------------------------------------------------------------
 
@@ -182,7 +182,7 @@ class RemoteSynchronizer(Configurable):
         """
 
         # Inform the user
-        self.log.info("Analysing the output of retreived simulations...")
+        self.log.info("Analysing the output of retrieved simulations...")
 
         # Loop over the list of simulations and analyse them
         for simulation in self.simulations:
@@ -245,23 +245,23 @@ class RemoteSynchronizer(Configurable):
                 prefix = " - "
                 tag = "[" + str(simulation_rank) + "]"
 
-                # Finished, but not yet retreived simulation
+                # Finished, but not yet retrieved simulation
                 if simulation_status == "finished":
 
                     if (self.config.ids is not None and entry.id in self.config.ids[remote.config.host_id])\
                             or (self.config.statuses is not None and "finished" in self.config.statuses):
 
                         self.log.warning("The simulation with ID " + str(entry.id) + " has finished, but has not been"
-                                         " retreived yet. Deleting it now would mean all simulation output is lost. Run "
-                                         " 'pts status' again to retreive the simulation output.")
+                                         " retrieved yet. Deleting it now would mean all simulation output is lost. Run "
+                                         " 'pts status' again to retrieve the simulation output.")
 
                     formatter = format.BLUE
 
-                # Finished and retreived simulation (remote output has already been removed, if requested)
-                elif simulation_status == "retreived":
+                # Finished and retrieved simulation (remote output has already been removed, if requested)
+                elif simulation_status == "retrieved":
 
                     if (self.config.ids is not None and entry.id in self.config.ids[remote.config.host_id])\
-                            or (self.config.statuses is not None and "retreived" in self.config.statuses):
+                            or (self.config.statuses is not None and "retrieved" in self.config.statuses):
 
                         tag = "[ X ]"
 

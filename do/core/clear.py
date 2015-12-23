@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.clear Clear retreived, crashed, cancelled and aborted simulations
+## \package pts.do.core.clear Clear retrieved, crashed, cancelled and aborted simulations
 
 # -----------------------------------------------------------------
 
@@ -111,7 +111,7 @@ arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
-if arguments.status is None: arguments.status = ["retreived", "crashed", "aborted", "cancelled"]
+if arguments.status is None: arguments.status = ["retrieved", "crashed", "aborted", "cancelled"]
 
 # Create a RemoteSynchronizer instance
 synchronizer = RemoteSynchronizer.from_arguments(arguments)

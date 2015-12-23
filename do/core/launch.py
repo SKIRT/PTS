@@ -95,7 +95,7 @@ parser.add_argument("--makergb", action="store_true", help="add this option to m
 parser.add_argument("--makewave", action="store_true", help="add this option to make a wave movie from the SKIRT output")
 parser.add_argument("--debug", action="store_true", help="add this option to enable debug output for the launch procedure")
 parser.add_argument("--keep", action="store_true", help="add this option to keep the remote input and output")
-parser.add_argument("--retreive", type=string_list, help="specify the types of output files that have to be retreived")
+parser.add_argument("--retrieve", type=string_list, help="specify the types of output files that have to be retrieved")
 
 # Parse the command line arguments
 arguments = parser.parse_args()

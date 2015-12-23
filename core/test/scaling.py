@@ -60,7 +60,7 @@ class ScalingTest(Configurable):
         # Create a ScalingAnalyser instance
         self.scalinganalyser = ScalingAnalyser()
 
-        # Initialize a list to contain the retreived simulations
+        # Initialize a list to contain the retrieved simulations
         self.simulations = []
 
     # -----------------------------------------------------------------
@@ -117,10 +117,10 @@ class ScalingTest(Configurable):
         # 2. Perform the simulations as a part of the scaling test
         self.perform()
 
-        # 3. Retreive the output of finished simulations (of other scaling test runs)
-        self.retreive()
+        # 3. Retrieve the output of finished simulations (of other scaling test runs)
+        self.retrieve()
 
-        # 3. Analyse the output of the retreived simulations
+        # 3. Analyse the output of the retrieved simulations
         self.analyse()
 
     # -----------------------------------------------------------------
@@ -337,7 +337,7 @@ class ScalingTest(Configurable):
 
     # -----------------------------------------------------------------
 
-    def retreive(self):
+    def retrieve(self):
 
         """
         This function ...
@@ -347,8 +347,8 @@ class ScalingTest(Configurable):
         # Inform the user
         self.log.info("Retreiving finished simulations...")
 
-        # Get a list of the simulations that have been succesfully retreived
-        self.simulations = self.remote.retreive()
+        # Get a list of the simulations that have been succesfully retrieved
+        self.simulations = self.remote.retrieve()
 
     # -----------------------------------------------------------------
 
@@ -360,7 +360,7 @@ class ScalingTest(Configurable):
         """
 
         # Inform the user
-        self.log.info("Analysing retreived simulations...")
+        self.log.info("Analysing retrieved simulations...")
 
         # Loop over the list of simulations and analyse them
         for simulation in self.simulations:
@@ -501,7 +501,7 @@ class ScalingTest(Configurable):
         simulation_file.write("plot memory: " + str(True) + "\n")
         simulation_file.write("remove remote input: " + str(not self.config.keep) + "\n")
         simulation_file.write("remove remote output: " + str(not self.config.keep) + "\n")
-        simulation_file.write("retreive types: " + json.dumps(["log"]) + "\n")
+        simulation_file.write("retrieve types: " + json.dumps(["log"]) + "\n")
         simulation_file.write("extraction directory: " + self.result_path_simulation + "\n")
         simulation_file.write("plotting directory: " + self.plot_path_simulation + "\n")
         simulation_file.write("part of scaling test run " + self.long_scaling_run_name + "\n")

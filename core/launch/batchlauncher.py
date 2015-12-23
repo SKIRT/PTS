@@ -85,9 +85,9 @@ class BatchLauncher(Configurable):
         self.simulate()
 
         # 4. Retrieve the simulations that are finished
-        self.retreive()
+        self.retrieve()
 
-        # 5. Analyse the output of the retreived simulations
+        # 5. Analyse the output of the retrieved simulations
         self.analyse()
 
     # -----------------------------------------------------------------
@@ -182,7 +182,7 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def retreive(self):
+    def retrieve(self):
 
         """
         This function ...

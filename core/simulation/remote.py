@@ -1352,7 +1352,7 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def retreive(self):
+    def retrieve(self):
 
         """
         This function ...
@@ -1362,7 +1362,7 @@ class SkirtRemote(Remote):
         # Raise an error if a connection to the remote has not been made
         if not self.connected: raise RuntimeError("Not connected to the remote")
 
-        # Initialize a list to contain the simulations that have been retreived
+        # Initialize a list to contain the simulations that have been retrieved
         simulations = []
 
         # Loop over the different entries of the status list
@@ -1380,8 +1380,8 @@ class SkirtRemote(Remote):
             # The simulation status
             simulation_status = entry.status
 
-            # Skip already retreived simulations
-            if simulation_status == "retreived": continue
+            # Skip already retrieved simulations
+            if simulation_status == "retrieved": continue
 
             # Finished simulations
             elif simulation_status == "finished":
@@ -1406,7 +1406,7 @@ class SkirtRemote(Remote):
                 make_wave = None
                 remove_remote_input = None
                 remove_remote_output = None
-                retreive_types = None
+                retrieve_types = None
                 extraction_directory = None
                 plotting_directory = None
                 scaling_run_name = None
@@ -1437,7 +1437,7 @@ class SkirtRemote(Remote):
                         elif "make wave movie" in line: make_wave = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
                         elif "remove remote input" in line: remove_remote_input = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
                         elif "remove remote output" in line: remove_remote_output = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-                        elif "retreive types" in line: retreive_types = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
+                        elif "retrieve types" in line: retrieve_types = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "extraction directory" in line: extraction_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "plotting directory" in line: plotting_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "part of scaling test run" in line: scaling_run_name = line.split("scaling test run ")[1].replace('\n', ' ').replace('\r', '').strip()
@@ -1445,18 +1445,18 @@ class SkirtRemote(Remote):
                         elif "scaling plot path" in line: scaling_plot_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "launched within screen session" in line: screen_session = line.split("screen session ")[1].replace('\n', ' ').replace('\r', '').strip()
 
-                # If retreive file types are not defined, download the complete output directory
-                if retreive_types is None or retreive_types == "None" or retreive_types == "null": # 'null' is what json makes of 'None'
+                # If retrieve file types are not defined, download the complete output directory
+                if retrieve_types is None or retrieve_types == "None" or retrieve_types == "null": # 'null' is what json makes of 'None'
 
                     # Download the simulation output
                     self.download(remote_output_path, local_output_path)
 
-                # If retreive file types are defined, download these files seperately to the local filesystem
+                # If retrieve file types are defined, download these files seperately to the local filesystem
                 else:
 
-                    # Try to create a list from the string that represents the retreive types
-                    try: retreive_types_list = json.loads(retreive_types)
-                    except ValueError: raise ValueError("The format of the retreive types string is invalid")
+                    # Try to create a list from the string that represents the retrieve types
+                    try: retrieve_types_list = json.loads(retrieve_types)
+                    except ValueError: raise ValueError("The format of the retrieve types string is invalid")
 
                     # Create a list for the paths of the files that have to be copied to the local filesystem
                     copy_paths = []
@@ -1467,36 +1467,36 @@ class SkirtRemote(Remote):
                         # Determine the full path to the output file
                         filepath = os.path.join(remote_output_path, filename)
 
-                        # Loop over the different possible file types and add the filepath if the particular type is in the list of types to retreive
+                        # Loop over the different possible file types and add the filepath if the particular type is in the list of types to retrieve
                         if filename.endswith("_ds_isrf.dat"):
-                            if "isrf" in retreive_types_list: copy_paths.append(filepath)
+                            if "isrf" in retrieve_types_list: copy_paths.append(filepath)
                         elif "_ds_temp" in filename and filename.endswith(".fits"):
-                            if "temp" in retreive_types_list: copy_paths.append(filepath)
+                            if "temp" in retrieve_types_list: copy_paths.append(filepath)
                         elif filename.endswith("_sed.dat"):
-                            if "sed" in retreive_types_list: copy_paths.append(filepath)
+                            if "sed" in retrieve_types_list: copy_paths.append(filepath)
                         elif filename.endswith("_total.fits"):
-                            if "image" in retreive_types_list: copy_paths.append(filepath)
+                            if "image" in retrieve_types_list: copy_paths.append(filepath)
                         elif filename.endswith("_ds_celltemps.dat"):
-                            if "celltemp" in retreive_types_list: copy_paths.append(filepath)
+                            if "celltemp" in retrieve_types_list: copy_paths.append(filepath)
                         elif "_log" in filename and filename.endswith(".txt"):
-                            if "log" in retreive_types_list: copy_paths.append(filepath)
+                            if "log" in retrieve_types_list: copy_paths.append(filepath)
                         elif filename.endswith("_wavelengths.dat"):
-                            if "wavelengths" in retreive_types_list: copy_paths.append(filepath)
+                            if "wavelengths" in retrieve_types_list: copy_paths.append(filepath)
                         elif "_ds_grid" in filename and filename.endswith(".dat"):
-                            if "grid" in retreive_types_list: copy_paths.append(filepath)
+                            if "grid" in retrieve_types_list: copy_paths.append(filepath)
                         elif "_ds_grho" in filename and filename.endswith(".fits"):
-                            if "grho" in retreive_types_list: copy_paths.append(filepath)
+                            if "grho" in retrieve_types_list: copy_paths.append(filepath)
                         elif "_ds_trho" in filename and filename.endswith(".fits"):
-                            if "trho" in retreive_types_list: copy_paths.append(filepath)
+                            if "trho" in retrieve_types_list: copy_paths.append(filepath)
                         elif filename.endswith("_ds_convergence.dat"):
-                            if "convergence" in retreive_types_list: copy_paths.append(filepath)
+                            if "convergence" in retrieve_types_list: copy_paths.append(filepath)
 
                     # Download the list of files to the local output directory
                     self.download(copy_paths, local_output_path)
 
                 # If retreival was succesful, add this information to the simulation file
                 with open(path, "a") as simulation_file:
-                    simulation_file.write("retreived at: " + time.timestamp() + "\n")
+                    simulation_file.write("retrieved at: " + time.timestamp() + "\n")
 
                 # Remove the remote input, if requested
                 if remove_remote_input: self.remove_directory(remote_input_path)
@@ -1527,10 +1527,10 @@ class SkirtRemote(Remote):
                 if scaling_plot_path is not None: simulation.scaling_plot_path = scaling_plot_path
                 if screen_session is not None: simulation.screen_session = screen_session
 
-                # Add the simulation to the list of retreived simulations
+                # Add the simulation to the list of retrieved simulations
                 simulations.append(simulation)
 
-        # Return the list of retreived simulations
+        # Return the list of retrieved simulations
         return simulations
 
     # -----------------------------------------------------------------
@@ -1586,7 +1586,7 @@ class SkirtRemote(Remote):
                 remote_simulation_path = None
                 screen_name = None
 
-                retreived = False
+                retrieved = False
 
                 with open(path) as simulation_file:
 
@@ -1601,7 +1601,7 @@ class SkirtRemote(Remote):
                         elif "remote simulation directory" in line: remote_simulation_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "launched within screen session" in line: screen_name = line.split("session ")[1].replace('\n', ' ').replace('\r', '').strip()
 
-                        elif "retreived at" in line: retreived = True
+                        elif "retrieved at" in line: retrieved = True
 
                     if remote_ski_path is None: raise ValueError("Not a valid simulation file")
                     if remote_output_path is None: raise ValueError("Not a valid simulation file")
@@ -1612,7 +1612,7 @@ class SkirtRemote(Remote):
                 # The path to the simulation log file
                 remote_log_file_path = os.path.join(remote_output_path, ski_name + "_log.txt")
 
-                if retreived: simulation_status = "retreived"
+                if retrieved: simulation_status = "retrieved"
                 else:
                     # Get the simulation status from the remote log file
                     simulation_status = self.status_from_log_file(remote_log_file_path, screen_name, ski_name)
@@ -1680,7 +1680,7 @@ class SkirtRemote(Remote):
                 remote_output_path = None
                 remote_simulation_path = None
 
-                retreived = False
+                retrieved = False
 
                 with open(path) as simulation_file:
 
@@ -1694,7 +1694,7 @@ class SkirtRemote(Remote):
                         elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
                         elif "remote simulation directory" in line: remote_simulation_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
 
-                        elif "retreived at" in line: retreived = True
+                        elif "retrieved at" in line: retrieved = True
 
                     if remote_ski_path is None: raise ValueError("Not a valid simulation file")
                     if remote_output_path is None: raise ValueError("Not a valid simulation file")
@@ -1708,8 +1708,8 @@ class SkirtRemote(Remote):
                 # Get the job ID from the name of the simulation file
                 job_id = int(os.path.splitext(item)[0])
 
-                # Check if the simulation has already been retreived
-                if retreived: simulation_status = "retreived"
+                # Check if the simulation has already been retrieved
+                if retrieved: simulation_status = "retrieved"
 
                 # Check if the job ID is in the list of queued or running jobs
                 elif job_id in queue_status:
