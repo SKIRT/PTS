@@ -67,13 +67,13 @@ class SimulationAnalyser(Configurable):
         # 1. Call the setup function
         self.setup(simulation)
 
-        # 1. Extract information from the simulation's log files
+        # 2. Extract information from the simulation's log files
         self.extract()
 
-        # 2. Make plots based on the simulation output
+        # 3. Make plots based on the simulation output
         self.plot()
 
-        # 3. Advanced output
+        # 4. Advanced output
         self.advanced()
 
     # -----------------------------------------------------------------

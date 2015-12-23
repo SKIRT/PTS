@@ -261,6 +261,25 @@ class Remote(Loggable):
 
     # -----------------------------------------------------------------
 
+    def rename_file(self, directory, old_name, new_name):
+
+        """
+        This function ...
+        :param directory:
+        :param old_name:
+        :param new_name:
+        :return:
+        """
+
+        # Determine the old and new file path
+        old_path = os.path.join(directory, old_name)
+        new_path = os.path.join(directory, new_name)
+
+        # Use the 'mv' command to rename the file
+        self.execute("mv " + old_path + " " + new_path)
+
+    # -----------------------------------------------------------------
+
     def remove_directory(self, path):
 
         """
@@ -507,6 +526,9 @@ class Remote(Loggable):
         :return:
         """
 
+        # Expand the path to absolute form
+        path = self.expand_user_path(path)
+
         # Load the text file into a variable
         self.execute("value='cat " + path + "'")
 
@@ -589,6 +611,17 @@ class Remote(Loggable):
         # Find out the path to the user's home directory and return it
         output = self.execute("echo $HOME")
         return output[0]
+
+    # -----------------------------------------------------------------
+
+    def expand_user_path(self, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return os.path.join(self.home_directory, path.split("~/")[1])
 
     # -----------------------------------------------------------------
 
@@ -930,6 +963,9 @@ class SkirtRemote(Remote):
         # Inform the user
         self.log.info("Starting the queued simulations remotely...")
 
+        # Create a unique screen name indicating we are running SKIRT simulations if none is given
+        if screen_name is None: screen_name = time.unique_name("SKIRT")
+
         # If the path for the shell script is not given, create a named temporary file
         if local_script_path is None:
             script_file = tempfile.NamedTemporaryFile()
@@ -953,18 +989,19 @@ class SkirtRemote(Remote):
         script_file.flush()
 
         # Copy the script to the remote host
-        script_name = os.path.basename(local_script_path)
-        remote_script_path = os.path.join(self.skirt_run_dir, script_name)
         self.upload(local_script_path, self.skirt_run_dir)
+
+        # Rename the remote script
+        local_script_name = os.path.basename(local_script_path)
+        remote_script_name = screen_name + ".sh"
+        remote_script_path = os.path.join(self.skirt_run_dir, remote_script_name)
+        self.rename_file(self.skirt_run_dir, local_script_name, remote_script_name)
 
         # Close the script file (if it is temporary it will automatically be removed)
         script_file.close()
 
         # Make the shell script executable
         self.execute("chmod +x " + remote_script_path, output=False)
-
-        # Create a unique screen name indicating we are running SKIRT simulations if none is given
-        if screen_name is None: screen_name = time.unique_name("SKIRT")
 
         # Record the screen output: 'script' command
         if screen_output_path is not None: self.execute("script " + screen_output_path)
@@ -1835,8 +1872,8 @@ class SkirtRemote(Remote):
             elif "Launched dust emission photon packages" in line: progress = float(line.split("packages: ")[1].split("%")[0])
             elif "Starting writing results" in line: phase = "writing"
 
-        if "self-absorption" in phase: return "running " + str(phase) + ", cycle " + str(cycle) + "] " + str(progress) + "%)"
-        elif "stellar emission" in phase or "dust emission" in phase: return "running (" + str(phase) + " " + str(progress) + "%)"
-        else: return "running (" + str(phase) + ")"
+        if "self-absorption" in phase: return "running: " + str(phase) + ", cycle " + str(cycle) + "] " + str(progress) + "%"
+        elif "stellar emission" in phase or "dust emission" in phase: return "running: " + str(phase) + " " + str(progress) + "%"
+        else: return "running: " + str(phase)
 
 # -----------------------------------------------------------------

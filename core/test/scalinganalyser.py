@@ -64,10 +64,10 @@ class ScalingAnalyser(Configurable):
         # 1. Call the setup function
         self.setup(simulation, timeline_extractor, memory_extractor)
 
-        # 1. Extract scaling information
+        # 2. Extract scaling information
         self.extract()
 
-        # 2. Make the scaling plots
+        # 3. Make the scaling plots
         if plot: self.plot()
 
     # -----------------------------------------------------------------

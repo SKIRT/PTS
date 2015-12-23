@@ -98,6 +98,9 @@ class SkirtRemoteLauncher(Configurable):
         if arguments.parallel is not None:
             launcher.config.arguments.parallel.processes = arguments.parallel[0]
             launcher.config.arguments.parallel.threads = arguments.parallel[1]
+        else:
+            launcher.config.arguments.parallel.processes = None
+            launcher.config.arguments.parallel.threads = None
 
         # Other simulation arguments
         launcher.config.arguments.emulate = arguments.emulate
@@ -215,12 +218,12 @@ class SkirtRemoteLauncher(Configurable):
         :return:
         """
 
-        self.log.info("free cores: " + str(self.remote.free_cores))
-        self.log.info("free memory: " + str(self.remote.free_memory))
-        self.log.info("free space: " + str(self.remote.free_space))
-        self.log.info("cores: " + str(self.remote.cores))
-        self.log.info("cpu load: " + str(self.remote.cpu_load))
-        self.log.info("memory load: " + str(self.remote.memory_load))
+        #self.log.info("free cores: " + str(self.remote.free_cores))
+        #self.log.info("free memory: " + str(self.remote.free_memory))
+        #self.log.info("free space: " + str(self.remote.free_space))
+        #self.log.info("cores: " + str(self.remote.cores))
+        #self.log.info("cpu load: " + str(self.remote.cpu_load))
+        #self.log.info("memory load: " + str(self.remote.memory_load))
 
         # Inform the user
         self.log.info("Determining the parallelization scheme by estimating the memory requirements...")
@@ -249,8 +252,8 @@ class SkirtRemoteLauncher(Configurable):
             threads = 1
 
         # Set the parallelization options
-        self.config.simulation.parallel.processes = processes
-        self.config.simulation.parallel.threads = threads
+        self.config.arguments.parallel.processes = processes
+        self.config.arguments.parallel.threads = threads
 
     # -----------------------------------------------------------------
 

@@ -92,6 +92,9 @@ class SkirtLauncher(Configurable):
         if arguments.parallel is not None:
             launcher.config.arguments.parallel.processes = arguments.parallel[0]
             launcher.config.arguments.parallel.threads = arguments.parallel[1]
+        else:
+            launcher.config.arguments.parallel.processes = None
+            launcher.config.arguments.parallel.threads = None
 
         # Other simulation arguments
         launcher.config.arguments.emulate = arguments.emulate
@@ -224,8 +227,8 @@ class SkirtLauncher(Configurable):
             threads = 1
 
         # Set the parallelization options
-        self.config.simulation.parallel.processes = processes
-        self.config.simulation.parallel.threads = threads
+        self.config.arguments.parallel.processes = processes
+        self.config.arguments.parallel.threads = threads
 
     # -----------------------------------------------------------------
 

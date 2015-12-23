@@ -100,13 +100,13 @@ class RemoteSynchronizer(Configurable):
         # 1. Call the setup function
         self.setup()
 
-        # 1. Extract information from the simulation's log files
+        # 2. Extract information from the simulation's log files
         self.retreive()
 
-        # 2. Analyse
+        # 3. Analyse
         self.analyse()
 
-        # 3. Announce the status of the simulations
+        # 4. Announce the status of the simulations
         self.announce()
 
     # -----------------------------------------------------------------
@@ -271,7 +271,7 @@ class RemoteSynchronizer(Configurable):
                     formatter = format.GREEN
 
                 # Running simulation
-                elif simulation_status == "running":
+                elif "running" in simulation_status:
 
                     if (self.config.ids is not None and entry.id in self.config.ids[remote.config.host_id])\
                             or (self.config.statuses is not None and "running" in self.config.statuses):
@@ -385,6 +385,8 @@ class RemoteSynchronizer(Configurable):
                 # Show the status of the current simulation
                 print(formatter + prefix + tag + " " + simulation_name + ": " + simulation_status + format.END)
 
-        if len(self.remotes) > 0: print()
+            print()
+
+        #if len(self.remotes) > 0: print()
 
 # -----------------------------------------------------------------
