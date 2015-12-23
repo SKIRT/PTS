@@ -17,6 +17,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import os
 import numpy as np
 import matplotlib
 if matplotlib.get_backend().lower() != "agg": matplotlib.use("agg")
@@ -42,7 +43,7 @@ from ..tools import archive as arch
 #                 if missing the corresponding axis is auto-scaled
 #  - from_percentile, to_percentile: the percentile values, in range [0,100], used to clip the luminosity values
 #                 loaded from the fits files; the default values are 30 and 100 respectively
-def makewavemovie(simulation, xlim=None, ylim=None, from_percentile=30, to_percentile=100):
+def makewavemovie(simulation, xlim=None, ylim=None, from_percentile=30, to_percentile=100, output_path=None):
     sedpaths = simulation.seddatpaths()
     npaths = len(sedpaths)
     if 1 <= npaths <= 3:
@@ -52,6 +53,7 @@ def makewavemovie(simulation, xlim=None, ylim=None, from_percentile=30, to_perce
         if len(fitspaths) == npaths and nlambda > 3:
             labels = [ path.rsplit("_",2)[1] for path in sedpaths ]
             outpath = sedpaths[0].rsplit("_",2)[0] + "_wave.mov"
+            if output_path is not None: outpath = os.path.join(output_path, os.path.basename(outpath))
             fluxlabel = simulation.fluxlabel()
 
             # get the image shapes (assume that fits frames in all files have the same shape)

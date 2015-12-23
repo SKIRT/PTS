@@ -39,7 +39,7 @@ def plotseds(simulation, figsize=(10,6), xlim=None, ylim=None, output_path=None)
     if len(sedpaths) > 0:
         labels = [ path.rsplit("_",2)[1] for path in sedpaths ]
         outpath = sedpaths[0].rsplit("_",2)[0] + "_sed.pdf"
-        if output_path is not None: outpath = os.path.join(output_path, outpath)
+        if output_path is not None: outpath = os.path.join(output_path, os.path.basename(outpath))
         success = plotseds_impl(sedpaths, outpath, labels, simulation.fluxlabel(), figsize=figsize, xlim=xlim, ylim=ylim)
         if success: print("Created PDF SED plot file " + outpath)
 

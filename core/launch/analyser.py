@@ -25,6 +25,8 @@ from ..plot.timeline import TimeLinePlotter
 from ..plot.memory import MemoryPlotter
 from ..plot.seds import plotseds
 from ..plot.grids import plotgrids
+from ..plot.rgbimages import makergbimages
+from ..plot.wavemovie import makewavemovie
 
 # -----------------------------------------------------------------
 
@@ -309,6 +311,9 @@ class SimulationAnalyser(Configurable):
         # Inform the user
         self.log.info("Making RGB images...")
 
+        # Make RGB images from the output images
+        makergbimages(self.simulation, output_path=self.simulation.plot_path)
+
     # -----------------------------------------------------------------
 
     def make_wave(self):
@@ -320,5 +325,8 @@ class SimulationAnalyser(Configurable):
 
         # Inform the user
         self.log.info("Making wave movies...")
+
+        # Make wave movies from the output images
+        makewavemovie(self.simulation)
 
 # -----------------------------------------------------------------

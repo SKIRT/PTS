@@ -16,6 +16,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import os
 import numpy as np
 
 # Import astronomical modules
@@ -36,7 +37,7 @@ from ..tools import archive as arch
 # to clip the luminosity values loaded from the fits file.
 # The images are saved in PNG format and are placed next to the original file(s) with the same name
 # but a different extension. If there are multiple images per fits file, a serial number is added.
-def makergbimages(simulation, wavelength_tuples=None, from_percentile=30, to_percentile=100):
+def makergbimages(simulation, wavelength_tuples=None, from_percentile=30, to_percentile=100, output_path=None):
 
     # loop over the wavelength tuples
     if wavelength_tuples==None: wavelength_tuples = [ None ]
@@ -65,6 +66,7 @@ def makergbimages(simulation, wavelength_tuples=None, from_percentile=30, to_per
                 im.applylog()
                 im.applycurve()
                 savename = outname[:-5] + (str(index+1) if index > 0 else "") + ".png"
+                if output_path is not None: savename = os.path.join(output_path, savename)
                 im.saveto(savename)
                 print("Created RGB image file " + savename)
 

@@ -43,7 +43,7 @@ def plotgrids(simulation, figsize=(8,8), output_path=None):
     for gridfile in simulation.gridxxdatpaths():
         plotfile = gridfile[:-4] + ".pdf"
 
-        if output_path is not None: plotfile = os.path.join(output_path, plotfile)
+        if output_path is not None: plotfile = os.path.join(output_path, os.path.basename(plotfile))
 
         # setup the figure with the appropriate size (in points)
         figwidth = 72*figsize[0]

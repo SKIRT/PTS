@@ -1522,10 +1522,10 @@ class SkirtRemote(Remote):
                 simulation.make_wave = make_wave
                 simulation.extraction_path = extraction_directory
                 simulation.plot_path = plotting_directory
-                if scaling_run_name is not None: simulation.scaling_run_name = scaling_run_name
-                if scaling_file_path is not None: simulation.scaling_file_path = scaling_file_path
-                if scaling_plot_path is not None: simulation.scaling_plot_path = scaling_plot_path
-                if screen_session is not None: simulation.screen_session = screen_session
+                simulation.scaling_run_name = scaling_run_name
+                simulation.scaling_file_path = scaling_file_path
+                simulation.scaling_plot_path = scaling_plot_path
+                simulation.screen_session = screen_session
 
                 # Add the simulation to the list of retrieved simulations
                 simulations.append(simulation)
