@@ -345,7 +345,7 @@ class ScalingTest(Configurable):
         """
 
         # Inform the user
-        self.log.info("Retreiving finished simulations...")
+        self.log.info("Retrieving finished simulations...")
 
         # Get a list of the simulations that have been succesfully retrieved
         self.simulations = self.remote.retrieve()

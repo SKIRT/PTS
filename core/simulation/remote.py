@@ -244,7 +244,7 @@ class Remote(Loggable):
         # Send the command
         self.ssh.sendline(command)
 
-        # Retreive the output if requested
+        # Retrieve the output if requested
         eof = self.ssh.prompt()
 
         # If an extra EOF is used before the actual output line (don't ask me why but I encounter this on the HPC UGent infrastructure), do prompt() again

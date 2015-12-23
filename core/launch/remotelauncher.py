@@ -125,7 +125,7 @@ class SkirtRemoteLauncher(Configurable):
         # Keep remote input and output
         launcher.config.keep = arguments.keep
 
-        # Retreive types
+        # Retrieve types
         launcher.config.retrieve_types = arguments.retrieve
 
         # Return the new launcher
