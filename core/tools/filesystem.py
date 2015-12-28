@@ -85,3 +85,15 @@ def remove_directory(path):
     shutil.rmtree(path)
 
 # -----------------------------------------------------------------
+
+def remove_file(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    os.remove(path)
+
+# -----------------------------------------------------------------

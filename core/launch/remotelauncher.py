@@ -286,6 +286,9 @@ class SkirtRemoteLauncher(Configurable):
         :return:
         """
 
+        # Inform the user
+        self.log.info("Retrieving finished simulations...")
+
         # Get a list of the simulations that have been succesfully retrieved
         self.simulations = self.remote.retrieve()
 
@@ -297,6 +300,9 @@ class SkirtRemoteLauncher(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        self.log.info("Analysing the output of retrieved simulations...")
 
         # Loop over the list of simulations and analyse them
         for simulation in self.simulations:
@@ -318,22 +324,22 @@ class SkirtRemoteLauncher(Configurable):
         """
 
         # Extraction
-        simulation.extraction.progress = self.config.extraction.progress
-        simulation.extraction.timeline = self.config.extraction.timeline
-        simulation.extraction.memory = self.config.extraction.memory
+        simulation.extract_progress = self.config.extraction.progress
+        simulation.extract_timeline = self.config.extraction.timeline
+        simulation.extract_memory = self.config.extraction.memory
         simulation.extraction_path = self.extr_path
 
         # Plotting
-        simulation.plotting.progress = self.config.plotting.progress
-        simulation.plotting.timeline = self.config.plotting.timeline
-        simulation.plotting.memory = self.config.plotting.memory
-        simulation.plotting.seds = self.config.plotting.seds
-        simulation.plotting.grids = self.config.plotting.grids
+        simulation.plot_progress = self.config.plotting.progress
+        simulation.plot_timeline = self.config.plotting.timeline
+        simulation.plot_memory = self.config.plotting.memory
+        simulation.plot_seds = self.config.plotting.seds
+        simulation.plot_grids = self.config.plotting.grids
         simulation.plotting_path = self.plot_path
 
         # Advanced
-        simulation.advanced.rgb = self.config.advanced.rgb
-        simulation.advanced.wave = self.config.advanced.wavemovie
+        simulation.make_rgb = self.config.advanced.rgb
+        simulation.make_wave = self.config.advanced.wavemovie
 
         # Remove remote files
         simulation.remove_remote_input = not self.config.keep

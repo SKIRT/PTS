@@ -20,6 +20,7 @@ import pickle
 import numpy as np
 
 # Import the relevant PTS classes and modules
+from ..tools import serialization
 from ..basics.map import Map
 from .skifile import SkiFile
 from .logfile import LogFile
@@ -114,8 +115,10 @@ class SkirtSimulation(object):
         self.input_path = inpath
         self.output_path = outpath
 
+        if self.ski_path is None: self.ski_path = self.outfilepath("parameters.xml")
+
         # provide placeholders for caching frequently-used objects
-        self._parameters = None if ski_path is None else SkiFile(ski_path)
+        self._parameters = None
         self._units = None
         self._processes = None
         self._threads = None
@@ -212,10 +215,10 @@ class SkirtSimulation(object):
     ## This function returns a SkiFile object representing the parameter file for this simulation.
     def parameters(self):
         if self._parameters is None:
-            self._parameters = SkiFile(self.outfilepath("parameters.xml"))
+            self._parameters = SkiFile(self.ski_path)
         return self._parameters
 
-    @property
+    #@property
     def ski_file(self):
         return self.parameters()
 
@@ -539,9 +542,17 @@ class RemoteSimulation(SkirtSimulation):
         self.retrieve_types = None
 
         # Options for analysis of the simulation output
-        self.extraction = Map({"progress": False, "timeline": False, "memory": False})
-        self.plotting = Map({"progress": False, "timeline": False, "memory": False, "seds": False, "grids": False})
-        self.advanced = Map({"rgb": False, "wave": False})
+        #self.extraction = Map({"progress": False, "timeline": False, "memory": False})
+        #self.plotting = Map({"progress": False, "timeline": False, "memory": False, "seds": False, "grids": False})
+        #self.advanced = Map({"rgb": False, "wave": False})
+        self.extract_progress = False
+        self.extract_timeline = False
+        self.extract_memory = False
+        self.plot_progress = False
+        self.plot_timeline = False
+        self.plot_memory = False
+        self.plot_seds = False
+        self.plot_grids = False
         self.extraction_path = None
         self.plotting_path = None
 
@@ -574,6 +585,8 @@ class RemoteSimulation(SkirtSimulation):
 
         return pickle.load(open(path, 'r'))
 
+        #return serialization.load(path)
+
     # -----------------------------------------------------------------
 
     def to_file(self, path):
@@ -584,7 +597,7 @@ class RemoteSimulation(SkirtSimulation):
         :return:
         """
 
-        pickle.dump(self, open(path, 'wb'))
+        serialization.dump(self, path, method="pickle")
         self.path = path
 
     # -----------------------------------------------------------------
@@ -597,6 +610,8 @@ class RemoteSimulation(SkirtSimulation):
         """
 
         if self.path is None: raise RuntimeError("The simulation file does not exist yet")
-        pickle.dump(self, open(self.path, 'wb'))
+
+        # Serialize and dump the simulation object
+        serialization.dump(self, self.path, method="pickle")
 
 # -----------------------------------------------------------------

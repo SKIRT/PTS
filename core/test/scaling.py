@@ -489,12 +489,12 @@ class ScalingTest(Configurable):
         simulation = self.remote.add_to_queue(self.arguments, simulation_name, scheduling_options)
 
         # Add additional information to the simulation object
-        simulation.extraction.progress = True
-        simulation.extraction.timeline = True
-        simulation.extraction.memory = True
-        simulation.plotting.progress = True
-        simulation.plotting.timeline = True
-        simulation.plotting.memory = True
+        simulation.extract_progress = True
+        simulation.extract_timeline = True
+        simulation.extract_memory = True
+        simulation.plot_progress = True
+        simulation.plot_timeline = True
+        simulation.plot_memory = True
         simulation.remove_remote_input = not self.config.keep
         simulation.remove_remote_output = not self.config.keep
         simulation.remove_remote_simulation_directory = not self.config.keep

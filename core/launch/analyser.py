@@ -120,13 +120,13 @@ class SimulationAnalyser(Configurable):
         """
 
         # Extract the progress information
-        if self.simulation.extraction.progress: self.extract_progress()
+        if self.simulation.extract_progress: self.extract_progress()
 
         # Extract the timeline information
-        if self.simulation.extraction.timeline: self.extract_timeline()
+        if self.simulation.extract_timeline: self.extract_timeline()
 
         # Extract the memory information
-        if self.simulation.extraction.memory: self.extract_memory()
+        if self.simulation.extract_memory: self.extract_memory()
 
     # -----------------------------------------------------------------
 
@@ -138,19 +138,19 @@ class SimulationAnalyser(Configurable):
         """
 
         # If requested, plot the SED's
-        if self.simulation.plotting.seds: self.plot_seds()
+        if self.simulation.plot_seds: self.plot_seds()
 
         # If requested, make plots of the dust grid
-        if self.simulation.plotting.grids: self.plot_grids()
+        if self.simulation.plot_grids: self.plot_grids()
 
         # If requested, plot the simulation progress as a function of time
-        if self.simulation.plotting.progress: self.plot_progress()
+        if self.simulation.plot_progress: self.plot_progress()
 
         # If requested, plot a timeline of the different simulation phases
-        if self.simulation.plotting.timeline: self.plot_timeline()
+        if self.simulation.plot_timeline: self.plot_timeline()
 
         # If requested, plot the memory usage as a function of time
-        if self.simulation.plotting.memory: self.plot_memory()
+        if self.simulation.plot_memory: self.plot_memory()
 
     # -----------------------------------------------------------------
 
@@ -162,10 +162,10 @@ class SimulationAnalyser(Configurable):
         """
 
         # If requested, make RGB images of the output FITS files
-        if self.simulation.advanced.rgb: self.make_rgb()
+        if self.simulation.make_rgb: self.make_rgb()
 
         # If requested, make wave movies from the ouput FITS files
-        if self.simulation.advanced.wave: self.make_wave()
+        if self.simulation.make_wave: self.make_wave()
 
     # -----------------------------------------------------------------
 

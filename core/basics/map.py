@@ -36,11 +36,13 @@ class Map(dict):
     # -----------------------------------------------------------------
 
     def __getattr__(self, attr):
+        if attr.startswith("__") and attr.endswith("__"): raise AttributeError
         return self.get(attr)
 
     # -----------------------------------------------------------------
 
     def __setattr__(self, key, value):
+        if key.startswith("__") and key.endswith("__"): super(Map, self).__setattr__(key, value)
         self.__setitem__(key, value)
 
     # -----------------------------------------------------------------

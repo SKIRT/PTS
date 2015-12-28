@@ -10,9 +10,11 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
+import os
 import re
 import pxssh
 import pexpect
+import tempfile
 
 # Import the relevant PTS classes and modules
 from .host import Host

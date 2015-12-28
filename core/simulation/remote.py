@@ -328,39 +328,6 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def create_simulation_file(self, arguments, name, simulation_id, remote_simulation_path, local_ski_path, local_input_path, local_output_path):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create the simulation file
-        simulation_file_path = os.path.join(self.local_skirt_host_run_dir, str(simulation_id) + ".sim")
-        simulation_file = open(simulation_file_path, 'w')
-
-        # Determine the simulation name from the ski file name if none is given
-        #if name is None: name = os.path.basename(arguments.ski_pattern).split(".")[0]
-
-        # Add the simulation information
-        simulation_file.write("simulation name: " + name + "\n")
-        simulation_file.write("local skifile path: " + local_ski_path + "\n")
-        simulation_file.write("remote skifile path: " + arguments.ski_pattern + "\n")
-        simulation_file.write("local input directory: " + str(local_input_path) + "\n") # can be None
-        simulation_file.write("local output directory: " + local_output_path + "\n")
-        simulation_file.write("remote input directory: " + str(arguments.input_path) + "\n") # can be None
-        simulation_file.write("remote simulation directory: " + str(remote_simulation_path) + "\n")
-        simulation_file.write("remote output directory: " + arguments.output_path + "\n")
-        simulation_file.write("submitted at: " + time.timestamp() + "\n")
-
-        # Close the file
-        simulation_file.close()
-
-        # Return the path to the simulation file
-        return simulation_file_path
-
-    # -----------------------------------------------------------------
-
     def create_simulation_object(self, arguments, name, simulation_id, remote_simulation_path, local_ski_path, local_input_path, local_output_path):
 
         """
@@ -378,14 +345,18 @@ class SkirtRemote(Remote):
         # Create a new remote simulation object
         simulation = RemoteSimulation(local_ski_path, local_input_path, local_output_path)
 
+        # Determine and set the simulation file path
+        simulation_file_path = os.path.join(self.local_skirt_host_run_dir, str(simulation_id) + ".sim")
+
         # Set other attributes
+        simulation.path = simulation_file_path
         simulation.id = simulation_id
         simulation.name = name
         simulation.remote_ski_path = arguments.ski_pattern
         simulation.remote_simulation_path = remote_simulation_path
         simulation.remote_input_path = arguments.input_path
         simulation.remote_output_path = arguments.output_path
-        simulation.submitted_at = time.now()
+        simulation.submitted_at = time.timestamp()
 
         # Return the simulation object
         return simulation

@@ -84,7 +84,7 @@ def makewavemovie(simulation, xlim=None, ylim=None, from_percentile=30, to_perce
                 print("  adding frame " + str(frame+1)+"/"+str(nlambda) + "...")
 
                 # assemble the top panel
-                image = None;
+                image = None
                 for data in datacubes:
                     im = RGBImage(np.dstack(( data[:,:,frame],data[:,:,frame],data[:,:,frame] )))
                     im.setrange(rmin,rmax)
