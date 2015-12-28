@@ -269,28 +269,13 @@ class SkirtRemoteLauncher(Configurable):
 
         # Run the simulation
         arguments = SkirtArguments(self.config.arguments)
-        simulation_file_path = self.remote.run(arguments)
+        simulation = self.remote.run(arguments)
 
-        # Add additional information to the simulation file
-        simulation_file = open(simulation_file_path, 'a')
-        simulation_file.write("extract progress: " + str(self.config.extraction.progress) + "\n")
-        simulation_file.write("extract timeline: " + str(self.config.extraction.timeline) + "\n")
-        simulation_file.write("extract memory: " + str(self.config.extraction.memory) + "\n")
-        simulation_file.write("plot seds: " + str(self.config.plotting.seds) + "\n")
-        simulation_file.write("plot grids: " + str(self.config.plotting.grids) + "\n")
-        simulation_file.write("plot progress: " + str(self.config.plotting.progress) + "\n")
-        simulation_file.write("plot timeline: " + str(self.config.plotting.timeline) + "\n")
-        simulation_file.write("plot memory: " + str(self.config.plotting.memory) + "\n")
-        simulation_file.write("make rgb images: " + str(self.config.advanced.rgb) + "\n")
-        simulation_file.write("make wave movie: " + str(self.config.advanced.wavemovie) + "\n")
-        simulation_file.write("remove remote input: " + str(not self.config.keep) + "\n")
-        simulation_file.write("remove remote output: " + str(not self.config.keep) + "\n")
-        simulation_file.write("retrieve types: " + json.dumps(self.config.retrieve_types) + "\n")
-        simulation_file.write("extraction directory: " + self.extr_path + "\n")
-        simulation_file.write("plotting directory: " + self.plot_path + "\n")
+        # Add additional information to the simulation object
+        self.add_analysis_info(simulation)
 
-        # Close the file
-        simulation_file.close()
+        # Save the simulation object
+        simulation.save()
 
     # -----------------------------------------------------------------
 
@@ -321,5 +306,41 @@ class SkirtRemoteLauncher(Configurable):
 
             # Clear the analyser
             self.analyser.clear()
+
+    # -----------------------------------------------------------------
+
+    def add_analysis_info(self, simulation):
+
+        """
+        This function ...
+        :param simulation:
+        :return:
+        """
+
+        # Extraction
+        simulation.extraction.progress = self.config.extraction.progress
+        simulation.extraction.timeline = self.config.extraction.timeline
+        simulation.extraction.memory = self.config.extraction.memory
+        simulation.extraction_path = self.extr_path
+
+        # Plotting
+        simulation.plotting.progress = self.config.plotting.progress
+        simulation.plotting.timeline = self.config.plotting.timeline
+        simulation.plotting.memory = self.config.plotting.memory
+        simulation.plotting.seds = self.config.plotting.seds
+        simulation.plotting.grids = self.config.plotting.grids
+        simulation.plotting_path = self.plot_path
+
+        # Advanced
+        simulation.advanced.rgb = self.config.advanced.rgb
+        simulation.advanced.wave = self.config.advanced.wavemovie
+
+        # Remove remote files
+        simulation.remove_remote_input = not self.config.keep
+        simulation.remove_remote_output = not self.config.keep
+        simulation.remove_remote_simulation_directory = not self.config.keep
+
+        # Retrieval
+        simulation.retrieve_types = self.config.retrieve_types
 
 # -----------------------------------------------------------------

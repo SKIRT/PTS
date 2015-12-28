@@ -16,9 +16,11 @@
 import os
 import os.path
 import types
+import pickle
 import numpy as np
 
 # Import the relevant PTS classes and modules
+from ..basics.map import Map
 from .skifile import SkiFile
 from .logfile import LogFile
 from ..tools import archive as arch
@@ -80,7 +82,7 @@ def createsimulations(source="", single=False):
 # Combining this ad-hoc knowledge in a single class (as much as possible) will ease the pain of updating things
 # if and when the SKIRT output schemes change.
 #
-class SkirtSimulation:
+class SkirtSimulation(object):
 
     # -----------------------------------------------------------------
 
@@ -96,16 +98,21 @@ class SkirtSimulation:
     #   or relative to the current working directory. A missing or empty outpath means the current working directory.
     #
     def __init__(self, prefix="", inpath="", outpath="", ski_path=None):
+
         self._inpath = os.path.realpath(os.path.expanduser(inpath)) if inpath is not None else None
         self._outpath = os.path.realpath(os.path.expanduser(outpath))
         self._prefix = prefix
         if self._prefix.endswith(".ski"):
             self._prefix = self._prefix[0:len(self._prefix)-len(".ski")]
-        if self._prefix=="":
+        if self._prefix == "":
             logfiles = arch.listdir(self._outpath, "_log.txt")
             if len(logfiles) == 0: raise ValueError("No log file in path: " + self._outpath)
             if len(logfiles) > 1: raise ValueError("Multiple log files in path: " + self._outpath)
             self._prefix = logfiles[0][0:len(logfiles[0])-len("_log.txt")]
+
+        self.ski_path = ski_path
+        self.input_path = inpath
+        self.output_path = outpath
 
         # provide placeholders for caching frequently-used objects
         self._parameters = None if ski_path is None else SkiFile(ski_path)
@@ -492,5 +499,104 @@ class SkirtSimulation:
         wavelengths, fluxes = np.loadtxt(arch.opentext(filepath), usecols=(0,1), unpack=True)
         wavelengths = self.units().convert(wavelengths, to_unit='micron', quantity='wavelength')
         return self.units().convert(fluxes, to_unit=unit, quantity='fluxdensity', wavelength=wavelengths)
+
+# -----------------------------------------------------------------
+
+class RemoteSimulation(SkirtSimulation):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, ski_path, input_path, output_path):
+
+        """
+        The constructor ...
+        :return:
+        """
+
+        # Determine the simulation prefix
+        prefix = os.path.basename(ski_path).split(".ski")[0]
+
+        # Call the constructor of the base class
+        super(RemoteSimulation, self).__init__(prefix, input_path, output_path, ski_path)
+
+        # -- Attributes --
+
+        # The simulation file path
+        self.path = None
+
+        # Basic properties
+        self.id = None
+        self.name = None
+        self.remote_ski_path = None
+        self.remote_simulation_path = None
+        self.remote_input_path = None
+        self.remote_output_path = None
+        self.submitted_at = None
+
+        # Options for retrieval
+        self.retrieve_types = None
+
+        # Options for analysis of the simulation output
+        self.extraction = Map({"progress": False, "timeline": False, "memory": False})
+        self.plotting = Map({"progress": False, "timeline": False, "memory": False, "seds": False, "grids": False})
+        self.advanced = Map({"rgb": False, "wave": False})
+        self.extraction_path = None
+        self.plotting_path = None
+
+        # Removal options
+        self.remove_remote_input = True
+        self.remove_remote_output = True
+        self.remove_remote_simulation_directory = True
+
+        # Screen session name
+        self.screen_name = None
+
+        # Properties relevant for simulations part of a scaling test
+        self.scaling_run_name = None
+        self.scaling_data_file = None
+        self.scaling_plot_path = None
+
+        # Flag indicating whether this simulation has been retrieved or not
+        self.retrieved = False
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return pickle.load(open(path, 'r'))
+
+    # -----------------------------------------------------------------
+
+    def to_file(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        pickle.dump(self, open(path, 'wb'))
+        self.path = path
+
+    # -----------------------------------------------------------------
+
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.path is None: raise RuntimeError("The simulation file does not exist yet")
+        pickle.dump(self, open(self.path, 'wb'))
 
 # -----------------------------------------------------------------

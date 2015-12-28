@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
-import json
 from collections import defaultdict
 
 # Import astronomical modules
@@ -135,7 +134,7 @@ class ScalingTest(Configurable):
         # Call the setup function of the base class
         super(ScalingTest, self).setup()
 
-        ## Remote execution environment
+        # -- Remote execution environment --
 
         # Setup the remote SKIRT execution context
         self.remote.setup(self.config.remote, self.config.cluster)
@@ -146,7 +145,7 @@ class ScalingTest(Configurable):
         # Get the number of cores (per node) on this system from a pre-defined dictionary
         self.cores = self.remote.cores
 
-        ## The minimum and maximum number of processors
+        # -- The minimum and maximum number of processors --
 
         # Calculate the maximum number of processors to use for the scaling test (maxnodes can be a decimal number)
         self.max_processors = int(self.config.max_nodes * self.cores)
@@ -161,11 +160,12 @@ class ScalingTest(Configurable):
         self.threads_per_process = 1
         if self.config.mode == "hybrid": self.threads_per_process = self.min_processors
 
-        # Create a string that identifies the parallelization mode, where the number of threads per process has been appended for hybrid mode
+        # Create a string that identifies the parallelization mode, where the number of threads per process has been
+        # appended for hybrid mode
         self.mode_info = self.config.mode + "-" + str(self.threads_per_process) if self.config.mode == "hybrid" else self.config.mode
         self.mode_info_long = self.config.mode + " mode with " + str(self.threads_per_process) + " threads per process" if self.config.mode == "hybrid" else self.config.mode + " mode"
 
-        ## Directory structure
+        # -- Directory structure --
 
         # Determine the simulation prefix
         self.prefix = os.path.basename(self.config.ski_path).split(".")[0]
@@ -174,7 +174,6 @@ class ScalingTest(Configurable):
         self.base_path = os.path.dirname(self.config.ski_path) if "/" in self.config.ski_path else os.getcwd()
 
         # Define a name identifying this scaling test run
-        #self.scaling_run_name = time.unique_name(self.mode_info + "_" + str(self.config.max_nodes) + "_" + str(self.config.min_nodes))
         self.scaling_run_name = time.unique_name(self.mode_info, separator="__")
         self.long_scaling_run_name = "SKIRT__scaling__" + self.prefix + "__" + self.remote.system_name + "__" + self.scaling_run_name
 
@@ -188,7 +187,7 @@ class ScalingTest(Configurable):
         # Inide the results directory of this run, create a file which gives useful information about this run
         self.create_info_file()
 
-        ## SKIRT arguments
+        # -- SKIRT arguments --
 
         self.arguments = SkirtArguments()
 
@@ -224,7 +223,7 @@ class ScalingTest(Configurable):
         :return:
         """
 
-        ## Top - level directories
+        # -- Top - level directories --
 
         # Set the paths to the input, output, result, plot and temp directories
         self.input_path = os.path.join(self.base_path, "in")
@@ -239,7 +238,7 @@ class ScalingTest(Configurable):
         # Create the output, result, plot and temp directories if necessary
         filesystem.create_directories([self.output_path, self.result_path, self.plot_path, self.temp_path])
 
-        ## System - level directories
+        # -- System - level directories --
 
         # Set the input, output, result, plot and temp paths for the system we are running this scaling test on
         self.output_path_system = os.path.join(self.output_path, self.remote.system_name)
@@ -250,7 +249,7 @@ class ScalingTest(Configurable):
         # Create the output, result, plot and temp directories for the system if necessary
         filesystem.create_directories([self.output_path_system, self.result_path_system, self.plot_path_system, self.temp_path_system])
 
-        ## Scaling run - level directories
+        # -- Scaling run - level directories --
 
         # Determine the paths to the directories that will contain the output, results, plots and temporary files of this particular scaling test run
         self.output_path_run = os.path.join(self.output_path_system, self.scaling_run_name)
@@ -372,7 +371,7 @@ class ScalingTest(Configurable):
             if simulation.scaling_run_name is not None:
 
                 # Run the scaling analyser and clear it afterwards
-                self.scalinganalyser.run(simulation, self.analyser.timeline, self.analyser.memory)
+                self.scalinganalyser.run(simulation, self.analyser.timeline_extractor, self.analyser.memory_extractor)
                 self.scalinganalyser.clear()
 
             # Clear the analyser
@@ -420,8 +419,6 @@ class ScalingTest(Configurable):
         :param processors: the total number of processors to be used for this run
         :param processes:
         :param threads:
-        :param skifilepath:
-        :param dataoutputpath:
         :param infofile:
         :return:
         """
@@ -489,28 +486,28 @@ class ScalingTest(Configurable):
             scheduling_options["full_node"] = True
 
         # Add the simulation to the remote queue
-        simulation_file_path = self.remote.add_to_queue(self.arguments, simulation_name, scheduling_options)
+        simulation = self.remote.add_to_queue(self.arguments, simulation_name, scheduling_options)
 
-        # Add additional information to the simulation file
-        simulation_file = open(simulation_file_path, 'a')
-        simulation_file.write("extract progress: " + str(True) + "\n")
-        simulation_file.write("extract timeline: " + str(True) + "\n")
-        simulation_file.write("extract memory: " + str(True) + "\n")
-        simulation_file.write("plot progress: " + str(True) + "\n")
-        simulation_file.write("plot timeline: " + str(True) + "\n")
-        simulation_file.write("plot memory: " + str(True) + "\n")
-        simulation_file.write("remove remote input: " + str(not self.config.keep) + "\n")
-        simulation_file.write("remove remote output: " + str(not self.config.keep) + "\n")
-        simulation_file.write("retrieve types: " + json.dumps(["log"]) + "\n")
-        simulation_file.write("extraction directory: " + self.result_path_simulation + "\n")
-        simulation_file.write("plotting directory: " + self.plot_path_simulation + "\n")
-        simulation_file.write("part of scaling test run " + self.long_scaling_run_name + "\n")
-        simulation_file.write("scaling data file: " + self.scaling_file_path + "\n")
-        simulation_file.write("scaling plot path: " + self.plot_path_system + "\n")
-        if not self.scheduler: simulation_file.write("launched within screen session " + self.long_scaling_run_name + "\n")
+        # Add additional information to the simulation object
+        simulation.extraction.progress = True
+        simulation.extraction.timeline = True
+        simulation.extraction.memory = True
+        simulation.plotting.progress = True
+        simulation.plotting.timeline = True
+        simulation.plotting.memory = True
+        simulation.remove_remote_input = not self.config.keep
+        simulation.remove_remote_output = not self.config.keep
+        simulation.remove_remote_simulation_directory = not self.config.keep
+        simulation.retrieve_types = ["log"]
+        simulation.extraction_path = self.result_path_simulation
+        simulation.plotting_path = self.plot_path_simulation
+        simulation.scaling_run_name = self.long_scaling_run_name
+        simulation.scaling_data_file = self.scaling_file_path
+        simulation.scaling_plot_path = self.plot_path_system
+        if not self.scheduler: simulation.screen_name = self.long_scaling_run_name
 
-        # Close the file
-        simulation_file.close()
+        # Save the simulation file
+        simulation.save()
 
         # Add information about the path to the directory where the extracted data will be placed
         infofile.write(" - progress information will be extracted to: " + self.result_path_simulation + "\n")

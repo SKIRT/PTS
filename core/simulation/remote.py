@@ -15,816 +15,14 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
-import re
-import json
-import pxssh
-import pexpect
 import tempfile
 
 # Import the relevant PTS classes and modules
-from ..basics.host import Host
-from ..basics.loggable import Loggable
+from ..basics.remote import Remote
 from .jobscript import JobScript
 from ..tools import time, inspection
-from .simulation import SkirtSimulation
-from ..basics.map import Map
 from ..test.resources import ResourceEstimator
-
-# -----------------------------------------------------------------
-
-class Remote(Loggable):
-
-    """
-    This function ...
-    """
-
-    def __init__(self):
-
-        """
-        The constructor ...
-        :return:
-        """
-
-        # Call the constructor of the base class
-        super(Remote, self).__init__()
-
-        # -- Attributes --
-
-        # The SSH interface, an instance of the pxssh class
-        self.ssh = pxssh.pxssh()
-
-        # The host instance
-        self.host = None
-
-        # A flag indicating whether the connection with the remote has been established
-        self.connected = False
-
-        # A regular expression object that strips away special unicode characters, used on the remote console output
-        self.ansi_escape = re.compile(r'\x1b[^m]*m')
-
-    # -----------------------------------------------------------------
-
-    def setup(self, host_id, cluster=None):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(Remote, self).setup()
-
-        # Create the host object
-        self.host = Host(host_id, cluster)
-
-        # Make the connection
-        self.login()
-
-        # Load the necessary modules
-        if self.host.modules is not None:
-
-            self.log.info("Loading necessary modules...")
-            self.execute("module load " + " ".join(self.host.modules), output=False)
-
-        # Check whether the output directory exists
-        if not self.is_directory(self.host.output_path): raise ValueError("The specified output path does not exist")
-
-    # -----------------------------------------------------------------
-
-    def login(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Logging in to the remote SKIRT environment on host '" + self.host.id + "'")
-
-        # Connect to the remote host
-        self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password)
-
-        # Check whether connection was succesful
-        if not self.connected: raise RuntimeError("Connection failed")
-
-    # -----------------------------------------------------------------
-
-    def logout(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Logging out from the remote SKIRT environment")
-
-        # Disconnect
-        if self.connected: self.ssh.logout()
-
-    # -----------------------------------------------------------------
-
-    def kill_screen(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        # Quit the specified screen session
-        self.execute("screen -S " + name + " -X quit", output=False)
-
-    # -----------------------------------------------------------------
-
-    def kill_job(self, id):
-
-        """
-        This function ...
-        :param id:
-        :return:
-        """
-
-        # Stop the job with the specified ID
-        self.execute("qdel " + str(id), output=False)
-
-    # -----------------------------------------------------------------
-
-    def screen_state(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        # Execute the 'screen -ls' command
-        output = self.execute("screen -ls")
-
-        # Loop over the different active screen sessions
-        for entry in output:
-
-            # Check if the specified screen name corresponds to the current entry
-            if name in entry:
-
-                # Check the state of this screen session
-                if "Detached" in entry: return "detached"
-                elif "Attached" in entry: return "attached"
-                else: raise ValueError("Screen " + name + " in unkown state")
-
-        # If the screen name was not encountered, return None (the screen session has finished or has been aborted)
-        return None
-
-    # -----------------------------------------------------------------
-
-    def is_active_screen(self, name):
-
-        """
-        This function ...
-        :return:
-        """
-
-        state = self.screen_state(name)
-        return state == "detached" or state == "attached"
-
-    # -----------------------------------------------------------------
-
-    def is_attached_screen(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        return self.screen_state(name) == "attached"
-
-    # -----------------------------------------------------------------
-
-    def is_detached_screen(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        return self.screen_state(name) == "detached"
-
-    # -----------------------------------------------------------------
-
-    def get_requirements(self, processors):
-
-        """
-        This function calculates the required amount of nodes and processors per node, given a certain number of
-        processors.
-        :param processors:
-        :return:
-        """
-
-        # Calculate the necessary amount of nodes
-        nodes = processors // self.cores + (processors % self.cores > 0)
-
-        # Determine the number of processors per node
-        ppn = processors if nodes == 1 else self.cores
-
-        # Return the number of nodes and processors per node
-        return nodes, ppn
-
-    # -----------------------------------------------------------------
-
-    def execute(self, command, output=True, expect_eof=True, contains_extra_eof=False):
-
-        """
-        This function ...
-        :param command:
-        :return:
-        """
-
-        # Send the command
-        self.ssh.sendline(command)
-
-        # Retrieve the output if requested
-        eof = self.ssh.prompt()
-
-        # If an extra EOF is used before the actual output line (don't ask me why but I encounter this on the HPC UGent infrastructure), do prompt() again
-        if contains_extra_eof: eof = self.ssh.prompt()
-
-        # If the command could not be sent, raise an error
-        if not eof and expect_eof and not contains_extra_eof: raise RuntimeError("The command could not be sent")
-
-        # Ignore the first and the last line (the first is the command itself, the last is always empty)
-        if output:
-            # Trial and error to get it right for HPC UGent login nodes; don't know what is happening
-            if contains_extra_eof: return self.ssh.before.replace('\x1b[K', '').split("\r\n")[1:-1]
-            else: return self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
-
-    # -----------------------------------------------------------------
-
-    def rename_file(self, directory, old_name, new_name):
-
-        """
-        This function ...
-        :param directory:
-        :param old_name:
-        :param new_name:
-        :return:
-        """
-
-        # Determine the old and new file path
-        old_path = os.path.join(directory, old_name)
-        new_path = os.path.join(directory, new_name)
-
-        # Use the 'mv' command to rename the file
-        self.execute("mv " + old_path + " " + new_path)
-
-    # -----------------------------------------------------------------
-
-    def remove_directory(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        self.execute("rm -rf " + path, output=False)
-
-    # -----------------------------------------------------------------
-
-    def remove_file(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        self.execute("rm " + path, output=False)
-
-    # -----------------------------------------------------------------
-
-    def change_cwd(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        self.execute("cd " + path)
-
-    # -----------------------------------------------------------------
-
-    def directories_in_path(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Get the path to the current working directory
-        working_directory = self.working_directory
-
-        # Change the working directory to the provided path
-        self.change_cwd(path)
-
-        # List the directories in the provided path
-        output = self.execute("for i in $(ls -d */); do echo ${i%%/}; done")
-
-        # Change the working directory back to the original working directory
-        self.change_cwd(working_directory)
-
-        # Return the list of directories
-        return output
-
-    # -----------------------------------------------------------------
-
-    def files_in_path(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Get the path to the current working directory
-        working_directory = self.working_directory
-
-        # Change the working directory to the provided path
-        self.change_cwd(path)
-
-        # List the files in the provided path
-        output = self.execute("for f in *; do [[ -d $f ]] || echo $f; done")
-
-        # Change the working directory back to the original working directory
-        self.change_cwd(working_directory)
-
-        # Return the list of directories
-        return output
-
-    # -----------------------------------------------------------------
-
-    def download(self, origin, destination, timeout=30):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Construct the command string
-        copy_command = "scp "
-
-        # Add the host address
-        copy_command += self.host.user + "@" + self.host.name + ":"
-
-        # If the origin is a string, we assume it represents a single file path or directory path
-        if isinstance(origin, basestring):
-
-            # Check if the origin represents a file
-            if self.is_file(origin): copy_command += origin.replace(" ", "\ ") + " "
-
-            # Check if it represents a directory
-            #elif self.is_directory(origin): copy_command += origin.replace(" ", "\ ") + "/* " + "-r "
-            elif self.is_directory(origin): copy_command += origin.replace(" ", "\ ") + "/* "
-
-            # The origin does not exist
-            else: raise ValueError("The specified path " + origin + " does not represent an existing directory or file on the remote host")
-
-        # If the origin is a list, we assume it contains multiple file paths
-        elif isinstance(origin, list):
-
-            # Check whether the files exist remotely
-            for file_path in origin:
-                if not self.is_file(file_path): raise ValueError("The file " + file_path + " does not exist on the remote host")
-
-            # Escape possible space characters
-            origin = [path.replace(" ", "\ ") for path in origin]
-
-            # Add a quotation mark character because the seperate file paths are going to be separated by spaces
-            # (the command is going to be of the form scp username@ip.of.server.copyfrom:"file1.log file2.log" "~/yourpathtocopy")
-            copy_command += '"'
-
-            # Add the file paths to the command string
-            copy_command += " ".join(origin)
-
-            # Add another quotation mark to identify the end of the filepath list
-            copy_command += '" '
-
-        # Add the destination path to the command
-        copy_command += destination.replace(" ", "\ ") + "/"
-
-        self.log.debug("Copy command: " + copy_command)
-
-        # Temporary file for output of the scp command
-        temp_file_path = tempfile.mktemp()
-        temp_file = open(temp_file_path, 'w')
-
-        # Execute the command
-        child = pexpect.spawn(copy_command, timeout=timeout)
-        if self.host.password is not None:
-            child.expect(['password: '])
-            child.sendline(self.host.password)
-        child.logfile = temp_file
-        child.expect(pexpect.EOF, timeout=None)
-        child.close()
-
-        # Close the temporary output file
-        temp_file.close()
-
-        # Open the output file again and read the contents
-        temp_file = open(temp_file_path, 'r')
-        stdout = temp_file.read()
-        temp_file.close()
-
-        # Raise an error if something went wrong
-        if child.exitstatus != 0: raise RuntimeError(stdout)
-
-        self.log.debug("Copy stdout: " + str(stdout))
-
-    # -----------------------------------------------------------------
-
-    def upload(self, origin, destination, timeout=30):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Construct the command string
-        copy_command = "scp "
-
-        # If the origin is a string, we assume it represents a single file path or directory path
-        if isinstance(origin, basestring):
-
-            # Check if the origin represents a file
-            if os.path.isfile(origin): copy_command += origin.replace(" ", "\ ") + " "
-
-            # Check if it represents a directory
-            elif os.path.isdir(origin): copy_command += "-r " + origin.replace(" ", "\ ") + "/ "
-
-            # The origin does not exist
-            else: raise ValueError("The specified path " + origin + " does not represent an existing directory or file")
-
-        # If the origin is a list, we assume it contains multiple file paths
-        elif isinstance(origin, list):
-
-            # Check whether the files exist locally
-            for file_path in origin:
-                if not os.path.isfile(file_path): raise ValueError("The file " + file_path + " does not exist")
-
-            # Escape possible space characters
-            origin = [path.replace(" ", "\ ") for path in origin]
-
-            # Add the file paths to the command string
-            copy_command += " ".join(origin) + " "
-
-        # Invalid argument
-        else: raise ValueError("The origin must be a string or a list of strings")
-
-        # Add the host address and the destination directory
-        copy_command += self.host.user + "@" + self.host.name + ":" + destination.replace(" ", "\ ") + "/"
-        self.log.debug("Copy command: " + copy_command)
-
-        # Temporary file for output of the scp command
-        temp_file_path = tempfile.mktemp()
-        temp_file = open(temp_file_path, 'w')
-
-        # Execute the command
-        child = pexpect.spawn(copy_command, timeout=timeout)
-        if self.host.password is not None:
-            child.expect(['password: '])
-            child.sendline(self.host.password)
-        child.logfile = temp_file
-        try:
-            child.expect(pexpect.EOF, timeout=None)
-        except pexpect.EOF:
-            pass
-        child.close()
-
-        # Close the temporary output file
-        temp_file.close()
-
-        # Open the output file again and read the contents
-        temp_file = open(temp_file_path, 'r')
-        stdout = temp_file.read()
-        temp_file.close()
-
-        # Raise an error if something went wrong
-        if child.exitstatus != 0: raise RuntimeError(stdout)
-
-        self.log.debug("Copy stdout: " + str(stdout))
-
-    # -----------------------------------------------------------------
-
-    def read_text_file(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Expand the path to absolute form
-        path = self.expand_user_path(path)
-
-        # Load the text file into a variable
-        self.execute("value='cat " + path + "'")
-
-        # Print the variable to the console, and obtain the output
-        return self.execute('echo "$($value)"')
-
-    # -----------------------------------------------------------------
-
-    def install(self, private=False, key_password=None):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Navigate to the home directory
-        self.execute("cd ~", output=False)
-
-        # Create the SKIRT directory
-        self.execute("mkdir SKIRT", output=False)
-
-        # In the SKIRT directory, create the necessary subdirectories
-        self.execute("cd SKIRT", output=False)
-        self.execute("mkdir git run release", output=False)
-
-        # Clone the SKIRT repository
-        if private:
-            output = self.execute("git clone git@github.ugent.be:SKIRT/SKIRT.git git", expect_eof=False)
-            self.ssh.expect(['id_rsa: '])
-            self.ssh.sendline(key_password)
-
-        else: self.execute("git clone https://github.com/SKIRT/SKIRT.git git", output=False)
-
-        # Compile the SKIRT code
-        self.execute("./makeSKIRT.sh", output=False)
-
-        # Put SKIRT in the PATH environment variable
-
-    # -----------------------------------------------------------------
-
-    def update(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Navigate to the SKIRT repository directory
-        skirt_repo_dir = os.path.join(self.skirt_dir, "git")
-        self.execute("cd " + skirt_repo_dir, output=False)
-
-        # Update SKIRT
-        self.execute("git pull origin master", output=False)
-
-        # Compile the SKIRT code
-        self.execute("./makeSKIRT.sh", output=False)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def system_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.host.system_name
-
-    # -----------------------------------------------------------------
-
-    @property
-    def home_directory(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Find out the path to the user's home directory and return it
-        output = self.execute("echo $HOME")
-        return output[0]
-
-    # -----------------------------------------------------------------
-
-    def expand_user_path(self, path):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return os.path.join(self.home_directory, path.split("~/")[1])
-
-    # -----------------------------------------------------------------
-
-    @property
-    def working_directory(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Find out the path to the current working directory and return it
-        output = self.execute("echo $PWD")
-        return output[0]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def free_cores(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.cores * self.cpu_load
-
-    # -----------------------------------------------------------------
-
-    @property
-    def free_memory(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Use the 'free' command to get information about the virtual memory usage
-        #output = self.execute("free -t | grep 'Total'")
-        output = self.execute("free -t | grep buffers/cache")
-        splitted = output[0].split(":")[1].split()
-
-        # Calculate the free amount of memory in gigabytes
-        free = float(splitted[1]) / 1e6
-
-        # Return the free amount of virtual memory in gigabytes
-        return free
-
-    # -----------------------------------------------------------------
-
-    @property
-    def free_space(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Use the 'df' command to obtain information about the free disk space
-        output = self.execute("df -lh")
-
-        total = 0.0
-        used = 0.0
-        free = 0.0
-
-        for entry in output[1:]:
-
-            if not entry.startswith("/dev/"): continue
-
-            splitted = entry.split()
-
-            total += float(splitted[1].split("G")[0]) if "G" in splitted[1] else float(splitted[1].split("T")[0]) * 1e3
-            used += float(splitted[2].split("G")[0]) if "G" in splitted[2] else float(splitted[2].split("T")[0]) * 1e3
-            free += float(splitted[3].split("G")[0]) if "G" in splitted[3] else float(splitted[3].split("T")[0]) * 1e3
-
-        # Return the amount of free memory in gigabytes
-        return free
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cores(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # If the remote host uses a scheduling system, the number of cores on the computing nodes is defined in the configuration
-        if self.host.scheduler: return self.host.clusters[self.host.cluster_name].cores
-
-        # If no scheduler is used, the computing node is the actual node we are logged in to
-        else:
-
-            # Use the 'lscpu' command to obtain the number of CPU's (hardware threads)
-            output = self.execute("lscpu | grep '^CPU(s)'")
-            cpus = int(float(output[0].split(":")[1]))
-
-            # Use the 'lscpu' command to get the number of hardware threads per core
-            output = self.execute("lscpu | grep '^Thread(s) per core'")
-            threads_per_core = int(float(output[0].split(":")[1]))
-
-            # Return the number of physical cores
-            return cpus / threads_per_core
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cpu_load(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Use the 'top' command to get the current CPU load
-        output = self.execute("top -b -n1 | grep 'Cpu(s)' | awk '{print $2 + $4}'")
-
-        # Convert the output into the fraction of CPU that is used
-        load = float(output[0]) / 100.0
-
-        # Return the current CPU load
-        return load
-
-    # -----------------------------------------------------------------
-
-    @property
-    def memory_load(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Use the 'free' command to get information about the virtual memory usage
-        output = self.execute("free -t | grep 'Total'")
-        splitted = output[0].split(":")[1].split()
-
-        # Calculate the total and used amount of memory in gigabytes
-        total = float(splitted[0]) / 1e6
-        used = float(splitted[1]) / 1e6
-        free = float(splitted[2]) / 1e6
-
-        # Return the fraction of virtual memory that is currently in use
-        return used / total
-
-    # -----------------------------------------------------------------
-
-    def file_or_directory(self, path):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Launch a bash command to check whether the path exists as either a file or a directory on the remote file system
-        output = self.execute("if [ -f " + path + " ]; then echo file; elif [ -d " + path + " ]; then echo directory; else echo None; fi")
-
-        # Return the result
-        if output[0] == "None": return None
-        else: return output[0]
-
-    # -----------------------------------------------------------------
-
-    def is_directory(self, path):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Launch a bash command to check whether the path exists as a directory on the remote file system
-        output = self.execute("if [ -d " + path + " ]; then echo True; else echo False; fi")
-
-        # Return the result
-        return output[0] == "True"
-
-    # -----------------------------------------------------------------
-
-    def is_file(self, path):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Launch a bash command to check whether the path exists as a regular file on the remote file system
-        output = self.execute("if [ -f " + path + " ]; then echo True; else echo False; fi")
-
-        # Return the result
-        return output[0] == "True"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def host_id(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.host.id
+from .simulation import RemoteSimulation
 
 # -----------------------------------------------------------------
 
@@ -938,9 +136,9 @@ class SkirtRemote(Remote):
             # Generate a new simulation ID based on the ID's currently in use
             simulation_id = self._new_simulation_id()
 
-        # Create a simulation file and return its path
-        simulation_file_path = self.create_simulation_file(arguments, name, simulation_id, remote_simulation_path, local_ski_path, local_input_path, local_output_path)
-        return simulation_file_path
+        # Create a simulation object and return it
+        simulation = self.create_simulation_object(arguments, name, simulation_id, remote_simulation_path, local_ski_path, local_input_path, local_output_path)
+        return simulation
 
     # -----------------------------------------------------------------
 
@@ -1045,16 +243,15 @@ class SkirtRemote(Remote):
         if len(self.queue) > 0: raise RuntimeError("The simulation queue is not empty")
 
         # Add the simulation arguments to the queue
-        simulation_file_path = self.add_to_queue(arguments, name, scheduling_options)
+        simulation = self.add_to_queue(arguments, name, scheduling_options)
 
         # Start the queue if that is not left up to the remote's own scheduling system
         if not self.host.scheduler:
             screen_name = self.start_queue(name)
-            with open(simulation_file_path, 'a') as simulation_file:
-                simulation_file.write("launched within screen session " + screen_name + "\n")
+            simulation.screen_name = screen_name
 
-        # Return the path to the simulation file
-        return simulation_file_path
+        # Return the simulation object
+        return simulation
 
     # -----------------------------------------------------------------
 
@@ -1161,6 +358,37 @@ class SkirtRemote(Remote):
 
         # Return the path to the simulation file
         return simulation_file_path
+
+    # -----------------------------------------------------------------
+
+    def create_simulation_object(self, arguments, name, simulation_id, remote_simulation_path, local_ski_path, local_input_path, local_output_path):
+
+        """
+        This function ...
+        :param arguments:
+        :param name:
+        :param simulation_id:
+        :param remote_simulation_path:
+        :param local_ski_path:
+        :param local_input_path:
+        :param local_output_path:
+        :return:
+        """
+
+        # Create a new remote simulation object
+        simulation = RemoteSimulation(local_ski_path, local_input_path, local_output_path)
+
+        # Set other attributes
+        simulation.id = simulation_id
+        simulation.name = name
+        simulation.remote_ski_path = arguments.ski_pattern
+        simulation.remote_simulation_path = remote_simulation_path
+        simulation.remote_input_path = arguments.input_path
+        simulation.remote_output_path = arguments.output_path
+        simulation.submitted_at = time.now()
+
+        # Return the simulation object
+        return simulation
 
     # -----------------------------------------------------------------
 
@@ -1366,19 +594,7 @@ class SkirtRemote(Remote):
         simulations = []
 
         # Loop over the different entries of the status list
-        for entry in self.status:
-
-            # The path to the simulation file
-            path = entry.file_path
-
-            # The ski file path
-            remote_ski_path = entry.remote_ski_path
-
-            # The remote output path
-            remote_output_path = entry.remote_output_path
-
-            # The simulation status
-            simulation_status = entry.status
+        for path, simulation_status in self.status:
 
             # Skip already retrieved simulations
             if simulation_status == "retrieved": continue
@@ -1386,146 +602,67 @@ class SkirtRemote(Remote):
             # Finished simulations
             elif simulation_status == "finished":
 
-                prefix = os.path.basename(remote_ski_path).split(".")[0]
-
-                # Properties obtained from the simulation file
-                local_ski_path = None
-                local_input_path = None
-                local_output_path = None
-                remote_input_path = None
-                remote_simulation_path = None
-                extract_progress = None
-                extract_timeline = None
-                extract_memory = None
-                plot_seds = None
-                plot_grids = None
-                plot_progress = None
-                plot_timeline = None
-                plot_memory = None
-                make_rgb = None
-                make_wave = None
-                remove_remote_input = None
-                remove_remote_output = None
-                retrieve_types = None
-                extraction_directory = None
-                plotting_directory = None
-                scaling_run_name = None
-                scaling_file_path = None
-                scaling_plot_path = None
-                screen_session = None
-
-                # Get simulation properties
-                with open(path) as simulation_file:
-
-                    # Loop over the lines in the file
-                    for line in simulation_file:
-
-                        if "local skifile path" in line: local_ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        if "local input directory" in line: local_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "local output directory" in line: local_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "remote input directory" in line: remote_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "remote simulation directory" in line: remote_simulation_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "extract progress" in line: extract_progress = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-                        elif "extract timeline" in line: extract_timeline = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-                        elif "extract memory" in line: extract_memory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-                        elif "plot seds" in line: plot_seds = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-                        elif "plot grids" in line: plot_grids = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-                        elif "plot progress" in line: plot_progress = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-                        elif "plot timeline" in line: plot_timeline = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-                        elif "plot memory" in line: plot_memory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-                        elif "make rgb images" in line: make_rgb = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-                        elif "make wave movie" in line: make_wave = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-                        elif "remove remote input" in line: remove_remote_input = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-                        elif "remove remote output" in line: remove_remote_output = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-                        elif "retrieve types" in line: retrieve_types = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "extraction directory" in line: extraction_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "plotting directory" in line: plotting_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "part of scaling test run" in line: scaling_run_name = line.split("scaling test run ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "scaling data file" in line: scaling_file_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "scaling plot path" in line: scaling_plot_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "launched within screen session" in line: screen_session = line.split("screen session ")[1].replace('\n', ' ').replace('\r', '').strip()
+                # Open the simulation file
+                simulation = RemoteSimulation.from_file(path)
 
                 # If retrieve file types are not defined, download the complete output directory
-                if retrieve_types is None or retrieve_types == "None" or retrieve_types == "null": # 'null' is what json makes of 'None'
+                if simulation.retrieve_types is None or simulation.retrieve_types == "None":
 
                     # Download the simulation output
-                    self.download(remote_output_path, local_output_path)
+                    self.download(simulation.remote_output_path, simulation.output_path)
 
                 # If retrieve file types are defined, download these files seperately to the local filesystem
                 else:
-
-                    # Try to create a list from the string that represents the retrieve types
-                    try: retrieve_types_list = json.loads(retrieve_types)
-                    except ValueError: raise ValueError("The format of the retrieve types string is invalid")
 
                     # Create a list for the paths of the files that have to be copied to the local filesystem
                     copy_paths = []
 
                     # Loop over the files that are present in the remoute output directory
-                    for filename in self.files_in_path(remote_output_path):
+                    for filename in self.files_in_path(simulation.remote_output_path):
 
                         # Determine the full path to the output file
-                        filepath = os.path.join(remote_output_path, filename)
+                        filepath = os.path.join(simulation.remote_output_path, filename)
 
                         # Loop over the different possible file types and add the filepath if the particular type is in the list of types to retrieve
                         if filename.endswith("_ds_isrf.dat"):
-                            if "isrf" in retrieve_types_list: copy_paths.append(filepath)
+                            if "isrf" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif "_ds_temp" in filename and filename.endswith(".fits"):
-                            if "temp" in retrieve_types_list: copy_paths.append(filepath)
+                            if "temp" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif filename.endswith("_sed.dat"):
-                            if "sed" in retrieve_types_list: copy_paths.append(filepath)
+                            if "sed" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif filename.endswith("_total.fits"):
-                            if "image" in retrieve_types_list: copy_paths.append(filepath)
+                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif filename.endswith("_ds_celltemps.dat"):
-                            if "celltemp" in retrieve_types_list: copy_paths.append(filepath)
+                            if "celltemp" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif "_log" in filename and filename.endswith(".txt"):
-                            if "log" in retrieve_types_list: copy_paths.append(filepath)
+                            if "log" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif filename.endswith("_wavelengths.dat"):
-                            if "wavelengths" in retrieve_types_list: copy_paths.append(filepath)
+                            if "wavelengths" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif "_ds_grid" in filename and filename.endswith(".dat"):
-                            if "grid" in retrieve_types_list: copy_paths.append(filepath)
+                            if "grid" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif "_ds_grho" in filename and filename.endswith(".fits"):
-                            if "grho" in retrieve_types_list: copy_paths.append(filepath)
+                            if "grho" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif "_ds_trho" in filename and filename.endswith(".fits"):
-                            if "trho" in retrieve_types_list: copy_paths.append(filepath)
+                            if "trho" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif filename.endswith("_ds_convergence.dat"):
-                            if "convergence" in retrieve_types_list: copy_paths.append(filepath)
+                            if "convergence" in simulation.retrieve_types: copy_paths.append(filepath)
 
                     # Download the list of files to the local output directory
-                    self.download(copy_paths, local_output_path)
+                    self.download(copy_paths, simulation.output_path)
 
                 # If retreival was succesful, add this information to the simulation file
                 with open(path, "a") as simulation_file:
                     simulation_file.write("retrieved at: " + time.timestamp() + "\n")
 
                 # Remove the remote input, if requested
-                if remove_remote_input: self.remove_directory(remote_input_path)
+                if simulation.remove_remote_input: self.remove_directory(simulation.remote_input_path)
 
                 # Remove the remote output, if requested
-                if remove_remote_output: self.remove_directory(remote_output_path)
+                if simulation.remove_remote_output: self.remove_directory(simulation.remote_output_path)
 
                 # If both the input and output directories have to be removed, the remote simulation directory
                 # can be removed too
-                if remove_remote_input and remove_remote_output: self.remove_directory(remote_simulation_path)
-
-                # Create a simulation object and add it to the list
-                simulation = SkirtSimulation(prefix, inpath=local_input_path, outpath=local_output_path, ski_path=local_ski_path)
-                simulation.extract_progress = extract_progress
-                simulation.extract_timeline = extract_timeline
-                simulation.extract_memory = extract_memory
-                simulation.plot_seds = plot_seds
-                simulation.plot_grids = plot_grids
-                simulation.plot_progress = plot_progress
-                simulation.plot_timeline = plot_timeline
-                simulation.plot_memory = plot_memory
-                simulation.make_rgb = make_rgb
-                simulation.make_wave = make_wave
-                simulation.extraction_path = extraction_directory
-                simulation.plot_path = plotting_directory
-                simulation.scaling_run_name = scaling_run_name
-                simulation.scaling_file_path = scaling_file_path
-                simulation.scaling_plot_path = scaling_plot_path
-                simulation.screen_session = screen_session
+                if simulation.remove_remote_simulation_path: self.remove_directory(simulation.remote_simulation_path)
 
                 # Add the simulation to the list of retrieved simulations
                 simulations.append(simulation)
@@ -1559,8 +696,8 @@ class SkirtRemote(Remote):
         :return:
         """
 
-        # Initialize a list to contain the simulations
-        simulations = []
+        # Initialize a list to contain the statuses
+        entries = []
 
         # If the remote host does not use a scheduling system
         if not self.host.scheduler:
@@ -1574,64 +711,21 @@ class SkirtRemote(Remote):
                 # Determine the full path to the simulation file
                 path = os.path.join(self.local_skirt_host_run_dir, item)
 
-                # Determine the simulation ID
-                simulation_id = int(os.path.basename(path).split(".sim")[0])
-
-                # Open the file
-                name = None
-                local_ski_path = None
-                remote_ski_path = None
-                remote_input_path = None
-                remote_output_path = None
-                remote_simulation_path = None
-                screen_name = None
-
-                retrieved = False
-
-                with open(path) as simulation_file:
-
-                    # Loop over the lines in the file
-                    for line in simulation_file:
-
-                        if "simulation name" in line: name = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "local skifile path" in line: local_ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "remote skifile path" in line: remote_ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "remote input directory" in line: remote_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "remote simulation directory" in line: remote_simulation_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "launched within screen session" in line: screen_name = line.split("session ")[1].replace('\n', ' ').replace('\r', '').strip()
-
-                        elif "retrieved at" in line: retrieved = True
-
-                    if remote_ski_path is None: raise ValueError("Not a valid simulation file")
-                    if remote_output_path is None: raise ValueError("Not a valid simulation file")
+                # Open the simulation file
+                simulation = RemoteSimulation.from_file(path)
 
                 # The name of the ski file (the simulation prefix)
-                ski_name = os.path.basename(remote_ski_path).split(".")[0]
+                ski_name = simulation.prefix()
 
                 # The path to the simulation log file
-                remote_log_file_path = os.path.join(remote_output_path, ski_name + "_log.txt")
+                remote_log_file_path = os.path.join(simulation.remote_output_path, ski_name + "_log.txt")
 
-                if retrieved: simulation_status = "retrieved"
-                else:
-                    # Get the simulation status from the remote log file
-                    simulation_status = self.status_from_log_file(remote_log_file_path, screen_name, ski_name)
+                # Get the simulation status from the remote log file if not yet retrieved
+                if simulation.retrieved: simulation_status = "retrieved"
+                else: simulation_status = self.status_from_log_file(remote_log_file_path, simulation.screen_name, ski_name)
 
                 # Add the simulation properties to the list
-                simulation = Map()
-                simulation.id = simulation_id
-                simulation.file_path = path
-                simulation.name = name
-                simulation.local_ski_path = local_ski_path
-                simulation.remote_ski_path = remote_ski_path
-                simulation.remote_input_path = remote_input_path
-                simulation.remote_output_path = remote_output_path
-                simulation.remote_simulation_path = remote_simulation_path
-                simulation.status = simulation_status
-                simulations.append(simulation)
-
-            # Return the list of simulation properties
-            return simulations
+                entries.append((path, simulation_status))
 
         # If the remote has a scheduling system for launching jobs
         else:
@@ -1672,44 +766,20 @@ class SkirtRemote(Remote):
                 # Determine the full path to the simulation file
                 path = os.path.join(self.local_skirt_host_run_dir, item)
 
-                # Open the file
-                name = None
-                local_ski_path = None
-                remote_ski_path = None
-                remote_input_path = None
-                remote_output_path = None
-                remote_simulation_path = None
-
-                retrieved = False
-
-                with open(path) as simulation_file:
-
-                    # Loop over the lines in the file
-                    for line in simulation_file:
-
-                        if "simulation name" in line: name = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "local skifile path" in line: local_ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "remote skifile path" in line: remote_ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "remote input directory" in line: remote_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-                        elif "remote simulation directory" in line: remote_simulation_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-
-                        elif "retrieved at" in line: retrieved = True
-
-                    if remote_ski_path is None: raise ValueError("Not a valid simulation file")
-                    if remote_output_path is None: raise ValueError("Not a valid simulation file")
+                # Open the simulation file
+                simulation = RemoteSimulation.from_file(path)
 
                 # The name of the ski file (the simulation prefix)
-                ski_name = os.path.basename(remote_ski_path).split(".")[0]
+                ski_name = simulation.prefix()
 
                 # The path to the simulation log file
-                remote_log_file_path = os.path.join(remote_output_path, ski_name + "_log.txt")
+                remote_log_file_path = os.path.join(simulation.remote_output_path, ski_name + "_log.txt")
 
                 # Get the job ID from the name of the simulation file
                 job_id = int(os.path.splitext(item)[0])
 
                 # Check if the simulation has already been retrieved
-                if retrieved: simulation_status = "retrieved"
+                if simulation.retrieved: simulation_status = "retrieved"
 
                 # Check if the job ID is in the list of queued or running jobs
                 elif job_id in queue_status:
@@ -1737,20 +807,10 @@ class SkirtRemote(Remote):
                 else: simulation_status = self.status_from_log_file_job(remote_log_file_path, ski_name)
 
                 # Add the simulation properties to the list
-                simulation = Map()
-                simulation.id = job_id
-                simulation.file_path = path
-                simulation.name = name
-                simulation.local_ski_path = local_ski_path
-                simulation.remote_ski_path = remote_ski_path
-                simulation.remote_input_path = remote_input_path
-                simulation.remote_output_path = remote_output_path
-                simulation.remote_simulation_path = remote_simulation_path
-                simulation.status = simulation_status
-                simulations.append(simulation)
+                entries.append((path, simulation_status))
 
-            # Return the list of simulation properties
-            return simulations
+        # Return the list of simulation properties
+        return entries
 
     # -----------------------------------------------------------------
 
