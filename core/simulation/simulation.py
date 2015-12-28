@@ -16,12 +16,10 @@
 import os
 import os.path
 import types
-import pickle
 import numpy as np
 
 # Import the relevant PTS classes and modules
 from ..tools import serialization
-from ..basics.map import Map
 from .skifile import SkiFile
 from .logfile import LogFile
 from ..tools import archive as arch
@@ -542,9 +540,6 @@ class RemoteSimulation(SkirtSimulation):
         self.retrieve_types = None
 
         # Options for analysis of the simulation output
-        #self.extraction = Map({"progress": False, "timeline": False, "memory": False})
-        #self.plotting = Map({"progress": False, "timeline": False, "memory": False, "seds": False, "grids": False})
-        #self.advanced = Map({"rgb": False, "wave": False})
         self.extract_progress = False
         self.extract_timeline = False
         self.extract_memory = False
@@ -553,6 +548,8 @@ class RemoteSimulation(SkirtSimulation):
         self.plot_memory = False
         self.plot_seds = False
         self.plot_grids = False
+        self.make_rgb = False
+        self.make_wave = False
         self.extraction_path = None
         self.plotting_path = None
 
@@ -583,9 +580,7 @@ class RemoteSimulation(SkirtSimulation):
         :return:
         """
 
-        return pickle.load(open(path, 'r'))
-
-        #return serialization.load(path)
+        return serialization.load(path)
 
     # -----------------------------------------------------------------
 

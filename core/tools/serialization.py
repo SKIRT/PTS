@@ -55,3 +55,15 @@ def dump(object, path, method="pickle"):
     else: raise ValueError("Not a valid method")
 
 # -----------------------------------------------------------------
+
+def load(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return pickle.load(open(path, 'r'))
+
+# -----------------------------------------------------------------
