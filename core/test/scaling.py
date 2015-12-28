@@ -49,7 +49,7 @@ class ScalingTest(Configurable):
         # Call the constructor of the base class
         super(ScalingTest, self).__init__(config, "core")
 
-        ## Attributes
+        # -- Attributes --
 
         # Create the SKIRT remote execution context
         self.remote = SkirtRemote()

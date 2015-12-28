@@ -46,7 +46,7 @@ class RemoteSynchronizer(Configurable):
         # Call the constructor of the base class
         super(RemoteSynchronizer, self).__init__(config, "core")
 
-        ## Attributes
+        # -- Attributes --
 
         # Initialize a list to contain different SkirtRemote instances for the different remote hosts
         self.remotes = []

@@ -44,7 +44,7 @@ class Plotter(Configurable):
         # Call the constructor of the base class
         super(Plotter, self).__init__(None, "core")
 
-        ## Attributes
+        # -- Attributes --
 
         # The table containing the input data
         self.table = None

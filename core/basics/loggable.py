@@ -33,7 +33,7 @@ class Loggable(object):
         :return:
         """
 
-        ## Attributes
+        # -- Attributes --
 
         # The logger
         self.log = None

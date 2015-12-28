@@ -51,7 +51,7 @@ class GalaxyExtractor(Configurable):
         # Call the constructor of the base class
         super(GalaxyExtractor, self).__init__(config, "magic")
 
-        ## Attributes
+        # -- Attributes --
 
         # Initialize an empty list for the galaxies
         self.galaxies = []
@@ -63,21 +63,21 @@ class GalaxyExtractor(Configurable):
         self.frame = None
 
         # The mask covering pixels that should be ignored throughout the entire extraction procedure
-        self.bad_mask = None
+        self.input_mask = None
 
         # Set the mask to None
         self.mask = None
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, mask):
+    def run(self, frame, input_mask):
 
         """
         This function ...
         """
 
         # 1. Call the setup function
-        self.setup(frame, mask)
+        self.setup(frame, input_mask)
 
         # 2. Find and remove the galaxies
         self.find_and_remove_galaxies()
@@ -90,7 +90,7 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, mask):
+    def setup(self, frame, input_mask):
 
         """
         This function ...
@@ -102,9 +102,9 @@ class GalaxyExtractor(Configurable):
         # Inform the user
         self.log.info("Setting up the galaxy extractor...")
 
-        # Make a local reference to the frame and 'bad' mask
+        # Make a local reference to the frame and input mask
         self.frame = frame
-        self.bad_mask = mask
+        self.input_mask = input_mask
 
         # Create a mask with shape equal to the shape of the frame
         self.mask = Mask(np.zeros_like(self.frame))

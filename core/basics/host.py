@@ -114,7 +114,7 @@ class Host(object):
         :return:
         """
 
-        ## Attributes
+        # -- Attributes --
 
         # The host ID
         self.id = host_id

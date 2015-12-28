@@ -39,6 +39,9 @@ pts_user_dir = os.path.join(pts_root_dir, "user")
 # The path to the PTS do directory containing launchable scripts (PTS/pts/do)
 pts_do_dir = os.path.join(pts_package_dir, "do")
 
+# The path to the 'dat' directory for a given PTS subproject
+def pts_dat_dir(subproject): return os.path.join(pts_package_dir, subproject, "dat")
+
 # -----------------------------------------------------------------
 
 # The path to the SKIRT executable

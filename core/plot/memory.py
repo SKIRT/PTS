@@ -40,7 +40,7 @@ class MemoryPlotter(Plotter):
         # Call the constructor of the base class
         super(MemoryPlotter, self).__init__()
 
-        ## Attributes
+        # -- Attributes --
 
         # A data structure to store the memory (de)allocation information
         self.allocation = None

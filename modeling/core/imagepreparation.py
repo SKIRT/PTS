@@ -50,7 +50,7 @@ class ImagePreparation(Configurable):
 
         #self.config.convolve = False
 
-        ## Attributes
+        # -- Attributes --
 
         # Set the galaxy and star extractors to None initially
         self.galaxyex = None

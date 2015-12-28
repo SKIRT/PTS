@@ -35,7 +35,7 @@ class TimeLineExtractor(object):
         :return:
         """
 
-        ## Attributes
+        # -- Attributes --
 
         # The list of log files created by the simulation
         self.log_files = None

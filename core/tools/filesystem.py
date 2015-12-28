@@ -14,6 +14,10 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import shutil
+
+# Import the relevant PTS classes and modules
+from . import time
 
 # -----------------------------------------------------------------
 
@@ -45,5 +49,39 @@ def create_directories(paths, recursive=False):
     
     # Loop over the different paths in the list
     for path in paths: create_directory(path)
+
+# -----------------------------------------------------------------
+
+def create_temporary_directory(prefix=None):
+
+    """
+    This function ...
+    :param prefix:
+    :return:
+    """
+
+    # Add a timestamp to the prefix
+    name = time.unique_name(prefix) if prefix is not None else time.unique_name("", "")
+
+    # Set the path to the temporary directory
+    path = os.path.join(os.getcwd(), name)
+
+    # Create the directory
+    create_directory(path)
+
+    # Return the directory path
+    return path
+
+# -----------------------------------------------------------------
+
+def remove_directory(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    shutil.rmtree(path)
 
 # -----------------------------------------------------------------

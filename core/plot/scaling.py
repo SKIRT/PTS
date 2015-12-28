@@ -60,7 +60,7 @@ class ScalingPlotter(Plotter):
         # Call the constructor of the base class
         super(ScalingPlotter, self).__init__()
 
-        ## Attributes
+        # -- Attributes --
 
         # A data structure to store the serial runtimes
         self.serial = None

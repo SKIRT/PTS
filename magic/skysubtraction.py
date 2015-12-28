@@ -47,7 +47,7 @@ class SkySubtractor(Configurable):
         # Call the constructor of the base class
         super(SkySubtractor, self).__init__(config, "magic")
 
-        ## Attributes
+        # -- Attributes --
 
         # The galaxy and star mask
         self.mask = None

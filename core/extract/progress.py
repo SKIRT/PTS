@@ -32,7 +32,7 @@ class ProgressExtractor(object):
         :return:
         """
 
-        ## Attributes
+        # -- Attributes --
 
         self.log_files = None
         self.staggered = None

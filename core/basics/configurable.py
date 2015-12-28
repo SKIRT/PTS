@@ -37,7 +37,7 @@ class Configurable(Loggable):
         # Call the constructor of the base class
         super(Configurable, self).__init__()
 
-        ## Attributes
+        # -- Attributes --
 
         # Set the configuration object
         self.config = configuration.set(subpackage, self.name, config)

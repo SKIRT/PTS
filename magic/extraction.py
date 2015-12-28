@@ -20,6 +20,7 @@ from .core import Frame
 from .tools import masks
 from .galaxyextraction import GalaxyExtractor
 from .starextraction import StarExtractor
+from .trainedextractor import TrainedExtractor
 
 # Import the relevant PTS classes and modules
 from ..core.tools import filesystem
@@ -44,7 +45,7 @@ class Extractor(Configurable):
         # Call the constructor of the base class
         super(Extractor, self).__init__(config, "magic")
 
-        ## Attributes
+        # -- Attributes --
 
         # The image frame on which to perform the extraction
         self.frame = None
@@ -55,6 +56,7 @@ class Extractor(Configurable):
         # The galaxy and star extractors
         self.galaxy_extractor = None
         self.star_extractor = None
+        self.trained_extractor = None
 
     # -----------------------------------------------------------------
 
@@ -81,7 +83,7 @@ class Extractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, mask):
+    def run(self, frame, input_mask):
 
         """
         This function ...
@@ -89,7 +91,7 @@ class Extractor(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup(frame, mask)
+        self.setup(frame, input_mask)
 
         # 2. Create the directory that will contain the output
         self.create_output_path()
@@ -100,12 +102,15 @@ class Extractor(Configurable):
         # 4. Run the star extraction
         self.extract_stars()
 
+        # 5. Look for other sources
+        self.find_other_sources()
+
         # 5. Writing phase
         self.write()
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, mask):
+    def setup(self, frame, input_mask):
 
         """
         This function ...
@@ -120,7 +125,7 @@ class Extractor(Configurable):
 
         # Make a local reference to the frame and mask
         self.frame = frame
-        self.mask = mask
+        self.input_mask = input_mask
 
         # Set the paths to the resulting frame and the total mask
         self.config.write_result = True
@@ -133,6 +138,9 @@ class Extractor(Configurable):
 
         # Initialize a star extractor according to the settings defined in the provided configuration file
         self.star_extractor = StarExtractor(self.config.stars)
+
+        # Initialize a trained extractor according to the settings defined in the provided configuration file
+        self.trained_extractor = TrainedExtractor(self.config.other_sources)
 
         # Set the appropriate configuration settings for writing out the region files
         if self.config.write_regions:
@@ -191,6 +199,7 @@ class Extractor(Configurable):
         # Clear the extractors
         self.galaxy_extractor.clear()
         self.star_extractor.clear()
+        self.trained_extractor.clear()
 
     # -----------------------------------------------------------------
 
@@ -219,7 +228,7 @@ class Extractor(Configurable):
         self.log.info("Extracting the galaxies...")
 
         # Run the galaxy extractor
-        self.galaxy_extractor.run(self.frame, self.mask)
+        self.galaxy_extractor.run(self.frame, self.input_mask)
     
     # -----------------------------------------------------------------
     
@@ -233,7 +242,22 @@ class Extractor(Configurable):
         self.log.info("Extracting the stars...")
 
         # Run the star extractor
-        self.star_extractor.run(self.frame, self.mask, self.galaxy_extractor)
+        self.star_extractor.run(self.frame, self.input_mask, self.galaxy_extractor)
+
+    # -----------------------------------------------------------------
+
+    def find_other_sources(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Total mask
+        mask = self.input_mask + self.star_extractor.mask + self.galaxy_extractor.mask
+
+        # Run the trained extractor just to find sources
+        self.trained_extractor.run(self.frame, mask, self.galaxy_extractor, self.star_extractor)
 
     # -----------------------------------------------------------------
 

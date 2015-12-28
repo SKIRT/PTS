@@ -43,7 +43,7 @@ class SkirtLauncher(Configurable):
         # Call the constructor of the base class
         super(SkirtLauncher, self).__init__(config, "core")
 
-        ## Attributes
+        # -- Attributes --
 
         # Create the SKIRT execution context
         self.skirt = SkirtExec()

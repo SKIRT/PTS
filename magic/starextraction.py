@@ -26,14 +26,13 @@ import astropy.coordinates as coord
 from astropy.table import Table
 from astroquery.vizier import Vizier
 from astropy.coordinates import Angle
-from photutils import detect_sources
 from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
 from .basics import Position, Extent, Mask, Region
 from .core import Frame, Source
 from .sky import Star
-from .tools import statistics, fitting, regions, masks
+from .tools import statistics, fitting, regions
 
 # Import the relevant PTS classes and modules
 from ..core.basics.configurable import Configurable
@@ -55,7 +54,7 @@ class StarExtractor(Configurable):
         # Call the constructor of the base class
         super(StarExtractor, self).__init__(config, "magic")
 
-        ## Attributes
+        # -- Attributes --
 
         # Initialize an empty list for the stars
         self.stars = []
@@ -67,30 +66,24 @@ class StarExtractor(Configurable):
         self.frame = None
 
         # The mask covering pixels that should be ignored throughout the entire extraction procedure
-        self.bad_mask = None
+        self.input_mask = None
 
         # Set the mask to None
         self.mask = None
 
-        # Set the segmentation map for other sources to None
-        self.segments = None
-
-        # Initialize an empty list for the apertures constructed for the other sources
-        self.other_apertures = []
-
-        # Set the logger to None initially
-        self.log = None
+        # Reference to the galaxy extractor
+        self.galaxy_extractor = None
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, mask, galaxyextractor=None):
+    def run(self, frame, input_mask, galaxyextractor=None):
 
         """
         This function ...
         """
 
         # 1. Call the setup function
-        self.setup(frame, mask, galaxyextractor)
+        self.setup(frame, input_mask, galaxyextractor)
 
         # 2. Find and remove the stars
         self.find_fit_and_remove_stars()
@@ -98,10 +91,7 @@ class StarExtractor(Configurable):
         # 3. If requested, find and remove saturated stars
         if self.config.find_saturation: self.find_and_remove_saturation()
 
-        # 4. If requested, find and remove other sources in the frame
-        if self.config.find_other: self.find_and_remove_other()
-
-        # 5. If requested, find and remove apertures
+        # 4. If requested, find and remove apertures
         if self.config.find_apertures: self.find_and_remove_apertures()
 
         # 5. If specified, remove manually selected stars
@@ -112,7 +102,7 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, mask, galaxyextractor=None):
+    def setup(self, frame, input_mask, galaxyextractor=None):
 
         """
         This function ...
@@ -123,10 +113,10 @@ class StarExtractor(Configurable):
 
         # Make a local reference to the frame and 'bad' mask
         self.frame = frame
-        self.bad_mask = mask
+        self.input_mask = input_mask
 
         # Make a local reference to the galaxy extractor (if any)
-        self.galaxyextractor = galaxyextractor
+        self.galaxy_extractor = galaxyextractor
 
         # Create a mask with shape equal to the shape of the frame
         self.mask = Mask(np.zeros_like(self.frame))
@@ -191,21 +181,6 @@ class StarExtractor(Configurable):
 
         # If requested, remove saturation in the image
         if self.config.remove_saturation: self.remove_saturation()
-
-    # -----------------------------------------------------------------
-
-    def find_and_remove_other(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Look for other sources in the frame
-        self.find_other_sources()
-
-        # If requested, remove the other sources
-        if self.config.remove_other: self.remove_other_sources()
 
     # -----------------------------------------------------------------
 
@@ -314,7 +289,7 @@ class StarExtractor(Configurable):
                 else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
 
                 # Loop over all galaxies
-                galaxies = self.galaxyextractor.galaxies if self.galaxyextractor is not None else []
+                galaxies = self.galaxy_extractor.galaxies if self.galaxy_extractor is not None else []
                 for galaxy in galaxies:
 
                     # Calculate the pixel position of the galaxy
@@ -376,9 +351,9 @@ class StarExtractor(Configurable):
                                 dec_error=dec_error, magnitudes=magnitudes, magnitude_errors=mag_errors)
 
                     # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
-                    if self.galaxyextractor is not None:
+                    if self.galaxy_extractor is not None:
 
-                        star.on_galaxy = self.galaxyextractor.principal.contains(star.pixel_position(self.frame.wcs, self.config.transformation_method))
+                        star.on_galaxy = self.galaxy_extractor.principal.contains(star.pixel_position(self.frame.wcs, self.config.transformation_method))
 
                     # If requested, enable track record
                     if self.config.track_record: star.enable_track_record()
@@ -401,7 +376,7 @@ class StarExtractor(Configurable):
             self.stars += stars
 
         # Inform the user
-        if self.galaxyextractor is not None: self.log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
+        if self.galaxy_extractor is not None: self.log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
 
         # Inform the user
         self.log.debug("Number of stars: " + str(len(self.stars)))
@@ -532,7 +507,7 @@ class StarExtractor(Configurable):
             if star.ignore: continue
 
             # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
-            if not self.config.removal.remove_foreground and self.galaxyextractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
+            if not self.config.removal.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
 
             # Remove the star in the frame
             star.remove(self.frame, self.mask, self.config.removal, default_fwhm)
@@ -568,7 +543,7 @@ class StarExtractor(Configurable):
                 if star.ignore: continue
 
                 # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
-                if not self.config.saturation.remove_foreground and self.galaxyextractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
+                if not self.config.saturation.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
 
                 # If a model was not found for this star, skip it unless the remove_if_not_fitted flag is enabled
                 if not star.has_model and not self.config.saturation.remove_if_not_fitted: continue
@@ -614,7 +589,7 @@ class StarExtractor(Configurable):
                 if star.ignore: continue
 
                 # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
-                if not self.config.saturation.remove_foreground and self.galaxyextractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
+                if not self.config.saturation.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
 
                 # If a model was not found for this star, skip it unless the remove_if_not_fitted flag is enabled
                 if not star.has_model and not self.config.saturation.remove_if_not_fitted: continue
@@ -662,68 +637,6 @@ class StarExtractor(Configurable):
 
             # If the star does not have saturation, continue
             if star.has_saturation: star.find_aperture(self.frame, self.config.apertures)
-
-        # Inform the user
-        self.log.info("Constructing elliptical aperture regions to encompass other contaminating sources")
-
-        # Find apertures for the other sources
-        #from scipy import ndimage
-        from photutils import segment_properties, properties_table
-        #from photutils.segmentation import SegmentProperties
-        from photutils import EllipticalAperture
-
-        # Get the segment properties
-        # Since there is only one segment in the source.mask (the center segment), the props
-        # list contains only one entry (one galaxy)
-        properties_list = segment_properties(np.asarray(self.frame), self.segments)
-
-        # Below we perform some steps exactly as in the photutils segment_properties function, but we want to
-        # avoid calling that function since it also calls _prepare_data which calls _check_units in turn,
-        # and because our frames have a 'unit' attribute it crashes for some reason (saying that if one of the
-        # [frames, errors, background] has a unit, the other must have too, although we don't provide these errors
-        # and background arrays ... More investigation in this should follow.
-        #label_ids = np.unique(self.segments[self.segments > 0])
-        #filtered_data = None
-        #label_slices = ndimage.find_objects(self.segments)
-        #properties_list = []
-        #for i, label_slice in enumerate(label_slices):
-        #    label = i + 1    # consecutive even if some label numbers are missing
-        #    # label_slice is None for missing label numbers
-        #    if label_slice is None or label not in label_ids:
-        #        continue
-        #    segm_props = SegmentProperties(
-        #        self.frame, self.segments, label, label_slice=label_slice, error=None,
-        #        effective_gain=None, mask=None, background=None,
-        #        wcs=self.frame.wcs, filtered_data=filtered_data, data_prepared=True)
-        #    properties_list.append(segm_props)
-
-        #table = properties_table(properties)
-        for properties in properties_list:
-
-            # Obtain the position, orientation and extent
-            position = (properties.xcentroid.value, properties.ycentroid.value)
-            a = properties.semimajor_axis_sigma.value * self.config.apertures.sigma_level
-            b = properties.semiminor_axis_sigma.value * self.config.apertures.sigma_level
-            theta = properties.orientation.value
-
-            ellipticity = (a-b)/b
-
-            # Create the aperture
-            if ellipticity < self.config.apertures.max_ellipticity: self.other_apertures.append(EllipticalAperture(position, a, b, theta=theta))
-
-        # Plotting the apertures
-        #from astropy.visualization import SqrtStretch
-        #from astropy.visualization.mpl_normalize import ImageNormalize
-        #import matplotlib.pylab as plt
-
-        #norm = ImageNormalize(stretch=SqrtStretch())
-
-        #plt.figure()
-
-        #plt.imshow(self.segments, origin='lower', cmap='jet')
-        #for aperture in self.other_apertures: aperture.plot(color='blue', lw=1.5, alpha=0.5)
-
-        #plt.show()
 
     # -----------------------------------------------------------------
 
@@ -780,154 +693,6 @@ class StarExtractor(Configurable):
 
             # Update the mask
             self.mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
-
-        # Loop over all other apertures
-        for aperture in self.other_apertures:
-
-            # Configuration settings
-            sigma_clip = self.config.aperture_removal.sigma_clip
-            interpolation_method = self.config.aperture_removal.interpolation_method
-            expansion_factor = self.config.aperture_removal.expansion_factor
-
-            # Create a source object
-            # Get the parameters of the elliptical aperture
-            x_center, y_center = aperture.positions[0]
-            center = Position(x=x_center, y=y_center)
-
-            major = aperture.a * expansion_factor
-            minor = aperture.b * expansion_factor
-
-            radius = Extent(x=major, y=minor)
-
-            # theta is in radians
-            angle = Angle(aperture.theta, u.rad)
-
-            # Create a source
-            source = Source(self.frame, center, radius, angle, self.config.aperture_removal.background_outer_factor)
-
-            # Estimate the background for the source
-            source.estimate_background("local_mean", True)
-
-            # Replace the frame in the appropriate area with the estimated background
-            source.background.replace(self.frame, where=source.mask)
-
-            # Update the mask
-            self.mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
-
-    # -----------------------------------------------------------------
-
-    def find_other_sources(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Searching for other contaminating sources not in the stellar catalog")
-
-        # Calculate the total mask
-        #mask = masks.union(self.galaxyextractor.mask, self.mask) if self.galaxyextractor is not None else self.mask
-
-        # New: include 'bad' mask
-        mask = self.bad_mask + self.mask
-        if self.galaxyextractor is not None: mask += self.galaxyextractor.mask
-
-        # Create the sigma-clipped mask
-        clipped_mask = statistics.sigma_clip_mask(self.frame, 3.0, mask)
-
-        # Calculate the median sky value and the standard deviation
-        median = np.median(np.ma.masked_array(self.frame, mask=clipped_mask).compressed())
-        stddev = np.ma.masked_array(self.frame, mask=clipped_mask).std()
-
-        # Calculate the detection threshold
-        threshold = median + (3.0 * stddev)
-
-        try:
-            # Create a segmentation map from the frame
-            self.segments = detect_sources(self.frame, threshold, npixels=5, filter_kernel=self.kernel)
-        except RuntimeError:
-
-            print("kernel=", self.kernel)
-            #print("self.frame=", self.frame)
-            print("self.frame.ndim=", self.frame.ndim)
-
-            from scipy import ndimage
-
-            conv_mode = 'constant'
-            conv_val = 0.0
-            image = ndimage.convolve(self.frame, self.kernel.array, mode=conv_mode, cval=conv_val)
-
-            print("median=", median)
-            print("stddev=", stddev)
-
-            #print("image=", image)
-            print("image.ndim=", image.ndim)
-            print("type image=", type(image))
-            print("image.shape=", image.shape)
-            print("threshold=", threshold)
-            image = image > threshold
-            print("image.ndim=", image.ndim)
-            print("type image=", type(image))
-            print("image.shape=", image.shape)
-
-        # Write the segmentation map to file
-        #Frame(self.segments).save(self.config.writing.other_segments_path[:-5]+"_or.fits")
-
-        # Eliminate the principal galaxy and companion galaxies from the segments
-        if self.galaxyextractor is not None:
-
-            # Determine the mask that covers the principal and companion galaxies
-            galaxy_mask = self.galaxyextractor.principal_mask + self.galaxyextractor.companion_mask
-
-            # Check where the galaxy mask overlaps with the segmentation map
-            overlap = masks.intersection(self.segments, galaxy_mask)
-            if not np.any(overlap): return
-
-            # Check which indices are present in the overlap map
-            possible = np.array(range(1,np.max(overlap)+1))
-            present = np.in1d(possible, overlap)
-            indices = possible[present]
-
-            # Remove the galaxies from the segmentation map
-            for index in indices: self.segments[self.segments == index] = 0
-
-    # -----------------------------------------------------------------
-
-    def write_other_segments(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Writing the segmentation map of other sources to " + self.config.writing.other_segments_path)
-
-        # Save the segmentation map
-        Frame(self.segments).save(self.config.writing.other_segments_path)
-
-    # -----------------------------------------------------------------
-
-    def remove_other_sources(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Removing the other sources from the frame")
-
-        # Interpolate over the segments
-        mask = self.segments > 0
-        interpolated = self.frame.interpolated(mask, "local_mean")
-
-        # Adapt the frame
-        self.frame[mask] = interpolated[mask]
-
-        # Update the mask
-        self.mask[mask] = True
 
     # -----------------------------------------------------------------
 
@@ -1626,9 +1391,6 @@ class StarExtractor(Configurable):
 
         # If requested, write out the frame where the stars are masked
         if self.config.write_masked_frame: self.write_masked_frame()
-
-        # If requested, write out the mask of other sources
-        if self.config.write_other_segments: self.write_other_segments()
 
         # If requested, write out the star cutout boxes
         if self.config.write_cutouts: self.write_cutouts()

@@ -31,7 +31,7 @@ class ScalingExtractor(object):
         :return:
         """
 
-        ## Attributes
+        # -- Attributes --
 
         # The parallelization mode
         self.mode = None

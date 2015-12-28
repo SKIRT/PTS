@@ -35,7 +35,7 @@ class MemoryExtractor(object):
         :return:
         """
 
-        ## Attributes
+        # -- Attributes --
 
         self.log_files = None
         self.table = None

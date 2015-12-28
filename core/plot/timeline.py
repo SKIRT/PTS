@@ -61,7 +61,7 @@ class TimeLinePlotter(Plotter):
         # Call the constructor of the base class
         super(TimeLinePlotter, self).__init__()
 
-        ## Attributes
+        # -- Attributes --
 
         # A list of the process ranks
         self.ranks = None

@@ -13,3 +13,5 @@
 #
 # This package ...
 #
+
+from .sextractor import SExtractor

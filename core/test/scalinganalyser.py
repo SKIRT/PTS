@@ -37,7 +37,7 @@ class ScalingAnalyser(Configurable):
         # Call the constructor of the base class
         super(ScalingAnalyser, self).__init__(config, "core")
 
-        ## Attributes
+        # -- Attributes --
 
         # Set the simulation object to None initially
         self.simulation = None

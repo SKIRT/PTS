@@ -38,7 +38,7 @@ class ResourceEstimator(object):
         :return:
         """
 
-        ## Attributes
+        # -- Attributes --
 
         # Create the SKIRT execution context
         self.skirt = SkirtExec()

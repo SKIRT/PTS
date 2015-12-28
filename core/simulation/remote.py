@@ -48,7 +48,7 @@ class Remote(Loggable):
         # Call the constructor of the base class
         super(Remote, self).__init__()
 
-        ## Attributes
+        # -- Attributes --
 
         # The SSH interface, an instance of the pxssh class
         self.ssh = pxssh.pxssh()
@@ -844,7 +844,7 @@ class SkirtRemote(Remote):
         # Call the constructor of the base class
         super(SkirtRemote, self).__init__()
 
-        ## Attributes
+        # -- Attributes --
 
         # Variables storing paths to the remote SKIRT installation location
         self.skirt_path = None
