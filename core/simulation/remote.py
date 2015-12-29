@@ -66,10 +66,7 @@ class SkirtRemote(Remote):
         super(SkirtRemote, self).setup(host_id, cluster)
 
         # Obtain some information about the SKIRT installation on the remote machine
-        output = self.execute("which skirt")
-
-        # Determine the path to the SKIRT executable
-        self.skirt_path = output[0]  # only one line is expected
+        self.skirt_path = self.find_executable("skirt")
 
         # We want absolute paths
         if self.skirt_path.startswith("~"):
@@ -622,18 +619,18 @@ class SkirtRemote(Remote):
                     self.download(copy_paths, simulation.output_path)
 
                 # If retreival was succesful, add this information to the simulation file
-                with open(path, "a") as simulation_file:
-                    simulation_file.write("retrieved at: " + time.timestamp() + "\n")
+                simulation.retrieved = True
+                simulation.save()
 
-                # Remove the remote input, if requested
-                if simulation.remove_remote_input: self.remove_directory(simulation.remote_input_path)
+                # Remove the remote input, if present, if requested
+                if simulation.remove_remote_input and simulation.has_input: self.remove_directory(simulation.remote_input_path)
 
                 # Remove the remote output, if requested
                 if simulation.remove_remote_output: self.remove_directory(simulation.remote_output_path)
 
                 # If both the input and output directories have to be removed, the remote simulation directory
                 # can be removed too
-                if simulation.remove_remote_simulation_path: self.remove_directory(simulation.remote_simulation_path)
+                if simulation.remove_remote_simulation_directory: self.remove_directory(simulation.remote_simulation_path)
 
                 # Add the simulation to the list of retrieved simulations
                 simulations.append(simulation)

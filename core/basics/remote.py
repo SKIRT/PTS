@@ -615,6 +615,22 @@ class Remote(Loggable):
 
     # -----------------------------------------------------------------
 
+    def find_executable(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the output of the 'which' command
+        output = self.execute("which " + name)
+
+        # Only one line is expected
+        return output[0]
+
+    # -----------------------------------------------------------------
+
     @property
     def working_directory(self):
 

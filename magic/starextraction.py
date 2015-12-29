@@ -1047,6 +1047,7 @@ class StarExtractor(Configurable):
         self.log.info("Writing cutout boxes to " + self.config.writing.cutouts_path)
 
         # Keep track of the number of stars encountered
+        without_source = 0
         with_source = 0
         with_model = 0
         with_saturation = 0
@@ -1077,7 +1078,7 @@ class StarExtractor(Configurable):
                 path = os.path.join(self.config.writing.cutouts_path, "star_model_" + str(with_model) + ".fits")
                 Frame(data).save(path)
 
-                # Increment the counter of the number of stars with saturation
+                # Increment the counter of the number of stars that could be fitted
                 with_model += 1
 
             # Check if a source was found for this star
@@ -1090,8 +1091,23 @@ class StarExtractor(Configurable):
                 path = os.path.join(self.config.writing.cutouts_path, "star_source_" + str(with_source) + ".fits")
                 Frame(data).save(path)
 
-                # Increment the counter of the number of stars with saturation
+                # Increment the counter of the number of stars that could be detected
                 with_source += 1
+
+            # If no source was found for this star
+            else:
+
+                #source = Source.
+
+                data = star.source.cutout
+                data[star.source.background_mask] = 0.0
+
+                # Save the cutout as a FITS file
+                path = os.path.join(self.config.writing.cutouts_path, "star_nosource_" + str(with_source) + ".fits")
+                Frame(data).save(path)
+
+                # Increment the counter of the number of stars without source
+                without_source += 1
 
     # -----------------------------------------------------------------
 

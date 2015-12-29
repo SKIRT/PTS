@@ -19,6 +19,10 @@ import subprocess
 #  MovieFile class
 # -----------------------------------------------------------------
 
+# TODO: Avoid mencoder dependency (which is difficult to install on Mac) by using matplotlib's MovieWriter
+# (http://stackoverflow.com/questions/4092927/generating-movie-from-python-without-saving-individual-frames-to-files)
+# or something else ?
+
 ## An instance of the MovieFile class allows creating a movie file from a sequence of images. Use the constructor
 # to specify the filename and the movie format, insert the images one at a time with the add() function, and finally
 # write the movie header information to the file with the close() function.
@@ -92,13 +96,14 @@ class MovieFile:
     # This function writes a string or a buffer containing the pixel data for a single movie frame to \c mencoder.
     # Each pixel must be encoded as RGBA (one byte for each R,G,B channel and an additional byte that is ignored).
     # The length of the buffer must match <tt>4*shape[0]*shape[1]</tt>.
-    def add(self, frame) :
+    def add(self, frame):
         assert len(frame) == self.buflen
         self.p.stdin.write(frame)
+        #self.p.communicate(input=frame) better? (is recommended)
 
    # This function writes the proper header information for the movie, and closes the movie file.
    # The function \em must be called for the movie file to be playable.
-    def close(self) :
+    def close(self):
         self.p.stdin.close()
 
 # -----------------------------------------------------------------

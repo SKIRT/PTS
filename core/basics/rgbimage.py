@@ -105,7 +105,7 @@ class RGBImage:
     def __init__(self, source, frames=None):
         # matplotlib Figure
         if isinstance(source,Figure):
-            self.setbuf(source.canvas.buffer_rgba(0,0))
+            self.setbuf(source.canvas.buffer_rgba(0,0)) # Crashes (API does not mention arguments?) ?
             self.shape = source.canvas.get_width_height()
 
         # numpy array

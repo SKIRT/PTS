@@ -271,7 +271,7 @@ class RemoteSynchronizer(Configurable):
                             filesystem.remove_file(path)
 
                             # Remove the remote input, output and simulation directory
-                            remote.remove_directory(simulation.remote_input_path)
+                            if simulation.has_input: remote.remove_directory(simulation.remote_input_path)
                             remote.remove_directory(simulation.remote_output_path)
                             remote.remove_directory(simulation.remote_simulation_path)
 
@@ -294,7 +294,7 @@ class RemoteSynchronizer(Configurable):
                         filesystem.remove_file(path)
 
                         # Remove the remote input, output and simulation directory
-                        remote.remove_directory(simulation.remote_input_path)
+                        if simulation.has_input: remote.remove_directory(simulation.remote_input_path)
                         remote.remove_directory(simulation.remote_output_path)
                         remote.remove_directory(simulation.remote_simulation_path)
 
@@ -312,7 +312,7 @@ class RemoteSynchronizer(Configurable):
                         filesystem.remove_file(path)
 
                         # Remove the remote input, output and simulation directory
-                        remote.remove_directory(simulation.remote_input_path)
+                        if simulation.has_input: remote.remove_directory(simulation.remote_input_path)
                         remote.remove_directory(simulation.remote_output_path)
                         remote.remove_directory(simulation.remote_simulation_path)
 
@@ -330,7 +330,7 @@ class RemoteSynchronizer(Configurable):
                         filesystem.remove_file(path)
 
                         # Remove the remote input, output and simulation directory
-                        remote.remove_directory(simulation.remote_input_path)
+                        if simulation.has_input: remote.remove_directory(simulation.remote_input_path)
                         remote.remove_directory(simulation.remote_output_path)
                         remote.remove_directory(simulation.remote_simulation_path)
 
@@ -353,7 +353,7 @@ class RemoteSynchronizer(Configurable):
                             filesystem.remove_file(path)
 
                             # Remove the remote input, output and simulation directory
-                            remote.remove_directory(simulation.remote_input_path)
+                            if simulation.has_input: remote.remove_directory(simulation.remote_input_path)
                             remote.remove_directory(simulation.remote_output_path)
                             remote.remove_directory(simulation.remote_simulation_path)
 

@@ -110,8 +110,8 @@ class SkirtSimulation(object):
             self._prefix = logfiles[0][0:len(logfiles[0])-len("_log.txt")]
 
         self.ski_path = ski_path
-        self.input_path = inpath
-        self.output_path = outpath
+        self.input_path = self._inpath
+        self.output_path = self._outpath
 
         if self.ski_path is None: self.ski_path = self.outfilepath("parameters.xml")
 
@@ -120,6 +120,11 @@ class SkirtSimulation(object):
         self._units = None
         self._processes = None
         self._threads = None
+
+    ## This function returns whether the simulation requires input
+    @property
+    def has_input(self):
+        return self.input_path is not None
 
     ## This function returns the simulation name, used as a prefix for output filenames
     def prefix(self):
@@ -580,7 +585,14 @@ class RemoteSimulation(SkirtSimulation):
         :return:
         """
 
-        return serialization.load(path)
+        # Load the simulation object from file
+        simulation = serialization.load(path)
+
+        # Set the path of the simulation file
+        simulation.path = path
+
+        # Return the simulation object
+        return simulation
 
     # -----------------------------------------------------------------
 
@@ -592,7 +604,10 @@ class RemoteSimulation(SkirtSimulation):
         :return:
         """
 
+        # Serialize and dump the simulation object
         serialization.dump(self, path, method="pickle")
+
+        # Set the simulation file path
         self.path = path
 
     # -----------------------------------------------------------------
@@ -604,6 +619,7 @@ class RemoteSimulation(SkirtSimulation):
         :return:
         """
 
+        # Check whether a path is defined for the simulation file
         if self.path is None: raise RuntimeError("The simulation file does not exist yet")
 
         # Serialize and dump the simulation object

@@ -66,7 +66,7 @@ def makergbimages(simulation, wavelength_tuples=None, from_percentile=30, to_per
                 im.applylog()
                 im.applycurve()
                 savename = outname[:-5] + (str(index+1) if index > 0 else "") + ".png"
-                if output_path is not None: savename = os.path.join(output_path, savename)
+                if output_path is not None: savename = os.path.join(output_path, os.path.basename(savename))
                 im.saveto(savename)
                 print("Created RGB image file " + savename)
 
