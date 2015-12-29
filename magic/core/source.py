@@ -24,6 +24,7 @@ from photutils import detect_threshold
 from astropy.convolution import convolve, convolve_fft
 
 # Import the relevant AstroMagic classes and modules
+from . import Image, Frame
 from .box import Box
 from ..basics import Position, Mask
 from ..tools import plotting, statistics
@@ -324,5 +325,34 @@ class Source(object):
 
             # Do the plotting
             plotting.plot_background_center(self.cutout, self.mask, peaks=peak_coordinates, title=title)
+
+    # -----------------------------------------------------------------
+
+    def save(self, path, frame=None):
+
+        """
+        This function ...
+        :param path:
+        :param frame: replacement frame
+        :return:
+        """
+
+        cutout = frame.box_like(self.cutout) if frame is not None else self.cutout
+
+        # Create an image to contain the cutout box and source mask
+        image = Image()
+        image.add_frame(Frame(cutout), "cutout")
+
+        # Add the background-subtracted cutout, if present
+        if self.has_background:
+
+            subtracted = cutout - self.background
+            image.add_frame(Frame(subtracted), "subtracted")
+
+        # Add the source mask to the image
+        image.add_frame(Frame(self.mask.astype(int)), "mask")
+
+        # Save the image
+        image.save(path)
 
 # -----------------------------------------------------------------

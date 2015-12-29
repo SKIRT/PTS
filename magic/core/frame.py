@@ -29,6 +29,7 @@ import astropy.coordinates as coord
 from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
+from . import Box
 from ..basics import Position
 from ..tools import coordinates, cropping, transformations, interpolation, headers, fitting
 
@@ -628,6 +629,21 @@ class Frame(np.ndarray):
 
         # Invalid option
         else: raise ValueError("Unknown interpolation method")
+
+    # -----------------------------------------------------------------
+
+    def box_like(self, box):
+
+        """
+        This function ...
+        :param box:
+        :return:
+        """
+
+        data = self[box.y_min:box.y_max, box.x_min:box.x_max]
+
+        # Create the new box and return it
+        return Box(data, box.x_min, box.x_max, box.y_min, box.y_max)
 
     # -----------------------------------------------------------------
 

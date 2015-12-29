@@ -736,12 +736,9 @@ class GalaxyExtractor(Configurable):
             # Check if this is the principal galaxy
             if galaxy.principal:
 
-                data = galaxy.source.cutout
-                data[galaxy.source.background_mask] = 0.0
-
                 # Save the cutout as a FITS file
                 path = os.path.join(self.config.writing.cutouts_path, "galaxy_principal_" + str(principals) + ".fits")
-                Frame(data).save(path)
+                galaxy.source.save(path)
 
                 # Increment the counter of the number of principal galaxies (there should only be one, really...)
                 principals += 1
@@ -749,12 +746,9 @@ class GalaxyExtractor(Configurable):
             # Check if this is a companion galaxy
             elif galaxy.companion:
 
-                data = galaxy.source.cutout
-                data[galaxy.source.background_mask] = 0.0
-
                 # Save the cutout as a FITS file
                 path = os.path.join(self.config.writing.cutouts_path, "galaxy_companion_" + str(companions) + ".fits")
-                Frame(data).save(path)
+                galaxy.source.save(path)
 
                 # Increment the counter of the number of companion galaxies
                 companions += 1
@@ -762,12 +756,9 @@ class GalaxyExtractor(Configurable):
             # Check if this galaxy has a source
             elif galaxy.has_source:
 
-                data = galaxy.source.cutout
-                data[galaxy.source.background_mask] = 0.0
-
                 # Save the cutout as a FITS file
                 path = os.path.join(self.config.writing.cutouts_path, "galaxy_source_" + str(principals) + ".fits")
-                Frame(data).save(path)
+                galaxy.source.save(path)
 
                 # Increment the counter of the number of galaxies with a source
                 with_source += 1

@@ -154,7 +154,7 @@ class Box(np.ndarray):
 
         data = self[rel_y_min:rel_y_max, rel_x_min:rel_x_max]
 
-        # Create the new box
+        # Create the new box and return it
         return Box(data, box.x_min, box.x_max, box.y_min, box.y_max)
 
     # -----------------------------------------------------------------

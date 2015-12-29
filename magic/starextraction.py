@@ -30,7 +30,7 @@ from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
 from .basics import Position, Extent, Mask, Region
-from .core import Frame, Source
+from .core import Source
 from .sky import Star
 from .tools import statistics, fitting, regions
 
@@ -64,6 +64,7 @@ class StarExtractor(Configurable):
 
         # Set the frame to None
         self.frame = None
+        self.original_frame = None
 
         # The mask covering pixels that should be ignored throughout the entire extraction procedure
         self.input_mask = None
@@ -113,6 +114,7 @@ class StarExtractor(Configurable):
 
         # Make a local reference to the frame and 'bad' mask
         self.frame = frame
+        self.original_frame = frame.copy()
         self.input_mask = input_mask
 
         # Make a local reference to the galaxy extractor (if any)
@@ -1052,18 +1054,18 @@ class StarExtractor(Configurable):
         with_model = 0
         with_saturation = 0
 
+        # Calculate the default FWHM based on the stars that could be fitted
+        default_fwhm = self.fwhm
+
         # Loop over all stars
         for star in self.stars:
 
             # Check if saturation has been detected for this star
             if star.has_saturation:
 
-                data = star.source.cutout
-                data[star.source.background_mask] = 0.0
-
                 # Save the cutout as a FITS file
                 path = os.path.join(self.config.writing.cutouts_path, "star_saturation_" + str(with_saturation) + ".fits")
-                Frame(data).save(path)
+                star.source.save(path, self.original_frame)
 
                 # Increment the counter of the number of stars with saturation
                 with_saturation += 1
@@ -1071,12 +1073,9 @@ class StarExtractor(Configurable):
             # Check if a model has been found for this star
             elif star.has_model:
 
-                data = star.source.cutout
-                data[star.source.background_mask] = 0.0
-
                 # Save the cutout as a FITS file
                 path = os.path.join(self.config.writing.cutouts_path, "star_model_" + str(with_model) + ".fits")
-                Frame(data).save(path)
+                star.source.save(path)
 
                 # Increment the counter of the number of stars that could be fitted
                 with_model += 1
@@ -1084,12 +1083,9 @@ class StarExtractor(Configurable):
             # Check if a source was found for this star
             elif star.has_source:
 
-                data = star.source.cutout
-                data[star.source.background_mask] = 0.0
-
                 # Save the cutout as a FITS file
                 path = os.path.join(self.config.writing.cutouts_path, "star_source_" + str(with_source) + ".fits")
-                Frame(data).save(path)
+                star.source.save(path)
 
                 # Increment the counter of the number of stars that could be detected
                 with_source += 1
@@ -1097,14 +1093,14 @@ class StarExtractor(Configurable):
             # If no source was found for this star
             else:
 
-                #source = Source.
-
-                data = star.source.cutout
-                data[star.source.background_mask] = 0.0
+                # Create a source for the desired sigma level and outer factor
+                sigma_level = self.config.writing.cutouts_undected_sigma_level
+                outer_factor = self.config.writing.cutouts_undetected_outer_factor
+                source = star.source_at_sigma_level(self.frame, default_fwhm, sigma_level, outer_factor)
 
                 # Save the cutout as a FITS file
                 path = os.path.join(self.config.writing.cutouts_path, "star_nosource_" + str(with_source) + ".fits")
-                Frame(data).save(path)
+                source.save(path)
 
                 # Increment the counter of the number of stars without source
                 without_source += 1
