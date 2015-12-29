@@ -391,11 +391,11 @@ class RGBImage:
     def ensurepil(self, invalidate=True):
         if self.dpil is None:
             if self.dbuf is not None:
-                self.dpil = Image.fromstring("RGBA", self.shape, self.dbuf, "raw", "RGBA", 0, 1)
+                self.dpil = Image.frombytes("RGBA", self.shape, self.dbuf, "raw", "RGBA", 0, 1)
             elif self.darr is not None:
                 data = self.scaledpixelarray(0,255.999)
                 buf = np.rollaxis(data,1).astype(np.uint8).tostring()
-                self.dpil = Image.fromstring("RGB", self.shape, buf, "raw", "RGB", 0, -1)
+                self.dpil = Image.frombytes("RGB", self.shape, buf, "raw", "RGB", 0, -1)
             else:
                 raise ValueError("No source data for conversion to PIL image")
         if invalidate:
