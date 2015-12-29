@@ -611,7 +611,8 @@ class Remote(Loggable):
         :return:
         """
 
-        return os.path.join(self.home_directory, path.split("~/")[1])
+        if not path.startswith("~"): return path
+        else: return os.path.join(self.home_directory, path.split("~/")[1])
 
     # -----------------------------------------------------------------
 
