@@ -97,3 +97,64 @@ def remove_file(path):
     os.remove(path)
 
 # -----------------------------------------------------------------
+
+def files_in_path(path, recursive=False, ignore_hidden=True, extension=None):
+
+    """
+    This function ...
+    :param path:
+    :param recursive:
+    :return:
+    """
+
+    # Initialize a list to contain the paths of the files that are found in the given directory
+    file_paths = []
+
+    # List all items in the specified directory
+    for item in os.listdir(path):
+
+        # Determine the full path
+        item_path = os.path.join(path, item)
+
+        # Ignore hidden files if requested
+        if ignore_hidden and item.startswith("."): continue
+
+        # Ignore files with extension different from the one that is specified
+        if extension is not None and os.path.splitext(item)[1][1:] != extension: continue
+
+        # Check if the current item is a file
+        if os.path.isfile(item_path): file_paths.append(item_path)
+
+    # Return the list of file paths
+    return file_paths
+
+# -----------------------------------------------------------------
+
+def directories_in_path(path, recursive=False, ignore_hidden=True):
+
+    """
+    This function ...
+    :param path:
+    :param recursive:
+    :return:
+    """
+
+    # Initialize a list to contain the paths of the directories that are found in the given directory
+    directory_paths = []
+
+    # List all items in the specified directory
+    for item in os.listdir(path):
+
+        # Determine the full path
+        item_path = os.path.join(path, item)
+
+        # Ignore hidden directories if requested
+        if ignore_hidden and item.startswith("."): continue
+
+        # Check if the current item is a directory
+        if os.path.isdir(item_path): directory_paths.append(item_path)
+
+    # Return the list of directory paths
+    return directory_paths
+
+# -----------------------------------------------------------------
