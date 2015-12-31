@@ -21,12 +21,14 @@ from astropy.table import Table
 from photutils import find_peaks
 from photutils import detect_sources
 from photutils import detect_threshold
+from astropy.coordinates import Angle
+from astropy import units as u
 from astropy.convolution import convolve, convolve_fft
 
 # Import the relevant AstroMagic classes and modules
 from . import Image, Frame
 from .box import Box
-from ..basics import Position, Mask
+from ..basics import Position, Extent, Mask
 from ..tools import plotting, statistics
 
 # -----------------------------------------------------------------
@@ -37,7 +39,7 @@ class Source(object):
     This class...
     """
 
-    def __init__(self, frame, center, radius, angle, factor):
+    def __init__(self, center, radius, angle, factor, cutout, mask, background=None, removed=None, peak=None):
 
         """
         The constructor ...
@@ -48,22 +50,85 @@ class Source(object):
         self.radius = radius
         self.angle = angle
         self.factor = factor
+        self.cutout = cutout
+        self.mask = mask
+        self.background = background
+        self.removed = removed
+        self.peak = peak
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_ellipse(cls, frame, center, radius, angle, factor):
+
+        """
+        This function ...
+        :param frame:
+        :param center:
+        :param radius:
+        :param angle:
+        :param factor:
+        :return:
+        """
 
         # Create the cutout box
-        self.cutout = Box.from_ellipse(frame, center, self.radius*self.factor, self.angle)
+        cutout = Box.from_ellipse(frame, center, radius * factor, angle)
 
         # Calculate the relative coordinate of the center for the cutout box
-        rel_center = self.cutout.rel_position(center)
+        rel_center = cutout.rel_position(center)
 
         # Create masks
-        self.mask = Mask.from_ellipse(self.cutout.xsize, self.cutout.ysize, rel_center, radius, self.angle)
+        mask = Mask.from_ellipse(cutout.xsize, cutout.ysize, rel_center, radius, angle)
 
         # Set (estimated) background and removed to None
-        self.background = None
-        self.removed = None
+        background = None
+        removed = None
 
         # Set peak position to None initially
-        self.peak = None
+        peak = None
+
+        # Create and return a new Source instance
+        return cls(center, radius, angle, factor, cutout, mask, background, removed, peak)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_image(cls, image):
+
+        """
+        This function ...
+        :param image:
+        :return:
+        """
+
+        # Get the interesting properties from the header
+        x_min = int(image.metadata["x_min"])
+        x_max = int(image.metadata["x_max"])
+        y_min = int(image.metadata["y_min"])
+        y_max = int(image.metadata["y_max"])
+        center = Position(float(image.metadata["center_x"]), float(image.metadata["center_y"]))
+        if "radius" in image.metadata: radius = float(image.metadata["radius"])
+        elif "radius_x" in image.metadata: radius = Extent(float(image.metadata["radius_x"]), float(image.metadata["radius_y"]))
+        else: RuntimeError("Radius information is missing in metadata")
+        angle = Angle(float(image.metadata["angle"]), u.deg)
+        factor = float(image.metadata["factor"])
+        if "peak_x" in image.metadata: peak = Position(float(image.metadata["peak_x"]), float(image.metadata["peak_y"]))
+        else: peak = None
+
+        # Get the cutout and mask
+        cutout = Box(image.frames.cutout, x_min, x_max, y_min, y_max)
+        mask = Mask(image.frames.mask)
+
+        # Check whether a background frame is present
+        if "background" in image.frames: background = Box(image.frames.background, x_min, x_max, y_min, y_max)
+        else: background = None
+
+        # Check whether a frame is present that represents the removed source
+        if "removed"in image.frames: removed = Box(image.frames.removed, x_min, x_max, y_min, y_max)
+        else: removed = None
+
+        # Create and return a new Source instance
+        return cls(center, radius, angle, factor, cutout, mask, background, removed, peak)
 
     # -----------------------------------------------------------------
 
@@ -101,6 +166,18 @@ class Source(object):
         """
 
         return self.background is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_removed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.removed is not None
 
     # -----------------------------------------------------------------
 
@@ -344,15 +421,40 @@ class Source(object):
         image.add_frame(Frame(cutout), "cutout")
 
         # Add the background-subtracted cutout, if present
-        if self.has_background:
+        if self.has_background: image.add_frame(Frame(self.background), "background")
 
-            subtracted = cutout - self.background
-            image.add_frame(Frame(subtracted), "subtracted")
+        # Add the source-subtracted cutout, if present
+        if self.has_removed: image.add_frame(Frame(self.removed), "removed")
 
         # Add the source mask to the image
         image.add_frame(Frame(self.mask.astype(int)), "mask")
 
+        # Add meta information specifically for sources
+        image.metadata["x_min"] = self.cutout.x_min
+        image.metadata["x_max"] = self.cutout.x_max
+        image.metadata["y_min"] = self.cutout.y_min
+        image.metadata["y_max"] = self.cutout.y_max
+        image.metadata["center_x"] = float(self.center.x) # is array, why?
+        image.metadata["center_y"] = float(self.center.y) # is array, why?
+        try: # x and y are sometimes Quantity ??
+            image.metadata["radius_x"] = self.radius.x.value
+            image.metadata["radius_y"] = self.radius.y.value
+        except AttributeError: # x and y are sometimes float ??
+            try:
+                image.metadata["radius_x"] = self.radius.x
+                image.metadata["radius_y"] = self.radius.y
+            except AttributeError:  # radius is sometimes float (for circles)
+                image.metadata["radius"] = self.radius
+        image.metadata["angle"] = self.angle.degree
+        image.metadata["factor"] = self.factor
+
+        if self.has_peak:
+
+            image.metadata["peak_x"] = self.peak.x
+            image.metadata["peak_y"] = self.peak.y
+
         # Save the image
+        image.frames.select_all()
         image.save(path)
 
 # -----------------------------------------------------------------

@@ -485,7 +485,7 @@ class GalaxyExtractor(Configurable):
             x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
 
             # Create a source
-            source = Source(self.frame, Position(x_center, y_center), Extent(x_radius, y_radius), Angle(0.0, u.deg), self.config.manual.background_outer_factor)
+            source = Source.from_ellipse(self.frame, Position(x_center, y_center), Extent(x_radius, y_radius), Angle(0.0, u.deg), self.config.manual.background_outer_factor)
 
             # Add the source to the list of manual sources
             self.manual_sources.append(source)

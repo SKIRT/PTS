@@ -264,7 +264,7 @@ class TrainedExtractor(Configurable):
             angle = Angle(aperture.theta, u.rad)
 
             # Create a source
-            source = Source(self.frame, center, radius, angle, self.config.aperture_removal.background_outer_factor)
+            source = Source.from_ellipse(self.frame, center, radius, angle, self.config.aperture_removal.background_outer_factor)
 
             # Estimate the background for the source
             source.estimate_background("local_mean", True)

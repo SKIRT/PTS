@@ -253,7 +253,7 @@ class Galaxy(SkyObject):
             return
 
         # Create a source object
-        self.source = Source(frame, center, radius*expansion_factor, angle, outer_factor)
+        self.source = Source.from_ellipse(frame, center, radius*expansion_factor, angle, outer_factor)
 
         #print(self.source.cutout.shape)
 

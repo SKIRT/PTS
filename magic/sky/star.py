@@ -173,7 +173,7 @@ class Star(SkyObject):
             center = self.pixel_position(frame.wcs)
 
         # Create a source and return it
-        return Source(frame, center, radius, Angle(0.0, u.deg), outer_factor)
+        return Source.from_ellipse(frame, center, radius, Angle(0.0, u.deg), outer_factor)
 
     # -----------------------------------------------------------------
 

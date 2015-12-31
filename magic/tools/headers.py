@@ -222,11 +222,9 @@ def get_frame_description(header, i):
 
     planeX = "PLANE" + str(i)
 
-    # Get the description
-    description = header[planeX]
-
     # Return the description
-    return description
+    if planeX in header: return header[planeX]
+    else: return None
 
 # -----------------------------------------------------------------
 

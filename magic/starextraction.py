@@ -449,7 +449,7 @@ class StarExtractor(Configurable):
                 center, radius, angle = star.ellipse_parameters(self.frame.wcs, self.frame.pixelscale, self.config.fitting.initial_radius)
 
                 # Create a source object
-                source = Source(self.frame, center, radius, angle, self.config.fitting.background_outer_factor)
+                source = Source.from_ellipse(self.frame, center, radius, angle, self.config.fitting.background_outer_factor)
 
             else: source = None
 
@@ -685,7 +685,7 @@ class StarExtractor(Configurable):
             angle = Angle(star.aperture.theta, u.rad)
 
             # Create a source
-            source = Source(self.frame, center, radius, angle, self.config.aperture_removal.background_outer_factor)
+            source = Source.from_ellipse(self.frame, center, radius, angle, self.config.aperture_removal.background_outer_factor)
 
             # Estimate the background for the source
             source.estimate_background(interpolation_method, sigma_clip)
@@ -769,7 +769,7 @@ class StarExtractor(Configurable):
             x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
 
             # Create a source
-            source = Source(self.frame, Position(x_center, y_center), Extent(x_radius, y_radius), Angle(0.0, u.deg), self.config.manual.background_outer_factor)
+            source = Source.from_ellipse(self.frame, Position(x_center, y_center), Extent(x_radius, y_radius), Angle(0.0, u.deg), self.config.manual.background_outer_factor)
 
             # Add the source to the list of manual sources
             self.manual_sources.append(source)

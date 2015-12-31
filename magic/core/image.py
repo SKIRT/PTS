@@ -45,7 +45,7 @@ class Image(object):
     This class ...
     """
 
-    def __init__(self, filename=None):
+    def __init__(self, filename=None, always_call_first_primary=True):
 
         """
         The constructor ...
@@ -53,28 +53,41 @@ class Image(object):
         :return:
         """
 
-        if filename is None:
-            
-            # Initialize a set of layers to represent image frames, masks and regions
-            self.frames = Layers()
-            self.masks = Layers()
-            self.regions = Layers()
-
-            return
-
-        # Check if the specified file exists, otherwise exit with an error
-        if not os.path.isfile(filename): raise IOError("No such file: " + filename)
-
-        # Set the name of the image
-        self.name = os.path.splitext(os.path.basename(filename))[0]
-
         # Initialize a set of layers to represent image frames, masks and regions
         self.frames = Layers()
         self.masks = Layers()
         self.regions = Layers()
-        
-        # Read in the image
-        self.load_frames(filename)
+
+        # The image name
+        self.name = None
+
+        # The dictionary containing meta information
+        self.metadata = dict()
+
+        if filename is not None:
+
+            # Check if the specified file exists, otherwise exit with an error
+            if not os.path.isfile(filename): raise IOError("No such file: " + filename)
+
+            # Set the name of the image
+            self.name = os.path.splitext(os.path.basename(filename))[0]
+
+            # Read in the image
+            self.load_frames(filename, always_call_first_primary=always_call_first_primary)
+
+    # -----------------------------------------------------------------
+
+    def select_all(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Select all frames, regions and masks
+        self.frames.select_all()
+        self.regions.select_all()
+        self.masks.select_all()
 
     # -----------------------------------------------------------------
 
@@ -174,13 +187,16 @@ class Image(object):
             datacube.append(self.frames[frame_name])
             
             # Add the name of the frame to the header
-            header["PLANE"+str(plane_index)] = frame_name
+            header["PLANE" + str(plane_index)] = frame_name
             
             plane_index += 1
 
         if plane_index > 1:
             header["NAXIS"] = 3
             header["NAXIS3"] = plane_index
+
+        # Add the meta information to the header
+        for key in self.metadata: header[key] = self.metadata[key]
 
         # Create the HDU from the data array and the header
         hdu = pyfits.PrimaryHDU(np.array(datacube), header)
@@ -843,7 +859,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def load_frames(self, filename, index=None, name=None, description=None):
+    def load_frames(self, filename, index=None, name=None, description=None, always_call_first_primary=True):
 
         """
         This function ...
@@ -864,7 +880,7 @@ class Image(object):
         header = hdu.header
 
         # Get a copy of the original header
-        self.old_header = header.copy()
+        original_header = header.copy()
 
         # Remove references to the third axis
         header["NAXIS"] = 2
@@ -879,20 +895,20 @@ class Image(object):
         pixelscale = headers.get_pixelscale(header)
 
         # Obtain the filter for this image
-        filter = headers.get_filter(self.name, self.old_header)
+        filter = headers.get_filter(self.name, original_header)
 
         # Inform the user on the filter
         if filter is not None: log.info("The filter for this image is " + filter.filterID())
         else: log.warning("Could not determine the filter for this image")
 
         # Obtain the units of this image
-        unit = headers.get_unit(self.old_header)
+        unit = headers.get_unit(original_header)
 
         # Check whether the image is sky-subtracted
-        sky_subtracted = headers.is_sky_subtracted(self.old_header)
+        sky_subtracted = headers.is_sky_subtracted(original_header)
 
         # Check whether multiple planes are present in the FITS image
-        nframes = headers.get_number_of_frames(self.old_header)
+        nframes = headers.get_number_of_frames(original_header)
         if nframes > 1:
 
             # For each frame
@@ -902,15 +918,29 @@ class Image(object):
                 if index is not None and i != index: continue
 
                 if index is None:
-                    # Get the name of this frame, but the first frame always gets the name 'primary'
-                    description = headers.get_frame_description(self.old_header, i) if i else "the primary signal map"
-                    name = headers.get_frame_name(description) if i else "primary"
+
+                    # Get the name of this frame, but the first frame always gets the name 'primary' unless the
+                    # 'always_call_first_primary' flag is disabled
+                    if i == 0 and always_call_first_primary:
+                        description = "the primary signal map"
+                        name = "primary"
+                    else:
+
+                        description = headers.get_frame_description(original_header, i)
+
+                        if description is None:
+                            description = ""
+                            name = "frame"+str(i)
+                        else: name = headers.get_frame_name(description)
 
                 # The sky-subtracted flag should only be set for the primary frame
                 subtracted = sky_subtracted if i == 0 else False
 
                 # Add this frame to the frames dictionary
                 self.add_frame(Frame(hdu.data[i], wcs, pixelscale, description, False, unit, name, filter, subtracted), name)
+
+                # Select the frame if it is the first one (the primary frame)
+                if i == 0: self.frames[name].select()
 
         else:
 
@@ -923,8 +953,12 @@ class Image(object):
             # Add the primary image frame
             self.add_frame(Frame(hdu.data, wcs, pixelscale, description, False, unit, name, filter, sky_subtracted), name)
 
-        # Select the primary frame
-        self.frames.primary.select()
+            # Select the frame
+            self.frames[name].select()
+
+        # Add meta information
+        for key in original_header:
+            self.metadata[key.lower()] = original_header[key]
 
         # Close the FITS file
         hdulist.close()
@@ -935,10 +969,8 @@ class Image(object):
 
         """
         This function ...
-        :param data:
-        :param coordinates:
+        :param frame:
         :param name:
-        :param description:
         :return:
         """
 

@@ -298,7 +298,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
     """
 
     # Create a source object
-    source = Source(frame, center, radius, angle, config.background_outer_factor)
+    source = Source.from_ellipse(frame, center, radius, angle, config.background_outer_factor)
 
     # If the source cutout is zero or nan everywhere, return None (no source can be found here)
     if np.all(np.isnan(source.cutout)) or not np.any(source.cutout): return None
@@ -459,7 +459,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
     if level < config.min_level or level > config.max_level: return None
 
     # Create a source object
-    source = Source(frame, center, radius, angle, config.background_outer_factor)
+    source = Source.from_ellipse(frame, center, radius, angle, config.background_outer_factor)
 
     # If the frame is zero in this box, continue to the next object
     if not np.any(source.cutout): return None
