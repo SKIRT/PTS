@@ -81,6 +81,18 @@ class Remote(Loggable):
 
     # -----------------------------------------------------------------
 
+    def __del__(self):
+
+        """
+        The destructor ...
+        :return:
+        """
+
+        # Disconnect from the remote host
+        self.logout()
+
+    # -----------------------------------------------------------------
+
     def login(self):
 
         """
