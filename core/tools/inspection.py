@@ -400,6 +400,8 @@ def find_matches(scripts, name):
         for item in scripts:
             if item[0] == dir_name and item[1].startswith(script_name): matches.append(item)
 
+        return matches
+
     # Return the list of matching scripts
     elif name is not None: return filter(lambda item: item[1].startswith(name), scripts)
     else: return []
