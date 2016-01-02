@@ -363,7 +363,7 @@ class Source(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, title=None, peaks=None):
+    def plot(self, title=None, peaks=None, show=True, scale="sqrt"):
 
         """
         This function ...
@@ -395,13 +395,13 @@ class Source(object):
         if self.has_background:
 
             # Do the plotting
-            plotting.plot_source(self.cutout, self.mask, self.background, peaks=peak_coordinates, title=title)
+            plotting.plot_source(self.cutout, self.mask, self.background, peaks=peak_coordinates, title=title, show=show, scale=scale)
 
         # Else, we just have a background and cutout box
         else:
 
             # Do the plotting
-            plotting.plot_background_center(self.cutout, self.mask, peaks=peak_coordinates, title=title)
+            plotting.plot_background_center(self.cutout, self.mask, peaks=peak_coordinates, title=title, show=show, scale=scale)
 
     # -----------------------------------------------------------------
 

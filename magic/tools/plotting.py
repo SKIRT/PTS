@@ -17,7 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Import astronomical modules
-from astropy.visualization import SqrtStretch
+from astropy.visualization import SqrtStretch, LogStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from photutils import CircularAperture
 
@@ -359,7 +359,7 @@ def plot_removal(cutout, mask, background, removed, title=None):
 
 # -----------------------------------------------------------------
 
-def plot_source(cutout, mask, background, peaks=None, title=None):
+def plot_source(cutout, mask, background, peaks=None, title=None, show=True, scale="sqrt"):
 
     """
     This function ...
@@ -367,7 +367,9 @@ def plot_source(cutout, mask, background, peaks=None, title=None):
     :return:
     """
 
-    norm = ImageNormalize(stretch=SqrtStretch())
+    if scale == "sqrt": norm = ImageNormalize(stretch=SqrtStretch())
+    elif scale == "log": norm = ImageNormalize(stretch=LogStretch())
+    else: raise ValueError("Invalid scale option")
 
     # Determine the maximum value in the box and the minimum value for plotting
     vmax = np.max(cutout)
@@ -420,7 +422,7 @@ def plot_source(cutout, mask, background, peaks=None, title=None):
     if title is not None: plt.suptitle(title, size=16)
 
     # Show the plot
-    plt.show()
+    if show: plt.show()
 
 # -----------------------------------------------------------------
 
@@ -479,7 +481,7 @@ def plot_background_subtraction(background, background_clipped, est_background, 
 
 # -----------------------------------------------------------------
 
-def plot_background_center(cutout, mask, peaks=None, title=None):
+def plot_background_center(cutout, mask, peaks=None, title=None, show=True, scale="sqrt"):
 
     """
     This function ...
@@ -493,7 +495,9 @@ def plot_background_center(cutout, mask, peaks=None, title=None):
     :return:
     """
 
-    norm = ImageNormalize(stretch=SqrtStretch())
+    if scale == "sqrt": norm = ImageNormalize(stretch=SqrtStretch())
+    elif scale == "log": norm = ImageNormalize(stretch=LogStretch())
+    else: raise ValueError("Invalid scale option")
 
     # Determine the maximum value in the box and the minimum value for plotting
     vmax = np.max(cutout)
@@ -524,7 +528,7 @@ def plot_background_center(cutout, mask, peaks=None, title=None):
     if title is not None: plt.suptitle(title, size=16)
 
     # Show the plot
-    plt.show()
+    if show: plt.show()
 
 # -----------------------------------------------------------------
 

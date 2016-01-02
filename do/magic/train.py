@@ -34,6 +34,11 @@ arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
+classes = {"star (nosource)": 0,
+           "star (source)": 1,
+           "star (model)": 1,
+           "star (saturation)": 2}
+
 # Loop over all FITS files found in the current directory
 for file_path in filesystem.files_in_path(os.getcwd(), extension="fits"):
 
@@ -48,7 +53,16 @@ for file_path in filesystem.files_in_path(os.getcwd(), extension="fits"):
     name = os.path.basename(file_path).split(".fits")[0]
     object_type, level, counter = name.split("_")
 
-    plot_title = object_type + " with " + level
+    # Skip galaxies for now
+    if object_type == "galaxy": continue
+
+    # Get description
+    description = object_type + " (" + level + ")"
+
+    # Get target class
+    target = classes[description]
+
+    plot_title = description + " (class " + str(target) + ")"
 
     # Plot the source
     source.plot(title=plot_title)
@@ -71,10 +85,11 @@ classifier.fit(data, targets)
 
 
 # Serialize and dump the classifier
-magic_user_path = os.path.join(inspection.pts_user_dir, "magic")
-filesystem.create_directory(magic_user_path)
+classification_user_path = os.path.join(inspection.pts_user_dir, "magic", "classification")
+filesystem.create_directory(classification_user_path, recursive=True)
 
-classifier_path = os.path.join(magic_user_path, "classifier.pkl")
+# Determine the path to the pickle file
+classifier_path = os.path.join(classification_user_path, "classifier.pkl")
 
 # Dump the classifier
 joblib.dump(classifier, classifier_path)
