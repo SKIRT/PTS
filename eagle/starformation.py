@@ -152,11 +152,14 @@ def getPtot(rho, schmidtpars):
 #
 def stochResamp(sfr, m_gas):
 
-    # resampling parameters
+    # mass resampling parameters (see Kennicutt & Evans 2012 section 2.5)
+    m_min = 700         # minimum mass of sub-particle in M_solar
+    m_max = 1e6         # maximum mass of sub-particle in M_solar
+    alpha = 1.8         # exponent of power-law mass function
+    alpha1 = 1. - alpha
+
+    # age resampling parameters
     thresh_age = 1e8    # period over which to resample in yr (100 Myr)
-    m_min = 1e3         # minimum mass of sub-particle in M_solar
-    m_max = 2e4         # maximum mass of sub-particle in M_solar
-    m_avg = 0.5 * (m_min + m_max)
 
     # initialise lists for output
     ms   = [[]]
@@ -169,13 +172,18 @@ def stochResamp(sfr, m_gas):
         sfri = sfr[i]
         mi = m_gas[i]
 
-        # determine the total number of sub-particles based on the average sub-particle mass
-        N = int(max(1, round(mi / m_avg)))
+        # determine the maximum number of sub-particles based on the minimum sub-particle mass
+        N = int(max(1,np.ceil(mi/m_min)))
 
-        # generate random sub-particle masses from a uniform distribution between min and max values
-        # and normalize them to the total mass of the parent
-        m = np.random.uniform(m_min, m_max, N)
-        m = mi/m.sum() * m
+        # generate random sub-particle masses from a power-law distribution between min and max values
+        X = np.random.random(N)
+        m = (m_min**alpha1 + X*(m_max**alpha1-m_min**alpha1))**(1./alpha1)
+
+        # limit and normalize the list of sub-particles to the total mass of the parent
+        mlim = m[np.cumsum(m)<=mi]
+        if len(mlim)<1: mlim = m[:1]
+        m = mi/mlim.sum() * mlim
+        N = len(m)
 
         # generate random decay lookback time for each sub-particle
         X = np.random.random(N)               # X in range (0,1]
