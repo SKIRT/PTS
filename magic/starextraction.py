@@ -225,11 +225,14 @@ class StarExtractor(Configurable):
         :return:
         """
 
+        # Determine the full path to the catalog file
+        path = self.full_input_path(self.config.fetching.catalog_path)
+
         # Inform the user
-        self.log.info("Loading stellar catalog from file " + self.config.fetching.catalog_path)
+        self.log.info("Loading stellar catalog from file " + path)
 
         # Load the catalog
-        table = Table.read(self.config.fetching.catalog_path, format="ascii.commented_header")
+        table = Table.read(path, format="ascii.commented_header")
 
         # Create the list of stars
         for i in range(len(table)):
@@ -442,6 +445,10 @@ class StarExtractor(Configurable):
                         difference = saved_star.pixel_position(self.frame.wcs, self.config.transformation_method) - star.pixel_position(self.frame.wcs, self.config.transformation_method)
 
                         if difference.norm < 3.0:
+
+                            # Inform the user
+                            self.log.debug("Star " + star_id + " could be identified with star " + saved_star.id + " from the " + saved_star.catalog + " catalog")
+
                             saved_star.confidence_level += 1
                             # Remove stars from previous_stars
                             previous_stars.remove(saved_star)
@@ -793,11 +800,14 @@ class StarExtractor(Configurable):
         :return:
         """
 
+        # Determine the full path to the special region file
+        path = self.full_input_path(self.config.special_region)
+
         # Inform the user
-        self.log.info("Setting special region from " + self.config.special_region)
+        self.log.info("Setting special region from " + path)
 
         # Load the region and create a mask from it
-        region = Region.from_file(self.config.special_region, self.frame.wcs)
+        region = Region.from_file(path, self.frame.wcs)
         special_mask = Mask(region.get_mask(shape=self.frame.shape))
 
         # Loop over all objects
@@ -819,11 +829,14 @@ class StarExtractor(Configurable):
         :return:
         """
 
+        # Determine the full path to the ignore region file
+        path = self.full_input_path(self.config.ignore_region)
+
         # Inform the user
-        self.log.info("Setting region to ignore for subtraction from " + self.config.ignore_region)
+        self.log.info("Setting region to ignore for subtraction from " + path)
 
         # Load the region and create a mask from it
-        region = Region.from_file(self.config.ignore_region, self.frame.wcs)
+        region = Region.from_file(path, self.frame.wcs)
         ignore_mask = Mask(region.get_mask(shape=self.frame.shape))
 
         # Loop over all objects
@@ -843,11 +856,14 @@ class StarExtractor(Configurable):
         This function ...
         """
 
+        # Determine the full path to the manual region file
+        path = self.full_input_path(self.config.manual_region)
+
         # Inform the user
-        self.log.info("Setting region for manual star extraction from " + self.config.manual_region)
+        self.log.info("Setting region for manual star extraction from " + path)
 
         # Load the region and create a mask from it
-        region = Region.from_file(self.config.manual_region, self.frame.wcs)
+        region = Region.from_file(path, self.frame.wcs)
 
         # Loop over the shapes in the region
         for shape in region:
@@ -893,7 +909,7 @@ class StarExtractor(Configurable):
 
         # TODO: improve this function
 
-        type="sky"
+        type = "sky"
 
         # Initialize lists
         position_list = []
@@ -942,14 +958,15 @@ class StarExtractor(Configurable):
         :return:
         """
 
-        path = self.config.writing.region_path
+        # Determine the full path to the region file
+        path = self.full_output_path(self.config.writing.region_path)
         annotation = self.config.writing.region_annotation
 
         # Inform the user
         self.log.info("Writing stars region to " + path)
 
         # Create a file
-        f = open(path,'w')
+        f = open(path, 'w')
 
         # Initialize the region string
         print("# Region file format: DS9 version 4.1", file=f)
@@ -1045,16 +1062,14 @@ class StarExtractor(Configurable):
         :return:
         """
 
-        path = self.config.writing.aperture_region_path
+        # Determine the full path to the aperture region file
+        path = self.full_output_path(self.config.writing.aperture_region_path)
 
         # Create a file
         f = open(path, 'w')
 
         # Initialize the region string
         print("# Region file format: DS9 version 4.1", file=f)
-
-        #print("have saturation = ", self.have_saturation)
-        #print("have aperture = ", self.have_aperture)
 
         # Loop over the stars
         for star in self.stars:
@@ -1075,18 +1090,6 @@ class StarExtractor(Configurable):
 
             print("image;ellipse({},{},{},{},{})".format(ap_x_center, ap_y_center, major, minor, angle) + aperture_suffix, file=f)
 
-        # Loop over all other apertures
-        for aperture in self.other_apertures:
-
-            ap_x_center, ap_y_center = aperture.positions[0]
-            major = aperture.a
-            minor = aperture.b
-            angle = aperture.theta / math.pi * 180
-
-            aperture_suffix = " # color = red"
-
-            print("image;ellipse({},{},{},{},{})".format(ap_x_center, ap_y_center, major, minor, angle) + aperture_suffix, file=f)
-
         # Close the file
         f.close()
 
@@ -1099,11 +1102,14 @@ class StarExtractor(Configurable):
         :return:
         """
 
+        # Determine the full path to the table file
+        path = self.full_output_path(self.config.writing.table_path)
+
         # Inform the user
-        self.log.info("Writing table to " + self.config.writing.table_path)
+        self.log.info("Writing table to " + path)
 
         # Write the table to file
-        self.table.write(self.config.writing.table_path, format="ascii.commented_header")
+        self.table.write(path, format="ascii.commented_header")
 
     # -----------------------------------------------------------------
 
@@ -1114,11 +1120,14 @@ class StarExtractor(Configurable):
         :return:
         """
 
+        # Determine the full path to the catalog file
+        path = self.full_output_path(self.config.writing.catalog_path)
+
         # Inform the user
-        self.log.info("Writing stellar catalog to " + self.config.writing.catalog_path)
+        self.log.info("Writing stellar catalog to " + path)
 
         # Write the catalog to file
-        self.catalog.write(self.config.writing.catalog_path, format="ascii.commented_header")
+        self.catalog.write(path, format="ascii.commented_header")
 
     # -----------------------------------------------------------------
 
@@ -1128,15 +1137,18 @@ class StarExtractor(Configurable):
         This function ...
         """
 
+        # Determine the full path to the masked frame file
+        path = self.full_output_path(self.config.writing.masked_frame_path)
+
         # Inform the user
-        self.log.info("Writing masked frame to " + self.config.writing.masked_frame_path)
+        self.log.info("Writing masked frame to " + path)
 
         # Create a frame where the objects are masked
         frame = self.frame.copy()
         frame[self.mask] = float(self.config.writing.mask_value)
 
         # Write out the masked frame
-        frame.save(self.config.writing.masked_frame_path)
+        frame.save(path)
 
     # -----------------------------------------------------------------
 
@@ -1147,8 +1159,11 @@ class StarExtractor(Configurable):
         :return:
         """
 
+        # Determine the full path to the cutouts directory
+        directory_path = self.full_output_path(self.config.writing.cutouts_path)
+
         # Inform the user
-        self.log.info("Writing cutout boxes to " + self.config.writing.cutouts_path)
+        self.log.info("Writing cutout boxes to " + directory_path)
 
         # Keep track of the number of stars encountered
         without_source = 0
@@ -1166,7 +1181,7 @@ class StarExtractor(Configurable):
             if star.has_saturation:
 
                 # Save the cutout as a FITS file
-                path = os.path.join(self.config.writing.cutouts_path, "star_saturation_" + str(with_saturation) + ".fits")
+                path = os.path.join(directory_path, "star_saturation_" + str(with_saturation) + ".fits")
                 star.source.save(path, self.original_frame)
 
                 # Increment the counter of the number of stars with saturation
@@ -1176,7 +1191,7 @@ class StarExtractor(Configurable):
             elif star.has_model:
 
                 # Save the cutout as a FITS file
-                path = os.path.join(self.config.writing.cutouts_path, "star_model_" + str(with_model) + ".fits")
+                path = os.path.join(directory_path, "star_model_" + str(with_model) + ".fits")
                 star.source.save(path)
 
                 # Increment the counter of the number of stars that could be fitted
@@ -1186,7 +1201,7 @@ class StarExtractor(Configurable):
             elif star.has_source:
 
                 # Save the cutout as a FITS file
-                path = os.path.join(self.config.writing.cutouts_path, "star_source_" + str(with_source) + ".fits")
+                path = os.path.join(directory_path, "star_source_" + str(with_source) + ".fits")
                 star.source.save(path)
 
                 # Increment the counter of the number of stars that could be detected
@@ -1201,7 +1216,7 @@ class StarExtractor(Configurable):
                 source = star.source_at_sigma_level(self.frame, default_fwhm, sigma_level, outer_factor)
 
                 # Save the cutout as a FITS file
-                path = os.path.join(self.config.writing.cutouts_path, "star_nosource_" + str(with_source) + ".fits")
+                path = os.path.join(directory_path, "star_nosource_" + str(with_source) + ".fits")
                 source.save(path)
 
                 # Increment the counter of the number of stars without source
@@ -1216,11 +1231,14 @@ class StarExtractor(Configurable):
         :return:
         """
 
+        # Determine the full path to the resulting FITS file
+        path = self.full_output_path(self.config.writing.result_path)
+
         # Inform the user
-        self.log.info("Writing resulting frame to " + self.config.writing.result_path)
+        self.log.info("Writing resulting frame to " + path)
 
         # Write out the resulting frame
-        self.frame.save(self.config.writing.result_path)
+        self.frame.save(path)
 
     # -----------------------------------------------------------------
 
@@ -1531,6 +1549,34 @@ class StarExtractor(Configurable):
 
         meta = {'name': 'stars'}
         return Table(data, names=names, meta=meta, masked=True)
+
+    # -----------------------------------------------------------------
+
+    def full_input_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if os.path.isabs(name): return name
+        elif self.config.input_path is not None: return os.path.join(self.config.input_path, name)
+        else: return os.path.join(os.getcwd(), name)
+
+    # -----------------------------------------------------------------
+
+    def full_output_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if os.path.isabs(name): return name
+        elif self.config.output_path is not None: return os.path.join(self.config.output_path, name)
+        else: return os.path.join(os.getcwd(), name)
 
     # -----------------------------------------------------------------
 

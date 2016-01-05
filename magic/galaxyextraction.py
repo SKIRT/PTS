@@ -288,10 +288,13 @@ class GalaxyExtractor(Configurable):
         :return:
         """
 
-        # Inform the user
-        self.log.info("Loading galaxy catalog from file " + self.config.fetching.catalog_path)
+        # Determine the full path to the catalog file
+        path = self.full_input_path(self.config.fetching.catalog_path)
 
-        with open(self.config.fetching.catalog_path, 'r') as f:
+        # Inform the user
+        self.log.info("Loading galaxy catalog from file " + path)
+
+        with open(path, 'r') as f:
             first_line = f.readline()
 
         first_line = first_line.replace(' ', "_")
@@ -492,11 +495,14 @@ class GalaxyExtractor(Configurable):
         :return:
         """
 
+        # Determine the full path to the special region file
+        path = self.full_input_path(self.config.special_region)
+
         # Inform the user
-        self.log.info("Setting special region from " + self.config.special_region)
+        self.log.info("Setting special region from " + path)
 
         # Load the region and create a mask from it
-        region = Region.from_file(self.config.special_region, self.frame.wcs)
+        region = Region.from_file(path, self.frame.wcs)
         special_mask = Mask(region.get_mask(shape=self.frame.shape))
 
         # Loop over all galaxies
@@ -518,11 +524,14 @@ class GalaxyExtractor(Configurable):
         :return:
         """
 
+        # Determine the full path to the ignore region file
+        path = self.full_input_path(self.config.ignore_region)
+
         # Inform the user
-        self.log.info("Setting region to ignore for subtraction from " + self.config.ignore_region)
+        self.log.info("Setting region to ignore for subtraction from " + path)
 
         # Load the region and create a mask from it
-        region = Region.from_file(self.config.ignore_region, self.frame.wcs)
+        region = Region.from_file(path, self.frame.wcs)
         ignore_mask = Mask(region.get_mask(shape=self.frame.shape))
 
         # Loop over all galaxies
@@ -542,11 +551,14 @@ class GalaxyExtractor(Configurable):
         This function ...
         """
 
+        # Determine the full path to the manual region file
+        path = self.full_input_path(self.config.manual_region)
+
         # Inform the user
-        self.log.info("Setting region for manual galaxy extraction from " + self.config.manual_region)
+        self.log.info("Setting region for manual galaxy extraction from " + path)
 
         # Load the region and create a mask from it
-        region = Region.from_file(self.config.manual_region, self.frame.wcs)
+        region = Region.from_file(path, self.frame.wcs)
 
         # Loop over the shapes in the region
         for shape in region:
@@ -679,7 +691,8 @@ class GalaxyExtractor(Configurable):
         :return:
         """
 
-        path = self.config.writing.region_path
+        # Determine the full path to the region file
+        path = self.full_output_path(self.config.writing.region_path)
         annotation = self.config.writing.region_annotation
 
         # Inform the user
@@ -759,11 +772,14 @@ class GalaxyExtractor(Configurable):
         :return:
         """
 
+        # Determine the full path to the catalog file
+        path = self.full_output_path(self.config.writing.catalog_path)
+
         # Inform the user
-        self.log.info("Writing galaxy catalog to " + self.config.writing.catalog_path)
+        self.log.info("Writing galaxy catalog to " + path)
 
         # Write the catalog to file
-        self.catalog.write(self.config.writing.catalog_path, format="ascii.commented_header")
+        self.catalog.write(path, format="ascii.commented_header")
 
     # -----------------------------------------------------------------
 
@@ -773,15 +789,18 @@ class GalaxyExtractor(Configurable):
         This function ...
         """
 
+        # Determine the full path to the masked frame file
+        path = self.full_output_path(self.config.writing.masked_frame_path)
+
         # Inform the user
-        self.log.info("Writing masked frame to " + self.config.writing.masked_frame_path)
+        self.log.info("Writing masked frame to " + path)
 
         # Create a frame where the objects are masked
         frame = self.frame.copy()
         frame[self.mask] = float(self.config.writing.mask_value)
 
         # Write out the masked frame
-        frame.save(self.config.writing.masked_frame_path)
+        frame.save(path)
 
     # -----------------------------------------------------------------
 
@@ -792,8 +811,11 @@ class GalaxyExtractor(Configurable):
         :return:
         """
 
+        # Determine the full path to the cutouts directory
+        directory_path = self.full_output_path(self.config.writing.cutouts_path)
+
         # Inform the user
-        self.log.info("Writing cutout boxes to " + self.config.writing.cutouts_path)
+        self.log.info("Writing cutout boxes to " + path)
 
         # Keep track of the number of stars encountered
         principals = 0
@@ -807,7 +829,7 @@ class GalaxyExtractor(Configurable):
             if galaxy.principal:
 
                 # Save the cutout as a FITS file
-                path = os.path.join(self.config.writing.cutouts_path, "galaxy_principal_" + str(principals) + ".fits")
+                path = os.path.join(directory_path, "galaxy_principal_" + str(principals) + ".fits")
                 galaxy.source.save(path)
 
                 # Increment the counter of the number of principal galaxies (there should only be one, really...)
@@ -817,7 +839,7 @@ class GalaxyExtractor(Configurable):
             elif galaxy.companion:
 
                 # Save the cutout as a FITS file
-                path = os.path.join(self.config.writing.cutouts_path, "galaxy_companion_" + str(companions) + ".fits")
+                path = os.path.join(directory_path, "galaxy_companion_" + str(companions) + ".fits")
                 galaxy.source.save(path)
 
                 # Increment the counter of the number of companion galaxies
@@ -827,7 +849,7 @@ class GalaxyExtractor(Configurable):
             elif galaxy.has_source:
 
                 # Save the cutout as a FITS file
-                path = os.path.join(self.config.writing.cutouts_path, "galaxy_source_" + str(principals) + ".fits")
+                path = os.path.join(directory_path, "galaxy_source_" + str(principals) + ".fits")
                 galaxy.source.save(path)
 
                 # Increment the counter of the number of galaxies with a source
@@ -842,11 +864,14 @@ class GalaxyExtractor(Configurable):
         :return:
         """
 
+        # Determine the full path to the resulting FITS file
+        path = self.full_output_path(self.config.writing.result_path)
+
         # Inform the user
-        self.log.info("Writing resulting frame to " + self.config.writing.result_path)
+        self.log.info("Writing resulting frame to " + path)
 
         # Write out the resulting frame
-        self.frame.save(self.config.writing.result_path)
+        self.frame.save(path)
 
     # -----------------------------------------------------------------
 
@@ -970,6 +995,34 @@ class GalaxyExtractor(Configurable):
 
         # Show the plot
         plt.show()
+
+    # -----------------------------------------------------------------
+
+    def full_input_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if os.path.isabs(name): return name
+        elif self.config.input_path is not None: return os.path.join(self.config.input_path, name)
+        else: return os.path.join(os.getcwd(), name)
+
+    # -----------------------------------------------------------------
+
+    def full_output_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if os.path.isabs(name): return name
+        elif self.config.output_path is not None: return os.path.join(self.config.output_path, name)
+        else: return os.path.join(os.getcwd(), name)
 
     # -----------------------------------------------------------------
 
