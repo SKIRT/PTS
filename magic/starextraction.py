@@ -1481,8 +1481,6 @@ class StarExtractor(Configurable):
 
             for band in star.magnitudes:
 
-                assert band in star.magnitude_errors
-
                 # Skip this band if we have already encountered it
                 if band in magnitudes: continue
 
@@ -1502,10 +1500,11 @@ class StarExtractor(Configurable):
 
             for band in magnitudes:
 
-                if band in star.magnitues:
+                if band in star.magnitudes:
 
                     magnitudes[band].append(star.magnitudes[band])
-                    magnitude_errors[band].append(star.magnitude_errors[band])
+                    if band in star.magnitude_errors: magnitude_errors[band].append(star.magnitude_errors[band])
+                    else: magnitude_errors[band].append(None)
 
                 else:
 

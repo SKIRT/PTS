@@ -257,9 +257,6 @@ class GalaxyExtractor(Configurable):
                 expansion_factor = self.config.detection.d25_expansion_factor
                 galaxy.source_from_parameters(self.frame, outer_factor, expansion_factor)
 
-                #print("xsize=",galaxy.source.cutout.xsize)
-                #print("ysize=",galaxy.source.cutout.ysize)
-
             else:
 
                 # Find a source
@@ -294,28 +291,53 @@ class GalaxyExtractor(Configurable):
         # Inform the user
         self.log.info("Loading galaxy catalog from file " + self.config.fetching.catalog_path)
 
+        with open(self.config.fetching.catalog_path, 'r') as f:
+            first_line = f.readline()
+
+        first_line = first_line.replace(' ', "_")
+        first_line = first_line.replace('"_"', ' ')
+        first_line = first_line.replace('\n', '')
+        first_line = first_line.replace('\r', '')
+        first_line = first_line.replace('#_"', '')
+        first_line = first_line.replace('#_', '') # if no quotes are used for the first column name
+        first_line = first_line.replace('"', "")
+
+        names = first_line.split()
+
+        print(names)
+
+        colnames = dict()
+        for i, name in enumerate(names):
+            colnames[name.replace("_", " ")] = "col" + str(i+1)
+
+        from astropy.io import ascii
+
         # Load the catalog
-        table = Table.read(self.config.fetching.catalog_path, format="ascii.commented_header")
+        #fill_values = [('--', '0')]
+        fill_values = [(np.ma.core.MaskedConstant, None)]
+        table = ascii.read(self.config.fetching.catalog_path, fill_values=fill_values)
+
+        print(table)
 
         # Create the list of galaxies
         for i in range(len(table)):
 
             # Get the galaxy properties
-            name = table["Name"][i]
-            redshift = table["Redshift"][i]
-            galaxy_type = table["Type"][i]
-            distance = table["Distance"][i]
-            inclination = table["Inclination"][i]
-            d25 = table["D25"][i]
-            major = table["Major axis length"][i]
-            minor = table["Minor axis length"][i]
-            position_angle = table["Position angle"][i]
-            ra = table["Right ascension"][i]
-            dec = table["Declination"][i]
-            names = table["Alternative names"][i].split()
-            principal_list = table["Principal"][i]
-            companions = table["Companion galaxies"][i].split()
-            parent = table["Parent galaxy"][i]
+            name = table[colnames["Name"]][i]
+            redshift = table[colnames["Redshift"]][i]
+            galaxy_type = table[colnames["Type"]][i]
+            distance = table[colnames["Distance"]][i]
+            inclination = table[colnames["Inclination"]][i]
+            d25 = table[colnames["D25"]][i]
+            major = table[colnames["Major axis length"]][i]
+            minor = table[colnames["Minor axis length"]][i]
+            position_angle = table[colnames["Position angle"]][i]
+            ra = table[colnames["Right ascension"]][i]
+            dec = table[colnames["Declination"]][i]
+            names = table[colnames["Alternative names"]][i].split()
+            principal_list = table[colnames["Principal"]][i]
+            companions = table[colnames["Companion galaxies"]][i].split()
+            parent = table[colnames["Parent galaxy"]][i]
 
             position = coord.SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg), frame='fk5')
 
@@ -884,7 +906,7 @@ class GalaxyExtractor(Configurable):
             if galaxy.names is not None: other_names_list.append(" ".join(galaxy.names))
             else: other_names_list.append(None)
             principal_list.append(galaxy.principal)
-            if galaxy.companions is not None: companions_list.append(" ".join(galaxy.companions))
+            if galaxy.companions: companions_list.append(" ".join(galaxy.companions))
             else: companions_list.append(None)
             parents.append(galaxy.parent)
 
@@ -892,6 +914,9 @@ class GalaxyExtractor(Configurable):
         data = [names, redshifts, types, distances, inclinations, d25_list, major_list, minor_list, position_angles, right_ascensions, declinations, other_names_list, principal_list, companions_list, parents]
         names = ['Name', 'Redshift', 'Type', 'Distance', 'Inclination', 'D25', 'Major axis length', 'Minor axis length', 'Position angle', 'Right ascension', 'Declination', 'Alternative names', 'Principal', 'Companion galaxies', 'Parent galaxy']
         meta = {'name': 'stars'}
+
+        assert len(data) == len(names)
+
         return Table(data, names=names, meta=meta, masked=True)
 
     # -----------------------------------------------------------------
