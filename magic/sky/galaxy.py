@@ -88,21 +88,21 @@ class Galaxy(SkyObject):
             ned_entry = ned_result[0]
 
             # Get a more common name for this galaxy (sometimes, the name obtained from NED is one starting with 2MASX .., use the PGC name in this case)
-            if ned_entry["Object Name"].startswith("2MASX "): self.name = name
-            else: self.name = ned_entry["Object Name"]
+            if ned_entry["Object Name"].startswith("2MASX "): gal_name = name
+            else: gal_name = ned_entry["Object Name"]
 
             # Get the redshift
-            self.redshift = ned_entry["Redshift"]
+            gal_redshift = ned_entry["Redshift"]
 
             # Get the type (G=galaxy, HII ...)
-            self.type = ned_entry["Type"]
+            gal_type = ned_entry["Type"]
 
         except astroquery.exceptions.RemoteServiceError:
 
             # Set attributes
-            self.name = name
-            self.redshift = None
-            self.type = None
+            gal_name = name
+            gal_redshift = None
+            gal_type = None
 
         # Create a new Vizier object and set the row limit to -1 (unlimited)
         viz = Vizier(keywords=["galaxies", "optical"])
@@ -133,7 +133,7 @@ class Galaxy(SkyObject):
 
                     names = row["ANames"]
 
-                    if name.replace(" ", "") in names or self.name.replace(" ", "") in names:
+                    if name.replace(" ", "") in names or gal_name.replace(" ", "") in names:
 
                         entry = row
                         break
@@ -149,7 +149,7 @@ class Galaxy(SkyObject):
         position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
 
         # Get the names given to this galaxy
-        self.names = entry["ANames"].split() if entry["ANames"] else None
+        gal_names = entry["ANames"].split() if entry["ANames"] else None
 
         # Get the size of the galaxy
         ratio = np.power(10.0, entry["logR25"]) if entry["logR25"] else None
@@ -163,25 +163,25 @@ class Galaxy(SkyObject):
 
             radial_profiles_entry = radial_profiles_result[0][0]
 
-            self.distance = radial_profiles_entry["Dist"] * u.Unit("Mpc")
-            self.inclination = Angle(radial_profiles_entry["i"], u.deg)
-            self.d25 = radial_profiles_entry["D25"] * u.arcmin
+            gal_distance = radial_profiles_entry["Dist"] * u.Unit("Mpc")
+            gal_inclination = Angle(radial_profiles_entry["i"], u.deg)
+            gal_d25 = radial_profiles_entry["D25"] * u.arcmin
 
         else:
 
-            self.distance = None
-            self.inclination = None
-            self.d25 = None
+            gal_distance = None
+            gal_inclination = None
+            gal_d25 = None
 
         # Get the size of major and minor axes
-        self.major = diameter
-        self.minor = diameter / ratio if diameter is not None and ratio is not None else None
+        gal_major = diameter
+        gal_minor = diameter / ratio if diameter is not None and ratio is not None else None
 
         # Get the position angle of the galaxy
-        self.pa = Angle(entry["PA"] - 90.0, u.deg) if entry["PA"] else None
+        gal_pa = Angle(entry["PA"] - 90.0, u.deg) if entry["PA"] else None
 
         # Create and return a new Galaxy instance
-        return cls()
+        return cls(gal_name, position, gal_redshift, gal_type, gal_names, gal_distance, gal_inclination, gal_d25, gal_major, gal_minor, gal_pa)
 
     # -----------------------------------------------------------------
 
