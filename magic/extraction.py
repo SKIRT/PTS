@@ -51,7 +51,7 @@ class Extractor(Configurable):
         self.frame = None
 
         # The mask covering pixels that should be ignored throughout the entire extraction procedure
-        self.mask = None
+        self.input_mask = None
 
         # The galaxy and star extractors
         self.galaxy_extractor = None
@@ -71,7 +71,8 @@ class Extractor(Configurable):
         # Create a new Extractor instance
         extractor = cls(arguments.config)
 
-        # Set the output path
+        # Set the input and output path
+        extractor.config.input_path = arguments.input_path
         extractor.config.output_path = arguments.output_path
 
         # Set options for writing out regions or masks
@@ -130,8 +131,8 @@ class Extractor(Configurable):
         # Set the paths to the resulting frame and the total mask
         self.config.write_result = True
         self.config.write_mask = True
-        self.config.writing.result_path = os.path.join(self.config.output_path, "result.fits")
-        self.config.writing.mask_path = os.path.join(self.config.output_path, "mask.fits")
+        self.config.writing.result_path = "result.fits"
+        self.config.writing.mask_path = "mask.fits"
 
         # Initialize a galaxy extractor according to the settings defined in the provided configuration file
         self.galaxy_extractor = GalaxyExtractor(self.config.galaxies)
@@ -142,27 +143,33 @@ class Extractor(Configurable):
         # Initialize a trained extractor according to the settings defined in the provided configuration file
         self.trained_extractor = TrainedExtractor(self.config.other_sources)
 
+        # Set the input and output path for the galaxy and star extractor
+        self.galaxy_extractor.config.input_path = self.config.input_path
+        self.galaxy_extractor.config.output_path = self.config.output_path
+        self.star_extractor.config.input_path = self.config.input_path
+        self.star_extractor.config.output_path = self.config.output_path
+
         # Set the appropriate configuration settings for writing out the region files
         if self.config.write_regions:
 
             # Galaxy extractor
             self.galaxy_extractor.config.write_region = True
-            self.galaxy_extractor.config.writing.region_path = os.path.join(self.config.output_path, "galaxies.reg")
+            self.galaxy_extractor.config.writing.region_path = "galaxies.reg"
 
             # Star extractor
             self.star_extractor.config.write_region = True
-            self.star_extractor.config.writing.region_path = os.path.join(self.config.output_path, "stars.reg")
+            self.star_extractor.config.writing.region_path = "stars.reg"
 
         # Set the appropriate configuration settings for writing out the masked frames
         if self.config.save_masked_frames:
 
             # Galaxy extractor
             self.galaxy_extractor.config.write_masked_frame = True
-            self.galaxy_extractor.config.writing.masked_frame_path = os.path.join(self.config.output_path, "masked_galaxies.fits")
+            self.galaxy_extractor.config.writing.masked_frame_path = "masked_galaxies.fits"
 
             # Star extractor
             self.star_extractor.config.write_masked_frame = True
-            self.star_extractor.config.writing.masked_frame_path = os.path.join(self.config.output_path, "masked_stars.fits")
+            self.star_extractor.config.writing.masked_frame_path = "masked_stars.fits"
 
         # Options for logging
         self.galaxy_extractor.config.logging.level = "WARNING"
@@ -193,8 +200,9 @@ class Extractor(Configurable):
         # Inform the user
         self.log.info("Clearing the extractor")
 
-        # Clear the frame
+        # Clear the frame and input mask
         self.frame = None
+        self.input_mask = None
 
         # Clear the extractors
         self.galaxy_extractor.clear()
@@ -286,11 +294,14 @@ class Extractor(Configurable):
         :return:
         """
 
+        # Determine the full path to the result file
+        path = self.full_output_path(self.config.writing.result_path)
+
         # Inform the user
-        self.log.info("Writing resulting frame to " + self.config.writing.result_path)
+        self.log.info("Writing resulting frame to " + path)
 
         # Write out the resulting frame
-        self.frame.save(self.config.writing.result_path)
+        self.frame.save(path)
 
     # -----------------------------------------------------------------
 
@@ -301,8 +312,11 @@ class Extractor(Configurable):
         :return:
         """
 
+        # Determine the full path to the mask file
+        path = self.full_output_path(self.config.writing.mask_path)
+
         # Inform the user
-        self.log.info("Writing the total mask to " + self.config.writing.mask_path)
+        self.log.info("Writing the total mask to " + path)
 
         # Set the galaxy mask
         galaxy_mask = self.galaxy_extractor.mask
@@ -314,6 +328,6 @@ class Extractor(Configurable):
         frame = Frame(masks.union(galaxy_mask, star_mask).astype(int))
 
         # Write out the total mask
-        frame.save(self.config.writing.mask_path)
+        frame.save(path)
 
 # -----------------------------------------------------------------

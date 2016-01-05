@@ -1552,34 +1552,6 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def full_input_path(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        if os.path.isabs(name): return name
-        elif self.config.input_path is not None: return os.path.join(self.config.input_path, name)
-        else: return os.path.join(os.getcwd(), name)
-
-    # -----------------------------------------------------------------
-
-    def full_output_path(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        if os.path.isabs(name): return name
-        elif self.config.output_path is not None: return os.path.join(self.config.output_path, name)
-        else: return os.path.join(os.getcwd(), name)
-
-    # -----------------------------------------------------------------
-
     def plot(self):
 
         """

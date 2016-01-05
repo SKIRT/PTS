@@ -29,18 +29,35 @@ parser.add_argument("image", type=str, help="the name of the input image")
 parser.add_argument('--config', type=str, help='the name of a configuration file', default=None)
 parser.add_argument("--regions", action="store_true", help="save regions")
 parser.add_argument("--masks", action="store_true", help="save masks")
-parser.add_argument("--out", type=str, help="the name of the output directory")
+parser.add_argument("-i", "--input", type=str, help="the name of the input directory")
+parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
 
 # Parse the command line arguments
 arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
+# -- Input --
+
+# If an input directory is given
+if arguments.input is not None:
+
+    # Determine the full path to the input directory
+    arguments.input_path = os.path.abspath(arguments.input)
+
+    # Give an error if the input directory does not exist
+    if not os.path.isdir(arguments.input_path): raise argparse.ArgumentError("The input directory does not exist")
+
+# If no input directory is given, assume the input is placed in the current working directory
+else: arguments.input_path = os.getcwd()
+
+# -- Output --
+
 # If an output directory is given
-if arguments.out is not None:
+if arguments.output is not None:
     
     # Determine the full path to the output directory
-    arguments.output_path = os.path.abspath(arguments.out)
+    arguments.output_path = os.path.abspath(arguments.output)
     
     # Create the directory if it does not yet exist
     if not os.path.isdir(arguments.output_path): os.makedirs(arguments.output_path)
