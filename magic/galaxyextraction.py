@@ -1005,9 +1005,6 @@ class GalaxyExtractor(Configurable):
         :return:
         """
 
-        # If requested, write out the galaxy catalog
-        if self.config.write_catalog: self.write_catalog()
-
         # If requested, write out the galaxy region
         if self.config.write_region: self.write_region()
 
@@ -1019,5 +1016,8 @@ class GalaxyExtractor(Configurable):
 
         # If requested, write out the result
         if self.config.write_result: self.write_result()
+
+        # If requested, write out the galaxy catalog
+        if self.config.write_catalog: self.write_catalog()
 
 # -----------------------------------------------------------------

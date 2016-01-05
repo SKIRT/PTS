@@ -466,7 +466,7 @@ class StarExtractor(Configurable):
 
             self.log.debug("Number of stars that were in the catalog: " + str(number_of_stars))
             self.log.debug("Number of stars that fell within the frame: " + str(number_of_stars_in_frame))
-            self.log.debug("Number of stars that were present in this catalog only: " + str(number_of_new_stars))
+            self.log.debug("Number of stars that were only present in this catalog: " + str(number_of_new_stars))
 
             # Add the new stars to the stars list
             self.stars += stars
@@ -649,6 +649,7 @@ class StarExtractor(Configurable):
                 if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
                 # Find a saturation source and remove it from the frame
+                self.config.saturation.centroid_table_path = self.full_output_path(self.config.saturation.centroid_table_path)
                 success = star.remove_saturation(self.frame, self.mask, self.config.saturation, default_fwhm)
                 if success: star.has_saturation = True
                 removed += success
@@ -702,6 +703,7 @@ class StarExtractor(Configurable):
                 if value >= minimum or (self.config.saturation.remove_if_undetected and not star.has_source):
 
                     # Find a saturation source and remove it from the frame
+                    self.config.saturation.centroid_table_path = self.full_output_path(self.config.saturation.centroid_table_path)
                     success = star.remove_saturation(self.frame, self.mask, self.config.saturation, default_fwhm)
                     if success: star.has_saturation = True
                     removed += success
@@ -1538,6 +1540,8 @@ class StarExtractor(Configurable):
         for band in magnitudes:
 
             # Values
+            print(magnitudes[band])
+            print(type(magnitudes[band]))
             column = MaskedColumn(magnitudes[band], mask=[mag is None for mag in magnitudes[band]])
             data.append(column)
             names.append(band + " magnitude")
@@ -1593,9 +1597,6 @@ class StarExtractor(Configurable):
         # If requested, write out a table with the star properties
         if self.config.write_table: self.write_table()
 
-        # If requested, write out the stellar catalog
-        if self.config.write_catalog: self.write_catalog()
-
         # If requested, write out the star region
         if self.config.write_region: self.write_region()
 
@@ -1610,5 +1611,8 @@ class StarExtractor(Configurable):
 
         # If requested, write out the result
         if self.config.write_result: self.write_result()
+
+        # If requested, write out the stellar catalog
+        if self.config.write_catalog: self.write_catalog()
 
 # -----------------------------------------------------------------
