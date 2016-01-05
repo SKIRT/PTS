@@ -39,13 +39,45 @@ class Galaxy(SkyObject):
     This class ...
     """
 
-    def __init__(self, name, position=None):
+    def __init__(self, name, position, redshift, galaxy_type, names, distance, inclination, d25, major, minor, position_angle):
 
         """
         The constructor ...
-        :param ra:
-        :param dec:
+        :param position:
         :param name:
+        :return:
+        """
+
+        # Set attributes
+        self.name = name
+        self.redshift = redshift
+        self.type = galaxy_type
+        self.names = names
+        self.distance = distance
+        self.inclination = inclination
+        self.d25 = d25
+        self.major = major
+        self.minor = minor
+        self.pa = position_angle
+
+        # Set the principal and companion flags to False initially
+        self.principal = False
+        self.companion = False
+
+        # Initialize a list for the names of companion galaxies
+        self.companions = []
+        self.parent = None
+
+        # Call the constructor of the base class
+        super(Galaxy, self).__init__(position)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_name(cls, name, position=None):
+
+        """
+        This function ...
         :return:
         """
 
@@ -116,14 +148,12 @@ class Galaxy(SkyObject):
         # Get the right ascension and the declination
         position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
 
-        #print(self.name, name, entry["_RAJ2000"], entry["_DEJ2000"])
-
         # Get the names given to this galaxy
         self.names = entry["ANames"].split() if entry["ANames"] else None
 
         # Get the size of the galaxy
         ratio = np.power(10.0, entry["logR25"]) if entry["logR25"] else None
-        diameter = np.power(10.0, entry["logD25"])*0.1*u.arcmin if entry["logD25"] else None
+        diameter = np.power(10.0, entry["logD25"]) * 0.1 * u.arcmin if entry["logD25"] else None
 
         #print("  D25_diameter = ", diameter)
 
@@ -148,18 +178,10 @@ class Galaxy(SkyObject):
         self.minor = diameter / ratio if diameter is not None and ratio is not None else None
 
         # Get the position angle of the galaxy
-        self.pa = Angle(entry["PA"]-90.0, u.deg) if entry["PA"] else None
+        self.pa = Angle(entry["PA"] - 90.0, u.deg) if entry["PA"] else None
 
-        # Set the principal and companion flags to False initially
-        self.principal = False
-        self.companion = False
-
-        # Initialize a list for the names of companion galaxies
-        self.companions = []
-        self.parent = None
-
-        # Call the constructor of the base class
-        super(Galaxy, self).__init__(position)
+        # Create and return a new Galaxy instance
+        return cls()
 
     # -----------------------------------------------------------------
 

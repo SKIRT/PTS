@@ -214,7 +214,7 @@ class TrainedExtractor(Configurable):
             b = properties.semiminor_axis_sigma.value * self.config.apertures.sigma_level
             theta = properties.orientation.value
 
-            ellipticity = (a-b)/b
+            ellipticity = (a - b) / b
 
             # Create the aperture
             if ellipticity < self.config.apertures.max_ellipticity: self.apertures.append(EllipticalAperture(position, a, b, theta=theta))

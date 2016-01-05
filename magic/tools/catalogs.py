@@ -76,7 +76,7 @@ def fetch_objects_in_box(box, catalog, keywords, radius, limit=None, column_filt
     """
     This function ...
     :param box:
-    :param catalogs:
+    :param catalog:
     :param keywords:
     :param radius:
     :param limit:
@@ -111,8 +111,6 @@ def fetch_objects_in_box(box, catalog, keywords, radius, limit=None, column_filt
             # Get the right ascension and the declination
             ra = entry[0]
             dec = entry[1]
-
-            #print coordinates.degrees_to_hms(ra=ra, dec=dec)
 
             # Create a string with the coordinates of the star
             regline = "fk5;circle(%s,%s,%.2f\")\n" % (ra, dec, radius)

@@ -21,13 +21,14 @@ import matplotlib.pylab as plt
 # Import astronomical modules
 import astropy.units as u
 from astropy.table import Table
+import astropy.coordinates as coord
 from astropy.coordinates import Angle
 from astropy.visualization import SqrtStretch, LogStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 
 # Import the relevant AstroMagic classes and modules
 from .basics import Mask, Region, Position, Extent
-from .core import Source, Frame
+from .core import Source
 from .sky import Galaxy
 from .tools import catalogs, regions
 
@@ -141,7 +142,8 @@ class GalaxyExtractor(Configurable):
         """
 
         # Get list of galaxies
-        self.fetch_galaxies()
+        if self.config.fetching.use_catalog_file: self.load_catalog()
+        else: self.fetch_galaxies()
 
         # Set special galaxies
         if self.config.special_region is not None: self.set_special()
@@ -282,6 +284,54 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    def load_catalog(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Loading galaxy catalog from file " + self.config.fetching.catalog_path)
+
+        # Load the catalog
+        table = Table.read(self.config.fetching.catalog_path, format="ascii.commented_header")
+
+        # Create the list of galaxies
+        for i in range(len(table)):
+
+            # Get the galaxy properties
+            name = table["Name"][i]
+            redshift = table["Redshift"][i]
+            galaxy_type = table["Type"][i]
+            distance = table["Distance"][i]
+            inclination = table["Inclination"][i]
+            d25 = table["D25"][i]
+            major = table["Major axis length"][i]
+            minor = table["Minor axis length"][i]
+            position_angle = table["Position angle"][i]
+            ra = table["Right ascension"][i]
+            dec = table["Declination"][i]
+            names = table["Alternative names"][i].split()
+            principal_list = table["Principal"][i]
+            companions = table["Companion galaxies"][i].split()
+            parent = table["Parent galaxy"][i]
+
+            position = coord.SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg), frame='fk5')
+
+            # Create a new Galaxy instance
+            galaxy = Galaxy(name, position, redshift, galaxy_type, names, distance, inclination, d25, major, minor, position_angle)
+
+            galaxy.principal = principal_list
+            galaxy.companion = parent is not None
+            galaxy.companions = companions
+            galaxy.parent = parent
+
+            # Add the new galaxy to the list
+            self.galaxies.append(galaxy)
+
+    # -----------------------------------------------------------------
+
     def fetch_galaxies(self):
 
         """
@@ -305,10 +355,8 @@ class GalaxyExtractor(Configurable):
         # Find galaxies in the box defined by the center and RA/DEC ranges
         for galaxy_name, position in catalogs.galaxies_in_box(center, ra_span, dec_span):
 
-            #print(galaxy_name, position)
-
             # Create a Galaxy object and add it to the list
-            self.galaxies.append(Galaxy(galaxy_name, position=position))
+            self.galaxies.append(Galaxy.from_name(galaxy_name, position=position))
 
         #print("len_before=", len(self.galaxies))
 
@@ -682,7 +730,7 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def write_table(self):
+    def write_catalog(self):
 
         """
         This function ...
@@ -690,10 +738,10 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Writing table to " + self.config.writing.table_path)
+        self.log.info("Writing galaxy catalog to " + self.config.writing.catalog_path)
 
-        # Write the table to file
-        self.table.write(self.config.writing.table_path, format="ascii.commented_header")
+        # Write the catalog to file
+        self.catalog.write(self.config.writing.catalog_path, format="ascii.commented_header")
 
     # -----------------------------------------------------------------
 
@@ -795,71 +843,56 @@ class GalaxyExtractor(Configurable):
     # -----------------------------------------------------------------
 
     @property
-    def table(self):
+    def catalog(self):
 
         """
         This function ...
         :return:
         """
 
-        names = ["name", "type", "distance", ""]
-        values = [[] for i in range(len(names))]
-
-        #for galaxy in self.galaxies:
-
-            #for index, name in enumerate(names):
-
-                #value = getattr(galaxy, name)
-                #values[index].append(value)
-
+        # Initialize empty lists for the table columns
         names = []
+        redshifts = []
         types = []
         distances = []
-        ascensions = []
-        declinations = []
-        majors = []
-        d25s = []
-        position_angles = []
         inclinations = []
-        principal_flags = []
-        companion_flags = []
-        sources = []
+        d25_list = []
+        major_list = []
+        minor_list = []
+        position_angles = []
+        right_ascensions = []
+        declinations = []
+        other_names_list = []
+        principal_list = []
+        companions_list = []
+        parents = []
 
-        # Loop over all stars
+        # Loop over all galaxies
         for galaxy in self.galaxies:
 
             names.append(galaxy.name)
+            redshifts.append(galaxy.redshift)
             types.append(galaxy.type)
-            if galaxy.distance is not None: distances.append(galaxy.distance.to(u.Mpc).value)
-            else: distances.append(None)
-            ascensions.append(galaxy.position.ra.value)
+            distances.append(galaxy.distance)
+            inclinations.append(galaxy.inclination)
+            d25_list.append(galaxy.d25)
+            major_list.append(galaxy.major)
+            minor_list.append(galaxy.minor)
+            position_angles.append(galaxy.pa)
+            right_ascensions.append(galaxy.position.ra.value)
             declinations.append(galaxy.position.dec.value)
-            if galaxy.major is not None: majors.append(galaxy.major.to(u.arcmin).value)
-            else: majors.append(None)
-            if galaxy.d25 is not None: d25s.append(galaxy.d25.to(u.arcmin).value)
-            else: d25s.append(None)
-            if galaxy.pa is not None: position_angles.append(galaxy.pa.degree)
-            else: position_angles.append(None)
-            if galaxy.inclination is not None: inclinations.append(galaxy.inclination.degree)
-            else: inclinations.append(None)
-            principal_flags.append(galaxy.principal)
-            companion_flags.append(galaxy.companion)
-            sources.append(galaxy.has_source)
+            if galaxy.names is not None: other_names_list.append(" ".join(galaxy.names))
+            else: other_names_list.append(None)
+            principal_list.append(galaxy.principal)
+            if galaxy.companions is not None: companions_list.append(" ".join(galaxy.companions))
+            else: companions_list.append(None)
+            parents.append(galaxy.parent)
 
-        # Create the table
-        table = Table([names, types, distances, ascensions, declinations, majors, d25s, position_angles, inclinations, principal_flags, companion_flags, sources],
-                     names=('Name', 'Type', 'Distance', 'RA', 'DEC', 'Major axis length', 'D25', 'Position angle', 'Inclination', 'Principal', 'Companion', 'Source'),
-                     meta={'name': 'galaxies'})
-
-        # Set units for columns
-        table['Distance'].unit = u.Mpc
-        table['D25'].unit = u.arcmin
-        table['Major axis length'].unit = u.arcmin
-        table['Position angle'].unit = u.deg
-        table['Inclination'].unit = u.deg
-
-        # Return the table
-        return table
+        # Create and return the table
+        data = [names, redshifts, types, distances, inclinations, d25_list, major_list, minor_list, position_angles, right_ascensions, declinations, other_names_list, principal_list, companions_list, parents]
+        names = ['Name', 'Redshift', 'Type', 'Distance', 'Inclination', 'D25', 'Major axis length', 'Minor axis length', 'Position angle', 'Right ascension', 'Declination', 'Alternative names', 'Principal', 'Companion galaxies', 'Parent galaxy']
+        meta = {'name': 'stars'}
+        return Table(data, names=names, meta=meta, masked=True)
 
     # -----------------------------------------------------------------
 
@@ -922,8 +955,8 @@ class GalaxyExtractor(Configurable):
         :return:
         """
 
-        # If requested, write out a table with the galaxy properties
-        if self.config.write_table: self.write_table()
+        # If requested, write out the galaxy catalog
+        if self.config.write_catalog: self.write_catalog()
 
         # If requested, write out the galaxy region
         if self.config.write_region: self.write_region()

@@ -313,13 +313,18 @@ class Star(SkyObject):
                 b = properties.semiminor_axis_sigma.value
                 theta = properties.orientation.value
 
+                # Calculate the ellipticity
+                ellipticity = (a - b) / b
+
                 # Create the aperture
                 #self.aperture = EllipticalAperture(position, a, b, theta=theta)
 
                 difference = position - self.pixel_position(frame.wcs)
 
                 with open(config.centroid_table_path, 'a') as centroid_file:
-                    centroid_file.write(str(difference.norm) + "  " + str(a/b) + "\n")
+                    centroid_file.write(str(difference.norm) + "  " + str(ellipticity) + "\n")
+
+                if difference.norm > config.max_centroid_offset or ellipticity > config.max_centroid_ellipticity: return False
 
             # Replace the source by a source that covers the saturation
             self.source = source
