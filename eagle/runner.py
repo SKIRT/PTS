@@ -15,6 +15,10 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Use non-interactive backend to ensure proper operation in batch job
+import matplotlib
+matplotlib.use("pdf")
+
 import os
 import os.path
 import shutil
