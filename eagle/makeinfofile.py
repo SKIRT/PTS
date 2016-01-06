@@ -83,6 +83,12 @@ def makeinfofile(skirtrun):
             segments = line.split()
             info[segments[0]] = float(segments[2])
 
+    # compute the dust mass from the gas input file and the parameters in the ski file
+    infile = arch.listdir(inpath, "_gas.dat")[0]
+    info["exported_mass_metallic_gas"], info["exported_mass_negative_metallic_gas"] = \
+            loadmetallicgasmasses(os.path.join(inpath,infile), simulation.maximumtemperature())
+    info["exported_mass_dust"] = info["exported_mass_metallic_gas"] * simulation.dustfraction()
+
     # gather SKIRT setup statistics
     info["setup_mass_dust"] = simulation.dustmass()
     info["setup_mass_dust_grid"] = simulation.dustgridmass()
@@ -186,6 +192,16 @@ def makeinfofile(skirtrun):
 
     # report success
     print "Created info file " + infofilepath
+
+# -----------------------------------------------------------------
+
+# This function calculates and returns the positive and negative metallic gas masses
+# from the specified gas input file and maximum temperature
+def loadmetallicgasmasses(inpath, Tmax):
+    M,Z,T = np.loadtxt(arch.opentext(inpath), usecols=(4,5,6), unpack=True)
+    mask_pos = (T<=Tmax) & (M>0)
+    mask_neg = (T<=Tmax) & (M<0)
+    return (M[mask_pos]*Z[mask_pos]).sum(), -(M[mask_neg]*Z[mask_neg]).sum()
 
 # -----------------------------------------------------------------
 
