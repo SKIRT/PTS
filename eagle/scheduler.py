@@ -95,7 +95,7 @@ def schedule(runidspec):
         for runid in runids:
             skirtrun = SkirtRun(runid)
             jobscript.write("cd {}\n".format(firstrun.runpath()))
-            jobscript.write("python -u -m do eagle_run {}\n".format(runid))
+            jobscript.write("python -u -m pts.do eagle/run {}\n".format(runid))
         jobscript.write("echo Done with SKIRT-runs {}\n".format(runidspec))
         jobscript.close()
 
