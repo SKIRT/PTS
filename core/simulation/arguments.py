@@ -228,8 +228,8 @@ def skirt_command(skirt_path, mpi_command, processes, scheduler):
     if processes > 1:
 
         # Determine the command based on whether or not a scheduling system is used
-        if scheduler: return [mpi_command, skirt_path]
-        else: return [mpi_command, "-np", str(processes), skirt_path]
+        if scheduler: return mpi_command.split() + [skirt_path]
+        else: return mpi_command.split() + ["-np", str(processes), skirt_path]
 
     # Singleprocessing mode
     else: return [skirt_path]
