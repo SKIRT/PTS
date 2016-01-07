@@ -105,7 +105,7 @@ class StarExtractor(Configurable):
         # 6. Update the catalog
         self.update_catalog()
 
-        # 6. Writing phase
+        # 7. Writing phase
         self.write()
 
     # -----------------------------------------------------------------
@@ -190,10 +190,10 @@ class StarExtractor(Configurable):
         :return:
         """
 
-        # Find saturated stars in the image
+        # Find saturated stars in the frame
         self.find_saturation()
 
-        # If requested, remove saturation in the image
+        # If requested, remove saturation in the frame
         if self.config.remove_saturation: self.remove_saturation()
 
     # -----------------------------------------------------------------
@@ -254,8 +254,8 @@ class StarExtractor(Configurable):
         """
 
         # Get masks
-        special_mask = self.get_special_mask()
-        ignore_mask = self.get_ignore_mask()
+        special_mask = self.special_mask
+        ignore_mask = self.ignore_mask
 
         # Create the list of stars
         for i in range(len(self.catalog)):
@@ -324,8 +324,6 @@ class StarExtractor(Configurable):
         # Inform the user
         self.log.info("Fetching star positions from an online catalog")
 
-        ## NEW
-
         # Initialize empty lists for the table columns
         catalog_column = []
         id_column = []
@@ -333,13 +331,12 @@ class StarExtractor(Configurable):
         dec_column = []
         ra_error_column = []
         dec_error_column = []
-        magnitude_column = {}
-        magnitude_error_column = {}
+        magnitude_columns = {}
+        magnitude_error_columns = {}
         on_galaxy_column = []
         confidence_level_column = []
 
-        ##
-
+        # Check whether the 'catalogs' setting defines a single catalog name or a list of such names
         if isinstance(self.config.fetching.catalogs, basestring):
             catalogs = [self.config.fetching.catalogs]
         elif isinstance(self.config.fetching.catalogs, config.Sequence):
@@ -347,8 +344,7 @@ class StarExtractor(Configurable):
         else: raise ValueError("Invalid option for 'catalogs', should be a string or a list of strings")
 
         # Get the range of right ascension and declination of this image
-        try:
-            center, ra_span, dec_span = self.frame.coordinate_range()
+        try: center, ra_span, dec_span = self.frame.coordinate_range()
         except AssertionError:
             self.log.warning("The coordinate system and pixelscale do not match")
             center, ra_span, dec_span = self.frame.coordinate_range(silent=True)
@@ -360,17 +356,17 @@ class StarExtractor(Configurable):
         # Loop over the different catalogs
         for catalog in catalogs:
 
+            # Initialize a list to specify which of the stars added to the columns from other catalogs is already
+            # matched to a star of the current catalog
             encountered = [False] * len(catalog_column)
 
-            # Copy the list of stars already added from other catalogs and the list of galaxies
-            #previous_stars = list(self.stars)
+            # Copy the list of galaxies, so that we can removed already encounted galaxies (TODO: change this to use
+            # an 'encountered' list as well
+            #encountered_galaxies = [False] * len(self.galaxy_extractor.galaxies)
             galaxies = list(self.galaxy_extractor.galaxies) if self.galaxy_extractor is not None else []
 
-            # Initialize a list for the stars obtained from this catalog
-            stars = []
-
             # Inform the user
-            self.log.debug("Querying " + catalog + " catalog")
+            self.log.debug("Querying the " + catalog + " catalog")
 
             # Query Vizier and obtain the resulting table
             result = viz.query_region(center, width=ra_span, height=dec_span, catalog=catalog)
@@ -380,19 +376,38 @@ class StarExtractor(Configurable):
             number_of_stars_in_frame = 0
             number_of_new_stars = 0
 
-            # Loop over all stars in the table
+            magnitudes = {}
+            magnitude_errors = {}
+
+            # Get the magnitude in different bands
+            for name in table.colnames:
+
+                # If this column name does not end with "mag", skip it
+                if not name.endswith("mag"): continue
+
+                # If the column name contains more than one character before "mag", skip it
+                if len(name.split("mag")[0]) > 1: continue
+
+                # Get the name of the band
+                band = name.split("mag")[0]
+
+                # Create empty lists for the magnitudes and errors
+                magnitudes[band] = []
+                magnitude_errors[band] = []
+
+            # Loop over all entries in the table
             distances = []
             for i in range(len(table)):
 
-                # Initialize an empty dictionary to contain the magnitudes and the magnitude errors
-                magnitudes = {}
-                mag_errors = {}
+                # -- General information --
 
                 # Get the ID of this star in the catalog
                 if catalog == "UCAC4": star_id = table["UCAC4"][i]
                 elif catalog == "NOMAD": star_id = table["NOMAD1"][i]
                 elif catalog == "II/246": star_id = table["_2MASS"][i]
                 else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
+
+                # -- Positional information --
 
                 # Get the position of the star as a SkyCoord object and as pixel coordinate
                 position = coord.SkyCoord(ra=table["_RAJ2000"][i], dec=table["_DEJ2000"][i], unit=(u.deg, u.deg), frame='fk5')
@@ -427,6 +442,8 @@ class StarExtractor(Configurable):
                     dec_error = error_maj.to("mas")
 
                 else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
+
+                # -- Cross-referencing with the galaxies in the frame --
 
                 # Loop over all galaxies
                 for galaxy in galaxies:
@@ -469,34 +486,37 @@ class StarExtractor(Configurable):
                 # If a break is not encountered
                 else:
 
-                    # Get the magnitude in different bands
-                    for name in table.colnames:
+                    # -- Magnitudes --
 
-                        # If this column name does not end with "mag", skip it
-                        if not name.endswith("mag"): continue
+                    for band in magnitudes:
 
-                        # If the column name contains more than one character before "mag", skip it
-                        if len(name.split("mag")[0]) > 1: continue
+                        column_name = band + "mag"
 
-                        # Get the name of the band
-                        band = name.split("mag")[0]
+                        value = table[column_name][i]
 
-                        if not isinstance(table[name][i], np.ma.core.MaskedConstant):
+                        if isinstance(value, np.ma.core.MaskedConstant):
 
-                            # Add the magnitude in this band to the dictionary
-                            magnitudes[band] = table[name][i] * u.mag
+                            magnitudes[band].append(None)
+                            magnitude_errors[band].append(None)
 
-                            # Check whether an error on the magnitude is present
-                            if "e_" + name in table.colnames and not isinstance(table["e_" + name][i], np.ma.core.MaskedConstant):
+                        else:
 
-                                # If so, add it to the mag_errors dictionary
-                                mag_errors[band] = table["e_" + name][i] * u.mag
+                            # Add the magnitude value
+                            magnitudes[band].append(u.Magnitude(value))
 
+                            # Check for presence of error on magnitude
+                            error_column_name = "e_" + column_name
+                            if error_column_name in table.colnames:
+                                error = table[error_column_name][i]
+                                if isinstance(error, np.ma.core.MaskedConstant): magnitude_errors[band].append(None)
+                                else: magnitude_errors[band].append(u.Magnitude(error))
+                            else: magnitude_errors[band].append(None)
 
                     # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
                     if self.galaxy_extractor is not None: star_on_galaxy = self.galaxy_extractor.principal.contains(pixel_position)
                     else: star_on_galaxy = False
 
+                    # -- Cross-referencing with previous catalogs --
 
                     # If there are already stars in the list, check for correspondences with the current stars
                     for index in range(len(encountered)):
@@ -551,9 +571,6 @@ class StarExtractor(Configurable):
             self.log.debug("Number of stars that fell within the frame: " + str(number_of_stars_in_frame))
             self.log.debug("Number of stars that were only present in this catalog: " + str(number_of_new_stars))
 
-            # Add the new stars to the stars list
-            self.stars += stars
-
         # Inform the user
         if self.galaxy_extractor is not None: self.log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
 
@@ -562,6 +579,25 @@ class StarExtractor(Configurable):
         names = ['Catalog', 'Id', 'Right ascension', 'Declination', 'Right ascension error', 'Declination error', 'On galaxy', 'Confidence level']
 
         # TODO: add magnitudes to the table ?
+
+        #magnitude_column_names = []
+        #for band in magnitudes:
+
+            # Values
+            ##column = MaskedColumn(magnitudes[band], mask=[mag is None for mag in magnitudes[band]])
+            ##data.append(column)
+            #data.append(magnitudes[band])
+            #column_name = band + " magnitude"
+            #names.append(column_name)
+            #magnitude_column_names.append(column_name)
+
+            # Errors
+            ##column = MaskedColumn(magnitude_errors[band], mask=[mag is None for mag in magnitude_errors[band]])
+            ##data.append(column)
+            #data.append(magnitude_errors[band])
+            #column_name = band + " magnitude error"
+            #names.append(column_name)
+            #magnitude_column_names.append(column_name)
 
         # Create the catalog
         meta = {'name': 'stars'}
@@ -850,7 +886,8 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_special_mask(self):
+    @property
+    def special_mask(self):
 
         """
         This function ...
@@ -876,7 +913,8 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_ignore_mask(self):
+    @property
+    def ignore_mask(self):
 
         """
         This function ...
@@ -1485,136 +1523,21 @@ class StarExtractor(Configurable):
         :return:
         """
 
-        have_source_column = []
-        have_model_column = []
-        have_saturation_column = []
+        have_source_column = [None] * len(self.catalog)
+        have_model_column = [None] * len(self.catalog)
+        have_saturation_column = [None] * len(self.catalog)
 
         # Loop over all stars
         for star in self.stars:
 
-            have_source_column.append(star.has_source)
-            have_model_column.append(star.has_model)
-            have_saturation_column.append(star.has_saturation)
+            have_source_column[star.index] = star.has_source
+            have_model_column[star.index] = star.has_model
+            have_saturation_column[star.index] = star.has_saturation
 
         # Add (or replace) the new columns
         self.catalog["Detected"] = have_source_column
         self.catalog["Fitted"] = have_model_column
         self.catalog["Saturated"] = have_saturation_column
-
-    # -----------------------------------------------------------------
-
-    def old_catalog(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Initialize empty lists for the table columns
-        catalogs = []
-        ids = []
-        right_ascensions = []
-        declinations = []
-        ra_errors = []
-        dec_errors = []
-        magnitudes = {}
-        magnitude_errors = {}
-        on_galaxy_list = []
-        confidence_levels = []
-
-        ignore_list = []
-        have_source_list = []
-        have_model_list = []
-
-        # Loop over the stars to see for which bands magnitudes are defined
-        for star in self.stars:
-
-            for band in star.magnitudes:
-
-                # Skip this band if we have already encountered it
-                if band in magnitudes: continue
-
-                # Create an empty list for this band
-                magnitudes[band] = []
-                magnitude_errors[band] = []
-
-        # Loop over all stars
-        for star in self.stars:
-
-            catalogs.append(star.catalog)
-            ids.append(star.id)
-            right_ascensions.append(star.position.ra.value)
-            declinations.append(star.position.dec.value)
-            ra_errors.append(star.ra_error.value)
-            dec_errors.append(star.dec_error.value)
-
-            for band in magnitudes:
-
-                if band in star.magnitudes:
-
-                    magnitudes[band].append(star.magnitudes[band].value)
-                    if band in star.magnitude_errors: magnitude_errors[band].append(star.magnitude_errors[band].value)
-                    else: magnitude_errors[band].append(None)
-
-                else:
-
-                    magnitudes[band].append(None)
-                    magnitude_errors[band].append(None)
-
-            on_galaxy_list.append(star.on_galaxy)
-            confidence_levels.append(star.confidence_level)
-
-            ignore_list.append(star.ignore)
-            have_source_list.append(star.has_source)
-            have_model_list.append(star.has_model)
-
-        # Create and return the table
-        data = [catalogs, ids, right_ascensions, declinations, ra_errors, dec_errors, on_galaxy_list, confidence_levels]
-        names = ['Catalog', 'Id', 'Right ascension', 'Declination', 'Right ascension error', 'Declination error', 'On galaxy', 'Confidence level']
-
-        magnitude_column_names = []
-        for band in magnitudes:
-
-            # Values
-            #column = MaskedColumn(magnitudes[band], mask=[mag is None for mag in magnitudes[band]])
-            #data.append(column)
-            data.append(magnitudes[band])
-            column_name = band + " magnitude"
-            names.append(column_name)
-
-            magnitude_column_names.append(column_name)
-
-            # Errors
-            #column = MaskedColumn(magnitude_errors[band], mask=[mag is None for mag in magnitude_errors[band]])
-            #data.append(column)
-            data.append(magnitude_errors[band])
-            column_name = band + " magnitude error"
-            names.append(column_name)
-
-            magnitude_column_names.append(column_name)
-
-        data.append(ignore_list)
-        names.append("Ignored")
-
-        data.append(have_source_list)
-        names.append("Detected")
-
-        data.append(have_model_list)
-        names.append("Fitted")
-
-        meta = {'name': 'stars'}
-        table = tables.new(data, names, meta)
-
-        # Set units
-        table["Right ascension"].unit = "deg"
-        table["Declination"].unit = "deg"
-        table["Right ascension error"].unit = "mas"
-        table["Declination error"].unit = "mas"
-        for name in magnitude_column_names:
-            table[name].unit = "mag"
-
-        # Return the catalog
-        return table
 
     # -----------------------------------------------------------------
 

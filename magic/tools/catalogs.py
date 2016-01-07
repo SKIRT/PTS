@@ -25,6 +25,28 @@ from . import regions
 
 # -----------------------------------------------------------------
 
+def create_star_catalog():
+
+    """
+    This function ...
+    :return:
+    """
+
+    pass
+
+# -----------------------------------------------------------------
+
+def create_galaxy_catalog():
+
+    """
+    This function ...
+    :return:
+    """
+
+    pass
+
+# -----------------------------------------------------------------
+
 def galaxies_in_box(center, ra_span, dec_span):
 
     """

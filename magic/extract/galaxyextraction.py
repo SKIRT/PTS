@@ -67,21 +67,21 @@ class GalaxyExtractor(Configurable):
         self.input_mask = None
 
         # The input catalog
-        self.input_catalog = None
+        self.catalog = None
 
         # Set the mask to None
         self.mask = None
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, input_mask, input_catalog=None):
+    def run(self, frame, input_mask, catalog=None):
 
         """
         This function ...
         """
 
         # 1. Call the setup function
-        self.setup(frame, input_mask, input_catalog)
+        self.setup(frame, input_mask, catalog)
 
         # 2. Find and remove the galaxies
         self.find_and_remove_galaxies()
@@ -94,7 +94,7 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, input_mask, input_catalog=None):
+    def setup(self, frame, input_mask, catalog=None):
 
         """
         This function ...
@@ -109,7 +109,7 @@ class GalaxyExtractor(Configurable):
         # Make a local reference to the frame and input mask
         self.frame = frame
         self.input_mask = input_mask
-        self.input_catalog = input_catalog
+        self.catalog = catalog
 
         # Create a mask with shape equal to the shape of the frame
         self.mask = Mask(np.zeros_like(self.frame))
@@ -146,14 +146,14 @@ class GalaxyExtractor(Configurable):
         """
 
         # If no input catalog was given
-        if self.input_catalog is None:
+        if self.catalog is None:
 
             # Get list of galaxies
-            if self.config.fetching.use_catalog_file: self.load_catalog()
-            else: self.fetch_galaxies()
+            if self.config.fetching.use_catalog_file: self.import_catalog()
+            else: self.fetch_catalog()
 
         # If an input catalog was given
-        else: self.process_catalog()
+        #self.load_galaxies() Not supported yet
 
         # Set special galaxies
         if self.config.special_region is not None: self.set_special()
@@ -291,7 +291,7 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def load_catalog(self):
+    def import_catalog(self):
 
         """
         This function ...
@@ -307,12 +307,9 @@ class GalaxyExtractor(Configurable):
         # Load the catalog
         self.input_catalog = tables.from_file(path)
 
-        # Process the catalog
-        self.process_catalog()
-
     # -----------------------------------------------------------------
 
-    def process_catalog(self):
+    def load_galaxies(self):
 
         """
         This function ...
@@ -356,7 +353,7 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def fetch_galaxies(self):
+    def fetch_catalog(self):
 
         """
         This function ...
@@ -381,8 +378,6 @@ class GalaxyExtractor(Configurable):
 
             # Create a Galaxy object and add it to the list
             self.galaxies.append(Galaxy.from_name(galaxy_name, position=position))
-
-        #print("len_before=", len(self.galaxies))
 
         # Check whether the pixel positions fall within the frame
         for galaxy in self.galaxies:
@@ -888,7 +883,6 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
     def catalog(self):
 
         """
@@ -1033,6 +1027,6 @@ class GalaxyExtractor(Configurable):
         if self.config.write_result: self.write_result()
 
         # If requested, write out the galaxy catalog
-        if self.config.write_catalog: self.write_catalog()
+        #if self.config.write_catalog: self.write_catalog()
 
 # -----------------------------------------------------------------
