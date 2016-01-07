@@ -102,6 +102,9 @@ class StarExtractor(Configurable):
         # 5. If specified, remove manually selected stars
         if self.config.manual_region is not None: self.set_and_remove_manual()
 
+        # 6. Update the catalog
+        self.update_catalog()
+
         # 6. Writing phase
         self.write()
 
@@ -1475,7 +1478,32 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def fill_catalog(self):
+    def update_catalog(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        have_source_column = []
+        have_model_column = []
+        have_saturation_column = []
+
+        # Loop over all stars
+        for star in self.stars:
+
+            have_source_column.append(star.has_source)
+            have_model_column.append(star.has_model)
+            have_saturation_column.append(star.has_saturation)
+
+        # Add (or replace) the new columns
+        self.catalog["Detected"] = have_source_column
+        self.catalog["Fitted"] = have_model_column
+        self.catalog["Saturated"] = have_saturation_column
+
+    # -----------------------------------------------------------------
+
+    def old_catalog(self):
 
         """
         This function ...
