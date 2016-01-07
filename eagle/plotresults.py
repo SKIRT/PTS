@@ -45,24 +45,22 @@ axistypes = {
 
     # intrinsic properties
     'logMstar': ( r"$\log_{10}(M_*)\,[M_\odot]$", lambda: log_if_positive(original_mass_stars) ),
-    'logMdust': ( r"$\log_{10}(M_\mathrm{dust})\,[M_\odot]$", lambda: log_if_positive(setup_mass_dust) ),
-    'logMdust/Mstar': ( r"$\log_{10}(M_\mathrm{dust}/M_*)$", lambda: log_divide_if_positive(setup_mass_dust,original_mass_stars) ),
+    'logMdust': ( r"$\log_{10}(M_\mathrm{dust})\,[M_\odot]$", lambda: log_if_positive(exported_mass_dust) ),
+    'logMdust/Mstar': ( r"$\log_{10}(M_\mathrm{dust}/M_*)$", lambda: log_divide_if_positive(exported_mass_dust,original_mass_stars) ),
     'logMhii': ( r"$\log_{10}(M_\mathrm{HII})\,[M_\odot]$", lambda: log_if_positive(exported_mass_hii_regions) ),
-    'logMhii.exp': ( r"$\log_{10}(M_\mathrm{HII})\,[M_\odot]$", lambda: log_if_positive(exported_mass_hii_regions) ),
     'fracMhii.fromgas': ( r"$M_{\mathrm{HII},\mathrm{from gas}}/M_{\mathrm{HII},\mathrm{total}}$",
         lambda: divide_if_positive(exported_mass_hii_regions_from_gas,exported_mass_hii_regions) ),
-    'logMdust+hii': ( r"$\log_{10}(M_\mathrm{dust}+\frac{1}{100}M_\mathrm{HII})\,[M_\odot]$",
-        lambda: log_if_positive(setup_mass_dust+0.01*exported_mass_hii_regions) ),
 
     'logLtot': ( r"$\log_{10}(L_\mathrm{tot})\,[L_\odot]$", lambda: log_if_positive(setup_luminosity_stars+setup_luminosity_hii_regions) ),
     'logLhii': ( r"$\log_{10}(L_\mathrm{HII})\,[L_\odot]$", lambda: log_if_positive(setup_luminosity_hii_regions) ),
-    'Zgas': ( r"$Z_\mathrm{gas}$", lambda: divide_if_positive(setup_mass_metallic_gas,setup_mass_cold_gas) ),
-    'fdust': ( r"$f_\mathrm{dust}$", lambda: divide_if_positive(setup_mass_dust,setup_mass_metallic_gas) ),
-    'Mgas/Mdust': ( r"$M_\mathrm{gas}/M_\mathrm{dust}$", lambda: divide_if_positive(setup_mass_cold_gas,setup_mass_dust) ),
-    'fracMgas': ( r"$M_\mathrm{gas}/(M_*+M_\mathrm{gas})$", lambda: divide_if_positive(setup_mass_cold_gas,original_mass_stars+setup_mass_cold_gas) ),
+    'Zgas': ( r"$Z_\mathrm{gas}$", lambda: divide_if_positive(exported_mass_metallic_gas,exported_mass_cold_gas) ),
+    'fdust': ( r"$f_\mathrm{dust}$", lambda: divide_if_positive(exported_mass_dust,exported_mass_metallic_gas) ),
+    'Mgas/Mdust': ( r"$M_\mathrm{gas}/M_\mathrm{dust}$", lambda: divide_if_positive(exported_mass_cold_gas,exported_mass_dust) ),
+    'fracMgas': ( r"$M_\mathrm{gas}/(M_*+M_\mathrm{gas})$",
+        lambda: divide_if_positive(exported_mass_cold_gas,original_mass_stars+exported_mass_cold_gas) ),
     'logM/L': ( r"$\log_{10}(M_*/L_\mathrm{tot})\,[M_\odot/L_\odot]$",
         lambda: log_divide_if_positive(original_mass_stars,setup_luminosity_stars+setup_luminosity_hii_regions) ),
-    'Mgas/Mhii': ( r"$M_\mathrm{gas}/M_\mathrm{HII}$", lambda: divide_if_positive(setup_mass_cold_gas,exported_mass_hii_regions) ),
+    'Mgas/Mhii': ( r"$M_\mathrm{gas}/M_\mathrm{HII}$", lambda: divide_if_positive(exported_mass_cold_gas,exported_mass_hii_regions) ),
 
     # magnitudes and colors
     'g': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g ),
@@ -106,7 +104,7 @@ axistypes = {
 
     # other ratios
     'logMdust/f350/D2' : ( r"$\log_{10}(M_\mathrm{dust}/(f_{350}D^2))\,[\mathrm{kg}\,\mathrm{W}^{-1}\,\mathrm{Hz}]$",
-        lambda: log_divide_if_positive(setup_mass_dust*Msun,instr_fluxdensity_spire_pmw_limited*1e-26*(setup_distance_instrument*pc)**2) ),
+        lambda: log_divide_if_positive(exported_mass_dust*Msun,instr_fluxdensity_spire_pmw_limited*1e-26*(setup_distance_instrument*pc)**2) ),
 
     # observationally derived mass properties
     'logMstar.zib': ( r"$\log_{10}(M_{*,\mathrm{zib}})\,[M_\odot]$", lambda: log_stellar_mass_as_zibetti() ),
