@@ -129,7 +129,7 @@ class Extractor(Configurable):
         self.input_mask = input_mask
 
         # Set the paths to the resulting frame and the total mask
-        self.config.write_result = True
+        self.config.write_result = False
         self.config.write_mask = True
         self.config.writing.result_path = "result.fits"
         self.config.writing.mask_path = "mask.fits"
@@ -148,6 +148,8 @@ class Extractor(Configurable):
         self.galaxy_extractor.config.output_path = self.config.output_path
         self.star_extractor.config.input_path = self.config.input_path
         self.star_extractor.config.output_path = self.config.output_path
+        self.trained_extractor.config.input_path = self.config.input_path
+        self.trained_extractor.config.output_path = self.config.output_path
 
         # Set the appropriate configuration settings for writing out the region files
         if self.config.write_regions:
@@ -176,6 +178,8 @@ class Extractor(Configurable):
         self.galaxy_extractor.config.logging.path = self.config.logging.path
         self.star_extractor.config.logging.level = "WARNING"
         self.star_extractor.config.logging.path = self.config.logging.path
+        self.trained_extractor.config.logging.level = "WARNING"
+        self.trained_extractor.config.logging.path = self.config.logging.path
 
         # Set the log level and path for the different children of this extractor, if cascading is enabled
         if self.config.logging.cascade:
@@ -187,6 +191,10 @@ class Extractor(Configurable):
             # Star extractor
             self.star_extractor.config.logging.cascade = True
             self.star_extractor.config.logging.level = self.config.logging.level
+
+            # Trained extractor
+            self.trained_extractor.config.logging.cascade = True
+            self.trained_extractor.config.logging.level = self.config.logging.level
 
     # -----------------------------------------------------------------
 
@@ -287,7 +295,7 @@ class Extractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def write_result(self):
+    def write_result(self, header=None):
 
         """
         This function ...
@@ -301,7 +309,7 @@ class Extractor(Configurable):
         self.log.info("Writing resulting frame to " + path)
 
         # Write out the resulting frame
-        self.frame.save(path)
+        self.frame.save(path, header)
 
     # -----------------------------------------------------------------
 

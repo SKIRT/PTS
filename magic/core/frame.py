@@ -647,14 +647,16 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self, path, header=None):
 
         """
         This function ...
         """
 
+        if header is None: header = self.header
+
         # Create the HDU
-        hdu = pyfits.PrimaryHDU(self, self.header)
+        hdu = pyfits.PrimaryHDU(self, header)
 
         # Write the HDU to a FITS file
         hdu.writeto(path, clobber=True)

@@ -404,15 +404,18 @@ class TrainedExtractor(Configurable):
         :return:
         """
 
+        # Determine the full path to the masked frame file path
+        path = self.full_output_path(self.config.writing.masked_frame_path)
+
         # Inform the user
-        self.log.info("Writing masked frame to " + self.config.writing.masked_frame_path)
+        self.log.info("Writing masked frame to " + path)
 
         # Create a frame where the objects are masked
         frame = self.frame.copy()
         frame[self.mask] = float(self.config.writing.mask_value)
 
         # Write out the masked frame
-        frame.save(self.config.writing.masked_frame_path)
+        frame.save(path)
 
     # -----------------------------------------------------------------
 
@@ -423,10 +426,13 @@ class TrainedExtractor(Configurable):
         :return:
         """
 
+        # Determine the path to the segmentation file
+        path = self.full_output_path(self.config.writing.segments_path)
+
         # Inform the user
-        self.log.info("Writing the segmentation map to " + self.config.writing.segments_path)
+        self.log.info("Writing the segmentation map to " + path)
 
         # Save the segmentation map
-        Frame(self.segments).save(self.config.writing.segments_path)
+        Frame(self.segments).save(path)
 
 # -----------------------------------------------------------------

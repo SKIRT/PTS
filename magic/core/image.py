@@ -960,6 +960,8 @@ class Image(object):
         for key in original_header:
             self.metadata[key.lower()] = original_header[key]
 
+        self.original_header = original_header
+
         # Close the FITS file
         hdulist.close()
 

@@ -84,4 +84,7 @@ extractor = Extractor.from_arguments(arguments)
 # Run the extractor
 extractor.run(image.frames.primary, mask)
 
+# Save the result
+extractor.write_result(image.original_header)
+
 # -----------------------------------------------------------------
