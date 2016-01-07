@@ -99,7 +99,7 @@ class SkirtSimulation(object):
     def __init__(self, prefix="", inpath="", outpath="", ski_path=None):
 
         self._inpath = os.path.realpath(os.path.expanduser(inpath)) if inpath is not None else None
-        self._outpath = os.path.realpath(os.path.expanduser(outpath))
+        self._outpath = os.path.realpath(os.path.expanduser(outpath if outpath is not None else ""))
         self._prefix = prefix
         if self._prefix.endswith(".ski"):
             self._prefix = self._prefix[0:len(self._prefix)-len(".ski")]

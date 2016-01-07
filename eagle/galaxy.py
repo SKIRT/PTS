@@ -498,6 +498,16 @@ class Galaxy:
 
         # ---- resample star forming regions
 
+        # seed the random generator so that a consistent pseudo-random sequence is used for each particular galaxy
+        np.random.seed(self.galaxyid)
+
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # define discretionary HII region properties
+        f_PDR = 0.20        # PDR covering fraction
+        b_PDR = 50.         # boost factor for negative gas mass compensating for PDR dust emission,
+                            #   M_negative_gas = SFR * infant_age * b_PDR
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
         # define HII region age constants (in years)
         young_age = 1e8     # 100 Myr  --> particles below this age are resampled
         infant_age = 1e7    # 10 Myr   --> resampled particles below this age are converted to HII regions
@@ -559,7 +569,7 @@ class Galaxy:
                 hiiregions['Z']     = sdat['Z'][idxs][isinfant]
                 hiiregions['P']     = sdat['P'][idxs][isinfant] * 0.1   # Convert to Pa for output
                 hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
-                hiiregions['fPDR']  = np.zeros_like(ts[isinfant]) + 0.2  # Covering fraction is set to fiducial constant value
+                hiiregions['fPDR']  = np.zeros_like(ts[isinfant]) + f_PDR  # Covering fraction is set to constant value
 
                 # calculate the HII region smoothing length from the mass of the surrounding PDR region,
                 # estimated to be 10 times as massive (see Jonsson et al. 2010, MNRAS 403, 17-44),
@@ -576,12 +586,18 @@ class Galaxy:
                 info["exported_initial_mass_hii_regions_from_stars"] = ms[isinfant].sum()
                 info["exported_mass_hii_regions_from_stars"] = info["exported_initial_mass_hii_regions_from_stars"]
 
-            # T is set to 0 K as T unavailable for resampled star particles
-            sdat['T'] = np.zeros(sdat['im'].shape[0])
+                # append to dust array with negative mass to compensate for the mass of the surrounding PDR region,
+                # considered to be b_PDR times as massive; use zero temperature as T is unavailable for resampled star particles
+                dust = np.concatenate((dust, np.column_stack([hiiregions['r'], hiiregions['h_mapp']*(b_PDR/10.)**(1/3.),
+                                                             -b_PDR*ms[isinfant], hiiregions['Z'],
+                                                             np.zeros(hiiregions['Z'].shape[0])]).copy()), axis=0)
+                info["exported_particles_negative_gas_from_stars"] = np.count_nonzero(isinfant)
+                info["exported_mass_negative_gas_from_stars"] = b_PDR*ms[isinfant].sum()
 
             # add unspent young star particle material to dust array
+            # use zero temperature as T is unavailable for resampled star particles
             mass = sdat['im'] - mdiffs
-            dust = np.concatenate((dust, np.column_stack([sdat['r'], sdat['h'], mass, sdat['Z'], sdat['T']]).copy()), axis=0)
+            dust = np.concatenate((dust, np.column_stack([sdat['r'], sdat['h'], mass, sdat['Z'], np.zeros(sdat['Z'].shape[0])]).copy()), axis=0)
             info["exported_particles_unspent_gas_from_stars"] = len(mass)
             info["exported_mass_unspent_gas_from_stars"] = mass.sum()
 
@@ -611,7 +627,7 @@ class Galaxy:
                 hiiregions['Z']     = gdat['Z'][idxs][isinfant]
                 hiiregions['P']     = gdat['P'][idxs][isinfant] * 0.1     # convert to Pa
                 hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
-                hiiregions['fPDR']  = np.zeros_like(ts[isinfant]) + 0.2  # Covering fraction is set to fiducial constant value
+                hiiregions['fPDR']  = np.zeros_like(ts[isinfant]) + f_PDR  # Covering fraction is set to constant value
 
                 # calculate the HII region smoothing length from the mass of the surrounding PDR region,
                 # estimated to be 10 times as massive (see Jonsson et al. 2010, MNRAS 403, 17-44),
@@ -627,6 +643,13 @@ class Galaxy:
                 info["exported_particles_hii_regions_from_gas"] = np.count_nonzero(isinfant)
                 info["exported_initial_mass_hii_regions_from_gas"] = ms[isinfant].sum()
                 info["exported_mass_hii_regions_from_gas"] = info["exported_initial_mass_hii_regions_from_gas"]
+
+                # append to dust array with negative mass to compensate for the mass of the surrounding PDR region,
+                # considered to be b_PDR times as massive; use negative temperature to indicate that it is not a physical value
+                dust = np.concatenate((dust, np.column_stack([hiiregions['r'], hiiregions['h_mapp']*(b_PDR/10.)**(1/3.),
+                                                             -b_PDR*ms[isinfant], hiiregions['Z'], -gdat['T'][idxs][isinfant]]).copy()), axis=0)
+                info["exported_particles_negative_gas_from_gas"] = np.count_nonzero(isinfant)
+                info["exported_mass_negative_gas_from_gas"] = b_PDR*ms[isinfant].sum()
 
             # add unspent SF gas material to dust array; use negative temperature to indicate that it is not a physical value
             mass = gdat['m'] - mdiffs
@@ -651,8 +674,11 @@ class Galaxy:
         info["exported_particles_unspent_gas"] = info["exported_particles_unspent_gas_from_stars"] + info["exported_particles_unspent_gas_from_gas"]
         info["exported_mass_unspent_gas"] = info["exported_mass_unspent_gas_from_stars"] + info["exported_mass_unspent_gas_from_gas"]
 
-        info["exported_particles_gas"] = info["exported_particles_non_star_forming_gas"] + info["exported_particles_unspent_gas"]
-        info["exported_mass_gas"] = info["exported_mass_non_star_forming_gas"] + info["exported_mass_unspent_gas"]
+        info["exported_particles_negative_gas"] = info["exported_particles_negative_gas_from_stars"] + info["exported_particles_negative_gas_from_gas"]
+        info["exported_mass_negative_gas"] = info["exported_mass_negative_gas_from_stars"] + info["exported_mass_negative_gas_from_gas"]
+
+        info["exported_particles_gas"] = info["exported_particles_non_star_forming_gas"] + info["exported_particles_unspent_gas"] + info["exported_particles_negative_gas"]
+        info["exported_mass_gas"] = info["exported_mass_non_star_forming_gas"] + info["exported_mass_unspent_gas"] # - info["exported_mass_negative_gas"]
         info["exported_mass_baryons"] = info["exported_mass_stars"] + info["exported_mass_hii_regions"] + info["exported_mass_gas"]
 
         infofilename = self.prefix() + "_info.txt"

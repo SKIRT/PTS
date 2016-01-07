@@ -312,6 +312,26 @@ class SkiFile:
         staggered = self.tree.xpath("//dustLib/*/assigner/StaggeredAssigner")
         return len(staggered) > 0
 
+    ## This function returns the dust fraction specified in an SPHDustDistribution,
+    # or 0 if the element or the attribute are not present.
+    def dustfraction(self):
+        # get the value of the relevant attribute on the SPHDustDistribution element (as a list of query results)
+        results = self.tree.xpath("//SPHDustDistribution/@dustFraction")
+        # if not found, return zero
+        if len(results) != 1: return 0
+        # convert the first result
+        return float(results[0])
+
+    ## This function returns the maximum gas temperature specified in an SPHDustDistribution, in Kelvin,
+    # or 0 if the element or the attribute are not present.
+    def maximumtemperature(self):
+        # get the value of the relevant attribute on the SPHDustDistribution element (as a list of query results)
+        results = self.tree.xpath("//SPHDustDistribution/@maximumTemperature")
+        # if not found, return zero
+        if len(results) != 1: return 0
+        # extract the number from the first result, assuming units of K
+        return float(results[0].split()[0])
+
     # ---------- Updating information ---------------------------------
 
     ## This function applies an XSLT transform to the ski file if an XPath condition evaluates to true.
