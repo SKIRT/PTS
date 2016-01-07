@@ -20,7 +20,6 @@ import matplotlib.pylab as plt
 
 # Import astronomical modules
 import astropy.units as u
-from astropy.table import Table
 import astropy.coordinates as coord
 from astropy.coordinates import Angle
 from astropy.visualization import SqrtStretch, LogStretch

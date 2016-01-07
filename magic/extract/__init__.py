@@ -9,7 +9,7 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.magic TO DO
+## \package pts.magic.extract TO DO
 #
 # This package ...
 #
@@ -17,4 +17,7 @@
 # -----------------------------------------------------------------
 
 # Import classes to make them available at the level of this subpackage
-from .extract import Extractor
+from .extraction import Extractor
+from .galaxyextraction import GalaxyExtractor
+from .starextraction import StarExtractor
+from .trainedextractor import TrainedExtractor
