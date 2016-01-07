@@ -24,20 +24,19 @@ import aplpy
 import astropy.io.fits as pyfits
 import astropy.units as u
 import astropy.coordinates as coord
-from astropy.table import Table, MaskedColumn
 from astroquery.vizier import Vizier
 from astropy.coordinates import Angle
 from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
-from .basics import Position, Extent, Mask, Region
-from .core import Source
-from .sky import Star
-from .tools import statistics, fitting, regions
+from ..basics import Position, Extent, Mask, Region
+from ..core import Source
+from ..sky import Star
+from ..tools import statistics, fitting, regions
 
 # Import the relevant PTS classes and modules
-from ..core.basics.configurable import Configurable
-from ..core.tools import tables
+from ...core.basics.configurable import Configurable
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -164,17 +163,11 @@ class StarExtractor(Configurable):
         if self.input_catalog is None:
 
             # Create a list of stars based on online catalogs
-            if self.config.fetching.use_catalog_file: self.load_catalog()
-            else: self.fetch_stars()
+            if self.config.fetching.use_catalog_file: self.import_catalog()
+            else: self.fetch_catalog()
 
         # If an input catalog was given
-        else: self.process_catalog()
-
-        # Set special stars
-        if self.config.special_region is not None: self.set_special()
-
-        # Set ignore stars
-        if self.config.ignore_region is not None: self.set_ignore()
+        self.load_stars()
 
         # For each star, find a corresponding source in the image
         self.find_sources()
@@ -193,6 +186,9 @@ class StarExtractor(Configurable):
         This function ...
         :return:
         """
+
+        # Find saturated stars in the image
+        self.find_saturation()
 
         # If requested, remove saturation in the image
         if self.config.remove_saturation: self.remove_saturation()
@@ -229,7 +225,7 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def load_catalog(self):
+    def import_catalog(self):
 
         """
         This function ...
@@ -245,28 +241,29 @@ class StarExtractor(Configurable):
         # Load the catalog
         self.input_catalog = tables.from_file(path)
 
-        # Process the catalog
-        self.process_catalog()
-
     # -----------------------------------------------------------------
 
-    def process_catalog(self):
+    def load_stars(self):
 
         """
         This function ...
         :return:
         """
 
+        # Get masks
+        special_mask = self.get_special_mask()
+        ignore_mask = self.get_ignore_mask()
+
         # Create the list of stars
         for i in range(len(self.input_catalog)):
 
             # Get the star properties
             catalog = self.input_catalog["Catalog"][i]
-            id = self.input_catalog["Id"][i]
+            star_id = self.input_catalog["Id"][i]
             ra = self.input_catalog["Right ascension"][i]
             dec = self.input_catalog["Declination"][i]
-            ra_error = self.input_catalog["Right ascension error"][i] * u.deg
-            dec_error = self.input_catalog["Declination error"][i] * u.deg
+            ra_error = self.input_catalog["Right ascension error"][i] * u.mas
+            dec_error = self.input_catalog["Declination error"][i] * u.mas
             on_galaxy = self.input_catalog["On galaxy"][i]
             confidence_level = self.input_catalog["Confidence level"][i]
 
@@ -284,25 +281,38 @@ class StarExtractor(Configurable):
             position = coord.SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg), frame='fk5')
 
             # Create a star object
-            star = Star(catalog=catalog, id=id, position=position, ra_error=ra_error,
+            star = Star(catalog=catalog, id=star_id, position=position, ra_error=ra_error,
                         dec_error=dec_error, magnitudes=magnitudes, magnitude_errors=magnitude_errors)
+
+            # Get the position of the star in pixel coordinates
+            pixel_position = star.pixel_position(self.frame.wcs, self.config.transformation_method)
 
             # Set other attributes
             star.on_galaxy = on_galaxy
             star.confidence_level = confidence_level
 
+            # Enable track record if requested
+            if self.config.track_record: star.enable_track_record()
+
             # What to do with:
             # Ignored
             # Detected
             # Fitted
-            # ?
+            # IN input catalog ?
+
+            # Set attributes based on masks (special and ignore)
+            if special_mask is not None: star.special = special_mask.masks(pixel_position)
+            if ignore_mask is not None: star.ignore = ignore_mask.masks(pixel_position)
+
+            # If the input mask masks this star's position, skip it (don't add it to the list of stars)
+            if self.input_mask is not None and self.input_mask.masks(pixel_position): continue
 
             # Add the star to the list
             self.stars.append(star)
 
     # -----------------------------------------------------------------
 
-    def fetch_stars(self):
+    def fetch_catalog(self):
 
         """
         This function ...
@@ -310,6 +320,22 @@ class StarExtractor(Configurable):
 
         # Inform the user
         self.log.info("Fetching star positions from an online catalog")
+
+        ## NEW
+
+        # Initialize empty lists for the table columns
+        catalog_column = []
+        id_column = []
+        ra_column = []
+        dec_column = []
+        ra_error_column = []
+        dec_error_column = []
+        magnitude_column = {}
+        magnitude_error_column = {}
+        on_galaxy_column = []
+        confidence_level_column = []
+
+        ##
 
         if isinstance(self.config.fetching.catalogs, basestring):
             catalogs = [self.config.fetching.catalogs]
@@ -331,9 +357,10 @@ class StarExtractor(Configurable):
         # Loop over the different catalogs
         for catalog in catalogs:
 
-            # Copy the list of stars already added from other catalogs
-            previous_stars = list(self.stars)
+            encountered = [False] * len(catalog_column)
 
+            # Copy the list of stars already added from other catalogs and the list of galaxies
+            #previous_stars = list(self.stars)
             galaxies = list(self.galaxy_extractor.galaxies) if self.galaxy_extractor is not None else []
 
             # Initialize a list for the stars obtained from this catalog
@@ -352,7 +379,6 @@ class StarExtractor(Configurable):
 
             # Loop over all stars in the table
             distances = []
-            #for entry in table: # slower
             for i in range(len(table)):
 
                 # Initialize an empty dictionary to contain the magnitudes and the magnitude errors
@@ -365,13 +391,19 @@ class StarExtractor(Configurable):
                 elif catalog == "II/246": star_id = table["_2MASS"][i]
                 else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
 
-                # Get the position of the star as a SkyCoord object
+                # Get the position of the star as a SkyCoord object and as pixel coordinate
                 position = coord.SkyCoord(ra=table["_RAJ2000"][i], dec=table["_DEJ2000"][i], unit=(u.deg, u.deg), frame='fk5')
+                pixel_position_x, pixel_position_y = position.to_pixel(self.frame.wcs, origin=0, mode=self.config.transformation_method)
+                pixel_position = Position(pixel_position_x, pixel_position_y)
+
+                # Get the right ascension and declination for the current star
+                star_ra = table["_RAJ2000"][i]
+                star_dec = table["_DEJ2000"][i]
 
                 number_of_stars += 1
 
                 # If this star does not lie within the frame, skip it
-                if not self.frame.contains(position, self.config.transformation_method): continue
+                #if not self.frame.contains(position, self.config.transformation_method): continue
 
                 number_of_stars_in_frame += 1
 
@@ -388,8 +420,8 @@ class StarExtractor(Configurable):
                     error_theta = Angle(table["errPA"][i], u.deg)
 
                     # Temporary: use only the major axis error (convert the error ellipse into a circle)
-                    ra_error = error_maj
-                    dec_error = error_maj
+                    ra_error = error_maj.to("mas")
+                    dec_error = error_maj.to("mas")
 
                 else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
 
@@ -457,32 +489,39 @@ class StarExtractor(Configurable):
                                 # If so, add it to the mag_errors dictionary
                                 mag_errors[band] = table["e_" + name][i] * u.mag
 
-                    # Create a star object
-                    star = Star(catalog=catalog, id=star_id, position=position, ra_error=ra_error,
-                                dec_error=dec_error, magnitudes=magnitudes, magnitude_errors=mag_errors)
 
                     # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
-                    if self.galaxy_extractor is not None:
+                    if self.galaxy_extractor is not None: star_on_galaxy = self.galaxy_extractor.principal.contains(pixel_position)
+                    else: star_on_galaxy = False
 
-                        star.on_galaxy = self.galaxy_extractor.principal.contains(star.pixel_position(self.frame.wcs, self.config.transformation_method))
-
-                    # If requested, enable track record
-                    if self.config.track_record: star.enable_track_record()
 
                     # If there are already stars in the list, check for correspondences with the current stars
-                    for saved_star in previous_stars:
+                    for index in range(len(encountered)):
+
+                        # Skip stars that are already encountered as matches with the current catalog (we assume there can only
+                        # be one match of a star of one catalog with the star of another catalog, within the radius of 3 pixels)
+                        if encountered[index]: continue
+
+                        saved_star_position = coord.SkyCoord(ra=ra_column[index], dec=dec_column[index], unit=(u.deg, u.deg), frame='fk5')
+                        saved_star_pixel_position_x, saved_star_pixel_position_y = saved_star_position.to_pixel(self.frame.wcs, origin=0, mode=self.config.transformation_method)
+                        saved_star_pixel_position = Position(saved_star_pixel_position_x, saved_star_pixel_position_y)
 
                         # Calculate the distance between the star already in the list and the new star
-                        difference = saved_star.pixel_position(self.frame.wcs, self.config.transformation_method) - star.pixel_position(self.frame.wcs, self.config.transformation_method)
+                        difference = saved_star_pixel_position - pixel_position
 
+                        # Check whether the distance is less then 3 pixels
                         if difference.norm < 3.0:
 
                             # Inform the user
-                            self.log.debug("Star " + star_id + " could be identified with star " + saved_star.id + " from the " + saved_star.catalog + " catalog")
+                            self.log.debug("Star " + star_id + " could be identified with star " + id_column[index] + " from the " + catalog_column[index] + " catalog")
 
-                            saved_star.confidence_level += 1
-                            # Remove stars from previous_stars
-                            previous_stars.remove(saved_star)
+                            # Increment the confidence level for the 'saved' star
+                            confidence_level_column[index] += 1
+
+                            # Set the 'encountered' flag to True for the 'saved' star
+                            encountered[index] = True
+
+                            # Break, because the current star does not have to be saved again (it is already in the lists)
                             break
 
                     # If no other stars are in the list yet or no corresponding star was found (no break was
@@ -493,8 +532,18 @@ class StarExtractor(Configurable):
 
                         # Inform the user
                         self.log.debug("Adding star " + star_id + " at " + str(position.to_string("hmsdms")))
-                        stars.append(star)
 
+                        # Fill in the column lists
+                        catalog_column.append(catalog)
+                        id_column.append(star_id)
+                        ra_column.append(star_ra)
+                        dec_column.append(star_dec)
+                        ra_error_column.append(ra_error.value)
+                        dec_error_column.append(dec_error.value)
+                        on_galaxy_column.append(star_on_galaxy)
+                        confidence_level_column.append(1)
+
+            # Debug messages
             self.log.debug("Number of stars that were in the catalog: " + str(number_of_stars))
             self.log.debug("Number of stars that fell within the frame: " + str(number_of_stars_in_frame))
             self.log.debug("Number of stars that were only present in this catalog: " + str(number_of_new_stars))
@@ -505,8 +554,30 @@ class StarExtractor(Configurable):
         # Inform the user
         if self.galaxy_extractor is not None: self.log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
 
+        ## NEW
+
+        # Create and return the table
+        data = [catalog_column, id_column, ra_column, dec_column, ra_error_column, dec_error_column, on_galaxy_column, confidence_level_column]
+        names = ['Catalog', 'Id', 'Right ascension', 'Declination', 'Right ascension error', 'Declination error', 'On galaxy', 'Confidence level']
+
+        # TODO: add magnitudes to the table ?
+
+        # Create the catalog
+        meta = {'name': 'stars'}
+        self.input_catalog = tables.new(data, names, meta)
+
+        # Set units
+        self.input_catalog["Right ascension"].unit = "deg"
+        self.input_catalog["Declination"].unit = "deg"
+        self.input_catalog["Right ascension error"].unit = "mas"
+        self.input_catalog["Declination error"].unit = "mas"
+        #for name in magnitude_column_names:
+        #    self.input_catalog[name].unit = "mag"
+
         # Inform the user
-        self.log.debug("Number of stars: " + str(len(self.stars)))
+        self.log.debug("Number of stars: " + str(len(self.input_catalog)))
+
+        ##
 
     # -----------------------------------------------------------------
 
@@ -641,7 +712,7 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def remove_saturation(self):
+    def find_saturation(self):
 
         """
         This function ...
@@ -649,101 +720,58 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Removing saturation from the frame")
+        self.log.info("Looking for saturated stars...")
+
+        # Inform the user on the number of stars that have a source
+        self.log.debug("Number of stars with source = " + str(self.have_source))
 
         # Calculate the default FWHM, for the stars for which a model was not found
         default_fwhm = self.fwhm
 
         # Set the number of stars where saturation was removed to zero initially
-        removed = 0
+        success = 0
 
-        # Detect and remove saturation for all stars
-        if self.config.saturation.method == "all":
+        # Loop over all stars
+        for star in self.stars:
 
-            # Inform the user on the number of stars that have a source
-            self.log.debug("Number of stars with source = " + str(self.have_source))
+            # If this star should be ignored, skip it
+            if star.ignore: continue
 
-            # Loop over all stars
-            for star in self.stars:
+            # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
+            if not self.config.saturation.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
 
-                # If this star should be ignored, skip it
-                if star.ignore: continue
+            # If a model was not found for this star, skip it unless the remove_if_not_fitted flag is enabled
+            if not star.has_model and not self.config.saturation.remove_if_not_fitted: continue
+            if star.has_model: assert star.has_source
 
-                # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
-                if not self.config.saturation.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
+            # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
+            if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
-                # If a model was not found for this star, skip it unless the remove_if_not_fitted flag is enabled
-                if not star.has_model and not self.config.saturation.remove_if_not_fitted: continue
-                if star.has_model: assert star.has_source
+            # Find a saturation source and remove it from the frame
+            self.config.saturation.centroid_table_path = self.full_output_path(self.config.saturation.centroid_table_path)
+            star.find_saturation(self.frame, self.original_frame, self.config.saturation, default_fwhm)
+            success += star.has_saturation
 
-                # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
-                if not star.has_source and not self.config.saturation.remove_if_undetected: continue
+        # Inform the user
+        self.log.debug("Found saturation in " + str(success) + " out of " + str(self.have_source) + " stars with source ({0:.2f}%)".format(success / self.have_source * 100.0))
 
-                # Find a saturation source and remove it from the frame
-                self.config.saturation.centroid_table_path = self.full_output_path(self.config.saturation.centroid_table_path)
-                success = star.remove_saturation(self.frame, self.mask, self.config.saturation, default_fwhm)
-                if success: star.has_saturation = True
-                removed += success
+    # -----------------------------------------------------------------
 
-            # Inform the user
-            self.log.debug("Removed saturation in " + str(removed) + " out of " + str(self.have_source) + " stars with source ({0:.2f}%)".format(removed/self.have_source*100.0))
+    def remove_saturation(self):
 
-        # Detect and remove saturation for the brightest stars
-        elif self.config.saturation.method == "brightest":
+        """
+        This function ...
+        :return:
+        """
 
-            # TODO: allow "central_brightness" as config.saturation.criterion
+        # Loop over all stars
+        for star in self.stars:
 
-            # Get a list of the fluxes of the stars
-            flux_list = self.fluxes
+            # Skip stars for which saturation was not detected
+            if not star.has_saturation: continue
 
-            # Calculate the minimal flux/central brightness
-            minimum = statistics.cutoff(flux_list, self.config.saturation.brightest_method, self.config.saturation.limit)
-
-            # Inform the user
-            quantity = "flux" if self.config.saturation.criterion == "flux" else "central brightness"
-            self.log.debug("Minimum value of the " + quantity + " for saturation removal: {0:.2f}".format(minimum))
-
-            # Inform the user
-            eligible = len([flux for flux in flux_list if flux >= minimum])
-            self.log.debug("Number of stars eligible for saturation removal: " + str(eligible) + " ({0:.2f}%)".format(eligible/len(self.stars)*100.0))
-
-            # Inform the user on the number of stars that have a source
-            self.log.debug("Number of stars with source = " + str(self.have_source))
-
-            # Loop over all stars
-            for star in self.stars:
-
-                # If this star should be ignored, skip it
-                if star.ignore: continue
-
-                # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
-                if not self.config.saturation.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
-
-                # If a model was not found for this star, skip it unless the remove_if_not_fitted flag is enabled
-                if not star.has_model and not self.config.saturation.remove_if_not_fitted: continue
-                if star.has_model: assert star.has_source
-
-                # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
-                if not star.has_source and not self.config.saturation.remove_if_undetected: continue
-
-                # Calculate the value (flux or brightness) for this star
-                try: value = star.flux
-                except AttributeError: value = 0.0
-
-                # Remove the saturation if the value is greater than the minimum value or the star has no source and 'remove_if_undetected' is enabled
-                if value >= minimum or (self.config.saturation.remove_if_undetected and not star.has_source):
-
-                    # Find a saturation source and remove it from the frame
-                    self.config.saturation.centroid_table_path = self.full_output_path(self.config.saturation.centroid_table_path)
-                    success = star.remove_saturation(self.frame, self.mask, self.config.saturation, default_fwhm)
-                    if success: star.has_saturation = True
-                    removed += success
-
-            # Inform the user
-            self.log.debug("Removed saturation in {0} out of {1} stars ({2:.2f}%)".format(removed, eligible, removed/eligible*100.0))
-
-        # Unkown saturation
-        else: raise ValueError("Unknown method (should be 'brightest' or 'all'")
+            # Remove the saturation of this star in the frame
+            star.remove_saturation(self.frame, self.mask, self.config.saturation)
 
     # -----------------------------------------------------------------
 
@@ -765,7 +793,7 @@ class StarExtractor(Configurable):
             if star.ignore: continue
 
             # If the star does not have saturation, continue
-            if star.has_saturation: star.find_aperture(self.frame, self.config.apertures)
+            if star.has_saturation: star.find_aperture(self.frame, self.config.apertures, saturation=True)
 
     # -----------------------------------------------------------------
 
@@ -825,13 +853,16 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def set_special(self):
+    def get_special_mask(self):
 
         """
         This function ...
         :param path:
         :return:
         """
+
+        # If no special region defined
+        if self.config.special_region is None: return None
 
         # Determine the full path to the special region file
         path = self.full_input_path(self.config.special_region)
@@ -844,23 +875,27 @@ class StarExtractor(Configurable):
         special_mask = Mask(region.get_mask(shape=self.frame.shape))
 
         # Loop over all objects
-        for skyobject in self.stars:
-
+        #for skyobject in self.stars:
             # Get the position of this object in pixel coordinates
-            position = skyobject.pixel_position(self.frame.wcs)
-
+        #    position = skyobject.pixel_position(self.frame.wcs)
             # Set special if position is covered by the mask
-            if special_mask.masks(position): skyobject.special = True
+        #    if special_mask.masks(position): skyobject.special = True
+
+        # Return the mask
+        return special_mask
 
     # -----------------------------------------------------------------
 
-    def set_ignore(self):
+    def get_ignore_mask(self):
 
         """
         This function ...
         :param frame:
         :return:
         """
+
+        # If no ignore region defined
+        if self.config.ignore_region is None: return None
 
         # Determine the full path to the ignore region file
         path = self.full_input_path(self.config.ignore_region)
@@ -873,13 +908,14 @@ class StarExtractor(Configurable):
         ignore_mask = Mask(region.get_mask(shape=self.frame.shape))
 
         # Loop over all objects
-        for skyobject in self.stars:
-
+        #for skyobject in self.stars:
             # Get the position of this object in pixel coordinates
-            position = skyobject.pixel_position(self.frame.wcs)
-
+        #    position = skyobject.pixel_position(self.frame.wcs)
             # Ignore if position is covered by the mask
-            if ignore_mask.masks(position): skyobject.ignore = True
+         #   if ignore_mask.masks(position): skyobject.ignore = True
+
+        # Return the mask
+        return ignore_mask
 
     # -----------------------------------------------------------------
 
@@ -1210,18 +1246,22 @@ class StarExtractor(Configurable):
         # Loop over all stars
         for star in self.stars:
 
+            # -- Saturation sources ---
+
             # Check if saturation has been detected for this star
             if star.has_saturation:
 
                 # Save the cutout as a FITS file
                 path = os.path.join(directory_path, "star_saturation_" + str(with_saturation) + ".fits")
-                star.source.save(path, self.original_frame)
+                star.saturation.save(path)
 
                 # Increment the counter of the number of stars with saturation
                 with_saturation += 1
 
+            # -- PSF sources ---
+
             # Check if a model has been found for this star
-            elif star.has_model:
+            if star.has_model:
 
                 # Save the cutout as a FITS file
                 path = os.path.join(directory_path, "star_model_" + str(with_model) + ".fits")
@@ -1474,43 +1514,6 @@ class StarExtractor(Configurable):
     # -----------------------------------------------------------------
 
     @property
-    def table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Initialize empty lists for the table columns
-        catalogs = []
-        ids = []
-        ascensions = []
-        declinations = []
-        sources = []
-        models = []
-        fwhms = []
-
-        # Loop over all stars
-        for star in self.stars:
-
-            catalogs.append(star.catalog)
-            ids.append(star.id)
-            ascensions.append(star.position.ra.value)
-            declinations.append(star.position.dec.value)
-            sources.append(star.has_source)
-            models.append(star.has_model)
-            if star.has_model: fwhms.append(star.fwhm)
-            else: fwhms.append(None)
-
-        # Create and return the table
-        data = [catalogs, ids, ascensions, declinations, sources, models, fwhms]
-        names = ('CATALOG', 'ID', 'RA', 'DEC', 'Source', 'Model', 'FWHM')
-        meta = {'name': 'stars'}
-        return tables.new(data, names, meta)
-
-    # -----------------------------------------------------------------
-
-    @property
     def catalog(self):
 
         """
@@ -1611,13 +1614,13 @@ class StarExtractor(Configurable):
         names.append("Fitted")
 
         meta = {'name': 'stars'}
-        table = Table(data, names=names, meta=meta, masked=True)
+        table = tables.new(data, names, meta)
 
         # Set units
         table["Right ascension"].unit = "deg"
         table["Declination"].unit = "deg"
-        table["Right ascension error"].unit = "deg"
-        table["Declination error"].unit = "deg"
+        table["Right ascension error"].unit = "mas"
+        table["Declination error"].unit = "mas"
         for name in magnitude_column_names:
             table[name].unit = "mag"
 
@@ -1664,8 +1667,8 @@ class StarExtractor(Configurable):
         :return:
         """
 
-        # If requested, write out a table with the star properties
-        if self.config.write_table: self.write_table()
+        # If requested, write out the stellar catalog
+        if self.config.write_catalog: self.write_catalog()
 
         # If requested, write out the star region
         if self.config.write_region: self.write_region()
@@ -1681,8 +1684,5 @@ class StarExtractor(Configurable):
 
         # If requested, write out the result
         if self.config.write_result: self.write_result()
-
-        # If requested, write out the stellar catalog
-        if self.config.write_catalog: self.write_catalog()
 
 # -----------------------------------------------------------------
