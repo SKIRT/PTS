@@ -493,6 +493,11 @@ class Galaxy:
         info["exported_initial_mass_hii_regions_from_gas"] = 0
         info["exported_mass_hii_regions_from_gas"] = 0
 
+        info["exported_particles_negative_gas_from_stars"] = 0
+        info["exported_particles_negative_gas_from_gas"] = 0
+        info["exported_mass_negative_gas_from_stars"] = 0
+        info["exported_mass_negative_gas_from_gas"] = 0
+
         info["exported_particles_unspent_gas_from_gas"] = 0
         info["exported_mass_unspent_gas_from_gas"] = 0
 
