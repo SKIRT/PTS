@@ -12,19 +12,16 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import os
-
 # Import the relevant AstroMagic classes and modules
-from .core import Frame
-from .tools import masks
+from ..core import Frame
+from ..tools import masks
 from .galaxyextraction import GalaxyExtractor
 from .starextraction import StarExtractor
 from .trainedextractor import TrainedExtractor
 
 # Import the relevant PTS classes and modules
-from ..core.tools import filesystem
-from ..core.basics.configurable import Configurable
+from ...core.tools import filesystem
+from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 

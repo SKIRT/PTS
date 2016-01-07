@@ -72,7 +72,7 @@ class Collector(Configurable):
 
         # -- Adjust the configuration settings according to the command-line arguments --
 
-        collector.mode = arguments.mode
+        collector.config.mode = arguments.mode
 
         # Return the collector
         return collector
@@ -173,12 +173,15 @@ class Collector(Configurable):
 
             # Add 'yes' and 'no' buttons
             self.current_source = source
-            axyes = plt.axes([0.7, 0.05, 0.1, 0.075])
-            axno = plt.axes([0.81, 0.05, 0.1, 0.075])
+            axyes = plt.axes([0.6, 0.05, 0.1, 0.075])
+            axno = plt.axes([0.7, 0.05, 0.1, 0.075])
+            axunsure = plt.axes([0.8, 0.05, 0.1, 0.075])
             yes_button = Button(axyes, 'Yes')
             yes_button.on_clicked(self.save_yes)
             no_button = Button(axno, 'No')
             no_button.on_clicked(self.save_no)
+            unsure_button = Button(axunsure, 'Unsure')
+            unsure_button.on_clicked(self.dont_save)
 
             # Show the plot
             plt.show()
@@ -225,6 +228,22 @@ class Collector(Configurable):
         # Inform the user and save the source object
         self.log.info("Saving the star without saturation to " + path)
         self.current_source.save(path)
+
+        # Close the currently active plotting window for this source
+        plt.close()
+
+    # -----------------------------------------------------------------
+
+    def dont_save(self, event):
+
+        """
+        This function ...
+        :param event:
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Ignoring source")
 
         # Close the currently active plotting window for this source
         plt.close()

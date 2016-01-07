@@ -21,13 +21,13 @@ from astropy.coordinates import Angle
 from photutils import detect_sources
 
 # Import the relevant AstroMagic classes and modules
-from .core import Frame, Source
-from .basics import Position, Extent, Mask
-from .tools import statistics, masks
-from .analysis import SExtractor
+from ..core import Frame, Source
+from ..basics import Position, Extent, Mask
+from ..tools import statistics, masks
+from ..analysis import SExtractor
 
 # Import the relevant PTS classes and modules
-from ..core.basics.configurable import Configurable
+from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 

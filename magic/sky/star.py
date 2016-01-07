@@ -52,8 +52,8 @@ class Star(SkyObject):
         # Set the model attribute to None initially
         self.model = None
 
-        # Set the has_saturation flag to False initially
-        self.has_saturation = False
+        # The saturation source
+        self.saturation = None
 
         # Call the constructor of the base class
         super(Star, self).__init__(position)
@@ -69,6 +69,18 @@ class Star(SkyObject):
         """
 
         return self.model is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_saturation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.saturation is not None
 
     # -----------------------------------------------------------------
 
@@ -270,10 +282,16 @@ class Star(SkyObject):
 
     # -----------------------------------------------------------------
 
-    def remove_saturation(self, frame, mask, config, default_fwhm, galaxy_mask=None):
+    def find_saturation(self, frame, original_frame, config, default_fwhm, galaxy_mask=None):
 
         """
         This function ...
+        :param frame:
+        :param original_frame:
+        :param config:
+        :param default_fwhm:
+        :param galaxy_mask:
+        :return:
         """
 
         # Convert FWHM to sigma
@@ -324,40 +342,51 @@ class Star(SkyObject):
                 with open(config.centroid_table_path, 'a') as centroid_file:
                     centroid_file.write(str(difference.norm) + "  " + str(ellipticity) + "\n")
 
-                if difference.norm > config.max_centroid_offset or ellipticity > config.max_centroid_ellipticity: return False
+                # Discard this saturation source if the centroid offset or the ellipticity is too large
+                if difference.norm > config.max_centroid_offset or ellipticity > config.max_centroid_ellipticity: return
+
+            # Replace the pixels of the cutout box by the pixels of the original frame (because the star itsself is already removed)
+            source.cutout = original_frame.box_like(source.cutout)
+
+            # TODO: check with classifier to verify this is actually a saturation source!
 
             # Replace the source by a source that covers the saturation
-            self.source = source
+            self.saturation = source
 
-            # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
-            if self.on_galaxy and config.no_sigma_clip_on_galaxy: sigma_clip = False
-            else: sigma_clip = config.sigma_clip
+    # -----------------------------------------------------------------
 
-            # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-            if self.on_galaxy and config.polynomial_on_galaxy: interpolation_method = "polynomial"
-            else: interpolation_method = config.interpolation_method
+    def remove_saturation(self, frame, mask, config):
 
-            # Estimate the background
-            self.source.estimate_background(interpolation_method, sigma_clip)
+        """
+        This function ...
+        :param frame:
+        :param mask:
+        :param config:
+        """
 
-            # FOR PLOTTING THE REMOVAL
-            #import copy
-            #cutout_interpolated = copy.deepcopy(source.cutout)
-            #cutout_interpolated[source.mask] = source.background[source.mask]
-            #from ..tools import plotting
-            # Do the plotting
-            #plotting.plot_removal(source.cutout, source.mask, source.background, cutout_interpolated)
+        # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
+        if self.on_galaxy and config.no_sigma_clip_on_galaxy: sigma_clip = False
+        else: sigma_clip = config.sigma_clip
 
-            # Replace the frame with the estimated background
-            self.source.background.replace(frame, where=self.source.mask)
+        # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
+        if self.on_galaxy and config.polynomial_on_galaxy: interpolation_method = "polynomial"
+        else: interpolation_method = config.interpolation_method
 
-            # Update the mask
-            mask[self.source.cutout.y_slice, self.source.cutout.x_slice] += self.source.mask
+        # Estimate the background
+        self.saturation.estimate_background(interpolation_method, sigma_clip)
 
-            # Indicate that a saturation source was found
-            return True
+        # FOR PLOTTING THE REMOVAL
+        #import copy
+        #cutout_interpolated = copy.deepcopy(source.cutout)
+        #cutout_interpolated[source.mask] = source.background[source.mask]
+        #from ..tools import plotting
+        # Do the plotting
+        #plotting.plot_removal(source.cutout, source.mask, source.background, cutout_interpolated)
 
-        # Otherwise, return False
-        else: return False
+        # Replace the frame with the estimated background
+        self.saturation.background.replace(frame, where=self.saturation.mask)
+
+        # Update the mask
+        mask[self.saturation.cutout.y_slice, self.saturation.cutout.x_slice] += self.saturation.mask
 
 # -----------------------------------------------------------------

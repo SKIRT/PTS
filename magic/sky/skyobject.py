@@ -159,24 +159,23 @@ class SkyObject(object):
 
     # -----------------------------------------------------------------
 
-    def find_aperture(self, frame, config):
+    def find_aperture(self, frame, config, saturation=False):
 
         """
         This function ...
         :return:
         """
 
-        #print(self.source.cutout.xsize)
-        #print(self.source.cutout.ysize)
-
-        #from ..tools import plotting
-        #plotting.plot_box(self.source.cutout)
-
-        props = segment_properties(self.source.cutout, self.source.mask)
+        if saturation: props = segment_properties(self.saturation.cutout, self.saturation.mask)
+        else: props = segment_properties(self.source.cutout, self.source.mask)
         #tbl = properties_table(props)
 
-        x_shift = self.source.cutout.x_min
-        y_shift = self.source.cutout.y_min
+        if saturation:
+            x_shift = self.saturation.cutout.x_min
+            y_shift = self.saturation.cutout.y_min
+        else:
+            x_shift = self.source.cutout.x_min
+            y_shift = self.source.cutout.y_min
 
         # Since there is only one segment in the self.source.mask (the center segment), the props
         # list contains only one entry (one galaxy)

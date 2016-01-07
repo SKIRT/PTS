@@ -26,14 +26,14 @@ from astropy.visualization import SqrtStretch, LogStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 
 # Import the relevant AstroMagic classes and modules
-from .basics import Mask, Region, Position, Extent
-from .core import Source
-from .sky import Galaxy
-from .tools import catalogs, regions
+from ..basics import Mask, Region, Position, Extent
+from ..core import Source
+from ..sky import Galaxy
+from ..tools import catalogs, regions
 
 # Import the relevant PTS classes and modules
-from ..core.basics.configurable import Configurable
-from ..core.tools import tables
+from ...core.basics.configurable import Configurable
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -814,7 +814,7 @@ class GalaxyExtractor(Configurable):
         directory_path = self.full_output_path(self.config.writing.cutouts_path)
 
         # Inform the user
-        self.log.info("Writing cutout boxes to " + path)
+        self.log.info("Writing cutout boxes to " + directory_path)
 
         # Keep track of the number of stars encountered
         principals = 0

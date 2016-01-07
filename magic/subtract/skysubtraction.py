@@ -21,12 +21,12 @@ import copy
 from astropy import log
 
 # Import the relevant AstroMagic classes and modules
-from .basics import Mask, Region
-from .core import Frame
-from .tools import statistics, interpolation, plotting
+from ..basics import Mask, Region
+from ..core import Frame
+from ..tools import statistics, interpolation, plotting
 
 # Import the relevant PTS classes and modules
-from ..core.basics.configurable import Configurable
+from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 

@@ -54,7 +54,7 @@ class Configurable(Loggable):
         """
 
         # Determine the full path to the log file
-        path = self.full_output_path(self.config.logging.path)
+        path = self.full_output_path(self.config.logging.path) if self.config.logging.path is not None else None
 
         # Call the setup function of the Loggable base class
         super(Configurable, self).setup(self.config.logging.level, path)
