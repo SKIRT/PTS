@@ -31,7 +31,7 @@ class Star(SkyObject):
     This class ...
     """
 
-    def __init__(self, catalog=None, id=None, position=None, ra_error=None, dec_error=None, magnitudes=None, magnitude_errors=None, on_galaxy=False):
+    def __init__(self, index, catalog=None, id=None, position=None, ra_error=None, dec_error=None, magnitudes=None, magnitude_errors=None, on_galaxy=False):
 
         """
         The constructor ...
@@ -39,6 +39,7 @@ class Star(SkyObject):
         """
 
         # Set the attributes
+        self.index = index
         self.catalog = catalog
         self.id = id
         self.ra_error = ra_error

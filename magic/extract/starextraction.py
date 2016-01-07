@@ -71,7 +71,7 @@ class StarExtractor(Configurable):
         self.input_mask = None
 
         # The input catalog
-        self.input_catalog = None
+        self.catalog = None
 
         # Set the mask to None
         self.mask = None
@@ -120,7 +120,7 @@ class StarExtractor(Configurable):
         self.frame = frame
         self.original_frame = frame.copy()
         self.input_mask = input_mask
-        self.input_catalog = catalog
+        self.catalog = catalog
 
         # Make a local reference to the galaxy extractor (if any)
         self.galaxy_extractor = galaxyextractor
@@ -160,7 +160,7 @@ class StarExtractor(Configurable):
         """
 
         # If no input catalog was given
-        if self.input_catalog is None:
+        if self.catalog is None:
 
             # Create a list of stars based on online catalogs
             if self.config.fetching.use_catalog_file: self.import_catalog()
@@ -239,7 +239,7 @@ class StarExtractor(Configurable):
         self.log.info("Loading stellar catalog from file " + path)
 
         # Load the catalog
-        self.input_catalog = tables.from_file(path)
+        self.catalog = tables.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -255,33 +255,33 @@ class StarExtractor(Configurable):
         ignore_mask = self.get_ignore_mask()
 
         # Create the list of stars
-        for i in range(len(self.input_catalog)):
+        for i in range(len(self.catalog)):
 
             # Get the star properties
-            catalog = self.input_catalog["Catalog"][i]
-            star_id = self.input_catalog["Id"][i]
-            ra = self.input_catalog["Right ascension"][i]
-            dec = self.input_catalog["Declination"][i]
-            ra_error = self.input_catalog["Right ascension error"][i] * u.mas
-            dec_error = self.input_catalog["Declination error"][i] * u.mas
-            on_galaxy = self.input_catalog["On galaxy"][i]
-            confidence_level = self.input_catalog["Confidence level"][i]
+            catalog = self.catalog["Catalog"][i]
+            star_id = self.catalog["Id"][i]
+            ra = self.catalog["Right ascension"][i]
+            dec = self.catalog["Declination"][i]
+            ra_error = self.catalog["Right ascension error"][i] * u.mas
+            dec_error = self.catalog["Declination error"][i] * u.mas
+            on_galaxy = self.catalog["On galaxy"][i]
+            confidence_level = self.catalog["Confidence level"][i]
 
             magnitudes = {}
             magnitude_errors = {}
 
-            for name in self.input_catalog.colnames:
+            for name in self.catalog.colnames:
                 if "magnitude" in name:
 
                     band = name.split(" magnitude")[0]
-                    magnitudes[band] = self.input_catalog[name][i] * u.mag
-                    magnitude_errors[band] = self.input_catalog[name + " error"][i] * u.mag
+                    magnitudes[band] = self.catalog[name][i] * u.mag
+                    magnitude_errors[band] = self.catalog[name + " error"][i] * u.mag
 
             # Create a sky coordinate for the star position
             position = coord.SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg), frame='fk5')
 
             # Create a star object
-            star = Star(catalog=catalog, id=star_id, position=position, ra_error=ra_error,
+            star = Star(i, catalog=catalog, id=star_id, position=position, ra_error=ra_error,
                         dec_error=dec_error, magnitudes=magnitudes, magnitude_errors=magnitude_errors)
 
             # Get the position of the star in pixel coordinates
@@ -554,8 +554,6 @@ class StarExtractor(Configurable):
         # Inform the user
         if self.galaxy_extractor is not None: self.log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
 
-        ## NEW
-
         # Create and return the table
         data = [catalog_column, id_column, ra_column, dec_column, ra_error_column, dec_error_column, on_galaxy_column, confidence_level_column]
         names = ['Catalog', 'Id', 'Right ascension', 'Declination', 'Right ascension error', 'Declination error', 'On galaxy', 'Confidence level']
@@ -564,20 +562,18 @@ class StarExtractor(Configurable):
 
         # Create the catalog
         meta = {'name': 'stars'}
-        self.input_catalog = tables.new(data, names, meta)
+        self.catalog = tables.new(data, names, meta)
 
         # Set units
-        self.input_catalog["Right ascension"].unit = "deg"
-        self.input_catalog["Declination"].unit = "deg"
-        self.input_catalog["Right ascension error"].unit = "mas"
-        self.input_catalog["Declination error"].unit = "mas"
+        self.catalog["Right ascension"].unit = "deg"
+        self.catalog["Declination"].unit = "deg"
+        self.catalog["Right ascension error"].unit = "mas"
+        self.catalog["Declination error"].unit = "mas"
         #for name in magnitude_column_names:
-        #    self.input_catalog[name].unit = "mag"
+        #    self.catalog[name].unit = "mag"
 
         # Inform the user
-        self.log.debug("Number of stars: " + str(len(self.input_catalog)))
-
-        ##
+        self.log.debug("Number of stars: " + str(len(self.catalog)))
 
     # -----------------------------------------------------------------
 
@@ -592,16 +588,14 @@ class StarExtractor(Configurable):
         # Inform the user
         self.log.info("Looking for sources near the star positions")
 
-        # Loop over all sky objects in the list
-        for skyobject in self.stars:
+        # Loop over all stars in the list
+        for star in self.stars:
 
             # If this sky object should be ignored, skip it
-            if skyobject.ignore: continue
+            if star.ignore: continue
 
             # Find a source
-            try:
-                skyobject.find_source(self.frame, self.config.detection)
-
+            try: star.find_source(self.frame, self.config.detection)
             except Exception as e:
 
                 #import traceback
@@ -613,13 +607,13 @@ class StarExtractor(Configurable):
 
                 if self.config.plot_track_record_if_exception:
 
-                    if skyobject.has_track_record: skyobject.track_record.plot()
+                    if star.has_track_record: star.track_record.plot()
                     else: self.log.warning("Track record is not enabled")
 
                 self.log.error("Continuing with next source")
 
         # Inform the user
-        self.log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.stars), self.have_source/len(self.stars)*100.0))
+        self.log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.stars), self.have_source / len(self.stars) * 100.0))
 
     # -----------------------------------------------------------------
 
@@ -874,13 +868,6 @@ class StarExtractor(Configurable):
         region = Region.from_file(path, self.frame.wcs)
         special_mask = Mask(region.get_mask(shape=self.frame.shape))
 
-        # Loop over all objects
-        #for skyobject in self.stars:
-            # Get the position of this object in pixel coordinates
-        #    position = skyobject.pixel_position(self.frame.wcs)
-            # Set special if position is covered by the mask
-        #    if special_mask.masks(position): skyobject.special = True
-
         # Return the mask
         return special_mask
 
@@ -906,13 +893,6 @@ class StarExtractor(Configurable):
         # Load the region and create a mask from it
         region = Region.from_file(path, self.frame.wcs)
         ignore_mask = Mask(region.get_mask(shape=self.frame.shape))
-
-        # Loop over all objects
-        #for skyobject in self.stars:
-            # Get the position of this object in pixel coordinates
-        #    position = skyobject.pixel_position(self.frame.wcs)
-            # Ignore if position is covered by the mask
-         #   if ignore_mask.masks(position): skyobject.ignore = True
 
         # Return the mask
         return ignore_mask
@@ -1161,24 +1141,6 @@ class StarExtractor(Configurable):
 
         # Close the file
         f.close()
-
-    # -----------------------------------------------------------------
-
-    def write_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the full path to the table file
-        path = self.full_output_path(self.config.writing.table_path)
-
-        # Inform the user
-        self.log.info("Writing table to " + path)
-
-        # Write the table to file
-        self.table.write(path, format="ascii.commented_header")
 
     # -----------------------------------------------------------------
 
@@ -1513,8 +1475,7 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
-    def catalog(self):
+    def fill_catalog(self):
 
         """
         This function ...
