@@ -93,6 +93,35 @@ class Source(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_aperture(cls, frame, aperture, factor):
+
+        """
+        This function ...
+        :param frame:
+        :param aperture:
+        :return:
+        """
+
+        # TODO: make this work with apertures other than EllipticalAperture
+
+        # Get the parameters of the elliptical aperture
+        x_center, y_center = aperture.positions[0]
+        center = Position(x=x_center, y=y_center)
+
+        major = aperture.a
+        minor = aperture.b
+
+        radius = Extent(x=major, y=minor)
+
+        # theta is in radians
+        angle = Angle(aperture.theta, u.rad)
+
+        # Return a new Mask object
+        return cls.from_ellipse(frame, center, radius, angle, factor)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_image(cls, image):
 
         """

@@ -215,16 +215,16 @@ class Star(SkyObject):
             if self.has_track_record: self.track_record.set_stage("removal")
 
             # Create a source for the desired sigma level and outer factor
-            source = self.source_at_sigma_level(frame, default_fwhm, config.sigma_level, config.outer_factor)
+            self.source = self.source_at_sigma_level(frame, default_fwhm, config.sigma_level, config.outer_factor)
 
             # Evaluate the model in the cutout of the star's source
-            evaluated = source.cutout.evaluate_model(self.model)
+            evaluated = self.source.cutout.evaluate_model(self.model)
 
             # Determine the value at the peak for both the source and the model
-            rel_peak = source.cutout.rel_position(self.source.peak)
+            rel_peak = self.source.cutout.rel_position(self.source.peak)
 
             # Create a box where the model has been subtracted
-            subtracted = source.cutout - evaluated
+            subtracted = self.source.cutout - evaluated
 
             # To plot the difference between the source and the fitted model
             #from ..tools import plotting
@@ -235,10 +235,13 @@ class Star(SkyObject):
             if self.has_track_record: self.track_record.append(subtracted)
 
             # Replace the frame with the subtracted box
-            subtracted.replace(frame, where=source.mask)
+            subtracted.replace(frame, where=self.source.mask)
+
+            # Set the subtracted cutout as the background of the source
+            self.source.background = subtracted
 
             # Update the mask
-            mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
+            mask[self.source.cutout.y_slice, self.source.cutout.x_slice] += self.source.mask
 
         # If a segment was found that can be identified with a source
         elif removal_method == "interpolation":
@@ -247,7 +250,7 @@ class Star(SkyObject):
             if self.has_track_record: self.track_record.set_stage("removal")
 
             # Create a source for the desired sigma level and outer factor
-            source = self.source_at_sigma_level(frame, default_fwhm, config.sigma_level, config.outer_factor)
+            self.source = self.source_at_sigma_level(frame, default_fwhm, config.sigma_level, config.outer_factor)
 
             # Determine whether we want the background to be sigma-clipped when interpolating over the source
             if self.on_galaxy and config.no_sigma_clip_on_galaxy: sigma_clip = False
@@ -258,7 +261,7 @@ class Star(SkyObject):
             else: method = config.interpolation_method
 
             # Estimate the background
-            source.estimate_background(method, sigma_clip)
+            self.source.estimate_background(method, sigma_clip)
 
             # FOR PLOTTING THE REMOVAL
             #import copy
@@ -269,13 +272,13 @@ class Star(SkyObject):
             #plotting.plot_removal(source.cutout, source.mask, source.background, cutout_interpolated)
 
             # Add the source to the track record
-            if self.has_track_record: self.track_record.append(source)
+            if self.has_track_record: self.track_record.append(self.source)
 
             # Replace the frame with the estimated background
-            source.background.replace(frame, where=source.mask)
+            self.source.background.replace(frame, where=self.source.mask)
 
             # Update the mask
-            mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
+            mask[self.source.cutout.y_slice, self.source.cutout.x_slice] += self.source.mask
 
         # None is a valid removal method
         elif removal_method is None: return

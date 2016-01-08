@@ -153,10 +153,7 @@ class GalaxyExtractor(Configurable):
             else: self.fetch_catalog()
 
         # If an input catalog was given
-        #self.load_galaxies() Not supported yet
-
-        # Set special galaxies
-        if self.config.special_region is not None: self.set_special()
+        self.load_galaxies()
 
         # Find the sources
         self.find_sources()
@@ -312,44 +309,68 @@ class GalaxyExtractor(Configurable):
     def load_galaxies(self):
 
         """
-        This function ...
+        This function creates the galaxy list from the galaxy catalog.
         :return:
         """
 
+        # Inform the user
+        self.log.info("Loading the galaxies from the catalog...")
+
+        # Get masks
+        special_mask = self.special_mask
+        ignore_mask = self.ignore_mask
+
         # Create the list of galaxies
-        for i in range(len(self.input_catalog)):
+        for i in range(len(self.catalog)):
 
             # Get the galaxy properties
-            name = self.input_catalog["Name"][i]
-            redshift = self.input_catalog["Redshift"][i]
-            galaxy_type = self.input_catalog["Type"][i]
-            distance = self.input_catalog["Distance"][i] * u.Mpc
-            inclination = self.input_catalog["Inclination"][i] * u.deg
-            d25 = self.input_catalog["D25"][i] * u.arcmin
-            major = self.input_catalog["Major axis length"][i] * u.arcmin
-            minor = self.input_catalog["Minor axis length"][i] * u.arcmin
-            position_angle = self.input_catalog["Position angle"][i] * u.deg
-            ra = self.input_catalog["Right ascension"][i]
-            dec = self.input_catalog["Declination"][i]
-            names = self.input_catalog["Alternative names"][i].split()
-            principal_list = self.input_catalog["Principal"][i]
-            companions = self.input_catalog["Companion galaxies"][i].split()
-            parent = self.input_catalog["Parent galaxy"][i]
+            name = self.catalog["Name"][i]
+            redshift = self.catalog["Redshift"][i]
+            galaxy_type = self.catalog["Type"][i]
+            distance = self.catalog["Distance"][i] * u.Mpc if self.catalog["Distance"][i] is not None else None
+            inclination = Angle(self.catalog["Inclination"][i], u.deg) if self.catalog["Inclination"][i] is not None else None
+            d25 = self.catalog["D25"][i] * u.arcmin if self.catalog["D25"][i] is not None else None
+            major = self.catalog["Major axis length"][i] * u.arcmin if self.catalog["Major axis length"][i] is not None else None
+            minor = self.catalog["Minor axis length"][i] * u.arcmin if self.catalog["Minor axis length"][i] is not None else None
+            position_angle = Angle(self.catalog["Position angle"][i], u.deg) if self.catalog["Position angle"][i] is not None else None
+            ra = self.catalog["Right ascension"][i]
+            dec = self.catalog["Declination"][i]
+            names = self.catalog["Alternative names"][i].split() if self.catalog["Alternative names"][i] is not None else []
+            principal = self.catalog["Principal"][i]
+            companions = self.catalog["Companion galaxies"][i].split() if self.catalog["Companion galaxies"][i] is not None else []
+            parent = self.catalog["Parent galaxy"][i]
 
             # Create a SkyCoord instance for the galaxy center position
             position = coord.SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg), frame='fk5')
 
             # Create a new Galaxy instance
-            galaxy = Galaxy(name, position, redshift, galaxy_type, names, distance, inclination, d25, major, minor, position_angle)
+            galaxy = Galaxy(i, name, position, redshift, galaxy_type, names, distance, inclination, d25, major, minor, position_angle)
+
+            # Calculate the pixel position of the galaxy in the frame
+            pixel_position = galaxy.pixel_position(self.frame.wcs, self.config.transformation_method)
 
             # Set other attributes
-            galaxy.principal = principal_list
+            galaxy.principal = principal
             galaxy.companion = parent is not None
             galaxy.companions = companions
             galaxy.parent = parent
 
+            # Enable track record if requested
+            if self.config.track_record: galaxy.enable_track_record()
+
+            # Set attributes based on masks (special and ignore)
+            if special_mask is not None: galaxy.special = special_mask.masks(pixel_position)
+            if ignore_mask is not None: galaxy.ignore = ignore_mask.masks(pixel_position)
+
+            # If the input mask masks this star's position, skip it (don't add it to the list of stars)
+            if self.input_mask is not None and self.input_mask.masks(pixel_position): continue
+
             # Add the new galaxy to the list
             self.galaxies.append(galaxy)
+
+        # Debug messages
+        self.log.debug(self.principal.name + " is the principal galaxy in the frame")
+        self.log.debug("The following galaxies are its companions: " + str(self.principal.companions))
 
     # -----------------------------------------------------------------
 
@@ -365,69 +386,11 @@ class GalaxyExtractor(Configurable):
         # Inform the user
         self.log.info("Fetching galaxy positions from an online catalog")
 
-        # Get the range of right ascension and declination of the image
-        try:
-            center, ra_span, dec_span = self.frame.coordinate_range()
-        except AssertionError as error:
-            self.log.warning("The coordinate system and pixelscale do not match")
-            #print(error)
-            center, ra_span, dec_span = self.frame.coordinate_range(silent=True)
-
-        # Find galaxies in the box defined by the center and RA/DEC ranges
-        for galaxy_name, position in catalogs.galaxies_in_box(center, ra_span, dec_span):
-
-            # Create a Galaxy object and add it to the list
-            self.galaxies.append(Galaxy.from_name(galaxy_name, position=position))
-
-        # Check whether the pixel positions fall within the frame
-        for galaxy in self.galaxies:
-
-            pixel_position = galaxy.pixel_position(self.frame.wcs)
-
-            #print(galaxy.name, "pixel position=", pixel_position)
-
-            if pixel_position.x < 0.0 or pixel_position.x >= self.frame.xsize:
-                #print("pixelposition.y=", pixel_position.x)
-                self.galaxies.remove(galaxy)
-
-            if pixel_position.y < 0.0 or pixel_position.y >= self.frame.ysize:
-                #print("pixelposition.x=", pixel_position.y)
-                self.galaxies.remove(galaxy)
-
-        #print("len_after=", len(self.galaxies))
-
-        # Define a function that returns the length of the major axis of the galaxy
-        def major_axis(galaxy):
-
-            if galaxy.major is None: return 0.0
-            else: return galaxy.major
-
-        # Indicate which galaxy is the principal galaxy
-        principal_galaxy = max(self.galaxies, key=major_axis)
-        principal_galaxy.principal = True
-
-        # Loop over the galaxies, and enable track record if requested
-        if self.config.track_record:
-
-            for galaxy in self.galaxies: galaxy.enable_track_record()
-
-        # Loop over the galaxies, check if they are companion galaxies
-        for galaxy in self.galaxies:
-
-            # Skip the principal galaxy
-            if galaxy.principal: continue
-
-            if galaxy.type == "HII": galaxy.companion = True
-            if galaxy.name[:-1].lower() == principal_galaxy.name[:-1].lower(): galaxy.companion = True
-
-            if galaxy.companion:
-                principal_galaxy.companions.append(galaxy.name)
-                galaxy.parent = principal_galaxy.name
+        # Create the galaxy catalog
+        self.catalog = catalogs.create_galaxy_catalog(self.frame)
 
         # Inform the user
-        self.log.debug("Number of galaxies: " + str(len(self.galaxies)))
-        self.log.debug(self.principal.name + " is the principal galaxy in the frame")
-        self.log.debug("The following galaxies are its companions: " + str(self.principal.companions))
+        self.log.debug("Number of galaxies: " + str(len(self.catalog)))
 
     # -----------------------------------------------------------------
 
@@ -481,13 +444,17 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def set_special(self):
+    @property
+    def special_mask(self):
 
         """
         This function ...
         :param path:
         :return:
         """
+
+        # If no special region is defined
+        if self.config.special_region is None: return None
 
         # Determine the full path to the special region file
         path = self.full_input_path(self.config.special_region)
@@ -499,24 +466,22 @@ class GalaxyExtractor(Configurable):
         region = Region.from_file(path, self.frame.wcs)
         special_mask = Mask(region.get_mask(shape=self.frame.shape))
 
-        # Loop over all galaxies
-        for galaxy in self.galaxies:
-
-            # Get the position of this object in pixel coordinates
-            position = galaxy.pixel_position(self.frame.wcs)
-
-            # Set special if position is covered by the mask
-            if special_mask.masks(position): galaxy.special = True
+        # Return the mask
+        return special_mask
 
     # -----------------------------------------------------------------
 
-    def set_ignore(self):
+    @property
+    def ignore_mask(self):
 
         """
         This function ...
         :param frame:
         :return:
         """
+
+        # If no ignore region is defined
+        if self.config.ignore_region is None: return None
 
         # Determine the full path to the ignore region file
         path = self.full_input_path(self.config.ignore_region)
@@ -528,14 +493,8 @@ class GalaxyExtractor(Configurable):
         region = Region.from_file(path, self.frame.wcs)
         ignore_mask = Mask(region.get_mask(shape=self.frame.shape))
 
-        # Loop over all galaxies
-        for galaxy in self.galaxies:
-
-            # Get the position of this object in pixel coordinates
-            position = galaxy.pixel_position(self.frame.wcs)
-
-            # Ignore if position is covered by the mask
-            if ignore_mask.masks(position): galaxy.ignore = True
+        # Return the mask
+        return ignore_mask
 
     # -----------------------------------------------------------------
 
@@ -771,6 +730,8 @@ class GalaxyExtractor(Configurable):
 
         # Inform the user
         self.log.info("Writing galaxy catalog to " + path)
+
+        print(self.catalog)
 
         # Write the catalog to file
         self.catalog.write(path, format="ascii.commented_header")
@@ -1027,6 +988,6 @@ class GalaxyExtractor(Configurable):
         if self.config.write_result: self.write_result()
 
         # If requested, write out the galaxy catalog
-        #if self.config.write_catalog: self.write_catalog()
+        if self.config.write_catalog: self.write_catalog()
 
 # -----------------------------------------------------------------

@@ -179,4 +179,28 @@ class Classifier(Configurable):
 
             print(test_target, result_target)
 
+    # -----------------------------------------------------------------
+
+    def is_star(self, source):
+
+        """
+        This function ...
+        :param source:
+        :return:
+        """
+
+        return False
+
+    # -----------------------------------------------------------------
+
+    def is_galaxy(self, source):
+
+        """
+        This function ...
+        :param source:
+        :return:
+        """
+
+        return False
+
 # -----------------------------------------------------------------

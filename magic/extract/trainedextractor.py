@@ -23,8 +23,10 @@ from photutils import detect_sources
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame, Source
 from ..basics import Position, Extent, Mask
-from ..tools import statistics, masks
+from ..tools import statistics, masks, catalogs
 from ..analysis import SExtractor
+from ..train import Classifier
+from ..sky import Galaxy, Star
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -60,6 +62,15 @@ class TrainedExtractor(Configurable):
         # Initialize an empty list for the apertures constructed from the sources
         self.apertures = []
 
+        # The classifier
+        classifier = Classifier()
+
+        # List of stars
+        self.stars = []
+
+        # Stellar catalog
+        self.catalog = []
+
         # Mask
         self.mask = None
 
@@ -87,11 +98,17 @@ class TrainedExtractor(Configurable):
         # 3. Find apertures
         if self.config.find_apertures: self.find_apertures()
 
+        # 4. Classify sources
+        if self.config.classify: self.classify_sources()
+
         # 4. Remove apertures
         if self.config.remove_apertures: self.remove_apertures()
 
         # 3. Classify the sources
         if self.config.classify: self.classify()
+
+        # Build catalogs
+        if self.config.build_catalogs: self.build_catalog()
 
         # 4. Writing
         self.write()
@@ -235,6 +252,50 @@ class TrainedExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    def classify_sources(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all apertures
+        for aperture in self.apertures:
+
+            background_factor = 1.5
+
+            # If the aperture has to be rescaled
+            #aperture.a *= 1.0
+            #aperture.b *= 1.0
+
+            # No: use the FWHM !
+
+            # Create a source from the aperture
+            source = Source.from_aperture(self.frame, aperture, background_factor)
+
+            # Test whether this source corresponds to a star
+            if classifier.is_star(source):
+
+                # Create a Star instance
+                star = Star()
+
+                # Add the star to the list of stars
+                self.stars.append(star)
+
+            # Test whether the source corresponds to a galaxy
+            #elif classifier.is_galaxy(source):
+
+                # Create a Galaxy instance
+                #galaxy = Galaxy()
+
+                # Add the galaxy to the list of galaxies
+                #self.galaxies.append(galaxy)
+
+            # Not a star or a galaxy
+            else: self.log.debug("The source does not correspond to a star or galaxy")
+
+    # -----------------------------------------------------------------
+
     def remove_apertures(self):
 
         """
@@ -285,6 +346,18 @@ class TrainedExtractor(Configurable):
         """
 
         pass
+
+    # -----------------------------------------------------------------
+
+    def build_catalog(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the stellar catalog
+        self.catalog = catalogs.from_stars(self.stars)
 
     # -----------------------------------------------------------------
 

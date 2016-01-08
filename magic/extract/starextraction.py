@@ -24,7 +24,6 @@ import aplpy
 import astropy.io.fits as pyfits
 import astropy.units as u
 import astropy.coordinates as coord
-from astroquery.vizier import Vizier
 from astropy.coordinates import Angle
 from astropy.convolution import Gaussian2DKernel
 
@@ -32,7 +31,7 @@ from astropy.convolution import Gaussian2DKernel
 from ..basics import Position, Extent, Mask, Region
 from ..core import Source
 from ..sky import Star
-from ..tools import statistics, fitting, regions
+from ..tools import statistics, fitting, regions, catalogs
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -141,7 +140,7 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Clearing the star extractor")
+        self.log.info("Clearing the star extractor ...")
 
         # Clear the list of stars
         self.stars = []
@@ -249,13 +248,23 @@ class StarExtractor(Configurable):
     def load_stars(self):
 
         """
-        This function ...
+        This function creates the star list from the star catalog.
         :return:
         """
+
+        # Inform the user
+        self.log.info("Loading the stars from the catalog ...")
 
         # Get masks
         special_mask = self.special_mask
         ignore_mask = self.ignore_mask
+
+        # Copy the list of galaxies, so that we can removed already encounted galaxies (TODO: change this to use
+        # an 'encountered' list as well
+        encountered_galaxies = [False] * len(self.galaxy_extractor.galaxies)
+
+        # Keep track of the distances between the stars and the galaxies
+        distances = []
 
         # Create the list of stars
         for i in range(len(self.catalog)):
@@ -267,15 +276,13 @@ class StarExtractor(Configurable):
             dec = self.catalog["Declination"][i]
             ra_error = self.catalog["Right ascension error"][i] * u.mas
             dec_error = self.catalog["Declination error"][i] * u.mas
-            on_galaxy = self.catalog["On galaxy"][i]
             confidence_level = self.catalog["Confidence level"][i]
 
+            # Check for which bands magnitudes are defined
             magnitudes = {}
             magnitude_errors = {}
-
             for name in self.catalog.colnames:
                 if "magnitude" in name:
-
                     band = name.split(" magnitude")[0]
                     magnitudes[band] = self.catalog[name][i] * u.mag
                     magnitude_errors[band] = self.catalog[name + " error"][i] * u.mag
@@ -290,8 +297,56 @@ class StarExtractor(Configurable):
             # Get the position of the star in pixel coordinates
             pixel_position = star.pixel_position(self.frame.wcs, self.config.transformation_method)
 
+            # -- Cross-referencing with the galaxies in the frame --
+
+            # Loop over all galaxies
+            for j in range(len(encountered_galaxies)):
+
+                # Ignore already encountered galaxies (an other star is already identified with it)
+                if encountered_galaxies[j]: continue
+
+                # Calculate the pixel position of the galaxy
+                galaxy_position = self.galaxy_extractor.galaxies[j].pixel_position(self.frame.wcs)
+
+                # Calculate the distance between the star's position and the galaxy's center
+                x_center, y_center = position.to_pixel(self.frame.wcs, mode=self.config.transformation_method)
+                difference = galaxy_position - Position(x=x_center, y=y_center)
+                distance = difference.norm
+
+                # Add the star-galaxy distance to the list of distances
+                distances.append(distance)
+
+                # The principal galaxy/galaxies
+                if self.galaxy_extractor.galaxies[j].principal:
+
+                    # Check whether the star-galaxy distance is smaller than a certain threshold
+                    if distance <= self.config.fetching.min_distance_from_galaxy.principal:
+                        break
+
+                # Companion galaxies
+                elif self.galaxy_extractor.galaxies[j].companion:
+
+                    if distance <= self.config.fetching.min_distance_from_galaxy.companion:
+
+                        # Indicate that the current star has been identified with the galaxy with index j
+                        encountered_galaxies[j] = True
+                        break
+
+                # All other galaxies in the frame
+                else:
+
+                    if distance <= self.config.fetching.min_distance_from_galaxy.other:
+
+                        # Indicate that the current star has been identified with the galaxy with index j
+                        encountered_galaxies[j] = True
+                        break
+
+            # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
+            if self.galaxy_extractor is not None: star_on_galaxy = self.galaxy_extractor.principal.contains(pixel_position)
+            else: star_on_galaxy = False
+
             # Set other attributes
-            star.on_galaxy = on_galaxy
+            star.on_galaxy = star_on_galaxy
             star.confidence_level = confidence_level
 
             # Enable track record if requested
@@ -313,6 +368,9 @@ class StarExtractor(Configurable):
             # Add the star to the list
             self.stars.append(star)
 
+        # Inform the user
+        self.log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
+
     # -----------------------------------------------------------------
 
     def fetch_catalog(self):
@@ -322,294 +380,15 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Fetching star positions from an online catalog")
-
-        # Initialize empty lists for the table columns
-        catalog_column = []
-        id_column = []
-        ra_column = []
-        dec_column = []
-        ra_error_column = []
-        dec_error_column = []
-        magnitude_columns = {}
-        magnitude_error_columns = {}
-        on_galaxy_column = []
-        confidence_level_column = []
+        self.log.info("Fetching star positions from online catalogs ...")
 
         # Check whether the 'catalogs' setting defines a single catalog name or a list of such names
-        if isinstance(self.config.fetching.catalogs, basestring):
-            catalogs = [self.config.fetching.catalogs]
-        elif isinstance(self.config.fetching.catalogs, config.Sequence):
-            catalogs = self.config.fetching.catalogs
+        if isinstance(self.config.fetching.catalogs, basestring): catalog_list = [self.config.fetching.catalogs]
+        elif isinstance(self.config.fetching.catalogs, config.Sequence): catalog_list = self.config.fetching.catalogs
         else: raise ValueError("Invalid option for 'catalogs', should be a string or a list of strings")
 
-        # Get the range of right ascension and declination of this image
-        try: center, ra_span, dec_span = self.frame.coordinate_range()
-        except AssertionError:
-            self.log.warning("The coordinate system and pixelscale do not match")
-            center, ra_span, dec_span = self.frame.coordinate_range(silent=True)
-
-        # Create a new Vizier object and set the row limit to -1 (unlimited)
-        viz = Vizier(keywords=["stars", "optical"])
-        viz.ROW_LIMIT = -1
-
-        # Loop over the different catalogs
-        for catalog in catalogs:
-
-            # Initialize a list to specify which of the stars added to the columns from other catalogs is already
-            # matched to a star of the current catalog
-            encountered = [False] * len(catalog_column)
-
-            # Copy the list of galaxies, so that we can removed already encounted galaxies (TODO: change this to use
-            # an 'encountered' list as well
-            #encountered_galaxies = [False] * len(self.galaxy_extractor.galaxies)
-            galaxies = list(self.galaxy_extractor.galaxies) if self.galaxy_extractor is not None else []
-
-            # Inform the user
-            self.log.debug("Querying the " + catalog + " catalog")
-
-            # Query Vizier and obtain the resulting table
-            result = viz.query_region(center, width=ra_span, height=dec_span, catalog=catalog)
-            table = result[0]
-
-            number_of_stars = 0
-            number_of_stars_in_frame = 0
-            number_of_new_stars = 0
-
-            magnitudes = {}
-            magnitude_errors = {}
-
-            # Get the magnitude in different bands
-            for name in table.colnames:
-
-                # If this column name does not end with "mag", skip it
-                if not name.endswith("mag"): continue
-
-                # If the column name contains more than one character before "mag", skip it
-                if len(name.split("mag")[0]) > 1: continue
-
-                # Get the name of the band
-                band = name.split("mag")[0]
-
-                # Create empty lists for the magnitudes and errors
-                magnitudes[band] = []
-                magnitude_errors[band] = []
-
-            # Loop over all entries in the table
-            distances = []
-            for i in range(len(table)):
-
-                # -- General information --
-
-                # Get the ID of this star in the catalog
-                if catalog == "UCAC4": star_id = table["UCAC4"][i]
-                elif catalog == "NOMAD": star_id = table["NOMAD1"][i]
-                elif catalog == "II/246": star_id = table["_2MASS"][i]
-                else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
-
-                # -- Positional information --
-
-                # Get the position of the star as a SkyCoord object and as pixel coordinate
-                position = coord.SkyCoord(ra=table["_RAJ2000"][i], dec=table["_DEJ2000"][i], unit=(u.deg, u.deg), frame='fk5')
-                pixel_position_x, pixel_position_y = position.to_pixel(self.frame.wcs, origin=0, mode=self.config.transformation_method)
-                pixel_position = Position(pixel_position_x, pixel_position_y)
-
-                # Get the right ascension and declination for the current star
-                star_ra = table["_RAJ2000"][i]
-                star_dec = table["_DEJ2000"][i]
-
-                number_of_stars += 1
-
-                # If this star does not lie within the frame, skip it
-                #if not self.frame.contains(position, self.config.transformation_method): continue
-
-                number_of_stars_in_frame += 1
-
-                # Get the mean error on the right ascension and declination
-                if catalog == "UCAC4" or catalog == "NOMAD":
-
-                    ra_error = table["e_RAJ2000"][i] * u.mas
-                    dec_error = table["e_DEJ2000"][i] * u.mas
-
-                elif catalog == "II/246":
-
-                    error_maj = table["errMaj"][i] * u.arcsec
-                    error_min = table["errMin"][i] * u.arcsec
-                    error_theta = Angle(table["errPA"][i], u.deg)
-
-                    # Temporary: use only the major axis error (convert the error ellipse into a circle)
-                    ra_error = error_maj.to("mas")
-                    dec_error = error_maj.to("mas")
-
-                else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
-
-                # -- Cross-referencing with the galaxies in the frame --
-
-                # Loop over all galaxies
-                for galaxy in galaxies:
-
-                    # Calculate the pixel position of the galaxy
-                    galaxy_position = galaxy.pixel_position(self.frame.wcs)
-
-                    # Calculate the distance between the star's position and the galaxy's center
-                    x_center, y_center = position.to_pixel(self.frame.wcs, mode=self.config.transformation_method)
-                    difference = galaxy_position - Position(x=x_center, y=y_center)
-
-                    distance = difference.norm
-
-                    # Add the star-galaxy distance to the list of distances
-                    distances.append(distance)
-
-                    # The principal galaxy/galaxies
-                    if galaxy.principal:
-
-                        # Check whether the star-galaxy distance is smaller than a certain threshold
-                        if distance <= self.config.fetching.min_distance_from_galaxy.principal:
-                            break
-
-                    # Companion galaxies
-                    elif galaxy.companion:
-
-                        if distance <= self.config.fetching.min_distance_from_galaxy.companion:
-                            # Remove the position of this galaxy from the list (one star is already identified with it)
-                            galaxies.remove(galaxy)
-                            break
-
-                    # All other galaxies in the frame
-                    else:
-
-                        if distance <= self.config.fetching.min_distance_from_galaxy.other:
-                            # Remove the position of this galaxy from the list (one star is already identified with it)
-                            galaxies.remove(galaxy)
-                            break
-
-                # If a break is not encountered
-                else:
-
-                    # -- Magnitudes --
-
-                    for band in magnitudes:
-
-                        column_name = band + "mag"
-
-                        value = table[column_name][i]
-
-                        if isinstance(value, np.ma.core.MaskedConstant):
-
-                            magnitudes[band].append(None)
-                            magnitude_errors[band].append(None)
-
-                        else:
-
-                            # Add the magnitude value
-                            magnitudes[band].append(u.Magnitude(value))
-
-                            # Check for presence of error on magnitude
-                            error_column_name = "e_" + column_name
-                            if error_column_name in table.colnames:
-                                error = table[error_column_name][i]
-                                if isinstance(error, np.ma.core.MaskedConstant): magnitude_errors[band].append(None)
-                                else: magnitude_errors[band].append(u.Magnitude(error))
-                            else: magnitude_errors[band].append(None)
-
-                    # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
-                    if self.galaxy_extractor is not None: star_on_galaxy = self.galaxy_extractor.principal.contains(pixel_position)
-                    else: star_on_galaxy = False
-
-                    # -- Cross-referencing with previous catalogs --
-
-                    # If there are already stars in the list, check for correspondences with the current stars
-                    for index in range(len(encountered)):
-
-                        # Skip stars that are already encountered as matches with the current catalog (we assume there can only
-                        # be one match of a star of one catalog with the star of another catalog, within the radius of 3 pixels)
-                        if encountered[index]: continue
-
-                        saved_star_position = coord.SkyCoord(ra=ra_column[index], dec=dec_column[index], unit=(u.deg, u.deg), frame='fk5')
-                        saved_star_pixel_position_x, saved_star_pixel_position_y = saved_star_position.to_pixel(self.frame.wcs, origin=0, mode=self.config.transformation_method)
-                        saved_star_pixel_position = Position(saved_star_pixel_position_x, saved_star_pixel_position_y)
-
-                        # Calculate the distance between the star already in the list and the new star
-                        difference = saved_star_pixel_position - pixel_position
-
-                        # Check whether the distance is less then 3 pixels
-                        if difference.norm < 3.0:
-
-                            # Inform the user
-                            self.log.debug("Star " + star_id + " could be identified with star " + id_column[index] + " from the " + catalog_column[index] + " catalog")
-
-                            # Increment the confidence level for the 'saved' star
-                            confidence_level_column[index] += 1
-
-                            # Set the 'encountered' flag to True for the 'saved' star
-                            encountered[index] = True
-
-                            # Break, because the current star does not have to be saved again (it is already in the lists)
-                            break
-
-                    # If no other stars are in the list yet or no corresponding star was found (no break was
-                    # encountered), just add all stars of the current catalog
-                    else:
-
-                        number_of_new_stars += 1
-
-                        # Inform the user
-                        self.log.debug("Adding star " + star_id + " at " + str(position.to_string("hmsdms")))
-
-                        # Fill in the column lists
-                        catalog_column.append(catalog)
-                        id_column.append(star_id)
-                        ra_column.append(star_ra)
-                        dec_column.append(star_dec)
-                        ra_error_column.append(ra_error.value)
-                        dec_error_column.append(dec_error.value)
-                        on_galaxy_column.append(star_on_galaxy)
-                        confidence_level_column.append(1)
-
-            # Debug messages
-            self.log.debug("Number of stars that were in the catalog: " + str(number_of_stars))
-            self.log.debug("Number of stars that fell within the frame: " + str(number_of_stars_in_frame))
-            self.log.debug("Number of stars that were only present in this catalog: " + str(number_of_new_stars))
-
-        # Inform the user
-        if self.galaxy_extractor is not None: self.log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
-
-        # Create and return the table
-        data = [catalog_column, id_column, ra_column, dec_column, ra_error_column, dec_error_column, on_galaxy_column, confidence_level_column]
-        names = ['Catalog', 'Id', 'Right ascension', 'Declination', 'Right ascension error', 'Declination error', 'On galaxy', 'Confidence level']
-
-        # TODO: add magnitudes to the table ?
-
-        #magnitude_column_names = []
-        #for band in magnitudes:
-
-            # Values
-            ##column = MaskedColumn(magnitudes[band], mask=[mag is None for mag in magnitudes[band]])
-            ##data.append(column)
-            #data.append(magnitudes[band])
-            #column_name = band + " magnitude"
-            #names.append(column_name)
-            #magnitude_column_names.append(column_name)
-
-            # Errors
-            ##column = MaskedColumn(magnitude_errors[band], mask=[mag is None for mag in magnitude_errors[band]])
-            ##data.append(column)
-            #data.append(magnitude_errors[band])
-            #column_name = band + " magnitude error"
-            #names.append(column_name)
-            #magnitude_column_names.append(column_name)
-
-        # Create the catalog
-        meta = {'name': 'stars'}
-        self.catalog = tables.new(data, names, meta)
-
-        # Set units
-        self.catalog["Right ascension"].unit = "deg"
-        self.catalog["Declination"].unit = "deg"
-        self.catalog["Right ascension error"].unit = "mas"
-        self.catalog["Declination error"].unit = "mas"
-        #for name in magnitude_column_names:
-        #    self.catalog[name].unit = "mag"
+        # Create the star catalog
+        self.catalog = catalogs.create_star_catalog(self.frame, catalog_list)
 
         # Inform the user
         self.log.debug("Number of stars: " + str(len(self.catalog)))
@@ -625,7 +404,7 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Looking for sources near the star positions")
+        self.log.info("Looking for sources near the star positions ...")
 
         # Loop over all stars in the list
         for star in self.stars:
@@ -663,7 +442,7 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Fitting analytical profiles to the sources")
+        self.log.info("Fitting analytical profiles to the sources ...")
 
         # Loop over all stars in the list
         for star in self.stars:
@@ -713,7 +492,7 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Removing the stars from the frame")
+        self.log.info("Removing the stars from the frame ...")
 
         # Calculate the default FWHM, for the stars for which a model was not found
         default_fwhm = self.fwhm
@@ -753,7 +532,7 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Looking for saturated stars...")
+        self.log.info("Looking for saturated stars ...")
 
         # Inform the user on the number of stars that have a source
         self.log.debug("Number of stars with source = " + str(self.have_source))
@@ -817,7 +596,7 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Constructing elliptical apertures regions to encompass saturated stars")
+        self.log.info("Constructing elliptical apertures regions to encompass saturated stars ...")
 
         # Loop over all stars
         for star in self.stars:
@@ -840,7 +619,7 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Replacing aperture regions by the estimated background")
+        self.log.info("Replacing aperture regions by the estimated background ...")
 
         # Loop over all stars
         for star in self.stars:
@@ -895,7 +674,7 @@ class StarExtractor(Configurable):
         :return:
         """
 
-        # If no special region defined
+        # If no special region is defined
         if self.config.special_region is None: return None
 
         # Determine the full path to the special region file
@@ -922,7 +701,7 @@ class StarExtractor(Configurable):
         :return:
         """
 
-        # If no ignore region defined
+        # If no ignore region is defined
         if self.config.ignore_region is None: return None
 
         # Determine the full path to the ignore region file
@@ -950,7 +729,7 @@ class StarExtractor(Configurable):
         path = self.full_input_path(self.config.manual_region)
 
         # Inform the user
-        self.log.info("Setting region for manual star extraction from " + path)
+        self.log.info("Setting region for manual star extraction from " + path + " ...")
 
         # Load the region and create a mask from it
         region = Region.from_file(path, self.frame.wcs)
@@ -976,7 +755,7 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Removing manually specified stars from the frame")
+        self.log.info("Removing manually specified stars from the frame ...")
 
         # Loop over each item in the list of manual sources
         for source in self.manual_sources:
@@ -1053,7 +832,7 @@ class StarExtractor(Configurable):
         annotation = self.config.writing.region_annotation
 
         # Inform the user
-        self.log.info("Writing stars region to " + path)
+        self.log.info("Writing stars region to " + path + " ...")
 
         # Create a file
         f = open(path, 'w')
@@ -1196,7 +975,7 @@ class StarExtractor(Configurable):
         path = self.full_output_path(self.config.writing.catalog_path)
 
         # Inform the user
-        self.log.info("Writing stellar catalog to " + path)
+        self.log.info("Writing stellar catalog to " + path + " ...")
 
         # Write the catalog to file
         self.catalog.write(path, format="ascii.commented_header")
@@ -1213,7 +992,7 @@ class StarExtractor(Configurable):
         path = self.full_output_path(self.config.writing.masked_frame_path)
 
         # Inform the user
-        self.log.info("Writing masked frame to " + path)
+        self.log.info("Writing masked frame to " + path + " ...")
 
         # Create a frame where the objects are masked
         frame = self.frame.copy()
@@ -1235,7 +1014,7 @@ class StarExtractor(Configurable):
         directory_path = self.full_output_path(self.config.writing.cutouts_path)
 
         # Inform the user
-        self.log.info("Writing cutout boxes to " + directory_path)
+        self.log.info("Writing cutout boxes to " + directory_path + " ...")
 
         # Keep track of the number of stars encountered
         without_source = 0
@@ -1311,7 +1090,7 @@ class StarExtractor(Configurable):
         path = self.full_output_path(self.config.writing.result_path)
 
         # Inform the user
-        self.log.info("Writing resulting frame to " + path)
+        self.log.info("Writing resulting frame to " + path + " ...")
 
         # Write out the resulting frame
         self.frame.save(path)
