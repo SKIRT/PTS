@@ -731,8 +731,6 @@ class GalaxyExtractor(Configurable):
         # Inform the user
         self.log.info("Writing galaxy catalog to " + path)
 
-        print(self.catalog)
-
         # Write the catalog to file
         self.catalog.write(path, format="ascii.commented_header")
 

@@ -167,7 +167,7 @@ class TrainedExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Removing the other sources from the frame")
+        self.log.info("Removing the other sources from the frame ...")
 
         # Interpolate over the segments
         mask = self.segments > 0
@@ -189,7 +189,7 @@ class TrainedExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Constructing elliptical aperture regions to encompass other contaminating sources")
+        self.log.info("Constructing elliptical aperture regions to encompass other contaminating sources ...")
 
         # Find apertures for the other sources
         #from scipy import ndimage

@@ -34,6 +34,115 @@ from ..basics import Position
 
 # -----------------------------------------------------------------
 
+def from_stars(stars):
+
+    """
+    This function ...
+    :param stars:
+    :return:
+    """
+
+    # Initialize empty lists for the table columns
+    catalog_column = []
+    id_column = []
+    ra_column = []
+    dec_column = []
+    ra_error_column = []
+    dec_error_column = []
+    on_galaxy_column = []
+    confidence_level_column = []
+
+    # Loop over all stars
+    for star in stars:
+
+        # Fill in the columns with the star properties
+        catalog_column.append(star.catalog)
+        id_column.append(star.id)
+        ra_column.append(star.position.ra.value)
+        dec_column.append(star.position.dec.value)
+        ra_error_column.append(star.ra_error.value)
+        dec_error_column.append(star.dec_error.value)
+        on_galaxy_column.append(star.on_galaxy)
+        confidence_level_column.append(star.confidence_level)
+
+    # Create and return the table
+    data = [catalog_column, id_column, ra_column, dec_column, ra_error_column, dec_error_column, confidence_level_column]
+    names = ['Catalog', 'Id', 'Right ascension', 'Declination', 'Right ascension error', 'Declination error', 'Confidence level']
+
+    # Create the catalog
+    meta = {'name': 'stars'}
+    catalog = tables.new(data, names, meta)
+
+    # Set units
+    catalog["Right ascension"].unit = "deg"
+    catalog["Declination"].unit = "deg"
+    catalog["Right ascension error"].unit = "mas"
+    catalog["Declination error"].unit = "mas"
+
+    # Return the catalog
+    return catalog
+
+# -----------------------------------------------------------------
+
+def from_galaxies(galaxies):
+
+    """
+    This function ...
+    :param galaxies:
+    :return:
+    """
+
+    # Initialize empty lists for the table columns
+    name_column = []
+    ra_column = []
+    dec_column = []
+    redshift_column = []
+    type_column = []
+    alternative_names_column = []
+    distance_column = []
+    inclination_column = []
+    d25_column = []
+    major_column = []
+    minor_column = []
+    pa_column = []
+
+    principal_column = []
+    companions_column = []
+    parent_column = []
+
+    # Loop over all galaxies
+    for galaxy in galaxies:
+
+        # Fill in the columns with the galaxy properties
+        pass
+
+    # Create the data structure and names list
+    data = [name_column, ra_column, dec_column, redshift_column, type_column, alternative_names_column, distance_column,
+            inclination_column, d25_column, major_column, minor_column, pa_column, principal_column, companions_column,
+            parent_column]
+    names = ["Name", "Right ascension", "Declination", "Redshift", "Type", "Alternative names", "Distance",
+             "Inclination", "D25", "Major axis length", "Minor axis length", "Position angle", "Principal",
+             "Companion galaxies", "Parent galaxy"]
+    meta = {'name': 'stars'}
+
+    # Create the catalog table
+    catalog = tables.new(data, names, meta)
+
+    # Set the column units
+    catalog["Distance"].unit = "Mpc"
+    catalog["Inclination"].unit = "deg"
+    catalog["D25"].unit = "arcmin"
+    catalog["Major axis length"].unit = "arcmin"
+    catalog["Minor axis length"].unit = "arcmin"
+    catalog["Position angle"].unit = "deg"
+    catalog["Right ascension"].unit = "deg"
+    catalog["Declination"].unit = "deg"
+
+    # Return the catalog
+    return catalog
+
+# -----------------------------------------------------------------
+
 def create_star_catalog(frame, catalogs=None):
 
     """

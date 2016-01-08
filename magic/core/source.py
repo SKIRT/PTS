@@ -242,7 +242,14 @@ class Source(object):
 
         #plotting.plot_box(np.ma.masked_array(np.asarray(self.subtracted), mask=self.cutout_mask.inverse()))
 
-        return np.ma.sum(np.ma.masked_array(np.asarray(self.subtracted), mask=self.background_mask))
+        value = np.ma.sum(np.ma.masked_array(np.asarray(self.subtracted), mask=self.background_mask))
+
+        if np.isnan(value):
+
+            self.plot()
+            return 0.0
+
+        else: return value
 
     # -----------------------------------------------------------------
 
