@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.magic.train Train ...
+## \package pts.do.magic.verify Verify ...
 
 # -----------------------------------------------------------------
 
@@ -16,13 +16,13 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.magic.train import Classifier
+from pts.magic.train import Verifier
 
 # -----------------------------------------------------------------
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
-parser.add_argument("mode", type=str, help="the training mode (star or saturation)")
+parser.add_argument("mode", type=str, help="the verification mode (star or saturation)")
 parser.add_argument("--debug", type=str, help="debug mode")
 
 # Parse the command line arguments
@@ -30,10 +30,10 @@ arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
-# Create the classifier
-classifier = Classifier.from_arguments(arguments)
+# Create the verifier
+verifier = Verifier.from_arguments(arguments)
 
-# Run the classifier
-classifier.run()
+# Run the verifier
+verifier.run()
 
 # -----------------------------------------------------------------

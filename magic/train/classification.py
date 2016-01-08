@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 from sklearn import svm
-from sklearn import datasets
 from sklearn.externals import joblib
 
 # Import the relevant PTS classes and modules
@@ -41,6 +40,9 @@ class Classifier(Configurable):
 
         # Call the constructor of the base class
         super(Classifier, self).__init__(config, "magic")
+
+        # The classifier object
+        self.vector_classifier = None
 
         # Determine the path to the magic/classification user directory
         self.collection_user_path = os.path.join(inspection.pts_user_dir, "magic", "collection")
@@ -68,14 +70,34 @@ class Classifier(Configurable):
 
         # -- Adjust the configuration settings according to the command-line arguments --
 
-        classifier.mode = arguments.mode
+        classifier.config.mode = arguments.mode
 
         # Return the classifier
         return classifier
 
     # -----------------------------------------------------------------
 
-    def run(self, frame):
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Create a new classifier instance
+        classifier = cls()
+
+        # Load the classifier
+        classifier.vector_classifier = joblib.load(path)
+
+        # Return the classifier
+        return classifier
+
+    # -----------------------------------------------------------------
+
+    def run(self):
 
         """
         This function ...
@@ -85,8 +107,14 @@ class Classifier(Configurable):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Classify
+        # 2. Load the training data
+        self.load_data()
+
+        # 3. Classify
         self.classify()
+
+        # 4. Write
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -100,12 +128,77 @@ class Classifier(Configurable):
         # Call the setup of the base class
         super(Classifier, self).setup()
 
-        # Determine the paths to the star collection and saturation collection directories
-        mode_path = os.path.join(self.collection_user_path, self.config.mode)
+        # Create the vector classifier
+        self.vector_classifier = svm.SVC(gamma=0.001, C=100.) # support vector classification
+
+        # Determine the path to the collection directory for the current mode
+        collection_mode_path = os.path.join(self.collection_user_path, self.config.mode)
 
         # Determine the paths to the 'yes' and 'no' saturation collection directories
-        self.yes_path = os.path.join(mode_path, "yes")
-        self.no_path = os.path.join(mode_path, "no")
+        self.yes_path = os.path.join(collection_mode_path, "yes")
+        self.no_path = os.path.join(collection_mode_path, "no")
+
+        # Determine the path to the classification directory for the current mode
+        self.classification_mode_path = os.path.join(self.classification_user_path, self.config.mode)
+
+    # -----------------------------------------------------------------
+
+    def load_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Starting the classification procedure ...")
+
+        # Get a list of the filepaths for every FITS file in the 'yes' directory
+        yes_paths = filesystem.files_in_path(self.yes_path, extension="fits")
+
+        # Get a list of the filepaths for every FITS file in the 'no' directory
+        no_paths = filesystem.files_in_path(self.no_path, extension="fits")
+
+        # Create a dictionary to contain all the file paths
+        paths = {"yes": yes_paths, "no": no_paths}
+
+        # Create the data structure
+        self.data = []
+        self.targets = []
+
+        # Inform the user
+        self.log.info("Gathering files ...")
+
+        # Loop over all FITS files
+        for label in paths:
+
+            # Target should be 1 for 'yes', 0 for 'no'
+            if label == "yes": target = 1
+            else: target = 0
+
+            # Loop over the paths classified under the current label
+            for path in paths[label]:
+
+                # Open the image, select all frames
+                image = Image(path, always_call_first_primary=False)
+                image.frames.select_all()
+
+                # Create a source
+                source = Source.from_image(image)
+
+                if source.has_background:
+
+                    array = source.subtracted
+                    array[source.background_mask] = 0.0
+
+                else:
+
+                    array = source.cutout
+                    array[source.background_mask] = 0.0
+
+                # Add the flattened data and target
+                self.data.append(array.flatten())
+                self.targets.append(target)
 
     # -----------------------------------------------------------------
 
@@ -116,68 +209,57 @@ class Classifier(Configurable):
         :return:
         """
 
-        # Loop over all FITS files found in the current directory
-        for file_path in filesystem.files_in_path(os.getcwd(), extension="fits"):
-
-            # Open the image
-            image = Image(file_path, always_call_first_primary=False)
-            image.frames.select_all()
-
-            # Create a source
-            source = Source.from_image(image)
-
-            name = os.path.basename(file_path).split(".fits")[0]
-            object_type, level, counter = name.split("_")
-
-            # Skip galaxies for now
-            if object_type == "galaxy": continue
-
-            # Get description
-            description = object_type + " (" + level + ")"
-
-            # Get target class
-            target = classes[description]
-
-            plot_title = description + " (class " + str(target) + ")"
-
-            # Plot the source
-            source.plot(title=plot_title)
-
-        # Load test data
-        #digits = datasets.load_digits()
-
-        classifier = svm.SVC(gamma=0.001, C=100.) # support vector classification
-
-        data = digits.data[:-10]
-        targets = digits.target[:-10]
-
-        test_data = digits.data[-10:]
-        test_targets = digits.target[-10:]
-
-
+        # Inform the user
+        self.log.info("Fitting training data ...")
 
         # The classifier is fit to the model, or learns from the model: by passing the training set
-        classifier.fit(data, targets)
+        self.vector_classifier.fit(self.data, self.targets)
 
+    # -----------------------------------------------------------------
 
-        # Serialize and dump the classifier
+    def write(self):
 
-
-        # Determine the path to the pickle file
-        classifier_path = os.path.join(self.classification_user_path, "classifier.pkl")
+        """
+        This function ...
+        :return:
+        """
 
         # Dump the classifier
-        joblib.dump(classifier, classifier_path)
+        self.dump_classifier()
 
-        # Load the classifier
-        classifier2 = joblib.load(classifier_path)
+    # -----------------------------------------------------------------
+
+    def dump_classifier(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path to the pickle file
+        classifier_path = os.path.join(self.classification_mode_path, "classifier.pkl")
+
+        # Inform the user
+        self.log.info("Writing the classifier to " + classifier_path)
+
+        # Serialize and dump the classifier
+        joblib.dump(self.vector_classifier, classifier_path)
+
+    # -----------------------------------------------------------------
+
+    def predict(self, data, single=False):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Predict the targets of the test data
-        result_targets = classifier2.predict(test_data)
+        result = self.vector_classifier.predict(data)
 
-        for test_target, result_target in zip(test_targets, result_targets):
-
-            print(test_target, result_target)
+        # Return the result
+        if single: return result[0]
+        else: return result
 
     # -----------------------------------------------------------------
 
@@ -188,6 +270,8 @@ class Classifier(Configurable):
         :param source:
         :return:
         """
+
+        #label = self.predict(data)
 
         return False
 

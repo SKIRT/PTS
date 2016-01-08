@@ -24,6 +24,10 @@ from ...core.tools import filesystem, inspection
 
 # -----------------------------------------------------------------
 
+description = {"star": "star", "saturation": "saturated star / diffraction pattern"}
+
+# -----------------------------------------------------------------
+
 class Collector(Configurable):
 
     """
@@ -41,7 +45,8 @@ class Collector(Configurable):
         # Call the constructor of the base class
         super(Collector, self).__init__(config, "magic")
 
-        # The current source
+        # The current and previous source
+        self.previous_source = None
         self.current_source = None
 
         # Determine the path to the magic/collection user directory
@@ -119,6 +124,9 @@ class Collector(Configurable):
         # Call the setup function of the base class
         super(Collector, self).setup()
 
+        # Get description
+        self.description = description[self.config.mode]
+
         # Determine the paths to the star collection and saturation collection directories
         mode_path = os.path.join(self.collection_user_path, self.config.mode)
 
@@ -154,12 +162,21 @@ class Collector(Configurable):
         :return:
         """
 
+        # Get a list of the filepaths for every FITS file in the current working directory
+        file_paths = filesystem.files_in_path(os.getcwd(), extension="fits", contains=self.config.mode)
+
+        # Keep track of how many files have been processed
+        number_of_files = len(file_paths)
+        processed = 0
+
         # Loop over all FITS files found in the current directory
-        for file_path in filesystem.files_in_path(os.getcwd(), extension="fits", contains=self.config.mode):
+        for file_path in file_paths:
+
+            processed += 1
 
             # Get information
-            #name = os.path.basename(file_path).split(".fits")[0]
-            #object_type, level, counter = name.split("_")
+            name = os.path.basename(file_path).split(".fits")[0]
+            object_type, index, detection_level = name.split("_")
 
             # Open the image, select all frames
             image = Image(file_path, always_call_first_primary=False)
@@ -169,22 +186,33 @@ class Collector(Configurable):
             source = Source.from_image(image)
 
             # Create a plot for the source
-            source.plot(title="Is this a saturated star?", show=False, scale="log")
+            source.plot(title="Is this a " + self.description + "? (" + str(processed) + " out of " + str(number_of_files) + ")", show=False, scale="log")
 
-            # Add 'yes' and 'no' buttons
+            # Set current and previous source
+            self.previous_source = self.current_source
             self.current_source = source
+
+            # Axes
             axyes = plt.axes([0.6, 0.05, 0.1, 0.075])
             axno = plt.axes([0.7, 0.05, 0.1, 0.075])
             axunsure = plt.axes([0.8, 0.05, 0.1, 0.075])
+            axback = plt.axes([0.1, 0.05, 0.1, 0.075])
+
+            # Buttons
             yes_button = Button(axyes, 'Yes')
             yes_button.on_clicked(self.save_yes)
             no_button = Button(axno, 'No')
             no_button.on_clicked(self.save_no)
             unsure_button = Button(axunsure, 'Unsure')
             unsure_button.on_clicked(self.dont_save)
+            back_button = Button(axback, 'Back')
+            back_button.on_clicked(self.go_back)
 
             # Show the plot
             plt.show()
+
+            # Increment the counter
+            processed += 1
 
     # -----------------------------------------------------------------
 
@@ -203,7 +231,7 @@ class Collector(Configurable):
         path = os.path.join(self.yes_path, str(self.current_index_yes) + ".fits")
 
         # Inform the user and save the source object
-        self.log.info("Saving the saturated star to " + path)
+        self.log.info("Saving the " + self.description + " to " + path)
         self.current_source.save(path)
 
         # Close the currently active plotting window for this source
@@ -226,11 +254,35 @@ class Collector(Configurable):
         path = os.path.join(self.no_path, str(self.current_index_no) + ".fits")
 
         # Inform the user and save the source object
-        self.log.info("Saving the star without saturation to " + path)
+        self.log.info("Saving the source to " + path)
         self.current_source.save(path)
 
         # Close the currently active plotting window for this source
         plt.close()
+
+    # -----------------------------------------------------------------
+
+    def show_frame(self, event):
+
+        """
+        This function ...
+        :param event:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def go_back(self, event):
+
+        """
+        This function ...
+        :param event:
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
