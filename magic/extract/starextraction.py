@@ -1014,6 +1014,8 @@ class StarExtractor(Configurable):
         outer_factor = 1.5
         method = "polynomial"
 
+        shape = Extent(31, 31)
+
         # Determine the full path to the cutouts directory
         directory_path = self.full_output_path(self.config.writing.cutouts_path)
 
@@ -1046,7 +1048,7 @@ class StarExtractor(Configurable):
                 path = os.path.join(directory_path, "star-fitted_" + str(star.index) + ".fits")
 
                 # Create source
-                source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=(31,31))
+                source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=shape)
 
                 # Estimate the background
                 sigma_clip = not star.on_galaxy
@@ -1062,7 +1064,7 @@ class StarExtractor(Configurable):
                 path = os.path.join(directory_path, "star-detected_" + str(star.index) + ".fits")
 
                 # Create source
-                source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=(31,31))
+                source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=shape)
 
                 # Estimate the background
                 sigma_clip = not star.on_galaxy
@@ -1078,7 +1080,7 @@ class StarExtractor(Configurable):
                 path = os.path.join(directory_path, "star-undetected_" + str(star.index) + ".fits")
 
                 # Create a source for the desired sigma level and outer factor
-                source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=(31,31))
+                source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=shape)
 
                 # Estimate the background
                 sigma_clip = not star.on_galaxy
