@@ -59,7 +59,7 @@ class Source(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_ellipse(cls, frame, center, radius, angle, factor):
+    def from_ellipse(cls, frame, center, radius, angle, factor, shape=None):
 
         """
         This function ...
@@ -72,7 +72,7 @@ class Source(object):
         """
 
         # Create the cutout box
-        cutout = Box.from_ellipse(frame, center, radius * factor, angle)
+        cutout = Box.from_ellipse(frame, center, radius * factor, angle, shape=shape)
 
         # Calculate the relative coordinate of the center for the cutout box
         rel_center = cutout.rel_position(center)
@@ -244,11 +244,7 @@ class Source(object):
 
         value = np.ma.sum(np.ma.masked_array(np.asarray(self.subtracted), mask=self.background_mask))
 
-        if np.isnan(value):
-
-            self.plot()
-            return 0.0
-
+        if np.isnan(value): return 0.0
         else: return value
 
     # -----------------------------------------------------------------
@@ -399,7 +395,7 @@ class Source(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, title=None, peaks=None, show=True, scale="sqrt"):
+    def plot(self, title=None, peaks=None, show=True, scale="sqrt", frame=None):
 
         """
         This function ...
@@ -431,7 +427,7 @@ class Source(object):
         if self.has_background:
 
             # Do the plotting
-            plotting.plot_source(self.cutout, self.mask, self.background, peaks=peak_coordinates, title=title, show=show, scale=scale)
+            plotting.plot_source(self.cutout, self.mask, self.background, peaks=peak_coordinates, title=title, show=show, scale=scale, frame=frame)
 
         # Else, we just have a background and cutout box
         else:

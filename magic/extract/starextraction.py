@@ -1010,17 +1010,15 @@ class StarExtractor(Configurable):
         :return:
         """
 
+        sigma_level = 3.0
+        outer_factor = 1.5
+        method = "polynomial"
+
         # Determine the full path to the cutouts directory
         directory_path = self.full_output_path(self.config.writing.cutouts_path)
 
         # Inform the user
         self.log.info("Writing cutout boxes to " + directory_path + " ...")
-
-        # Keep track of the number of stars encountered
-        without_source = 0
-        with_source = 0
-        with_model = 0
-        with_saturation = 0
 
         # Calculate the default FWHM based on the stars that could be fitted
         default_fwhm = self.fwhm
@@ -1033,49 +1031,61 @@ class StarExtractor(Configurable):
             # Check if saturation has been detected for this star
             if star.has_saturation:
 
-                # Save the cutout as a FITS file
-                path = os.path.join(directory_path, "star_saturation_" + str(with_saturation) + ".fits")
-                star.saturation.save(path)
+                # Determine the path
+                path = os.path.join(directory_path, "saturation_" + str(star.index) + ".fits")
 
-                # Increment the counter of the number of stars with saturation
-                with_saturation += 1
+                # Save the saturation source as a FITS file
+                star.saturation.save(path)
 
             # -- PSF sources ---
 
             # Check if a model has been found for this star
             if star.has_model:
 
-                # Save the cutout as a FITS file
-                path = os.path.join(directory_path, "star_model_" + str(with_model) + ".fits")
-                star.source.save(path)
+                # Determine the path
+                path = os.path.join(directory_path, "star-fitted_" + str(star.index) + ".fits")
 
-                # Increment the counter of the number of stars that could be fitted
-                with_model += 1
+                # Create source
+                source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=(31,31))
+
+                # Estimate the background
+                sigma_clip = not star.on_galaxy
+                source.estimate_background(method, sigma_clip)
+
+                # Save the source as a FITS file
+                source.save(path)
 
             # Check if a source was found for this star
             elif star.has_source:
 
-                # Save the cutout as a FITS file
-                path = os.path.join(directory_path, "star_source_" + str(with_source) + ".fits")
-                star.source.save(path)
+                # Determine the path
+                path = os.path.join(directory_path, "star-detected_" + str(star.index) + ".fits")
 
-                # Increment the counter of the number of stars that could be detected
-                with_source += 1
+                # Create source
+                source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=(31,31))
+
+                # Estimate the background
+                sigma_clip = not star.on_galaxy
+                source.estimate_background(method, sigma_clip)
+
+                # Save the source as a FITS file
+                source.save(path)
 
             # If no source was found for this star
             else:
 
+                # Determine the path
+                path = os.path.join(directory_path, "star-undetected_" + str(star.index) + ".fits")
+
                 # Create a source for the desired sigma level and outer factor
-                sigma_level = self.config.writing.cutouts_undected_sigma_level
-                outer_factor = self.config.writing.cutouts_undetected_outer_factor
-                source = star.source_at_sigma_level(self.frame, default_fwhm, sigma_level, outer_factor)
+                source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=(31,31))
+
+                # Estimate the background
+                sigma_clip = not star.on_galaxy
+                source.estimate_background(method, sigma_clip)
 
                 # Save the cutout as a FITS file
-                path = os.path.join(directory_path, "star_nosource_" + str(with_source) + ".fits")
                 source.save(path)
-
-                # Increment the counter of the number of stars without source
-                without_source += 1
 
     # -----------------------------------------------------------------
 

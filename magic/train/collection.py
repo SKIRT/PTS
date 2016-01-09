@@ -176,7 +176,7 @@ class Collector(Configurable):
 
             # Get information
             name = os.path.basename(file_path).split(".fits")[0]
-            object_type, index, detection_level = name.split("_")
+            info, index = name.split("_")
 
             # Open the image, select all frames
             image = Image(file_path, always_call_first_primary=False)

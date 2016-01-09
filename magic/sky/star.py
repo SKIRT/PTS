@@ -159,7 +159,7 @@ class Star(SkyObject):
 
     # -----------------------------------------------------------------
 
-    def source_at_sigma_level(self, frame, default_fwhm, sigma_level, outer_factor):
+    def source_at_sigma_level(self, frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=False, shape=None):
 
         """
         This function ...
@@ -170,7 +170,8 @@ class Star(SkyObject):
         default_sigma = default_fwhm * statistics.fwhm_to_sigma
 
         # Determine the radius of the contour in which the star will be removed
-        radius = fitting.sigma(self.model) * sigma_level if self.model is not None else default_sigma * sigma_level
+        if self.model is None or use_default_fwhm: radius = default_sigma * sigma_level
+        else: radius = fitting.sigma(self.model) * sigma_level
 
         # Determine the center position of the source (center of model if present, otherwise position of the star)
         if self.source is not None:
@@ -186,7 +187,7 @@ class Star(SkyObject):
             center = self.pixel_position(frame.wcs)
 
         # Create a source and return it
-        return Source.from_ellipse(frame, center, radius, Angle(0.0, u.deg), outer_factor)
+        return Source.from_ellipse(frame, center, radius, Angle(0.0, u.deg), outer_factor, shape=shape)
 
     # -----------------------------------------------------------------
 

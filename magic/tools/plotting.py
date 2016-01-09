@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 # Import astronomical modules
 from astropy.visualization import SqrtStretch, LogStretch
@@ -359,7 +360,7 @@ def plot_removal(cutout, mask, background, removed, title=None):
 
 # -----------------------------------------------------------------
 
-def plot_source(cutout, mask, background, peaks=None, title=None, show=True, scale="sqrt"):
+def plot_source(cutout, mask, background, peaks=None, title=None, show=True, scale="sqrt", frame=None):
 
     """
     This function ...
@@ -370,6 +371,14 @@ def plot_source(cutout, mask, background, peaks=None, title=None, show=True, sca
     if scale == "sqrt": norm = ImageNormalize(stretch=SqrtStretch())
     elif scale == "log": norm = ImageNormalize(stretch=LogStretch())
     else: raise ValueError("Invalid scale option")
+
+    if frame is not None:
+
+        gs1 = gridspec.GridSpec(3, 3)
+        gs1.update(left=0.05, right=0.48, wspace=0.05)
+        ax1 = plt.subplot(gs1[:-1, :])
+        ax2 = plt.subplot(gs1[-1, :-1])
+        ax3 = plt.subplot(gs1[-1, -1])
 
     # Determine the maximum value in the box and the minimum value for plotting
     vmax = np.max(cutout)

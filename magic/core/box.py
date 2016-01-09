@@ -76,7 +76,7 @@ class Box(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def cutout_limits(cls, frame, x_min, x_max, y_min, y_max):
+    def cutout_limits(cls, frame, x_min, x_max, y_min, y_max, absolute=False):
 
         """
         This function ...
@@ -84,7 +84,8 @@ class Box(np.ndarray):
         """
 
         # Crop the frame
-        cropped, x_min, x_max, y_min, y_max = cropping.crop_direct(frame, x_min, x_max, y_min, y_max)
+        if absolute: cropped = cropping.crop_absolute(frame, x_min, x_max, y_min, y_max)
+        else: cropped, x_min, x_max, y_min, y_max = cropping.crop_direct(frame, x_min, x_max, y_min, y_max)
 
         # Return a new box
         return cls(cropped, x_min, x_max, y_min, y_max)
@@ -92,7 +93,7 @@ class Box(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_ellipse(cls, frame, center, radius, angle):
+    def from_ellipse(cls, frame, center, radius, angle, shape=None):
 
         """
         This function ...
@@ -127,14 +128,30 @@ class Box(np.ndarray):
         x_min, y_min = extent.min
         x_max, y_max = extent.max
 
+        if shape is not None:
+
+            x_center = 0.5 * (x_min + x_max)
+            y_center = 0.5 * (y_min + y_max)
+
+            x_min = x_center - 0.5 * shape.x
+            x_max = x_center + 0.5 * shape.x
+
+            y_min = y_center - 0.5 * shape.y
+            y_max = y_center + 0.5 * shape.y
+
         # Convert into integers
         x_min = int(round(x_min))
         x_max = int(round(x_max))
         y_min = int(round(y_min))
         y_max = int(round(y_max))
 
+        if shape is not None:
+
+            assert x_max - x_min == shape.x
+            assert y_max - y_min == shape.y
+
         # Return a new box
-        return cls.cutout_limits(frame, x_min, x_max, y_min, y_max)
+        return cls.cutout_limits(frame, x_min, x_max, y_min, y_max, absolute=(shape is not None))
 
     # -----------------------------------------------------------------
 

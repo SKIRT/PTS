@@ -40,6 +40,39 @@ def crop(data, x_center, y_center, x_radius, y_radius):
 
 # -----------------------------------------------------------------
 
+def crop_absolute(data, x_min, x_max, y_min, y_max, fill_value=0.0):
+
+    """
+    This function ...
+    :param data:
+    :param x_min:
+    :param x_max:
+    :param y_min:
+    :param y_max:
+    :return:
+    """
+
+    x_size = x_max - x_min
+    y_size = y_max - y_min
+
+    box = np.zeros((y_size, x_size))
+
+    data_x_min = 0 if x_min < 0 else x_min
+    data_x_max = data.shape[1] if x_max >= data.shape[1] else x_max
+    data_y_min = 0 if y_min < 0 else y_min
+    data_y_max = data.shape[0] if y_max >= data.shape[0] else y_max
+
+    box_x_min = data_x_min - x_min
+    box_x_max = x_max - data_x_max
+    box_y_min = data_y_min - y_min
+    box_y_max = y_max - data_y_max
+
+    box[box_y_min:box_y_max, box_x_min:box_x_max] = data[data_y_min:data_x_max, data_x_min:data_x_max]
+
+    return box
+
+# -----------------------------------------------------------------
+
 def crop_direct(data, x_min, x_max, y_min, y_max):
 
     """
