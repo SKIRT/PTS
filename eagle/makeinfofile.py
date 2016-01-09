@@ -202,10 +202,14 @@ def makeinfofile(skirtrun):
 # (positive cold gas mass, negative cold gas mass, positive metallic gas mass, negative metallic gas mass)
 
 def loadgasmasses(inpath, Tmax):
-    M,Z,T = np.loadtxt(arch.opentext(inpath), usecols=(4,5,6), unpack=True)
-    mask_pos = (T<=Tmax) & (M>0)
-    mask_neg = (T<=Tmax) & (M<0)
-    return M[mask_pos].sum(), -M[mask_neg].sum(), (M[mask_pos]*Z[mask_pos]).sum(), -(M[mask_neg]*Z[mask_neg]).sum()
+    data = np.loadtxt(arch.opentext(inpath), usecols=(4,5,6), unpack=True)
+    if len(data)>0:
+        M,Z,T = data
+        mask_pos = (T<=Tmax) & (M>0)
+        mask_neg = (T<=Tmax) & (M<0)
+        return M[mask_pos].sum(), -M[mask_neg].sum(), (M[mask_pos]*Z[mask_pos]).sum(), -(M[mask_neg]*Z[mask_neg]).sum()
+    else:
+        return 0,0,0,0
 
 # -----------------------------------------------------------------
 
