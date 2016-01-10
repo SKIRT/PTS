@@ -58,6 +58,7 @@ class Collector(Configurable):
         self.yes_path = None
         self.no_path = None
 
+        self.last_path = None
         self.current_index_yes = -1
         self.current_index_no = -1
 
@@ -166,13 +167,11 @@ class Collector(Configurable):
         file_paths = filesystem.files_in_path(os.getcwd(), extension="fits", contains=self.config.mode)
 
         # Keep track of how many files have been processed
-        number_of_files = len(file_paths)
-        processed = 0
+        self.number_of_files = len(file_paths)
+        self.processed = 0
 
         # Loop over all FITS files found in the current directory
         for file_path in file_paths:
-
-            processed += 1
 
             # Get information
             name = os.path.basename(file_path).split(".fits")[0]
@@ -185,34 +184,46 @@ class Collector(Configurable):
             # Create a source
             source = Source.from_image(image)
 
-            # Create a plot for the source
-            source.plot(title="Is this a " + self.description + "? (" + str(processed) + " out of " + str(number_of_files) + ")", show=False, scale="log")
+            self.show(source)
 
-            # Set current and previous source
-            self.previous_source = self.current_source
-            self.current_source = source
+    # -----------------------------------------------------------------
 
-            # Axes
-            axyes = plt.axes([0.6, 0.05, 0.1, 0.075])
-            axno = plt.axes([0.7, 0.05, 0.1, 0.075])
-            axunsure = plt.axes([0.8, 0.05, 0.1, 0.075])
-            axback = plt.axes([0.1, 0.05, 0.1, 0.075])
+    def show(self, source):
 
-            # Buttons
-            yes_button = Button(axyes, 'Yes')
-            yes_button.on_clicked(self.save_yes)
-            no_button = Button(axno, 'No')
-            no_button.on_clicked(self.save_no)
-            unsure_button = Button(axunsure, 'Unsure')
-            unsure_button.on_clicked(self.dont_save)
-            back_button = Button(axback, 'Back')
-            back_button.on_clicked(self.go_back)
+        """
+        This function ...
+        :param source:
+        :return:
+        """
 
-            # Show the plot
-            plt.show()
+        # Create a plot for the source
+        source.plot(title="Is this a " + self.description + "? (" + str(self.processed) + " out of " + str(self.number_of_files) + ")", show=False, scale="log")
 
-            # Increment the counter
-            processed += 1
+        # Set current and previous source
+        self.previous_source = self.current_source
+        self.current_source = source
+
+        # Axes
+        axyes = plt.axes([0.6, 0.05, 0.1, 0.075])
+        axno = plt.axes([0.7, 0.05, 0.1, 0.075])
+        axunsure = plt.axes([0.8, 0.05, 0.1, 0.075])
+        axback = plt.axes([0.1, 0.05, 0.1, 0.075])
+
+        # Buttons
+        yes_button = Button(axyes, 'Yes')
+        yes_button.on_clicked(self.save_yes)
+        no_button = Button(axno, 'No')
+        no_button.on_clicked(self.save_no)
+        unsure_button = Button(axunsure, 'Unsure')
+        unsure_button.on_clicked(self.dont_save)
+        back_button = Button(axback, 'Back')
+        back_button.on_clicked(self.go_back)
+
+        # Show the plot
+        plt.show()
+
+        # Increment the counter
+        self.processed += 1
 
     # -----------------------------------------------------------------
 
@@ -233,6 +244,8 @@ class Collector(Configurable):
         # Inform the user and save the source object
         self.log.info("Saving the " + self.description + " to " + path)
         self.current_source.save(path)
+
+        self.last_path = path
 
         # Close the currently active plotting window for this source
         plt.close()
@@ -256,6 +269,8 @@ class Collector(Configurable):
         # Inform the user and save the source object
         self.log.info("Saving the source to " + path)
         self.current_source.save(path)
+
+        self.last_path = path
 
         # Close the currently active plotting window for this source
         plt.close()
@@ -282,7 +297,22 @@ class Collector(Configurable):
         :return:
         """
 
-        pass
+        if self.previous_source is not None:
+
+            # Inform the user
+            self.log.info("Going back to the previous source")
+
+            plt.close()
+
+            # Remove saved file
+            if self.last_path is not None: filesystem.remove_file(self.last_path)
+
+            self.processed -= 1
+
+            self.current_source = None
+            self.show(self.previous_source)
+
+        else: self.log.warning("Cannot go back")
 
     # -----------------------------------------------------------------
 
@@ -296,6 +326,8 @@ class Collector(Configurable):
 
         # Inform the user
         self.log.info("Ignoring source")
+
+        self.last_path = None
 
         # Close the currently active plotting window for this source
         plt.close()

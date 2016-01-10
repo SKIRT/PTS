@@ -14,8 +14,9 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
-from sklearn import svm
-from sklearn.externals import joblib
+
+# Import the relevant AstroMagic classes and modules
+from .classification import Classifier
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -80,11 +81,11 @@ class Verifier(Configurable):
         # 1. Call the setup function
         self.setup()
 
+        # Classify
+        self.classify()
+
         # 2. Verify
         self.verify()
-
-        # 3. Write
-        self.write()
 
     # -----------------------------------------------------------------
 
@@ -96,8 +97,22 @@ class Verifier(Configurable):
         """
 
         # Call the setup of the base class
-        super(Classifier, self).setup()
+        super(Verifier, self).setup()
+
+        self.classifier = Classifier()
+        self.classifier.config.mode = self.config.mode
         
+    # -----------------------------------------------------------------
+
+    def classify(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.classifier.run()
+
     # -----------------------------------------------------------------
 
     def verify(self):
@@ -108,18 +123,33 @@ class Verifier(Configurable):
         """
 
         # Inform the user
-        self.log.info("Starting the classification procedure ...")
-        
-    # -----------------------------------------------------------------
+        self.log.info("Starting the verification ...")
 
-    def write(self):
+        # Get a list of the filepaths for every FITS file in the current working directory
+        file_paths = filesystem.files_in_path(os.getcwd(), extension="fits", contains=self.config.mode)
 
-        """
-        This function ...
-        :return:
-        """
+        # Keep track of how many files have been processed
+        self.number_of_files = len(file_paths)
+        self.processed = 0
 
-        # Dump the classifier
-        self.dump_classifier()
-        
+        # Loop over all FITS files found in the current directory
+        for file_path in file_paths:
+
+            # Get information
+            name = os.path.basename(file_path).split(".fits")[0]
+            info, index = name.split("_")
+
+            # Open the image, select all frames
+            image = Image(file_path, always_call_first_primary=False)
+            image.frames.select_all()
+
+            # Create a source
+            source = Source.from_image(image)
+
+            is_star = self.classifier.is_star(source)
+
+            label = "star" if is_star else "not a star"
+
+            source.plot(title="Classified as: " + label)
+
 # -----------------------------------------------------------------

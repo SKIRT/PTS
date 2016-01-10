@@ -62,12 +62,15 @@ def crop_absolute(data, x_min, x_max, y_min, y_max, fill_value=0.0):
     data_y_min = 0 if y_min < 0 else y_min
     data_y_max = data.shape[0] if y_max >= data.shape[0] else y_max
 
-    box_x_min = data_x_min - x_min
-    box_x_max = x_max - data_x_max
-    box_y_min = data_y_min - y_min
-    box_y_max = y_max - data_y_max
+    data_x_size = data_x_max - data_x_min
+    data_y_size = data_y_max - data_y_min
 
-    box[box_y_min:box_y_max, box_x_min:box_x_max] = data[data_y_min:data_x_max, data_x_min:data_x_max]
+    box_x_min = data_x_min - x_min
+    box_x_max = box_x_min + data_x_size
+    box_y_min = data_y_min - y_min
+    box_y_max = box_y_min + data_y_size
+
+    box[box_y_min:box_y_max, box_x_min:box_x_max] = data[data_y_min:data_y_max, data_x_min:data_x_max]
 
     return box
 

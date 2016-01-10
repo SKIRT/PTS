@@ -19,3 +19,4 @@
 # Import classes to make them available at the level of this subpackage
 from .collection import Collector
 from .classification import Classifier
+from .verification import Verifier

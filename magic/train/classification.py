@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import numpy as np
 from sklearn import svm
 from sklearn.externals import joblib
 
@@ -163,7 +164,7 @@ class Classifier(Configurable):
         paths = {"yes": yes_paths, "no": no_paths}
 
         # Create the data structure
-        self.data = []
+        self.rows = []
         self.targets = []
 
         # Inform the user
@@ -197,8 +198,14 @@ class Classifier(Configurable):
                     array[source.background_mask] = 0.0
 
                 # Add the flattened data and target
-                self.data.append(array.flatten())
+                self.rows.append(array.flatten())
                 self.targets.append(target)
+
+        # Make the input data array
+        self.data = np.vstack(self.rows)
+
+        # Set nan values to zero
+        self.data[np.isnan(self.data)] = 0.0
 
     # -----------------------------------------------------------------
 
@@ -271,9 +278,18 @@ class Classifier(Configurable):
         :return:
         """
 
-        #label = self.predict(data)
+        if source.has_background:
 
-        return False
+            data = source.subtracted
+            data[source.background_mask] = 0.0
+
+        else:
+
+            data = source.cutout
+            data[source.background_mask] = 0.0
+
+        label = self.predict(data)
+        return label == 1
 
     # -----------------------------------------------------------------
 

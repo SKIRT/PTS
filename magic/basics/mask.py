@@ -180,6 +180,32 @@ class Mask(np.ndarray):
 
     # -----------------------------------------------------------------
 
+    def fill_holes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a copy of this mask
+        new_mask = self.copy()
+
+        # Perform the segmentation
+        segments = detect_sources(self.astype(float), 0.5, 1)
+
+        # Find the label of the largest segment (=the background)
+        label_counts = np.bincount(segments.flatten())
+        background_label = np.argmax(label_counts)
+
+        # Create a mask for the holes identified as background
+        holes = self.copy()
+        holes[segments == background_label] = False
+
+        # Remove holes from the mask
+        new_mask[holes] = False
+
+    # -----------------------------------------------------------------
+
     def dilated(self, structure=None, connectivity=2, iterations=100):
 
         """

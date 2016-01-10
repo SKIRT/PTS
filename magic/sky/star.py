@@ -179,15 +179,25 @@ class Star(SkyObject):
             # If the star has been modeled succesfully, use the center position of the model
             # Otherwise, use the source's peak
             if self.model is not None: center = fitting.center(self.model)
-            else: center = self.source.peak
+            elif self.source.has_peak: center = self.source.peak
+            else:
+
+                print("WARNING: star source does not have peak")
+                center = self.pixel_position(frame.wcs)
 
         else:
 
             # Calculate the pixel coordinate of the star's position
             center = self.pixel_position(frame.wcs)
 
-        # Create a source and return it
-        return Source.from_ellipse(frame, center, radius, Angle(0.0, u.deg), outer_factor, shape=shape)
+        # Create the new source
+        source = Source.from_ellipse(frame, center, radius, Angle(0.0, u.deg), outer_factor, shape=shape)
+
+        # Set peak to that of the previous source
+        source.peak = self.source.peak if self.source is not None else None
+
+        # Return the new source
+        return source
 
     # -----------------------------------------------------------------
 

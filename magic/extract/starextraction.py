@@ -300,46 +300,50 @@ class StarExtractor(Configurable):
             # -- Cross-referencing with the galaxies in the frame --
 
             # Loop over all galaxies
-            for j in range(len(encountered_galaxies)):
+            if self.config.fetching.cross_reference_with_galaxies:
 
-                # Ignore already encountered galaxies (an other star is already identified with it)
-                if encountered_galaxies[j]: continue
+                # TODO: Better if this piece of code would be inside a function ...
 
-                # Calculate the pixel position of the galaxy
-                galaxy_position = self.galaxy_extractor.galaxies[j].pixel_position(self.frame.wcs)
+                for j in range(len(encountered_galaxies)):
 
-                # Calculate the distance between the star's position and the galaxy's center
-                x_center, y_center = position.to_pixel(self.frame.wcs, mode=self.config.transformation_method)
-                difference = galaxy_position - Position(x=x_center, y=y_center)
-                distance = difference.norm
+                    # Ignore already encountered galaxies (an other star is already identified with it)
+                    if encountered_galaxies[j]: continue
 
-                # Add the star-galaxy distance to the list of distances
-                distances.append(distance)
+                    # Calculate the pixel position of the galaxy
+                    galaxy_position = self.galaxy_extractor.galaxies[j].pixel_position(self.frame.wcs)
 
-                # The principal galaxy/galaxies
-                if self.galaxy_extractor.galaxies[j].principal:
+                    # Calculate the distance between the star's position and the galaxy's center
+                    x_center, y_center = position.to_pixel(self.frame.wcs, mode=self.config.transformation_method)
+                    difference = galaxy_position - Position(x=x_center, y=y_center)
+                    distance = difference.norm
 
-                    # Check whether the star-galaxy distance is smaller than a certain threshold
-                    if distance <= self.config.fetching.min_distance_from_galaxy.principal:
-                        break
+                    # Add the star-galaxy distance to the list of distances
+                    distances.append(distance)
 
-                # Companion galaxies
-                elif self.galaxy_extractor.galaxies[j].companion:
+                    # The principal galaxy/galaxies
+                    if self.galaxy_extractor.galaxies[j].principal:
 
-                    if distance <= self.config.fetching.min_distance_from_galaxy.companion:
+                        # Check whether the star-galaxy distance is smaller than a certain threshold
+                        if distance <= self.config.fetching.min_distance_from_galaxy.principal:
+                            break
 
-                        # Indicate that the current star has been identified with the galaxy with index j
-                        encountered_galaxies[j] = True
-                        break
+                    # Companion galaxies
+                    elif self.galaxy_extractor.galaxies[j].companion:
 
-                # All other galaxies in the frame
-                else:
+                        if distance <= self.config.fetching.min_distance_from_galaxy.companion:
 
-                    if distance <= self.config.fetching.min_distance_from_galaxy.other:
+                            # Indicate that the current star has been identified with the galaxy with index j
+                            encountered_galaxies[j] = True
+                            break
 
-                        # Indicate that the current star has been identified with the galaxy with index j
-                        encountered_galaxies[j] = True
-                        break
+                    # All other galaxies in the frame
+                    else:
+
+                        if distance <= self.config.fetching.min_distance_from_galaxy.other:
+
+                            # Indicate that the current star has been identified with the galaxy with index j
+                            encountered_galaxies[j] = True
+                            break
 
             # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
             if self.galaxy_extractor is not None: star_on_galaxy = self.galaxy_extractor.principal.contains(pixel_position)
@@ -1014,7 +1018,7 @@ class StarExtractor(Configurable):
         outer_factor = 1.5
         method = "polynomial"
 
-        shape = Extent(31, 31)
+        shape = Extent(21, 21)
 
         # Determine the full path to the cutouts directory
         directory_path = self.full_output_path(self.config.writing.cutouts_path)
@@ -1314,6 +1318,7 @@ class StarExtractor(Configurable):
         :return:
         """
 
+        on_galaxy_column = [False] * len(self.catalog)
         have_source_column = [None] * len(self.catalog)
         have_model_column = [None] * len(self.catalog)
         have_saturation_column = [None] * len(self.catalog)
@@ -1321,11 +1326,13 @@ class StarExtractor(Configurable):
         # Loop over all stars
         for star in self.stars:
 
+            on_galaxy_column[star.index] = star.on_galaxy
             have_source_column[star.index] = star.has_source
             have_model_column[star.index] = star.has_model
             have_saturation_column[star.index] = star.has_saturation
 
         # Add (or replace) the new columns
+        self.catalog["On galaxy"] = on_galaxy_column
         self.catalog["Detected"] = have_source_column
         self.catalog["Fitted"] = have_model_column
         self.catalog["Saturated"] = have_saturation_column
