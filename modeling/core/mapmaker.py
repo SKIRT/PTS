@@ -235,7 +235,7 @@ class MapMaker(Configurable):
                 Frame(self.mask.astype(float)).save(self.config.saving.cutoff_mask_with_holes_path)
 
                 # Perform the segmentation
-                segments = detect_sources(self.mask.astype(float), 0.5, 1)
+                segments = detect_sources(self.mask.astype(float), 0.5, 1).data
 
                 # Save segments
                 Frame(segments.astype(float)).save(self.config.saving.cutoff_mask_segments_path)

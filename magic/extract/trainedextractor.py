@@ -59,8 +59,8 @@ class TrainedExtractor(Configurable):
         # Set the segmentation map to None initially
         self.segments = None
 
-        # Initialize an empty list for the apertures constructed from the sources
-        self.apertures = []
+        # List of sources
+        self.sources = []
 
         # The classifier
         classifier = Classifier()
@@ -95,22 +95,13 @@ class TrainedExtractor(Configurable):
         # 3. Remove sources
         if self.config.remove: self.remove_sources()
 
-        # 3. Find apertures
-        if self.config.find_apertures: self.find_apertures()
-
         # 4. Classify sources
         if self.config.classify: self.classify_sources()
 
-        # 4. Remove apertures
-        if self.config.remove_apertures: self.remove_apertures()
-
-        # 3. Classify the sources
-        if self.config.classify: self.classify()
-
-        # Build catalogs
+        # 5. Build catalogs
         if self.config.build_catalogs: self.build_catalog()
 
-        # 4. Writing
+        # 6. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -145,6 +136,9 @@ class TrainedExtractor(Configurable):
         :return:
         """
 
+        # Inform the user
+        self.log.info("Looking for sources in the frame ...")
+
         # Find sources by locating peaks
         if self.config.detection.method == "peaks": self.find_sources_peaks()
 
@@ -170,14 +164,28 @@ class TrainedExtractor(Configurable):
         self.log.info("Removing the other sources from the frame ...")
 
         # Interpolate over the segments
-        mask = self.segments > 0
-        interpolated = self.frame.interpolated(mask, self.config.removal.interpolation_method)
+        #mask = self.segments > 0
+        #interpolated = self.frame.interpolated(mask, self.config.removal.interpolation_method)
 
         # Adapt the frame
-        self.frame[mask] = interpolated[mask]
+        #self.frame[mask] = interpolated[mask]
 
         # Update the mask
-        self.mask[mask] = True
+        #self.mask[mask] = True
+
+        # Loop over all sources
+        for source in self.sources:
+
+            # Estimate the background
+            interpolation_method = "local_mean"
+            sigma_clip = True
+            source.estimate_background(interpolation_method, sigma_clip)
+
+            # Replace the frame with the estimated background
+            source.background.replace(self.frame, where=source.mask)
+
+            # Update the mask
+            self.mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
 
     # -----------------------------------------------------------------
 
@@ -191,6 +199,9 @@ class TrainedExtractor(Configurable):
         # Inform the user
         self.log.info("Constructing elliptical aperture regions to encompass other contaminating sources ...")
 
+        # Initialize a list for the apertures
+        apertures = []
+
         # Find apertures for the other sources
         #from scipy import ndimage
         from photutils import source_properties
@@ -200,26 +211,6 @@ class TrainedExtractor(Configurable):
         # Since there is only one segment in the source.mask (the center segment), the props
         # list contains only one entry (one galaxy)
         properties_list = source_properties(np.asarray(self.frame), self.segments)
-
-        # Below we perform some steps exactly as in the photutils source_properties function, but we want to
-        # avoid calling that function since it also calls _prepare_data which calls _check_units in turn,
-        # and because our frames have a 'unit' attribute it crashes for some reason (saying that if one of the
-        # [frames, errors, background] has a unit, the other must have too, although we don't provide these errors
-        # and background arrays ... More investigation in this should follow.
-        #label_ids = np.unique(self.segments[self.segments > 0])
-        #filtered_data = None
-        #label_slices = ndimage.find_objects(self.segments)
-        #properties_list = []
-        #for i, label_slice in enumerate(label_slices):
-        #    label = i + 1    # consecutive even if some label numbers are missing
-        #    # label_slice is None for missing label numbers
-        #    if label_slice is None or label not in label_ids:
-        #        continue
-        #    segm_props = SegmentProperties(
-        #        self.frame, self.segments, label, label_slice=label_slice, error=None,
-        #        effective_gain=None, mask=None, background=None,
-        #        wcs=self.frame.wcs, filtered_data=filtered_data, data_prepared=True)
-        #    properties_list.append(segm_props)
 
         #table = properties_table(properties)
         for properties in properties_list:
@@ -233,7 +224,7 @@ class TrainedExtractor(Configurable):
             ellipticity = (a - b) / b
 
             # Create the aperture
-            if ellipticity < self.config.apertures.max_ellipticity: self.apertures.append(EllipticalAperture(position, a, b, theta=theta))
+            if ellipticity < self.config.apertures.max_ellipticity: apertures.append(EllipticalAperture(position, a, b, theta=theta))
 
         # Plotting the apertures
         #from astropy.visualization import SqrtStretch
@@ -249,6 +240,9 @@ class TrainedExtractor(Configurable):
 
         #plt.show()
 
+        # Return the list of apertures
+        return apertures
+
     # -----------------------------------------------------------------
 
     def classify_sources(self):
@@ -258,22 +252,11 @@ class TrainedExtractor(Configurable):
         :return:
         """
 
-        # Loop over all apertures
-        for aperture in self.apertures:
-
-            background_factor = 1.5
-
-            # If the aperture has to be rescaled
-            #aperture.a *= 1.0
-            #aperture.b *= 1.0
-
-            # No: use the FWHM !
-
-            # Create a source from the aperture
-            source = Source.from_aperture(self.frame, aperture, background_factor)
+        # Loop over all sources
+        for source in self.sources:
 
             # Test whether this source corresponds to a star
-            if classifier.is_star(source):
+            if self.classifier.is_star(source):
 
                 # Create a Star instance
                 star = Star()
@@ -282,7 +265,7 @@ class TrainedExtractor(Configurable):
                 self.stars.append(star)
 
             # Test whether the source corresponds to a galaxy
-            #elif classifier.is_galaxy(source):
+            #elif self.classifier.is_galaxy(source):
 
                 # Create a Galaxy instance
                 #galaxy = Galaxy()
@@ -334,17 +317,6 @@ class TrainedExtractor(Configurable):
 
             # Update the mask
             self.mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
-
-    # -----------------------------------------------------------------
-
-    def classify(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pass
 
     # -----------------------------------------------------------------
 
@@ -407,7 +379,7 @@ class TrainedExtractor(Configurable):
 
         try:
             # Create a segmentation map from the frame
-            self.segments = detect_sources(self.frame, threshold, npixels=5, filter_kernel=kernel)
+            self.segments = detect_sources(self.frame, threshold, npixels=5, filter_kernel=kernel).data
         except RuntimeError:
 
             print("kernel=", kernel)
@@ -452,6 +424,38 @@ class TrainedExtractor(Configurable):
             # Remove the galaxies from the segmentation map
             for index in indices: self.segments[self.segments == index] = 0
 
+        # Find apertures
+        apertures = self.find_apertures()
+
+        # Construct sources
+        for aperture in apertures:
+
+            background_factor = 1.5
+
+            # If the aperture has to be rescaled
+            #aperture.a *= 1.0
+            #aperture.b *= 1.0
+
+            # No: use the FWHM ! Hmm.. or not: saturation ?
+
+            # Create a source from the aperture
+            source = Source.from_aperture(self.frame, aperture, background_factor)
+
+            y_min = source.cutout.y_min
+            y_max = source.cutout.y_max
+            x_min = source.cutout.x_min
+            x_max = source.cutout.x_max
+
+            # Create source mask from the segmentation map
+            mask = Mask(self.segments[y_min:y_max, x_min:x_max])
+            mask = mask.fill_holes()
+
+            # Set the source mask
+            source.mask = mask
+
+            # Add the source
+            self.sources.append(source)
+
     # -----------------------------------------------------------------
 
     def find_sources_sextractor(self):
@@ -480,7 +484,7 @@ class TrainedExtractor(Configurable):
         path = self.full_output_path(self.config.writing.masked_frame_path)
 
         # Inform the user
-        self.log.info("Writing masked frame to " + path)
+        self.log.info("Writing masked frame to " + path + " ...")
 
         # Create a frame where the objects are masked
         frame = self.frame.copy()
@@ -502,7 +506,7 @@ class TrainedExtractor(Configurable):
         path = self.full_output_path(self.config.writing.segments_path)
 
         # Inform the user
-        self.log.info("Writing the segmentation map to " + path)
+        self.log.info("Writing the segmentation map to " + path + " ...")
 
         # Save the segmentation map
         Frame(self.segments).save(path)

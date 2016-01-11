@@ -327,7 +327,7 @@ class StarExtractor(Configurable):
             self.stars.append(star)
 
         # Inform the user
-        self.log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
+        if self.config.fetching.cross_reference_with_galaxies: self.log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
 
     # -----------------------------------------------------------------
 
@@ -843,6 +843,9 @@ class StarExtractor(Configurable):
             # Skip stars without saturation
             if not star.has_saturation: continue
 
+            # Convert the star index to a string
+            text = str(star.index)
+
             # Get aperture properties
             center = apertures.position(star.aperture)
             major = star.aperture.a
@@ -853,7 +856,8 @@ class StarExtractor(Configurable):
             # Write to region file
             suffix = " # "
             color_suffix = "color = white"
-            suffix += color_suffix
+            text_suffix = "text = {" + text + "}"
+            suffix += color_suffix + " " + text_suffix
             print("image;ellipse({},{},{},{},{})".format(center.x, center.y, major, minor, angle) + suffix, file=f)
 
         # Close the file

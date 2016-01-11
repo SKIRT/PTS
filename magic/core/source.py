@@ -56,6 +56,9 @@ class Source(object):
         self.removed = removed
         self.peak = peak
 
+        ## NEW
+        self.aperture = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -298,7 +301,7 @@ class Source(object):
             threshold = detect_threshold(box, snr=2.0) #snr=2.0
 
         # Perform the segmentation
-        segments = detect_sources(box, threshold, npixels=min_pixels, filter_kernel=kernel)
+        segments = detect_sources(box, threshold, npixels=min_pixels, filter_kernel=kernel).data
 
         # To plot the multiple segments that are detected
         #if segments.max() > 1: plotting.plot_box(np.ma.masked_array(box, mask=segments.astype(bool)))

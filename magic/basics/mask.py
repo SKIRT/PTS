@@ -191,7 +191,7 @@ class Mask(np.ndarray):
         new_mask = self.copy()
 
         # Perform the segmentation
-        segments = detect_sources(self.inverse().astype(float), 0.5, 1)
+        segments = detect_sources(self.inverse().astype(float), 0.5, 1).data
 
         # Find the label of the largest segment (=the background)
         label_counts = np.bincount(segments.flatten())
@@ -328,7 +328,7 @@ class Mask(np.ndarray):
 
         mask = self.opening(structure)
 
-        segments = detect_sources(mask, 0.5, 1)
+        segments = detect_sources(mask, 0.5, 1).data
 
         # Get the label of the center segment
         label = segments[int(0.5*segments.shape[0]), int(0.5*segments.shape[1])]
