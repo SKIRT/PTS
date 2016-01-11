@@ -19,8 +19,7 @@ from astropy.coordinates import Angle
 # Import the relevant AstroMagic classes and modules
 from .skyobject import SkyObject
 from ..core import Source
-from ..tools import statistics
-from ..tools import fitting
+from ..tools import statistics, fitting, apertures
 from ..analysis import sources
 
 # -----------------------------------------------------------------
@@ -320,53 +319,37 @@ class Star(SkyObject):
         if self.has_track_record: self.track_record.set_stage("saturation")
 
         # Look for a center segment corresponding to a 'saturation' source
-        source = sources.find_source_segmentation(frame, self.pixel_position(frame.wcs), radius, Angle(0.0, u.deg), config, track_record=self.track_record, special=self.special)
+        saturation_source = sources.find_source_segmentation(frame, self.pixel_position(frame.wcs), radius, Angle(0.0, u.deg), config, track_record=self.track_record, special=self.special)
 
         # If a 'saturation' source was found
-        if source is not None:
+        if saturation_source is not None:
+
+            # Calculate the aperture
+            aperture = sources.find_aperture(saturation_source.cutout, saturation_source.mask, config.apertures.sigma_level)
 
             # Check whether the source centroid matches the star position
             if config.check_centroid:
 
-                from photutils import segment_properties, properties_table
-                from ..basics import Position
+                # Get the position and ellipticity
+                position = apertures.position(aperture)
+                ellipticity = apertures.ellipticity(aperture)
 
-                # Get the segment properties
-                # Since there is only one segment in the source.mask (the center segment), the props
-                # list contains only one entry (one galaxy)
-                props = segment_properties(source.cutout, source.mask)
-                properties = props[0]
-
-                x_shift = source.cutout.x_min
-                y_shift = source.cutout.y_min
-
-                # Obtain the position, orientation and extent
-                position = Position(properties.xcentroid.value + x_shift, properties.ycentroid.value + y_shift)
-                a = properties.semimajor_axis_sigma.value
-                b = properties.semiminor_axis_sigma.value
-                theta = properties.orientation.value
-
-                # Calculate the ellipticity
-                ellipticity = (a - b) / b
-
-                # Create the aperture
-                #self.aperture = EllipticalAperture(position, a, b, theta=theta)
-
+                # Calculate the offset
                 difference = position - self.pixel_position(frame.wcs)
 
-                with open(config.centroid_table_path, 'a') as centroid_file:
-                    centroid_file.write(str(difference.norm) + "  " + str(ellipticity) + "\n")
+                with open(config.centroid_table_path, 'a') as centroid_file: centroid_file.write(str(difference.norm) + "  " + str(ellipticity) + "\n")
 
                 # Discard this saturation source if the centroid offset or the ellipticity is too large
                 if difference.norm > config.max_centroid_offset or ellipticity > config.max_centroid_ellipticity: return
 
             # Replace the pixels of the cutout box by the pixels of the original frame (because the star itsself is already removed)
-            source.cutout = original_frame.box_like(source.cutout)
+            saturation_source.cutout = original_frame.box_like(saturation_source.cutout)
 
             # TODO: check with classifier to verify this is actually a saturation source!
 
             # Replace the source by a source that covers the saturation
-            self.saturation = source
+            self.saturation = saturation_source
+            self.aperture = aperture
 
     # -----------------------------------------------------------------
 

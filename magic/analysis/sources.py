@@ -23,9 +23,41 @@ from astropy import log
 from photutils import daofind
 from astropy.stats import sigma_clipped_stats
 
+# Import astronomical modules
+from photutils import source_properties, properties_table
+from photutils import EllipticalAperture
+
 # Import the relevant AstroMagic classes and modules
 from ..tools import fitting, plotting, statistics, coordinates, cropping, interpolation, masks, regions
 from ..core import Source
+
+# -----------------------------------------------------------------
+
+def find_aperture(box, mask, sigma_level):
+
+    """
+    This function ...
+    :return:
+    """
+
+    props = source_properties(box, mask)
+    #tbl = properties_table(props)
+
+    x_shift = box.x_min
+    y_shift = box.y_min
+
+    # Since there is only one segment in the self.source.mask (the center segment), the props
+    # list contains only one entry (one galaxy)
+    properties = props[0]
+
+    # Obtain the position, orientation and extent
+    position = (properties.xcentroid.value + x_shift, properties.ycentroid.value + y_shift)
+    a = properties.semimajor_axis_sigma.value * sigma_level
+    b = properties.semiminor_axis_sigma.value * sigma_level
+    theta = properties.orientation.value
+
+    # Create and return the aperture
+    return EllipticalAperture(position, a, b, theta=theta)
 
 # -----------------------------------------------------------------
 
@@ -410,8 +442,13 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
 
         # -- Fill holes --
 
+        #plotting.plot_box(np.ma.array(source.cutout, mask=source.mask))
+        #plotting.plot_box(np.ma.array(source.cutout, mask=mask))
+
         mask = mask.fill_holes()
         source.mask = mask
+
+        #plotting.plot_box(np.ma.array(source.cutout, mask=source.mask))
 
         # Show a plot for debugging
         if config.debug.holes or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Removed holes")
@@ -426,7 +463,6 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
 
         # Show a plot for debugging
         if config.debug.dilated or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Dilated mask")
-
 
         # -- Expansion --
 

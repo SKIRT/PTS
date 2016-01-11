@@ -299,7 +299,7 @@ class GalaxyExtractor(Configurable):
         path = self.full_input_path(self.config.fetching.catalog_path)
 
         # Inform the user
-        self.log.info("Loading galaxy catalog from file " + path)
+        self.log.info("Importing galaxy catalog from file " + path)
 
         # Load the catalog
         self.input_catalog = tables.from_file(path)
@@ -335,9 +335,9 @@ class GalaxyExtractor(Configurable):
             position_angle = Angle(self.catalog["Position angle"][i], u.deg) if self.catalog["Position angle"][i] is not None else None
             ra = self.catalog["Right ascension"][i]
             dec = self.catalog["Declination"][i]
-            names = self.catalog["Alternative names"][i].split() if self.catalog["Alternative names"][i] is not None else []
+            names = self.catalog["Alternative names"][i].split(", ") if self.catalog["Alternative names"][i] is not None else []
             principal = self.catalog["Principal"][i]
-            companions = self.catalog["Companion galaxies"][i].split() if self.catalog["Companion galaxies"][i] is not None else []
+            companions = self.catalog["Companion galaxies"][i].split(", ") if self.catalog["Companion galaxies"][i] is not None else []
             parent = self.catalog["Parent galaxy"][i]
 
             # Create a SkyCoord instance for the galaxy center position

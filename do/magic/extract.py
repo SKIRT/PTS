@@ -46,7 +46,7 @@ if arguments.input is not None:
     arguments.input_path = os.path.abspath(arguments.input)
 
     # Give an error if the input directory does not exist
-    if not os.path.isdir(arguments.input_path): raise argparse.ArgumentError("The input directory does not exist")
+    if not os.path.isdir(arguments.input_path): raise argparse.ArgumentError(arguments.input_path, "The input directory does not exist")
 
 # If no input directory is given, assume the input is placed in the current working directory
 else: arguments.input_path = os.getcwd()

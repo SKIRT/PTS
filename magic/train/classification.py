@@ -261,6 +261,8 @@ class Classifier(Configurable):
         :return:
         """
 
+        if single: data = data.reshape(1, -1)
+
         # Predict the targets of the test data
         result = self.vector_classifier.predict(data)
 
@@ -282,13 +284,15 @@ class Classifier(Configurable):
 
             data = source.subtracted
             data[source.background_mask] = 0.0
+            data[np.isnan(data)] = 0.0
 
         else:
 
             data = source.cutout
             data[source.background_mask] = 0.0
+            data[np.isnan(data)] = 0.0
 
-        label = self.predict(data)
+        label = self.predict(data, single=True)
         return label == 1
 
     # -----------------------------------------------------------------

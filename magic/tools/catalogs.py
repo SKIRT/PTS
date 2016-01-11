@@ -430,7 +430,7 @@ def create_galaxy_catalog(frame):
         dec_column.append(position.dec.value)
         redshift_column.append(gal_redshift)
         type_column.append(gal_type)
-        alternative_names_column.append(" ".join(gal_names) if len(gal_names) > 0 else None)
+        alternative_names_column.append(", ".join(gal_names) if len(gal_names) > 0 else None)
         distance_column.append(gal_distance.value if gal_distance is not None else None)
         inclination_column.append(gal_inclination.degree if gal_inclination is not None else None)
         d25_column.append(gal_d25.value if gal_d25 is not None else None)
@@ -472,7 +472,7 @@ def create_galaxy_catalog(frame):
     companions_column = []
     for companion_list in companions_list_list:
         if len(companion_list) == 0: companions_column.append(None)
-        else: companions_column.append(" ".join(companion_list))
+        else: companions_column.append(", ".join(companion_list))
 
     # Create the data structure and names list
     data = [name_column, ra_column, dec_column, redshift_column, type_column, alternative_names_column, distance_column,

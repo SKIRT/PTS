@@ -156,8 +156,10 @@ class Extractor(Configurable):
             self.galaxy_extractor.config.writing.region_path = "galaxies.reg"
 
             # Star extractor
-            self.star_extractor.config.write_region = True
-            self.star_extractor.config.writing.region_path = "stars.reg"
+            self.star_extractor.config.write_star_region = True
+            self.star_extractor.config.write_saturation_region = True
+            self.star_extractor.config.writing.star_region_path = "stars.reg"
+            self.star_extractor.config.writing.saturation_region_path = "saturation.reg"
 
         # Set the appropriate configuration settings for writing out the masked frames
         if self.config.save_masked_frames:
@@ -182,7 +184,7 @@ class Extractor(Configurable):
         if self.config.logging.cascade:
 
             # Galaxy extractor
-            self.galaxy_extractor.config.loggin.cascade = True
+            self.galaxy_extractor.config.logging.cascade = True
             self.galaxy_extractor.config.logging.level = self.config.logging.level
 
             # Star extractor

@@ -191,18 +191,23 @@ class Mask(np.ndarray):
         new_mask = self.copy()
 
         # Perform the segmentation
-        segments = detect_sources(self.astype(float), 0.5, 1)
+        segments = detect_sources(self.inverse().astype(float), 0.5, 1)
 
         # Find the label of the largest segment (=the background)
         label_counts = np.bincount(segments.flatten())
-        background_label = np.argmax(label_counts)
+        background_label = np.argmax(label_counts[1:])
+        # If the source mask is larger than the background (in number of pixels), the above will provide the correct label
+        # therefore we do the '[1:]'
 
         # Create a mask for the holes identified as background
         holes = self.copy()
         holes[segments == background_label] = False
 
         # Remove holes from the mask
-        new_mask[holes] = False
+        new_mask[holes] = True
+
+        # Return the new mask
+        return new_mask
 
     # -----------------------------------------------------------------
 
@@ -349,9 +354,6 @@ class Mask(np.ndarray):
         """
         This function ...
         """
-
-        # Check whether the new mask will still be an instance of Mask
-        assert isinstance(np.logical_not(self), Mask)
 
         # Return the inverse of this mask
         return np.logical_not(self)

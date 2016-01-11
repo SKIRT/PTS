@@ -16,13 +16,10 @@ from __future__ import absolute_import, division, print_function
 from abc import ABCMeta
 from abc import abstractmethod
 
-# Import astronomical modules
-from photutils import segment_properties, properties_table
-from photutils import EllipticalAperture
-
 # Import the relevant AstroMagic classes and modules
 from ..basics import Position, TrackRecord
 from ..analysis import sources
+from ..tools import apertures
 
 # -----------------------------------------------------------------
 
@@ -166,34 +163,28 @@ class SkyObject(object):
         :return:
         """
 
-        if saturation: props = segment_properties(self.saturation.cutout, self.saturation.mask)
-        else: props = segment_properties(self.source.cutout, self.source.mask)
-        #tbl = properties_table(props)
-
+        # Determine which box and mask
         if saturation:
-            x_shift = self.saturation.cutout.x_min
-            y_shift = self.saturation.cutout.y_min
+
+            box = self.saturation.cutout
+            mask = self.saturation.mask
         else:
-            x_shift = self.source.cutout.x_min
-            y_shift = self.source.cutout.y_min
 
-        # Since there is only one segment in the self.source.mask (the center segment), the props
-        # list contains only one entry (one galaxy)
-        properties = props[0]
+            box = self.source.cutout
+            mask = self.source.mask
 
-        # Obtain the position, orientation and extent
-        position = (properties.xcentroid.value + x_shift, properties.ycentroid.value + y_shift)
-        a = properties.semimajor_axis_sigma.value * config.sigma_level
-        b = properties.semiminor_axis_sigma.value * config.sigma_level
-        theta = properties.orientation.value
+        # Get the aperture
+        aperture = sources.find_aperture(box, mask, config.sigma_level)
+
+        aperture_position = apertures.position(aperture)
 
         # Calculate the difference (in number of pixels) between the aperture center and the position of the sky object
-        difference = self.pixel_position(frame.wcs) - Position(position[0], position[1])
+        difference = self.pixel_position(frame.wcs) - aperture_position
 
         # Set the aperture if the offset is smaller than or equal to the specified maximum
         if difference.norm <= config.max_offset or config.max_offset is None:
 
-            # Create the aperture
-            self.aperture = EllipticalAperture(position, a, b, theta=theta)
+            # Set the aperture
+            self.aperture = aperture
 
 # -----------------------------------------------------------------

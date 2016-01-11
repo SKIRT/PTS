@@ -31,7 +31,7 @@ from astropy.convolution import Gaussian2DKernel
 from ..basics import Position, Extent, Mask, Region
 from ..core import Source
 from ..sky import Star
-from ..tools import statistics, fitting, regions, catalogs
+from ..tools import statistics, fitting, regions, catalogs, apertures
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -95,16 +95,13 @@ class StarExtractor(Configurable):
         # 3. If requested, find and remove saturated stars
         if self.config.find_saturation: self.find_and_remove_saturation()
 
-        # 4. If requested, find and remove apertures
-        if self.config.find_apertures: self.find_and_remove_apertures()
-
-        # 5. If specified, remove manually selected stars
+        # 4. If specified, remove manually selected stars
         if self.config.manual_region is not None: self.set_and_remove_manual()
 
-        # 6. Update the catalog
+        # 5. Update the catalog
         self.update_catalog()
 
-        # 7. Writing phase
+        # 6. Writing phase
         self.write()
 
     # -----------------------------------------------------------------
@@ -195,20 +192,8 @@ class StarExtractor(Configurable):
         # If requested, remove saturation in the frame
         if self.config.remove_saturation: self.remove_saturation()
 
-    # -----------------------------------------------------------------
-
-    def find_and_remove_apertures(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Find the apertures
-        self.find_apertures()
-
-        # If requested, remove apertures
-        if self.config.remove_apertures: self.remove_apertures()
+        # If requested, remove apertures that encompass the saturation sources
+        if self.config.saturation.remove_apertures: self.remove_apertures()
 
     # -----------------------------------------------------------------
 
@@ -238,7 +223,7 @@ class StarExtractor(Configurable):
         path = self.full_input_path(self.config.fetching.catalog_path)
 
         # Inform the user
-        self.log.info("Loading stellar catalog from file " + path)
+        self.log.info("Importing stellar catalog from file " + path)
 
         # Load the catalog
         self.catalog = tables.from_file(path)
@@ -262,6 +247,15 @@ class StarExtractor(Configurable):
         # Copy the list of galaxies, so that we can removed already encounted galaxies (TODO: change this to use
         # an 'encountered' list as well
         encountered_galaxies = [False] * len(self.galaxy_extractor.galaxies)
+
+        galaxy_pixel_position_list = []
+        galaxy_type_list = []
+        for galaxy in self.galaxy_extractor.galaxies:
+
+            galaxy_pixel_position_list.append(galaxy.pixel_position(self.frame.wcs, self.config.transformation_method))
+            if galaxy.principal: galaxy_type_list.append("principal")
+            elif galaxy.companion: galaxy_type_list.append("companion")
+            else: galaxy_type_list.append("other")
 
         # Keep track of the distances between the stars and the galaxies
         distances = []
@@ -302,48 +296,8 @@ class StarExtractor(Configurable):
             # Loop over all galaxies
             if self.config.fetching.cross_reference_with_galaxies:
 
-                # TODO: Better if this piece of code would be inside a function ...
-
-                for j in range(len(encountered_galaxies)):
-
-                    # Ignore already encountered galaxies (an other star is already identified with it)
-                    if encountered_galaxies[j]: continue
-
-                    # Calculate the pixel position of the galaxy
-                    galaxy_position = self.galaxy_extractor.galaxies[j].pixel_position(self.frame.wcs)
-
-                    # Calculate the distance between the star's position and the galaxy's center
-                    x_center, y_center = position.to_pixel(self.frame.wcs, mode=self.config.transformation_method)
-                    difference = galaxy_position - Position(x=x_center, y=y_center)
-                    distance = difference.norm
-
-                    # Add the star-galaxy distance to the list of distances
-                    distances.append(distance)
-
-                    # The principal galaxy/galaxies
-                    if self.galaxy_extractor.galaxies[j].principal:
-
-                        # Check whether the star-galaxy distance is smaller than a certain threshold
-                        if distance <= self.config.fetching.min_distance_from_galaxy.principal:
-                            break
-
-                    # Companion galaxies
-                    elif self.galaxy_extractor.galaxies[j].companion:
-
-                        if distance <= self.config.fetching.min_distance_from_galaxy.companion:
-
-                            # Indicate that the current star has been identified with the galaxy with index j
-                            encountered_galaxies[j] = True
-                            break
-
-                    # All other galaxies in the frame
-                    else:
-
-                        if distance <= self.config.fetching.min_distance_from_galaxy.other:
-
-                            # Indicate that the current star has been identified with the galaxy with index j
-                            encountered_galaxies[j] = True
-                            break
+                # If a match is found with one of the galaxies, skip this star
+                if matches_galaxy_position(pixel_position, galaxy_pixel_position_list, galaxy_type_list, encountered_galaxies, self.config.fetching.min_distance_from_galaxy, distances): continue
 
             # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
             if self.galaxy_extractor is not None: star_on_galaxy = self.galaxy_extractor.principal.contains(pixel_position)
@@ -591,28 +545,6 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def find_apertures(self):
-
-        """
-        This function ...
-        :param frame:
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Constructing elliptical apertures regions to encompass saturated stars ...")
-
-        # Loop over all stars
-        for star in self.stars:
-
-            # If this star should be ignored, skip it
-            if star.ignore: continue
-
-            # If the star does not have saturation, continue
-            if star.has_saturation: star.find_aperture(self.frame, self.config.apertures, saturation=True)
-
-    # -----------------------------------------------------------------
-
     def remove_apertures(self):
 
         """
@@ -632,15 +564,15 @@ class StarExtractor(Configurable):
             if not star.has_aperture: continue
 
             # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
-            if star.on_galaxy and self.config.aperture_removal.no_sigma_clip_on_galaxy: sigma_clip = False
-            else: sigma_clip = self.config.aperture_removal.sigma_clip
+            if star.on_galaxy and self.config.saturation.aperture_removal.no_sigma_clip_on_galaxy: sigma_clip = False
+            else: sigma_clip = self.config.saturation.aperture_removal.sigma_clip
 
             # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-            if star.on_galaxy and self.config.aperture_removal.polynomial_on_galaxy: interpolation_method = "polynomial"
-            else: interpolation_method = self.config.aperture_removal.interpolation_method
+            if star.on_galaxy and self.config.saturation.aperture_removal.polynomial_on_galaxy: interpolation_method = "polynomial"
+            else: interpolation_method = self.config.saturation.aperture_removal.interpolation_method
 
             # Expansion factor
-            expansion_factor = self.config.aperture_removal.expansion_factor
+            expansion_factor = self.config.saturation.aperture_removal.expansion_factor
 
             # Create a source object
             # Get the parameters of the elliptical aperture
@@ -656,7 +588,7 @@ class StarExtractor(Configurable):
             angle = Angle(star.aperture.theta, u.rad)
 
             # Create a source
-            source = Source.from_ellipse(self.frame, center, radius, angle, self.config.aperture_removal.background_outer_factor)
+            source = Source.from_ellipse(self.frame, center, radius, angle, self.config.saturation.aperture_removal.background_outer_factor)
 
             # Estimate the background for the source
             source.estimate_background(interpolation_method, sigma_clip)
@@ -823,7 +755,7 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def write_region(self):
+    def write_star_region(self):
 
         """
         This function ...
@@ -831,12 +763,11 @@ class StarExtractor(Configurable):
         :return:
         """
 
-        # Determine the full path to the region file
-        path = self.full_output_path(self.config.writing.region_path)
-        annotation = self.config.writing.region_annotation
+        # Determine the full path to the star region file
+        path = self.full_output_path(self.config.writing.star_region_path)
 
         # Inform the user
-        self.log.info("Writing stars region to " + path + " ...")
+        self.log.info("Writing star region to " + path + " ...")
 
         # Create a file
         f = open(path, 'w')
@@ -851,77 +782,79 @@ class StarExtractor(Configurable):
         for star in self.stars:
 
             # Get the center in pixel coordinates
-            #x_center, y_center = star.position.to_pixel(self.frame.wcs, origin=0)
-            center = star.pixel_position(self.frame.wcs)
+            center = star.pixel_position(self.frame.wcs, self.config.transformation_method)
 
-            if star.has_source:
+            # Determine the color, based on the detection level
+            if star.has_model: color = "blue"
+            elif star.has_source: color = "green"
+            else: color = "red"
 
-                if star.has_model:
+            # Determine the FWHM
+            fwhm = default_fwhm if not star.has_model else star.fwhm
 
-                    fwhm = star.fwhm
-                    color = "blue"
+            # Calculate the radius in pixels
+            radius = fwhm * statistics.fwhm_to_sigma * self.config.removal.sigma_level
 
-                else:
+            # Convert the star index to a string
+            text = str(star.index)
 
-                    fwhm = default_fwhm
-                    color = "green"
+            # Show a circle for the star
+            suffix = " # "
+            color_suffix = "color = " + color
+            text_suffix = "text = {" + text + "}"
+            suffix += color_suffix + " " + text_suffix
+            print("image;circle({},{},{})".format(center.x, center.y, radius) + suffix, file=f)
 
-            else:
+            # Draw a cross for the peak position
+            if star.has_source and star.source.has_peak:
 
-                fwhm = default_fwhm
-                color = "red"
+                suffix = " # "
+                point_suffix = "point = x"
+                suffix += point_suffix
+                print("image;point({},{})".format(star.source.peak.x, star.source.peak.y) + suffix, file=f)
 
-            if annotation == "flux":
+        # Close the file
+        f.close()
 
-                if star.has_source and star.source.has_background:
+    # -----------------------------------------------------------------
 
-                    text = "text = {" + str(int(round(star.flux))) + "}"
+    def write_saturation_region(self):
 
-                else: text = ""
+        """
+        This function ...
+        :return:
+        """
 
-            elif annotation == "has_source":
+        # Determine the full path to the saturation region file
+        path = self.full_output_path(self.config.writing.saturation_region_path)
 
-                text = "text = {" + str(star.has_source) + "}"
+        # Inform the user
+        self.log.info("Writing saturation region to " + path + " ...")
 
-            elif annotation == "has_background":
+        # Create a file
+        f = open(path, 'w')
 
-                if star.has_source: text = "text = {" + str(star.source.has_background) + "}"
-                else: text = ""
+        # Initialize the region string
+        print("# Region file format: DS9 version 4.1", file=f)
 
-            elif annotation is None: text = ""
-            else: raise ValueError("Invalid option for annotation")
+        # Loop over all stars
+        for star in self.stars:
 
-            # If the FWHM is defined, draw a circle for the star and draw a cross for its peak position (if defined)
-            if fwhm is not None:
+            # Skip stars without saturation
+            if not star.has_saturation: continue
 
-                # Calculate the radius in pixels
-                radius = fwhm * statistics.fwhm_to_sigma * self.config.region.sigma_level
+            # Get aperture properties
+            center = apertures.position(star.aperture)
+            major = star.aperture.a
+            minor = star.aperture.b
+            #angle = star.aperture.theta * math.pi / 180
+            angle = star.aperture.theta
 
-                # Draw a cross for the peak position
-                if star.has_source and star.source.has_peak:
-
-                    point_suffix = " # point = x " + text
-                    print("image;point({},{})".format(star.source.peak.x, star.source.peak.y) + point_suffix, file=f)
-
-                # Show a circle for the star
-                color_suffix = " # color = " + color
-                print("image;circle({},{},{})".format(center.x, center.y, radius) + color_suffix, file=f)
-
-            # If the FWHM is undefined, simply draw a point for the star's position (e.g. when this function is called
-            # after the fetch_stars method)
-            else: print("image;point({},{})".format(center.x, center.y), file=f)
-
-            # Aperture created from saturation mask
-            if star.has_aperture:
-
-                ap_x_center, ap_y_center = star.aperture.positions[0]
-                major = star.aperture.a
-                minor = star.aperture.b
-                angle = star.aperture.theta * math.pi / 180
-
-                aperture_suffix = " # color = white"
-
-                print("image;ellipse({},{},{},{},{})".format(ap_x_center, ap_y_center, major, minor, angle) + aperture_suffix, file=f)
+            # Write to region file
+            suffix = " # "
+            color_suffix = "color = white"
+            suffix += color_suffix
+            print("image;ellipse({},{},{},{},{})".format(center.x, center.y, major, minor, angle) + suffix, file=f)
 
         # Close the file
         f.close()
@@ -1381,7 +1314,10 @@ class StarExtractor(Configurable):
         if self.config.write_catalog: self.write_catalog()
 
         # If requested, write out the star region
-        if self.config.write_region: self.write_region()
+        if self.config.write_star_region: self.write_star_region()
+
+        # If requested, write out the saturation region
+        if self.config.write_saturation_region: self.write_saturation_region()
 
         # If requested, write out the aperture region
         if self.config.write_aperture_region: self.write_aperture_region()
@@ -1394,5 +1330,59 @@ class StarExtractor(Configurable):
 
         # If requested, write out the result
         if self.config.write_result: self.write_result()
+
+# -----------------------------------------------------------------
+
+def matches_galaxy_position(position, position_list, type_list, encountered, min_distances, distances=None):
+
+    """
+    This function ...
+    :param position:
+    :param galaxy_extractor:
+    :param encountered_galaxies:
+    :return:
+    """
+
+    for j in range(len(encountered)):
+
+        # Ignore already encountered galaxies (an other star is already identified with it)
+        if encountered[j]: continue
+
+        # Calculate the pixel position of the galaxy
+        galaxy_position = position_list[j]
+
+        # Calculate the distance between the star's position and the galaxy's center
+        difference = galaxy_position - position
+        distance = difference.norm
+
+        # Add the star-galaxy distance to the list of distances
+        if distances is not None: distances.append(distance)
+
+        # The principal galaxy/galaxies
+        if type_list[j] == "principal":
+
+            # Check whether the star-galaxy distance is smaller than a certain threshold
+            if distance <= min_distances.principal: return True
+
+        # Companion galaxies
+        elif type_list[j] == "companion":
+
+            if distance <= min_distances.companion:
+
+                # Indicate that the current star has been identified with the galaxy with index j
+                encountered[j] = True
+                return True
+
+        # All other galaxies in the frame
+        else:
+
+            if distance <= min_distances.other:
+
+                # Indicate that the current star has been identified with the galaxy with index j
+                encountered[j] = True
+                return True
+
+    # Return False if none of the galaxies provided a match
+    return False
 
 # -----------------------------------------------------------------

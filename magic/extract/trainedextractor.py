@@ -193,16 +193,15 @@ class TrainedExtractor(Configurable):
 
         # Find apertures for the other sources
         #from scipy import ndimage
-        from photutils import segment_properties, properties_table
-        #from photutils.segmentation import SegmentProperties
+        from photutils import source_properties
         from photutils import EllipticalAperture
 
         # Get the segment properties
         # Since there is only one segment in the source.mask (the center segment), the props
         # list contains only one entry (one galaxy)
-        properties_list = segment_properties(np.asarray(self.frame), self.segments)
+        properties_list = source_properties(np.asarray(self.frame), self.segments)
 
-        # Below we perform some steps exactly as in the photutils segment_properties function, but we want to
+        # Below we perform some steps exactly as in the photutils source_properties function, but we want to
         # avoid calling that function since it also calls _prepare_data which calls _check_units in turn,
         # and because our frames have a 'unit' attribute it crashes for some reason (saying that if one of the
         # [frames, errors, background] has a unit, the other must have too, although we don't provide these errors
