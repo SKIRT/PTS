@@ -340,8 +340,6 @@ class Star(SkyObject):
                 # Calculate the offset
                 difference = position - self.pixel_position(frame.wcs)
 
-                with open(config.centroid_table_path, 'a') as centroid_file: centroid_file.write(str(difference.norm) + "  " + str(ellipticity) + "\n")
-
                 # Discard this saturation source if the centroid offset or the ellipticity is too large
                 if difference.norm > config.max_centroid_offset or ellipticity > config.max_centroid_ellipticity: return
 

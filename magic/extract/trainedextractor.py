@@ -63,7 +63,7 @@ class TrainedExtractor(Configurable):
         self.sources = []
 
         # The classifier
-        classifier = Classifier()
+        self.classifier = Classifier()
 
         # List of stars
         self.stars = []
@@ -197,7 +197,7 @@ class TrainedExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Constructing elliptical aperture regions to encompass other contaminating sources ...")
+        self.log.info("Constructing elliptical aperture regions to encompass sources ...")
 
         # Initialize a list for the apertures
         apertures = []
@@ -212,6 +212,8 @@ class TrainedExtractor(Configurable):
         # list contains only one entry (one galaxy)
         properties_list = source_properties(np.asarray(self.frame), self.segments)
 
+        print("Have properties list")
+
         #table = properties_table(properties)
         for properties in properties_list:
 
@@ -221,10 +223,10 @@ class TrainedExtractor(Configurable):
             b = properties.semiminor_axis_sigma.value * self.config.detection.apertures.sigma_level
             theta = properties.orientation.value
 
-            ellipticity = (a - b) / b
+            print("Adding aperture")
 
             # Create the aperture
-            if ellipticity < self.config.apertures.max_ellipticity: apertures.append(EllipticalAperture(position, a, b, theta=theta))
+            apertures.append(EllipticalAperture(position, a, b, theta=theta))
 
         # Plotting the apertures
         #from astropy.visualization import SqrtStretch
@@ -438,6 +440,8 @@ class TrainedExtractor(Configurable):
 
             # No: use the FWHM ! Hmm.. or not: saturation ?
 
+            print("Creating source from aperture")
+
             # Create a source from the aperture
             source = Source.from_aperture(self.frame, aperture, background_factor)
 
@@ -445,6 +449,8 @@ class TrainedExtractor(Configurable):
             y_max = source.cutout.y_max
             x_min = source.cutout.x_min
             x_max = source.cutout.x_max
+
+            print("Removing holes from source mask")
 
             # Create source mask from the segmentation map
             mask = Mask(self.segments[y_min:y_max, x_min:x_max])

@@ -102,7 +102,7 @@ class StarExtractor(Configurable):
         if self.config.manual_region is not None: self.set_and_remove_manual()
 
         # 5. Set the statistics
-        self.set_statistics()
+        if not self.config.fetching.use_statistics_file: self.set_statistics()
 
         # 6. Writing phase
         self.write()
@@ -171,14 +171,25 @@ class StarExtractor(Configurable):
         # If an input catalog was given
         self.load_stars()
 
-        # For each star, find a corresponding source in the image
-        self.find_sources()
+        # Import statistics if statistics file is specified
+        if self.config.fetching.use_statistics_file:
 
-        # Fit analytical models to the stars
-        self.fit_stars()
+            # Import the statistics
+            self.import_statistics()
 
-        # If requested, remove the stars
-        if self.config.remove: self.remove_stars()
+            # If requested, remove the stars
+            if self.config.remove: self.remove_from_statistics()
+
+        else:
+
+            # For each star, find a corresponding source in the image
+            self.find_sources()
+
+            # Fit analytical models to the stars
+            self.fit_stars()
+
+            # If requested, remove the stars
+            if self.config.remove: self.remove_stars()
 
     # -----------------------------------------------------------------
 
@@ -263,6 +274,8 @@ class StarExtractor(Configurable):
         # Keep track of the distances between the stars and the galaxies
         distances = []
 
+        on_galaxy_column = []
+
         # Create the list of stars
         for i in range(len(self.catalog)):
 
@@ -294,6 +307,16 @@ class StarExtractor(Configurable):
             # Get the position of the star in pixel coordinates
             pixel_position = star.pixel_position(self.frame.wcs, self.config.transformation_method)
 
+            # -- Checking for foreground or surroudings of galaxy --
+
+            if "On galaxy" in self.catalog.colnames: star_on_galaxy = self.catalog["On galaxy"]
+            else:
+
+                # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
+                if self.galaxy_extractor is not None: star_on_galaxy = self.galaxy_extractor.principal.contains(pixel_position)
+                else: star_on_galaxy = False
+                on_galaxy_column.append(star_on_galaxy)
+
             # -- Cross-referencing with the galaxies in the frame --
 
             # Loop over all galaxies
@@ -302,22 +325,12 @@ class StarExtractor(Configurable):
                 # If a match is found with one of the galaxies, skip this star
                 if matches_galaxy_position(pixel_position, galaxy_pixel_position_list, galaxy_type_list, encountered_galaxies, self.config.fetching.min_distance_from_galaxy, distances): continue
 
-            # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
-            if self.galaxy_extractor is not None: star_on_galaxy = self.galaxy_extractor.principal.contains(pixel_position)
-            else: star_on_galaxy = False
-
             # Set other attributes
             star.on_galaxy = star_on_galaxy
             star.confidence_level = confidence_level
 
             # Enable track record if requested
             if self.config.track_record: star.enable_track_record()
-
-            # What to do with:
-            # Ignored
-            # Detected
-            # Fitted
-            # IN input catalog ?
 
             # Set attributes based on masks (special and ignore)
             if special_mask is not None: star.special = special_mask.masks(pixel_position)
@@ -332,8 +345,68 @@ class StarExtractor(Configurable):
             # Add the star to the list
             self.stars.append(star)
 
+        # Add the 'on_galaxy' column to the catalog if necessary
+        if "On galaxy" not in self.catalog.colnames: self.catalog["On galaxy"] = on_galaxy_column
+
         # Inform the user
         if self.config.fetching.cross_reference_with_galaxies: self.log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
+
+    # -----------------------------------------------------------------
+
+    def import_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the statistics file
+        path = self.full_input_path(self.config.fetching.statistics_path)
+
+        # Inform the user
+        self.log.info("Importing stellar statistics from file: " + path)
+
+        # Load the catalog
+        self.statistics = tables.from_file(path)
+
+        encountered = [False] * len(self.stars)
+
+        # Loop over all entries in the statistics table
+        for i in range(len(self.statistics)):
+
+            index = self.statistics["Star index"][i]
+
+            # Loop over all stars
+            for j in range(len(self.stars)):
+
+                # Skip this star if it has been encountered
+                if encountered[j]: continue
+
+                if self.stars[j].index == index:
+
+                    encountered[j] = True
+
+                    # TODO: work in progress
+
+                    #self.stars[j].source =
+
+                    break
+
+            # If break is not encountered
+            else: raise RuntimeError("The statistics file does not correspond to the catalog (star index does not exist)")
+
+            #"Star index", "Detected", "Fitted", "Saturated", "FWHM", "Ignore"
+
+    # -----------------------------------------------------------------
+
+    def remove_from_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -528,7 +601,6 @@ class StarExtractor(Configurable):
             if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
             # Find a saturation source and remove it from the frame
-            self.config.saturation.centroid_table_path = self.full_output_path(self.config.saturation.centroid_table_path)
             star.find_saturation(self.frame, self.original_frame, self.config.saturation, default_fwhm)
             success += star.has_saturation
 
@@ -868,46 +940,6 @@ class StarExtractor(Configurable):
             text_suffix = "text = {" + text + "}"
             suffix += color_suffix + " " + text_suffix
             print("image;ellipse({},{},{},{},{})".format(center.x, center.y, major, minor, angle) + suffix, file=f)
-
-        # Close the file
-        f.close()
-
-    # -----------------------------------------------------------------
-
-    def write_aperture_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the full path to the aperture region file
-        path = self.full_output_path(self.config.writing.aperture_region_path)
-
-        # Create a file
-        f = open(path, 'w')
-
-        # Initialize the region string
-        print("# Region file format: DS9 version 4.1", file=f)
-
-        # Loop over the stars
-        for star in self.stars:
-
-            # Skip stars that do not have an aperture
-            if not star.has_aperture: continue
-
-            ap_x_center, ap_y_center = star.aperture.positions[0]
-            major = star.aperture.a
-            minor = star.aperture.b
-            angle = star.aperture.theta / math.pi * 180
-
-            aperture_suffix = " # color = blue"
-
-            # Calculate the difference between the aperture center and the star position (in number of pixels)
-            difference = star.pixel_position(self.frame.wcs) - Position(ap_x_center, ap_y_center)
-            aperture_suffix += " text = {" + str(difference.norm) + "}"
-
-            print("image;ellipse({},{},{},{},{})".format(ap_x_center, ap_y_center, major, minor, angle) + aperture_suffix, file=f)
 
         # Close the file
         f.close()
@@ -1286,7 +1318,28 @@ class StarExtractor(Configurable):
         have_source_column = []
         have_model_column = []
         have_saturation_column = []
+
+        # Peak
+        x_peak_column = []
+        y_peak_column = []
+
+        # Fitting -> FWHM
         fwhm_column = []
+
+        # Saturation -> aperture
+        x_centroid_column = []
+        y_centroid_column = []
+        a_column = []
+        b_column = []
+        angle_column = []
+
+        # Ignore
+        ignore_column = []
+
+        # Other
+        #not_star_column = []
+        #force_column = []
+        #not_saturation_column = []
 
         # Loop over all stars
         for star in self.stars:
@@ -1295,11 +1348,35 @@ class StarExtractor(Configurable):
             have_source_column.append(star.has_source)
             have_model_column.append(star.has_model)
             have_saturation_column.append(star.has_saturation)
+
+            if star.has_source and star.source.has_peak:
+
+                x_peak_column.append(star.source.peak.x)
+                y_peak_column.append(star.source.peak.y)
+
             fwhm_column.append(star.fwhm if star.has_model else None)
 
+            if star.has_saturation:
+
+                ap_position = apertures.position(star.aperture)
+                x_centroid_column.append(ap_position.x)
+                y_centroid_column.append(ap_position.y)
+                a_column.append(star.aperture.a)
+                b_column.append(star.aperture.b)
+                angle_column.append(star.aperture.theta / math.pi * 180)
+
+            ignore_column.append(star.ignore)
+            #not_star_column.append()
+            #force_column.append()
+            #not_saturation_column.append()
+
         # Create data structure and set column names
-        data = [index_column, have_source_column, have_model_column, have_saturation_column, fwhm_column]
-        names = ["Star index", "Detected", "Fitted", "Saturated", "FWHM"]
+        data = [index_column, have_source_column, have_model_column, have_saturation_column,
+                x_peak_column, y_peak_column, fwhm_column, x_centroid_column, y_centroid_column, a_column, b_column,
+                angle_column, ignore_column]
+        names = ["Star index", "Detected", "Fitted", "Saturated", "Peak x position", "Peak y position", "FWHM",
+                 "Aperture x centroid", "Aperture y centroid", "Aperture a length", "Aperture b length",
+                 "Aperture angle", "Ignore"]
 
         # Create the statistics table
         self.statistics = tables.new(data, names)
@@ -1355,9 +1432,6 @@ class StarExtractor(Configurable):
 
         # If requested, write out the saturation region
         if self.config.write_saturation_region: self.write_saturation_region()
-
-        # If requested, write out the aperture region
-        if self.config.write_aperture_region: self.write_aperture_region()
 
         # If requested, write out the frame where the stars are masked
         if self.config.write_masked_frame: self.write_masked_frame()
