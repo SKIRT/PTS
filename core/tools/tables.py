@@ -17,7 +17,22 @@ import numpy as np
 
 # Import astronomical modules
 from astropy.table import Table, Column
-from astropy.io import ascii
+
+# -----------------------------------------------------------------
+
+def write(table, path):
+
+    """
+    This function ...
+    :param catalog:
+    :param path:
+    :return:
+    """
+
+    # TODO: add metadata ?
+
+    # Write the table
+    table.write(path, format="ascii.commented_header")
 
 # -----------------------------------------------------------------
 
@@ -32,10 +47,6 @@ def from_file(path):
     # Read the table from file
     fill_values = [('--', '0')]
     table = Table.read(path, fill_values=fill_values, format="ascii.commented_header")
-
-    # Fix MaskedConstants to None
-    #for name in table.colnames:
-        #table[name][table[name].mask] = None
 
     # Fix boolean values
     fix_logical(table)
@@ -52,7 +63,15 @@ def new(data, names, meta=None):
     :return:
     """
 
-    return Table(data, names=names, meta=meta, masked=True)
+    # Create a new table from the data
+    table = Table(data, names=names, meta=meta, masked=True)
+
+    # Set mask for each column from None values
+    for column_index in range(len(names)):
+        table[names[column_index]].mask = [value is None for value in data[column_index]]
+
+    # Return the new table
+    return table
 
 # -----------------------------------------------------------------
 

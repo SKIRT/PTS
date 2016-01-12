@@ -161,3 +161,30 @@ def directories_in_path(path, recursive=False, ignore_hidden=True):
     return directory_paths
 
 # -----------------------------------------------------------------
+
+def copy_file(file_path, directory_path, new_name=None):
+
+    """
+    This function ...
+    :return:
+    """
+
+    if new_name is not None: destination = os.path.join(directory_path, new_name)
+    else: destination = directory_path
+
+    shutil.copy(file_path, destination)
+
+# -----------------------------------------------------------------
+
+def copy_files(file_paths, directory_path):
+
+    """
+    This function ...
+    :param file_paths:
+    :param directory_path:
+    :return:
+    """
+
+    for file_path in file_paths: copy_file(file_path, directory_path)
+
+# -----------------------------------------------------------------

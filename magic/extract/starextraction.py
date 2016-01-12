@@ -69,8 +69,11 @@ class StarExtractor(Configurable):
         # The mask covering pixels that should be ignored throughout the entire extraction procedure
         self.input_mask = None
 
-        # The input catalog
+        # The stellar catalog
         self.catalog = None
+
+        # The statistics table
+        self.statistics = None
 
         # Set the mask to None
         self.mask = None
@@ -98,8 +101,8 @@ class StarExtractor(Configurable):
         # 4. If specified, remove manually selected stars
         if self.config.manual_region is not None: self.set_and_remove_manual()
 
-        # 5. Update the catalog
-        self.update_catalog()
+        # 5. Set the statistics
+        self.set_statistics()
 
         # 6. Writing phase
         self.write()
@@ -925,7 +928,25 @@ class StarExtractor(Configurable):
         self.log.info("Writing stellar catalog to " + path + " ...")
 
         # Write the catalog to file
-        self.catalog.write(path, format="ascii.commented_header")
+        tables.write(self.catalog, path)
+
+    # -----------------------------------------------------------------
+
+    def write_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the statistics file
+        path = self.full_output_path(self.config.writing.statistics_path)
+
+        # Inform the user
+        self.log.info("Writing stellar statistics to " + path + " ...")
+
+        # Write the catalog to file
+        tables.write(self.statistics, path)
 
     # -----------------------------------------------------------------
 
@@ -1254,31 +1275,34 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def update_catalog(self):
+    def set_statistics(self):
 
         """
         This function ...
         :return:
         """
 
-        on_galaxy_column = [False] * len(self.catalog)
-        have_source_column = [None] * len(self.catalog)
-        have_model_column = [None] * len(self.catalog)
-        have_saturation_column = [None] * len(self.catalog)
+        index_column = []
+        have_source_column = []
+        have_model_column = []
+        have_saturation_column = []
+        fwhm_column = []
 
         # Loop over all stars
         for star in self.stars:
 
-            on_galaxy_column[star.index] = star.on_galaxy
-            have_source_column[star.index] = star.has_source
-            have_model_column[star.index] = star.has_model
-            have_saturation_column[star.index] = star.has_saturation
+            index_column.append(star.index)
+            have_source_column.append(star.has_source)
+            have_model_column.append(star.has_model)
+            have_saturation_column.append(star.has_saturation)
+            fwhm_column.append(star.fwhm if star.has_model else None)
 
-        # Add (or replace) the new columns
-        self.catalog["On galaxy"] = on_galaxy_column
-        self.catalog["Detected"] = have_source_column
-        self.catalog["Fitted"] = have_model_column
-        self.catalog["Saturated"] = have_saturation_column
+        # Create data structure and set column names
+        data = [index_column, have_source_column, have_model_column, have_saturation_column, fwhm_column]
+        names = ["Star index", "Detected", "Fitted", "Saturated", "FWHM"]
+
+        # Create the statistics table
+        self.statistics = tables.new(data, names)
 
     # -----------------------------------------------------------------
 
@@ -1322,6 +1346,9 @@ class StarExtractor(Configurable):
 
         # If requested, write out the stellar catalog
         if self.config.write_catalog: self.write_catalog()
+
+        # If requested, write out statistics
+        if self.config.write_statistics: self.write_statistics()
 
         # If requested, write out the star region
         if self.config.write_star_region: self.write_star_region()

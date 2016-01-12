@@ -21,6 +21,7 @@ from astropy.table import Table
 from photutils import find_peaks
 from photutils import detect_sources
 from photutils import detect_threshold
+from photutils import EllipticalAperture
 from astropy.coordinates import Angle
 from astropy import units as u
 from astropy.convolution import convolve, convolve_fft
@@ -56,8 +57,10 @@ class Source(object):
         self.removed = removed
         self.peak = peak
 
-        ## NEW
-        self.aperture = None
+        # The aperture
+        a = self.radius.x if isinstance(self.radius, Extent) else self.radius
+        b = self.radius.y if isinstance(self.radius, Extent) else self.radius
+        self.aperture = EllipticalAperture((self.center.x, self.center.y), a, b, theta=self.angle.radian)
 
     # -----------------------------------------------------------------
 

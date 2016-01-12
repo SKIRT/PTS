@@ -66,8 +66,11 @@ class GalaxyExtractor(Configurable):
         # The mask covering pixels that should be ignored throughout the entire extraction procedure
         self.input_mask = None
 
-        # The input catalog
+        # The galactic catalog
         self.catalog = None
+
+        # The galactic statistics
+        self.statistics = None
 
         # Set the mask to None
         self.mask = None
@@ -89,7 +92,10 @@ class GalaxyExtractor(Configurable):
         # 3. If a manual region was specified, remove the corresponding galaxies
         if self.config.manual_region is not None: self.set_and_remove_manual()
 
-        # 4. Writing phase
+        # 4. Set the statistics
+        self.set_statistics()
+
+        # 5. Writing phase
         self.write()
 
     # -----------------------------------------------------------------
@@ -104,7 +110,7 @@ class GalaxyExtractor(Configurable):
         super(GalaxyExtractor, self).setup()
 
         # Inform the user
-        self.log.info("Setting up the galaxy extractor...")
+        self.log.info("Setting up the galaxy extractor ...")
 
         # Make a local reference to the frame and input mask
         self.frame = frame
@@ -124,7 +130,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Clearing the galaxy extractor...")
+        self.log.info("Clearing the galaxy extractor ...")
 
         # Clear the list of galaxies
         self.galaxies = []
@@ -249,7 +255,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Looking for sources near the galaxy positions")
+        self.log.info("Looking for sources near the galaxy positions ...")
 
         # Loop over all galaxies in the list
         for galaxy in self.galaxies:
@@ -299,7 +305,7 @@ class GalaxyExtractor(Configurable):
         path = self.full_input_path(self.config.fetching.catalog_path)
 
         # Inform the user
-        self.log.info("Importing galaxy catalog from file " + path)
+        self.log.info("Importing galaxy catalog from file " + path + " ...")
 
         # Load the catalog
         self.catalog = tables.from_file(path)
@@ -314,7 +320,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Loading the galaxies from the catalog...")
+        self.log.info("Loading the galaxies from the catalog ...")
 
         # Get masks
         special_mask = self.special_mask
@@ -384,7 +390,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Fetching galaxy positions from an online catalog")
+        self.log.info("Fetching galaxy positions from an online catalog ...")
 
         # Create the galaxy catalog
         self.catalog = catalogs.create_galaxy_catalog(self.frame)
@@ -403,7 +409,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Constructing elliptical apertures regions to encompass the detected galaxies")
+        self.log.info("Constructing elliptical apertures regions to encompass the detected galaxies ...")
 
         # Loop over all galaxies
         for galaxy in self.galaxies:
@@ -427,7 +433,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Removing the galaxies from the frame (except for the principal galaxy and its companions)")
+        self.log.info("Removing the galaxies from the frame (except for the principal galaxy and its companions) ...")
 
         # Loop over all galaxies
         for galaxy in self.galaxies:
@@ -460,7 +466,7 @@ class GalaxyExtractor(Configurable):
         path = self.full_input_path(self.config.special_region)
 
         # Inform the user
-        self.log.info("Setting special region from " + path)
+        self.log.info("Setting special region from " + path + " ...")
 
         # Load the region and create a mask from it
         region = Region.from_file(path, self.frame.wcs)
@@ -487,7 +493,7 @@ class GalaxyExtractor(Configurable):
         path = self.full_input_path(self.config.ignore_region)
 
         # Inform the user
-        self.log.info("Setting region to ignore for subtraction from " + path)
+        self.log.info("Setting region to ignore for subtraction from " + path + " ...")
 
         # Load the region and create a mask from it
         region = Region.from_file(path, self.frame.wcs)
@@ -508,7 +514,7 @@ class GalaxyExtractor(Configurable):
         path = self.full_input_path(self.config.manual_region)
 
         # Inform the user
-        self.log.info("Setting region for manual galaxy extraction from " + path)
+        self.log.info("Setting region for manual galaxy extraction from " + path + " ...")
 
         # Load the region and create a mask from it
         region = Region.from_file(path, self.frame.wcs)
@@ -534,7 +540,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Removing manually specified galaxies from the frame")
+        self.log.info("Removing manually specified galaxies from the frame ...")
 
         # Loop over each item in the list of manual sources
         for source in self.manual_sources:
@@ -636,6 +642,31 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    def set_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        index_column = []
+        have_source_column = []
+
+        # Loop over all galaxies
+        for galaxy in self.galaxies:
+
+            index_column.append(galaxy.index)
+            have_source_column.append(galaxy.has_source)
+
+        # Create data structure and set column names
+        data = [index_column, have_source_column]
+        names = ["Galaxy index", "Detected"]
+
+        # Create the statistics table
+        self.statistics = tables.new(data, names)
+
+    # -----------------------------------------------------------------
+
     def write_region(self):
 
         """
@@ -649,7 +680,7 @@ class GalaxyExtractor(Configurable):
         annotation = self.config.writing.region_annotation
 
         # Inform the user
-        self.log.info("Writing galaxy region to " + path)
+        self.log.info("Writing galaxy region to " + path + " ...")
 
         # Create a file
         f = open(path, 'w')
@@ -729,10 +760,28 @@ class GalaxyExtractor(Configurable):
         path = self.full_output_path(self.config.writing.catalog_path)
 
         # Inform the user
-        self.log.info("Writing galaxy catalog to " + path)
+        self.log.info("Writing galactic catalog to " + path + " ...")
 
         # Write the catalog to file
-        self.catalog.write(path, format="ascii.commented_header")
+        tables.write(self.catalog, path)
+
+    # -----------------------------------------------------------------
+
+    def write_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the statistics file
+        path = self.full_output_path(self.config.writing.statistics_path)
+
+        # Inform the user
+        self.log.info("Writing galactic statistics to " + path + " ...")
+
+        # Write the statistics to file
+        tables.write(self.statistics, path)
 
     # -----------------------------------------------------------------
 
@@ -746,7 +795,7 @@ class GalaxyExtractor(Configurable):
         path = self.full_output_path(self.config.writing.masked_frame_path)
 
         # Inform the user
-        self.log.info("Writing masked frame to " + path)
+        self.log.info("Writing masked frame to " + path + " ...")
 
         # Create a frame where the objects are masked
         frame = self.frame.copy()
@@ -768,7 +817,7 @@ class GalaxyExtractor(Configurable):
         directory_path = self.full_output_path(self.config.writing.cutouts_path)
 
         # Inform the user
-        self.log.info("Writing cutout boxes to " + directory_path)
+        self.log.info("Writing cutout boxes to " + directory_path + " ...")
 
         # Keep track of the number of stars encountered
         principals = 0
@@ -821,7 +870,7 @@ class GalaxyExtractor(Configurable):
         path = self.full_output_path(self.config.writing.result_path)
 
         # Inform the user
-        self.log.info("Writing resulting frame to " + path)
+        self.log.info("Writing resulting frame to " + path + " ...")
 
         # Write out the resulting frame
         self.frame.save(path)
@@ -973,6 +1022,12 @@ class GalaxyExtractor(Configurable):
         :return:
         """
 
+        # If requested, write out the galaxy catalog
+        if self.config.write_catalog: self.write_catalog()
+
+        # If requested, write out galaxy statistics
+        if self.config.write_statistics: self.write_statistics()
+
         # If requested, write out the galaxy region
         if self.config.write_region: self.write_region()
 
@@ -984,8 +1039,5 @@ class GalaxyExtractor(Configurable):
 
         # If requested, write out the result
         if self.config.write_result: self.write_result()
-
-        # If requested, write out the galaxy catalog
-        if self.config.write_catalog: self.write_catalog()
 
 # -----------------------------------------------------------------

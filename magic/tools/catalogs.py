@@ -14,6 +14,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import copy
 import numpy as np
 
 # Import astronomical modules
@@ -31,6 +32,88 @@ from ...core.tools import tables
 # Import the relevant AstroMagic classes and modules
 from . import regions
 from ..basics import Position
+
+# -----------------------------------------------------------------
+
+def merge_stellar_catalogs(catalog_a, catalog_b):
+
+    """
+    This function ...
+    :param catalog_a:
+    :param catalog_b:
+    :return:
+    """
+
+    # Create a copy of catalog a
+    new_catalog = copy.deepcopy(catalog_a)
+
+    # Keep track of which stars in catalog a have been encountered in catalog b (to avoid unnecessary checking)
+    encountered = [False] * len(catalog_a)
+
+    # Loop over the entries in catalog b
+    for j in range(len(catalog_b)):
+
+        # Loop over the entries in catalog a to find a match
+        for i in range(len(catalog_a)):
+
+            # Skip this entry (star) if it has already been matched with a star from the other catalog
+            if encountered[i]: continue
+
+            # If star i in catalog a is the same as star j in catalog b, break the loop over catalog a's stars
+            if catalog_a["Catalog"][i] == catalog_b["Catalog"][j] and catalog_a["Id"][i] == catalog_b["Id"][j]:
+
+                encountered[i] = True
+                break
+
+        # If a break is not encountered, a match is not found -> add the star from catalog b
+        else:
+
+            # Add the corresponding row
+            new_catalog.add_row(catalog_b[j])
+
+    # Return the new catalog
+    return new_catalog
+
+# -----------------------------------------------------------------
+
+def merge_galactic_catalogs(catalog_a, catalog_b):
+
+    """
+    This function ...
+    :param catalog_a:
+    :param catalog_b:
+    :return:
+    """
+
+    # Create a copy of catalog a
+    new_catalog = copy.deepcopy(catalog_a)
+
+    # Keep track of which galaxies in catalog a have been encountered in catalog b (to avoid unnecessary checking)
+    encountered = [False] * len(catalog_a)
+
+    # Loop over the entries in catalog b
+    for j in range(len(catalog_b)):
+
+        # Loop over the entries in catalog a to find a match
+        for i in range(len(catalog_a)):
+
+            # Skip this entry (galaxy) if it has already been matches with a galaxy from the other catalog
+            if encountered[i]: continue
+
+            # If galaxy i in catalog a is the same as galaxy j in catalog b, break the loop over catalog a's galaxies
+            if catalog_a["Name"][i] == catalog_b["Name"][j]:
+
+                encountered[i] = True
+                break
+
+        # If a break is not encountered, a match is not found -> add the galaxy from catalog b
+        else:
+
+            # Add the corresponding row
+            new_catalog.add_row(catalog_b[j])
+
+    # Return the new catalog
+    return new_catalog
 
 # -----------------------------------------------------------------
 
@@ -540,7 +623,7 @@ def get_galaxy_info(name, position):
     viz.ROW_LIMIT = -1
 
     # Query Vizier and obtain the resulting table
-    result = viz.query_object(name, catalog=["VII/237"])
+    result = viz.query_object(name.replace(" ", ""), catalog=["VII/237"])
     table = result[0]
 
     # Get the correct entry (sometimes, for example for mergers, querying with the name of one galaxy gives two hits! We have to obtain the right one each time!)
