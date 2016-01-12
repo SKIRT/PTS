@@ -509,7 +509,7 @@ class Galaxy:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # define discretionary HII region properties
         f_PDR = 0.20        # PDR covering fraction
-        b_PDR = 50.         # boost factor for negative gas mass compensating for PDR dust emission,
+        b_PDR = 10.         # boost factor for negative gas mass compensating for PDR dust emission,
                             #   M_negative_gas = SFR * infant_age * b_PDR
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -593,7 +593,7 @@ class Galaxy:
 
                 # append to dust array with negative mass to compensate for the mass of the surrounding PDR region,
                 # considered to be b_PDR times as massive; use zero temperature as T is unavailable for resampled star particles
-                dust = np.concatenate((dust, np.column_stack([hiiregions['r'], hiiregions['h_mapp']*(b_PDR/10.)**(1/3.),
+                dust = np.concatenate((dust, np.column_stack([hiiregions['r'], hiiregions['h_mapp']*(b_PDR/10.)**(1/3.)*3.,
                                                              -b_PDR*ms[isinfant], hiiregions['Z'],
                                                              np.zeros(hiiregions['Z'].shape[0])]).copy()), axis=0)
                 info["exported_particles_negative_gas_from_stars"] = np.count_nonzero(isinfant)
@@ -651,7 +651,7 @@ class Galaxy:
 
                 # append to dust array with negative mass to compensate for the mass of the surrounding PDR region,
                 # considered to be b_PDR times as massive; use negative temperature to indicate that it is not a physical value
-                dust = np.concatenate((dust, np.column_stack([hiiregions['r'], hiiregions['h_mapp']*(b_PDR/10.)**(1/3.),
+                dust = np.concatenate((dust, np.column_stack([hiiregions['r'], hiiregions['h_mapp']*(b_PDR/10.)**(1/3.)*3,
                                                              -b_PDR*ms[isinfant], hiiregions['Z'], -gdat['T'][idxs][isinfant]]).copy()), axis=0)
                 info["exported_particles_negative_gas_from_gas"] = np.count_nonzero(isinfant)
                 info["exported_mass_negative_gas_from_gas"] = b_PDR*ms[isinfant].sum()
