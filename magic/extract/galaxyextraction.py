@@ -302,7 +302,7 @@ class GalaxyExtractor(Configurable):
         self.log.info("Importing galaxy catalog from file " + path)
 
         # Load the catalog
-        self.input_catalog = tables.from_file(path)
+        self.catalog = tables.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -325,20 +325,20 @@ class GalaxyExtractor(Configurable):
 
             # Get the galaxy properties
             name = self.catalog["Name"][i]
-            redshift = self.catalog["Redshift"][i]
-            galaxy_type = self.catalog["Type"][i]
-            distance = self.catalog["Distance"][i] * u.Mpc if self.catalog["Distance"][i] is not None else None
-            inclination = Angle(self.catalog["Inclination"][i], u.deg) if self.catalog["Inclination"][i] is not None else None
-            d25 = self.catalog["D25"][i] * u.arcmin if self.catalog["D25"][i] is not None else None
-            major = self.catalog["Major axis length"][i] * u.arcmin if self.catalog["Major axis length"][i] is not None else None
-            minor = self.catalog["Minor axis length"][i] * u.arcmin if self.catalog["Minor axis length"][i] is not None else None
-            position_angle = Angle(self.catalog["Position angle"][i], u.deg) if self.catalog["Position angle"][i] is not None else None
+            redshift = self.catalog["Redshift"][i] if not self.catalog["Redshift"].mask[i] else None
+            galaxy_type = self.catalog["Type"][i] if not self.catalog["Type"].mask[i] else None
+            distance = self.catalog["Distance"][i] * u.Mpc if not self.catalog["Distance"].mask[i] else None
+            inclination = Angle(self.catalog["Inclination"][i], u.deg) if not self.catalog["Inclination"].mask[i] else None
+            d25 = self.catalog["D25"][i] * u.arcmin if not self.catalog["D25"].mask[i] else None
+            major = self.catalog["Major axis length"][i] * u.arcmin if not self.catalog["Major axis length"].mask[i] else None
+            minor = self.catalog["Minor axis length"][i] * u.arcmin if not self.catalog["Minor axis length"].mask[i] else None
+            position_angle = Angle(self.catalog["Position angle"][i], u.deg) if not self.catalog["Position angle"].mask[i] else None
             ra = self.catalog["Right ascension"][i]
             dec = self.catalog["Declination"][i]
-            names = self.catalog["Alternative names"][i].split(", ") if self.catalog["Alternative names"][i] is not None else []
+            names = self.catalog["Alternative names"][i].split(", ") if not self.catalog["Alternative names"].mask[i] else []
             principal = self.catalog["Principal"][i]
-            companions = self.catalog["Companion galaxies"][i].split(", ") if self.catalog["Companion galaxies"][i] is not None else []
-            parent = self.catalog["Parent galaxy"][i]
+            companions = self.catalog["Companion galaxies"][i].split(", ") if not self.catalog["Companion galaxies"].mask[i] else []
+            parent = self.catalog["Parent galaxy"][i] if not self.catalog["Parent galaxy"].mask[i] else None
 
             # Create a SkyCoord instance for the galaxy center position
             position = coord.SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg), frame='fk5')

@@ -33,6 +33,10 @@ def from_file(path):
     fill_values = [('--', '0')]
     table = Table.read(path, fill_values=fill_values, format="ascii.commented_header")
 
+    # Fix MaskedConstants to None
+    #for name in table.colnames:
+        #table[name][table[name].mask] = None
+
     # Fix boolean values
     fix_logical(table)
 

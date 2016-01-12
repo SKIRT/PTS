@@ -223,7 +223,7 @@ class StarExtractor(Configurable):
         path = self.full_input_path(self.config.fetching.catalog_path)
 
         # Inform the user
-        self.log.info("Importing stellar catalog from file " + path)
+        self.log.info("Importing stellar catalog from file: " + path)
 
         # Load the catalog
         self.catalog = tables.from_file(path)
@@ -322,6 +322,9 @@ class StarExtractor(Configurable):
 
             # If the input mask masks this star's position, skip it (don't add it to the list of stars)
             if self.input_mask is not None and self.input_mask.masks(pixel_position): continue
+
+            # Don't add stars which are indicated as 'not stars'
+            if self.config.manual_indices.not_stars is not None and i in self.config.manual_indices.not_stars: continue
 
             # Add the star to the list
             self.stars.append(star)
@@ -478,7 +481,8 @@ class StarExtractor(Configurable):
             if not self.config.removal.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
 
             # Remove the star in the frame
-            star.remove(self.frame, self.mask, self.config.removal, default_fwhm)
+            force = self.config.manual_indices.remove_stars is not None and star.index in self.config.manual_indices.remove_stars
+            star.remove(self.frame, self.mask, self.config.removal, default_fwhm, force=force)
 
     # -----------------------------------------------------------------
 
@@ -506,6 +510,9 @@ class StarExtractor(Configurable):
 
             # If this star should be ignored, skip it
             if star.ignore: continue
+
+            # If the index of this star is in the 'not_saturation' list, skip it
+            if self.config.manual_indices.not_saturation is not None and star.index in self.config.manual_indices.not_saturation: continue
 
             # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
             if not self.config.saturation.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
@@ -850,8 +857,7 @@ class StarExtractor(Configurable):
             center = apertures.position(star.aperture)
             major = star.aperture.a
             minor = star.aperture.b
-            #angle = star.aperture.theta * math.pi / 180
-            angle = star.aperture.theta
+            angle = star.aperture.theta / math.pi * 180
 
             # Write to region file
             suffix = " # "

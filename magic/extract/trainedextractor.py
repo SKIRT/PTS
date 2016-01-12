@@ -217,8 +217,8 @@ class TrainedExtractor(Configurable):
 
             # Obtain the position, orientation and extent
             position = (properties.xcentroid.value, properties.ycentroid.value)
-            a = properties.semimajor_axis_sigma.value * self.config.apertures.sigma_level
-            b = properties.semiminor_axis_sigma.value * self.config.apertures.sigma_level
+            a = properties.semimajor_axis_sigma.value * self.config.detection.apertures.sigma_level
+            b = properties.semiminor_axis_sigma.value * self.config.detection.apertures.sigma_level
             theta = properties.orientation.value
 
             ellipticity = (a - b) / b

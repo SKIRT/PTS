@@ -195,12 +195,12 @@ class Mask(np.ndarray):
 
         # Find the label of the largest segment (=the background)
         label_counts = np.bincount(segments.flatten())
-        background_label = np.argmax(label_counts[1:])
+        background_label = np.argmax(label_counts[1:]) + 1
         # If the source mask is larger than the background (in number of pixels), the above will provide the correct label
         # therefore we do the '[1:]'
 
         # Create a mask for the holes identified as background
-        holes = self.copy()
+        holes = self.inverse().copy()
         holes[segments == background_label] = False
 
         # Remove holes from the mask
@@ -208,6 +208,23 @@ class Mask(np.ndarray):
 
         # Return the new mask
         return new_mask
+
+    # -----------------------------------------------------------------
+
+    def fill_small_holes(self, radius):
+
+        """
+        This function ...
+        :param radius:
+        :return:
+        """
+
+        # This function will come in a later version of sckits-image
+        #output_mask = morphology.remove_small_holes(self, radius, connectivity=1)
+
+        #return output_mask
+
+        pass
 
     # -----------------------------------------------------------------
 

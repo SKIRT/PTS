@@ -200,7 +200,7 @@ class Star(SkyObject):
 
     # -----------------------------------------------------------------
 
-    def remove(self, frame, mask, config, default_fwhm):
+    def remove(self, frame, mask, config, default_fwhm, force=False):
 
         """
         This function removes the star from a given frame
@@ -214,6 +214,9 @@ class Star(SkyObject):
         if self.has_model: removal_method = config.method[0]
         elif self.has_source: removal_method = config.method[1]
         else: removal_method = config.method[2]
+
+        # Star that is 'forced' to be removed
+        if removal_method is None and force: removal_method = "interpolation"
 
         # Remove the star by subtracting the model if a model was found and the method is set to 'model'
         if removal_method == "model":

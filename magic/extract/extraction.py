@@ -119,7 +119,7 @@ class Extractor(Configurable):
         super(Extractor, self).setup()
 
         # Inform the user
-        self.log.info("Setting up the extractor...")
+        self.log.info("Setting up the extractor ...")
 
         # Make a local reference to the frame and mask
         self.frame = frame
@@ -205,7 +205,7 @@ class Extractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Clearing the extractor")
+        self.log.info("Clearing the extractor ...")
 
         # Clear the frame and input mask
         self.frame = None
@@ -226,7 +226,7 @@ class Extractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Creating the output directory if necessary")
+        self.log.info("Creating the output directory if necessary ...")
 
         # Create the directory if necessary
         filesystem.create_directory(self.config.output_path)
@@ -240,7 +240,7 @@ class Extractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Extracting the galaxies...")
+        self.log.info("Extracting the galaxies ...")
 
         # Run the galaxy extractor
         self.galaxy_extractor.run(self.frame, self.input_mask)
@@ -254,7 +254,7 @@ class Extractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Extracting the stars...")
+        self.log.info("Extracting the stars ...")
 
         # Run the star extractor
         self.star_extractor.run(self.frame, self.input_mask, self.galaxy_extractor)
@@ -284,7 +284,7 @@ class Extractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Writing...")
+        self.log.info("Writing ...")
 
         # If requested, write out the result
         if self.config.write_result: self.write_result()
@@ -305,7 +305,7 @@ class Extractor(Configurable):
         path = self.full_output_path(self.config.writing.result_path)
 
         # Inform the user
-        self.log.info("Writing resulting frame to " + path)
+        self.log.info("Writing resulting frame to " + path + " ...")
 
         # Write out the resulting frame
         self.frame.save(path, header)
@@ -323,7 +323,7 @@ class Extractor(Configurable):
         path = self.full_output_path(self.config.writing.mask_path)
 
         # Inform the user
-        self.log.info("Writing the total mask to " + path)
+        self.log.info("Writing the total mask to " + path + " ...")
 
         # Set the galaxy mask
         galaxy_mask = self.galaxy_extractor.mask
