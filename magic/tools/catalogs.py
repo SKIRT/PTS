@@ -624,6 +624,10 @@ def get_galaxy_info(name, position):
 
     # Query Vizier and obtain the resulting table
     result = viz.query_object(name.replace(" ", ""), catalog=["VII/237"])
+
+    # Not found ... TODO: fix this ... this object was in the first query output
+    if len(result) == 0: return name, position, None, None, [], None, None, None, None, None, None
+
     table = result[0]
 
     # Get the correct entry (sometimes, for example for mergers, querying with the name of one galaxy gives two hits! We have to obtain the right one each time!)
