@@ -77,12 +77,9 @@ class Source(object):
         :return:
         """
 
-        # Create the cutout box --> OLD WAY
-        #cutout = Box.from_ellipse(frame, center, radius * factor, angle, shape=shape)
-
         # NEW WAY
         ellipse = Ellipse(center, radius * factor, angle)
-        cutout = Box.new_from_ellipse(frame, ellipse, shape)
+        cutout = Box.from_ellipse(frame, ellipse, shape)
 
         # Calculate the relative coordinate of the center for the cutout box
         rel_center = cutout.rel_position(center)

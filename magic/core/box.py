@@ -114,70 +114,7 @@ class Box(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_ellipse(cls, frame, center, radius, angle, shape=None):
-
-        """
-        This function ...
-        :param frame:
-        :param center:
-        :param radius:
-        :param angle:
-        :return:
-        """
-
-        # TODO: improve this function ...
-
-        # Create a region consisting of one ellipse
-        region = Region.ellipse(center, radius, angle)
-
-        # This is a hack to use mpl to determine the outer bounds of the regions
-        # (but it's a legit hack - pyregion needs a major internal refactor before
-        # we can approach this any other way)
-        mpl_objects = region.get_mpl_patches_texts(origin=0)[0]
-
-        # The object list should only contain one ellipse
-        # Find the minimal enclosing box containing the ellipse
-        extent = mpl_objects[0].get_extents()
-
-        #print("----")
-        #print("center=", center)
-        #print("radius=", radius)
-        #print("extent=", extent)
-        #print("----")
-
-        # Get the minimum and maximum x and y values
-        x_min, y_min = extent.min
-        x_max, y_max = extent.max
-
-        if shape is not None:
-
-            x_center = 0.5 * (x_min + x_max)
-            y_center = 0.5 * (y_min + y_max)
-
-            x_min = x_center - 0.5 * shape.x
-            x_max = x_center + 0.5 * shape.x
-
-            y_min = y_center - 0.5 * shape.y
-            y_max = y_center + 0.5 * shape.y
-
-        # Convert into integers
-        x_min = int(round(x_min))
-        x_max = int(round(x_max))
-        y_min = int(round(y_min))
-        y_max = int(round(y_max))
-
-        if shape is not None:
-
-            assert x_max - x_min == shape.x
-            assert y_max - y_min == shape.y
-
-        # Return a new box
-        return cls.cutout_limits(frame, x_min, x_max, y_min, y_max, absolute=(shape is not None))
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def new_from_ellipse(cls, frame, ellipse, shape=None):
+    def from_ellipse(cls, frame, ellipse, shape=None):
 
         """
         This function ...
@@ -185,18 +122,13 @@ class Box(np.ndarray):
         :return:
         """
 
-        # Tried this first, don't know if it would work
-        # Function to get the bounding box ?
-        #from photutils.aperture_funcs import get_phot_extents
-        # ood_filter, pixel_extent, phot_extent = get_phot_extents(frame, positions, extents)
-
         # Get bouding box
         rectangle = ellipse.bounding_box
 
         # ...
         if shape is not None: rectangle = Rectangle(rectangle.center, Extent(0.5 * shape.x, 0.5 * shape.y))
 
-        return cls.from_rectangle(frame, rectangle)
+        return cls.from_rectangle(frame, rectangle, absolute=(shape is not None))
 
     # -----------------------------------------------------------------
 
