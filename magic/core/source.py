@@ -271,7 +271,7 @@ class Source(object):
 
     # -----------------------------------------------------------------
 
-    def find_center_segment(self, threshold_sigmas, kernel=None, min_pixels=5):
+    def find_center_segment(self, sigma_level, kernel=None, min_pixels=5):
 
         """
         This function ...
@@ -289,7 +289,7 @@ class Source(object):
             # Calculate threshold for segmentation
             try:
                 mean, median, stddev = statistics.sigma_clipped_statistics(box, mask=self.mask)
-                threshold = mean + stddev * threshold_sigmas
+                threshold = mean + stddev * sigma_level
             except TypeError:
 
                 print(box)
@@ -312,9 +312,6 @@ class Source(object):
         # Get the label of the center segment
         rel_center = self.cutout.rel_position(self.center)
         label = segments[rel_center.y, rel_center.x]
-        #except IndexError:
-        #plotting.plot_box(self.cutout)
-        #plotting.plot_peak(self.cutout, rel_center.x, rel_center.y)
 
         # If the center pixel is identified as being part of the background, create an empty mask (the center does not
         # correspond to a segment)
@@ -325,7 +322,7 @@ class Source(object):
 
     # -----------------------------------------------------------------
 
-    def locate_peaks(self, threshold_sigmas, kernel=None):
+    def locate_peaks(self, sigma_level, kernel=None):
 
         """
         This function ...
@@ -336,14 +333,15 @@ class Source(object):
         box = self.subtracted if self.has_background else self.cutout
 
         # Calculate the sigma-clipped statistics of the box
-        mean, median, stddev = statistics.sigma_clipped_statistics(box, sigma=3.0)
-        threshold = median + (threshold_sigmas * stddev)
+        mean, median, stddev = statistics.sigma_clipped_statistics(box, sigma=3.0, mask=self.background_mask) # Sigma 3.0 for clipping is what photutils uses in detect_threshold
+        threshold = median + (sigma_level * stddev)
 
         # Convolve the box with the given kernel, if any
         if kernel is not None: box = convolve_fft(box, kernel, normalize_kernel=True)
 
         # Find peaks
-        peaks = find_peaks(box, threshold, box_size=5)
+        #threshold = detect_threshold(box, snr=2.0) # other method
+        peaks = find_peaks(box, threshold, box_size=5, mask=self.background_mask)
 
         # For some reason, once in a while, an ordinary list comes out of the find_peaks routine instead of an
         # Astropy Table instance. We assume we need an empty table in this case
