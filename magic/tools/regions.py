@@ -33,11 +33,20 @@ def ellipse_parameters(shape):
     y_center = shape.coord_list[1]
     x_radius = shape.coord_list[2]
 
-    if shape.name == "ellipse": y_radius = shape.coord_list[3]
-    elif shape.name == "circle": y_radius = shape.coord_list[2]
+    if shape.name == "ellipse":
+
+        y_radius = shape.coord_list[3]
+        try: angle = shape.coord_list[4]
+        except: angle = 0.0
+
+    elif shape.name == "circle":
+
+        y_radius = shape.coord_list[2]
+        angle = 0.0
+
     else: raise ValueError("Shape must be either a circle or an ellipse")
     
-    return x_center, y_center, x_radius, y_radius
+    return x_center, y_center, x_radius, y_radius, angle
 
 # -----------------------------------------------------------------
 
@@ -51,8 +60,11 @@ def get_enclosing_box(shape):
 
     # TODO: make it work for shapes other than ellipses!
 
+    # TODO: THIS FUNCTION SHOULD BE DEPRECATED IN FAVOR OF ELLIPSE CLASS
+    # NOTE: THIS FUNCTION IS INCORRECT FOR ROTATED ELLIPSES !!
+
     # Get the parameters of this ellipse (or circle)
-    x_center, y_center, x_radius, y_radius = ellipse_parameters(shape)
+    x_center, y_center, x_radius, y_radius, angle = ellipse_parameters(shape)
 
     # Create a box to estimate the background
     x_min = int(round(x_center - x_radius))

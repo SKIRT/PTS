@@ -384,7 +384,10 @@ class ImagePreparation(Configurable):
         # Loop over all shapes
         for shape in region:
 
-            x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
+
+            # TODO: use angle
+
+            x_center, y_center, x_radius, y_radius, angle = regions.ellipse_parameters(shape)
 
             box, x_min, x_max, y_min, y_max = cropping.crop(self.image.frames[self.config.primary], x_center, y_center, x_radius, y_radius)
 

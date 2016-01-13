@@ -456,8 +456,8 @@ class StarExtractor(Configurable):
                 #import traceback
 
                 self.log.error("Error when finding source")
-                #print(type(e))
-                #print(e)
+                print(type(e))
+                print(e)
                 #traceback.print_exc()
 
                 if self.config.plot_track_record_if_exception:
@@ -756,10 +756,10 @@ class StarExtractor(Configurable):
         for shape in region:
 
             # Get the center and radius of the shape (can be a circle or an ellipse)
-            x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
+            x_center, y_center, x_radius, y_radius, angle = regions.ellipse_parameters(shape)
 
             # Create a source
-            source = Source.from_ellipse(self.frame, Position(x_center, y_center), Extent(x_radius, y_radius), Angle(0.0, u.deg), self.config.manual.background_outer_factor)
+            source = Source.from_ellipse(self.frame, Position(x_center, y_center), Extent(x_radius, y_radius), Angle(angle, u.deg), self.config.manual.background_outer_factor)
 
             # Add the source to the list of manual sources
             self.manual_sources.append(source)

@@ -42,7 +42,7 @@ def make_star_model(shape, data, annuli_mask, fit_mask, background_outer_sigmas,
     """
 
     # Get the shape's parameters
-    x_center, y_center, x_radius, y_radius = regions.ellipse_parameters(shape)
+    x_center, y_center, x_radius, y_radius, _ = regions.ellipse_parameters(shape)
 
     # Set the radii for cutting out the background box
     radius = 0.5*(x_radius + y_radius)

@@ -17,7 +17,7 @@ import numpy as np
 from scipy import ndimage
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Position, Region
+from ..basics import Position, Region, Rectangle, Extent
 from ..tools import cropping, fitting, interpolation
 
 # -----------------------------------------------------------------
@@ -93,6 +93,27 @@ class Box(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_rectangle(cls, frame, rectangle, absolute=False):
+
+        """
+        This function ...
+        :param frame:
+        :param rectangle:
+        :return:
+        """
+
+        # Convert into integers
+        x_min = int(round(rectangle.x_min))
+        x_max = int(round(rectangle.x_max))
+        y_min = int(round(rectangle.y_min))
+        y_max = int(round(rectangle.y_max))
+
+        # Create cutout
+        return cls.cutout_limits(frame, x_min, x_max, y_min, y_max, absolute)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_ellipse(cls, frame, center, radius, angle, shape=None):
 
         """
@@ -156,7 +177,7 @@ class Box(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def new_from_ellipse(cls, ellipse):
+    def new_from_ellipse(cls, frame, ellipse, shape=None):
 
         """
         This function ...
@@ -164,13 +185,18 @@ class Box(np.ndarray):
         :return:
         """
 
+        # Tried this first, don't know if it would work
         # Function to get the bounding box ?
-        from photutils.aperture_funcs import get_phot_extents
+        #from photutils.aperture_funcs import get_phot_extents
+        # ood_filter, pixel_extent, phot_extent = get_phot_extents(frame, positions, extents)
 
-        # Function to create mask from ellipse
-        from photutils.geometry import elliptical_overlap_grid
+        # Get bouding box
+        rectangle = ellipse.bounding_box
 
-        pass
+        # ...
+        if shape is not None: rectangle = Rectangle(rectangle.center, Extent(0.5 * shape.x, 0.5 * shape.y))
+
+        return cls.from_rectangle(frame, rectangle)
 
     # -----------------------------------------------------------------
 

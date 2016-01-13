@@ -212,8 +212,6 @@ class TrainedExtractor(Configurable):
         # list contains only one entry (one galaxy)
         properties_list = source_properties(np.asarray(self.frame), self.segments)
 
-        print("Have properties list")
-
         #table = properties_table(properties)
         for properties in properties_list:
 
@@ -222,8 +220,6 @@ class TrainedExtractor(Configurable):
             a = properties.semimajor_axis_sigma.value * self.config.detection.apertures.sigma_level
             b = properties.semiminor_axis_sigma.value * self.config.detection.apertures.sigma_level
             theta = properties.orientation.value
-
-            print("Adding aperture")
 
             # Create the aperture
             apertures.append(EllipticalAperture(position, a, b, theta=theta))
@@ -440,8 +436,6 @@ class TrainedExtractor(Configurable):
 
             # No: use the FWHM ! Hmm.. or not: saturation ?
 
-            print("Creating source from aperture")
-
             # Create a source from the aperture
             source = Source.from_aperture(self.frame, aperture, background_factor)
 
@@ -449,8 +443,6 @@ class TrainedExtractor(Configurable):
             y_max = source.cutout.y_max
             x_min = source.cutout.x_min
             x_max = source.cutout.x_max
-
-            print("Removing holes from source mask")
 
             # Create source mask from the segmentation map
             mask = Mask(self.segments[y_min:y_max, x_min:x_max])

@@ -388,7 +388,7 @@ def create_star_catalog(frame, catalogs=None):
                 if difference.norm < 3.0:
 
                     # Inform the user
-                    print("DEBUG: Star " + star_id + " could be identified with star " + id_column[index] + " from the " + catalog_column[index] + " catalog")
+                    #print("DEBUG: Star " + star_id + " could be identified with star " + id_column[index] + " from the " + catalog_column[index] + " catalog")
 
                     # Increment the confidence level for the 'saved' star
                     confidence_level_column[index] += 1
@@ -406,7 +406,7 @@ def create_star_catalog(frame, catalogs=None):
                 number_of_new_stars += 1
 
                 # Inform the user
-                print("DEBUG: Adding star " + star_id + " at " + str(position.to_string("hmsdms")))
+                #print("DEBUG: Adding star " + star_id + " at " + str(position.to_string("hmsdms")))
 
                 # Fill in the column lists
                 catalog_column.append(catalog)
