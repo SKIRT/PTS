@@ -29,7 +29,7 @@ from astropy.convolution import convolve, convolve_fft
 # Import the relevant AstroMagic classes and modules
 from . import Image, Frame
 from .box import Box
-from ..basics import Position, Extent, Mask
+from ..basics import Position, Extent, Mask, Ellipse
 from ..tools import plotting, statistics
 
 # -----------------------------------------------------------------
@@ -84,7 +84,11 @@ class Source(object):
         rel_center = cutout.rel_position(center)
 
         # Create masks
-        mask = Mask.from_ellipse(cutout.xsize, cutout.ysize, rel_center, radius, angle)
+        #mask = Mask.from_ellipse(cutout.xsize, cutout.ysize, rel_center, radius, angle) # Old way
+
+        ellipse = Ellipse(rel_center, radius, angle)
+        mask = Mask.from_ellipse(cutout.xsize, cutout.ysize, ellipse)
+        #plotting.plot_difference(mask, mask2)
 
         # Set (estimated) background and removed to None
         background = None
@@ -388,7 +392,8 @@ class Source(object):
         source.radius = self.radius / factor
 
         # Create smaller mask
-        source.mask = Mask.from_ellipse(source.cutout.xsize, source.cutout.ysize, rel_center, source.radius, source.angle)
+        ellipse = Ellipse(rel_center, source.radius, source.angle)
+        source.mask = Mask.from_ellipse(source.cutout.xsize, source.cutout.ysize, ellipse)
 
         # Set other properties to None
         source.background = None

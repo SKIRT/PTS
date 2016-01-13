@@ -9,7 +9,7 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.magic.basics TO DO
+## \package pts.magic.plot TO DO
 #
 # This package ...
 #
@@ -17,9 +17,4 @@
 # -----------------------------------------------------------------
 
 # Import classes to make them available at the level of this subpackage
-from .vector import Position, Extent
-from .layers import Layers
-from .mask import Mask
-from .region import Region
-from .trackrecord import TrackRecord
-from .geometry import Ellipse, Rectangle
+# ...

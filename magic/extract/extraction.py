@@ -148,6 +148,28 @@ class Extractor(Configurable):
         self.trained_extractor.config.input_path = self.config.input_path
         self.trained_extractor.config.output_path = self.config.output_path
 
+        # Set the appropriate configuration settings for writing out the galactic and stellar catalogs
+        if self.config.write_catalogs:
+
+            # Galaxy extractor
+            self.galaxy_extractor.config.write_catalog = True
+            self.galaxy_extractor.config.writing.catalog_path = "galaxies.cat"
+
+            # Star extractor
+            self.star_extractor.config.write_catalog = True
+            self.star_extractor.config.writing.catalog_path = "saturation.cat"
+
+        # Set the appropriate configuration settings for writing out the galactic and stellar statistics
+        if self.config.write_statistics:
+
+            # Galaxy extractor
+            self.galaxy_extractor.config.write_statistics = True
+            self.galaxy_extractor.config.writing.statistics_path = "galaxies.stat"
+
+            # Star extractor
+            self.star_extractor.config.write_statistics = True
+            self.star_extractor.config.writing.statistics_path = "saturation.stat"
+
         # Set the appropriate configuration settings for writing out the region files
         if self.config.write_regions:
 

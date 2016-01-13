@@ -309,7 +309,7 @@ class StarExtractor(Configurable):
 
             # -- Checking for foreground or surroudings of galaxy --
 
-            if "On galaxy" in self.catalog.colnames: star_on_galaxy = self.catalog["On galaxy"]
+            if "On galaxy" in self.catalog.colnames: star_on_galaxy = self.catalog["On galaxy"][i]
             else:
 
                 # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
@@ -1354,6 +1354,11 @@ class StarExtractor(Configurable):
                 x_peak_column.append(star.source.peak.x)
                 y_peak_column.append(star.source.peak.y)
 
+            else:
+
+                x_peak_column.append(None)
+                y_peak_column.append(None)
+
             fwhm_column.append(star.fwhm if star.has_model else None)
 
             if star.has_saturation:
@@ -1364,6 +1369,14 @@ class StarExtractor(Configurable):
                 a_column.append(star.aperture.a)
                 b_column.append(star.aperture.b)
                 angle_column.append(star.aperture.theta / math.pi * 180)
+
+            else:
+
+                x_centroid_column.append(None)
+                y_centroid_column.append(None)
+                a_column.append(None)
+                b_column.append(None)
+                angle_column.append(None)
 
             ignore_column.append(star.ignore)
             #not_star_column.append()

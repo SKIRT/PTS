@@ -22,6 +22,9 @@ import astropy.units as u
 from astropy.coordinates import Angle
 from photutils import detect_sources
 
+# Function to create mask from ellipse
+from photutils.geometry import elliptical_overlap_grid
+
 # Import the relevant AstroMagic classes and modules
 from .region import Region
 from .vector import Position, Extent
@@ -129,7 +132,7 @@ class Mask(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_ellipse(cls, x_size, y_size, center, radius, angle):
+    def old_from_ellipse(cls, x_size, y_size, center, radius, angle):
 
         """
         This function ...
@@ -149,6 +152,75 @@ class Mask(np.ndarray):
 
         # Return a new Mask object
         return cls(data)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_ellipse(cls, x_size, y_size, ellipse):
+
+        """
+        This function ...
+        :param ellipse:
+        :return:
+        """
+
+        #ood_filter, extent, phot_extent = get_phot_extents(data, positions, extents)
+
+        #x_min, x_max, y_min, y_max = extent
+        #x_pmin, x_pmax, y_pmin, y_pmax = phot_extent
+
+        #if method == 'center':
+        #    use_exact = 0
+        #    subpixels = 1
+        #elif method == 'subpixel':
+        #    use_exact = 0
+        #else:
+        #    use_exact = 1
+        #    subpixels = 1
+
+        #fraction = elliptical_overlap_grid(x_pmin[i], x_pmax[i], y_pmin[i], y_pmax[i], x_max[i] - x_min[i], y_max[i] - y_min[i], a, b, theta, use_exact, subpixels) # original
+
+        # theta in radians !
+
+        # example:
+
+        # fraction = elliptical_overlap_grid(-35, 35, -35, 35, 70, 70, 30, 20, 1.6, use_exact=1, subpixels=1) # 1.6 = pi / 2
+        # plotting.plot_box(fraction)
+
+        rel_center = ellipse.center
+
+        a = ellipse.radius.x if isinstance(ellipse.radius, Extent) else ellipse.radius
+        b = ellipse.radius.y if isinstance(ellipse.radius, Extent) else ellipse.radius
+
+        theta = ellipse.angle.radian
+
+        x_min = - rel_center.x
+        x_max = x_size - rel_center.x
+        y_min = - rel_center.y
+        y_max = y_size - rel_center.y
+
+        # Calculate the mask
+        fraction = elliptical_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, a, b, theta, use_exact=0, subpixels=1)
+
+        #xmin, xmax, ymin, ymax : float
+        #    Extent of the grid in the x and y direction.
+        #nx, ny : int
+        #    Grid dimensions.
+        #rx : float
+        #    The semimajor axis of the ellipse.
+        #ry : float
+        #    The semiminor axis of the ellipse.
+        #theta : float
+        #    The position angle of the semimajor axis in radians (counterclockwise).
+        #use_exact : 0 or 1
+        #    If set to 1, calculates the exact overlap, while if set to 0, uses a
+        #    subpixel sampling method with ``subpixel`` subpixels in each direction.
+        #subpixels : int
+        #    If ``use_exact`` is 0, each pixel is resampled by this factor in each
+        #    dimension. Thus, each pixel is divided into ``subpixels ** 2``
+        #    subpixels.
+
+        return cls(fraction)
 
     # -----------------------------------------------------------------
 

@@ -27,6 +27,7 @@ from ..basics import Position, Extent
 
 # -----------------------------------------------------------------
 
+# THIS FUNCTION IS NOT USED ANYMORE, BUT CONTAINS UPSAMPLING CODE POTENTIALLY USEFUL LATER (see also analysis.stars.make_star_model)
 def fit_2D_model(data, mask, background, model='Gaussian', x_center=None, y_center=None, radius=None, x_shift=0.0, y_shift=0.0, pixel_deviation=0.5, upsample_factor=1.0):
 
     """
@@ -137,6 +138,7 @@ def evaluate_model(model, x_min, x_max, y_min, y_max, x_delta=1, y_delta=1):
 
 # -----------------------------------------------------------------
 
+# NOT USED CURRENTLY
 def fit_two_2D_Gaussians(box, x_shift=0.0, y_shift=0.0, zoom_factor=1.0, mask=None):
 
     """
@@ -211,6 +213,28 @@ def fit_two_2D_Gaussians(box, x_shift=0.0, y_shift=0.0, zoom_factor=1.0, mask=No
 
     # Return the model
     return two_gaussians
+
+# -----------------------------------------------------------------
+
+def fit_2D_ShiftedGaussian(box, center=None, fixed_center=False, max_center_offset=None, sigma=None, zoom_factor=1.0, mask=None, amplitude=None):
+
+    """
+    This function ...
+    :param box:
+    :param center:
+    :param fixed_center:
+    :param max_center_offset:
+    :param sigma:
+    :param zoom_factor:
+    :param mask:
+    :param amplitude:
+    :return:
+    """
+
+    # Compound model class that represent a Gaussian function that can be shifted up and down
+    ShiftedGaussian = models.Gaussian2D + models.Const2D
+
+    # Parameters are: amplitude_0, x_mean_0, y_mean_0, x_stddev_0, y_stddev_0, theta_0, amplitude_1
 
 # -----------------------------------------------------------------
 

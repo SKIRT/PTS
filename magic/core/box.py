@@ -155,6 +155,25 @@ class Box(np.ndarray):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def new_from_ellipse(cls, ellipse):
+
+        """
+        This function ...
+        :param ellipse:
+        :return:
+        """
+
+        # Function to get the bounding box ?
+        from photutils.aperture_funcs import get_phot_extents
+
+        # Function to create mask from ellipse
+        from photutils.geometry import elliptical_overlap_grid
+
+        pass
+
+    # -----------------------------------------------------------------
+
     def box_like(self, box):
 
         """
@@ -344,6 +363,12 @@ class Box(np.ndarray):
 
             # Do the fitting
             model = fitting.fit_2D_Airy(self, rel_center, radius=radius, max_center_offset=max_center_offset, amplitude=amplitude)
+
+        # Fit a 2D (vertically) shifted Gaussian to the data
+        elif model_name == "ShiftedGaussian":
+
+            # Do the fitting
+            model = fitting.fit_2D_ShiftedGaussian(self, rel_center, sigma=sigma, max_center_offset=max_center_offset, amplitude=amplitude)
 
         # Unknown model name
         else: raise ValueError("Model name should be 'Gaussian' or 'Airy'")

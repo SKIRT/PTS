@@ -21,6 +21,7 @@ from ..tools import fitting, plotting, coordinates, cropping, regions
 
 # -----------------------------------------------------------------
 
+# THIS FUNCTION IS NOT USED ANYMORE, BUT CONTAINS UPSAMPLING CODE POTENTIALLY USEFUL LATER
 def make_star_model(shape, data, annuli_mask, fit_mask, background_outer_sigmas, fit_sigmas,
                     model_name, upsample_factor=1.0, interpolate_background=True, sigma_clip_background=True, plot=False):
 
