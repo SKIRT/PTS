@@ -24,6 +24,8 @@ from photutils import daofind
 from astropy.stats import sigma_clipped_stats
 
 # Import astronomical modules
+import astropy.units as u
+from astropy.coordinates import Angle
 from photutils import source_properties, properties_table
 
 # Import the relevant AstroMagic classes and modules
@@ -54,7 +56,8 @@ def find_contours(frame, segments, sigma_level):
         position = Position(properties.xcentroid.value, properties.ycentroid.value)
         a = properties.semimajor_axis_sigma.value * sigma_level
         b = properties.semiminor_axis_sigma.value * sigma_level
-        angle = properties.orientation
+        angle = properties.orientation.value # in radians
+        angle = Angle(angle, u.rad)
 
         radius = Extent(a, b)
 
@@ -90,7 +93,8 @@ def find_contour(box, mask, sigma_level):
     position = Position(properties.xcentroid.value + x_shift, properties.ycentroid.value + y_shift)
     a = properties.semimajor_axis_sigma.value * sigma_level
     b = properties.semiminor_axis_sigma.value * sigma_level
-    angle = properties.orientation
+    angle = properties.orientation.value # in radians
+    angle = Angle(angle, u.rad)
 
     radius = Extent(a, b)
 

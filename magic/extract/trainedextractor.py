@@ -25,7 +25,7 @@ from astropy.coordinates import SkyCoord
 from ..core import Frame, Source
 from ..basics import Position, Extent, Mask
 from ..tools import statistics, masks, catalogs
-from ..analysis import SExtractor
+from ..analysis import SExtractor, sources
 from ..train import Classifier
 from ..sky import Galaxy, Star
 

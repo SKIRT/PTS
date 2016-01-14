@@ -1358,7 +1358,7 @@ class StarExtractor(Configurable):
                 y_centroid_column.append(contour_position.y)
                 a_column.append(star.contour.major)
                 b_column.append(star.contour.minor)
-                angle_column.append(star.contour.degree)
+                angle_column.append(star.contour.angle.degree)
 
             else:
 
