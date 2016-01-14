@@ -14,13 +14,15 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import numpy as np
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Position, Extent, Rectangle
+from ..basics import Position, Extent, Rectangle, CatalogCoverage
+from ..tools import catalogs
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
-from ...core.tools import inspection
+from ...core.tools import inspection, tables, filesystem
 
 # -----------------------------------------------------------------
 
@@ -41,12 +43,16 @@ class CatalogBuilder(Configurable):
         # Call the constructor of the base class
         super(CatalogBuilder, self).__init__(config, "magic")
 
+        self.frame = None
         self.galaxy_extractor = None
         self.star_extractor = None
+        self.trained_extractor = None
+
+        self.galaxy_user_path = None
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, galaxy_extractor, star_extractor):
+    def run(self, frame, galaxy_extractor, star_extractor, trained_extractor):
 
         """
         This function ...
@@ -54,14 +60,31 @@ class CatalogBuilder(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup(frame, galaxy_extractor, star_extractor)
+        self.setup(frame, galaxy_extractor, star_extractor, trained_extractor)
         
-        # 2. 
+        # 2. Build the catalog
         self.build()
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, galaxy_extractor, star_extractor):
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.frame = None
+        self.galaxy_extractor = None
+        self.star_extractor = None
+        self.trained_extractor = None
+
+        self.galaxy_name = None
+        self.galaxy_user_path = None
+
+    # -----------------------------------------------------------------
+
+    def setup(self, frame, galaxy_extractor, star_extractor, trained_extractor):
 
         """
         This function ...
@@ -77,6 +100,16 @@ class CatalogBuilder(Configurable):
         self.frame = frame
         self.galaxy_extractor = galaxy_extractor
         self.star_extractor = star_extractor
+        self.trained_extractor = trained_extractor
+
+        # Name of the principal galaxy
+        self.galaxy_name = self.galaxy_extractor.principal.name
+
+        # Determine the path to the user catalogs directory
+        catalogs_user_path = os.path.join(inspection.pts_user_dir, "magic", "catalogs")
+
+        # Determine the path to the directory to contain the catalogs for this galaxy
+        self.galaxy_user_path = os.path.join(catalogs_user_path, self.galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -87,90 +120,135 @@ class CatalogBuilder(Configurable):
         :return:
         """
 
-        # Get coordinate range
-        center, ra_span, dec_span = self.frame.coordinate_range(silent=True)
+        # Get bounding box
+        coordinate_box = self.frame.bounding_box()
 
-        # Right ascension and declination in degrees
-        ra = center.ra.degree
-        dec = center.dec.degree
+        # Get current catalog coverage
+        coverage = CatalogCoverage(self.galaxy_name)
 
-        # Right ascension and declination span in degrees
-        ra_span = ra_span.value
-        dec_span = dec_span.value
+        # Cache the galaxy and stellar catalog
+        if os.path.isdir(self.galaxy_user_path):
+
+            # If the coordinate range of the current frame extents that of the previous frames
+            if not coverage.covers(coordinate_box):
+
+                # -- MERGE GALAXY CATALOG --
+
+                # Check whether there is a galactic catalog file in the galaxy's directory
+                old_galactic_catalog_path = os.path.join(self.galaxy_user_path, "galaxies.cat")
+                assert os.path.isfile(old_galactic_catalog_path)
+
+                # Open the 'old' galactic catalog
+                old_galaxy_catalog = tables.from_file(old_galactic_catalog_path)
+
+                # Create merged galactic catalog
+                galaxy_catalog = catalogs.merge_galactic_catalogs(self.galaxy_extractor.catalog, old_galaxy_catalog)
+
+                # Save the merged catalog
+                path = os.path.join(self.galaxy_user_path, "galaxies.cat")
+                tables.write(galaxy_catalog, path)
+
+
+                # -- MERGE STELLAR CATALOG --
+
+                # Check whether there is a stellar catalog file in the galaxy's directory
+                old_stellar_catalog_path = os.path.join(self.galaxy_user_path, "stars.cat")
+                assert os.path.isfile(old_stellar_catalog_path)
+
+                # Open the 'old' stellar catalog
+                old_stellar_catalog = tables.from_file(old_stellar_catalog_path)
+
+                # Create merged stellar catalog
+                stellar_catalog = catalogs.merge_stellar_catalogs(self.star_extractor.catalog, old_stellar_catalog)
+
+                # Save the merged catalog
+                path = os.path.join(self.galaxy_user_path, "stars.cat")
+                tables.write(stellar_catalog, path)
+
+
+                # -- UPDATE RANGES TABLE --
+
+                coverage.add_box(coordinate_box)
+                coverage.save()
+
+        else:
+
+            # Create the directory to contain the catalogs for this galaxy
+            filesystem.create_directory(self.galaxy_user_path)
+
+            coverage.add_box(coordinate_box)
+
+            # Save galactic catalog
+            galactic_catalog_path = os.path.join(self.galaxy_user_path, "galaxies.cat")
+            tables.write(self.galaxy_extractor.catalog, galactic_catalog_path)
+
+            # Save stellar catalog
+            stellar_catalog_path = os.path.join(self.galaxy_user_path, "stars.cat")
+            tables.write(self.star_extractor.catalog, stellar_catalog_path)
+
+            # Save the coverage or range table
+            coverage.save()
+
+    # -----------------------------------------------------------------
+
+    def extents_current_ranges(self, table, ra, dec, ra_span, dec_span):
+
+        """
+        This function ...
+        :param table:
+        :param box:
+        :return:
+        """
 
         # Create rectangle
         center = Position(ra, dec)
         radius = Extent(0.5 * ra_span, 0.5 * dec_span)
         box = Rectangle(center, radius)
 
-        ## First check for identical entry
+        # List of boxes from ranges in the table
+        boxes = []
 
+        # Loop over all entries in the table
+        for i in range(len(table)):
 
+            entry_ra = table["Central right ascension"][i]
+            entry_dec = table["Central declination"][i]
+            entry_ra_span = table["Right ascension span"][i]
+            entry_dec_span = table["Declination span"][i]
 
-        # Name of the principal galaxy
-        galaxy_name = self.galaxy_extractor.principal.name
+            # Check whether the box properties are the same (neglecting small roundoff errors)
+            same_ra = np.isclose(entry_ra, ra)
+            same_dec = np.isclose(entry_dec, dec)
+            same_ra_span = np.isclose(entry_ra_span, ra_span)
+            same_dec_span = entry_dec_span == dec_span
 
-        # Determine the path to the user catalogs directory
-        catalogs_user_path = os.path.join(inspection.pts_user_dir, "magic", "catalogs")
+            ## First check for identical entry
+            identical_box_already_processed = same_ra and same_dec and same_ra_span and same_dec_span
 
-        # Determine the path to the directory to contain the catalogs for this galaxy
-        galaxy_user_path = os.path.join(catalogs_user_path, galaxy_name)
+            # If a frame with identical ranges has already been processed before
+            if identical_box_already_processed: return False
 
-        # Cache the galaxy and stellar catalog
-        if os.path.isdir(galaxy_user_path):
+            entry_center = Position(entry_ra, entry_dec)
+            entry_radius = Extent(0.5 * entry_ra_span, 0.5 * entry_dec_span)
 
-            old_galactic_catalog_path = os.path.join(galaxy_user_path, "galaxies.dat")
-            old_stellar_catalog_path = os.path.join(galaxy_user_path, "stars.dat")
+            entry_box = Rectangle(entry_center, entry_radius)
 
-            if os.path.isfile(old_galactic_catalog_path):
+            boxes.append(entry_box)
 
-                # Open the 'old' galaxy catalog
-                old_galaxy_catalog = tables.from_file(old_galactic_catalog_path)
+        # Loop over corners of the box
+        for corner in box.corners:
 
-                # Create merged galaxy catalog
-                galaxy_catalog = catalogs.merge_galactic_catalogs(galactic_catalog, old_galaxy_catalog)
+            # Loop over all boxes
+            for box in boxes:
 
-                # Save the merged catalog
-                path = os.path.join(galaxy_user_path, "galaxies.dat")
-                tables.write(galaxy_catalog, path)
+                # If at least one of the boxes contains this corner, this corner is OK
+                if box.contains(corner): break
 
-            # If a galactic catalog file does not exist yet
-            else: filesystem.copy_file(galactic_catalog_path, galaxy_user_path, "galaxies.dat")
+            # If a break is not encountered: this corner is not covered by any of the boxes
+            else: return True
 
-            # Check whether there is a stellar catalog file in the galaxy's directory
-            if os.path.isfile(old_stellar_catalog_path):
-
-                # Open the new stellar catalog
-                stellar_catalog = tables.from_file(stellar_catalog_path)
-
-                # Open the 'old' stellar catalog
-                old_stellar_catalog = tables.from_file(old_stellar_catalog_path)
-
-                # Create merged stellar catalog
-                stellar_catalog = catalogs.merge_stellar_catalogs(stellar_catalog, old_stellar_catalog)
-
-                # Save the merged catalog
-                path = os.path.join(galaxy_user_path, "stars.dat")
-                tables.write(stellar_catalog, path)
-
-            # If a stellar catalog file does not exist yet
-            else: filesystem.copy_file(stellar_catalog_path, galaxy_user_path, "stars.dat")
-
-        else:
-
-            # Create the directory to contain the catalogs for this galaxy
-            filesystem.create_directory(galaxy_user_path)
-
-            # Copy the galaxy and stellar catalog files into the new directory
-            #filesystem.copy_file(galactic_catalog_path, galaxy_user_path, "galaxies.dat")
-            #filesystem.copy_file(stellar_catalog_path, galaxy_user_path, "stars.dat")
-
-            # Save galactic catalog
-            galactic_catalog_path = os.path.join(galaxy_user_path, "galaxies.cat")
-            tables.write(self.galaxy_extractor.catalog, galactic_catalog_path)
-
-            # Save stellar catalog
-            stellar_catalog_path = os.path.join(galaxy_user_path, "stars.cat")
-            tables.write(self.star_extractor.catalog, stellar_catalog_path)
+        # If a break IS encountered for each corner, each corner is covered by one or more boxes, so this box
+        # does not extent the range of these other boxes
+        return False
 
 # -----------------------------------------------------------------

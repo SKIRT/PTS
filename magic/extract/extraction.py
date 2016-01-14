@@ -12,16 +12,19 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import os
+
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame
-from ..tools import masks
 from .galaxyextraction import GalaxyExtractor
 from .starextraction import StarExtractor
 from .trainedextractor import TrainedExtractor
 from ..misc import CatalogBuilder
+from ..basics import Position, Extent, Rectangle, CatalogCoverage
 
 # Import the relevant PTS classes and modules
-from ...core.tools import filesystem
+from ...core.tools import filesystem, tables, inspection
 from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
@@ -97,6 +100,9 @@ class Extractor(Configurable):
 
         # 2. Create the directory that will contain the output
         self.create_output_path()
+
+        # 3. Import cached catalogs
+        self.import_catalogs()
 
         # 3. Run the galaxy extraction
         self.extract_galaxies()
@@ -211,6 +217,8 @@ class Extractor(Configurable):
         self.star_extractor.config.logging.path = self.config.logging.path
         self.trained_extractor.config.logging.level = "WARNING"
         self.trained_extractor.config.logging.path = self.config.logging.path
+        self.catalog_builder.config.logging.level = "WARNING"
+        self.catalog_builder.config.logging.path = self.config.logging.path
 
         # Set the log level and path for the different children of this extractor, if cascading is enabled
         if self.config.logging.cascade:
@@ -226,6 +234,10 @@ class Extractor(Configurable):
             # Trained extractor
             self.trained_extractor.config.logging.cascade = True
             self.trained_extractor.config.logging.level = self.config.logging.level
+
+            # Catalog builder
+            self.catalog_builder.config.logging.cascade = True
+            self.catalog_builder.config.logging.level = self.config.logging.level
 
     # -----------------------------------------------------------------
 
@@ -265,6 +277,48 @@ class Extractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    def import_catalogs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path to the user catalogs directory
+        catalogs_user_path = os.path.join(inspection.pts_user_dir, "magic", "catalogs")
+
+        # Get bounding box of the frame
+        bounding_box = self.frame.bounding_box()
+
+        # Loop over all directories within the catalogs directory (different galaxies)
+        for galaxy_path in filesystem.directories_in_path(catalogs_user_path):
+
+            # Get the galaxy name
+            galaxy_name = os.path.basename(galaxy_path)
+
+            # Get the catalog coverage for this galaxy
+            coverage = CatalogCoverage(galaxy_name)
+
+            # If this is the galaxy matching the frame, check if the current catalog covers the entire frame
+            # Second part is probably time-consuming .. But if first is False, won't be executed
+            if coverage.matches(bounding_box) and coverage.covers(bounding_box):
+
+                galactic_catalog_path = os.path.join(galaxy_path, "galaxies.cat")
+                stellar_catalog_path = os.path.join(galaxy_path, "stars.cat")
+
+                self.galaxy_catalog = tables.from_file(galactic_catalog_path)
+                self.star_catalog = tables.from_file(stellar_catalog_path)
+
+                break
+
+        # If no break is encountered
+        else:
+
+            self.galaxy_catalog = None
+            self.star_catalog = None
+
+    # -----------------------------------------------------------------
+
     def extract_galaxies(self):
         
         """
@@ -275,7 +329,7 @@ class Extractor(Configurable):
         self.log.info("Extracting the galaxies ...")
 
         # Run the galaxy extractor
-        self.galaxy_extractor.run(self.frame, self.input_mask)
+        self.galaxy_extractor.run(self.frame, self.input_mask, self.galaxy_catalog)
     
     # -----------------------------------------------------------------
     
@@ -289,7 +343,7 @@ class Extractor(Configurable):
         self.log.info("Extracting the stars ...")
 
         # Run the star extractor
-        self.star_extractor.run(self.frame, self.input_mask, self.galaxy_extractor)
+        self.star_extractor.run(self.frame, self.input_mask, self.galaxy_extractor, self.star_catalog)
 
     # -----------------------------------------------------------------
 
@@ -316,7 +370,7 @@ class Extractor(Configurable):
         """
 
         # Run the catalog builder
-        #self.catalog_builder.run(self.frame, self.galaxy_extractor, self.star_extractor)
+        self.catalog_builder.run(self.frame, self.galaxy_extractor, self.star_extractor, self.trained_extractor)
 
     # -----------------------------------------------------------------
 
@@ -375,8 +429,11 @@ class Extractor(Configurable):
         # Set the star mask
         star_mask = self.star_extractor.mask
 
+        # Set the 'other sources' mask
+        other_mask = self.trained_extractor.mask
+
         # Create a frame for the total mask
-        frame = Frame(masks.union(galaxy_mask, star_mask).astype(int))
+        frame = Frame((galaxy_mask + star_mask + other_mask).astype(int))
 
         # Write out the total mask
         frame.save(path)

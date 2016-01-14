@@ -131,7 +131,7 @@ class Rectangle(object):
         :return:
         """
 
-
+        return self.x_min <= position.x <= self.x_max and self.y_min <= position.y <= self.y_max
 
     # -----------------------------------------------------------------
 

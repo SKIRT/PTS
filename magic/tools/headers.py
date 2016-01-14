@@ -153,6 +153,9 @@ def get_unit(header):
     if "BUNIT" in header:
 
         value = header["BUNIT"].split("   / ")[0].rstrip()
+
+        if value == "DN": value = "count"
+
         return u.Unit(value)
 
     # Look for the 'SIGUNIT' keyword

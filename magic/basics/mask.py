@@ -132,6 +132,32 @@ class Mask(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_rectangle(cls, x_size, y_size, rectangle):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :param rectangle:
+        :return:
+        """
+
+        data = np.zeros((y_size, x_size))
+
+        # Convert into integers
+        x_min = int(round(rectangle.x_min))
+        x_max = int(round(rectangle.x_max))
+        y_min = int(round(rectangle.y_min))
+        y_max = int(round(rectangle.y_max))
+
+        data[y_min:y_max, x_min:x_max] = 1
+
+        # Return a new Mask object
+        return cls(data)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_ellipse(cls, x_size, y_size, ellipse):
 
         """

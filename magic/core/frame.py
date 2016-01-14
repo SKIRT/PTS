@@ -30,7 +30,7 @@ from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
 from . import Box
-from ..basics import Position
+from ..basics import Position, Extent, Rectangle
 from ..tools import coordinates, cropping, transformations, interpolation, headers, fitting
 
 # -----------------------------------------------------------------
@@ -441,6 +441,33 @@ class Frame(np.ndarray):
 
         # Return the shifted frame
         return self.shift(shift)
+
+    # -----------------------------------------------------------------
+
+    def bounding_box(self, unit="deg"):
+
+        """
+        This function ...
+        :param unit:
+        :return:
+        """
+
+        # Get coordinate range
+        center, ra_span, dec_span = self.coordinate_range(silent=True)
+
+        ra = center.ra.to(unit).value
+        dec = center.dec.to(unit).value
+
+        ra_span = ra_span.to(unit).value
+        dec_span = dec_span.to(unit).value
+
+        # Create rectangle
+        center = Position(ra, dec)
+        radius = Extent(0.5 * ra_span, 0.5 * dec_span)
+        box = Rectangle(center, radius)
+
+        # Return the box
+        return box
 
     # -----------------------------------------------------------------
 

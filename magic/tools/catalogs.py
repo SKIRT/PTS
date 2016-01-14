@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import math
 import numpy as np
 
 # Import astronomical modules
@@ -712,6 +713,12 @@ def galaxies_in_box(center, ra_span, dec_span):
 
     # Initialize a list to contain the galaxies
     names = []
+
+    # Other way ?? Much more results ?
+    #ra_radius = 0.5 * ra_span.value
+    #dec_radius = 0.5 * dec_span.value
+    #radius = math.sqrt(ra_radius**2 + dec_radius**2)
+    #result_table = Ned.query_region(center, radius=radius)
 
     # Create a new Vizier object and set the row limit to -1 (unlimited)
     viz = Vizier(keywords=["galaxies", "optical"])

@@ -23,7 +23,7 @@ from astropy.coordinates import SkyCoord
 
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame, Source
-from ..basics import Position, Extent, Mask
+from ..basics import Position, Extent, Mask, Ellipse
 from ..tools import statistics, masks, catalogs
 from ..analysis import SExtractor, sources
 from ..train import Classifier
@@ -163,16 +163,6 @@ class TrainedExtractor(Configurable):
 
         # Inform the user
         self.log.info("Removing the other sources from the frame ...")
-
-        # Interpolate over the segments
-        #mask = self.segments > 0
-        #interpolated = self.frame.interpolated(mask, self.config.removal.interpolation_method)
-
-        # Adapt the frame
-        #self.frame[mask] = interpolated[mask]
-
-        # Update the mask
-        #self.mask[mask] = True
 
         # Loop over all sources
         for source in self.sources:

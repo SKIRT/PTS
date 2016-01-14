@@ -21,6 +21,30 @@ from . import time
 
 # -----------------------------------------------------------------
 
+def is_file(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return os.path.isfile(path)
+
+# -----------------------------------------------------------------
+
+def is_directory(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return os.path.isdir(path)
+
+# -----------------------------------------------------------------
+
 def create_directory(path, recursive=False):
 
     """
