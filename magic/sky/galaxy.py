@@ -12,20 +12,14 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-import matplotlib.pyplot as plt
-
 # Import astronomical modules
-import astropy.io.fits as pyfits
-import aplpy
 from astropy import units as u
 from astropy.coordinates import Angle
 
 # Import the relevant AstroMagic classes and modules
 from ..core import Source
 from .skyobject import SkyObject
-from ..basics import Extent
+from ..basics import Extent, Ellipse
 from ..tools import catalogs
 
 # -----------------------------------------------------------------
@@ -171,16 +165,13 @@ class Galaxy(SkyObject):
         # Get the parameters describing the elliptical contour
         center, radius, angle = self.ellipse_parameters(frame.wcs, frame.pixelscale, None)
 
-        #print("center_here=", center)
-
         if center.x < 0 or center.y < 0:
             self.source = None
             return
 
         # Create a source object
-        self.source = Source.from_ellipse(frame, center, radius*expansion_factor, angle, outer_factor)
-
-        #print(self.source.cutout.shape)
+        ellipse = Ellipse(center, radius*expansion_factor, angle)
+        self.source = Source.from_ellipse(frame, ellipse, outer_factor)
 
         if self.source.cutout.shape[0] == 0 or self.source.cutout.shape[1] == 0:
 
@@ -223,58 +214,5 @@ class Galaxy(SkyObject):
 
             # Update the mask
             mask[self.source.cutout.y_slice, self.source.cutout.x_slice] += self.source.mask
-
-    # -----------------------------------------------------------------
-
-    def plot(self, frame):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.has_source:
-
-            # Create a HDU from this frame with the image header
-            hdu = pyfits.PrimaryHDU(self.source.cutout)
-
-            # Create a figure canvas
-            figure = plt.figure(figsize=(15, 15))
-
-            # Create a figure from this frame
-            plot = aplpy.FITSFigure(hdu, figure=figure)
-
-            # Plot in color scale
-            plot.show_colorscale()
-
-            # Add a color bar if requested
-            plot.add_colorbar()
-
-            if self.has_aperture: self.aperture.plot(color='white', lw=1.5, alpha=0.5, ax=plt.gca())
-
-            # Show the plot
-            plt.show()
-
-        else:
-
-            # Create a HDU from this frame with the image header
-            hdu = pyfits.PrimaryHDU(frame, frame.wcs.to_header())
-
-            # Create a figure canvas
-            figure = plt.figure(figsize=(20, 20))
-
-            # Create a figure from this frame
-            plot = aplpy.FITSFigure(hdu, figure=figure)
-
-            # Plot in color scale
-            plot.show_colorscale()
-
-            # Add a color bar if requested
-            plot.add_colorbar()
-
-            if self.has_aperture: self.aperture.plot(color='white', lw=1.5, alpha=0.5, ax=plt.gca())
-
-            # Show the plot
-            plt.show()
 
 # -----------------------------------------------------------------

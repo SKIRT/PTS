@@ -15,3 +15,7 @@
 #
 
 # -----------------------------------------------------------------
+
+# Import classes to make them available at the level of this subpackage
+from .wcsfinder import WCSFinder
+from .catalogbuilder import CatalogBuilder

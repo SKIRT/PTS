@@ -25,18 +25,54 @@ from astropy.stats import sigma_clipped_stats
 
 # Import astronomical modules
 from photutils import source_properties, properties_table
-from photutils import EllipticalAperture
 
 # Import the relevant AstroMagic classes and modules
 from ..tools import fitting, plotting, statistics, coordinates, cropping, interpolation, masks, regions
 from ..core import Source
+from ..basics import Position, Extent, Ellipse
 
 # -----------------------------------------------------------------
 
-def find_aperture(box, mask, sigma_level):
+def find_contours(frame, segments, sigma_level):
 
     """
     This function ...
+    :return:
+    """
+
+    # Initialize a list for the contours
+    contours = []
+
+    # Get the segment properties
+    # Since there is only one segment in the source.mask (the center segment), the props
+    # list contains only one entry (one galaxy)
+    properties_list = source_properties(np.asarray(frame), segments)
+
+    for properties in properties_list:
+
+        # Obtain the position, orientation and extent
+        position = Position(properties.xcentroid.value, properties.ycentroid.value)
+        a = properties.semimajor_axis_sigma.value * sigma_level
+        b = properties.semiminor_axis_sigma.value * sigma_level
+        angle = properties.orientation
+
+        radius = Extent(a, b)
+
+        # Create the contour
+        contours.append(Ellipse(position, radius, angle))
+
+    # Return the contours
+    return contours
+
+# -----------------------------------------------------------------
+
+def find_contour(box, mask, sigma_level):
+
+    """
+    This function ...
+    :param box:
+    :param mask:
+    :param sigma_level:
     :return:
     """
 
@@ -51,13 +87,15 @@ def find_aperture(box, mask, sigma_level):
     properties = props[0]
 
     # Obtain the position, orientation and extent
-    position = (properties.xcentroid.value + x_shift, properties.ycentroid.value + y_shift)
+    position = Position(properties.xcentroid.value + x_shift, properties.ycentroid.value + y_shift)
     a = properties.semimajor_axis_sigma.value * sigma_level
     b = properties.semiminor_axis_sigma.value * sigma_level
-    theta = properties.orientation.value
+    angle = properties.orientation
 
-    # Create and return the aperture
-    return EllipticalAperture(position, a, b, theta=theta)
+    radius = Extent(a, b)
+
+    # Create and return the elliptical contour
+    return Ellipse(position, radius, angle)
 
 # -----------------------------------------------------------------
 
@@ -330,7 +368,8 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
     """
 
     # Create a source object
-    source = Source.from_ellipse(frame, center, radius, angle, config.background_outer_factor)
+    ellipse = Ellipse(center, radius, angle)
+    source = Source.from_ellipse(frame, ellipse, config.background_outer_factor)
 
     # If the source cutout is zero or nan everywhere, return None (no source can be found here)
     if np.all(np.isnan(source.cutout)) or not np.any(source.cutout): return None
@@ -502,7 +541,8 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
     if level < config.min_level or level > config.max_level: return None
 
     # Create a source object
-    source = Source.from_ellipse(frame, center, radius, angle, config.background_outer_factor)
+    ellipse = Ellipse(center, radius, angle)
+    source = Source.from_ellipse(frame, ellipse, config.background_outer_factor)
 
     # If the frame is zero in this box, continue to the next object
     if not np.any(source.cutout): return None

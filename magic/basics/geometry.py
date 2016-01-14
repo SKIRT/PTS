@@ -43,6 +43,42 @@ class Ellipse(object):
     # -----------------------------------------------------------------
 
     @property
+    def major(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.radius.x if isinstance(self.radius, Extent) else self.radius
+
+    # -----------------------------------------------------------------
+
+    @property
+    def minor(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.radius.y if isinstance(self.radius, Extent) else self.radius
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ellipticity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.major - self.minor) / self.major
+
+    # -----------------------------------------------------------------
+
+    @property
     def bounding_box(self):
 
         """
@@ -85,6 +121,17 @@ class Rectangle(object):
 
         self.center = center
         self.radius = radius
+
+    # -----------------------------------------------------------------
+
+    def contains(self, position):
+
+        """
+        This function ...
+        :return:
+        """
+
+
 
     # -----------------------------------------------------------------
 

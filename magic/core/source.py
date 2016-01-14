@@ -21,7 +21,6 @@ from astropy.table import Table
 from photutils import find_peaks
 from photutils import detect_sources
 from photutils import detect_threshold
-from photutils import EllipticalAperture
 from astropy.coordinates import Angle
 from astropy import units as u
 from astropy.convolution import convolve, convolve_fft
@@ -57,15 +56,13 @@ class Source(object):
         self.removed = removed
         self.peak = peak
 
-        # The aperture
-        a = self.radius.x if isinstance(self.radius, Extent) else self.radius
-        b = self.radius.y if isinstance(self.radius, Extent) else self.radius
-        self.aperture = EllipticalAperture((self.center.x, self.center.y), a, b, theta=self.angle.radian)
+        # The elliptical contour
+        self.contour = Ellipse(self.center, self.radius, self.angle)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_ellipse(cls, frame, center, radius, angle, factor, shape=None):
+    def from_ellipse(cls, frame, ellipse, factor, shape=None):
 
         """
         This function ...
@@ -77,14 +74,19 @@ class Source(object):
         :return:
         """
 
-        # NEW WAY
-        ellipse = Ellipse(center, radius * factor, angle)
+        # Get original ellipse properties
+        center = ellipse.center
+        radius = ellipse.radius
+        angle = ellipse.angle
+
+        # Create cutout box
+        ellipse = Ellipse(center, radius * factor, angle) # new, expanded ellipse
         cutout = Box.from_ellipse(frame, ellipse, shape)
 
         # Calculate the relative coordinate of the center for the cutout box
         rel_center = cutout.rel_position(center)
 
-        # NEW WAY
+        # Create source mask
         ellipse = Ellipse(rel_center, radius, angle)
         mask = Mask.from_ellipse(cutout.xsize, cutout.ysize, ellipse)
 
@@ -97,35 +99,6 @@ class Source(object):
 
         # Create and return a new Source instance
         return cls(center, radius, angle, factor, cutout, mask, background, removed, peak)
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_aperture(cls, frame, aperture, factor):
-
-        """
-        This function ...
-        :param frame:
-        :param aperture:
-        :return:
-        """
-
-        # TODO: make this work with apertures other than EllipticalAperture
-
-        # Get the parameters of the elliptical aperture
-        x_center, y_center = aperture.positions[0]
-        center = Position(x=x_center, y=y_center)
-
-        major = aperture.a
-        minor = aperture.b
-
-        radius = Extent(x=major, y=minor)
-
-        # theta is in radians
-        angle = Angle(aperture.theta, u.rad)
-
-        # Return a new Mask object
-        return cls.from_ellipse(frame, center, radius, angle, factor)
 
     # -----------------------------------------------------------------
 

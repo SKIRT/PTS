@@ -19,8 +19,9 @@ from astropy.coordinates import Angle
 # Import the relevant AstroMagic classes and modules
 from .skyobject import SkyObject
 from ..core import Source
-from ..tools import statistics, fitting, apertures
+from ..tools import statistics, fitting
 from ..analysis import sources
+from ..basics import Ellipse
 
 # -----------------------------------------------------------------
 
@@ -190,7 +191,8 @@ class Star(SkyObject):
             center = self.pixel_position(frame.wcs)
 
         # Create the new source
-        source = Source.from_ellipse(frame, center, radius, Angle(0.0, u.deg), outer_factor, shape=shape)
+        ellipse = Ellipse(center, radius, Angle(0.0, u.deg))
+        source = Source.from_ellipse(frame, ellipse, outer_factor, shape=shape)
 
         # Set peak to that of the previous source
         source.peak = self.source.peak if self.source is not None else None
@@ -327,21 +329,17 @@ class Star(SkyObject):
         # If a 'saturation' source was found
         if saturation_source is not None:
 
-            # Calculate the aperture
-            aperture = sources.find_aperture(saturation_source.cutout, saturation_source.mask, config.apertures.sigma_level)
+            # Calculate the elliptical contour
+            contour = sources.find_contour(saturation_source.cutout, saturation_source.mask, config.apertures.sigma_level)
 
             # Check whether the source centroid matches the star position
             if config.check_centroid:
 
-                # Get the position and ellipticity
-                position = apertures.position(aperture)
-                ellipticity = apertures.ellipticity(aperture)
-
                 # Calculate the offset
-                difference = position - self.pixel_position(frame.wcs)
+                difference = contour.center - self.pixel_position(frame.wcs)
 
                 # Discard this saturation source if the centroid offset or the ellipticity is too large
-                if difference.norm > config.max_centroid_offset or ellipticity > config.max_centroid_ellipticity: return
+                if difference.norm > config.max_centroid_offset or contour.ellipticity > config.max_centroid_ellipticity: return
 
             # Replace the pixels of the cutout box by the pixels of the original frame (because the star itsself is already removed)
             saturation_source.cutout = original_frame.box_like(saturation_source.cutout)
@@ -350,7 +348,7 @@ class Star(SkyObject):
 
             # Replace the source by a source that covers the saturation
             self.saturation = saturation_source
-            self.aperture = aperture
+            self.contour = contour
 
     # -----------------------------------------------------------------
 

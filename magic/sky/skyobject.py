@@ -19,7 +19,6 @@ from abc import abstractmethod
 # Import the relevant AstroMagic classes and modules
 from ..basics import Position, TrackRecord
 from ..analysis import sources
-from ..tools import apertures
 
 # -----------------------------------------------------------------
 
@@ -45,8 +44,8 @@ class SkyObject(object):
         # Set the source attribute to None initially
         self.source = None
 
-        # Set the aperture (for saturation) to None initially
-        self.aperture = None
+        # Set the contour (for saturation) to None initially
+        self.contour = None
 
         # Initialize a track record of sources
         self.track_record = None
@@ -72,14 +71,14 @@ class SkyObject(object):
     # -----------------------------------------------------------------
 
     @property
-    def has_aperture(self):
+    def has_contour(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.aperture is not None
+        return self.contour is not None
 
     # -----------------------------------------------------------------
 
@@ -156,7 +155,7 @@ class SkyObject(object):
 
     # -----------------------------------------------------------------
 
-    def find_aperture(self, frame, config, saturation=False):
+    def find_contour(self, frame, config, saturation=False):
 
         """
         This function ...
@@ -174,17 +173,15 @@ class SkyObject(object):
             mask = self.source.mask
 
         # Get the aperture
-        aperture = sources.find_aperture(box, mask, config.sigma_level)
-
-        aperture_position = apertures.position(aperture)
+        contour = sources.find_contour(box, mask, config.sigma_level)
 
         # Calculate the difference (in number of pixels) between the aperture center and the position of the sky object
-        difference = self.pixel_position(frame.wcs) - aperture_position
+        difference = self.pixel_position(frame.wcs) - contour.center
 
         # Set the aperture if the offset is smaller than or equal to the specified maximum
         if difference.norm <= config.max_offset or config.max_offset is None:
 
             # Set the aperture
-            self.aperture = aperture
+            self.contour = contour
 
 # -----------------------------------------------------------------

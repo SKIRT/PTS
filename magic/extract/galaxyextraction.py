@@ -14,19 +14,15 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
-import math
 import numpy as np
-import matplotlib.pylab as plt
 
 # Import astronomical modules
 import astropy.units as u
 import astropy.coordinates as coord
 from astropy.coordinates import Angle
-from astropy.visualization import SqrtStretch, LogStretch
-from astropy.visualization.mpl_normalize import ImageNormalize
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Mask, Region, Position, Extent
+from ..basics import Mask, Region, Position, Extent, Ellipse
 from ..core import Source
 from ..sky import Galaxy
 from ..tools import catalogs, regions
@@ -165,7 +161,7 @@ class GalaxyExtractor(Configurable):
         self.find_sources()
 
         # Find apertures
-        if self.config.find_apertures: self.find_apertures()
+        if self.config.find_apertures: self.find_contours()
 
         # If requested, remove
         if self.config.remove: self.remove_galaxies()
@@ -400,7 +396,7 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def find_apertures(self):
+    def find_contours(self):
 
         """
         This function ...
@@ -409,7 +405,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Constructing elliptical apertures regions to encompass the detected galaxies ...")
+        self.log.info("Constructing elliptical contours to encompass the detected galaxies ...")
 
         # Loop over all galaxies
         for galaxy in self.galaxies:
@@ -418,7 +414,7 @@ class GalaxyExtractor(Configurable):
             if galaxy.ignore: continue
 
             # If the galaxy does not have a source, continue
-            if galaxy.has_source: galaxy.find_aperture(self.frame, self.config.apertures)
+            if galaxy.has_source: galaxy.find_contour(self.frame, self.config.apertures)
 
     # -----------------------------------------------------------------
 
@@ -526,7 +522,8 @@ class GalaxyExtractor(Configurable):
             x_center, y_center, x_radius, y_radius, angle = regions.ellipse_parameters(shape)
 
             # Create a source
-            source = Source.from_ellipse(self.frame, Position(x_center, y_center), Extent(x_radius, y_radius), Angle(angle, u.deg), self.config.manual.background_outer_factor)
+            ellipse = Ellipse(Position(x_center, y_center), Extent(x_radius, y_radius), Angle(angle, u.deg))
+            source = Source.from_ellipse(self.frame, ellipse, self.config.manual.background_outer_factor)
 
             # Add the source to the list of manual sources
             self.manual_sources.append(source)
@@ -733,16 +730,16 @@ class GalaxyExtractor(Configurable):
             print("image;ellipse({},{},{},{},{})".format(center.x, center.y, x_radius, y_radius, angle) + color_suffix, file=f)
 
             # Add aperture
-            if galaxy.has_aperture:
+            if galaxy.has_contour:
 
-                ap_x_center, ap_y_center = galaxy.aperture.positions[0]
-                major = galaxy.aperture.a
-                minor = galaxy.aperture.b
-                angle = galaxy.aperture.theta / math.pi * 180
+                contour_center = galaxy.contour.center
+                major = galaxy.contour.major
+                minor = galaxy.contour.minor
+                angle = galaxy.contour.angle.degree
 
                 aperture_suffix = " # color = white"
 
-                print("image;ellipse({},{},{},{},{})".format(ap_x_center, ap_y_center, major, minor, angle) + aperture_suffix, file=f)
+                print("image;ellipse({},{},{},{},{})".format(contour_center.x, contour_center.y, major, minor, angle) + aperture_suffix, file=f)
 
         # Close the file
         f.close()
@@ -960,58 +957,6 @@ class GalaxyExtractor(Configurable):
 
         # Return the catalog
         return table
-
-    # -----------------------------------------------------------------
-
-    def plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        x_centers = []
-        y_centers = []
-        apertures = []
-
-        # Loop over all galaxies
-        for galaxy in self.galaxies:
-
-            x_center, y_center = galaxy.position.to_pixel(self.frame.wcs, mode=self.config.transformation_method)
-            x_centers.append(x_center)
-            y_centers.append(y_center)
-
-            # If the galaxy does not have a source, continue
-            if galaxy.has_aperture: apertures.append(galaxy.aperture)
-
-        # Initialize the plot
-        #norm = ImageNormalize(stretch=SqrtStretch())
-        norm = ImageNormalize(stretch=LogStretch())
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-
-        # Determine the maximum value in the box and the mimimum value for plotting
-        vmax = np.max(self.frame)
-        vmin = np.min(self.frame) if vmax <= 0 else 0.0
-
-        # Plot the frame and the segments mask
-        ax1.imshow(self.frame, origin='lower', interpolation='nearest', norm=norm, vmin=vmin, vmax=vmax)
-        ax2.imshow(self.mask, origin='lower', cmap='jet')
-
-        # Set axes limits
-        plt.xlim(0, self.frame.xsize-1)
-        plt.ylim(0, self.frame.ysize-1)
-
-        # Plot the apertures
-        for aperture in apertures:
-
-            aperture.plot(color='white', lw=1.5, alpha=0.5, ax=ax1)
-            aperture.plot(color='white', lw=1.5, alpha=1.0, ax=ax2)
-
-        # Plot centers of the galaxies
-        plt.plot(x_centers, y_centers, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
-
-        # Show the plot
-        plt.show()
 
     # -----------------------------------------------------------------
 

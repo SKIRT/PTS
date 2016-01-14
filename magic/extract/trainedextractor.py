@@ -19,6 +19,7 @@ from scipy import ndimage
 # Import astronomical modules
 from astropy.coordinates import Angle
 from photutils import detect_sources
+from astropy.coordinates import SkyCoord
 
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame, Source
@@ -189,7 +190,7 @@ class TrainedExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def find_apertures(self):
+    def find_contours(self):
 
         """
         This function ...
@@ -197,49 +198,10 @@ class TrainedExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Constructing elliptical aperture regions to encompass sources ...")
-
-        # Initialize a list for the apertures
-        apertures = []
-
-        # Find apertures for the other sources
-        #from scipy import ndimage
-        from photutils import source_properties
-        from photutils import EllipticalAperture
-
-        # Get the segment properties
-        # Since there is only one segment in the source.mask (the center segment), the props
-        # list contains only one entry (one galaxy)
-        properties_list = source_properties(np.asarray(self.frame), self.segments)
-
-        #table = properties_table(properties)
-        for properties in properties_list:
-
-            # Obtain the position, orientation and extent
-            position = (properties.xcentroid.value, properties.ycentroid.value)
-            a = properties.semimajor_axis_sigma.value * self.config.detection.apertures.sigma_level
-            b = properties.semiminor_axis_sigma.value * self.config.detection.apertures.sigma_level
-            theta = properties.orientation.value
-
-            # Create the aperture
-            apertures.append(EllipticalAperture(position, a, b, theta=theta))
-
-        # Plotting the apertures
-        #from astropy.visualization import SqrtStretch
-        #from astropy.visualization.mpl_normalize import ImageNormalize
-        #import matplotlib.pylab as plt
-
-        #norm = ImageNormalize(stretch=SqrtStretch())
-
-        #plt.figure()
-
-        #plt.imshow(self.segments, origin='lower', cmap='jet')
-        #for aperture in self.other_apertures: aperture.plot(color='blue', lw=1.5, alpha=0.5)
-
-        #plt.show()
+        self.log.info("Constructing elliptical contours to encompass sources ...")
 
         # Return the list of apertures
-        return apertures
+        return sources.find_contours(self.frame, self.segments, self.config.detection.apertures.sigma_level)
 
     # -----------------------------------------------------------------
 
@@ -253,14 +215,32 @@ class TrainedExtractor(Configurable):
         # Loop over all sources
         for source in self.sources:
 
+            # Find peaks
+            peaks = source.locate_peaks(3.0)
+
+            if source.has_peak:
+
+                # Create sky coordinate from the peak position
+                position = SkyCoord.from_pixel(source.peak.x, source.peak.y, self.frame.wcs, mode="wcs")
+
+                # Create star object
+                index = None
+                star = Star(index, catalog="DustPedia", id=None, position=position, ra_error=None, dec_error=None)
+
+                # Try to fit star
+                star.fit_model(self.config.classifcation.fitting)
+
+                # If a model is found, add the star to the list
+                if star.has_model: self.stars.append(star)
+
             # Test whether this source corresponds to a star
-            if self.classifier.is_star(source):
+            #if self.classifier.is_star(source):
 
                 # Create a Star instance
-                star = Star()
+                #star = Star()
 
                 # Add the star to the list of stars
-                self.stars.append(star)
+                #self.stars.append(star)
 
             # Test whether the source corresponds to a galaxy
             #elif self.classifier.is_galaxy(source):
@@ -276,7 +256,7 @@ class TrainedExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def remove_apertures(self):
+    def remove_contours(self):
 
         """
         This function ...
@@ -284,28 +264,16 @@ class TrainedExtractor(Configurable):
         """
 
         # Loop over all other apertures
-        for aperture in self.apertures:
+        for contour in self.contours:
 
             # Configuration settings
             sigma_clip = self.config.aperture_removal.sigma_clip
             interpolation_method = self.config.aperture_removal.interpolation_method
             expansion_factor = self.config.aperture_removal.expansion_factor
 
-            # Create a source object
-            # Get the parameters of the elliptical aperture
-            x_center, y_center = aperture.positions[0]
-            center = Position(x=x_center, y=y_center)
-
-            major = aperture.a * expansion_factor
-            minor = aperture.b * expansion_factor
-
-            radius = Extent(x=major, y=minor)
-
-            # theta is in radians
-            angle = Angle(aperture.theta, u.rad)
-
             # Create a source
-            source = Source.from_ellipse(self.frame, center, radius, angle, self.config.aperture_removal.background_outer_factor)
+            ellipse = Ellipse(contour.center, contour.radius * expansion_factor, contour.angle)
+            source = Source.from_ellipse(self.frame, ellipse, self.config.aperture_removal.background_outer_factor)
 
             # Estimate the background for the source
             source.estimate_background("local_mean", True)
@@ -423,10 +391,10 @@ class TrainedExtractor(Configurable):
             for index in indices: self.segments[self.segments == index] = 0
 
         # Find apertures
-        apertures = self.find_apertures()
+        contours = self.find_contours()
 
         # Construct sources
-        for aperture in apertures:
+        for contour in contours:
 
             background_factor = 1.5
 
@@ -437,7 +405,7 @@ class TrainedExtractor(Configurable):
             # No: use the FWHM ! Hmm.. or not: saturation ?
 
             # Create a source from the aperture
-            source = Source.from_aperture(self.frame, aperture, background_factor)
+            source = Source.from_ellipse(self.frame, contour, background_factor)
 
             y_min = source.cutout.y_min
             y_max = source.cutout.y_max

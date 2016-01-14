@@ -18,6 +18,7 @@ from ..tools import masks
 from .galaxyextraction import GalaxyExtractor
 from .starextraction import StarExtractor
 from .trainedextractor import TrainedExtractor
+from ..misc import CatalogBuilder
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem
@@ -54,6 +55,9 @@ class Extractor(Configurable):
         self.galaxy_extractor = None
         self.star_extractor = None
         self.trained_extractor = None
+
+        # The catalog buidler
+        self.catalog_builder = None
 
     # -----------------------------------------------------------------
 
@@ -103,6 +107,9 @@ class Extractor(Configurable):
         # 5. Look for other sources
         self.find_other_sources()
 
+        # 6. Build catalogs
+        self.build_catalogs()
+
         # 5. Writing phase
         self.write()
 
@@ -139,6 +146,9 @@ class Extractor(Configurable):
 
         # Initialize a trained extractor according to the settings defined in the provided configuration file
         self.trained_extractor = TrainedExtractor(self.config.other_sources)
+
+        # Initialize a catalog builder
+        self.catalog_builder = CatalogBuilder()
 
         # Set the input and output path for the galaxy and star extractor
         self.galaxy_extractor.config.input_path = self.config.input_path
@@ -295,6 +305,18 @@ class Extractor(Configurable):
 
         # Run the trained extractor just to find sources
         self.trained_extractor.run(self.frame, mask, self.galaxy_extractor, self.star_extractor)
+
+    # -----------------------------------------------------------------
+
+    def build_catalogs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Run the catalog builder
+        #self.catalog_builder.run(self.frame, self.galaxy_extractor, self.star_extractor)
 
     # -----------------------------------------------------------------
 

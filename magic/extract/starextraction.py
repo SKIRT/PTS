@@ -28,10 +28,10 @@ from astropy.coordinates import Angle
 from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Position, Extent, Mask, Region
+from ..basics import Position, Extent, Mask, Region, Ellipse
 from ..core import Source
 from ..sky import Star
-from ..tools import statistics, fitting, regions, catalogs, apertures
+from ..tools import statistics, fitting, regions, catalogs
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -207,7 +207,7 @@ class StarExtractor(Configurable):
         if self.config.remove_saturation: self.remove_saturation()
 
         # If requested, remove apertures that encompass the saturation sources
-        if self.config.saturation.remove_apertures: self.remove_apertures()
+        if self.config.saturation.remove_apertures: self.remove_contours()
 
     # -----------------------------------------------------------------
 
@@ -494,7 +494,8 @@ class StarExtractor(Configurable):
                 center, radius, angle = star.ellipse_parameters(self.frame.wcs, self.frame.pixelscale, self.config.fitting.initial_radius)
 
                 # Create a source object
-                source = Source.from_ellipse(self.frame, center, radius, angle, self.config.fitting.background_outer_factor)
+                ellipse = Ellipse(center, radius, angle)
+                source = Source.from_ellipse(self.frame, ellipse, self.config.fitting.background_outer_factor)
 
             else: source = None
 
@@ -627,7 +628,7 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def remove_apertures(self):
+    def remove_contours(self):
 
         """
         This function ...
@@ -637,13 +638,13 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Replacing aperture regions by the estimated background ...")
+        self.log.info("Replacing regions within elliptical contours with the estimated background ...")
 
         # Loop over all stars
         for star in self.stars:
 
-            # If the object does not have an aperture, skip it
-            if not star.has_aperture: continue
+            # If the object does not have an contour, skip it
+            if not star.has_contour: continue
 
             # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
             if star.on_galaxy and self.config.saturation.aperture_removal.no_sigma_clip_on_galaxy: sigma_clip = False
@@ -656,21 +657,9 @@ class StarExtractor(Configurable):
             # Expansion factor
             expansion_factor = self.config.saturation.aperture_removal.expansion_factor
 
-            # Create a source object
-            # Get the parameters of the elliptical aperture
-            x_center, y_center = star.aperture.positions[0]
-            center = Position(x=x_center, y=y_center)
-
-            major = star.aperture.a * expansion_factor
-            minor = star.aperture.b * expansion_factor
-
-            radius = Extent(x=major, y=minor)
-
-            # theta is in radians
-            angle = Angle(star.aperture.theta, u.rad)
-
             # Create a source
-            source = Source.from_ellipse(self.frame, center, radius, angle, self.config.saturation.aperture_removal.background_outer_factor)
+            ellipse = Ellipse(star.contour.center, star.contour.radius * expansion_factor, star.contour.angle)
+            source = Source.from_ellipse(self.frame, ellipse, self.config.saturation.aperture_removal.background_outer_factor)
 
             # Estimate the background for the source
             source.estimate_background(interpolation_method, sigma_clip)
@@ -759,7 +748,8 @@ class StarExtractor(Configurable):
             x_center, y_center, x_radius, y_radius, angle = regions.ellipse_parameters(shape)
 
             # Create a source
-            source = Source.from_ellipse(self.frame, Position(x_center, y_center), Extent(x_radius, y_radius), Angle(angle, u.deg), self.config.manual.background_outer_factor)
+            ellipse = Ellipse(Position(x_center, y_center), Extent(x_radius, y_radius), Angle(angle, u.deg))
+            source = Source.from_ellipse(self.frame, ellipse, self.config.manual.background_outer_factor)
 
             # Add the source to the list of manual sources
             self.manual_sources.append(source)
@@ -929,10 +919,10 @@ class StarExtractor(Configurable):
             text = str(star.index)
 
             # Get aperture properties
-            center = apertures.position(star.aperture)
-            major = star.aperture.a
-            minor = star.aperture.b
-            angle = star.aperture.theta / math.pi * 180
+            center = star.contour.center
+            major = star.contour.major
+            minor = star.contour.minor
+            angle = star.contour.angle.degree
 
             # Write to region file
             suffix = " # "
@@ -1174,7 +1164,7 @@ class StarExtractor(Configurable):
     # -----------------------------------------------------------------
 
     @property
-    def have_aperture(self):
+    def have_contour(self):
 
         """
         This function ...
@@ -1182,7 +1172,7 @@ class StarExtractor(Configurable):
         """
 
         count = 0
-        for star in self.stars: count += star.has_aperture
+        for star in self.stars: count += star.has_contour
         return count
 
     # -----------------------------------------------------------------
@@ -1363,12 +1353,12 @@ class StarExtractor(Configurable):
 
             if star.has_saturation:
 
-                ap_position = apertures.position(star.aperture)
-                x_centroid_column.append(ap_position.x)
-                y_centroid_column.append(ap_position.y)
-                a_column.append(star.aperture.a)
-                b_column.append(star.aperture.b)
-                angle_column.append(star.aperture.theta / math.pi * 180)
+                contour_position = star.contour.center
+                x_centroid_column.append(contour_position.x)
+                y_centroid_column.append(contour_position.y)
+                a_column.append(star.contour.major)
+                b_column.append(star.contour.minor)
+                angle_column.append(star.contour.degree)
 
             else:
 
@@ -1393,37 +1383,6 @@ class StarExtractor(Configurable):
 
         # Create the statistics table
         self.statistics = tables.new(data, names)
-
-    # -----------------------------------------------------------------
-
-    def plot(self):
-
-        """
-        This function ...
-        :param frame:
-        :return:
-        """
-
-        # Create a HDU from this frame with the image header
-        hdu = pyfits.PrimaryHDU(self.frame, self.frame.wcs.to_header())
-
-        # Create a figure canvas
-        figure = plt.figure(figsize=(20, 20))
-
-        # Create a figure from this frame
-        plot = aplpy.FITSFigure(hdu, figure=figure)
-
-        # Plot in color scale
-        plot.show_colorscale()
-
-        # Add a color bar if requested
-        if self.config.plotting.show_colorbar: plot.add_colorbar()
-
-        # Add these shapes to the plot
-        plot.show_regions(self.region)
-
-        # Show the plot
-        plt.show()
 
     # -----------------------------------------------------------------
 

@@ -132,30 +132,6 @@ class Mask(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def old_from_ellipse(cls, x_size, y_size, center, radius, angle):
-
-        """
-        This function ...
-        :param x_size:
-        :param y_size:
-        :param center:
-        :param radius:
-        :param angle:
-        :return:
-        """
-
-        # Create a region consisting of one ellipse
-        region = Region.ellipse(center, radius, angle)
-
-        # Create the mask
-        data = region.get_mask(shape=(y_size, x_size))
-
-        # Return a new Mask object
-        return cls(data)
-
-    # -----------------------------------------------------------------
-
-    @classmethod
     def from_ellipse(cls, x_size, y_size, ellipse):
 
         """
@@ -164,34 +140,12 @@ class Mask(np.ndarray):
         :return:
         """
 
-        #ood_filter, extent, phot_extent = get_phot_extents(data, positions, extents)
-
-        #x_min, x_max, y_min, y_max = extent
-        #x_pmin, x_pmax, y_pmin, y_pmax = phot_extent
-
-        #if method == 'center':
-        #    use_exact = 0
-        #    subpixels = 1
-        #elif method == 'subpixel':
-        #    use_exact = 0
-        #else:
-        #    use_exact = 1
-        #    subpixels = 1
-
-        #fraction = elliptical_overlap_grid(x_pmin[i], x_pmax[i], y_pmin[i], y_pmax[i], x_max[i] - x_min[i], y_max[i] - y_min[i], a, b, theta, use_exact, subpixels) # original
-
-        # theta in radians !
-
-        # example:
-
-        # fraction = elliptical_overlap_grid(-35, 35, -35, 35, 70, 70, 30, 20, 1.6, use_exact=1, subpixels=1) # 1.6 = pi / 2
-        # plotting.plot_box(fraction)
-
         rel_center = ellipse.center
 
         a = ellipse.radius.x if isinstance(ellipse.radius, Extent) else ellipse.radius
         b = ellipse.radius.y if isinstance(ellipse.radius, Extent) else ellipse.radius
 
+        # theta in radians !
         theta = ellipse.angle.radian
 
         x_min = - rel_center.x
@@ -221,34 +175,6 @@ class Mask(np.ndarray):
         #    subpixels.
 
         return cls(fraction)
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_aperture(cls, x_size, y_size, aperture, expansion_factor=1.0):
-
-        """
-        This function ...
-        :param aperture:
-        :return:
-        """
-
-        # TODO: make this work with apertures other than EllipticalAperture
-
-        # Get the parameters of the elliptical aperture
-        x_center, y_center = aperture.positions[0]
-        center = Position(x=x_center, y=y_center)
-
-        major = aperture.a * expansion_factor
-        minor = aperture.b * expansion_factor
-
-        radius = Extent(x=major, y=minor)
-
-        # theta is in radians
-        angle = Angle(aperture.theta, u.rad)
-
-        # Return a new Mask object
-        return cls.from_ellipse(x_size, y_size, center, radius, angle)
 
     # -----------------------------------------------------------------
 
