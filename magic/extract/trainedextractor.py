@@ -122,7 +122,7 @@ class TrainedExtractor(Configurable):
         self.input_mask = input_mask
 
         # Create a mask with shape equal to the shape of the frame
-        self.mask = Mask(np.zeros_like(self.frame))
+        self.mask = Mask.from_shape(self.frame.shape)
 
         # Make local references to the galaxy and star extractors
         self.galaxy_extractor = galaxyextractor
@@ -202,13 +202,17 @@ class TrainedExtractor(Configurable):
         :return:
         """
 
+        fwhms = self.star_extractor.fwhms
+        min_fwhm = min(fwhms)
+        max_fwhm = max(fwhms)
+
         # Loop over all sources
         for source in self.sources:
 
             # Find peaks
             peaks = source.locate_peaks(3.0)
 
-            if source.has_peak:
+            if source.has_peak or self.config.classification.fitting.fit_if_undetected:
 
                 # Create sky coordinate from the peak position
                 position = SkyCoord.from_pixel(source.peak.x, source.peak.y, self.frame.wcs, mode="wcs")
@@ -217,11 +221,17 @@ class TrainedExtractor(Configurable):
                 index = None
                 star = Star(index, catalog="DustPedia", id=None, position=position, ra_error=None, dec_error=None)
 
+                star.source = source
+
                 # Try to fit star
-                star.fit_model(self.config.classifcation.fitting)
+                star.fit_model(self.config.classification.fitting)
 
                 # If a model is found, add the star to the list
-                if star.has_model: self.stars.append(star)
+                if star.has_model:
+
+                    if star.fwhm <= max_fwhm and star.fwhm >= min_fwhm:
+                        self.stars.append(star)
+                    #else: print(star.fwhm)
 
             # Test whether this source corresponds to a star
             #if self.classifier.is_star(source):
@@ -242,7 +252,7 @@ class TrainedExtractor(Configurable):
                 #self.galaxies.append(galaxy)
 
             # Not a star or a galaxy
-            else: self.log.debug("The source does not correspond to a star or galaxy")
+            #else: self.log.debug("The source does not correspond to a star or galaxy")
 
     # -----------------------------------------------------------------
 
@@ -297,6 +307,9 @@ class TrainedExtractor(Configurable):
 
         # If requested, write out the frame where the sources are masked
         if self.config.write_masked_frame: self.write_masked_frame()
+
+        # If requested, ...
+        if self.config.write_star_region: self.write_star_region()
 
         # If requested, write out the segmentation map
         if self.config.write_segments: self.write_segments()
@@ -448,6 +461,61 @@ class TrainedExtractor(Configurable):
 
         # Write out the masked frame
         frame.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_star_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the star region file
+        path = self.full_output_path(self.config.writing.star_region_path)
+
+        # Inform the user
+        self.log.info("Writing star region to " + path + " ...")
+
+        # Create a file
+        f = open(path, 'w')
+
+        # Initialize the region string
+        print("# Region file format: DS9 version 4.1", file=f)
+
+        # Loop over all galaxies
+        for star in self.stars:
+
+            # Get the center in pixel coordinates
+            center = star.pixel_position(self.frame.wcs, "wcs")
+
+            # Determine the color, based on the detection level
+            color = "blue"
+
+            #if star.has_source: region.append(star.source.contour, color)
+            #else: region.append(star.ellipse())
+
+            # Determine the FWHM
+            fwhm = star.fwhm
+
+            # Calculate the radius in pixels
+            #radius = fwhm * statistics.fwhm_to_sigma * self.config.removal.sigma_level
+            radius = fwhm * statistics.fwhm_to_sigma * 3.0
+
+            # Show a circle for the star
+            suffix = " # "
+            color_suffix = "color = " + color
+            suffix += color_suffix
+            print("image;circle({},{},{})".format(center.x, center.y, radius) + suffix, file=f)
+
+            # Draw a cross for the peak position
+            suffix = " # "
+            point_suffix = "point = x"
+            suffix += point_suffix
+            print("image;point({},{})".format(star.source.peak.x, star.source.peak.y) + suffix, file=f)
+
+        # Close the file
+        f.close()
 
     # -----------------------------------------------------------------
 

@@ -31,7 +31,7 @@ parser.add_argument('--report', action='store_true', help='write a report file')
 parser.add_argument('--plot', action='store_true', help='plot the result of intermediate steps')
 
 # Parse the command line arguments
-args = parser.parse_args()
+arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
@@ -41,25 +41,21 @@ working_directory = os.getcwd()
 # -----------------------------------------------------------------
 
 # Create a GalaxyModeler object
-modeler = GalaxyModeler(working_directory, args.config)
+#modeler = GalaxyModeler(working_directory, arguments.config)
+modeler = GalaxyModeler.from_arguments(arguments)
 
 # Set configuration options passed as command line arguments
-modeler.config.preparation.filter_name = args.image
-if args.report:
+#modeler.config.preparation.filter_name = arguments.image
+#if arguments.report:
 
     # Determine a unique report path and set the appropriate configuration entry
-    timestamp = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
-    report_path = os.path.join(working_directory, "report_" + timestamp + ".txt")
-    modeler.config.logging.path = report_path
+#    timestamp = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+#    report_path = os.path.join(working_directory, "report_" + timestamp + ".txt")
+#    modeler.config.logging.path = report_path
 
 # -----------------------------------------------------------------
 
-# Run the modeling (or a specific stage)
-if args.stage is None: modeler.run()
-elif args.stage == "preparation": modeler.prepare_images()
-elif args.stage == "decomposition": modeler.decompose()
-elif args.stage == "mapmaking": modeler.make_maps()
-elif args.stage == "fitting": modeler.fit_sed()
-else: raise ValueError("Unkown stage (choose 'preparation', 'decomposition', 'mapmaking' or 'fitting')")
+# Run the modeling
+modeler.run(working_directory)
 
 # -----------------------------------------------------------------

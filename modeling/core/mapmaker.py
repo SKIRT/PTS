@@ -25,7 +25,7 @@ from ...magic.basics import Mask
 from ...magic.core import Image, Frame
 
 # Import the relevant PTS classes and modules
-from ...core.basics import Configurable
+from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 

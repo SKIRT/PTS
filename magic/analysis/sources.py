@@ -103,7 +103,7 @@ def find_contour(box, mask, sigma_level):
 
 # -----------------------------------------------------------------
 
-def find_source_daofind(frame, center, radius, angle, config, track_record, special=False):
+def find_source_daofind(frame, ellipse, config, track_record, special=False):
 
     """
     This function ...
@@ -134,7 +134,7 @@ def find_source_daofind(frame, center, radius, angle, config, track_record, spec
 
 # -----------------------------------------------------------------
 
-def find_source_iraf(frame, center, radius, angle, config, track_record, special=False):
+def find_source_iraf(frame, ellipse, config, track_record, special=False):
 
     """
     This function ...
@@ -340,7 +340,7 @@ def make_star_model(shape, data, annuli_mask, fit_mask, background_outer_sigmas,
 
 # -----------------------------------------------------------------
 
-def find_source(frame, center, radius, angle, config, track_record=None, special=False):
+def find_source(frame, ellipse, config, track_record=None, special=False):
 
     """
     This function ...
@@ -348,23 +348,23 @@ def find_source(frame, center, radius, angle, config, track_record=None, special
     """
 
     # Segmentation method
-    if config.detection_method == "segmentation": return find_source_segmentation(frame, center, radius, angle, config, track_record, special=special)
+    if config.detection_method == "segmentation": return find_source_segmentation(frame, ellipse, config, track_record, special=special)
 
     # Peaks method
-    elif config.detection_method == "peaks": return find_source_peaks(frame, center, radius, angle, config, track_record, special=special)
+    elif config.detection_method == "peaks": return find_source_peaks(frame, ellipse, config, track_record, special=special)
 
     # DAOFIND source detection
-    elif config.detection_method == "daofind": return find_source_daofind(frame, center, radius, angle, config, track_record, special=special)
+    elif config.detection_method == "daofind": return find_source_daofind(frame, ellipse, config, track_record, special=special)
 
     # IRAF's starfind algorithm
-    elif config.detection_method == "iraf": return find_source_iraf(frame, center, radius, angle, config, track_record, special=special)
+    elif config.detection_method == "iraf": return find_source_iraf(frame, ellipse, config, track_record, special=special)
 
     # Unknown detection method
     else: raise ValueError("Unknown source detection method")
 
 # -----------------------------------------------------------------
 
-def find_source_segmentation(frame, center, radius, angle, config, track_record=None, expansion_level=1, special=False):
+def find_source_segmentation(frame, ellipse, config, track_record=None, expansion_level=1, special=False):
 
     """
     This function ...
@@ -372,7 +372,6 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
     """
 
     # Create a source object
-    ellipse = Ellipse(center, radius, angle)
     source = Source.from_ellipse(frame, ellipse, config.background_outer_factor)
 
     # If the source cutout is zero or nan everywhere, return None (no source can be found here)
@@ -456,7 +455,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Show a plot for debugging
-        if config.debug.expand or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=masks.union(mask, source.background_mask)), title="Masked segment hits boundary")
+        if config.debug.expand or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=masks.union(mask, source.background_mask)), title="Masked segment hits boundary [expansion level = " + str(expansion_level) + "]")
 
         # If the maximum expansion level has been reached, no source could be found
         if expansion_level >= config.max_expansion_level:
@@ -469,11 +468,11 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
         else:
 
             # Calculate the expanded parameters
-            radius *= config.expansion_factor
+            ellipse *= config.expansion_factor
             expansion_level += 1
 
             # Repeat the procedure for the expanded ellipse
-            return find_source_segmentation(frame, center, radius, angle, config, track_record=track_record, expansion_level=expansion_level, special=special)
+            return find_source_segmentation(frame, ellipse, config, track_record=track_record, expansion_level=expansion_level, special=special)
 
     else:
 
@@ -528,7 +527,7 @@ def find_source_segmentation(frame, center, radius, angle, config, track_record=
 
 # -----------------------------------------------------------------
 
-def find_source_peaks(frame, center, radius, angle, config, track_record=None, level=0, special=False):
+def find_source_peaks(frame, ellipse, config, track_record=None, level=0, special=False):
 
     """
     This function ...
@@ -545,7 +544,6 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
     if level < config.min_level or level > config.max_level: return None
 
     # Create a source object
-    ellipse = Ellipse(center, radius, angle)
     source = Source.from_ellipse(frame, ellipse, config.background_outer_factor)
 
     # If the frame is zero in this box, continue to the next object
@@ -604,10 +602,10 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
         if level < 0: return None
 
         # Scale the ellipse in which to look for a source
-        radius *= config.scale_factor
+        ellipse *= config.scale_factor
 
         # Find a source in the zoomed-out region
-        return find_source_peaks(frame, center, radius, angle, config, track_record=track_record, level=level+1, special=special)
+        return find_source_peaks(frame, ellipse, config, track_record=track_record, level=level+1, special=special)
 
     # If more than one source was detected
     elif len(peaks) > 1:
@@ -622,10 +620,10 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
         if level > 0: return None
 
         # Scale the ellipse in which to look for a source
-        radius /= config.scale_factor
+        ellipse /= config.scale_factor
 
         # Find a source in the zoomed-in region
-        return find_source_peaks(frame, center, radius, angle, config, track_record=track_record, level=level-1, special=special)
+        return find_source_peaks(frame, ellipse, config, track_record=track_record, level=level-1, special=special)
 
     # If one source was detected
     elif len(peaks) == 1:
@@ -641,7 +639,7 @@ def find_source_peaks(frame, center, radius, angle, config, track_record=None, l
         y_peak = peaks[0].y
 
         # Check whether peak position corresponds to the center of the cutout
-        if not (np.isclose(x_peak, center.x, atol=config.peak_offset_tolerance) and np.isclose(y_peak, center.y, atol=config.peak_offset_tolerance)):
+        if not (np.isclose(x_peak, ellipse.center.x, atol=config.peak_offset_tolerance) and np.isclose(y_peak, ellipse.center.y, atol=config.peak_offset_tolerance)):
 
             # Show a plot for debugging
             if config.debug.off_center or special: source.plot(title="Peak and center position do not match")

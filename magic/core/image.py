@@ -45,11 +45,11 @@ class Image(object):
     This class ...
     """
 
-    def __init__(self, filename=None, always_call_first_primary=True):
+    def __init__(self, filepath=None, always_call_first_primary=True):
 
         """
         The constructor ...
-        :param filename:
+        :param filepath:
         :return:
         """
 
@@ -58,22 +58,24 @@ class Image(object):
         self.masks = Layers()
         self.regions = Layers()
 
-        # The image name
+        # The image name and path
         self.name = None
+        self.path = None
 
         # The dictionary containing meta information
         self.metadata = dict()
 
-        if filename is not None:
+        if filepath is not None:
 
             # Check if the specified file exists, otherwise exit with an error
-            if not os.path.isfile(filename): raise IOError("No such file: " + filename)
+            if not os.path.isfile(filepath): raise IOError("No such file: " + filepath)
 
             # Set the name of the image
-            self.name = os.path.splitext(os.path.basename(filename))[0]
+            self.name = os.path.splitext(os.path.basename(filepath))[0]
 
             # Read in the image
-            self.load_frames(filename, always_call_first_primary=always_call_first_primary)
+            self.load_frames(filepath, always_call_first_primary=always_call_first_primary)
+            self.path = filepath
 
     # -----------------------------------------------------------------
 
@@ -157,13 +159,15 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self, path=None):
 
         """
         This function exports the currently selected frame(s) as a datacube into FITS file
-        :param filepath:
+        :param path:
         :return:
         """
+
+        if path is None: path = self.path
 
         # Create an array to contain the data cube
         datacube = []
@@ -203,6 +207,8 @@ class Image(object):
 
         # Write the HDU to a FITS file
         hdu.writeto(path, clobber=True)
+
+        self.path = path
 
         # Inform the user that the file has been created
         log.info("File " + path + " created")

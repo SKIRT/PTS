@@ -20,6 +20,25 @@ from astropy.table import Table, Column
 
 # -----------------------------------------------------------------
 
+def find_index(table, key):
+
+    """
+    This function ...
+    :param key:
+    :return:
+    """
+
+    first_column_name = table.colnames[0]
+
+    # Loop over all entries in the column
+    for i in range(len(table)):
+
+        if table[first_column_name][i] == key: return i
+
+    return None
+
+# -----------------------------------------------------------------
+
 def write(table, path):
 
     """

@@ -15,13 +15,17 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 
+# Import astronomical modules
+import astropy.units as u
+
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame
+from ..basics import Mask
 from .galaxyextraction import GalaxyExtractor
 from .starextraction import StarExtractor
 from .trainedextractor import TrainedExtractor
 from ..misc import CatalogBuilder
-from ..basics import Position, Extent, Rectangle, CatalogCoverage
+from ..basics import CatalogCoverage
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem, tables, inspection
@@ -54,13 +58,25 @@ class Extractor(Configurable):
         # The mask covering pixels that should be ignored throughout the entire extraction procedure
         self.input_mask = None
 
-        # The galaxy and star extractors
-        self.galaxy_extractor = None
-        self.star_extractor = None
-        self.trained_extractor = None
+        # The output mask
+        self.mask = None
 
         # The catalog buidler
         self.catalog_builder = None
+
+        # -- Children --
+
+        # Initialize a galaxy extractor according to the settings defined in the provided configuration file
+        self.children["galaxy_extractor"] = GalaxyExtractor(self.config.galaxies)
+
+        # Initialize a star extractor according to the settings defined in the provided configuration file
+        self.children["star_extractor"] = StarExtractor(self.config.stars)
+
+        # Initialize a trained extractor according to the settings defined in the provided configuration file
+        self.children["trained_extractor"] = TrainedExtractor(self.config.other_sources)
+
+        # Initialize a catalog builder
+        self.children["catalog_builder"] = CatalogBuilder()
 
     # -----------------------------------------------------------------
 
@@ -82,6 +98,9 @@ class Extractor(Configurable):
         # Set options for writing out regions or masks
         extractor.config.write_regions = arguments.regions
         extractor.config.write_masked_frames = arguments.masks
+
+        # Build catalog
+        extractor.config.build_catalog = arguments.build
 
         # Return the new instance
         return extractor
@@ -114,7 +133,7 @@ class Extractor(Configurable):
         self.find_other_sources()
 
         # 6. Build catalogs
-        self.build_catalogs()
+        if self.config.build_catalog: self.build_catalogs()
 
         # 5. Writing phase
         self.write()
@@ -144,25 +163,8 @@ class Extractor(Configurable):
         self.config.writing.result_path = "result.fits"
         self.config.writing.mask_path = "mask.fits"
 
-        # Initialize a galaxy extractor according to the settings defined in the provided configuration file
-        self.galaxy_extractor = GalaxyExtractor(self.config.galaxies)
-
-        # Initialize a star extractor according to the settings defined in the provided configuration file
-        self.star_extractor = StarExtractor(self.config.stars)
-
-        # Initialize a trained extractor according to the settings defined in the provided configuration file
-        self.trained_extractor = TrainedExtractor(self.config.other_sources)
-
-        # Initialize a catalog builder
-        self.catalog_builder = CatalogBuilder()
-
-        # Set the input and output path for the galaxy and star extractor
-        self.galaxy_extractor.config.input_path = self.config.input_path
-        self.galaxy_extractor.config.output_path = self.config.output_path
-        self.star_extractor.config.input_path = self.config.input_path
-        self.star_extractor.config.output_path = self.config.output_path
-        self.trained_extractor.config.input_path = self.config.input_path
-        self.trained_extractor.config.output_path = self.config.output_path
+        # Create a mask with shape equal to the shape of the frame
+        self.mask = Mask.from_shape(self.frame.shape)
 
         # Set the appropriate configuration settings for writing out the galactic and stellar catalogs
         if self.config.write_catalogs:
@@ -210,56 +212,6 @@ class Extractor(Configurable):
             self.star_extractor.config.write_masked_frame = True
             self.star_extractor.config.writing.masked_frame_path = "masked_stars.fits"
 
-        # Options for logging
-        self.galaxy_extractor.config.logging.level = "WARNING"
-        self.galaxy_extractor.config.logging.path = self.config.logging.path
-        self.star_extractor.config.logging.level = "WARNING"
-        self.star_extractor.config.logging.path = self.config.logging.path
-        self.trained_extractor.config.logging.level = "WARNING"
-        self.trained_extractor.config.logging.path = self.config.logging.path
-        self.catalog_builder.config.logging.level = "WARNING"
-        self.catalog_builder.config.logging.path = self.config.logging.path
-
-        # Set the log level and path for the different children of this extractor, if cascading is enabled
-        if self.config.logging.cascade:
-
-            # Galaxy extractor
-            self.galaxy_extractor.config.logging.cascade = True
-            self.galaxy_extractor.config.logging.level = self.config.logging.level
-
-            # Star extractor
-            self.star_extractor.config.logging.cascade = True
-            self.star_extractor.config.logging.level = self.config.logging.level
-
-            # Trained extractor
-            self.trained_extractor.config.logging.cascade = True
-            self.trained_extractor.config.logging.level = self.config.logging.level
-
-            # Catalog builder
-            self.catalog_builder.config.logging.cascade = True
-            self.catalog_builder.config.logging.level = self.config.logging.level
-
-    # -----------------------------------------------------------------
-
-    def clear(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Clearing the extractor ...")
-
-        # Clear the frame and input mask
-        self.frame = None
-        self.input_mask = None
-
-        # Clear the extractors
-        self.galaxy_extractor.clear()
-        self.star_extractor.clear()
-        self.trained_extractor.clear()
-
     # -----------------------------------------------------------------
 
     def create_output_path(self):
@@ -273,7 +225,7 @@ class Extractor(Configurable):
         self.log.info("Creating the output directory if necessary ...")
 
         # Create the directory if necessary
-        filesystem.create_directory(self.config.output_path)
+        if self.config.output_path is not None: filesystem.create_directory(self.config.output_path)
 
     # -----------------------------------------------------------------
 
@@ -330,7 +282,10 @@ class Extractor(Configurable):
 
         # Run the galaxy extractor
         self.galaxy_extractor.run(self.frame, self.input_mask, self.galaxy_catalog)
-    
+
+        # Add to the total mask
+        self.mask += self.galaxy_extractor.mask
+
     # -----------------------------------------------------------------
     
     def extract_stars(self):
@@ -342,8 +297,16 @@ class Extractor(Configurable):
         # Inform the user
         self.log.info("Extracting the stars ...")
 
-        # Run the star extractor
-        self.star_extractor.run(self.frame, self.input_mask, self.galaxy_extractor, self.star_catalog)
+        # ...
+        if self.frame.wavelength < 10.0 * u.Unit("micron"):
+
+            # Run the star extractor
+            self.star_extractor.run(self.frame, self.input_mask, self.galaxy_extractor, self.star_catalog)
+
+            # Add star mask to the total mask
+            self.mask += self.star_extractor.mask
+
+        else: self.log.info("No star extraction for this image")
 
     # -----------------------------------------------------------------
 
@@ -354,11 +317,13 @@ class Extractor(Configurable):
         :return:
         """
 
-        # Total mask
-        mask = self.input_mask + self.star_extractor.mask + self.galaxy_extractor.mask
+        # Input mask (bad pixels) + mask (combined galaxy and star extraction masks)
 
         # Run the trained extractor just to find sources
-        self.trained_extractor.run(self.frame, mask, self.galaxy_extractor, self.star_extractor)
+        self.trained_extractor.run(self.frame, self.input_mask + self.mask, self.galaxy_extractor, self.star_extractor)
+
+        # Add sources to the total mask
+        self.mask += self.trained_extractor.mask
 
     # -----------------------------------------------------------------
 
@@ -423,17 +388,8 @@ class Extractor(Configurable):
         # Inform the user
         self.log.info("Writing the total mask to " + path + " ...")
 
-        # Set the galaxy mask
-        galaxy_mask = self.galaxy_extractor.mask
-
-        # Set the star mask
-        star_mask = self.star_extractor.mask
-
-        # Set the 'other sources' mask
-        other_mask = self.trained_extractor.mask
-
         # Create a frame for the total mask
-        frame = Frame((galaxy_mask + star_mask + other_mask).astype(int))
+        frame = Frame(self.mask.astype(int))
 
         # Write out the total mask
         frame.save(path)

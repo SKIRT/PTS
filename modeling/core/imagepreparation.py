@@ -21,11 +21,14 @@ import astropy.units as u
 
 # Import the relevant AstroMagic classes and modules
 from ...magic.core import Frame
-from ...magic import StarExtractor, GalaxyExtractor, SkySubtractor
+from ...magic.basics import Mask, Region
+from ...magic.extract import Extractor
+from ...magic.subtract import SkySubtractor
 from ...magic.tools import regions, cropping
 
 # Import the relevant PTS classes and modules
-from ...core.basics import Configurable
+from ...core.basics.configurable import Configurable
+from ...core.tools import filesystem
 
 # -----------------------------------------------------------------
 
@@ -46,21 +49,26 @@ class ImagePreparation(Configurable):
         # Call the constructor of the base class
         super(ImagePreparation, self).__init__(config, "modeling")
 
-        ## Temporary
+        # -- Temporary --
 
-        #self.config.convolve = False
+        self.config.convolve = False
+        self.config.subtract_sky = False
+
+        # -- Children --
+
+        # Set the galaxy and star extractors to None initially
+        self.extractor = None
+
+        # Set the sky subtractor to None initially
+        self.sky_subtractor = None
 
         # -- Attributes --
 
-        # Set the galaxy and star extractors to None initially
-        self.galaxyex = None
-        self.starex = None
-
-        # Set the sky subtractor to None initially
-        self.skysub = None
-
-        # Set the image reference to None initially
+        # The image
         self.image = None
+
+        # The mask for bad pixels
+        self.bad_mask = None
 
     # -----------------------------------------------------------------
 
@@ -75,28 +83,31 @@ class ImagePreparation(Configurable):
         # 1. Call the setup function
         self.setup(image)
 
-        # 2. Extract stars and galaxies from the image
+        # 2. Create the mask for bad pixels
+        self.create_mask()
+
+        # 3. Extract stars and galaxies from the image
         self.extract_sources()
 
-        # 3. If requested, subtract the sky
-        if self.config.extract_sky: self.subtract_sky()
+        # 4. If requested, subtract the sky
+        if self.config.subtract_sky: self.subtract_sky()
 
-        # 4. If requested, correct for galactic extinction
+        # 5. If requested, correct for galactic extinction
         if self.config.correct_for_extinction: self.correct_for_extinction()
 
-        # 5. If requested, convert the unit
+        # 6. If requested, convert the unit
         if self.config.convert_unit: self.convert_unit()
 
-        # 6. If requested, convolve
+        # 7. If requested, convolve
         if self.config.convolve: self.convolve()
 
-        # 7. If requested, rebin
+        # 8. If requested, rebin
         if self.config.rebin: self.rebin()
 
-        # 8. If requested, set the uncertainties
+        # 9. If requested, set the uncertainties
         if self.config.set_uncertainties: self.set_uncertainties()
 
-        # 9. If requested, crop
+        # 10. If requested, crop
         if self.config.crop: self.crop()
 
     # -----------------------------------------------------------------
@@ -112,26 +123,32 @@ class ImagePreparation(Configurable):
         super(ImagePreparation, self).setup()
 
         # Make a local reference to the passed image
-        self.frame = image
+        self.image = image
 
     # -----------------------------------------------------------------
 
-    def clear(self):
+    def create_mask(self):
 
         """
-        This function ...
+        This fuction ...
         :return:
         """
 
-        # Set the galaxy and star extractors to None
-        self.galaxyex = None
-        self.starex = None
+        # Create a mask for the nans in the primary
+        self.bad_mask = Mask.is_nan(self.image.frames["primary"])
 
-        # Set the sky subtractor to None
-        self.skysub = None
+        if self.config.extra_region_path is not None:
 
-        # Set the image reference to None
-        self.image = None
+            # Replace pixels in the 'extra' region with zeros
+            extra_path = self.full_input_path(self.config.extra_region_path)
+
+            extra_region = Region.from_file(extra_path)
+            extra_mask = Mask.from_region(extra_region, self.image.frames["primary"].shape)
+
+            self.bad_mask += extra_mask
+
+        # Set value of bad pixels to zero
+        self.image.frames["primary"][self.bad_mask] = 0.0
 
     # -----------------------------------------------------------------
 
@@ -142,41 +159,11 @@ class ImagePreparation(Configurable):
         :return:
         """
 
-        # Extract the galaxies
-        self.extract_galaxies()
-
-        # If requested, extract the stars
-        if self.config.extract_stars: self.extract_stars()
-
-    # -----------------------------------------------------------------
-
-    def extract_galaxies(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Create a galaxy extractor
-        self.galaxyex = GalaxyExtractor(self.config.galaxy_extraction)
+        self.extractor = Extractor(self.config.galaxy_extraction)
 
-        # Run the galaxy extractor
-        self.galaxyex.run(self.image.frames[self.config.primary])
-
-    # -----------------------------------------------------------------
-
-    def extract_stars(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create a star extractor
-        self.starex = StarExtractor(self.config.star_extraction)
-
-        # Run the star extractor
-        self.starex.run(self.image.frames[self.config.primary], self.galaxyex)
+        # Run the extractor
+        self.extractor.run(self.image.frames[self.config.primary], self.bad_mask)
 
     # -----------------------------------------------------------------
 
@@ -191,7 +178,7 @@ class ImagePreparation(Configurable):
         self.skysub = SkySubtractor(self.config.sky_extraction)
 
         # Run the sky extraction
-        self.skysub.run(self.image.frames[self.config.primary], self.galaxyex, self.starex)
+        self.skysub.run(self.image.frames[self.config.primary], self.extractor.mask + self.bad_mask)
 
         # Print the statistics of the sky frame
         self.log.info("Mean sky level = " + str(self.skysub.mean))
@@ -208,8 +195,13 @@ class ImagePreparation(Configurable):
         :return:
         """
 
-        # Correct the primary frame for galactic extinction
-        self.image.frames[self.config.primary] *= 10**(0.4*self.config.attenuation)
+        # ...
+        if self.image.wavelength < 1.0 * u.Unit("micron"):
+
+            # Correct the primary frame for galactic extinction
+            self.image.frames[self.config.primary] *= 10**(0.4*self.config.attenuation)
+
+        else: self.log.info("No extinction correction for this image")
 
     # -----------------------------------------------------------------
 
@@ -235,7 +227,7 @@ class ImagePreparation(Configurable):
         ####
 
         # THE GALEX FUV IMAGE
-        if self.image.name == "GALEXFUV":
+        if self.image.name == "GALEX FUV":
 
             # Get the pixelscale of the image
             pixelscale = self.image.frames.primary.pixelscale.value
@@ -254,7 +246,7 @@ class ImagePreparation(Configurable):
             self.image *= factor
 
         # THE 2MASS H IMAGE
-        elif self.image.name == "2MASSH":
+        elif self.image.name == "2MASS H":
 
             # Conversion factor to magnitudes
             m0 = 20.6473999
@@ -297,13 +289,13 @@ class ImagePreparation(Configurable):
             self.image *= factor
 
         # THE IRAC I1 IMAGE IS ALREADY IN MJY/SR
-        elif self.image.name == "IRACI1": pass
+        elif self.image.name == "IRAC I1": pass
 
         # THE MIPS 24 IMAGE IS ALREADY IN MJY/SR
-        elif self.image.name == "MIPS24": pass
+        elif self.image.name == "MIPS 24": pass
 
         # THE PACS 70 IMAGE
-        elif self.image.name == "PACS70":
+        elif self.image.name == "PACS 70":
 
             # Get the pixelscale of the image
             pixelscale = self.image.frames.primary.pixelscale.value
@@ -316,7 +308,7 @@ class ImagePreparation(Configurable):
             self.image *= factor
 
         # THE PACS 160 IMAGE
-        elif self.image.name == "PACS160":
+        elif self.image.name == "PACS 160":
 
             # Get the pixelscale of the image
             pixelscale = self.image.frames.primary.pixelscale.value

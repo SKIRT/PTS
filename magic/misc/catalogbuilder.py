@@ -158,8 +158,16 @@ class CatalogBuilder(Configurable):
                 # Open the 'old' stellar catalog
                 old_stellar_catalog = tables.from_file(old_stellar_catalog_path)
 
+                # Find the maximal DustPedia star ID
+                maximal_id = -1
+                for j in range(len(old_stellar_catalog)):
+                    if old_stellar_catalog["Id"][j] > maximal_id:
+                        maximal_id = int(old_stellar_catalog["Id"][j].split("/")[1])
+
+                stellar_catalog = self.create_stellar_catalog(maximal_id)
+
                 # Create merged stellar catalog
-                stellar_catalog = catalogs.merge_stellar_catalogs(self.star_extractor.catalog, old_stellar_catalog)
+                stellar_catalog = catalogs.merge_stellar_catalogs(stellar_catalog, old_stellar_catalog)
 
                 # Save the merged catalog
                 path = os.path.join(self.galaxy_user_path, "stars.cat")
@@ -182,12 +190,86 @@ class CatalogBuilder(Configurable):
             galactic_catalog_path = os.path.join(self.galaxy_user_path, "galaxies.cat")
             tables.write(self.galaxy_extractor.catalog, galactic_catalog_path)
 
+            # Append stars from the trained extractor
+            # Loop over the stars found by the trained extractor
+            maximal_id = -1
+            stellar_catalog = self.create_stellar_catalog(maximal_id)
+
             # Save stellar catalog
             stellar_catalog_path = os.path.join(self.galaxy_user_path, "stars.cat")
-            tables.write(self.star_extractor.catalog, stellar_catalog_path)
+            tables.write(stellar_catalog, stellar_catalog_path)
 
             # Save the coverage or range table
             coverage.save()
+
+    # -----------------------------------------------------------------
+
+    def create_stellar_catalog(self, maximal_id):
+
+        """
+        This function ...
+        :param maximal_id:
+        :return:
+        """
+
+        catalog_column = []
+        id_column = []
+        ra_column = []
+        dec_column = []
+        ra_error_column = []
+        dec_error_column = []
+        confidence_level_column = []
+        on_galaxy_column = []
+        original_id_column = []
+
+        # Append stars from the star extractor
+        # Loop over the stellar statistics
+        for i in range(len(self.star_extractor.statistics)):
+
+            id = self.galaxy_name + "/" + str(maximal_id + 1)
+
+            index = self.star_extractor.statistics["Star index"][i]
+
+            # Skip undetected stars
+            if not self.star_extractor.statistics["Detected"][i]: continue
+
+            catalog_column.append("DustPedia")
+            id_column.append(id)
+            ra_column.append(self.star_extractor.catalog["Right ascension"][index])
+            dec_column.append(self.star_extractor.catalog["Declination"][index])
+            ra_error_column.append(self.star_extractor.catalog["Right ascension error"][index])
+            dec_error_column.append(self.star_extractor.catalog["Declination error"][index])
+            confidence_level_column.append(self.star_extractor.catalog["Confidence level"][index])
+            on_galaxy_column.append(self.star_extractor.catalog["On galaxy"][index])
+            original_id_column.append(self.star_extractor.catalog["Catalog"][index] + " " + self.star_extractor.catalog["Id"][index])
+
+            maximal_id += 1
+
+        # Append stars from the trained extractor
+        # Loop over the stars found by the trained extractor
+        for star in self.trained_extractor.stars:
+
+            id = self.galaxy_name + "/" + str(maximal_id + 1)
+
+            catalog_column.append("DustPedia")
+            id_column.append(id)
+            ra_column.append(star.position.ra.value)
+            dec_column.append(star.position.dec.value)
+            ra_error_column.append(None)
+            dec_error_column.append(None)
+            confidence_level_column.append(star.confidence_level)
+            on_galaxy_column.append(False)
+            original_id_column.append(None)
+
+            maximal_id += 1
+
+        data = [catalog_column, id_column, ra_column, dec_column, ra_error_column, dec_error_column, confidence_level_column,
+                on_galaxy_column, original_id_column]
+        names = ['Catalog', 'Id', 'Right ascension', 'Declination', 'Right ascension error', 'Declination error', 'Confidence level',
+                 'On galaxy', 'Original catalog and id']
+        stellar_catalog = tables.new(data, names)
+
+        return stellar_catalog
 
     # -----------------------------------------------------------------
 

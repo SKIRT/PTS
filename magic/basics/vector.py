@@ -180,4 +180,16 @@ class Extent(Vector):
 
         return Extent(self.x / value, self.y / value)
 
+    # -----------------------------------------------------------------
+
+    def __truediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return Extent(self.x / value, self.y / value)
+
 # -----------------------------------------------------------------

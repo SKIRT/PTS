@@ -18,19 +18,18 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os.path
-import inspect
-import shutil
+import os
 
 # Import astronomical modules
 from astropy import units as u
 
 # Import the relevant AstroMagic classes and modules
-from pts.magic.core import Image, Frame
+from ..magic.core import Image, Frame
 
 # Import the relevant PTS classes and modules
-from pts.modeling.core import ImagePreparation, MapMaker, SEDFitter, GalaxyDecomposer
-from pts.core.basics.configurable import Configurable
+from .core import ImagePreparation, MapMaker, SEDFitter, GalaxyDecomposer
+from ..core.basics.configurable import Configurable
+from ..core.tools import filesystem, tables
 
 # -----------------------------------------------------------------
 
@@ -45,7 +44,7 @@ class GalaxyModeler(Configurable):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, path, config=None):
+    def __init__(self, config=None):
 
         """
         The constructor ...
@@ -60,29 +59,57 @@ class GalaxyModeler(Configurable):
         # Call the constructor of the base class
         super(GalaxyModeler, self).__init__(config, "modeling")
 
-        ## Temporary
+        # -- Temporary --
 
         self.config.decompose = False
         self.config.make_maps = False
         self.config.fit_sed = False
 
-        ## Paths
+        # -- Children --
 
-        # Get the name of the galaxy (the name of the base directory)
-        self.galaxy_name = os.path.basename(path)
-
-        # Get the full path to the 'data', 'prep' and 'in' directories
-        self.data_path = os.path.join(path, self.config.data_dir)
-        self.prep_path = os.path.join(path, self.config.prep_dir)
-        self.in_path = os.path.join(path, self.config.in_dir)
-        self.config_path = os.path.join(path, self.config.config_dir)
-        self.extra_path = os.path.join(path, self.config.extra_dir)
-        self.ignore_path = os.path.join(path, self.config.ignore_dir)
-        self.manual_path = os.path.join(path, self.config.manual_dir)
+        # Create the preparation object
+        self.children["image_preparer"] = ImagePreparation(self.config.preparation)
+        self.children["map_maker"] = MapMaker()
+        self.children["sed_fitter"] = SEDFitter()
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    @classmethod
+    def from_arguments(cls, arguments):
+
+        """
+        This function ...
+        :param arguments:
+        :return:
+        """
+
+        # Create a new Modeler instance
+        modeler = cls(arguments.config)
+
+        # Set the input and output path
+        #modeler.config.input_path = arguments.input_path
+        #modeler.config.output_path = arguments.output_path
+
+        # Check if a specific stage is defined
+        if arguments.stage is not None:
+
+            modeler.config.prepare = False
+            modeler.config.decompose = False
+            modeler.config.make_maps = False
+            modeler.config.fit_sed = False
+
+            if arguments.stage == "preparation": modeler.config.prepare = True
+            elif arguments.stage == "decomposition": modeler.config.decompose = True
+            elif arguments.stage == "mapmaking": modeler.config.make_maps = True
+            elif arguments.stage == "fitting": modeler.config.fit_sed = True
+            else: raise ValueError("Unkown stage (choose 'preparation', 'decomposition', 'mapmaking' or 'fitting')")
+
+        # Return the new instance
+        return modeler
+
+    # -----------------------------------------------------------------
+
+    def run(self, path):
 
         """
         This function runs the image preparation procedure
@@ -90,7 +117,7 @@ class GalaxyModeler(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(path)
 
         # 2. Prepare the images
         if self.config.prepare: self.prepare_images()
@@ -106,14 +133,30 @@ class GalaxyModeler(Configurable):
 
     # -----------------------------------------------------------------
 
-    def clear_output(self):
+    def setup(self, path):
 
         """
         This function ...
+        :param path:
         :return:
         """
 
-        shutil.rmtree('/home/me/test')
+        # Call the setup function of the base class
+        super(GalaxyModeler, self).setup()
+
+        # -- Attributes --
+
+        # Get the name of the galaxy (the name of the base directory)
+        self.galaxy_name = os.path.basename(path)
+
+        # Get the full path to the 'data', 'prep' and 'in' directories
+        self.data_path = os.path.join(path, self.config.data_dir)
+        self.prep_path = os.path.join(path, self.config.prep_dir)
+        self.in_path = os.path.join(path, self.config.in_dir)
+        self.config_path = os.path.join(path, self.config.config_dir)
+        self.extra_path = os.path.join(path, self.config.extra_dir)
+        self.ignore_path = os.path.join(path, self.config.ignore_dir)
+        self.manual_path = os.path.join(path, self.config.manual_dir)
 
     # -----------------------------------------------------------------
 
@@ -124,183 +167,78 @@ class GalaxyModeler(Configurable):
         :return:
         """
 
-        # Find the input FITS files
-        self.find_input_files()
+        # Load image information
+        info_path = os.path.join(self.data_path, "info.dat")
+        info_table = tables.from_file(info_path)
 
-        # Loop over all filters for which we have an image
-        for filter_name, path in self.image_paths.items():
+        # Loop over all files found in the data directory
+        for file_path in filesystem.files_in_path(self.data_path, extension="fits", not_contains="error"):
 
-            ### IF THE FINAL.FITS FILE EXISTS, SKIP THIS IMAGE
+            # Get the file name
+            file_name = os.path.basename(file_path)
+            image_name = os.path.splitext(file_name)[0]
 
-            final_path = os.path.join(self.prep_path, filter_name, "final.fits")
-            if os.path.isfile(final_path): continue
+            # Get the corresponding index in the information table
+            info_index = tables.find_index(info_table, image_name)
+            # TEMP: skip image if not defined in table !!
+            if info_index is None: continue
 
-            ### CONFIGURATION FOR THE PREPARATION
-
-            # Determine the path to the default configuration file
-            directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-            default_config = os.path.join(directory, "config", "imagepreparation.cfg")
-
-            # Look for a user configuration file
-            config_path = os.path.join(self.config_path, filter_name + ".cfg")
-            config = config_path if os.path.isfile(config_path) else None
-
-            # Open the default configuration if no configuration file is specified, otherwise adjust the default
-            # settings according to the user defined configuration file
-            if config is None: config = configuration.open(default_config)
-            else: config = configuration.open(config, default_config)
-
-            # Set log level for the different children of the ImagePreparation object, if cascading is enabled
-            if self.config.logging.cascade:
-
-                # Galaxy extractor
-                config.galaxy_extraction.logging.level = self.config.logging.level
-                config.galaxy_extraction.logging.cascade = self.config.logging.cascade
-                config.galaxy_extraction.logging.path = self.config.logging.path
-
-                # Star extractor
-                config.star_extraction.logging.level = self.config.logging.level
-                config.star_extraction.logging.cascade = self.config.logging.cascade
-                config.star_extraction.logging.path = self.config.logging.path
-
-                # Sky extractor
-                config.sky_extraction.logging.level = self.config.logging.level
-                config.sky_extraction.logging.cascade = self.config.logging.cascade
-                config.sky_extraction.logging.path = self.config.logging.path
-
-            # Set saving parameters for galaxy extractor
-            config.galaxy_extraction.save_table = True
-            config.galaxy_extraction.save_region = True
-            #config.galaxy_extraction.save_masked_frame = True
-            #config.galaxy_extraction.save_result = True
-            config.galaxy_extraction.saving.table_path = os.path.join(self.prep_path, filter_name, "galaxies.txt")
-            config.galaxy_extraction.saving.region_path = os.path.join(self.prep_path, filter_name, "galaxies.reg")
-            config.galaxy_extraction.saving.region_annotation = "name"
-            #config.galaxy_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "masked_galaxies.fits")
-            #config.galaxy_extraction.saving.result_path = os.path.join(self.prep_path, filter_name, "extractedgalaxies.fits")
-
-            # Set saving parameters for star extractor
-            config.star_extraction.save_table = True
-            config.star_extraction.save_region = True
-            #config.star_extraction.save_masked_frame = True
-            config.star_extraction.save_result = True
-            config.star_extraction.saving.table_path = os.path.join(self.prep_path, filter_name, "stars.txt")
-            config.star_extraction.saving.region_path = os.path.join(self.prep_path, filter_name, "stars.reg")
-            config.star_extraction.saving.region_annotation = "flux"
-            #config.star_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "masked_stars.fits")
-            config.star_extraction.saving.result_path = os.path.join(self.prep_path, filter_name, "extractedstars.fits")
-
-            # Set saving parameters for sky extractor
-            config.sky_extraction.save_masked_frame = True
-            config.sky_extraction.save_clipped_masked_frame = True
-            config.sky_extraction.save_histogram = False
-            config.sky_extraction.saving.masked_frame_path = os.path.join(self.prep_path, filter_name, "sky_mask.fits")
-            config.sky_extraction.saving.clipped_masked_frame_path = os.path.join(self.prep_path, filter_name, "clipped_sky_mask.fits")
-            config.sky_extraction.saving.histogram_path = os.path.join(self.prep_path, filter_name, "sky_histogram.pdf")
-
-            # Temporary: do not include calibration errors
-            config.uncertainties.add_calibration_error = False
-
-            ### OPENING THE IMAGE
+            # Check whether this image already has a prepared image
+            final_path = os.path.join(self.prep_path, image_name, "final.fits")
+            if filesystem.is_file(final_path): continue
 
             # Open the image
-            image = Image(path)
+            image = Image(file_path)
+            self.load_error_frame_and_select(image, image_name)
 
-            # If no error map was found in the FITS file, try to find a seperate FITS file containing error data
-            if image.frames.errors is None:
-
-                error_path = os.path.join(self.data_path, filter_name + "_error.fits")
-                if os.path.isfile(error_path): image.load_frames(error_path, 0, config.errors, "the error map")
-
-            if image.frames.errors is None: log.warning("No error data found for " + filter_name)
-
-            ### SELECTING THE APPROPRIATE FRAMES
-
-            # Select the primary and errors frame
-            image.deselect_all()
-            image.frames[config.primary].select()
-            if config.errors in image.frames: image.frames[config.errors].select()
-
-            ### SETTING FLAGS
-
-            # Set the extract_stars flag
-            if image.wavelength < 10.0 * u.micron: config.extract_stars = True
-            else: config.extract_stars = False
-
-            # Set the correct_for_extinction flag
-            if image.wavelength < 1.0 * u.micron: config.correct_for_extinction = True
-            else: config.correct_for_extinction = False
-
-            ### SETTING THE UNITS
+            # -- Units --
 
             # Set the unit
-            unit = u.Unit(config.unit)
+            unit = u.Unit(info_table["Unit"][info_index])
             image.set_unit(unit)
 
-            ### SETTING THE FWHM
+            # -- The FWHM of the PSF --
 
             # Set the FWHM of the PSF
-            fwhm = config.fwhm * u.Unit(config.fwhm_unit) if config.fwhm is not None else None
-            image.frames[config.primary].set_fwhm(fwhm)
+            fwhm = info_table["FWHM"][info_index] * u.Unit(info_table["Unit of FWHM"][info_index]) if not info_table["FWHM"].mask[info_index] else None
+            image.frames["primary"].set_fwhm(fwhm)
 
-            ### REMOVING NANS AND BAD REGIONS
+            # -- Extra region mask --
 
-            # Replace nans by zeros
-            image.frames[config.primary].replace_nans(0.0)
+            extra_path = os.path.join(self.data_path, "extra", image_name + ".reg")
+            # Check if a region is present
+            # Check whether the extra region file is present
+            if filesystem.is_file(extra_path): self.image_preparer.config.extra_region_path = extra_path
+            else: self.image_preparer.config.extra_region_path = None
 
-            # Replace pixels in the 'extra' region with zeros
-            extra_path = os.path.join(self.extra_path, image.name + '.reg')
-            if os.path.isfile(extra_path):
-
-                image.import_region(extra_path, "extra")
-                image.regions.extra.select()
-                image.create_mask()
-                image.regions.extra.deselect()
-                image.masks.extra.select()
-                image.apply_masks(0.0)
-
-                # Set the path of the extra region in the SkyExtractor's configuration
-                config.sky_extraction.extra_region = extra_path
-
-            ### SETTING THE REFERENCE IMAGE
+            # -- The reference image (for convolution and rebinning)
 
             # Set the path to the reference image for the rebinning
-            config.rebinning.rebin_to = os.path.join(self.data_path, self.config.reference_image + ".fits")
+            reference_path = os.path.join(self.data_path, self.config.reference_image + ".fits")
 
-            # Set the 'rebin' and 'convolve' flags
-            if image.name == self.config.reference_image:
+            if file_path == reference_path:
 
-                log.info("This is the reference image, will not be rebinned or convolved")
-                config.rebin = False
-                config.convolve = False
+                self.image_preparer.config.rebin = False
+                self.image_preparer.config.convolve = False
 
-            ### SETTING THE NOISE REGION
+            else:
+
+                self.image_preparer.config.rebin = True
+                self.image_preparer.config.convolve = True
+
+                self.image_preparer.config.rebin_to = reference_path
+                self.image_preparer.config.convolve_to = self.config.reference_image.replace(' ', '')
+
+            # -- Noise --
 
             # Set the path to the noise region
-            noise_path = os.path.join(self.prep_path, "noise.reg")
-            config.uncertainties.noise_path = noise_path
+            noise_path = os.path.join(self.data_path, "noise.reg")
+            self.image_preparer.config.uncertainties.noise_path = noise_path
 
-            ### LOOKING FOR REGIONS TO IGNORE FOR THE EXTRACTION ALGORITHMS
+            # Run the image preparation
+            self.image_preparer.run(image)
 
-            # If a region file exists with the name of this image, add its path to the configuration for the preparation
-            ignore_path = os.path.join(self.ignore_path, image.name + ".reg")
-            if os.path.isfile(ignore_path): config.star_extraction.ignore_region = ignore_path
-
-            ### LOOKING FOR MANUAL STAR REGIONS
-
-            # If a region file exists with the name of this image, add its path to the configuration for the preparation
-            manual_path = os.path.join(self.manual_path, image.name + ".reg")
-            if os.path.isfile(manual_path): config.star_extraction.manual_region = manual_path
-
-            ### PERFORMING THE PREPARATION
-
-            # Create the preparation object
-            preparation = ImagePreparation(config)
-
-            # Run the preparation
-            preparation.run(image)
-
-            ### SAVING
+            # -- Saving --
 
             # Save the result
             image.save(final_path)
@@ -314,27 +252,19 @@ class GalaxyModeler(Configurable):
         :return:
         """
 
-        # Determine the path to the default configuration file
-        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_config = os.path.join(directory, "config", "decomposer.cfg")
-
-        # Create config for the GalaxyDecomposer object
-        config = configuration.open(default_config)
+        # Create a GalaxyDecomposer object
+        #decomposer = GalaxyDecomposer()
 
         # Set log level for the decomposer, if cascading is enabled
-        if self.config.logging.cascade:
+        #if self.config.logging.cascade:
 
-            config.logging.level = self.config.logging.level
-            config.logging.cascade = self.config.logging.cascade
-            config.logging.path = self.config.logging.path
-
-        # Create a GalaxyDecomposer object
-        decomposer = GalaxyDecomposer(config)
-
-        # Run the decomposition
-        decomposer.run()
+        #    decomposer.config.logging.level = self.config.logging.level
+        #    decomposer.config.logging.cascade = self.config.logging.cascade
+        #    decomposer.config.logging.path = self.config.logging.path
 
         # TODO: do the bulge/disk fitting here
+        # Run the decomposition
+        #decomposer.run()
 
         # Set path of bulge and disk images
         bulge_path = os.path.join(self.prep_path, "Bulge", "bulge.fits")
@@ -374,13 +304,6 @@ class GalaxyModeler(Configurable):
         """
         This function makes the maps of dust and stars ...
         """
-
-        # Determine the path to the default configuration file
-        directory = os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
-        default_config = os.path.join(directory, "config", "mapmaker.cfg")
-
-        # Create config for the MapMaker object
-        config = configuration.open(default_config)
 
         ### CONFIGURATION FOR THE PREPARATION
 
@@ -446,11 +369,8 @@ class GalaxyModeler(Configurable):
 
         ### PERFORMING THE MAP MAKING
 
-        # Create a MapMaker object
-        maker = MapMaker(config)
-
         # Run the map maker
-        maker.run()
+        self.map_maker.run()
 
     # -----------------------------------------------------------------
     
@@ -471,11 +391,32 @@ class GalaxyModeler(Configurable):
             config.logging.cascade = self.config.logging.cascade
             config.logging.path = self.config.logging.path
 
-        # Create a SEDFitter object
-        fitter = SEDFitter()
-
         # Run the SED fitting
-        fitter.run()
+        self.sed_fitter.run()
+
+    # -----------------------------------------------------------------
+
+    def load_error_frame_and_select(self, image, image_name):
+
+        """
+        This function ...
+        :param image:
+        :param name:
+        :return:
+        """
+
+        # If no error map was found in the FITS file, try to find a seperate FITS file containing error data
+        if image.frames.errors is None:
+
+            error_path = os.path.join(self.data_path, image_name + " error.fits")
+            if os.path.isfile(error_path): image.load_frames(error_path, 0, "errors", "the error map")
+
+        # Still no errors frame
+        if image.frames.errors is None: self.log.warning("No error data found for " + image_name + ".fits")
+
+        image.deselect_all()
+        image.frames["primary"].select()
+        if "errors" in image.frames: image.frames["errors"].select()
 
     # -----------------------------------------------------------------
 

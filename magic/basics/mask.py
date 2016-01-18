@@ -18,15 +18,12 @@ from scipy import ndimage
 from skimage import morphology
 
 # Import astronomical modules
-import astropy.units as u
-from astropy.coordinates import Angle
 from photutils import detect_sources
 
 # Function to create mask from ellipse
 from photutils.geometry import elliptical_overlap_grid
 
 # Import the relevant AstroMagic classes and modules
-from .region import Region
 from .vector import Position, Extent
 
 # -----------------------------------------------------------------
@@ -114,6 +111,19 @@ class Mask(np.ndarray):
 
     @property
     def ysize(self): return self.shape[0]
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_shape(cls, shape):
+
+        """
+        This function ...
+        :param shape:
+        :return:
+        """
+
+        return cls(np.zeros(shape))
 
     # -----------------------------------------------------------------
 

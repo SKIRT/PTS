@@ -78,6 +78,66 @@ class Ellipse(object):
 
     # -----------------------------------------------------------------
 
+    def __mul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return Ellipse(self.center, self.radius * value, self.angle)
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return Ellipse(self.center, self.radius / value, self.angle)
+
+    # -----------------------------------------------------------------
+
+    def __truediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return Ellipse(self.center, self.radius / value, self.angle)
+
+    # -----------------------------------------------------------------
+
+    def __add__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return Ellipse(self.center + value, self.radius, self.angle)
+
+    # -----------------------------------------------------------------
+
+    def __sub__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return Ellipse(self.center - value, self.radius, self.angle)
+
+    # -----------------------------------------------------------------
+
     @property
     def bounding_box(self):
 

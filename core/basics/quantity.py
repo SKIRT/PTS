@@ -98,5 +98,19 @@ class Quantity(object):
         value = self.value / quantity.value
         error = math.fabs(value) * math.sqrt(math.pow(self.relative_error, 2) + math.pow(quantity.relative_error, 2))
         return Quantity(value, error)
-        
+
+    # -----------------------------------------------------------------
+
+    def __truediv__(self, quantity):
+
+        """
+        This function ...
+        :param quantity:
+        :return:
+        """
+
+        value = self.value / quantity.value
+        error = math.fabs(value) * math.sqrt(math.pow(self.relative_error, 2) + math.pow(quantity.relative_error, 2))
+        return Quantity(value, error)
+
 # -----------------------------------------------------------------

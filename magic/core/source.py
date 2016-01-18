@@ -360,7 +360,13 @@ class Source(object):
         rel_center = source.cutout.rel_position(self.center)
 
         # Decrease the radius
-        source.radius = self.radius / factor
+
+        try:
+            source.radius = self.radius / factor
+        except TypeError:
+            #print(type(self.radius), type(factor))
+            #print(type(self.radius.x), type(self.radius.y))
+            source.radius = self.radius * (1.0 / factor)
 
         # Create smaller mask
         ellipse = Ellipse(rel_center, source.radius, source.angle)

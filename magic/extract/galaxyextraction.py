@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
-import numpy as np
 
 # Import astronomical modules
 import astropy.units as u
@@ -22,7 +21,7 @@ import astropy.coordinates as coord
 from astropy.coordinates import Angle
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Mask, Region, Position, Extent, Ellipse
+from ..basics import Mask, Region
 from ..core import Source
 from ..sky import Galaxy
 from ..tools import catalogs, regions
@@ -114,7 +113,7 @@ class GalaxyExtractor(Configurable):
         self.catalog = catalog
 
         # Create a mask with shape equal to the shape of the frame
-        self.mask = Mask(np.zeros_like(self.frame))
+        self.mask = Mask.from_shape(self.frame.shape)
 
     # -----------------------------------------------------------------
 
@@ -519,10 +518,9 @@ class GalaxyExtractor(Configurable):
         for shape in region:
 
             # Get the center and radius of the shape (can be a circle or an ellipse)
-            x_center, y_center, x_radius, y_radius, angle = regions.ellipse_parameters(shape)
+            ellipse = regions.ellipse(shape)
 
             # Create a source
-            ellipse = Ellipse(Position(x_center, y_center), Extent(x_radius, y_radius), Angle(angle, u.deg))
             source = Source.from_ellipse(self.frame, ellipse, self.config.manual.background_outer_factor)
 
             # Add the source to the list of manual sources
@@ -559,7 +557,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Create a new mask with the dimensions of the frame
-        mask = Mask(np.zeros_like(self.frame))
+        mask = Mask.from_shape(self.frame.shape)
 
         # Add the principal galaxy's mask to the total mask
         mask[self.principal.source.cutout.y_slice, self.principal.source.cutout.x_slice] = self.principal.source.mask
@@ -578,7 +576,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Create a new mask with the dimension of the frame
-        mask = Mask(np.zeros_like(self.frame))
+        mask = Mask.from_shape(self.frame.shape)
 
         # Loop over all companion galaxies
         for galaxy in self.companions:

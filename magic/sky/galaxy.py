@@ -111,6 +111,21 @@ class Galaxy(SkyObject):
 
     # -----------------------------------------------------------------
 
+    def ellipse(self, wcs, pixelscale, default_radius):
+
+        """
+        This function ...
+        :param wcs:
+        :param pixelscale:
+        :param default_radius:
+        :return:
+        """
+
+        center, radius, angle = self.ellipse_parameters(wcs, pixelscale, default_radius)
+        return Ellipse(center, radius, angle)
+
+    # -----------------------------------------------------------------
+
     def ellipse_parameters(self, wcs, pixelscale, default_radius):
 
         """
@@ -163,20 +178,15 @@ class Galaxy(SkyObject):
         """
 
         # Get the parameters describing the elliptical contour
-        center, radius, angle = self.ellipse_parameters(frame.wcs, frame.pixelscale, None)
+        ellipse = self.ellipse(frame.wcs, frame.pixelscale, None)
 
-        if center.x < 0 or center.y < 0:
+        if ellipse.center.x < 0 or ellipse.center.y < 0:
             self.source = None
             return
 
         # Create a source object
-        ellipse = Ellipse(center, radius*expansion_factor, angle)
+        ellipse *= expansion_factor
         self.source = Source.from_ellipse(frame, ellipse, outer_factor)
-
-        if self.source.cutout.shape[0] == 0 or self.source.cutout.shape[1] == 0:
-
-            print(self.name)
-            print("radius=", radius)
 
     # -----------------------------------------------------------------
 

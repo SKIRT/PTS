@@ -122,7 +122,7 @@ def remove_file(path):
 
 # -----------------------------------------------------------------
 
-def files_in_path(path, recursive=False, ignore_hidden=True, extension=None, contains=None):
+def files_in_path(path, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None):
 
     """
     This function ...
@@ -148,6 +148,9 @@ def files_in_path(path, recursive=False, ignore_hidden=True, extension=None, con
 
         # Ignore filenames that do not contain a certain string, if specified
         if contains is not None and contains not in item: continue
+
+        # Ignore filenames that do contain a certain string that it should not contain, if specified
+        if not_contains is not None and not_contains in item: continue
 
         # Check if the current item is a file
         if os.path.isfile(item_path): file_paths.append(item_path)

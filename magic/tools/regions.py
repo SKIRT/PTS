@@ -18,6 +18,17 @@ import numpy as np
 
 # Import astronomical modules
 import pyregion
+from astropy.coordinates import Angle
+
+# Import the relevant AstroMagic classes and modules
+from ..basics import Ellipse, Position, Extent
+
+# -----------------------------------------------------------------
+
+def ellipse(shape):
+
+    x_center, y_center, x_radius, y_radius, angle = ellipse_parameters(shape)
+    return Ellipse(Position(x_center, y_center), Extent(x_radius, y_radius), Angle(angle, u.deg))
 
 # -----------------------------------------------------------------
 
@@ -47,33 +58,6 @@ def ellipse_parameters(shape):
     else: raise ValueError("Shape must be either a circle or an ellipse")
     
     return x_center, y_center, x_radius, y_radius, angle
-
-# -----------------------------------------------------------------
-
-def get_enclosing_box(shape):
-
-    """
-    This function ...
-    :param shape:
-    :return:
-    """
-
-    # TODO: make it work for shapes other than ellipses!
-
-    # TODO: THIS FUNCTION SHOULD BE DEPRECATED IN FAVOR OF ELLIPSE CLASS
-    # NOTE: THIS FUNCTION IS INCORRECT FOR ROTATED ELLIPSES !!
-
-    # Get the parameters of this ellipse (or circle)
-    x_center, y_center, x_radius, y_radius, angle = ellipse_parameters(shape)
-
-    # Create a box to estimate the background
-    x_min = int(round(x_center - x_radius))
-    x_max = int(round(x_center + x_radius))
-    y_min = int(round(y_center - y_radius))
-    y_max = int(round(y_center + y_radius))
-
-    # Return the extents
-    return x_min, x_max, y_min, y_max
 
 # -----------------------------------------------------------------
 
@@ -368,27 +352,6 @@ def subtract(region_a, region_b, center_offset_tolerance, header):
 
     # Return the subtracted region
     return new_region
-
-# -----------------------------------------------------------------
-
-def in_box(shape, dimensions, require_completely=False):
-
-    """
-    This function ...
-    :param shape:
-    :param dimensions:
-    :param require_completely:
-    :return:
-    """
-
-    # TODO: use require_completely (require the shape to completely fall within the box)
-
-    x_min, x_max, y_min, y_max = get_enclosing_box(shape)
-
-    if x_min >= dimensions[1] or y_min >= dimensions[0]: return False
-    if x_max < 0 or y_max < 0: return False
-
-    return True
 
 # -----------------------------------------------------------------
 

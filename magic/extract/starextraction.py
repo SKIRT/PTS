@@ -14,21 +14,16 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
-import math
 import numpy as np
-import matplotlib.pyplot as plt
 import config
 
 # Import astronomical modules
-import aplpy
-import astropy.io.fits as pyfits
 import astropy.units as u
 import astropy.coordinates as coord
-from astropy.coordinates import Angle
 from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Position, Extent, Mask, Region, Ellipse
+from ..basics import Extent, Mask, Region, Ellipse
 from ..core import Source
 from ..sky import Star
 from ..tools import statistics, fitting, regions, catalogs
@@ -128,7 +123,7 @@ class StarExtractor(Configurable):
         self.galaxy_extractor = galaxyextractor
 
         # Create a mask with shape equal to the shape of the frame
-        self.mask = Mask(np.zeros_like(self.frame))
+        self.mask = Mask.from_shape(self.frame.shape)
 
     # -----------------------------------------------------------------
 
@@ -491,10 +486,9 @@ class StarExtractor(Configurable):
             if not star.has_source and self.config.fitting.fit_if_undetected:
 
                 # Get the parameters of the circle
-                center, radius, angle = star.ellipse_parameters(self.frame.wcs, self.frame.pixelscale, self.config.fitting.initial_radius)
+                ellipse = star.ellipse(self.frame.wcs, self.frame.pixelscale, self.config.fitting.initial_radius)
 
                 # Create a source object
-                ellipse = Ellipse(center, radius, angle)
                 source = Source.from_ellipse(self.frame, ellipse, self.config.fitting.background_outer_factor)
 
             else: source = None
@@ -602,7 +596,7 @@ class StarExtractor(Configurable):
             if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
             # Find a saturation source and remove it from the frame
-            star.find_saturation(self.frame, self.original_frame, self.config.saturation, default_fwhm)
+            star.find_saturation(self.frame, self.original_frame, self.config.saturation, default_fwhm, self.galaxy_extractor.mask, self.mask)
             success += star.has_saturation
 
         # Inform the user
@@ -745,10 +739,9 @@ class StarExtractor(Configurable):
         for shape in region:
 
             # Get the center and radius of the shape (can be a circle or an ellipse)
-            x_center, y_center, x_radius, y_radius, angle = regions.ellipse_parameters(shape)
+            ellipse = regions.ellipse(shape)
 
             # Create a source
-            ellipse = Ellipse(Position(x_center, y_center), Extent(x_radius, y_radius), Angle(angle, u.deg))
             source = Source.from_ellipse(self.frame, ellipse, self.config.manual.background_outer_factor)
 
             # Add the source to the list of manual sources
@@ -860,6 +853,9 @@ class StarExtractor(Configurable):
             if star.has_model: color = "blue"
             elif star.has_source: color = "green"
             else: color = "red"
+
+            #if star.has_source: region.append(star.source.contour, color)
+            #else: region.append(star.ellipse())
 
             # Determine the FWHM
             fwhm = default_fwhm if not star.has_model else star.fwhm

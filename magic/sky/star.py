@@ -19,7 +19,7 @@ from astropy.coordinates import Angle
 # Import the relevant AstroMagic classes and modules
 from .skyobject import SkyObject
 from ..core import Source
-from ..tools import statistics, fitting
+from ..tools import statistics, fitting, masks
 from ..analysis import sources
 from ..basics import Ellipse
 
@@ -111,6 +111,21 @@ class Star(SkyObject):
 
     # -----------------------------------------------------------------
 
+    def ellipse(self, wcs, pixelscale, default_radius):
+
+        """
+        This function ...
+        :param wcs:
+        :param pixelscale:
+        :param default_radius:
+        :return:
+        """
+
+        center, radius, angle = self.ellipse_parameters(wcs, pixelscale, default_radius)
+        return Ellipse(center, radius, angle)
+
+    # -----------------------------------------------------------------
+
     def ellipse_parameters(self, wcs, pixelscale, default_radius):
 
         """
@@ -126,7 +141,7 @@ class Star(SkyObject):
 
     # -----------------------------------------------------------------
 
-    def fit_model(self, config, source=None):
+    def fit_model(self, config, source=None, debug=False):
 
         """
         This function ...
@@ -144,7 +159,7 @@ class Star(SkyObject):
             if source is None:
 
                 # Do the fitting
-                source, model = sources.fit_model_to_source(self.source, config, self.track_record, level=level)
+                source, model = sources.fit_model_to_source(self.source, config, self.track_record, level=level, special=debug)
 
             else:
 
@@ -301,7 +316,7 @@ class Star(SkyObject):
 
     # -----------------------------------------------------------------
 
-    def find_saturation(self, frame, original_frame, config, default_fwhm, galaxy_mask=None):
+    def find_saturation(self, frame, original_frame, config, default_fwhm, galaxy_mask=None, star_mask=None):
 
         """
         This function ...
@@ -324,7 +339,8 @@ class Star(SkyObject):
         if self.has_track_record: self.track_record.set_stage("saturation")
 
         # Look for a center segment corresponding to a 'saturation' source
-        saturation_source = sources.find_source_segmentation(frame, self.pixel_position(frame.wcs), radius, Angle(0.0, u.deg), config, track_record=self.track_record, special=self.special)
+        ellipse = Ellipse(self.pixel_position(frame.wcs), radius, Angle(0.0, u.deg))
+        saturation_source = sources.find_source_segmentation(frame, ellipse, config, track_record=self.track_record, special=self.special)
 
         # If a 'saturation' source was found
         if saturation_source is not None:
@@ -338,8 +354,11 @@ class Star(SkyObject):
                 # Calculate the offset
                 difference = contour.center - self.pixel_position(frame.wcs)
 
+                star_mask_cutout = star_mask[saturation_source.cutout.y_slice, saturation_source.cutout.x_slice]
+
                 # Discard this saturation source if the centroid offset or the ellipticity is too large
-                if difference.norm > config.max_centroid_offset or contour.ellipticity > config.max_centroid_ellipticity: return
+                if not masks.overlap(saturation_source.mask, star_mask_cutout):
+                    if difference.norm > config.max_centroid_offset or contour.ellipticity > config.max_centroid_ellipticity: return
 
             # Replace the pixels of the cutout box by the pixels of the original frame (because the star itsself is already removed)
             saturation_source.cutout = original_frame.box_like(saturation_source.cutout)

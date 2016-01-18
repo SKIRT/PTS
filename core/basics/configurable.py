@@ -45,6 +45,36 @@ class Configurable(Loggable):
         # Set the configuration object
         self.config = configuration.set(subpackage, self.name, config)
 
+        # The children of the object
+        self.children = dict()
+
+    # -----------------------------------------------------------------
+
+    def __getattr__(self, attr):
+
+        """
+        This function ...
+        Overriding __getattr__ should be fine (will not break the default behaviour) -- __getattr__ is only called
+        as a last resort i.e. if there are no attributes in the instance that match the name.
+        :param name:
+        :return:
+        """
+
+        if attr.startswith("__") and attr.endswith("__"): raise AttributeError("Can't delegate this attribute")
+        return self.children[attr]
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Clear all children
+        for child in self.children.values(): child.clear()
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -58,6 +88,46 @@ class Configurable(Loggable):
 
         # Call the setup function of the Loggable base class
         super(Configurable, self).setup(self.config.logging.level, path)
+
+        # Call the setup functions of the children
+        for child in self.children.values():
+
+            # Set the input and output path for the galaxy and star extractor
+            child.config.input_path = self.config.input_path
+            child.config.output_path = self.config.output_path
+
+            # Options for logging
+            child.config.logging.level = "WARNING"
+            child.config.logging.path = self.config.logging.path
+
+            # Set the log level and path for the different children of this object, if cascading is enabled
+            if self.config.logging.cascade:
+
+                # Galaxy extractor
+                child.config.logging.cascade = True
+                child.config.logging.level = self.config.logging.level
+
+    # -----------------------------------------------------------------
+
+    def setup_before(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def setup_after(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
