@@ -28,7 +28,6 @@ from ...magic.tools import regions, cropping
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
-from ...core.tools import filesystem
 
 # -----------------------------------------------------------------
 
@@ -53,14 +52,6 @@ class ImagePreparation(Configurable):
 
         self.config.convolve = False
         self.config.subtract_sky = False
-
-        # -- Children --
-
-        # Set the galaxy and star extractors to None initially
-        self.extractor = None
-
-        # Set the sky subtractor to None initially
-        self.sky_subtractor = None
 
         # -- Attributes --
 
@@ -110,6 +101,9 @@ class ImagePreparation(Configurable):
         # 10. If requested, crop
         if self.config.crop: self.crop()
 
+        # Writing
+        self.write()
+
     # -----------------------------------------------------------------
 
     def setup(self, image):
@@ -119,11 +113,33 @@ class ImagePreparation(Configurable):
         :return:
         """
 
+        # -- Children --
+
+        # Add extractor and sky subtractor
+        self.add_child("extractor", Extractor, self.config.galaxy_extraction)
+        self.add_child("sky_subtractor", SkySubtractor, self.config.sky_extraction)
+
         # Call the setup function of the base class
         super(ImagePreparation, self).setup()
 
         # Make a local reference to the passed image
         self.image = image
+
+        if self.config.write_steps:
+
+            # -- Source extraction --
+
+            self.extractor.config.write_result = True
+            self.extractor.config.writing.result_path = "extracted.fits"
+
+            self.extractor.config.write_catalogs = True
+            self.extractor.config.write_statistics = True
+            self.extractor.config.write_regions = True
+            self.extractor.config.write_masked_frames = True
+
+            # -- Sky subtraction --
+
+
 
     # -----------------------------------------------------------------
 
@@ -159,9 +175,6 @@ class ImagePreparation(Configurable):
         :return:
         """
 
-        # Create a galaxy extractor
-        self.extractor = Extractor(self.config.galaxy_extraction)
-
         # Run the extractor
         self.extractor.run(self.image.frames[self.config.primary], self.bad_mask)
 
@@ -173,9 +186,6 @@ class ImagePreparation(Configurable):
         This function ...
         :return:
         """
-
-        # Create a sky subtractor
-        self.skysub = SkySubtractor(self.config.sky_extraction)
 
         # Run the sky extraction
         self.skysub.run(self.image.frames[self.config.primary], self.extractor.mask + self.bad_mask)
@@ -213,7 +223,7 @@ class ImagePreparation(Configurable):
         :return:
         """
 
-        #### TODO: make this function automatic
+        # TODO: make this function automatic
 
         # Create a unit object
         unit = u.Unit(self.config.unit_conversion.to_unit)
@@ -234,10 +244,10 @@ class ImagePreparation(Configurable):
 
             # Get the wavelength of the image
             wavelength = self.image.frames.primary.filter.centerwavelength()
-            wavelength = (wavelength * u.micron).to(u.AA)
+            wavelength = (wavelength * u.Unit("micron")).to("AA")
 
             # Speed of light in Angstrom per seconds
-            c = (299792458.0 * u.m / u.s).to(u.AA / u.s)
+            c = (299792458.0 * u.Unit("m") / u.Unit("s")).to("AA/s")
             spectralfactor = wavelength.value**2 / c.value
             pixelfactor = (206264.806247 / pixelscale)**2
             factor = 1.4e-15 * spectralfactor * 1e17 * pixelfactor
@@ -367,7 +377,7 @@ class ImagePreparation(Configurable):
         """
 
         # Create noise region
-        region = regions.Region.from_file(self.config.uncertainties.noise_path, self.image.frames[self.config.primary].wcs)
+        region = Region.from_file(self.config.uncertainties.noise_path, self.image.frames[self.config.primary].wcs)
 
         # Initialize lists for the mean value and standard deviation in the different shapes
         means = []
@@ -446,5 +456,38 @@ class ImagePreparation(Configurable):
 
         # Crop the image (the primary and errors frame)
         self.image.crop(x_min, x_max, y_min, y_max)
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Writing ...")
+
+        # If requested, write out the result
+        if self.config.write_result: self.write_result()
+
+    # -----------------------------------------------------------------
+
+    def write_result(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the result file
+        path = self.full_output_path(self.config.writing.result_path)
+
+        # Inform the user
+        self.log.info("Writing resulting image to " + path + " ...")
+
+        # Write out the resulting image
+        self.image.save(path)
 
 # -----------------------------------------------------------------

@@ -13,9 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os.path
+import os
 import argparse
-from datetime import datetime
 
 # Import the relevant PTS classes and modules
 from pts.modeling import GalaxyModeler
@@ -24,11 +23,12 @@ from pts.modeling import GalaxyModeler
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
-parser.add_argument('--config', type=str, help='the name of a configuration file', default=None)
-parser.add_argument('--stage', type=str, help='the preparation stage')
-parser.add_argument('--image', type=str, help='provide this argument to only prepare one specific image')
+parser.add_argument("--config", type=str, help='the name of a configuration file', default=None)
+parser.add_argument("--stage", type=str, help='the preparation stage')
 parser.add_argument('--report', action='store_true', help='write a report file')
 parser.add_argument('--plot', action='store_true', help='plot the result of intermediate steps')
+parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
+parser.add_argument("--steps", action="store_true", help="write out the results of intermediate steps")
 
 # Parse the command line arguments
 arguments = parser.parse_args()
@@ -41,19 +41,7 @@ working_directory = os.getcwd()
 # -----------------------------------------------------------------
 
 # Create a GalaxyModeler object
-#modeler = GalaxyModeler(working_directory, arguments.config)
 modeler = GalaxyModeler.from_arguments(arguments)
-
-# Set configuration options passed as command line arguments
-#modeler.config.preparation.filter_name = arguments.image
-#if arguments.report:
-
-    # Determine a unique report path and set the appropriate configuration entry
-#    timestamp = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
-#    report_path = os.path.join(working_directory, "report_" + timestamp + ".txt")
-#    modeler.config.logging.path = report_path
-
-# -----------------------------------------------------------------
 
 # Run the modeling
 modeler.run(working_directory)

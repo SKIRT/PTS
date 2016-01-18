@@ -90,9 +90,11 @@ class Configurable(Loggable):
         super(Configurable, self).setup(self.config.logging.level, path)
 
         # Call the setup functions of the children
-        for child in self.children.values():
+        for child_name in self.children:
 
-            # Set the input and output path for the galaxy and star extractor
+            child = self.children[child_name]
+
+            # Set the input and output path for the child
             child.config.input_path = self.config.input_path
             child.config.output_path = self.config.output_path
 
@@ -106,6 +108,20 @@ class Configurable(Loggable):
                 # Galaxy extractor
                 child.config.logging.cascade = True
                 child.config.logging.level = self.config.logging.level
+
+    # -----------------------------------------------------------------
+
+    def add_child(self, name, type, config=None):
+
+        """
+        This function ...
+        :param name:
+        :param instance:
+        :return:
+        """
+
+        if name in self.children: raise ValueError("Child with this name already exists")
+        self.children[name] = type(config)
 
     # -----------------------------------------------------------------
 

@@ -64,20 +64,6 @@ class Extractor(Configurable):
         # The catalog buidler
         self.catalog_builder = None
 
-        # -- Children --
-
-        # Initialize a galaxy extractor according to the settings defined in the provided configuration file
-        self.children["galaxy_extractor"] = GalaxyExtractor(self.config.galaxies)
-
-        # Initialize a star extractor according to the settings defined in the provided configuration file
-        self.children["star_extractor"] = StarExtractor(self.config.stars)
-
-        # Initialize a trained extractor according to the settings defined in the provided configuration file
-        self.children["trained_extractor"] = TrainedExtractor(self.config.other_sources)
-
-        # Initialize a catalog builder
-        self.children["catalog_builder"] = CatalogBuilder()
-
     # -----------------------------------------------------------------
 
     @classmethod
@@ -101,6 +87,10 @@ class Extractor(Configurable):
 
         # Build catalog
         extractor.config.build_catalog = arguments.build
+
+        # If used from the command line, the result and mask should be written
+        extractor.config.write_result = True
+        extractor.config.write_mask = True
 
         # Return the new instance
         return extractor
@@ -147,6 +137,15 @@ class Extractor(Configurable):
         :return:
         """
 
+        # -- Create children --
+
+        self.add_child("galaxy_extractor", GalaxyExtractor, self.config.galaxies)
+        self.add_child("star_extractor", StarExtractor, self.config.stars)
+        self.add_child("trained_extractor", TrainedExtractor, self.config.other_sources)
+        self.add_child("catalog_builder", CatalogBuilder)
+
+        # -- Setup of the base class --
+
         # Call the setup function of the base class
         super(Extractor, self).setup()
 
@@ -158,8 +157,6 @@ class Extractor(Configurable):
         self.input_mask = input_mask
 
         # Set the paths to the resulting frame and the total mask
-        self.config.write_result = False
-        self.config.write_mask = True
         self.config.writing.result_path = "result.fits"
         self.config.writing.mask_path = "mask.fits"
 
@@ -202,7 +199,7 @@ class Extractor(Configurable):
             self.star_extractor.config.writing.saturation_region_path = "saturation.reg"
 
         # Set the appropriate configuration settings for writing out the masked frames
-        if self.config.save_masked_frames:
+        if self.config.write_masked_frames:
 
             # Galaxy extractor
             self.galaxy_extractor.config.write_masked_frame = True
@@ -236,6 +233,9 @@ class Extractor(Configurable):
         :return:
         """
 
+        # Inform the user
+        self.log.info("Checking whether cached catalogs can be imported ...")
+
         # Determine the path to the user catalogs directory
         catalogs_user_path = os.path.join(inspection.pts_user_dir, "magic", "catalogs")
 
@@ -254,6 +254,9 @@ class Extractor(Configurable):
             # If this is the galaxy matching the frame, check if the current catalog covers the entire frame
             # Second part is probably time-consuming .. But if first is False, won't be executed
             if coverage.matches(bounding_box) and coverage.covers(bounding_box):
+
+                # Debug info
+                self.log.debug("DustPedia catalog will be imported for " + galaxy_name + " galaxy")
 
                 galactic_catalog_path = os.path.join(galaxy_path, "galaxies.cat")
                 stellar_catalog_path = os.path.join(galaxy_path, "stars.cat")

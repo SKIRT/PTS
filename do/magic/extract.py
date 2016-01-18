@@ -32,6 +32,7 @@ parser.add_argument("--masks", action="store_true", help="save masks")
 parser.add_argument("--build", action="store_true", help="build the stellar catalog")
 parser.add_argument("-i", "--input", type=str, help="the name of the input directory")
 parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
+parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
 
 # Parse the command line arguments
 arguments = parser.parse_args()

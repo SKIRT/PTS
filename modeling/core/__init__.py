@@ -21,3 +21,4 @@ from .galaxydecomposer import GalaxyDecomposer
 from .imagepreparation import ImagePreparation
 from .mapmaker import MapMaker
 from .sedfitter import SEDFitter
+from .photometry import PhotoMeter

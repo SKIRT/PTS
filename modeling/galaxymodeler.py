@@ -27,9 +27,9 @@ from astropy import units as u
 from ..magic.core import Image, Frame
 
 # Import the relevant PTS classes and modules
-from .core import ImagePreparation, MapMaker, SEDFitter, GalaxyDecomposer
+from .core import ImagePreparation, MapMaker, SEDFitter, PhotoMeter
 from ..core.basics.configurable import Configurable
-from ..core.tools import filesystem, tables
+from ..core.tools import filesystem, tables, time
 
 # -----------------------------------------------------------------
 
@@ -65,13 +65,6 @@ class GalaxyModeler(Configurable):
         self.config.make_maps = False
         self.config.fit_sed = False
 
-        # -- Children --
-
-        # Create the preparation object
-        self.children["image_preparer"] = ImagePreparation(self.config.preparation)
-        self.children["map_maker"] = MapMaker()
-        self.children["sed_fitter"] = SEDFitter()
-
     # -----------------------------------------------------------------
 
     @classmethod
@@ -86,6 +79,16 @@ class GalaxyModeler(Configurable):
         # Create a new Modeler instance
         modeler = cls(arguments.config)
 
+        # Logging
+        if arguments.debug:
+
+            modeler.config.logging.level = "DEBUG"
+            modeler.config.logging.cascade = True
+
+        modeler.config.write_steps = arguments.steps
+
+        if arguments.report: modeler.config.logging.path = time.unique_name("log") + ".txt"
+
         # Set the input and output path
         #modeler.config.input_path = arguments.input_path
         #modeler.config.output_path = arguments.output_path
@@ -99,7 +102,7 @@ class GalaxyModeler(Configurable):
             modeler.config.fit_sed = False
 
             if arguments.stage == "preparation": modeler.config.prepare = True
-            elif arguments.stage == "decomposition": modeler.config.decompose = True
+            elif arguments.stage == "photometry": modeler.config.do_photometry = True
             elif arguments.stage == "mapmaking": modeler.config.make_maps = True
             elif arguments.stage == "fitting": modeler.config.fit_sed = True
             else: raise ValueError("Unkown stage (choose 'preparation', 'decomposition', 'mapmaking' or 'fitting')")
@@ -122,6 +125,9 @@ class GalaxyModeler(Configurable):
         # 2. Prepare the images
         if self.config.prepare: self.prepare_images()
 
+        # 3. Perform the photometry
+        if self.config.do_photometry: self.do_photometry()
+
         # 3. Fit bulge and disk
         if self.config.decompose: self.decompose()
 
@@ -141,10 +147,22 @@ class GalaxyModeler(Configurable):
         :return:
         """
 
+        # -- Children --
+
+        # Create the preparation object
+        self.add_child("image_preparer", ImagePreparation, self.config.preparation)
+        self.add_child("photometer", PhotoMeter)
+        self.add_child("map_maker", MapMaker)
+        self.add_child("sed_fitter", SEDFitter)
+
+        # -- Setup of the base class --
+
         # Call the setup function of the base class
         super(GalaxyModeler, self).setup()
 
         # -- Attributes --
+
+        self.image_preparer.config.write_steps = self.config.write_steps
 
         # Get the name of the galaxy (the name of the base directory)
         self.galaxy_name = os.path.basename(path)
@@ -167,6 +185,9 @@ class GalaxyModeler(Configurable):
         :return:
         """
 
+        # Inform the user
+        self.log.info("Preparing the images ...")
+
         # Load image information
         info_path = os.path.join(self.data_path, "info.dat")
         info_table = tables.from_file(info_path)
@@ -178,13 +199,18 @@ class GalaxyModeler(Configurable):
             file_name = os.path.basename(file_path)
             image_name = os.path.splitext(file_name)[0]
 
+            # Inform the user
+            self.log.debug("Preparing the " + image_name + " image")
+
+            image_output_path = os.path.join(self.prep_path, image_name)
+
             # Get the corresponding index in the information table
             info_index = tables.find_index(info_table, image_name)
             # TEMP: skip image if not defined in table !!
             if info_index is None: continue
 
             # Check whether this image already has a prepared image
-            final_path = os.path.join(self.prep_path, image_name, "final.fits")
+            final_path = os.path.join(image_output_path, "result.fits")
             if filesystem.is_file(final_path): continue
 
             # Open the image
@@ -235,13 +261,48 @@ class GalaxyModeler(Configurable):
             noise_path = os.path.join(self.data_path, "noise.reg")
             self.image_preparer.config.uncertainties.noise_path = noise_path
 
+            # -- Output --
+
+            # Create the output directory if it does not exist for this image
+            filesystem.create_directory(image_output_path)
+            self.image_preparer.config.output_path = image_output_path
+
+            # -- Result --
+
+            # Save the result
+            self.image_preparer.config.writing.result_path = "result.fits"
+
             # Run the image preparation
             self.image_preparer.run(image)
 
-            # -- Saving --
+    # -----------------------------------------------------------------
 
-            # Save the result
-            image.save(final_path)
+    def calculate_photometry(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Calculating the photometry for the different bands ...")
+
+        # Loop over all directories found in the prep directory
+        for directory_path in filesystem.directories_in_path(self.prep_path):
+
+            name = os.path.basename(directory_path)
+
+            # Debug info
+            self.log.info("Calculating the photometry for " + name +  " ...")
+
+            path = os.path.join(directory_path, "result.fits")
+
+            if not filesystem.is_file(path): raise ValueError("No resulting image present for " + name)
+
+            # Check whether a result FITS file is present
+            frame = Frame.from_file(path)
+
+            self.photometer.run(frame, None)
 
     # -----------------------------------------------------------------
 
