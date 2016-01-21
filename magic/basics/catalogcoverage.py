@@ -81,6 +81,22 @@ class CatalogCoverage(object):
 
     # -----------------------------------------------------------------
 
+    def covers_position(self, position):
+
+        """
+        This function ...
+        :param position: is Position(x=ra(in deg), y=dec(in deg))
+        :return:
+        """
+
+        # Loop over all boxes
+        for box in self.boxes:
+
+            # If at least one of the boxes contains this position, return True
+            if box.contains(position): return True
+
+    # -----------------------------------------------------------------
+
     def covers(self, box):
 
         """
@@ -90,7 +106,7 @@ class CatalogCoverage(object):
         """
 
         # List of boxes from ranges in the table
-        boxes = []
+        self.boxes = []
 
         ra = box.center.x
         dec = box.center.y
@@ -122,13 +138,13 @@ class CatalogCoverage(object):
 
             entry_box = Rectangle(entry_center, entry_radius)
 
-            boxes.append(entry_box)
+            self.boxes.append(entry_box)
 
         # Loop over corners of the box
         for corner in box.corners:
 
             # Loop over all boxes
-            for box in boxes:
+            for box in self.boxes:
 
                 # If at least one of the boxes contains this corner, this corner is OK
                 if box.contains(corner): break

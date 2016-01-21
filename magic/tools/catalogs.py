@@ -60,8 +60,11 @@ def merge_stellar_catalogs(catalog_a, catalog_b):
             # Skip this entry (star) if it has already been matched with a star from the other catalog
             if encountered[i]: continue
 
+            exact_catalog_match = catalog_a["Catalog"][i] == catalog_b["Catalog"][j] and catalog_a["Id"][i] == catalog_b["Id"][j]
+            original_catalog_match = catalog_a["Original catalog and id"] == catalog_b["Original catalog and id"]
+
             # If star i in catalog a is the same as star j in catalog b, break the loop over catalog a's stars
-            if catalog_a["Catalog"][i] == catalog_b["Catalog"][j] and catalog_a["Id"][i] == catalog_b["Id"][j]:
+            if exact_catalog_match or original_catalog_match:
 
                 encountered[i] = True
                 break

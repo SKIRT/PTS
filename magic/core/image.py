@@ -200,7 +200,9 @@ class Image(object):
             header["NAXIS3"] = plane_index
 
         # Add the meta information to the header
-        for key in self.metadata: header[key] = self.metadata[key]
+        for key in self.metadata:
+            try: header[key] = self.metadata[key]
+            except ValueError: pass # Some values in the header gives errors in Astropy when adding them again to this new header ... (e.g. ValueError: Illegal value: = 'created by T.H. Jarrett'.)
 
         # Create the HDU from the data array and the header
         hdu = pyfits.PrimaryHDU(np.array(datacube), header)
@@ -310,6 +312,25 @@ class Image(object):
 
             # Set the unit for this frame
             self.frames[frame_name].set_unit(unit)
+
+    # -----------------------------------------------------------------
+
+    def set_fwhm(self, fwhm):
+
+        """
+        This function ...
+        :param fwhm:
+        :return:
+        """
+
+        # Loop over all currently selected frames
+        for frame_name in self.frames.get_selected():
+
+            # Inform the user
+            log.info("Setting the FWHM of the " + frame_name + " frame to " + str(fwhm))
+
+            # Set the unit for this frame
+            self.frames[frame_name].set_fwhm(fwhm)
 
     # -----------------------------------------------------------------
 

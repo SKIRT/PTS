@@ -18,6 +18,9 @@ import os
 import inspect
 from config import Config, Mapping
 
+# Import the relevant PTS classes and modules
+from . import filesystem, inspection
+
 # -----------------------------------------------------------------
 
 def special(self, item):
@@ -63,6 +66,9 @@ def set(subpackage_name, class_name, config=None):
     # Determine the path to the default configuration file
     subpackage_directory = os.path.join(inspect.getfile(inspect.currentframe()).split("/core")[0], subpackage_name)
     default_config = os.path.join(subpackage_directory, "config", class_name + ".cfg")
+
+    # If we have not created a default configuration file for this class yet ...
+    if not filesystem.is_file(default_config): default_config = os.path.join(inspection.pts_package_dir, "core", "config", "default.cfg")
 
     # Open the default configuration if no configuration file is specified, otherwise adjust the default
     # settings according to the user defined configuration file

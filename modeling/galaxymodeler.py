@@ -27,9 +27,9 @@ from astropy import units as u
 from ..magic.core import Image, Frame
 
 # Import the relevant PTS classes and modules
-from .core import ImagePreparation, MapMaker, SEDFitter, PhotoMeter
+from .core import ImagePreparer, MapMaker, SEDFitter, PhotoMeter
 from ..core.basics.configurable import Configurable
-from ..core.tools import filesystem, tables, time
+from ..core.tools import filesystem, tables, time, inspection
 
 # -----------------------------------------------------------------
 
@@ -87,11 +87,12 @@ class GalaxyModeler(Configurable):
 
         modeler.config.write_steps = arguments.steps
 
-        if arguments.report: modeler.config.logging.path = time.unique_name("log") + ".txt"
-
         # Set the input and output path
-        #modeler.config.input_path = arguments.input_path
-        #modeler.config.output_path = arguments.output_path
+        modeler.config.input_path = arguments.input_path
+        modeler.config.output_path = arguments.output_path
+
+        # Set logging path
+        if arguments.report: modeler.config.logging.path = os.path.join(modeler.config.output_path, time.unique_name("log") + ".txt")
 
         # Check if a specific stage is defined
         if arguments.stage is not None:
@@ -151,9 +152,9 @@ class GalaxyModeler(Configurable):
 
         # Create the preparation object
         self.add_child("image_preparer", ImagePreparation, self.config.preparation)
-        self.add_child("photometer", PhotoMeter)
-        self.add_child("map_maker", MapMaker)
-        self.add_child("sed_fitter", SEDFitter)
+        self.add_child("photometer", PhotoMeter, self.config.photometry)
+        self.add_child("map_maker", MapMaker, self.config.map_making)
+        self.add_child("sed_fitter", SEDFitter, self.config.sed_fitting)
 
         # -- Setup of the base class --
 
@@ -171,10 +172,12 @@ class GalaxyModeler(Configurable):
         self.data_path = os.path.join(path, self.config.data_dir)
         self.prep_path = os.path.join(path, self.config.prep_dir)
         self.in_path = os.path.join(path, self.config.in_dir)
-        self.config_path = os.path.join(path, self.config.config_dir)
-        self.extra_path = os.path.join(path, self.config.extra_dir)
-        self.ignore_path = os.path.join(path, self.config.ignore_dir)
-        self.manual_path = os.path.join(path, self.config.manual_dir)
+
+        # Create the prep path if it does not exist yet
+        filesystem.create_directory(self.prep_path)
+
+        # Determine the path to the kernels user directory
+        self.kernels_path = os.path.join(inspection.pts_user_dir, "kernels")
 
     # -----------------------------------------------------------------
 
@@ -229,6 +232,10 @@ class GalaxyModeler(Configurable):
             fwhm = info_table["FWHM"][info_index] * u.Unit(info_table["Unit of FWHM"][info_index]) if not info_table["FWHM"].mask[info_index] else None
             image.frames["primary"].set_fwhm(fwhm)
 
+            # -- Attenuation ---
+
+            self.image_preparer.config.attenuation = info_table["Attenuation"][info_index]
+
             # -- Extra region mask --
 
             extra_path = os.path.join(self.data_path, "extra", image_name + ".reg")
@@ -252,8 +259,17 @@ class GalaxyModeler(Configurable):
                 self.image_preparer.config.rebin = True
                 self.image_preparer.config.convolve = True
 
-                self.image_preparer.config.rebin_to = reference_path
-                self.image_preparer.config.convolve_to = self.config.reference_image.replace(' ', '')
+                # Determine the aniano name for the current image
+                aniano_name = info_table["Aniano name"][info_index]
+
+                # Determine the path to the appropriate kernel
+                reference_index = tables.find_index(info_table, self.config.reference_image)
+                reference_aniano_name = info_table["Aniano name"][reference_index]
+                kernel_path = os.path.join(self.kernels_path, "Kernel_HiRes_" + aniano_name + "_to_" + reference_aniano_name + ".fits")
+
+                # Set the path of the rebinning reference path and the kernel image
+                self.image_preparer.config.rebinning.rebin_to = reference_path
+                self.image_preparer.config.convolution.kernel_path = kernel_path
 
             # -- Noise --
 
@@ -270,10 +286,14 @@ class GalaxyModeler(Configurable):
             # -- Result --
 
             # Save the result
+            self.image_preparer.config.write_result = True
             self.image_preparer.config.writing.result_path = "result.fits"
 
             # Run the image preparation
             self.image_preparer.run(image)
+
+            # Clear it
+            self.image_preparer.clear()
 
     # -----------------------------------------------------------------
 
@@ -315,13 +335,6 @@ class GalaxyModeler(Configurable):
 
         # Create a GalaxyDecomposer object
         #decomposer = GalaxyDecomposer()
-
-        # Set log level for the decomposer, if cascading is enabled
-        #if self.config.logging.cascade:
-
-        #    decomposer.config.logging.level = self.config.logging.level
-        #    decomposer.config.logging.cascade = self.config.logging.cascade
-        #    decomposer.config.logging.path = self.config.logging.path
 
         # TODO: do the bulge/disk fitting here
         # Run the decomposition
@@ -368,16 +381,9 @@ class GalaxyModeler(Configurable):
 
         ### CONFIGURATION FOR THE PREPARATION
 
-        # Set log level for the map maker, if cascading is enabled
-        if self.config.logging.cascade:
-
-            config.logging.level = self.config.logging.level
-            config.logging.cascade = self.config.logging.cascade
-            config.logging.path = self.config.logging.path
-
         # Set the names of the primary and error frames
-        config.primary = self.config.primary
-        config.errors = self.config.errors
+        #config.primary = self.config.primary
+        #config.errors = self.config.errors
 
         # Open the prepared reference image
         config.cutoff.reference_path = os.path.join(self.prep_path, self.config.reference_image, "final.fits")
@@ -428,7 +434,7 @@ class GalaxyModeler(Configurable):
         config.ionizing_stars.output_path = os.path.join(self.in_path, "ionizing_stars.fits")
         config.non_ionizing_stars.output_path = os.path.join(self.in_path, "non_ionizing_stars.fits")
 
-        ### PERFORMING THE MAP MAKING
+        # PERFORMING THE MAP MAKING
 
         # Run the map maker
         self.map_maker.run()
@@ -441,16 +447,6 @@ class GalaxyModeler(Configurable):
         This function ...
         :return:
         """
-
-        # Create config for SEDFitter ...
-        config = None
-
-        # Set log level for the SED fitter, if cascading is enabled
-        if self.config.logging.cascade:
-
-            config.logging.level = self.config.logging.level
-            config.logging.cascade = self.config.logging.cascade
-            config.logging.path = self.config.logging.path
 
         # Run the SED fitting
         self.sed_fitter.run()

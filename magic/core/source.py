@@ -315,7 +315,7 @@ class Source(object):
         if kernel is not None: box = convolve_fft(box, kernel, normalize_kernel=True)
 
         # Find peaks
-        #threshold = detect_threshold(box, snr=2.0) # other method
+        #threshold = detect_threshold(box, snr=2.0) # other method (snr corresponds to sigma_level as I use it above)
         peaks = find_peaks(box, threshold, box_size=5, mask=self.background_mask)
 
         # For some reason, once in a while, an ordinary list comes out of the find_peaks routine instead of an
@@ -329,11 +329,17 @@ class Source(object):
         for peak in peaks:
 
             # Calculate the absolute x and y coordinate of the peak
-            x = peak['x_peak'] + self.cutout.x_min
-            y = peak['y_peak'] + self.cutout.y_min
+            x_rel = peak['x_peak']
+            y_rel = peak['y_peak']
+            x = x_rel + self.cutout.x_min
+            y = y_rel + self.cutout.y_min
 
-            # Add the coordinates to the positions list
-            positions.append(Position(x, y))
+            # Check whether the peak position falls in the box and then add it to the list
+            peak_position = Position(x, y)
+            if self.cutout.contains(peak_position):
+                # Add the coordinates to the positions list
+                positions.append(peak_position)
+            else: print("DEBUG: peak position", peak_position, "falls outside of box with shape", box.shape)
 
         # If exactly one peak was found, set the self.peak attribute accordingly
         if len(positions) == 1: self.peak = positions[0]

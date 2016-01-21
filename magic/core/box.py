@@ -373,9 +373,14 @@ class Box(np.ndarray):
             try:
                 return self.fit_polynomial(3, mask=mask)
             except TypeError:
-                #plotting.plot_box(np.ma.masked_array(self.cutout, mask=mask))
+                from ..tools import plotting
+                print("cutout=", type(self), mask.shape)
+                print("mask=", type(mask), mask.shape)
+                #plotting.plot_box(self)
+                #plotting.plot_box(mask)
+                #plotting.plot_box(np.ma.masked_array(self, mask=mask))
                 mask = mask.eroded(2, 1)
-                #plotting.plot_box(np.ma.masked_array(self.cutout, mask=mask))
+                plotting.plot_box(np.ma.masked_array(self, mask=mask))
                 return self.fit_polynomial(3, mask=mask)
 
         # Interpolate using the local mean method

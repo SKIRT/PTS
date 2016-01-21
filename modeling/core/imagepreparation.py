@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.imagepreparation Contains the ImagePreparation class.
+## \package pts.modeling.core.imagepreparation Contains the ImagePreparer class.
 
 # -----------------------------------------------------------------
 
@@ -31,7 +31,7 @@ from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class ImagePreparation(Configurable):
+class ImagePreparer(Configurable):
 
     """
     This class...
@@ -46,12 +46,7 @@ class ImagePreparation(Configurable):
         """
 
         # Call the constructor of the base class
-        super(ImagePreparation, self).__init__(config, "modeling")
-
-        # -- Temporary --
-
-        self.config.convolve = False
-        self.config.subtract_sky = False
+        super(ImagePreparer, self).__init__(config, "modeling")
 
         # -- Attributes --
 
@@ -119,12 +114,6 @@ class ImagePreparation(Configurable):
         self.add_child("extractor", Extractor, self.config.galaxy_extraction)
         self.add_child("sky_subtractor", SkySubtractor, self.config.sky_extraction)
 
-        # Call the setup function of the base class
-        super(ImagePreparation, self).setup()
-
-        # Make a local reference to the passed image
-        self.image = image
-
         if self.config.write_steps:
 
             # -- Source extraction --
@@ -139,7 +128,11 @@ class ImagePreparation(Configurable):
 
             # -- Sky subtraction --
 
+        # Call the setup function of the base class
+        super(ImagePreparer, self).setup()
 
+        # Make a local reference to the passed image
+        self.image = image
 
     # -----------------------------------------------------------------
 
@@ -153,6 +146,7 @@ class ImagePreparation(Configurable):
         # Create a mask for the nans in the primary
         self.bad_mask = Mask.is_nan(self.image.frames["primary"])
 
+        # Make a mask from the extra region
         if self.config.extra_region_path is not None:
 
             # Replace pixels in the 'extra' region with zeros
@@ -161,6 +155,7 @@ class ImagePreparation(Configurable):
             extra_region = Region.from_file(extra_path)
             extra_mask = Mask.from_region(extra_region, self.image.frames["primary"].shape)
 
+            # Add the extra mask to the bad pixel mask
             self.bad_mask += extra_mask
 
         # Set value of bad pixels to zero
@@ -188,7 +183,7 @@ class ImagePreparation(Configurable):
         """
 
         # Run the sky extraction
-        self.skysub.run(self.image.frames[self.config.primary], self.extractor.mask + self.bad_mask)
+        self.sky_subtractor.run(self.image.frames[self.config.primary], self.extractor.mask + self.bad_mask)
 
         # Print the statistics of the sky frame
         self.log.info("Mean sky level = " + str(self.skysub.mean))
@@ -209,7 +204,7 @@ class ImagePreparation(Configurable):
         if self.image.wavelength < 1.0 * u.Unit("micron"):
 
             # Correct the primary frame for galactic extinction
-            self.image.frames[self.config.primary] *= 10**(0.4*self.config.attenuation)
+            self.image.frames[self.config.primary] *= 10**(0.4 * self.config.attenuation)
 
         else: self.log.info("No extinction correction for this image")
 
@@ -343,13 +338,18 @@ class ImagePreparation(Configurable):
         :return:
         """
 
+        # Inform the user
+        self.log.info("Convolving the image with kernel " + self.config.convolution.kernel_path + " ...")
+
         # Open the kernel frame
-        kernels_dir = os.path.expanduser(self.config.convolution.kernels_dir)
-        kernel_path = os.path.join(kernels_dir, "Kernel_HiRes_" + self.config.convolution.aniano_name + "_to_" + self.config.convolution.convolve_to + ".fits")
-        kernel = Frame.from_file(kernel_path)
+        kernel = Frame.from_file(self.config.convolution.kernel_path)
 
         # Convolve the image (the primary and errors frame)
         self.image.convolve(kernel)
+
+        # Save convolved frame
+        path = self.full_output_path("convolved.fits")
+        if self.config.write_steps: self.image.frames["primary"].save(path)
 
     # -----------------------------------------------------------------
 
@@ -361,11 +361,18 @@ class ImagePreparation(Configurable):
         :return:
         """
 
+        # Inform the user
+        self.log.info("Rebinning the image to the pixel grid of " + self.config.rebinning.rebin_to + " ...")
+
         # Open the reference frame
         reference = Frame.from_file(self.config.rebinning.rebin_to)
 
         # Rebin the image (the primary and errors frame)
         self.image.rebin(reference)
+
+        # Save rebinned frame
+        path = self.full_output_path("rebinned.fits")
+        if self.config.write_steps: self.image.frames["primary"].save(path)
 
     # -----------------------------------------------------------------
 

@@ -174,7 +174,16 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
     model_name = config.model_names[level]
 
     # Fit the model to the background-subtracted box
-    model = source.subtracted.fit_model(position, model_name, amplitude=source.cutout.value(source.peak))
+    try:
+        model = source.subtracted.fit_model(position, model_name, amplitude=source.cutout.value(source.peak))
+    except IndexError:
+        print("DEBUG: PEAK= (", source.peak.x, source.peak.y, ")")
+        print("DEBUG: source.cutout.x_min,y_min = ", source.cutout.x_min, source.cutout.y_min)
+        print("DEBUG: rel_peak = ", source.peak.x - source.cutout.x_min, source.peak.y - source.cutout.y_min)
+        #print("DEBUG: source.cutout.value = ", source.cutout.value(source.peak))
+
+        # TODO: NO SOLUTION YET AS TO WHY SOMETIMES THE PEAK POSITIONS ARE OUTSIDE OF THE SOURCE.CUTOUT
+        return None, None
 
     # If the amplitude is negative, the model is invalid
     if model.amplitude < 0:
@@ -384,7 +393,9 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
     if config.always_subtract_background:
 
         # Subtract the background from the source
-        source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
+        try: # weird error coming out for example with M81 GALEX FUV image (saturation detection)
+            source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
+        except: return None
 
     # Create a kernel
     sigma = config.kernel.fwhm * statistics.fwhm_to_sigma
@@ -404,7 +415,9 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         if config.debug.no_segment_before or special: source.plot(title="No segment found, gradient background will be removed")
 
         # Subtract the background from the source
-        source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
+        try: # weird error coming out for example with M81 GALEX FUV image (saturation detection)
+            source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
+        except: return None
 
         # Search for a center segment again
         mask = source.find_center_segment(config.sigma_level, kernel=kernel, min_pixels=config.min_pixels)

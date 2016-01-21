@@ -164,10 +164,13 @@ class CatalogBuilder(Configurable):
                     if old_stellar_catalog["Id"][j] > maximal_id:
                         maximal_id = int(old_stellar_catalog["Id"][j].split("/")[1])
 
-                stellar_catalog = self.create_stellar_catalog(maximal_id)
-
                 # Create merged stellar catalog
-                stellar_catalog = catalogs.merge_stellar_catalogs(stellar_catalog, old_stellar_catalog)
+                stellar_catalog = self.create_merged_stellar_catalog(maximal_id, old_stellar_catalog, coverage)
+
+                # Not good: wasted many DustPedia star id's for stars that then are not added after all because
+                # they are matched to a star already in the old catalog
+                #stellar_catalog = self.create_stellar_catalog(maximal_id)
+                #stellar_catalog = catalogs.merge_stellar_catalogs(stellar_catalog, old_stellar_catalog)
 
                 # Save the merged catalog
                 path = os.path.join(self.galaxy_user_path, "stars.cat")
@@ -201,6 +204,104 @@ class CatalogBuilder(Configurable):
 
             # Save the coverage or range table
             coverage.save()
+
+    # -----------------------------------------------------------------
+
+    def create_merged_stellar_catalog(self, maximal_id, old_stellar_catalog, old_coverage):
+
+        """
+        This function ...
+        :param maximal_id:
+        :return:
+        """
+
+        catalog_column = []
+        id_column = []
+        ra_column = []
+        dec_column = []
+        ra_error_column = []
+        dec_error_column = []
+        confidence_level_column = []
+        on_galaxy_column = []
+        original_id_column = []
+
+        # Keep track of which stars in catalog a have been encountered in the 'old' catalog (to avoid unnecessary checking)
+        encountered = [False] * len(old_stellar_catalog)
+
+        # Append stars from the star extractor
+        # Loop over the stellar statistics
+        for i in range(len(self.star_extractor.statistics)):
+
+            id = self.galaxy_name + "/" + str(maximal_id + 1)
+
+            index = self.star_extractor.statistics["Star index"][i]
+
+            # Skip undetected stars
+            if not self.star_extractor.statistics["Detected"][i]: continue
+
+            # IMPORTANT: Skip stars that are already in the cached catalog
+            for j in range(len(old_stellar_catalog)):
+
+                # Skip this entry (star) if it has already been matched with a star from the new catalog
+                if encountered[j]: continue
+
+                old_catalog_original_catalog_star = old_stellar_catalog["Original catalog and id"][j].split("**")[0]
+                old_catalog_original_id_star = old_stellar_catalog["Original catalog and id"][j].split("**")[1]
+
+                # Check whether it's a match
+                if self.star_extractor.catalog["Catalog"][index] == old_catalog_original_catalog_star and self.star_extractor.catalog["Id"][index] == old_catalog_original_id_star:
+
+                    # This star from the old catalog has been matched
+                    encountered[j] = True
+                    break
+
+            # If a break is not encountered, no match is found -> add the new star to the catalog
+            else:
+
+                catalog_column.append("DustPedia")
+                id_column.append(id)
+                ra_column.append(self.star_extractor.catalog["Right ascension"][index])
+                dec_column.append(self.star_extractor.catalog["Declination"][index])
+                ra_error_column.append(self.star_extractor.catalog["Right ascension error"][index])
+                dec_error_column.append(self.star_extractor.catalog["Declination error"][index])
+                confidence_level_column.append(self.star_extractor.catalog["Confidence level"][index])
+                on_galaxy_column.append(self.star_extractor.catalog["On galaxy"][index])
+                original_id_column.append(self.star_extractor.catalog["Catalog"][index] + "**" + self.star_extractor.catalog["Id"][index])
+
+                maximal_id += 1
+
+        # Append stars from the trained extractor
+        # Loop over the stars found by the trained extractor
+        for star in self.trained_extractor.stars:
+
+            ra_deg = star.position.ra.value
+            dec_deg = star.position.dec.value
+
+            # Check if the 'other source' lies outside of what the old catalog currently covers
+            position = Position(ra_deg, dec_deg)
+            if not old_coverage.covers(position):
+
+                id = self.galaxy_name + "/" + str(maximal_id + 1)
+
+                catalog_column.append("DustPedia")
+                id_column.append(id)
+                ra_column.append(ra_deg)
+                dec_column.append(dec_deg)
+                ra_error_column.append(None)
+                dec_error_column.append(None)
+                confidence_level_column.append(star.confidence_level)
+                on_galaxy_column.append(False)
+                original_id_column.append(None)
+
+                maximal_id += 1
+
+        data = [catalog_column, id_column, ra_column, dec_column, ra_error_column, dec_error_column, confidence_level_column,
+                on_galaxy_column, original_id_column]
+        names = ['Catalog', 'Id', 'Right ascension', 'Declination', 'Right ascension error', 'Declination error', 'Confidence level',
+                 'On galaxy', 'Original catalog and id']
+        stellar_catalog = tables.new(data, names)
+
+        return stellar_catalog
 
     # -----------------------------------------------------------------
 
@@ -241,7 +342,7 @@ class CatalogBuilder(Configurable):
             dec_error_column.append(self.star_extractor.catalog["Declination error"][index])
             confidence_level_column.append(self.star_extractor.catalog["Confidence level"][index])
             on_galaxy_column.append(self.star_extractor.catalog["On galaxy"][index])
-            original_id_column.append(self.star_extractor.catalog["Catalog"][index] + " " + self.star_extractor.catalog["Id"][index])
+            original_id_column.append(self.star_extractor.catalog["Catalog"][index] + "**" + self.star_extractor.catalog["Id"][index])
 
             maximal_id += 1
 

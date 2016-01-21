@@ -90,7 +90,7 @@ def get_filter(name, header):
     if 'INSTRUME' in header: filterid += header['INSTRUME'].lower()
     if 'FILTER' in header: filterid += header['FILTER'].lower()
     if 'FLTRNM' in header: filterid += header['FLTRNM'].lower()
-
+    if 'ORIGIN' in header: filterid += header['ORIGIN'].lower()
     if "CHNLNUM" in header: channel = int(header["CHNLNUM"])
     else: channel = None
 
@@ -135,6 +135,14 @@ def get_filter(name, header):
 
     elif "alpha" in filterid or "6561" in filterid: return Filter("656_1")
     elif "r" in filterid and "kpno" in filterid: return Filter("KPNO.Mosaic.R")
+    elif "sdss" in filterid:
+
+        if "-u" in filterid: return Filter("SDSS.u")
+        elif "-g" in filterid: return Filter("SDSS.g")
+        elif "-r" in filterid: return Filter("SDSS.r")
+        elif "-i" in filterid: return Filter("SDSS.i")
+        elif "-z" in filterid: return Filter("SDSS.z")
+        else: log.warning("Could not determine which SDSS filter was used for this image")
 
     # The filter could not be determined from the specified header
     else: return None

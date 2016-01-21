@@ -19,7 +19,7 @@ from astropy.coordinates import Angle
 # Import the relevant AstroMagic classes and modules
 from .skyobject import SkyObject
 from ..core import Source
-from ..tools import statistics, fitting, masks
+from ..tools import statistics, fitting, masks, plotting
 from ..analysis import sources
 from ..basics import Ellipse
 
@@ -257,8 +257,7 @@ class Star(SkyObject):
             subtracted = self.source.cutout - evaluated
 
             # To plot the difference between the source and the fitted model
-            #from ..tools import plotting
-            #plotting.plot_star(source.cutout, rel_peak, self.model, "Star about to be removed by subtracting model")
+            if self.special: plotting.plot_star(self.source.cutout, rel_peak, self.model, "Star about to be removed by subtracting model")
 
             # Add the evaluated and subtracted boxes to the track record
             if self.has_track_record: self.track_record.append(evaluated)
@@ -294,12 +293,11 @@ class Star(SkyObject):
             self.source.estimate_background(method, sigma_clip)
 
             # FOR PLOTTING THE REMOVAL
-            #import copy
-            #cutout_interpolated = copy.deepcopy(source.cutout)
-            #cutout_interpolated[source.mask] = source.background[source.mask]
-            #from ..tools import plotting
-            # Do the plotting
-            #plotting.plot_removal(source.cutout, source.mask, source.background, cutout_interpolated)
+            if self.special:
+                cutout_interpolated = self.source.cutout.copy()
+                cutout_interpolated[self.source.mask] = self.source.background[self.source.mask]
+                # Do the plotting
+                plotting.plot_removal(self.source.cutout, self.source.mask, self.source.background, cutout_interpolated)
 
             # Add the source to the track record
             if self.has_track_record: self.track_record.append(self.source)
@@ -356,6 +354,11 @@ class Star(SkyObject):
 
                 star_mask_cutout = star_mask[saturation_source.cutout.y_slice, saturation_source.cutout.x_slice]
 
+                # Remove the mask of this star from the star_mask_cutout
+                x_min_source = self.source.cutout.x_min
+                x_max_source = self.source.cutout.x_max
+
+
                 # Discard this saturation source if the centroid offset or the ellipticity is too large
                 if not masks.overlap(saturation_source.mask, star_mask_cutout):
                     if difference.norm > config.max_centroid_offset or contour.ellipticity > config.max_centroid_ellipticity: return
@@ -392,12 +395,11 @@ class Star(SkyObject):
         self.saturation.estimate_background(interpolation_method, sigma_clip)
 
         # FOR PLOTTING THE REMOVAL
-        #import copy
-        #cutout_interpolated = copy.deepcopy(source.cutout)
-        #cutout_interpolated[source.mask] = source.background[source.mask]
-        #from ..tools import plotting
-        # Do the plotting
-        #plotting.plot_removal(source.cutout, source.mask, source.background, cutout_interpolated)
+        if self.special:
+            cutout_interpolated = self.saturation.cutout.copy()
+            cutout_interpolated[self.saturation.mask] = self.saturation.background[self.saturation.mask]
+            # Do the plotting
+            plotting.plot_removal(self.saturation.cutout, self.saturation.mask, self.saturation.background, cutout_interpolated)
 
         # Replace the frame with the estimated background
         self.saturation.background.replace(frame, where=self.saturation.mask)

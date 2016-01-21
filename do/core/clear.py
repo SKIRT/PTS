@@ -32,24 +32,24 @@ def int_list(string):
     # Split the string
     splitted = string.split('-')
 
-    if len(splitted) == 0: raise argparse.ArgumentError("No range given")
+    if len(splitted) == 0: raise argparse.ArgumentError("ids", "No range given")
     elif len(splitted) == 1:
 
         splitted = splitted[0].split(",")
 
         # Check if the values are valid
         for value in splitted:
-            if not value.isdigit(): raise argparse.ArgumentError("Argument contains unvalid characters")
+            if not value.isdigit(): raise argparse.ArgumentError("ids", "Argument contains unvalid characters")
 
         # Only leave unique values
         return list(set([int(value) for value in splitted]))
 
     elif len(splitted) == 2:
 
-        if not (splitted[0].isdigit() and splitted[1].isdigit()): raise argparse.ArgumentError("Not a valid integer range")
+        if not (splitted[0].isdigit() and splitted[1].isdigit()): raise argparse.ArgumentError("ids", "Not a valid integer range")
         return range(int(splitted[0]), int(splitted[1])+1)
 
-    else: raise argparse.ArgumentError("Values must be seperated by commas or by a '-' in the case of a range")
+    else: raise argparse.ArgumentError("ids", "Values must be seperated by commas or by a '-' in the case of a range")
 
 # -----------------------------------------------------------------
 
@@ -65,7 +65,7 @@ def simulation_ids(string):
     delete = dict()
 
     # If the string is empty, raise an error
-    if not string.strip(): raise argparse.ArgumentError("No input for argument")
+    if not string.strip(): raise argparse.ArgumentError("ids", "No input for argument")
 
     # Split the string by the ';' character, so that each part represents a different remote host
     for entry in string.split(";"):

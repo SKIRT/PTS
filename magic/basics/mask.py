@@ -294,8 +294,12 @@ class Mask(np.ndarray):
         # Define the structure for the expansion
         if structure is None: structure = ndimage.generate_binary_structure(2, connectivity=connectivity)
 
-        # Make the new mask, made from 100 iterations with the structure array
-        data = ndimage.binary_erosion(self, structure, iterations)
+        try:
+            # Make the new mask, made from 100 iterations with the structure array
+            data = ndimage.binary_erosion(self, structure, iterations)
+        except:
+            print(self)
+            print(structure)
 
         # Reassign this object
         return Mask(data, self.selected, self.description)

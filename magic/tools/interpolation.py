@@ -24,6 +24,15 @@ from photutils.background import Background
 
 # -----------------------------------------------------------------
 
+# TODO: create a better inpainting function. OpenCV has one, but this is a terrible dependency because it's hard to
+# install. Options:
+#  - The below replace_nans function can be replaced by the more up to date version at:
+#    https://github.com/OpenPIV/openpiv-python/blob/master/openpiv/src/lib.pyx
+#    We may want to keep it in cython so that it runs faster. However, this original does not have the inverse distance
+#    weighing as in the code below, but we can maybe add this ourselves in the cython code
+#  - Write our own code.
+
+
 def in_paint(data, mask):
 
     """

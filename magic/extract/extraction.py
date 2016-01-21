@@ -92,6 +92,11 @@ class Extractor(Configurable):
         extractor.config.write_result = True
         extractor.config.write_mask = True
 
+        # Manual indices
+        if arguments.not_stars is not None: extractor.config.manual_indices.not_stars = arguments.not_stars
+        if arguments.remove_stars is not None: extractor.config.manual_indices.remove_stars = arguments.remove_stars
+        if arguments.not_saturation is not None: extractor.config.manual_indices.not_saturation = arguments.not_saturation
+
         # Return the new instance
         return extractor
 
@@ -301,7 +306,7 @@ class Extractor(Configurable):
         self.log.info("Extracting the stars ...")
 
         # ...
-        if self.frame.wavelength < 10.0 * u.Unit("micron"):
+        if self.frame.wavelength is None or self.frame.wavelength < 10.0 * u.Unit("micron"):
 
             # Run the star extractor
             self.star_extractor.run(self.frame, self.input_mask, self.galaxy_extractor, self.star_catalog)
@@ -320,9 +325,11 @@ class Extractor(Configurable):
         :return:
         """
 
-        # Input mask (bad pixels) + mask (combined galaxy and star extraction masks)
+        # Inform the user
+        self.log.info("Looking for sources in the frame not in the catalog ...")
 
         # Run the trained extractor just to find sources
+        # As the mask, pass the input mask (bad pixels) + self.mask (at this point, combined galaxy and star extraction masks)
         self.trained_extractor.run(self.frame, self.input_mask + self.mask, self.galaxy_extractor, self.star_extractor)
 
         # Add sources to the total mask
@@ -336,6 +343,9 @@ class Extractor(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        self.log.info("Building the catalog for later ...")
 
         # Run the catalog builder
         self.catalog_builder.run(self.frame, self.galaxy_extractor, self.star_extractor, self.trained_extractor)

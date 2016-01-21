@@ -18,7 +18,9 @@
 
 # Import classes to make them available at the level of this subpackage
 from .galaxydecomposer import GalaxyDecomposer
-from .imagepreparation import ImagePreparation
+from .imagepreparation import ImagePreparer
 from .mapmaker import MapMaker
 from .sedfitter import SEDFitter
 from .photometry import PhotoMeter
+from .datapreparation import DataPreparer
+from .component import ModelingComponent

@@ -72,8 +72,8 @@ class Configurable(Loggable):
         :return:
         """
 
-        # Clear all children
-        for child in self.children.values(): child.clear()
+        # Delete its children
+        self.children = dict()
 
     # -----------------------------------------------------------------
 
