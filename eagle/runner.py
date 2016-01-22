@@ -31,6 +31,7 @@ from .skirtrun import SkirtRun
 from ..core.simulation.skifile import SkiFile
 from ..core.plot.seds import plotseds
 from ..core.plot.rgbimages import makergbimages
+from .makeinfofile import makeinfofile
 
 # -----------------------------------------------------------------
 
@@ -104,8 +105,11 @@ def run(runid):
         # create basic RGB images at the SDSS gri wavelengths (not integrated over bands)
         makergbimages(simulation, wavelength_tuples=((0.753,0.617,0.470),) )
 
-        # move any .png and .pdf files to the visualization directory
-        for visfile in filter(lambda fn: fn.endswith((".png",".pdf")), os.listdir(skirtrun.outpath())):
+        # build info file
+        makeinfofile(skirtrun)
+
+        # move any .png, .pdf and info.txt files to the visualization directory
+        for visfile in filter(lambda fn: fn.endswith((".png",".pdf","_info.txt")), os.listdir(skirtrun.outpath())):
             os.rename(os.path.join(skirtrun.outpath(), visfile),
                       os.path.join(skirtrun.vispath(), visfile))
 
