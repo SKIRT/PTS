@@ -59,15 +59,20 @@ def int_list(string):
 # Create the command-line parser
 parser = argparse.ArgumentParser()
 parser.add_argument("image", type=str, help="the name of the input image")
+parser.add_argument('--report', action='store_true', help='write a report file')
 parser.add_argument('--config', type=str, help='the name of a configuration file', default=None)
-parser.add_argument("--regions", action="store_true", help="save regions")
-parser.add_argument("--masks", action="store_true", help="save masks")
+parser.add_argument("--regions", action="store_true", help="write regions")
+parser.add_argument("--catalogs", action="store_true", help="write catalogs")
+parser.add_argument("--masks", action="store_true", help="write masks")
 parser.add_argument("--build", action="store_true", help="build the stellar catalog")
 parser.add_argument("--not_stars", type=int_list, help="the indices of stars which should not be removed")
 parser.add_argument("--remove_stars", type=int_list, help="the indices of stars that should be removed")
 parser.add_argument("--not_saturation", type=int_list, help="the indices of stars which are not sources of saturation")
+parser.add_argument("--filecatalog", action="store_true", help="use file catalogs")
 parser.add_argument("-i", "--input", type=str, help="the name of the input directory")
 parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
+parser.add_argument("--ignore", type=str, help="the name of the file specifying regions to ignore")
+parser.add_argument("--special", type=str, help="the name of the file specifying regions with objects needing special attention")
 parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
 
 # Parse the command line arguments

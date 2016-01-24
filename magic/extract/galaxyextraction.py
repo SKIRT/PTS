@@ -60,6 +60,8 @@ class GalaxyExtractor(Configurable):
 
         # The mask covering pixels that should be ignored throughout the entire extraction procedure
         self.input_mask = None
+        self.special_mask = None
+        self.ignore_mask = None
 
         # The galactic catalog
         self.catalog = None
@@ -72,14 +74,14 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, input_mask, catalog=None):
+    def run(self, frame, input_mask, catalog=None, special=None, ignore=None):
 
         """
         This function ...
         """
 
         # 1. Call the setup function
-        self.setup(frame, input_mask, catalog)
+        self.setup(frame, input_mask, catalog, special, ignore)
 
         # 2. Find and remove the galaxies
         self.find_and_remove_galaxies()
@@ -95,7 +97,7 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, input_mask, catalog=None):
+    def setup(self, frame, input_mask, catalog=None, special_mask=None, ignore_mask=None):
 
         """
         This function ...
@@ -111,6 +113,8 @@ class GalaxyExtractor(Configurable):
         self.frame = frame
         self.input_mask = input_mask
         self.catalog = catalog
+        self.special_mask = special_mask
+        self.ignore_mask = ignore_mask
 
         # Create a mask with shape equal to the shape of the frame
         self.mask = Mask.from_shape(self.frame.shape)
@@ -317,10 +321,6 @@ class GalaxyExtractor(Configurable):
         # Inform the user
         self.log.info("Loading the galaxies from the catalog ...")
 
-        # Get masks
-        special_mask = self.special_mask
-        ignore_mask = self.ignore_mask
-
         # Create the list of galaxies
         for i in range(len(self.catalog)):
 
@@ -360,8 +360,8 @@ class GalaxyExtractor(Configurable):
             if self.config.track_record: galaxy.enable_track_record()
 
             # Set attributes based on masks (special and ignore)
-            if special_mask is not None: galaxy.special = special_mask.masks(pixel_position)
-            if ignore_mask is not None: galaxy.ignore = ignore_mask.masks(pixel_position)
+            if self.special_mask is not None: galaxy.special = self.special_mask.masks(pixel_position)
+            if self.ignore_mask is not None: galaxy.ignore = self.ignore_mask.masks(pixel_position)
 
             # If the input mask masks this star's position, skip it (don't add it to the list of stars)
             if self.input_mask is not None and self.input_mask.masks(pixel_position): continue
@@ -442,60 +442,6 @@ class GalaxyExtractor(Configurable):
         # Add the principal and companion galaxies to the mask
         self.mask += self.principal_mask
         self.mask += self.companion_mask
-
-    # -----------------------------------------------------------------
-
-    @property
-    def special_mask(self):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # If no special region is defined
-        if self.config.special_region is None: return None
-
-        # Determine the full path to the special region file
-        path = self.full_input_path(self.config.special_region)
-
-        # Inform the user
-        self.log.info("Setting special region from " + path + " ...")
-
-        # Load the region and create a mask from it
-        region = Region.from_file(path, self.frame.wcs)
-        special_mask = Mask(region.get_mask(shape=self.frame.shape))
-
-        # Return the mask
-        return special_mask
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ignore_mask(self):
-
-        """
-        This function ...
-        :param frame:
-        :return:
-        """
-
-        # If no ignore region is defined
-        if self.config.ignore_region is None: return None
-
-        # Determine the full path to the ignore region file
-        path = self.full_input_path(self.config.ignore_region)
-
-        # Inform the user
-        self.log.info("Setting region to ignore for subtraction from " + path + " ...")
-
-        # Load the region and create a mask from it
-        region = Region.from_file(path, self.frame.wcs)
-        ignore_mask = Mask(region.get_mask(shape=self.frame.shape))
-
-        # Return the mask
-        return ignore_mask
 
     # -----------------------------------------------------------------
 

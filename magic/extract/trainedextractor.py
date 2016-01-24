@@ -56,6 +56,8 @@ class TrainedExtractor(Configurable):
         # The image frame and mask
         self.frame = None
         self.input_mask = None
+        self.special_mask = None
+        self.ignore_mask = None
 
         # Set the segmentation map to None initially
         self.segments = None
@@ -80,7 +82,7 @@ class TrainedExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, input_mask, galaxyextractor=None, starextractor=None):
+    def run(self, frame, input_mask, galaxyextractor=None, starextractor=None, special=None, ignore=None):
 
         """
         This function ...
@@ -88,7 +90,7 @@ class TrainedExtractor(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup(frame, input_mask, galaxyextractor, starextractor)
+        self.setup(frame, input_mask, galaxyextractor, starextractor, special, ignore)
 
         # 2. Find sources
         self.find_sources()
@@ -107,7 +109,7 @@ class TrainedExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, input_mask, galaxyextractor=None, starextractor=None):
+    def setup(self, frame, input_mask, galaxyextractor=None, starextractor=None, special_mask=None, ignore_mask=None):
 
         """
         This function ...
@@ -120,6 +122,8 @@ class TrainedExtractor(Configurable):
         # Make a local reference to the frame
         self.frame = frame
         self.input_mask = input_mask
+        self.special_mask = special_mask
+        self.ignore_mask = ignore_mask
 
         # Create a mask with shape equal to the shape of the frame
         self.mask = Mask.from_shape(self.frame.shape)
@@ -379,19 +383,22 @@ class TrainedExtractor(Configurable):
         if self.galaxy_extractor is not None:
 
             # Determine the mask that covers the principal and companion galaxies
-            galaxy_mask = self.galaxy_extractor.principal_mask + self.galaxy_extractor.companion_mask
+            eliminate_mask = self.galaxy_extractor.principal_mask + self.galaxy_extractor.companion_mask
+
+            # NEW: PLUS: Eliminate the segments covered by the 'ignore mask'
+            if self.ignore_mask is not None: eliminate_mask += self.ignore_mask
 
             # Check where the galaxy mask overlaps with the segmentation map
-            overlap = masks.intersection(self.segments, galaxy_mask)
-            if not np.any(overlap): return
+            overlap = masks.intersection(self.segments, eliminate_mask)
+            if np.any(overlap):
 
-            # Check which indices are present in the overlap map
-            possible = np.array(range(1, np.max(overlap) + 1))
-            present = np.in1d(possible, overlap)
-            indices = possible[present]
+                # Check which indices are present in the overlap map
+                possible = np.array(range(1, np.max(overlap) + 1))
+                present = np.in1d(possible, overlap)
+                indices = possible[present]
 
-            # Remove the galaxies from the segmentation map
-            for index in indices: self.segments[self.segments == index] = 0
+                # Remove the galaxies from the segmentation map
+                for index in indices: self.segments[self.segments == index] = 0
 
         # Find apertures
         contours = self.find_contours()

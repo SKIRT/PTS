@@ -20,7 +20,7 @@ import astropy.units as u
 
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame
-from ..basics import Mask
+from ..basics import Mask, Region
 from .galaxyextraction import GalaxyExtractor
 from .starextraction import StarExtractor
 from .trainedextractor import TrainedExtractor
@@ -57,12 +57,11 @@ class Extractor(Configurable):
 
         # The mask covering pixels that should be ignored throughout the entire extraction procedure
         self.input_mask = None
+        self.special_mask = None
+        self.ignore_mask = None
 
         # The output mask
         self.mask = None
-
-        # The catalog buidler
-        self.catalog_builder = None
 
     # -----------------------------------------------------------------
 
@@ -77,6 +76,13 @@ class Extractor(Configurable):
         # Create a new Extractor instance
         extractor = cls(arguments.config)
 
+        # Report file
+        extractor.config.logging.path = "log.txt"
+
+        # Ignore and special region
+        extractor.config.ignore_region = arguments.ignore
+        extractor.config.special_region = arguments.special
+
         # Set the input and output path
         extractor.config.input_path = arguments.input_path
         extractor.config.output_path = arguments.output_path
@@ -84,6 +90,7 @@ class Extractor(Configurable):
         # Set options for writing out regions or masks
         extractor.config.write_regions = arguments.regions
         extractor.config.write_masked_frames = arguments.masks
+        extractor.config.write_catalogs = arguments.catalogs
 
         # Build catalog
         extractor.config.build_catalog = arguments.build
@@ -93,9 +100,17 @@ class Extractor(Configurable):
         extractor.config.write_mask = True
 
         # Manual indices
-        if arguments.not_stars is not None: extractor.config.manual_indices.not_stars = arguments.not_stars
-        if arguments.remove_stars is not None: extractor.config.manual_indices.remove_stars = arguments.remove_stars
-        if arguments.not_saturation is not None: extractor.config.manual_indices.not_saturation = arguments.not_saturation
+        if arguments.not_stars is not None: extractor.config.stars.manual_indices.not_stars = arguments.not_stars
+        if arguments.remove_stars is not None: extractor.config.stars.manual_indices.remove_stars = arguments.remove_stars
+        if arguments.not_saturation is not None: extractor.config.stars.manual_indices.not_saturation = arguments.not_saturation
+
+        if arguments.filecatalog:
+
+            extractor.config.galaxies.fetching.use_catalog_file = True
+            extractor.config.galaxies.fetching.catalog_path = "galaxies.cat"
+
+            extractor.config.stars.fetching.use_catalog_file = True
+            extractor.config.stars.fetching.catalog_path = "stars.cat"
 
         # Return the new instance
         return extractor
@@ -177,7 +192,7 @@ class Extractor(Configurable):
 
             # Star extractor
             self.star_extractor.config.write_catalog = True
-            self.star_extractor.config.writing.catalog_path = "saturation.cat"
+            self.star_extractor.config.writing.catalog_path = "stars.cat"
 
         # Set the appropriate configuration settings for writing out the galactic and stellar statistics
         if self.config.write_statistics:
@@ -213,6 +228,10 @@ class Extractor(Configurable):
             # Star extractor
             self.star_extractor.config.write_masked_frame = True
             self.star_extractor.config.writing.masked_frame_path = "masked_stars.fits"
+
+        # Create special and ignore mask
+        self.set_ignore_mask()
+        self.set_special_mask()
 
     # -----------------------------------------------------------------
 
@@ -289,7 +308,7 @@ class Extractor(Configurable):
         self.log.info("Extracting the galaxies ...")
 
         # Run the galaxy extractor
-        self.galaxy_extractor.run(self.frame, self.input_mask, self.galaxy_catalog)
+        self.galaxy_extractor.run(self.frame, self.input_mask, self.galaxy_catalog, special=self.special_mask, ignore=self.ignore_mask)
 
         # Add to the total mask
         self.mask += self.galaxy_extractor.mask
@@ -309,7 +328,7 @@ class Extractor(Configurable):
         if self.frame.wavelength is None or self.frame.wavelength < 10.0 * u.Unit("micron"):
 
             # Run the star extractor
-            self.star_extractor.run(self.frame, self.input_mask, self.galaxy_extractor, self.star_catalog)
+            self.star_extractor.run(self.frame, self.input_mask, self.galaxy_extractor, self.star_catalog, special=self.special_mask, ignore=self.ignore_mask)
 
             # Add star mask to the total mask
             self.mask += self.star_extractor.mask
@@ -330,7 +349,7 @@ class Extractor(Configurable):
 
         # Run the trained extractor just to find sources
         # As the mask, pass the input mask (bad pixels) + self.mask (at this point, combined galaxy and star extraction masks)
-        self.trained_extractor.run(self.frame, self.input_mask + self.mask, self.galaxy_extractor, self.star_extractor)
+        self.trained_extractor.run(self.frame, self.input_mask + self.mask, self.galaxy_extractor, self.star_extractor, special=self.special_mask, ignore=self.ignore_mask)
 
         # Add sources to the total mask
         self.mask += self.trained_extractor.mask
@@ -406,5 +425,59 @@ class Extractor(Configurable):
 
         # Write out the total mask
         frame.save(path)
+
+    # -----------------------------------------------------------------
+
+    def set_special_mask(self):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # If no special region is defined
+        if self.config.special_region is None: return
+
+        # Determine the full path to the special region file
+        path = self.full_input_path(self.config.special_region)
+
+        # Inform the user
+        self.log.info("Setting special region from " + path)
+
+        # Load the region and create a mask from it
+        region = Region.from_file(path, self.frame.wcs)
+        special_mask = Mask(region.get_mask(shape=self.frame.shape))
+
+        # Return the mask
+        #return special_mask
+        self.special_mask = special_mask
+
+    # -----------------------------------------------------------------
+
+    def set_ignore_mask(self):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        # If no ignore region is defined
+        if self.config.ignore_region is None: return
+
+        # Determine the full path to the ignore region file
+        path = self.full_input_path(self.config.ignore_region)
+
+        # Inform the user
+        self.log.info("Setting region to ignore for subtraction from " + path)
+
+        # Load the region and create a mask from it
+        region = Region.from_file(path, self.frame.wcs)
+        ignore_mask = Mask(region.get_mask(shape=self.frame.shape))
+
+        # Return the mask
+        #return ignore_mask
+        self.ignore_mask = ignore_mask
 
 # -----------------------------------------------------------------
