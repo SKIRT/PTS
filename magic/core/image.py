@@ -29,13 +29,7 @@ from astropy import log
 # Import the relevant AstroMagic classes and modules
 from ..basics import Layers, Mask, Region
 from .frame import Frame
-from ..tools import headers, fitting, plotting, regions, statistics, catalogs
-
-# -----------------------------------------------------------------
-
-# Do not show warnings, to block Canopy's UserWarnings from spoiling the console log
-import warnings
-warnings.filterwarnings("ignore")
+from ..tools import headers, fitting, plotting, regions, statistics, catalogs, coordinates
 
 # -----------------------------------------------------------------
 
@@ -585,37 +579,6 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def combine_regions(self, name=None, allow_none=True):
-
-        """
-        This function ...
-        :param name:
-        :param allow_none:
-        :return:
-        """
-
-        # Initialize an empty list of shapes
-        total_region = pyregion.ShapeList([])
-
-        # TODO: what to do if one region is in image coordinates and other in physical coordinates?
-        # Temporary fix: all in image coordinates
-
-        # Loop over all active regions, adding them together
-        for region_name in self.regions.get_selected(allow_none=allow_none):
-
-            # Add all the shapes of this region to the combined region
-            for shape in self.regions[region_name].region.as_imagecoord(self.header):
-
-                total_region.append(shape)
-
-        # If no name is provided, return the new region
-        if name is None: return total_region
-
-        # Else, add the region to the list of regions, with the appropriate name
-        else: self._add_region(total_region, name)
-
-    # -----------------------------------------------------------------
-
     def combine_masks(self, name=None, allow_none=True, return_mask=False):
 
         """
@@ -625,21 +588,8 @@ class Image(object):
         :return:
         """
 
-        # Initialize an boolean array for the total mask
-        total_mask = np.zeros_like(self.frames.primary, dtype=bool)
-
-        # For each active mask
-        for mask_name in self.masks.get_selected(allow_none=allow_none):
-
-            # Add this mask to the total
-            total_mask += self.masks[mask_name].data
-
-        # Set the name of the total mask
-        name = name if name is not None else "total"
-
-        # Return the mask or add it to this image
-        if return_mask: return total_mask
-        else: self._add_mask(total_mask, name)
+        # TODO: rewrite this function
+        pass
 
     # -----------------------------------------------------------------
 
@@ -694,24 +644,8 @@ class Image(object):
         :return:
         """
 
-        # Initialize an boolean array for the total mask
-        total_mask = np.zeros_like(self.frames.primary, dtype=bool)
-
-        name = ""
-
-        # For each active region
-        for region_name in self.regions.get_selected():
-
-            # Create the mask
-            total_mask += regions.create_mask(self.regions[region_name], self.frames.primary.header, self.frames.primary.xsize, self.frames.primary.ysize)
-            name += region_name + "_"
-
-        # Remove the trailing underscore
-        name = name.rstrip("_")
-
-        # Return the mask or add it to this image
-        if return_mask: return total_mask
-        else: self._add_mask(total_mask, name)
+        # TODO: rewrite this function
+        pass
 
     # -----------------------------------------------------------------
 
@@ -770,58 +704,6 @@ class Image(object):
 
         # Remove the mask from the dictionary of masks and re-add it under a different key
         self.masks[name] = self.masks.pop(mask_name)
-
-    # -----------------------------------------------------------------
-
-    def find_sky(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the name of the currently selected frame
-        frame_name = self.frames.get_selected(require_single=True)
-
-        # The length of the major axis of the ellipse
-        major = 3.0 * self.orientation.majoraxis * 2.5
-
-        # The width and heigth of the ellips
-        width = major
-        height = major * (1 - self.orientation.eps)
-
-        # Create a string identifying this ellipse
-        region_string = "image;ellipse(" + str(self.orientation.ypeak) + "," + str(self.orientation.xpeak) + "," + str(width) + "," + str(height) + "," + str(self.orientation.theta) + ")"
-
-        # Create a region for the outer ellipse of the annulus
-        region = pyregion.parse(region_string)
-
-        # Add the annulus region
-        self._add_region(region, "annulus")
-
-        # Create the annulus mask
-        annulusmask = np.logical_not(self.regions["annulus"].region.get_mask(header=self.header, shape=(self.ysize,self.xsize)))
-
-        # Get a combination of the currently selected masks
-        current_mask = self.combine_masks(return_mask=True)
-
-        # Combine the currently selected mask, the galaxy mask and the annulus mask
-        sky_mask = (current_mask + self.masks.galaxy.data + annulusmask).astype(bool)
-
-        # Make a mask of > 3 sigma regions
-        new_mask = statistics.sigma_clip_mask(self.frames[frame_name], sigma=3.0, mask=sky_mask)
-
-        # Add the mask
-        self._add_mask(new_mask, "sky")
-
-        # Make a masked frame, the (sigma-clipped) sky
-        skyframe = np.copy(self.frames.primary)
-
-        # Set the sky frame to zero in the pixels masked by the new 'sky' mask
-        skyframe[self.masks.sky.data] = 0.0
-
-        # Add this frame to the set of frames
-        self.add_frame(skyframe, "sky")
 
     # -----------------------------------------------------------------
 
@@ -919,7 +801,14 @@ class Image(object):
         wcs = WCS(header)
 
         # Load the frames
-        pixelscale = headers.get_pixelscale(header)
+        # old: was in arcsec
+        old_pixelscale = headers.get_pixelscale(header) # OFTEN, THE HEADER STATES AN INCORRECT PIXEL SCALE !!!!
+        pixelscale = coordinates.pixel_scale(wcs)  # pixelscale is now Extent(x=... deg, y=... deg)
+
+        # Temporary fix because of all functions using the pixelscale attribute of the Frame class ...
+        pixelscale = 0.5 * (pixelscale.x.to("arcsec") + pixelscale.y.to("arcsec"))
+
+        print("DEBUG: old pixelscale =", old_pixelscale, "new pixelscale =", pixelscale)
 
         # Obtain the filter for this image
         filter = headers.get_filter(self.name, original_header)
@@ -1008,40 +897,6 @@ class Image(object):
 
         # Add the layer to the layers dictionary
         self.frames[name] = frame
-
-    # -----------------------------------------------------------------
-
-    def _add_region(self, region, name):
-
-        """
-        This function ...
-        :param region:
-        :param name:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Adding '" + name + "' to the set of regions")
-
-        # Add the region to the regions dictionary
-        self.regions[name] = Region(region)
-
-    # -----------------------------------------------------------------
-
-    def _add_mask(self, data, name):
-
-        """
-        This function ...
-        :param data:
-        :param name:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Adding '" + name + "' to the set of masks")
-
-        # Add the mask to the masks dictionary
-        self.masks[name] = Mask(data)
 
     # -----------------------------------------------------------------
 

@@ -124,29 +124,29 @@ def plot_star(box, peak, model, title=None):
 
     # Plot the box
     plt.subplot(1,4,1)
-    plt.imshow(box, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
-    plt.plot(peak.x, peak.y, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
+    plt.imshow(box, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
+    plt.plot(peak.x, peak.y, ls=None, color='white', marker='+', ms=40, lw=10, mew=4)
     plt.xlim(0, box.xsize-1)
     plt.ylim(0, box.ysize-1)
     plt.title("Cutout")
 
     # Plot the model
     plt.subplot(1,4,2)
-    plt.imshow(evaluated, origin='lower', interpolation='none', norm=norm, vmin=0.0, vmax=vmax)
+    plt.imshow(evaluated, origin='lower', interpolation="nearest", norm=norm, vmin=0.0, vmax=vmax)
     plt.xlim(0, box.xsize-1)
     plt.ylim(0, box.ysize-1)
     plt.title("Model")
 
     # Plot the subtracted box on the same scale as the original box and model
     plt.subplot(1,4,3)
-    plt.imshow(subtracted, origin='lower', interpolation='none', norm=norm, vmin=0.0, vmax=vmax)
+    plt.imshow(subtracted, origin='lower', interpolation="nearest", norm=norm, vmin=0.0, vmax=vmax)
     plt.xlim(0, box.xsize-1)
     plt.ylim(0, box.ysize-1)
     plt.title("Residual")
 
     # Plot the subtracted box on a narrower color scale
     plt.subplot(1,4,4)
-    sp = plt.imshow(subtracted, origin='lower', interpolation='none')
+    sp = plt.imshow(subtracted, origin='lower', interpolation="nearest")
     plt.xlim(0, box.xsize-1)
     plt.ylim(0, box.ysize-1)
     plt.title("Residual")
@@ -181,7 +181,7 @@ def plot_peaks(box, x_peaks, y_peaks, radius=None, title=None):
     plt.figure(figsize=(8,2.5))
     plt.imshow(box, origin='lower', norm=norm, interpolation='nearest', vmin=vmin, vmax=vmax)
 
-    if radius is None: plt.plot(x_peaks, y_peaks, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
+    if radius is None: plt.plot(x_peaks, y_peaks, ls=None, color='white', marker='+', ms=40, lw=10, mew=4)
     else:
 
         positions = (x_peaks, y_peaks)
@@ -237,7 +237,7 @@ def plot_peaks_models(box, x_peaks, y_peaks, models):
     plt.figure(figsize=(8,2.5))
     plt.subplot(1,3,1)
     plt.imshow(box, origin='lower', interpolation='nearest', vmin=vmin, vmax=vmax)
-    plt.plot(x_peaks, y_peaks, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
+    plt.plot(x_peaks, y_peaks, ls=None, color='white', marker='+', ms=40, lw=10, mew=4)
     plt.xlim(0, box.shape[1]-1)
     plt.ylim(0, box.shape[0]-1)
     plt.title("Data")
@@ -273,43 +273,43 @@ def plot_star_model(background, background_clipped, est_background, star, est_ba
     # Plot the data with the best-fit model
     plt.figure(figsize=(20,3))
     plt.subplot(1,7,1)
-    plt.imshow(background, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(background, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, background.shape[1]-1)
     plt.ylim(0, background.shape[0]-1)
     plt.title("Background")
 
     plt.subplot(1,7,2)
-    plt.imshow(background_clipped, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(background_clipped, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, background_clipped.shape[1]-1)
     plt.ylim(0, background_clipped.shape[0]-1)
     plt.title("Sigma-clipped background")
 
     plt.subplot(1,7,3)
-    plt.imshow(est_background, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(est_background, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, est_background.shape[1]-1)
     plt.ylim(0, est_background.shape[0]-1)
     plt.title("Estimated background")
 
     plt.subplot(1,7,4)
-    plt.imshow(star, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(star, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, star.shape[1]-1)
     plt.ylim(0, star.shape[0]-1)
     plt.title("Star")
 
     plt.subplot(1,7,5)
-    plt.imshow(star.data - est_background_star, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(star.data - est_background_star, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, star.shape[1]-1)
     plt.ylim(0, star.shape[0]-1)
     plt.title("Star without background")
 
     plt.subplot(1,7,6)
-    plt.imshow(fitted_star, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(fitted_star, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, fitted_star.shape[1]-1)
     plt.ylim(0, fitted_star.shape[0]-1)
     plt.title("Fitted star")
 
     plt.subplot(1,7,7)
-    plt.imshow(star.data - fitted_star, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(star.data - fitted_star, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, star.shape[1]-1)
     plt.ylim(0, star.shape[0]-1)
     plt.title("Residual")
@@ -329,25 +329,25 @@ def plot_removal(cutout, mask, background, removed, title=None):
     # Plot the data with the best-fit model
     plt.figure(figsize=(20,3))
     plt.subplot(1,4,1)
-    plt.imshow(cutout, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(cutout, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(-0.5, cutout.xsize-0.5)
     plt.ylim(-0.5, cutout.ysize-0.5)
     plt.title("Cutout")
 
     plt.subplot(1,4,2)
-    plt.imshow(np.ma.masked_array(cutout, mask=mask), origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(np.ma.masked_array(cutout, mask=mask), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(-0.5, cutout.xsize-0.5)
     plt.ylim(-0.5, cutout.ysize-0.5)
     plt.title("Background mask")
 
     plt.subplot(1,4,3)
-    plt.imshow(background, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(background, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(-0.5, background.xsize-0.5)
     plt.ylim(-0.5, background.ysize-0.5)
     plt.title("Estimated background")
 
     plt.subplot(1,4,4)
-    plt.imshow(removed, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(removed, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(-0.5, background.xsize-0.5)
     plt.ylim(-0.5, background.ysize-0.5)
     plt.title("Cutout with star removed")
@@ -391,38 +391,38 @@ def plot_source(cutout, mask, background, peaks=None, title=None, show=True, sca
     # Plot the data with the best-fit model
     plt.figure(figsize=(20,3))
     plt.subplot(1,number,1)
-    plt.imshow(cutout, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(cutout, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(-0.5, cutout.xsize-0.5)
     plt.ylim(-0.5, cutout.ysize-0.5)
     plt.title("Cutout")
 
     plt.subplot(1,number,2)
-    plt.imshow(np.ma.masked_array(cutout, mask=mask), origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(np.ma.masked_array(cutout, mask=mask), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(-0.5, cutout.xsize-0.5)
     plt.ylim(-0.5, cutout.ysize-0.5)
     plt.title("Background mask")
 
     plt.subplot(1,number,3)
-    plt.imshow(background, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(background, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(-0.5, background.xsize-0.5)
     plt.ylim(-0.5, background.ysize-0.5)
     plt.title("Estimated background")
 
     plt.subplot(1,number,4)
-    plt.imshow(np.ma.masked_array(cutout, mask=mask.inverse()), origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(np.ma.masked_array(cutout, mask=mask.inverse()), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(-0.5, cutout.xsize-0.5)
     plt.ylim(-0.5, cutout.ysize-0.5)
     plt.title("Source mask")
 
     plt.subplot(1,number,5)
-    plt.imshow(cutout-background, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
-    if peaks is not None: plt.plot(peaks[0], peaks[1], ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
+    plt.imshow(cutout-background, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
+    if peaks is not None: plt.plot(peaks[0], peaks[1], ls=None, color='white', marker='+', ms=40, lw=10, mew=4)
     plt.xlim(-0.5, cutout.xsize-0.5)
     plt.ylim(-0.5, cutout.ysize-0.5)
     plt.title("Background subtracted")
 
     plt.subplot(1,number,6)
-    plt.imshow(np.ma.masked_array(cutout-background, mask=mask.inverse()), origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(np.ma.masked_array(cutout-background, mask=mask.inverse()), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(-0.5, cutout.xsize-0.5)
     plt.ylim(-0.5, cutout.ysize-0.5)
     plt.title("Background subtracted source")
@@ -457,31 +457,31 @@ def plot_background_subtraction(background, background_clipped, est_background, 
     # Plot the data with the best-fit model
     plt.figure(figsize=(20,3))
     plt.subplot(1,5,1)
-    plt.imshow(background, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(background, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, background.shape[1]-1)
     plt.ylim(0, background.shape[0]-1)
     plt.title("Background")
 
     plt.subplot(1,5,2)
-    plt.imshow(background_clipped, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(background_clipped, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, background_clipped.shape[1]-1)
     plt.ylim(0, background_clipped.shape[0]-1)
     plt.title("Sigma-clipped background")
 
     plt.subplot(1,5,3)
-    plt.imshow(est_background, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(est_background, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, est_background.shape[1]-1)
     plt.ylim(0, est_background.shape[0]-1)
     plt.title("Estimated background")
 
     plt.subplot(1,5,4)
-    plt.imshow(star, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(star, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, star.shape[1]-1)
     plt.ylim(0, star.shape[0]-1)
     plt.title("Star")
 
     plt.subplot(1,5,5)
-    plt.imshow(star.data - est_background_star, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(star.data - est_background_star, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, star.shape[1]-1)
     plt.ylim(0, star.shape[0]-1)
     plt.title("Star without background")
@@ -515,20 +515,20 @@ def plot_background_center(cutout, mask, peaks=None, title=None, show=True, scal
     # Plot the data with the best-fit model
     plt.figure(figsize=(10,4))
     plt.subplot(1,3,1)
-    plt.imshow(cutout, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(cutout, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0.5, cutout.xsize-0.5)
     plt.ylim(0.5, cutout.ysize-0.5)
     plt.title("Cutout")
 
     plt.subplot(1,3,2)
-    plt.imshow(np.ma.masked_array(cutout, mask=mask), origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(np.ma.masked_array(cutout, mask=mask), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0.5, cutout.xsize-0.5)
     plt.ylim(0.5, cutout.ysize-0.5)
     plt.title("Background mask")
 
     plt.subplot(1,3,3)
-    plt.imshow(np.ma.masked_array(cutout, mask=mask.inverse()), origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
-    if peaks is not None: plt.plot(peaks[0], peaks[1], ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
+    plt.imshow(np.ma.masked_array(cutout, mask=mask.inverse()), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
+    if peaks is not None: plt.plot(peaks[0], peaks[1], ls=None, color='white', marker='+', ms=40, lw=10, mew=4)
     plt.xlim(0.5, cutout.xsize-0.5)
     plt.ylim(0.5, cutout.ysize-0.5)
     plt.title("Source mask")
@@ -561,13 +561,13 @@ def plot_difference(box_a, box_b, share_colorscale=False):
     plt.figure(figsize=(8,2.5))
     plt.subplot(1,3,1)
     #plt.imshow(box_a, origin='lower', interpolation='nearest', vmin=vmin, vmax=vmax)
-    plt.imshow(box_a, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(box_a, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, box_a.shape[1]-1)
     plt.ylim(0, box_a.shape[0]-1)
     plt.title("Data a")
     plt.subplot(1,3,2)
     #plt.imshow(box_b, origin='lower', interpolation='nearest', vmin=0.0, vmax=vmax)
-    plt.imshow(box_b, origin='lower', interpolation='none', norm=norm, vmin=0.0, vmax=vmax)
+    plt.imshow(box_b, origin='lower', interpolation="nearest", norm=norm, vmin=0.0, vmax=vmax)
     plt.xlim(0, box_a.shape[1]-1)
     plt.ylim(0, box_a.shape[0]-1)
     plt.title("Data b")
@@ -575,7 +575,7 @@ def plot_difference(box_a, box_b, share_colorscale=False):
 
     if share_colorscale:
 
-        plt.imshow(box_a - box_b, origin='lower', interpolation='none', norm=norm, vmin=0.0, vmax=vmax)
+        plt.imshow(box_a - box_b, origin='lower', interpolation="nearest", norm=norm, vmin=0.0, vmax=vmax)
         plt.xlim(0, box_a.shape[1]-1)
         plt.ylim(0, box_a.shape[0]-1)
         plt.title("Residual")
@@ -583,7 +583,7 @@ def plot_difference(box_a, box_b, share_colorscale=False):
 
     else:
 
-        residualimage = plt.imshow(box_a - box_b, origin='lower', interpolation='none')
+        residualimage = plt.imshow(box_a - box_b, origin='lower', interpolation="nearest")
         plt.xlim(0, box_a.shape[1]-1)
         plt.ylim(0, box_a.shape[0]-1)
         plt.title("Residual")
@@ -613,7 +613,7 @@ def plot_difference_value(box, value, share_colorscale=False):
     plt.figure(figsize=(8,2.5))
     plt.subplot(1,3,1)
     #plt.imshow(box_a, origin='lower', interpolation='nearest', vmin=vmin, vmax=vmax)
-    plt.imshow(box, origin='lower', interpolation='none', norm=norm, vmin=vmin, vmax=vmax)
+    plt.imshow(box, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0, box.shape[1]-1)
     plt.ylim(0, box.shape[0]-1)
     plt.title("Data")
@@ -624,19 +624,19 @@ def plot_difference_value(box, value, share_colorscale=False):
 
     #print np.median(box-value_box)
 
-    plt.imshow(value_box, origin='lower', interpolation='none', norm=norm, vmin=0.0, vmax=vmax)
+    plt.imshow(value_box, origin='lower', interpolation="nearest", norm=norm, vmin=0.0, vmax=vmax)
     plt.title("Constant value")
     plt.subplot(1,3,3)
 
     if share_colorscale:
 
-        plt.imshow(box - value_box, origin='lower', interpolation='none', norm=norm, vmin=0.0, vmax=vmax)
+        plt.imshow(box - value_box, origin='lower', interpolation="nearest", norm=norm, vmin=0.0, vmax=vmax)
         plt.title("Residual")
         #plt.imshow(box_a - box_b, origin='lower', interpolation='nearest', vmin=0.0, vmax=vmax)
 
     else:
 
-        residualimage = plt.imshow(box - value_box, origin='lower', interpolation='none')
+        residualimage = plt.imshow(box - value_box, origin='lower', interpolation="nearest")
         plt.title("Residual")
         plt.colorbar(residualimage, format="%.2f")
 
@@ -667,15 +667,15 @@ def plot_difference_model(box, model):
     plt.figure(figsize=(8,2.5))
 
     plt.subplot(1,3,1)
-    plt.imshow(box, origin='lower', interpolation='nearest', vmin=vmin, vmax=vmax)
+    plt.imshow(box, origin='lower', interpolation="nearest", vmin=vmin, vmax=vmax)
     plt.title("Data")
 
     plt.subplot(1,3,2)
-    plt.imshow(model_box, origin='lower', interpolation='nearest', vmin=vmin, vmax=vmax)
+    plt.imshow(model_box, origin='lower', interpolation="nearest", vmin=vmin, vmax=vmax)
     plt.title("Model")
 
     plt.subplot(1,3,3)
-    plt.imshow(box - model_box, origin='lower', interpolation='nearest', vmin=vmin, vmax=vmax)
+    plt.imshow(box - model_box, origin='lower', interpolation="nearest", vmin=vmin, vmax=vmax)
     plt.title("Residual")
 
     plt.show()

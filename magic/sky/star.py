@@ -337,8 +337,9 @@ class Star(SkyObject):
         if self.has_track_record: self.track_record.set_stage("saturation")
 
         # Look for a center segment corresponding to a 'saturation' source
-        ellipse = Ellipse(self.pixel_position(frame.wcs), radius, Angle(0.0, u.deg))
-        saturation_source = sources.find_source_segmentation(frame, ellipse, config, track_record=self.track_record, special=self.special)
+        ellipse = Ellipse(self.pixel_position(frame.wcs), radius, Angle(0.0, u.Unit("deg")))
+        saturation_source = sources.find_source_segmentation(original_frame, ellipse, config, track_record=self.track_record, special=self.special)
+        #saturation_source = sources.find_source_segmentation(frame, ellipse, config, track_record=self.track_record, special=self.special)
 
         # If a 'saturation' source was found
         if saturation_source is not None:
@@ -355,15 +356,58 @@ class Star(SkyObject):
                 star_mask_cutout = star_mask[saturation_source.cutout.y_slice, saturation_source.cutout.x_slice]
 
                 # Remove the mask of this star from the star_mask_cutout
+                x_min_cutout = saturation_source.cutout.x_min
+                x_max_cutout = saturation_source.cutout.x_max
+                y_min_cutout = saturation_source.cutout.y_min
+                y_max_cutout = saturation_source.cutout.y_max
+
                 x_min_source = self.source.cutout.x_min
                 x_max_source = self.source.cutout.x_max
+                y_min_source = self.source.cutout.y_min
+                y_max_source = self.source.cutout.y_max
 
+                #plotting.plot_box(star_mask_cutout, title="before removing central source")
+                star_mask_cutout[y_min_source-y_min_cutout:y_max_source-y_min_cutout, x_min_source-x_min_cutout:x_max_source-x_min_cutout][self.source.mask] = False
+                #plotting.plot_box(star_mask_cutout, title="after removing central source")
 
                 # Discard this saturation source if the centroid offset or the ellipticity is too large
                 if not masks.overlap(saturation_source.mask, star_mask_cutout):
                     if difference.norm > config.max_centroid_offset or contour.ellipticity > config.max_centroid_ellipticity: return
 
-            # Replace the pixels of the cutout box by the pixels of the original frame (because the star itsself is already removed)
+            if config.second_segmentation:
+
+                # Find all of the saturation light in a second segmentation step
+                saturation_source = sources.find_source_segmentation(frame, ellipse, config, track_record=self.track_record, special=self.special, sigma_level=config.second_sigma_level)
+                contour = sources.find_contour(saturation_source.cutout, saturation_source.mask, config.apertures.sigma_level)
+
+                # Check whether the source centroid matches the star position
+                if config.check_centroid:
+
+                    # Calculate the offset
+                    difference = contour.center - self.pixel_position(frame.wcs)
+
+                    star_mask_cutout = star_mask[saturation_source.cutout.y_slice, saturation_source.cutout.x_slice]
+
+                    # Remove the mask of this star from the star_mask_cutout
+                    x_min_cutout = saturation_source.cutout.x_min
+                    x_max_cutout = saturation_source.cutout.x_max
+                    y_min_cutout = saturation_source.cutout.y_min
+                    y_max_cutout = saturation_source.cutout.y_max
+
+                    x_min_source = self.source.cutout.x_min
+                    x_max_source = self.source.cutout.x_max
+                    y_min_source = self.source.cutout.y_min
+                    y_max_source = self.source.cutout.y_max
+
+                    #plotting.plot_box(star_mask_cutout, title="before removing central source")
+                    star_mask_cutout[y_min_source-y_min_cutout:y_max_source-y_min_cutout, x_min_source-x_min_cutout:x_max_source-x_min_cutout][self.source.mask] = False
+                    #plotting.plot_box(star_mask_cutout, title="after removing central source")
+
+                    # Discard this saturation source if the centroid offset or the ellipticity is too large
+                    if not masks.overlap(saturation_source.mask, star_mask_cutout):
+                        if difference.norm > config.max_centroid_offset or contour.ellipticity > config.max_centroid_ellipticity: return
+
+            # Replace the pixels of the cutout box by the pixels of the original frame (because the star itself is already removed)
             saturation_source.cutout = original_frame.box_like(saturation_source.cutout)
 
             # TODO: check with classifier to verify this is actually a saturation source!

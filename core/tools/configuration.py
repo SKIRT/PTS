@@ -15,11 +15,26 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import io
 import inspect
 from config import Config, Mapping
 
 # Import the relevant PTS classes and modules
 from . import filesystem, inspection
+
+# -----------------------------------------------------------------
+
+def from_string(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    string = string.replace(',', '\n')
+    fh = io.StringIO(string.decode('unicode-escape'))
+    return Config(fh)
 
 # -----------------------------------------------------------------
 

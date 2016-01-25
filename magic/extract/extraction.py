@@ -74,26 +74,41 @@ class Extractor(Configurable):
         """
 
         # Create a new Extractor instance
-        extractor = cls(arguments.config)
+        if arguments.config is not None: extractor = cls(arguments.config)
+        elif arguments.settings is not None: extractor = cls(arguments.settings)
+        else: extractor = cls()
 
         # Report file
-        extractor.config.logging.path = "log.txt"
+        if arguments.report: extractor.config.logging.path = "log.txt"
 
         # Ignore and special region
-        extractor.config.ignore_region = arguments.ignore
-        extractor.config.special_region = arguments.special
+        if arguments.ignore is not None: extractor.config.ignore_region = arguments.ignore
+        if arguments.special is not None: extractor.config.special_region = arguments.special
 
         # Set the input and output path
-        extractor.config.input_path = arguments.input_path
-        extractor.config.output_path = arguments.output_path
+        if arguments.input_path is not None: extractor.config.input_path = arguments.input_path
+        if arguments.output_path is not None: extractor.config.output_path = arguments.output_path
 
         # Set options for writing out regions or masks
-        extractor.config.write_regions = arguments.regions
-        extractor.config.write_masked_frames = arguments.masks
-        extractor.config.write_catalogs = arguments.catalogs
+        if arguments.regions: extractor.config.write_regions = True
+        if arguments.masks: extractor.config.write_masked_frames = True
+        #if arguments.catalogs: extractor.config.write_catalogs = True
+
+        if arguments.catalogs:
+
+            extractor.config.write_galactic_catalog = True
+            extractor.config.writing.galactic_catalog_path = "galaxies.cat"
+
+            extractor.config.write_stellar_catalog = True
+            extractor.config.writing.stellar_catalog_path = "stars.cat"
+
+        if arguments.segments:
+
+            extractor.config.other_sources.write_segments = True
+            extractor.config.other_sources.writing.segments_path = "other_segments.fits"
 
         # Build catalog
-        extractor.config.build_catalog = arguments.build
+        if arguments.build: extractor.config.build_catalog = True
 
         # If used from the command line, the result and mask should be written
         extractor.config.write_result = True
@@ -143,7 +158,7 @@ class Extractor(Configurable):
         self.find_other_sources()
 
         # 6. Build catalogs
-        if self.config.build_catalog: self.build_catalogs()
+        self.build_catalogs()
 
         # 5. Writing phase
         self.write()
@@ -184,15 +199,15 @@ class Extractor(Configurable):
         self.mask = Mask.from_shape(self.frame.shape)
 
         # Set the appropriate configuration settings for writing out the galactic and stellar catalogs
-        if self.config.write_catalogs:
+        #if self.config.write_catalogs:
 
             # Galaxy extractor
-            self.galaxy_extractor.config.write_catalog = True
-            self.galaxy_extractor.config.writing.catalog_path = "galaxies.cat"
+            #self.galaxy_extractor.config.write_catalog = True
+            #self.galaxy_extractor.config.writing.catalog_path = "galaxies.cat"
 
             # Star extractor
-            self.star_extractor.config.write_catalog = True
-            self.star_extractor.config.writing.catalog_path = "stars.cat"
+            #self.star_extractor.config.write_catalog = True
+            #self.star_extractor.config.writing.catalog_path = "stars.cat"
 
         # Set the appropriate configuration settings for writing out the galactic and stellar statistics
         if self.config.write_statistics:
@@ -285,16 +300,16 @@ class Extractor(Configurable):
                 galactic_catalog_path = os.path.join(galaxy_path, "galaxies.cat")
                 stellar_catalog_path = os.path.join(galaxy_path, "stars.cat")
 
-                self.galaxy_catalog = tables.from_file(galactic_catalog_path)
-                self.star_catalog = tables.from_file(stellar_catalog_path)
+                self.input_galaxy_catalog = tables.from_file(galactic_catalog_path)
+                self.input_star_catalog = tables.from_file(stellar_catalog_path)
 
                 break
 
         # If no break is encountered
         else:
 
-            self.galaxy_catalog = None
-            self.star_catalog = None
+            self.input_galaxy_catalog = None
+            self.input_star_catalog = None
 
     # -----------------------------------------------------------------
 
@@ -308,7 +323,7 @@ class Extractor(Configurable):
         self.log.info("Extracting the galaxies ...")
 
         # Run the galaxy extractor
-        self.galaxy_extractor.run(self.frame, self.input_mask, self.galaxy_catalog, special=self.special_mask, ignore=self.ignore_mask)
+        self.galaxy_extractor.run(self.frame, self.input_mask, self.input_galaxy_catalog, special=self.special_mask, ignore=self.ignore_mask)
 
         # Add to the total mask
         self.mask += self.galaxy_extractor.mask
@@ -328,7 +343,7 @@ class Extractor(Configurable):
         if self.frame.wavelength is None or self.frame.wavelength < 10.0 * u.Unit("micron"):
 
             # Run the star extractor
-            self.star_extractor.run(self.frame, self.input_mask, self.galaxy_extractor, self.star_catalog, special=self.special_mask, ignore=self.ignore_mask)
+            self.star_extractor.run(self.frame, self.input_mask, self.galaxy_extractor, self.input_star_catalog, special=self.special_mask, ignore=self.ignore_mask)
 
             # Add star mask to the total mask
             self.mask += self.star_extractor.mask
@@ -366,6 +381,9 @@ class Extractor(Configurable):
         # Inform the user
         self.log.info("Building the catalog for later ...")
 
+        # Only write when 'build_catalog' is enabled, but make the merged catalog anyway
+        if self.config.build_catalog: self.catalog_builder.config.write = True
+
         # Run the catalog builder
         self.catalog_builder.run(self.frame, self.galaxy_extractor, self.star_extractor, self.trained_extractor)
 
@@ -386,6 +404,48 @@ class Extractor(Configurable):
 
         # If requested, write out the total mask
         if self.config.write_mask: self.write_mask()
+
+        # If requested, write out the galactic catalog
+        if self.config.write_galactic_catalog: self.write_galactic_catalog()
+
+        # If requested, write out the compiled stellar catalog
+        if self.config.write_stellar_catalog: self.write_stellar_catalog()
+
+    # -----------------------------------------------------------------
+
+    def write_galactic_catalog(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the catalog file
+        path = self.full_output_path(self.config.writing.galactic_catalog_path)
+
+        # Inform the user
+        self.log.info("Writing galactic catalog to " + path + " ...")
+
+        # Write the catalog to file
+        tables.write(self.galaxy_extractor.catalog, path)
+
+    # -----------------------------------------------------------------
+
+    def write_stellar_catalog(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the catalog file
+        path = self.full_output_path(self.config.writing.stellar_catalog_path)
+
+        # Inform the user
+        self.log.info("Writing stellar catalog to " + path + " ...")
+
+        # Write the catalog to file
+        tables.write(self.catalog_builder.stellar_catalog, path)
 
     # -----------------------------------------------------------------
 
@@ -443,14 +503,13 @@ class Extractor(Configurable):
         path = self.full_input_path(self.config.special_region)
 
         # Inform the user
-        self.log.info("Setting special region from " + path)
+        self.log.info("Creating mask covering objects that require special attention from " + path + " ...")
 
         # Load the region and create a mask from it
         region = Region.from_file(path, self.frame.wcs)
         special_mask = Mask(region.get_mask(shape=self.frame.shape))
 
-        # Return the mask
-        #return special_mask
+        # Create the mask
         self.special_mask = special_mask
 
     # -----------------------------------------------------------------
@@ -470,14 +529,13 @@ class Extractor(Configurable):
         path = self.full_input_path(self.config.ignore_region)
 
         # Inform the user
-        self.log.info("Setting region to ignore for subtraction from " + path)
+        self.log.info("Creating mask covering objects that should be ignored from " + path + " ...")
 
         # Load the region and create a mask from it
         region = Region.from_file(path, self.frame.wcs)
         ignore_mask = Mask(region.get_mask(shape=self.frame.shape))
 
-        # Return the mask
-        #return ignore_mask
+        # Create the mask
         self.ignore_mask = ignore_mask
 
 # -----------------------------------------------------------------

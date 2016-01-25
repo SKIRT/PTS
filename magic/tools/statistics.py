@@ -41,7 +41,7 @@ def sigma_clip_mask_list(data, sigma=3.0, mask=None):
     :return:
     """
 
-    masked_list = sigma_clip(data, sig=sigma, iters=None, copy=False)
+    masked_list = sigma_clip(data, sigma=sigma, iters=None, copy=False)
 
     new_mask = copy.deepcopy(mask) if mask is not None else [0]*len(data)
 
@@ -68,7 +68,7 @@ def sigma_clip_mask(data, sigma_level=3.0, mask=None):
     x_values, y_values, z_values = general.split_xyz(data, mask=mask)
 
     # Sigma-clip z-values that are outliers
-    masked_z_values = sigma_clip(z_values, sig=sigma_level, iters=None, copy=False)
+    masked_z_values = sigma_clip(z_values, sigma=sigma_level, iters=None, copy=False)
 
     # Copy the mask or create a new one if none was provided
     new_mask = copy.deepcopy(mask) if mask is not None else Mask(np.zeros_like(data))
@@ -198,7 +198,7 @@ def cutoff(values, method, limit):
     elif method == "sigma_clip":
 
         # Perform sigma clipping on the input list
-        masked_values = sigma_clip(np.array(values), sig=limit, iters=None, copy=False)
+        masked_values = sigma_clip(np.array(values), sigma=limit, iters=None, copy=False)
 
         # Calculate the maximum of the masked array
         return np.ma.max(masked_values)

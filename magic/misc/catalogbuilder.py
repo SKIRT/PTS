@@ -50,6 +50,8 @@ class CatalogBuilder(Configurable):
 
         self.galaxy_user_path = None
 
+        self.stellar_catalog = None
+
     # -----------------------------------------------------------------
 
     def run(self, frame, galaxy_extractor, star_extractor, trained_extractor):
@@ -165,22 +167,24 @@ class CatalogBuilder(Configurable):
                         maximal_id = int(old_stellar_catalog["Id"][j].split("/")[1])
 
                 # Create merged stellar catalog
-                stellar_catalog = self.create_merged_stellar_catalog(maximal_id, old_stellar_catalog, coverage)
+                self.stellar_catalog = self.create_merged_stellar_catalog(maximal_id, old_stellar_catalog, coverage)
 
                 # Not good: wasted many DustPedia star id's for stars that then are not added after all because
                 # they are matched to a star already in the old catalog
                 #stellar_catalog = self.create_stellar_catalog(maximal_id)
                 #stellar_catalog = catalogs.merge_stellar_catalogs(stellar_catalog, old_stellar_catalog)
 
-                # Save the merged catalog
-                path = os.path.join(self.galaxy_user_path, "stars.cat")
-                tables.write(stellar_catalog, path)
+                if self.config.write:
+
+                    # Save the merged catalog
+                    path = os.path.join(self.galaxy_user_path, "stars.cat")
+                    tables.write(self.stellar_catalog, path)
 
 
-                # -- UPDATE RANGES TABLE --
+                    # -- UPDATE RANGES TABLE --
 
-                coverage.add_box(coordinate_box)
-                coverage.save()
+                    coverage.add_box(coordinate_box)
+                    coverage.save()
 
         else:
 
@@ -196,14 +200,16 @@ class CatalogBuilder(Configurable):
             # Append stars from the trained extractor
             # Loop over the stars found by the trained extractor
             maximal_id = -1
-            stellar_catalog = self.create_stellar_catalog(maximal_id)
+            self.stellar_catalog = self.create_stellar_catalog(maximal_id)
 
-            # Save stellar catalog
-            stellar_catalog_path = os.path.join(self.galaxy_user_path, "stars.cat")
-            tables.write(stellar_catalog, stellar_catalog_path)
+            if self.config.write:
 
-            # Save the coverage or range table
-            coverage.save()
+                # Save stellar catalog
+                stellar_catalog_path = os.path.join(self.galaxy_user_path, "stars.cat")
+                tables.write(self.stellar_catalog, stellar_catalog_path)
+
+                # Save the coverage or range table
+                coverage.save()
 
     # -----------------------------------------------------------------
 
@@ -232,7 +238,7 @@ class CatalogBuilder(Configurable):
         # Loop over the stellar statistics
         for i in range(len(self.star_extractor.statistics)):
 
-            id = self.galaxy_name + "/" + str(maximal_id + 1)
+            id = self.galaxy_name.replace(' ', '') + "/" + str(maximal_id + 1)
 
             index = self.star_extractor.statistics["Star index"][i]
 
@@ -270,6 +276,8 @@ class CatalogBuilder(Configurable):
 
                 maximal_id += 1
 
+        position_error = 0.5 * self.frame.pixelscale * 1000  # in mas !!
+
         # Append stars from the trained extractor
         # Loop over the stars found by the trained extractor
         for star in self.trained_extractor.stars:
@@ -281,14 +289,14 @@ class CatalogBuilder(Configurable):
             position = Position(ra_deg, dec_deg)
             if not old_coverage.covers(position):
 
-                id = self.galaxy_name + "/" + str(maximal_id + 1)
+                id = self.galaxy_name.replace(' ', '') + "/" + str(maximal_id + 1)
 
                 catalog_column.append("DustPedia")
                 id_column.append(id)
                 ra_column.append(ra_deg)
                 dec_column.append(dec_deg)
-                ra_error_column.append(None)
-                dec_error_column.append(None)
+                ra_error_column.append(position_error) # in mas
+                dec_error_column.append(position_error)  # in mas
                 confidence_level_column.append(star.confidence_level)
                 on_galaxy_column.append(False)
                 original_id_column.append(None)
@@ -327,7 +335,7 @@ class CatalogBuilder(Configurable):
         # Loop over the stellar statistics
         for i in range(len(self.star_extractor.statistics)):
 
-            id = self.galaxy_name + "/" + str(maximal_id + 1)
+            id = self.galaxy_name.replace(' ', '') + "/" + str(maximal_id + 1)
 
             index = self.star_extractor.statistics["Star index"][i]
 
@@ -346,18 +354,20 @@ class CatalogBuilder(Configurable):
 
             maximal_id += 1
 
+        position_error = 0.5 * self.frame.pixelscale * 1000  # in mas !!
+
         # Append stars from the trained extractor
         # Loop over the stars found by the trained extractor
         for star in self.trained_extractor.stars:
 
-            id = self.galaxy_name + "/" + str(maximal_id + 1)
+            id = self.galaxy_name.replace(' ', '') + "/" + str(maximal_id + 1)
 
             catalog_column.append("DustPedia")
             id_column.append(id)
             ra_column.append(star.position.ra.value)
             dec_column.append(star.position.dec.value)
-            ra_error_column.append(None)
-            dec_error_column.append(None)
+            ra_error_column.append(position_error)
+            dec_error_column.append(position_error)
             confidence_level_column.append(star.confidence_level)
             on_galaxy_column.append(False)
             original_id_column.append(None)

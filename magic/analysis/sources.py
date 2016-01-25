@@ -373,12 +373,15 @@ def find_source(frame, ellipse, config, track_record=None, special=False):
 
 # -----------------------------------------------------------------
 
-def find_source_segmentation(frame, ellipse, config, track_record=None, expansion_level=1, special=False):
+def find_source_segmentation(frame, ellipse, config, track_record=None, expansion_level=1, special=False, sigma_level=None):
 
     """
     This function ...
     :return:
     """
+
+    # Allow for a custom sigma level
+    sigma_level = config.sigma_level if sigma_level is None else sigma_level
 
     # Create a source object
     source = Source.from_ellipse(frame, ellipse, config.background_outer_factor)
@@ -403,7 +406,7 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
     kernel = Gaussian2DKernel(sigma, x_size=kernel_size, y_size=kernel_size)
 
     # Create a mask for the center segment found for the source
-    mask = source.find_center_segment(config.sigma_level, kernel=kernel, min_pixels=config.min_pixels)
+    mask = source.find_center_segment(sigma_level, kernel=kernel, min_pixels=config.min_pixels)
 
     # If no center segment was found, subtract the background first
     if not np.any(mask) and not config.always_subtract_background:
@@ -420,7 +423,7 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         except: return None
 
         # Search for a center segment again
-        mask = source.find_center_segment(config.sigma_level, kernel=kernel, min_pixels=config.min_pixels)
+        mask = source.find_center_segment(sigma_level, kernel=kernel, min_pixels=config.min_pixels)
 
         # Add a snapshot of the source to the track record for debugging
         if track_record is not None: track_record.append(copy.deepcopy(source))

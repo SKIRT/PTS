@@ -15,6 +15,45 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
+# Import astronomical modules
+from astropy.wcs import utils
+import astropy.units as u
+
+# Import the relevant AstroMagic classes and modules
+from ..basics import Extent
+
+# -----------------------------------------------------------------
+
+def pixel_scale(wcs):
+
+    """
+    This function ...
+    :param wcs:
+    :return:
+    """
+
+    result = utils.proj_plane_pixel_scales(wcs)
+    # returns: A vector (ndarray) of projection plane increments corresponding to each pixel side (axis).
+    # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
+    # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
+
+    x_pixelscale = result[0] * u.Unit("deg")
+    y_pixelscale = result[1] * u.Unit("deg")
+
+    return Extent(x_pixelscale, y_pixelscale)
+
+# -----------------------------------------------------------------
+
+def is_distorted(wcs):
+
+    """
+    This function ...
+    :param wcs:
+    :return:
+    """
+
+    return utils.is_proj_plane_distorted(wcs)
+
 # -----------------------------------------------------------------
 
 def relative_coordinate(x, y, x_shift, y_shift):
