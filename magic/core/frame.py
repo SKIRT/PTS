@@ -26,7 +26,7 @@ import aplpy
 import astropy.io.fits as pyfits
 import astropy.units as u
 import astropy.coordinates as coord
-from astropy.convolution import convolve, convolve_fft, Gaussian2DKernel
+from astropy.convolution import convolve_fft
 
 # Import the relevant AstroMagic classes and modules
 from . import Box
@@ -48,8 +48,8 @@ class Frame(np.ndarray):
         """
         This function ...
         :param cls:
-        :param input_array:
-        :param info:
+        :param data:
+        :param wcs:
         :return:
         """
 
@@ -62,6 +62,7 @@ class Frame(np.ndarray):
         obj.name = name
         obj.filter = filter
         obj.sky_subtracted = sky_subtracted
+        obj.fwhm = None
 
         return obj
 
@@ -102,7 +103,12 @@ class Frame(np.ndarray):
         wcs = WCS(flat_header)
 
         # Load the frames
-        pixelscale = headers.get_pixelscale(header)
+        old_pixelscale = headers.get_pixelscale(header) # OLD WAY, SOMETIMES PLAIN WRONG IN THE HEADER !!
+        pixelscale = coordinates.pixel_scale(wcs)
+
+        # Check whether pixelscale defined in the header is correct
+        new_xy_pixelscale = 0.5 * (pixelscale.x.to("arcsec") + pixelscale.y.to("arcsec"))
+        if not np.isclose(old_pixelscale.to("arcsec").value, new_xy_pixelscale.to("arcsec").value): print("WARNING: the pixel scale defined in the header is WRONG")
 
         # Obtain the filter for this image
         filter = headers.get_filter(os.path.basename(path[:-5]), header)
@@ -142,6 +148,24 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
+    @property
+    def xy_average_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        x_pixelscale = self.pixelscale.x.to("arcsec")
+        y_pixelscale = self.pixelscale.y.to("arcsec")
+
+        if not np.isclose(x_pixelscale.value, y_pixelscale.value): print("WARNING: averaging the pixelscale over the x and y direction may not be a good approximation")
+
+        # Return a single value for the pixelscale in arcseconds
+        return 0.5 * (x_pixelscale + y_pixelscale)
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def zeros_like(cls, frame):
 
@@ -166,13 +190,14 @@ class Frame(np.ndarray):
 
         if obj is None: return
         self.wcs = getattr(obj, 'wcs', None)
-        self.pixelscale = getattr(obj, 'wcs', None)
+        self.pixelscale = getattr(obj, 'pixelscale', None)
         self.description = getattr(obj, 'description', None)
         self.selected = getattr(obj, 'selected', False)
         self.unit = getattr(obj, 'unit', None)
         self.name = getattr(obj, 'name', None)
         self.filter = getattr(obj, 'filter', None)
         self.sky_subtracted = getattr(obj, 'sky_subtracted', False)
+        self.fwhm = getattr(obj, 'fwhm', None)
 
     # -----------------------------------------------------------------
 
@@ -326,7 +351,7 @@ class Frame(np.ndarray):
         """
 
         # Calculate the zooming factor
-        factor = (self.pixelscale / kernel.pixelscale).value
+        factor = (self.xy_average_pixelscale.to("arcsec").value / kernel.xy_average_pixelscale.to("arcsec").value)
 
         # Rebin the kernel to the same grid of the image
         kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
@@ -453,7 +478,7 @@ class Frame(np.ndarray):
         """
 
         # Get coordinate range
-        center, ra_span, dec_span = self.coordinate_range(silent=True)
+        center, ra_span, dec_span = self.coordinate_range()
 
         ra = center.ra.to(unit).value
         dec = center.dec.to(unit).value
@@ -478,9 +503,6 @@ class Frame(np.ndarray):
         :return:
         """
 
-        #print("xsize=", self.xsize)
-        #print("ysize=", self.ysize)
-
         coor1 = self.wcs.wcs_pix2world(0.0, 0.0, 0)
         coor2 = self.wcs.wcs_pix2world(self.xsize - 1.0, self.ysize - 1.0, 0)
 
@@ -492,8 +514,8 @@ class Frame(np.ndarray):
         #world = self.wcs.all_pix2world(pixels, 0)  # Convert pixel coordinates to world coordinates (RA and DEC in degrees)
         #print(world)
 
-        co1 = coord.SkyCoord(ra=float(coor1[0]), dec=float(coor1[1]), unit=(u.deg, u.deg), frame='fk5')
-        co2 = coord.SkyCoord(ra=float(coor2[0]), dec=float(coor2[1]), unit=(u.deg, u.deg), frame='fk5')
+        co1 = coord.SkyCoord(ra=float(coor1[0]), dec=float(coor1[1]), unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
+        co2 = coord.SkyCoord(ra=float(coor2[0]), dec=float(coor2[1]), unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
 
         #print("co1=", co1.to_string('hmsdms'))
         #print("co2=", co2.to_string('hmsdms'))
@@ -506,8 +528,6 @@ class Frame(np.ndarray):
         ra_range = [co1.ra.value, co2.ra.value]
         dec_range = [co1.dec.value, co2.dec.value]
 
-        #print("ra_range=", ra_range)
-
         # Determine the center in RA and DEC (in degrees)
         ra_center = 0.5 * (ra_range[0] + ra_range[1])
         dec_center = 0.5 * (dec_range[0] + dec_range[1])
@@ -518,54 +538,33 @@ class Frame(np.ndarray):
         ra_begin = ra_range[0]
         ra_end = ra_range[1]
 
-        # Determine the width in RA and DEC (both in degrees)
-        #dec_width = dec_range[1] - dec_range[0]
-        #ra_width = ra_range[1] - ra_range[0]   # WRONG!
-
-        # Calculate the start and end RA coordinates (in degrees)
-        #ra_begin = ra_center - 0.5 * ra_width
-        #ra_end = ra_center + 0.5 * ra_width
-
-        # Calculate the start and end DEC coordinates (in degrees)
-        #dec_begin = dec_center - 0.5 * dec_width
-        #dec_end = dec_center + 0.5 * dec_width
-
-        # Calculate the
+        # Calculate the actual RA and DEC distance in degrees
         ra_distance = abs(coordinates.ra_distance(dec_center, ra_begin, ra_end))
         dec_distance = abs(dec_end - dec_begin)
 
-        #print("ra_distance=", ra_distance)
-        #print("dec_distance=", dec_distance)
-
         # Calculate the pixel scale of this image in degrees
-        pixelscale = self.pixelscale
-        pixelscale_deg = pixelscale.to("deg").value
+        x_pixelscale_deg = self.pixelscale.x.to("deg").value
+        y_pixelscale_deg = self.pixelscale.y.to("deg").value
 
         # Get the center pixel
         ref_pix = self.wcs.wcs.crpix
         ref_world = self.wcs.wcs.crval
 
         # Get the number of pixels
-        size_dec_deg = self.ysize * pixelscale_deg
-        size_ra_deg = self.xsize * pixelscale_deg
+        size_dec_deg = self.ysize * x_pixelscale_deg
+        size_ra_deg = self.xsize * y_pixelscale_deg
 
         if not silent:
+
             # Check whether the two different ways of calculating the RA width result in approximately the same value
             assert np.isclose(ra_distance, size_ra_deg, rtol=0.02), "The coordinate system and pixel scale do not match: ra_distance=" + str(ra_distance) + ",size_ra_deg=" + str(size_ra_deg)
             assert np.isclose(dec_distance, size_dec_deg, rtol=0.02), "The coordinate system and pixel scale do not match: dec_distance=" + str(dec_distance) + ",size_dec_deg=" + str(size_dec_deg)
 
-        center = coord.SkyCoord(ra=ra_center, dec=dec_center, unit=(u.deg, u.deg), frame='fk5')
-        #ra_span = size_ra_deg * u.deg
-        #dec_span = size_dec_deg * u.deg
+        center = coord.SkyCoord(ra=ra_center, dec=dec_center, unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
 
-        # New
-        ra_span = ra_distance * u.deg
-        dec_span = dec_distance * u.deg
-
-        #print("center=", center)
-        #print("center=", center.to_string('hmsdms'))
-        #print("ra_span=", ra_span)
-        #print("dec_span=", dec_span)
+        # Create RA and DEC span as quantities
+        ra_span = ra_distance * u.Unit("deg")
+        dec_span = dec_distance * u.Unit("deg")
 
         # Return the center coordinate and the RA and DEC span
         return center, ra_span, dec_span

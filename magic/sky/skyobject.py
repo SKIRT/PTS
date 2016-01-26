@@ -163,7 +163,7 @@ class SkyObject(object):
         if self.has_track_record: self.track_record.set_stage("detection")
 
         # Get the parameters of the circle
-        ellipse = self.ellipse(frame.wcs, frame.pixelscale, config.initial_radius)
+        ellipse = self.ellipse(frame.wcs, frame.xy_average_pixelscale, config.initial_radius)
 
         # Find a source
         self.source = sources.find_source(frame, ellipse, config, self.track_record, special=self.special)

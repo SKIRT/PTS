@@ -229,9 +229,16 @@ class Mask(np.ndarray):
 
         # Find the label of the largest segment (=the background)
         label_counts = np.bincount(segments.flatten())
-        background_label = np.argmax(label_counts[1:]) + 1
-        # If the source mask is larger than the background (in number of pixels), the above will provide the correct label
-        # therefore we do the '[1:]'
+        try:
+            background_label = np.argmax(label_counts[1:]) + 1
+            # If the source mask is larger than the background (in number of pixels), the above will provide the correct label
+            # therefore we do the '[1:]'
+
+        except ValueError:
+            from ..tools import plotting
+            plotting.plot_box(self, "mask")
+            plotting.plot_box(segments, "segments")
+            print("label counts =", label_counts)
 
         # Create a mask for the holes identified as background
         holes = self.inverse().copy()

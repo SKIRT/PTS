@@ -235,7 +235,7 @@ class ImagePreparer(Configurable):
         if self.image.name == "GALEX FUV":
 
             # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.pixelscale.value
+            pixelscale = self.image.frames.primary.xy_average_pixelscale.value
 
             # Get the wavelength of the image
             wavelength = self.image.frames.primary.filter.centerwavelength()
@@ -260,7 +260,7 @@ class ImagePreparer(Configurable):
             F0 = 1024.0
 
             # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.pixelscale.value
+            pixelscale = self.image.frames.primary.xy_average_pixelscale.value
 
             # Calculate the conversion factor
             pixelfactor = (206264.806247 / pixelscale)**2
@@ -274,7 +274,7 @@ class ImagePreparer(Configurable):
         elif self.image.name == "Ha":
 
             # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.pixelscale.value
+            pixelscale = self.image.frames.primary.xy_average_pixelscale.value
 
             pixelfactor = (206264.806247 / pixelscale)**2
 
@@ -303,7 +303,7 @@ class ImagePreparer(Configurable):
         elif self.image.name == "PACS 70":
 
             # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.pixelscale.value
+            pixelscale = self.image.frames.primary.xy_average_pixelscale.value
 
             # Calculate the conversion factor
             pixelfactor = (206264.806247 / pixelscale)**2
@@ -316,7 +316,7 @@ class ImagePreparer(Configurable):
         elif self.image.name == "PACS 160":
 
             # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.pixelscale.value
+            pixelscale = self.image.frames.primary.xy_average_pixelscale.value
 
             # Calculate the conversion factor
             pixelfactor = (206264.806247 / pixelscale)**2

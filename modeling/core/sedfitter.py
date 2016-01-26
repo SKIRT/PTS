@@ -37,6 +37,19 @@ class SEDFitter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_arguments(cls, arguments):
+
+        """
+        This function ...
+        :param arguments:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
     def run(self):
 
         """

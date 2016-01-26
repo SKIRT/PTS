@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import os
-
 # Import astronomical modules
 import astropy.units as u
 
@@ -24,11 +21,10 @@ from ..basics import Mask, Region
 from .galaxyextraction import GalaxyExtractor
 from .starextraction import StarExtractor
 from .trainedextractor import TrainedExtractor
-from ..misc import CatalogBuilder
-from ..basics import CatalogCoverage
+from ..catalog import CatalogBuilder, CatalogImporter, CatalogSynchronizer
 
 # Import the relevant PTS classes and modules
-from ...core.tools import filesystem, tables, inspection
+from ...core.tools import filesystem, tables
 from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
@@ -63,6 +59,9 @@ class Extractor(Configurable):
         # The output mask
         self.mask = None
 
+        # The name of the principal galaxy
+        self.galaxy_name = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -78,6 +77,12 @@ class Extractor(Configurable):
         elif arguments.settings is not None: extractor = cls(arguments.settings)
         else: extractor = cls()
 
+        # Debug mode
+        if arguments.debug:
+
+            extractor.config.logging.level = "DEBUG"
+            extractor.config.logging.cascade = True
+
         # Report file
         if arguments.report: extractor.config.logging.path = "log.txt"
 
@@ -92,8 +97,9 @@ class Extractor(Configurable):
         # Set options for writing out regions or masks
         if arguments.regions: extractor.config.write_regions = True
         if arguments.masks: extractor.config.write_masked_frames = True
-        #if arguments.catalogs: extractor.config.write_catalogs = True
+        if arguments.catalogs: extractor.config.write_catalogs = True
 
+        # Writing output catalogs
         if arguments.catalogs:
 
             extractor.config.write_galactic_catalog = True
@@ -102,13 +108,14 @@ class Extractor(Configurable):
             extractor.config.write_stellar_catalog = True
             extractor.config.writing.stellar_catalog_path = "stars.cat"
 
+        # Writing segmentation map
         if arguments.segments:
 
             extractor.config.other_sources.write_segments = True
             extractor.config.other_sources.writing.segments_path = "other_segments.fits"
 
-        # Build catalog
-        if arguments.build: extractor.config.build_catalog = True
+        # Synchronize catalog
+        if arguments.synchronize: extractor.config.synchronize_catalogs = True
 
         # If used from the command line, the result and mask should be written
         extractor.config.write_result = True
@@ -119,13 +126,14 @@ class Extractor(Configurable):
         if arguments.remove_stars is not None: extractor.config.stars.manual_indices.remove_stars = arguments.remove_stars
         if arguments.not_saturation is not None: extractor.config.stars.manual_indices.not_saturation = arguments.not_saturation
 
+        # Options for using a file as input catalog
         if arguments.filecatalog:
 
-            extractor.config.galaxies.fetching.use_catalog_file = True
-            extractor.config.galaxies.fetching.catalog_path = "galaxies.cat"
+            extractor.config.catalogs.galaxies.use_catalog_file = True
+            extractor.config.catalogs.galaxies.catalog_path = "galaxies.cat"
 
-            extractor.config.stars.fetching.use_catalog_file = True
-            extractor.config.stars.fetching.catalog_path = "stars.cat"
+            extractor.config.catalogs.stars.use_catalog_file = True
+            extractor.config.catalogs.stars.catalog_path = "stars.cat"
 
         # Return the new instance
         return extractor
@@ -136,6 +144,8 @@ class Extractor(Configurable):
 
         """
         This function ...
+        :param frame:
+        :param input_mask:
         :return:
         """
 
@@ -145,7 +155,7 @@ class Extractor(Configurable):
         # 2. Create the directory that will contain the output
         self.create_output_path()
 
-        # 3. Import cached catalogs
+        # 3. Import galactic and stellar catalogs
         self.import_catalogs()
 
         # 3. Run the galaxy extraction
@@ -157,8 +167,8 @@ class Extractor(Configurable):
         # 5. Look for other sources
         self.find_other_sources()
 
-        # 6. Build catalogs
-        self.build_catalogs()
+        # 6. Build and update catalog
+        self.build_and_synchronize_catalog()
 
         # 5. Writing phase
         self.write()
@@ -169,15 +179,19 @@ class Extractor(Configurable):
 
         """
         This function ...
+        :param frame:
+        :param input_mask:
         :return:
         """
 
         # -- Create children --
 
+        self.add_child("catalog_importer", CatalogImporter, self.config.catalogs)
         self.add_child("galaxy_extractor", GalaxyExtractor, self.config.galaxies)
         self.add_child("star_extractor", StarExtractor, self.config.stars)
         self.add_child("trained_extractor", TrainedExtractor, self.config.other_sources)
-        self.add_child("catalog_builder", CatalogBuilder)
+        self.add_child("catalog_builder", CatalogBuilder, self.config.building)
+        self.add_child("catalog_synchronizer", CatalogSynchronizer, self.config.synchronization)
 
         # -- Setup of the base class --
 
@@ -197,17 +211,6 @@ class Extractor(Configurable):
 
         # Create a mask with shape equal to the shape of the frame
         self.mask = Mask.from_shape(self.frame.shape)
-
-        # Set the appropriate configuration settings for writing out the galactic and stellar catalogs
-        #if self.config.write_catalogs:
-
-            # Galaxy extractor
-            #self.galaxy_extractor.config.write_catalog = True
-            #self.galaxy_extractor.config.writing.catalog_path = "galaxies.cat"
-
-            # Star extractor
-            #self.star_extractor.config.write_catalog = True
-            #self.star_extractor.config.writing.catalog_path = "stars.cat"
 
         # Set the appropriate configuration settings for writing out the galactic and stellar statistics
         if self.config.write_statistics:
@@ -273,43 +276,10 @@ class Extractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Checking whether cached catalogs can be imported ...")
+        self.log.info("Importing the catalogs ...")
 
-        # Determine the path to the user catalogs directory
-        catalogs_user_path = os.path.join(inspection.pts_user_dir, "magic", "catalogs")
-
-        # Get bounding box of the frame
-        bounding_box = self.frame.bounding_box()
-
-        # Loop over all directories within the catalogs directory (different galaxies)
-        for galaxy_path in filesystem.directories_in_path(catalogs_user_path):
-
-            # Get the galaxy name
-            galaxy_name = os.path.basename(galaxy_path)
-
-            # Get the catalog coverage for this galaxy
-            coverage = CatalogCoverage(galaxy_name)
-
-            # If this is the galaxy matching the frame, check if the current catalog covers the entire frame
-            # Second part is probably time-consuming .. But if first is False, won't be executed
-            if coverage.matches(bounding_box) and coverage.covers(bounding_box):
-
-                # Debug info
-                self.log.debug("DustPedia catalog will be imported for " + galaxy_name + " galaxy")
-
-                galactic_catalog_path = os.path.join(galaxy_path, "galaxies.cat")
-                stellar_catalog_path = os.path.join(galaxy_path, "stars.cat")
-
-                self.input_galaxy_catalog = tables.from_file(galactic_catalog_path)
-                self.input_star_catalog = tables.from_file(stellar_catalog_path)
-
-                break
-
-        # If no break is encountered
-        else:
-
-            self.input_galaxy_catalog = None
-            self.input_star_catalog = None
+        # Run the catalog importer
+        self.catalog_importer.run(self.frame)
 
     # -----------------------------------------------------------------
 
@@ -323,10 +293,13 @@ class Extractor(Configurable):
         self.log.info("Extracting the galaxies ...")
 
         # Run the galaxy extractor
-        self.galaxy_extractor.run(self.frame, self.input_mask, self.input_galaxy_catalog, special=self.special_mask, ignore=self.ignore_mask)
+        self.galaxy_extractor.run(self.frame, self.input_mask, self.catalog_importer.galactic_catalog, special=self.special_mask, ignore=self.ignore_mask)
 
         # Add to the total mask
         self.mask += self.galaxy_extractor.mask
+
+        # Set the name of the principal galaxy
+        self.galaxy_name = self.galaxy_extractor.principal.name
 
     # -----------------------------------------------------------------
     
@@ -339,11 +312,11 @@ class Extractor(Configurable):
         # Inform the user
         self.log.info("Extracting the stars ...")
 
-        # ...
+        # Run the star extraction if the wavelength of this image is smaller than 10 micron (or the wavelength is unknown)
         if self.frame.wavelength is None or self.frame.wavelength < 10.0 * u.Unit("micron"):
 
             # Run the star extractor
-            self.star_extractor.run(self.frame, self.input_mask, self.galaxy_extractor, self.input_star_catalog, special=self.special_mask, ignore=self.ignore_mask)
+            self.star_extractor.run(self.frame, self.input_mask, self.galaxy_extractor, self.catalog_importer.stellar_catalog, special=self.special_mask, ignore=self.ignore_mask)
 
             # Add star mask to the total mask
             self.mask += self.star_extractor.mask
@@ -371,7 +344,22 @@ class Extractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def build_catalogs(self):
+    def build_and_synchronize_catalog(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Build the catalog
+        self.build_catalog()
+
+        # Synchronize the catalog
+        if self.config.synchronize_catalogs: self.synchronize_catalog()
+
+    # -----------------------------------------------------------------
+
+    def build_catalog(self):
 
         """
         This function ...
@@ -379,13 +367,25 @@ class Extractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Building the catalog for later ...")
-
-        # Only write when 'build_catalog' is enabled, but make the merged catalog anyway
-        if self.config.build_catalog: self.catalog_builder.config.write = True
+        self.log.info("Building the stellar catalog ...")
 
         # Run the catalog builder
         self.catalog_builder.run(self.frame, self.galaxy_extractor, self.star_extractor, self.trained_extractor)
+
+    # -----------------------------------------------------------------
+
+    def synchronize_catalog(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Synchronizing with the DustPedia catalog ...")
+
+        # Run the catalog synchronizer
+        self.catalog_synchronizer.run(self.frame, self.galaxy_name, self.catalog_builder.galactic_catalog, self.catalog_builder.stellar_catalog)
 
     # -----------------------------------------------------------------
 
@@ -405,11 +405,39 @@ class Extractor(Configurable):
         # If requested, write out the total mask
         if self.config.write_mask: self.write_mask()
 
+        # If requested, write out the galactic region
+        if self.config.write_galactic_region: self.write_galactic_region()
+
+        # If requested, write out the stellar region
+        if self.config.write_stellar_region: self.write_stellar_region()
+
         # If requested, write out the galactic catalog
         if self.config.write_galactic_catalog: self.write_galactic_catalog()
 
         # If requested, write out the compiled stellar catalog
         if self.config.write_stellar_catalog: self.write_stellar_catalog()
+
+    # -----------------------------------------------------------------
+
+    def write_galactic_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def write_stellar_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -427,7 +455,7 @@ class Extractor(Configurable):
         self.log.info("Writing galactic catalog to " + path + " ...")
 
         # Write the catalog to file
-        tables.write(self.galaxy_extractor.catalog, path)
+        tables.write(self.catalog_builder.galactic_catalog, path)
 
     # -----------------------------------------------------------------
 

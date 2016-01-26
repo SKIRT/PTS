@@ -24,7 +24,7 @@ from astropy.coordinates import Angle
 from ..basics import Mask, Region
 from ..core import Source
 from ..sky import Galaxy
-from ..tools import catalogs, regions
+from ..tools import regions
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -74,7 +74,7 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, input_mask, catalog=None, special=None, ignore=None):
+    def run(self, frame, input_mask, catalog, special=None, ignore=None):
 
         """
         This function ...
@@ -97,7 +97,7 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, input_mask, catalog=None, special_mask=None, ignore_mask=None):
+    def setup(self, frame, input_mask, catalog, special_mask=None, ignore_mask=None):
 
         """
         This function ...
@@ -150,14 +150,7 @@ class GalaxyExtractor(Configurable):
         :return:
         """
 
-        # If no input catalog was given
-        if self.catalog is None:
-
-            # Get list of galaxies
-            if self.config.fetching.use_catalog_file: self.import_catalog()
-            else: self.fetch_catalog()
-
-        # If an input catalog was given
+        # Load the galaxies from the galactic catalog
         self.load_galaxies()
 
         # Find the sources
@@ -293,24 +286,6 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def import_catalog(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the full path to the catalog file
-        path = self.full_input_path(self.config.fetching.catalog_path)
-
-        # Inform the user
-        self.log.info("Importing galaxy catalog from file " + path + " ...")
-
-        # Load the catalog
-        self.catalog = tables.from_file(path)
-
-    # -----------------------------------------------------------------
-
     def load_galaxies(self):
 
         """
@@ -372,26 +347,6 @@ class GalaxyExtractor(Configurable):
         # Debug messages
         self.log.debug(self.principal.name + " is the principal galaxy in the frame")
         self.log.debug("The following galaxies are its companions: " + str(self.principal.companions))
-
-    # -----------------------------------------------------------------
-
-    def fetch_catalog(self):
-
-        """
-        This function ...
-        :param image:
-        :param config:
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Fetching galaxy positions from an online catalog ...")
-
-        # Create the galaxy catalog
-        self.catalog = catalogs.create_galaxy_catalog(self.frame)
-
-        # Inform the user
-        self.log.debug("Number of galaxies: " + str(len(self.catalog)))
 
     # -----------------------------------------------------------------
 
@@ -569,8 +524,8 @@ class GalaxyExtractor(Configurable):
 
             else:
 
-                width = self.config.region.default_radius * self.frame.pixelscale.value
-                height = self.config.region.default_radius * self.frame.pixelscale.value
+                width = self.config.region.default_radius * self.frame.xy_average_pixelscale.value
+                height = self.config.region.default_radius * self.frame.xy_average_pixelscale.value
 
             angle = galaxy.pa.degree if galaxy.pa is not None else 0.0
 
@@ -649,15 +604,15 @@ class GalaxyExtractor(Configurable):
 
                 color = "green"
 
-                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.frame.pixelscale.value
+                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.frame.xy_average_pixelscale.value
                 y_radius = x_radius
 
             else:
 
                 color = "green"
 
-                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.frame.pixelscale.value
-                y_radius = 0.5 * galaxy.minor.to("arcsec").value / self.frame.pixelscale.value
+                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.frame.xy_average_pixelscale.value
+                y_radius = 0.5 * galaxy.minor.to("arcsec").value / self.frame.xy_average_pixelscale.value
 
             # Annotation
             if annotation == "name": text = "text = {" + galaxy.name + "}"

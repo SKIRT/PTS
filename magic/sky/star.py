@@ -145,8 +145,9 @@ class Star(SkyObject):
 
         """
         This function ...
-        :param frame:
         :param config:
+        :param source:
+        :param debug:
         :return:
         """
 

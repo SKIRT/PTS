@@ -21,7 +21,6 @@ import copy
 
 # Import astronomical modules
 import aplpy
-import pyregion
 import astropy.io.fits as pyfits
 from astropy.wcs import WCS
 from astropy import log
@@ -29,7 +28,7 @@ from astropy import log
 # Import the relevant AstroMagic classes and modules
 from ..basics import Layers, Mask, Region
 from .frame import Frame
-from ..tools import headers, fitting, plotting, regions, statistics, catalogs, coordinates
+from ..tools import headers, fitting, plotting, statistics, catalogs, coordinates
 
 # -----------------------------------------------------------------
 
@@ -55,6 +54,9 @@ class Image(object):
         # The image name and path
         self.name = None
         self.path = None
+
+        # The original image header
+        self.original_header = None
 
         # The dictionary containing meta information
         self.metadata = dict()
@@ -204,6 +206,7 @@ class Image(object):
         # Write the HDU to a FITS file
         hdu.writeto(path, clobber=True)
 
+        # Update the path
         self.path = path
 
         # Inform the user that the file has been created
@@ -805,10 +808,9 @@ class Image(object):
         old_pixelscale = headers.get_pixelscale(header) # OFTEN, THE HEADER STATES AN INCORRECT PIXEL SCALE !!!!
         pixelscale = coordinates.pixel_scale(wcs)  # pixelscale is now Extent(x=... deg, y=... deg)
 
-        # Temporary fix because of all functions using the pixelscale attribute of the Frame class ...
-        pixelscale = 0.5 * (pixelscale.x.to("arcsec") + pixelscale.y.to("arcsec"))
-
-        print("DEBUG: old pixelscale =", old_pixelscale, "new pixelscale =", pixelscale)
+        # Check whether pixelscale in header is correct
+        new_xy_pixelscale = 0.5 * (pixelscale.x.to("arcsec") + pixelscale.y.to("arcsec"))
+        if not np.isclose(old_pixelscale.to("arcsec").value, new_xy_pixelscale.to("arcsec").value): print("WARNING: the pixel scale defined in the header is WRONG")
 
         # Obtain the filter for this image
         filter = headers.get_filter(self.name, original_header)
@@ -876,6 +878,7 @@ class Image(object):
         for key in original_header:
             self.metadata[key.lower()] = original_header[key]
 
+        # Let the original header remain accessible
         self.original_header = original_header
 
         # Close the FITS file

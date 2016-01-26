@@ -134,13 +134,7 @@ class Galaxy(SkyObject):
         :return:
         """
 
-        #print("pixelscale=", pixelscale)
-
-        #print("self.pa=", self.pa)
-        #print("self.major=", self.major)
-        #print("self.minor=", self.minor)
-
-        if self.pa is None: angle = Angle(0.0, u.deg)
+        if self.pa is None: angle = Angle(0.0, u.Unit("deg"))
         else: angle = self.pa
 
         if self.major is None:
@@ -150,20 +144,15 @@ class Galaxy(SkyObject):
 
         elif self.minor is None or angle == 0.0:
 
-            x_radius = 0.5 * self.major.to("arcsec") / pixelscale
+            x_radius = 0.5 * self.major.to("arcsec").value / pixelscale.to("arcsec").value
             y_radius = x_radius
 
         else:
 
-            x_radius = 0.5 * self.major.to("arcsec") / pixelscale
-            y_radius = 0.5 * self.minor.to("arcsec") / pixelscale
-
-        #print("x_radius=", x_radius)
-        #print("y_radius=", y_radius)
+            x_radius = 0.5 * self.major.to("arcsec").value / pixelscale.to("arcsec").value
+            y_radius = 0.5 * self.minor.to("arcsec").value / pixelscale.to("arcsec").value
 
         pixel_position = self.pixel_position(wcs)
-
-        #print("PIXEL_POSITION=", pixel_position)
 
         # Return the parameters
         return pixel_position, Extent(x=x_radius, y=y_radius), angle
@@ -178,7 +167,7 @@ class Galaxy(SkyObject):
         """
 
         # Get the parameters describing the elliptical contour
-        ellipse = self.ellipse(frame.wcs, frame.pixelscale, None)
+        ellipse = self.ellipse(frame.wcs, frame.xy_average_pixelscale, None)
 
         if ellipse.center.x < 0 or ellipse.center.y < 0:
             self.source = None

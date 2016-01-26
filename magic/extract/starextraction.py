@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 import numpy as np
-import config
 
 # Import astronomical modules
 import astropy.units as u
@@ -26,7 +25,7 @@ from astropy.convolution import Gaussian2DKernel
 from ..basics import Extent, Mask, Region, Ellipse
 from ..core import Source
 from ..sky import Star
-from ..tools import statistics, fitting, regions, catalogs
+from ..tools import statistics, fitting, regions
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -80,7 +79,7 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, input_mask, galaxyextractor=None, catalog=None, special=None, ignore=None):
+    def run(self, frame, input_mask, galaxyextractor, catalog, special=None, ignore=None):
 
         """
         This function ...
@@ -106,7 +105,7 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, input_mask, galaxyextractor=None, catalog=None, special_mask=None, ignore_mask=None):
+    def setup(self, frame, input_mask, galaxyextractor, catalog, special_mask=None, ignore_mask=None):
 
         """
         This function ...
@@ -160,14 +159,7 @@ class StarExtractor(Configurable):
         :return:
         """
 
-        # If no input catalog was given
-        if self.catalog is None:
-
-            # Create a list of stars based on online catalogs
-            if self.config.fetching.use_catalog_file: self.import_catalog()
-            else: self.fetch_catalog()
-
-        # If an input catalog was given
+        # Load the stars from the stellar catalog
         self.load_stars()
 
         # Import statistics if statistics file is specified
@@ -185,7 +177,7 @@ class StarExtractor(Configurable):
             self.find_sources()
 
             # Fit analytical models to the stars
-            self.fit_stars()
+            if not self.config.use_frame_fwhm or self.frame.fwhm is None: self.fit_stars()
 
             # If requested, remove the stars
             if self.config.remove: self.remove_stars()
@@ -222,24 +214,6 @@ class StarExtractor(Configurable):
 
         # If requested, remove the manually specified stars
         if self.config.remove_manual: self.remove_manual()
-
-    # -----------------------------------------------------------------
-
-    def import_catalog(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the full path to the catalog file
-        path = self.full_input_path(self.config.fetching.catalog_path)
-
-        # Inform the user
-        self.log.info("Importing stellar catalog from file: " + path)
-
-        # Load the catalog
-        self.catalog = tables.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -405,28 +379,6 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def fetch_catalog(self):
-
-        """
-        This function ...
-        """
-
-        # Inform the user
-        self.log.info("Fetching star positions from online catalogs ...")
-
-        # Check whether the 'catalogs' setting defines a single catalog name or a list of such names
-        if isinstance(self.config.fetching.catalogs, basestring): catalog_list = [self.config.fetching.catalogs]
-        elif isinstance(self.config.fetching.catalogs, config.Sequence): catalog_list = self.config.fetching.catalogs
-        else: raise ValueError("Invalid option for 'catalogs', should be a string or a list of strings")
-
-        # Create the star catalog
-        self.catalog = catalogs.create_star_catalog(self.frame, catalog_list)
-
-        # Inform the user
-        self.log.debug("Number of stars: " + str(len(self.catalog)))
-
-    # -----------------------------------------------------------------
-
     def find_sources(self):
 
         """
@@ -486,7 +438,7 @@ class StarExtractor(Configurable):
             if not star.has_source and self.config.fitting.fit_if_undetected:
 
                 # Get the parameters of the circle
-                ellipse = star.ellipse(self.frame.wcs, self.frame.pixelscale, self.config.fitting.initial_radius)
+                ellipse = star.ellipse(self.frame.wcs, self.frame.xy_average_pixelscale, self.config.fitting.initial_radius)
 
                 # Create a source object
                 source = Source.from_ellipse(self.frame, ellipse, self.config.fitting.background_outer_factor)
@@ -754,7 +706,7 @@ class StarExtractor(Configurable):
             radius = fwhm * statistics.fwhm_to_sigma * self.config.region.sigma_level
 
             # Add the radius (in arcseconds) and the color the appropriate list
-            radius_list.append(radius * self.frame.pixelscale)
+            radius_list.append(radius * self.frame.xy_average_pixelscale)
             color_list.append(color)
 
         # Create a region
@@ -1213,6 +1165,12 @@ class StarExtractor(Configurable):
         This function ...
         :return:
         """
+
+        # If requested, always use the FWHM defined by the frame object
+        if self.config.use_frame_fwhm and self.frame.fwhm is not None:
+
+            # Return the FWHM in 'number of pixels'
+            return self.frame.fwhm.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec").value
 
         # If the list of FWHM values is empty (the stars were not fitted yet), return None
         if len(self.fwhms) == 0: return None

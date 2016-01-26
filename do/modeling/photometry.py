@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.makemaps Make maps as input for a SKIRT radiative transfer model
+## \package pts.do.modeling.photometry Calculate the photometry of the different input images
 
 # -----------------------------------------------------------------
 
@@ -16,24 +16,23 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.modeling.core import MapMaker
+from pts.modeling.core import PhotoMeter
 
 # -----------------------------------------------------------------
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
-parser.add_argument("map", type=str, help="the map to be made (dust, old, Y, IY)")
-parser.add_argument("--config", type=str, help="the name of a configuration file")
+parser.add_argument("image", type=str, help="the name of the image for which to calculate the photometry")
 
 # Parse the command line arguments
 arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
-# Create a MapMaker object
-maker = MapMaker.from_arguments(arguments)
+# Create a PhotoMeter object
+photometer = PhotoMeter.from_arguments(arguments)
 
-# Run the map making
-maker.run()
+# Run the photometry
+photometer.run()
 
 # -----------------------------------------------------------------
