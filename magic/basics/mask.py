@@ -24,7 +24,7 @@ from photutils import detect_sources
 from photutils.geometry import elliptical_overlap_grid
 
 # Import the relevant AstroMagic classes and modules
-from .vector import Position, Extent
+from .vector import Extent
 
 # -----------------------------------------------------------------
 
@@ -229,23 +229,18 @@ class Mask(np.ndarray):
 
         # Find the label of the largest segment (=the background)
         label_counts = np.bincount(segments.flatten())
-        try:
+        if len(label_counts) > 1:
+
             background_label = np.argmax(label_counts[1:]) + 1
             # If the source mask is larger than the background (in number of pixels), the above will provide the correct label
             # therefore we do the '[1:]'
 
-        except ValueError:
-            from ..tools import plotting
-            plotting.plot_box(self, "mask")
-            plotting.plot_box(segments, "segments")
-            print("label counts =", label_counts)
+            # Create a mask for the holes identified as background
+            holes = self.inverse().copy()
+            holes[segments == background_label] = False
 
-        # Create a mask for the holes identified as background
-        holes = self.inverse().copy()
-        holes[segments == background_label] = False
-
-        # Remove holes from the mask
-        new_mask[holes] = True
+            # Remove holes from the mask
+            new_mask[holes] = True
 
         # Return the new mask
         return new_mask

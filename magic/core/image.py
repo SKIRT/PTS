@@ -26,7 +26,7 @@ from astropy.wcs import WCS
 from astropy import log
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Layers, Mask, Region
+from ..basics import Layers, Region
 from .frame import Frame
 from ..tools import headers, fitting, plotting, statistics, catalogs, coordinates
 
@@ -152,6 +152,19 @@ class Image(object):
 
         # Return the pixelscale of the primary frame
         return self.frames.primary.pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the FWHM of the primary frame
+        return self.frames.primary.fwhm
 
     # -----------------------------------------------------------------
 

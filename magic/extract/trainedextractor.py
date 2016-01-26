@@ -17,17 +17,16 @@ import numpy as np
 from scipy import ndimage
 
 # Import astronomical modules
-from astropy.coordinates import Angle
 from photutils import detect_sources
 from astropy.coordinates import SkyCoord
 
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame, Source
-from ..basics import Position, Extent, Mask, Ellipse
-from ..tools import statistics, masks, catalogs
+from ..basics import Mask, Ellipse
+from ..tools import statistics, masks
 from ..analysis import SExtractor, sources
 from ..train import Classifier
-from ..sky import Galaxy, Star
+from ..sky import Star
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -101,9 +100,6 @@ class TrainedExtractor(Configurable):
         # 4. Classify sources
         if self.config.classify: self.classify_sources()
 
-        # 5. Build catalogs
-        if self.config.build_catalogs: self.build_catalog()
-
         # 6. Writing
         self.write()
 
@@ -166,7 +162,7 @@ class TrainedExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Removing the other sources from the frame ...")
+        self.log.info("Removing the sources from the frame ...")
 
         # Loop over all sources
         for source in self.sources:
@@ -223,7 +219,7 @@ class TrainedExtractor(Configurable):
 
                 # Create star object
                 index = None
-                star = Star(index, catalog="DustPedia", id=None, position=position, ra_error=None, dec_error=None)
+                star = Star(index, catalog=None, id=None, position=position, ra_error=None, dec_error=None)
 
                 star.source = source
 
@@ -287,18 +283,6 @@ class TrainedExtractor(Configurable):
 
             # Update the mask
             self.mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
-
-    # -----------------------------------------------------------------
-
-    def build_catalog(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create the stellar catalog
-        self.catalog = catalogs.from_stars(self.stars)
 
     # -----------------------------------------------------------------
 
