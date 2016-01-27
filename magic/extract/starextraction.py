@@ -600,7 +600,7 @@ class StarExtractor(Configurable):
 
             # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
             # NEW: only enable this for optical and IR (galaxy has smooth emission there but not in UV)
-            if self.frame.wavelength is None or self.frame.wavelength > 3.9 * u.Unit("micron"):
+            if self.frame.wavelength is None or self.frame.wavelength > 0.39 * u.Unit("micron"):
                 if star.on_galaxy and self.config.saturation.aperture_removal.polynomial_on_galaxy: interpolation_method = "polynomial"
                 else: interpolation_method = self.config.saturation.aperture_removal.interpolation_method
             else: interpolation_method = self.config.saturation.aperture_removal.interpolation_method
