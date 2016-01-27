@@ -111,7 +111,7 @@ class DataPreparer(ModelingComponent):
         self.load_data()
 
         # 2. Prepare the images
-        if self.config.prepare: self.prepare()
+        self.prepare()
 
     # -----------------------------------------------------------------
 
@@ -173,6 +173,10 @@ class DataPreparer(ModelingComponent):
             file_name = os.path.basename(file_path)
             image_name = os.path.splitext(file_name)[0]
 
+            # If only a single image must be prepared, check if this image matches the specified image name
+            if self.config.single_image is not None and image_name != self.config.single_image: continue
+
+            # Determine the output path for this image
             image_output_path = os.path.join(self.prep_path, image_name)
 
             # Get the corresponding index in the information table

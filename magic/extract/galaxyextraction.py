@@ -303,12 +303,12 @@ class GalaxyExtractor(Configurable):
             name = self.catalog["Name"][i]
             redshift = self.catalog["Redshift"][i] if not self.catalog["Redshift"].mask[i] else None
             galaxy_type = self.catalog["Type"][i] if not self.catalog["Type"].mask[i] else None
-            distance = self.catalog["Distance"][i] * u.Mpc if not self.catalog["Distance"].mask[i] else None
-            inclination = Angle(self.catalog["Inclination"][i], u.deg) if not self.catalog["Inclination"].mask[i] else None
-            d25 = self.catalog["D25"][i] * u.arcmin if not self.catalog["D25"].mask[i] else None
-            major = self.catalog["Major axis length"][i] * u.arcmin if not self.catalog["Major axis length"].mask[i] else None
-            minor = self.catalog["Minor axis length"][i] * u.arcmin if not self.catalog["Minor axis length"].mask[i] else None
-            position_angle = Angle(self.catalog["Position angle"][i], u.deg) if not self.catalog["Position angle"].mask[i] else None
+            distance = self.catalog["Distance"][i] * u.Unit("Mpc") if not self.catalog["Distance"].mask[i] else None
+            inclination = Angle(self.catalog["Inclination"][i], u.Unit("deg")) if not self.catalog["Inclination"].mask[i] else None
+            d25 = self.catalog["D25"][i] * u.Unit("arcmin") if not self.catalog["D25"].mask[i] else None
+            major = self.catalog["Major axis length"][i] * u.Unit("arcmin") if not self.catalog["Major axis length"].mask[i] else None
+            minor = self.catalog["Minor axis length"][i] * u.Unit("arcmin") if not self.catalog["Minor axis length"].mask[i] else None
+            position_angle = Angle(self.catalog["Position angle"][i], u.Unit("deg")) if not self.catalog["Position angle"].mask[i] else None
             ra = self.catalog["Right ascension"][i]
             dec = self.catalog["Declination"][i]
             names = self.catalog["Alternative names"][i].split(", ") if not self.catalog["Alternative names"].mask[i] else []
@@ -317,7 +317,10 @@ class GalaxyExtractor(Configurable):
             parent = self.catalog["Parent galaxy"][i] if not self.catalog["Parent galaxy"].mask[i] else None
 
             # Create a SkyCoord instance for the galaxy center position
-            position = coord.SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg), frame='fk5')
+            position = coord.SkyCoord(ra=ra, dec=dec, unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
+
+            # If the galaxy falls outside of the frame, skip it
+            if not self.frame.contains(position, self.config.transformation_method): continue
 
             # Create a new Galaxy instance
             galaxy = Galaxy(i, name, position, redshift, galaxy_type, names, distance, inclination, d25, major, minor, position_angle)

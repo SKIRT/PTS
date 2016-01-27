@@ -620,6 +620,8 @@ def find_source_peaks(frame, ellipse, config, track_record=None, level=0, specia
         # Scale the ellipse in which to look for a source
         ellipse *= config.scale_factor
 
+        #print("DEBUG: zooming in to find peak") # WE REALLY NEED A GLOBAL LOG !! no time :( ..
+
         # Find a source in the zoomed-out region
         return find_source_peaks(frame, ellipse, config, track_record=track_record, level=level+1, special=special)
 

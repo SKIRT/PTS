@@ -86,15 +86,25 @@ def get_filter(name, header):
 
     filterid = name.lower()
 
-    # Determine the filter from the information in the header
-    if 'INSTRUME' in header: filterid += header['INSTRUME'].lower()
-    if 'FILTER' in header: filterid += header['FILTER'].lower()
-    if 'FLTRNM' in header: filterid += header['FLTRNM'].lower()
-    if 'ORIGIN' in header: filterid += header['ORIGIN'].lower()
+    # Get information from the header
+
+    # Get information regarding the telescope and instrument
+    if "TELESCOP" in header: filterid += header["TELESCOP"].lower()
+    if "INSTRUME" in header: filterid += header['INSTRUME'].lower()
+    if "ORIGIN" in header: filterid += header['ORIGIN'].lower()
+
+    # Get a name describing the filter
+    if "FILTER" in header: filterid += header['FILTER'].lower()
+    if "FLTRNM" in header: filterid += header['FLTRNM'].lower()
+
+    # Get information about the channel number
     if "CHNLNUM" in header: channel = int(header["CHNLNUM"])
+    elif "BAND" in header: channel = int(header["BAND"])
     else: channel = None
 
-    # Create a filter object from the filterid
+    # Get the wavelength
+    if "WAVELEN" in header: wavelength = float(header["WAVELEN"])
+    else: wavelength = None
 
     # -- UV --
 
@@ -162,7 +172,13 @@ def get_filter(name, header):
         elif "w2" in filterid: return Filter("WISE.W2")
         elif "w3" in filterid: return Filter("WISE.W3")
         elif "w4" in filterid: return Filter("WISE.W4")
-        else: log.warning("Could not determine which WISE filter was used for this image")
+        else:
+
+            if channel == 1: return Filter("WISE.W1")
+            elif channel == 2: return Filter("WISE.W2")
+            elif channel == 3: return Filter("WISE.W3")
+            elif channel == 4: return Filter("WISE.W4")
+            else: log.warning("Could not determine which WISE filter was used for this image")
 
     # MIPS filters
     elif "mips" in filterid:

@@ -253,8 +253,8 @@ class StarExtractor(Configurable):
             star_id = self.catalog["Id"][i]
             ra = self.catalog["Right ascension"][i]
             dec = self.catalog["Declination"][i]
-            ra_error = self.catalog["Right ascension error"][i] * u.mas
-            dec_error = self.catalog["Declination error"][i] * u.mas
+            ra_error = self.catalog["Right ascension error"][i] * u.Unit("mas")
+            dec_error = self.catalog["Declination error"][i] * u.Unit("mas")
             confidence_level = self.catalog["Confidence level"][i]
 
             # Check for which bands magnitudes are defined
@@ -267,7 +267,10 @@ class StarExtractor(Configurable):
                     magnitude_errors[band] = self.catalog[name + " error"][i] * u.mag
 
             # Create a sky coordinate for the star position
-            position = coord.SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg), frame='fk5')
+            position = coord.SkyCoord(ra=ra, dec=dec, unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
+
+            # If the stars falls outside of the frame, skip it
+            if not self.frame.contains(position, self.config.transformation_method): continue
 
             # Create a star object
             star = Star(i, catalog=catalog, id=star_id, position=position, ra_error=ra_error,
@@ -443,7 +446,7 @@ class StarExtractor(Configurable):
 
             else: source = None
 
-            # Find a source
+            # Find a model
             if star.has_source or source is not None: star.fit_model(self.config.fitting, source)
 
         # If requested, perform sigma-clipping to the list of FWHM's to filter out outliers

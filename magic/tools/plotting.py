@@ -125,7 +125,7 @@ def plot_star(box, peak, model, title=None):
     # Plot the box
     plt.subplot(1,4,1)
     plt.imshow(box, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
-    plt.plot(peak.x, peak.y, ls=None, color='white', marker='+', ms=40, lw=10, mew=4)
+    plt.plot(peak.x, peak.y, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
     plt.xlim(0, box.xsize-1)
     plt.ylim(0, box.ysize-1)
     plt.title("Cutout")
@@ -181,7 +181,7 @@ def plot_peaks(box, x_peaks, y_peaks, radius=None, title=None):
     plt.figure(figsize=(8,2.5))
     plt.imshow(box, origin='lower', norm=norm, interpolation='nearest', vmin=vmin, vmax=vmax)
 
-    if radius is None: plt.plot(x_peaks, y_peaks, ls=None, color='white', marker='+', ms=40, lw=10, mew=4)
+    if radius is None: plt.plot(x_peaks, y_peaks, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
     else:
 
         positions = (x_peaks, y_peaks)
@@ -237,7 +237,7 @@ def plot_peaks_models(box, x_peaks, y_peaks, models):
     plt.figure(figsize=(8,2.5))
     plt.subplot(1,3,1)
     plt.imshow(box, origin='lower', interpolation='nearest', vmin=vmin, vmax=vmax)
-    plt.plot(x_peaks, y_peaks, ls=None, color='white', marker='+', ms=40, lw=10, mew=4)
+    plt.plot(x_peaks, y_peaks, ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
     plt.xlim(0, box.shape[1]-1)
     plt.ylim(0, box.shape[0]-1)
     plt.title("Data")
@@ -416,7 +416,7 @@ def plot_source(cutout, mask, background, peaks=None, title=None, show=True, sca
 
     plt.subplot(1,number,5)
     plt.imshow(cutout-background, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
-    if peaks is not None: plt.plot(peaks[0], peaks[1], ls=None, color='white', marker='+', ms=40, lw=10, mew=4)
+    if peaks is not None: plt.plot(peaks[0], peaks[1], ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
     plt.xlim(-0.5, cutout.xsize-0.5)
     plt.ylim(-0.5, cutout.ysize-0.5)
     plt.title("Background subtracted")
@@ -528,7 +528,7 @@ def plot_background_center(cutout, mask, peaks=None, title=None, show=True, scal
 
     plt.subplot(1,3,3)
     plt.imshow(np.ma.masked_array(cutout, mask=mask.inverse()), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
-    if peaks is not None: plt.plot(peaks[0], peaks[1], ls=None, color='white', marker='+', ms=40, lw=10, mew=4)
+    if peaks is not None: plt.plot(peaks[0], peaks[1], ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
     plt.xlim(0.5, cutout.xsize-0.5)
     plt.ylim(0.5, cutout.ysize-0.5)
     plt.title("Source mask")

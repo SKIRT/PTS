@@ -83,6 +83,9 @@ class Source(object):
         ellipse = Ellipse(center, radius * factor, angle) # new, expanded ellipse
         cutout = Box.from_ellipse(frame, ellipse, shape)
 
+        print(frame.xsize, frame.ysize)
+        print(center)
+
         # Calculate the relative coordinate of the center for the cutout box
         rel_center = cutout.rel_position(center)
 
@@ -309,6 +312,7 @@ class Source(object):
 
         # Calculate the sigma-clipped statistics of the box
         mean, median, stddev = statistics.sigma_clipped_statistics(box, sigma=3.0, mask=self.background_mask) # Sigma 3.0 for clipping is what photutils uses in detect_threshold
+        #sigma_level = 1.5   # I once tried to investigate why some clear peaks were not detected, did not have time ..
         threshold = median + (sigma_level * stddev)
 
         # Convolve the box with the given kernel, if any
