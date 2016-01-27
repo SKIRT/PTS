@@ -641,6 +641,15 @@ class Frame(np.ndarray):
             # Return a new Frame
             return Frame(data, self.wcs, self.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
+        # Interpolate using inverse distance weighing
+        elif method == "idw":
+
+            # Calculate the interpolated data
+            data = interpolation.in_paint(self, mask, method="idw")
+
+            # Return a new Frame
+            return Frame(data, self.wcs, self.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+
         # Calculate the mean value of the data
         elif method == "mean":
 

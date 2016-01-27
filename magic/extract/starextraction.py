@@ -383,7 +383,6 @@ class StarExtractor(Configurable):
 
         """
         This function ...
-        :param frame:
         :return:
         """
 
@@ -400,12 +399,11 @@ class StarExtractor(Configurable):
             try: star.find_source(self.frame, self.config.detection)
             except Exception as e:
 
-                #import traceback
-
+                import traceback
                 self.log.error("Error when finding source")
                 print(type(e))
                 print(e)
-                #traceback.print_exc()
+                traceback.print_exc()
 
                 if self.config.plot_track_record_if_exception:
 
@@ -486,7 +484,7 @@ class StarExtractor(Configurable):
 
         if self.config.removal.method == "model":
 
-            # Calculate the relative differences between the ampltides of the fitted models and the corresponding sources
+            # Calculate the relative differences between the amplitudes of the fitted models and the corresponding sources
             differences = np.array(self.amplitude_differences) * 100.0
 
             print(np.mean(differences))
@@ -501,6 +499,7 @@ class StarExtractor(Configurable):
             if star.ignore: continue
 
             # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
+            # Note: I forgot why we would ever want to do this ...
             if not self.config.removal.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
 
             # Remove the star in the frame
@@ -538,11 +537,14 @@ class StarExtractor(Configurable):
             if self.config.manual_indices.not_saturation is not None and star.index in self.config.manual_indices.not_saturation: continue
 
             # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
+            # Note: I forgot why we would ever want to do this ...
             if not self.config.saturation.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
 
             # If a model was not found for this star, skip it unless the remove_if_not_fitted flag is enabled
             if not star.has_model and not self.config.saturation.remove_if_not_fitted: continue
             if star.has_model: assert star.has_source
+
+            # Note: DustPedia stars will always get a 'source' during removal (with star.source_at_sigma_level) so star.has_source will already pass
 
             # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
             if not star.has_source and not self.config.saturation.remove_if_undetected: continue
@@ -597,7 +599,10 @@ class StarExtractor(Configurable):
             else: sigma_clip = self.config.saturation.aperture_removal.sigma_clip
 
             # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-            if star.on_galaxy and self.config.saturation.aperture_removal.polynomial_on_galaxy: interpolation_method = "polynomial"
+            # NEW: only enable this for optical and IR (galaxy has smooth emission there but not in UV)
+            if self.frame.wavelength is None or self.frame.wavelength > 3.9 * u.Unit("micron"):
+                if star.on_galaxy and self.config.saturation.aperture_removal.polynomial_on_galaxy: interpolation_method = "polynomial"
+                else: interpolation_method = self.config.saturation.aperture_removal.interpolation_method
             else: interpolation_method = self.config.saturation.aperture_removal.interpolation_method
 
             # Expansion factor

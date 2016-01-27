@@ -157,9 +157,6 @@ class CatalogBuilder(Configurable):
             # Get the index of this star in the input catalog used by the star extractor
             index = self.star_extractor.statistics["Star index"][i]
 
-            # Skip stars already from the DustPedia catalog
-            #if self.star_extractor.catalog["Catalog"][index] == "DustPedia": continue
-
             # Skip undetected stars
             if not self.star_extractor.statistics["Detected"][i]: continue
 

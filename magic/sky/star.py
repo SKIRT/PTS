@@ -236,6 +236,11 @@ class Star(SkyObject):
         # Star that is 'forced' to be removed
         if removal_method is None and force: removal_method = "interpolation"
 
+        # Stars from the DustPedia catalog should always be removed (because we trust this catalog)
+        # New: only enable this for optical and IR (some stars are not present in UV maps)
+        if frame.wavelength is None or frame.wavelength > 3.9 * u.Unit("micron"):
+            if self.catalog == "DustPedia" and removal_method is None: removal_method = "interpolation"
+
         # Remove the star by subtracting the model if a model was found and the method is set to 'model'
         if removal_method == "model":
 
@@ -287,7 +292,10 @@ class Star(SkyObject):
             else: sigma_clip = config.sigma_clip
 
             # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-            if self.on_galaxy and config.polynomial_on_galaxy: method = "polynomial"
+            # NEW: only enable this for optical and IR (galaxy has smooth emission there but not in UV)
+            if frame.wavelength is None or frame.wavelength > 3.9 * u.Unit("micron"):
+                if self.on_galaxy and config.polynomial_on_galaxy: method = "polynomial"
+                else: method = config.interpolation_method
             else: method = config.interpolation_method
 
             # Estimate the background
@@ -433,7 +441,10 @@ class Star(SkyObject):
         else: sigma_clip = config.sigma_clip
 
         # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-        if self.on_galaxy and config.polynomial_on_galaxy: interpolation_method = "polynomial"
+        # NEW: only enable this for optical and IR (galaxy has smooth emission there but not in UV)
+        if frame.wavelength is None or frame.wavelength > 3.9 * u.Unit("micron"):
+            if self.on_galaxy and config.polynomial_on_galaxy: interpolation_method = "polynomial"
+            else: interpolation_method = config.interpolation_method
         else: interpolation_method = config.interpolation_method
 
         # Estimate the background

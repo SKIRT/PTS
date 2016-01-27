@@ -32,8 +32,7 @@ from photutils.background import Background
 #    weighing as in the code below, but we can maybe add this ourselves in the cython code
 #  - Write our own code.
 
-
-def in_paint(data, mask):
+def in_paint(data, mask, method="localmean"):
 
     """
     This function ...
@@ -49,7 +48,7 @@ def in_paint(data, mask):
     data_with_nans = np.copy(data)
     data_with_nans[mask] = np.NaN
 
-    interpolated = replace_nans(data_with_nans, 5, 0.5, 2, "localmean")
+    interpolated = replace_nans(data_with_nans, 5, 0.5, 2, method)
 
     # If the interpolated box contains nans, do not fill in the corresponding pixels of the data with these nans,
     # therefore set the pixels that are nan to False in the box_mask (take the difference between the box_mask

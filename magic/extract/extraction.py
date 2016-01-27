@@ -135,6 +135,9 @@ class Extractor(Configurable):
             extractor.config.catalogs.stars.use_catalog_file = True
             extractor.config.catalogs.stars.catalog_path = "stars.cat"
 
+        # The interpolation method
+        if arguments.interpolation_method is not None: extractor.config.interpolation_method = arguments.interpolation_method
+
         # Return the new instance
         return extractor
 
@@ -246,6 +249,15 @@ class Extractor(Configurable):
             # Star extractor
             self.star_extractor.config.write_masked_frame = True
             self.star_extractor.config.writing.masked_frame_path = "masked_stars.fits"
+
+        # Set the interpolation method wherever it is appropriate
+        self.galaxy_extractor.config.removal.interpolation_method = self.config.interpolation_method
+        self.galaxy_extractor.config.manual.interpolation_method = self.config.interpolation_method
+        self.star_extractor.config.removal.interpolation_method = self.config.interpolation_method
+        self.star_extractor.config.saturation.interpolation_method = self.config.interpolation_method
+        self.star_extractor.config.saturation.aperture_removal.interpolation_method = self.config.interpolation_method
+        self.star_extractor.config.manual.interpolation_method = self.config.interpolation_method
+        self.trained_extractor.config.removal.interpolation_method = self.config.interpolation_method
 
         # Create special and ignore mask
         self.set_ignore_mask()

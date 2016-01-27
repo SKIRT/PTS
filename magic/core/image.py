@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
-import os.path
 import numpy as np
 import matplotlib.pyplot as plt
 import copy

@@ -365,6 +365,8 @@ class Box(np.ndarray):
 
         """
         This function ...
+        :param mask
+        :param method
         :return:
         """
 
@@ -388,6 +390,15 @@ class Box(np.ndarray):
 
             # Calculate the interpolated data
             data = interpolation.in_paint(self, mask)
+
+            # Create and return a new box
+            return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
+
+        # Interpolate using inverse distance weighing
+        elif method == "idw":
+
+            # Calculate the interpolated data
+            data = interpolation.in_paint(self, mask, method="idw")
 
             # Create and return a new box
             return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)

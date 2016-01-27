@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.magic.extract Run galaxy, star and sky extraction on an image
+## \package pts.do.magic.extract Extract stars and other objects from an astronomical image.
 
 # -----------------------------------------------------------------
 
@@ -72,6 +72,7 @@ parser.add_argument("--not_stars", type=int_list, help="the indices of stars whi
 parser.add_argument("--remove_stars", type=int_list, help="the indices of stars that should be removed")
 parser.add_argument("--not_saturation", type=int_list, help="the indices of stars which are not sources of saturation")
 parser.add_argument("--filecatalog", action="store_true", help="use file catalogs")
+parser.add_argument("--interpolation_method", type=str, help="the interpolation method to use")
 parser.add_argument("-i", "--input", type=str, help="the name of the input directory")
 parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
 parser.add_argument("--ignore", type=str, help="the name of the file specifying regions to ignore")
