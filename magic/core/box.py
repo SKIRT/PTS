@@ -18,7 +18,7 @@ from scipy import ndimage
 
 # Import the relevant AstroMagic classes and modules
 from ..basics import Position, Region, Rectangle, Extent
-from ..tools import cropping, fitting, interpolation
+from ..tools import cropping, fitting, interpolation, plotting
 
 # -----------------------------------------------------------------
 
@@ -202,7 +202,7 @@ class Box(np.ndarray):
         :return:
         """
 
-        pass
+        plotting.plot_box(self)
 
         # If frame is not None, plot 'zoom' plot
 
@@ -388,8 +388,12 @@ class Box(np.ndarray):
         # Interpolate using the local mean method
         elif method == "local_mean":
 
-            # Calculate the interpolated data
-            data = interpolation.in_paint(self, mask)
+            try:
+                # Calculate the interpolated data
+                data = interpolation.in_paint(self, mask)
+            except IndexError:
+                print(self)
+                print(mask)
 
             # Create and return a new box
             return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)

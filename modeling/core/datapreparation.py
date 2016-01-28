@@ -21,7 +21,7 @@ import os
 from astropy import units as u
 
 # Import the relevant AstroMagic classes and modules
-from ...magic.core import Image
+from ...magic import ImageImporter
 
 # Import the relevant PTS classes and modules
 from .component import ModelingComponent
@@ -126,6 +126,7 @@ class DataPreparer(ModelingComponent):
         # -- Children --
 
         # Create the preparation object
+        self.add_child("importer", ImageImporter)
         self.add_child("preparer", ImagePreparer)
 
         # -- Setup of the base class --
@@ -167,11 +168,7 @@ class DataPreparer(ModelingComponent):
         info_table = tables.from_file(info_path)
 
         # Loop over all files found in the data directory
-        for file_path in filesystem.files_in_path(self.data_path, extension="fits", not_contains="error"):
-
-            # Get the file name
-            file_name = os.path.basename(file_path)
-            image_name = os.path.splitext(file_name)[0]
+        for image_path, image_name in filesystem.files_in_path(self.data_path, extension="fits", not_contains="error", names=True):
 
             # If only a single image must be prepared, check if this image matches the specified image name
             if self.config.single_image is not None and image_name != self.config.single_image: continue
@@ -179,35 +176,36 @@ class DataPreparer(ModelingComponent):
             # Determine the output path for this image
             image_output_path = os.path.join(self.prep_path, image_name)
 
-            # Get the corresponding index in the information table
-            info_index = tables.find_index(info_table, image_name)
-            if info_index is None: continue  # TEMP: skip image if not defined in table !!
-
             # Check whether this image already has a prepared image
             final_path = os.path.join(image_output_path, "result.fits")
             if filesystem.is_file(final_path): continue
 
-            # Inform the user
-            self.log.debug("Importing the " + image_name + " image")
+            # Get the corresponding index in the information table
+            info_index = tables.find_index(info_table, image_name)
+            if info_index is None:
+                # TEMP: skip image if not defined in table !!
+                self.log.warning("No information about " + image_name + ": skipping")
+                continue
 
-            # Open the image
-            image = Image(file_path)
-            self.load_error_frame_and_select(image, image_name)
-
-            # Set image properties such as the unit and the FWHM of the PSF
+            # Get image properties such as the unit and the FWHM of the PSF
             unit = u.Unit(info_table["Unit"][info_index])
             fwhm = info_table["FWHM"][info_index] * u.Unit(info_table["Unit of FWHM"][info_index]) if not info_table["FWHM"].mask[info_index] else None
-            image.set_unit(unit)
-            image.set_fwhm(fwhm)
+
+            # Import the image
+            importer = ImageImporter()
+            importer.run(image_path, unit=unit, fwhm=fwhm)
 
             # Add the image that has to be processed to the list
-            self.images.append(image)
+            self.images.append(importer.image)
+
+            # Clear the image importer
+            self.importer.clear()
 
             # Set the attenuation
-            self.attenuations[image.name] = info_table["Attenuation"][info_index]
+            self.attenuations[image_name] = info_table["Attenuation"][info_index]
 
             # Set the name for the Aniano kernel
-            self.aniano_names[image.name] = info_table["Aniano name"][info_index]
+            self.aniano_names[image_name] = info_table["Aniano name"][info_index]
 
     # -----------------------------------------------------------------
 

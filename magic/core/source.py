@@ -67,9 +67,7 @@ class Source(object):
         """
         This function ...
         :param frame:
-        :param center:
-        :param radius:
-        :param angle:
+        :param ellipse:
         :param factor:
         :return:
         """
@@ -82,9 +80,6 @@ class Source(object):
         # Create cutout box
         ellipse = Ellipse(center, radius * factor, angle) # new, expanded ellipse
         cutout = Box.from_ellipse(frame, ellipse, shape)
-
-        print(frame.xsize, frame.ysize)
-        print(center)
 
         # Calculate the relative coordinate of the center for the cutout box
         rel_center = cutout.rel_position(center)

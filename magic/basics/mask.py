@@ -24,7 +24,7 @@ from photutils import detect_sources
 from photutils.geometry import elliptical_overlap_grid
 
 # Import the relevant AstroMagic classes and modules
-from .vector import Extent
+from .vector import Extent, Position
 
 # -----------------------------------------------------------------
 
@@ -464,7 +464,7 @@ class Mask(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def hits_boundary(self, min_pixels=2):
+    def hits_boundary(self, min_pixels=2, where=False):
 
         """
         This function ...
@@ -473,28 +473,39 @@ class Mask(np.ndarray):
         # Set the number of hits (pixels hitting the boundary) to zero initially
         hits = 0
 
+        positions = []
+
         for x in range(self.xsize):
+            for y in (0, self.ysize-1):
 
-            if self[0, x] or self[self.ysize-1, x]:
+                # Check if pixel is masked
+                if self[y, x]:
 
-                # Add one hit
-                hits += 1
+                    # Add one hit
+                    hits += 1
 
-                # Break the loop, avoid performing unnecessary checks
-                if hits >= min_pixels: break
+                    if where: positions.append(Position(x, y))
+
+                    # Break the loop, avoid performing unnecessary checks (if we don't need to output where the hits were)
+                    if hits >= min_pixels and not where: break
 
         for y in range(1, self.ysize-1):
+            for x in (0, self.xsize-1):
 
-            if self[y, 0] or self[y, self.xsize-1]:
+                # Check if pixel is masked
+                if self[y, x]:
 
-                # Add one hit
-                hits += 1
+                    # Add one hit
+                    hits += 1
 
-                # Break the loop, avoid performing unnecessary checks
-                if hits >= min_pixels: break
+                    if where: positions.append(Position(x, y))
+
+                    # Break the loop, avoid performing unnecessary checks (if we don't need to output where the hits were)
+                    if hits >= min_pixels and not where: break
 
         # Return whether ...
-        return hits >= min_pixels
+        if where: return hits >= min_pixels, positions
+        else: return hits >= min_pixels
 
     # -----------------------------------------------------------------
 

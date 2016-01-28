@@ -628,8 +628,8 @@ class GalaxyExtractor(Configurable):
             point_suffix = " # point = x " + text
 
             # Add point for the center
-            print("image;point({},{})".format(center.x, center.y) + point_suffix, file=f)
-            print("image;ellipse({},{},{},{},{})".format(center.x, center.y, x_radius, y_radius, angle) + color_suffix, file=f)
+            print("image;point({},{})".format(center.x+1, center.y+1) + point_suffix, file=f)
+            print("image;ellipse({},{},{},{},{})".format(center.x+1, center.y+1, x_radius, y_radius, angle) + color_suffix, file=f)
 
             # Add aperture
             if galaxy.has_contour:
@@ -641,7 +641,7 @@ class GalaxyExtractor(Configurable):
 
                 aperture_suffix = " # color = white"
 
-                print("image;ellipse({},{},{},{},{})".format(contour_center.x, contour_center.y, major, minor, angle) + aperture_suffix, file=f)
+                print("image;ellipse({},{},{},{},{})".format(contour_center.x+1, contour_center.y+1, major, minor, angle) + aperture_suffix, file=f)
 
         # Close the file
         f.close()

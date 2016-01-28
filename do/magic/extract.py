@@ -17,9 +17,7 @@ import os
 import argparse
 
 # Import the relevant AstroMagic classes and modules
-from pts.magic.core import Image
-from pts.magic.basics import Mask
-from pts.magic import Extractor
+from pts.magic import ImageImporter, Extractor
 from pts.core.tools import configuration
 
 # -----------------------------------------------------------------
@@ -77,6 +75,9 @@ parser.add_argument("-i", "--input", type=str, help="the name of the input direc
 parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
 parser.add_argument("--ignore", type=str, help="the name of the file specifying regions to ignore")
 parser.add_argument("--special", type=str, help="the name of the file specifying regions with objects needing special attention")
+#parser.add_argument("--ignore", type=int_list, help="the indices of stars that should be ignored")
+#parser.add_argument("--special", type=int_list, help="the indices of stars that require special attention")
+parser.add_argument("--bad", type=str, help="the name of the file specifying regions that have to be added to the mask of bad pixels")
 parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
 
 # Parse the command line arguments
@@ -117,21 +118,22 @@ else: arguments.output_path = os.getcwd()
 # Determine the full path to the image
 image_path = os.path.abspath(arguments.image)
 
-# Open the image
-image = Image(image_path)
+# Determine the full path to the bad region file
+bad_region_path = os.path.join(arguments.input_path, arguments.bad) if arguments.bad is not None else None
+
+# Import the image
+importer = ImageImporter()
+importer.run(image_path, bad_region_path=bad_region_path)
 
 # -----------------------------------------------------------------
-
-# Create a mask for the nans in the primary
-mask = Mask.is_nan(image.frames.primary)
 
 # Create an Extractor instance and configure it according to the command-line arguments
 extractor = Extractor.from_arguments(arguments)
 
 # Run the extractor
-extractor.run(image.frames.primary, mask)
+extractor.run(importer.image.frames.primary, importer.mask)
 
 # Save the result
-extractor.write_result(image.original_header)
+extractor.write_result(importer.image.original_header)
 
 # -----------------------------------------------------------------

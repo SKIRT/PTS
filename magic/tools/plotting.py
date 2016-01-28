@@ -32,18 +32,22 @@ def plot_box(box, title=None):
     :return:
     """
 
+    # Normalization
+    norm = ImageNormalize(stretch=SqrtStretch())
+
     # Determine the maximum value in the box and the mimimum value for plotting
-    vmax = np.max(box)
-    vmin = np.min(box) if vmax <= 0 else 0.0
+    vmax = np.nanmax(box)
+    vmin = np.nanmin(box) if vmax <= 0 else 0.0
 
     # Make the plot
     plt.figure(figsize=(6,6))
-    plt.imshow(box, origin='center', interpolation='nearest', vmin=vmin, vmax=vmax)
+    plt.imshow(box, origin='center', interpolation='nearest', vmin=vmin, vmax=vmax, norm=norm)
     plt.xlim(0, box.shape[1]-1)
     plt.ylim(0, box.shape[0]-1)
 
     if title is not None: plt.title(title)
 
+    # Show the plot
     plt.show()
 
 # -----------------------------------------------------------------
@@ -60,8 +64,8 @@ def plot_peak_model(box, x_peak, y_peak, model, title=None):
     """
 
     # Determine the maximum value in the box and the minimum value for plotting
-    vmax = np.max(box)
-    vmin = np.min(box) if vmax <= 0 else 0.0
+    vmax = np.nanmax(box)
+    vmin = np.nanmin(box) if vmax <= 0 else 0.0
 
     # Create x and y meshgrid for plotting
     y_plotvalues, x_plotvalues = np.mgrid[:box.shape[0], :box.shape[1]]
@@ -112,8 +116,8 @@ def plot_star(box, peak, model, title=None):
     norm = ImageNormalize(stretch=SqrtStretch())
 
     # Determine the maximum value in the box and the minimum value for plotting
-    vmax = np.max(box)
-    vmin = np.min(box) if vmax <= 0 else 0.0
+    vmax = np.nanmax(box)
+    vmin = np.nanmin(box) if vmax <= 0 else 0.0
 
     # Evaluate the model and subtract it from the cutout
     evaluated = box.evaluate_model(model)
@@ -171,8 +175,8 @@ def plot_peaks(box, x_peaks, y_peaks, radius=None, title=None):
     """
 
     # Determine the maximum value in the box and the minium value for plotting
-    vmax = np.max(box)
-    vmin = np.min(box) if vmax <= 0 else 0.0
+    vmax = np.nanmax(box)
+    vmin = np.nanmin(box) if vmax <= 0 else 0.0
 
     # Set the normalization
     norm = ImageNormalize(stretch=SqrtStretch())
@@ -223,8 +227,8 @@ def plot_peaks_models(box, x_peaks, y_peaks, models):
     """
 
     # Determine the maximum value in the box and the minium value for plotting
-    vmax = np.max(box)
-    vmin = np.min(box) if vmax <= 0 else 0.0
+    vmax = np.nanmax(box)
+    vmin = np.nanmin(box) if vmax <= 0 else 0.0
 
     # Create x and y meshgrid for plotting
     y_plotvalues, x_plotvalues = np.mgrid[:box.shape[0], :box.shape[1]]
@@ -267,8 +271,8 @@ def plot_star_model(background, background_clipped, est_background, star, est_ba
     norm = ImageNormalize(stretch=SqrtStretch())
 
     # Determine the maximum value in the box and the minimum value for plotting
-    vmax = np.max(background)
-    vmin = np.min(background) if vmax <= 0 else 0.0
+    vmax = np.nanmax(background)
+    vmin = np.nanmin(background) if vmax <= 0 else 0.0
 
     # Plot the data with the best-fit model
     plt.figure(figsize=(20,3))
@@ -320,11 +324,21 @@ def plot_star_model(background, background_clipped, est_background, star, est_ba
 
 def plot_removal(cutout, mask, background, removed, title=None):
 
+    """
+    This function ...
+    :param cutout:
+    :param mask:
+    :param background:
+    :param removed:
+    :param title:
+    :return:
+    """
+
     norm = ImageNormalize(stretch=SqrtStretch())
 
     # Determine the maximum value in the box and the minimum value for plotting
-    vmax = np.max(cutout)
-    vmin = np.min(cutout) if vmax <= 0 else 0.0
+    vmax = np.nanmax(cutout)
+    vmin = np.nanmin(cutout) if vmax <= 0 else 0.0
 
     # Plot the data with the best-fit model
     plt.figure(figsize=(20,3))
@@ -381,8 +395,8 @@ def plot_source(cutout, mask, background, peaks=None, title=None, show=True, sca
         ax3 = plt.subplot(gs1[-1, -1])
 
     # Determine the maximum value in the box and the minimum value for plotting
-    vmax = np.max(cutout)
-    vmin = np.min(cutout) if vmax <= 0 else 0.0
+    vmax = np.nanmax(cutout)
+    vmin = np.nanmin(cutout) if vmax <= 0 else 0.0
 
     #number = 6 if source_mask is not None else 5
 
@@ -451,8 +465,8 @@ def plot_background_subtraction(background, background_clipped, est_background, 
     norm = ImageNormalize(stretch=SqrtStretch())
 
     # Determine the maximum value in the box and the minimum value for plotting
-    vmax = np.max(background)
-    vmin = np.min(background) if vmax <= 0 else 0.0
+    vmax = np.nanmax(background)
+    vmin = np.nanmin(background) if vmax <= 0 else 0.0
 
     # Plot the data with the best-fit model
     plt.figure(figsize=(20,3))
@@ -509,8 +523,8 @@ def plot_background_center(cutout, mask, peaks=None, title=None, show=True, scal
     else: raise ValueError("Invalid scale option")
 
     # Determine the maximum value in the box and the minimum value for plotting
-    vmax = np.max(cutout)
-    vmin = np.min(cutout) if vmax <= 0 else 0.0
+    vmax = np.nanmax(cutout)
+    vmin = np.nanmin(cutout) if vmax <= 0 else 0.0
 
     # Plot the data with the best-fit model
     plt.figure(figsize=(10,4))
@@ -554,8 +568,8 @@ def plot_difference(box_a, box_b, share_colorscale=False):
     norm = ImageNormalize(stretch=SqrtStretch())
 
     # Determine the maximum value in the box and the minimum value for plotting
-    vmax = np.max(box_a)
-    vmin = np.min(box_a) if vmax <= 0 else 0.0
+    vmax = np.nanmax(box_a)
+    vmin = np.nanmin(box_a) if vmax <= 0 else 0.0
 
     # Plot the data with the best-fit model
     plt.figure(figsize=(8,2.5))
@@ -606,8 +620,8 @@ def plot_difference_value(box, value, share_colorscale=False):
     norm = ImageNormalize(stretch=SqrtStretch())
 
     # Determine the maximum value in the box and the minimum value for plotting
-    vmax = np.max(box)
-    vmin = np.min(box) if vmax <= 0 else 0.0
+    vmax = np.nanmax(box)
+    vmin = np.nanmin(box) if vmax <= 0 else 0.0
 
     # Plot the data with the best-fit model
     plt.figure(figsize=(8,2.5))
@@ -654,8 +668,8 @@ def plot_difference_model(box, model):
     """
 
     # Determine the maximum value in the box and the minimum value for plotting
-    vmax = np.max(box)
-    vmin = np.min(box) if vmax <= 0 else 0.0
+    vmax = np.nanmax(box)
+    vmin = np.nanmin(box) if vmax <= 0 else 0.0
 
     # Create x and y meshgrid for plotting
     y_plotvalues, x_plotvalues = np.mgrid[:box.shape[0], :box.shape[1]]

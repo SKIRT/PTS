@@ -777,7 +777,7 @@ class StarExtractor(Configurable):
             color_suffix = "color = " + color
             text_suffix = "text = {" + text + "}"
             suffix += color_suffix + " " + text_suffix
-            print("image;circle({},{},{})".format(center.x, center.y, radius) + suffix, file=f)
+            print("image;circle({},{},{})".format(center.x+1, center.y+1, radius) + suffix, file=f)
 
             # Draw a cross for the peak position
             if star.has_source and star.source.has_peak:
@@ -785,7 +785,7 @@ class StarExtractor(Configurable):
                 suffix = " # "
                 point_suffix = "point = x"
                 suffix += point_suffix
-                print("image;point({},{})".format(star.source.peak.x, star.source.peak.y) + suffix, file=f)
+                print("image;point({},{})".format(star.source.peak.x+1, star.source.peak.y+1) + suffix, file=f)
 
         # Close the file
         f.close()
@@ -831,7 +831,7 @@ class StarExtractor(Configurable):
             color_suffix = "color = white"
             text_suffix = "text = {" + text + "}"
             suffix += color_suffix + " " + text_suffix
-            print("image;ellipse({},{},{},{},{})".format(center.x, center.y, major, minor, angle) + suffix, file=f)
+            print("image;ellipse({},{},{},{},{})".format(center.x+1, center.y+1, major, minor, angle) + suffix, file=f)
 
         # Close the file
         f.close()

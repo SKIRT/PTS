@@ -90,7 +90,7 @@ for i in range(len(catalog)):
     color_suffix = "color = " + arguments.color
     text_suffix = "text = {" + text + "}"
     suffix += color_suffix + " " + text_suffix
-    print("image;circle({},{},{})".format(center.x, center.y, radius) + suffix, file=f)
+    print("image;circle({},{},{})".format(center.x+1, center.y+1, radius) + suffix, file=f)
 
 # Close the file
 f.close()
