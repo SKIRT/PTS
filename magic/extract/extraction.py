@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-import astropy.units as u
-
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame
 from ..basics import Mask, Region
@@ -22,6 +19,7 @@ from .galaxyextraction import GalaxyExtractor
 from .starextraction import StarExtractor
 from .trainedextractor import TrainedExtractor
 from ..catalog import CatalogBuilder, CatalogImporter, CatalogSynchronizer
+from ..tools import wavelengths
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem, tables
@@ -324,8 +322,8 @@ class Extractor(Configurable):
         # Inform the user
         self.log.info("Extracting the stars ...")
 
-        # Run the star extraction if the wavelength of this image is smaller than 10 micron (or the wavelength is unknown)
-        if self.frame.wavelength is None or self.frame.wavelength < 10.0 * u.Unit("micron"):
+        # Run the star extraction if the wavelength of this image is smaller than 25 micron (or the wavelength is unknown)
+        if self.frame.wavelength is None or self.frame.wavelength < wavelengths.ranges.ir.mir.max:
 
             # Run the star extractor
             self.star_extractor.run(self.frame, self.input_mask, self.galaxy_extractor, self.catalog_importer.stellar_catalog, special=self.special_mask, ignore=self.ignore_mask)
