@@ -19,6 +19,7 @@ import argparse
 # Import the relevant AstroMagic classes and modules
 from pts.magic import ImageImporter, SkySubtractor
 from pts.magic.basics import Mask
+from pts.core.tools import configuration
 
 # -----------------------------------------------------------------
 
@@ -26,7 +27,10 @@ from pts.magic.basics import Mask
 parser = argparse.ArgumentParser()
 parser.add_argument("image", type=str, help="the name of the input image")
 parser.add_argument("mask", type=str, help="the name of the mask image resulting from the extraction procedure")
+parser.add_argument("galaxies", type=str, help="the name of the file specifying the galaxy regions")
+parser.add_argument("saturation", type=str, nargs='?', help="the name of the file specifying the saturation regions", default=None)
 parser.add_argument('--config', type=str, help='the name of a configuration file')
+parser.add_argument("--settings", type=configuration.from_string, help="settings")
 parser.add_argument("-i", "--input", type=str, help="the name of the input directory")
 parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
 parser.add_argument("--bad", type=str, help="the name of the file specifying regions that have to be added to the mask of bad pixels")
@@ -37,6 +41,22 @@ parser.add_argument('--report', action='store_true', help='write a report file')
 arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
+
+# -- Input --
+
+# If an input directory is given
+if arguments.input is not None:
+
+    # Determine the full path to the input directory
+    arguments.input_path = os.path.abspath(arguments.input)
+
+    # Give an error if the input directory does not exist
+    if not os.path.isdir(arguments.input_path): raise argparse.ArgumentError(arguments.input_path, "The input directory does not exist")
+
+# If no input directory is given, assume the input is placed in the current working directory
+else: arguments.input_path = os.getcwd()
+
+# -- Output --
 
 # If an output directory is given
 if arguments.output is not None:
@@ -70,10 +90,17 @@ mask = Mask.from_file(mask_path)
 
 # -----------------------------------------------------------------
 
+# Determine the full path to the galaxy region file and the saturation region file
+galaxy_region_path = os.path.join(arguments.input_path, arguments.galaxies)
+saturation_region_path = os.path.join(arguments.input_path, arguments.saturation) if arguments.saturation is not None else None
+
 # Create a SkySubtractor instance and configure it according to the command-line arguments
 subtractor = SkySubtractor.from_arguments(arguments)
 
 # Run the subtractor
-subtractor.run(importer.image.frames.primary, mask)
+subtractor.run(importer.image.frames.primary, mask, galaxy_region_path, saturation_region_path, bad_mask=importer.mask)
+
+# Save the result
+subtractor.write_result(importer.image.original_header)
 
 # -----------------------------------------------------------------

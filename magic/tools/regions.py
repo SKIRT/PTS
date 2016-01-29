@@ -18,6 +18,7 @@ import numpy as np
 
 # Import astronomical modules
 import pyregion
+import astropy.units as u
 from astropy.coordinates import Angle
 
 # Import the relevant AstroMagic classes and modules
@@ -27,8 +28,14 @@ from ..basics import Ellipse, Position, Extent
 
 def ellipse(shape):
 
+    """
+    This function ...
+    :param shape:
+    :return:
+    """
+
     x_center, y_center, x_radius, y_radius, angle = ellipse_parameters(shape)
-    return Ellipse(Position(x_center, y_center), Extent(x_radius, y_radius), Angle(angle, u.deg))
+    return Ellipse(Position(x_center, y_center), Extent(x_radius, y_radius), Angle(angle, u.Unit("deg")))
 
 # -----------------------------------------------------------------
 

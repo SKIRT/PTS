@@ -107,11 +107,12 @@ class Frame(np.ndarray):
         pixelscale = coordinates.pixel_scale(wcs)
 
         # Check whether pixelscale defined in the header is correct
-        new_xy_pixelscale = 0.5 * (pixelscale.x.to("arcsec") + pixelscale.y.to("arcsec"))
-        if not np.isclose(old_pixelscale.to("arcsec").value, new_xy_pixelscale.to("arcsec").value):
-            print("WARNING: the pixel scale defined in the header is WRONG:")
-            print("           - header pixelscale: ", old_pixelscale, "arcsec")
-            print("           - actual pixelscale: ", new_xy_pixelscale, "arcsec (x=",pixelscale.x.to("arcsec").value,"y=", pixelscale.y.to("arcsec").value,")")
+        if old_pixelscale is not None:
+            new_xy_pixelscale = 0.5 * (pixelscale.x.to("arcsec") + pixelscale.y.to("arcsec"))
+            if not np.isclose(old_pixelscale.to("arcsec").value, new_xy_pixelscale.to("arcsec").value):
+                print("WARNING: the pixel scale defined in the header is WRONG:")
+                print("           - header pixelscale: ", old_pixelscale, "arcsec")
+                print("           - actual pixelscale: ", new_xy_pixelscale, "arcsec (x=",pixelscale.x.to("arcsec").value,"y=", pixelscale.y.to("arcsec").value,")")
 
         # Obtain the filter for this image
         filter = headers.get_filter(os.path.basename(path[:-5]), header)

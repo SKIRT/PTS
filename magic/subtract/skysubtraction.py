@@ -19,7 +19,8 @@ import copy
 
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame
-from ..tools import interpolation, plotting, masks, statistics
+from ..basics import Region, Mask
+from ..tools import interpolation, plotting, masks, statistics, regions
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -53,6 +54,10 @@ class SkySubtractor(Configurable):
 
         # The mask of bad pixels
         self.bad_mask = None
+
+        # The galaxy and saturation region
+        self.galaxy_region = None
+        self.saturation_region = None
 
         # The output mask (combined input + bad mask + sigma-clipping mask)
         self.mask = None
@@ -94,7 +99,7 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, input_mask, bad_mask=None):
+    def run(self, frame, input_mask, galaxy_region_path, saturation_region_path=None, bad_mask=None):
 
         """
         This function ...
@@ -105,7 +110,10 @@ class SkySubtractor(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup(frame, input_mask, bad_mask)
+        self.setup(frame, input_mask, galaxy_region_path, saturation_region_path, bad_mask)
+
+        # 2. Create mask
+        self.create_mask()
 
         # 2. Perform sigma-clipping
         if self.config.sigma_clip_mask: self.sigma_clip()
@@ -135,12 +143,13 @@ class SkySubtractor(Configurable):
         self.frame = None
         self.input_mask = None
         self.bad_mask = None
+        self.galaxy_region = None
         self.mask = None
         self.sky = None
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, input_mask, bad_mask=None):
+    def setup(self, frame, input_mask, galaxy_region_path, saturation_region_path=None, bad_mask=None):
 
         """
         This function ...
@@ -153,6 +162,12 @@ class SkySubtractor(Configurable):
         # Call the setup function of the base class
         super(SkySubtractor, self).setup()
 
+        # Set the paths to the resulting frame and the total mask
+        self.config.write_result = True
+        self.config.write_masked_frame = True
+        self.config.writing.result_path = "subtracted.fits"
+        self.config.writing.masked_frame_path = "masked_sky_frame.fits"
+
         # Make a local reference to the frame
         self.frame = frame
 
@@ -160,8 +175,51 @@ class SkySubtractor(Configurable):
         self.input_mask = input_mask
         self.bad_mask = bad_mask
 
+        # Set the galaxy region and saturation region
+        self.galaxy_region = Region.from_file(galaxy_region_path)
+        if saturation_region_path is not None: self.saturation_region = Region.from_file(saturation_region_path)
+
+    # -----------------------------------------------------------------
+
+    def create_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the ellipse describing the principal galaxy
+        principal_ellipse = None
+        for shape in self.galaxy_region:
+
+            if not shape.name == "ellipse" and not shape.name == "circle": continue
+
+            # Get the center and radius of the shape (can be a circle or an ellipse)
+            ellipse = regions.ellipse(shape)
+            if principal_ellipse is None or ellipse.major > principal_ellipse.major: principal_ellipse = ellipse
+
+        # Create a mask from the ellipse
+        annulus_outer_factor = 1.5
+        annulus_inner_factor = 1.0
+        annulus_mask = Mask.from_ellipse(self.frame.xsize, self.frame.ysize, principal_ellipse * annulus_outer_factor).inverse() + \
+                       Mask.from_ellipse(self.frame.xsize, self.frame.ysize, principal_ellipse * annulus_inner_factor)
+
         # Set the mask, make a copy of the input mask initially
-        self.mask = masks.union(self.input_mask, self.bad_mask) if self.bad_mask is not None else self.input_mask.copy()
+        self.mask = self.input_mask + annulus_mask
+
+        if self.bad_mask is not None: self.mask += self.bad_mask
+
+        if self.saturation_region is not None:
+
+            for shape in self.saturation_region:
+
+                # Expand
+                shape.coord_list[2] *= 1.5
+                shape.coord_list[3] *= 1.5
+
+            saturation_mask = Mask.from_region(self.saturation_region, self.frame.shape)
+
+            self.mask += saturation_mask
 
     # -----------------------------------------------------------------
 
@@ -174,6 +232,17 @@ class SkySubtractor(Configurable):
 
         # Inform the user
         self.log.info("Performing sigma-clipping on the pixel values ...")
+
+        ### TEMPORARY: WRITE OUT MASK BEFORE CLIPPING
+
+        # Create a frame where the objects are masked
+        frame = copy.deepcopy(self.frame)
+        frame[self.mask] = float(self.config.writing.mask_value)
+
+        # Save the masked frame
+        frame.save("masked_sky_frame_notclipped.fits")
+
+        ###
 
         # Create the sigma-clipped mask
         self.mask = statistics.sigma_clip_mask(self.frame, self.config.sigma_clipping.sigma_level, self.mask)
@@ -188,7 +257,7 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Estimating the sky by using " + self.config.estimation.method)
+        self.log.info("Estimating the sky by using " + self.config.estimation.method + " ...")
 
         # If the mean sky level should be used
         if self.config.estimation.method == "mean":
@@ -229,13 +298,13 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        log.info("Subtracting the sky from the frame")
+        self.log.info("Subtracting the sky from the frame ...")
 
         # Check whether the median sky level exceeds the standard deviation
         if self.median > self.stddev:
 
             # Inform the user
-            log.info("The median sky level exceeds the standard deviation")
+            self.log.info("The median sky level exceeds the standard deviation")
 
             # Subtract the estimated sky from the image frame
             self.frame -= self.sky
@@ -252,26 +321,74 @@ class SkySubtractor(Configurable):
         # Inform the user
         self.log.info("Writing ...")
 
-        # Write out a histogram of the sky pixels
-        if self.config.write_histogram: self.write_histogram()
+        # Write out the result
+        #if self.config.write_result: self.write_result()
 
-        # If requested, write out the frame where the galaxies and stars are masked
+        # Write out a histogram of the sky pixels
+        #if self.config.write_histogram: self.write_histogram()
+
+        # If requested, write out the masked frame
         if self.config.write_masked_frame: self.write_masked_frame()
 
-        # If requested, write out the frame where pixels covered by the sigma-clipped mask are zero
-        if self.config.write_clipped_masked_frame: self.write_clipped_masked_frame()
+        # If requested, write out the sky statistics
+        if self.config.write_statistics: self.write_statistics()
 
     # -----------------------------------------------------------------
 
-    def plot(self):
+    def write_result(self, header=None):
 
         """
         This function ...
         :return:
         """
 
-        # Plot the frame with the sky subtracted
-        plotting.plot_difference(self.frame, self.sky)
+        # Determine the full path to the result file
+        path = self.full_output_path(self.config.writing.result_path)
+
+        # Inform the user
+        self.log.info("Writing resulting frame to " + path + " ...")
+
+        # Write out the resulting frame
+        self.frame.save(path, header)
+
+    # -----------------------------------------------------------------
+
+    def write_masked_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the masked frame file
+        path = self.full_output_path(self.config.writing.masked_frame_path)
+
+        # Inform the user
+        self.log.info("Writing masked frame to " + path + " ...")
+
+        # Create a frame where the objects are masked
+        frame = self.frame.copy()
+        frame[self.mask] = float(self.config.writing.mask_value)
+
+        # Write out the masked frame
+        frame.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the statistics file
+        path = self.full_output_path(self.config.writing.statistics_path)
+
+        # Inform the user
+        self.log.info("Writing statistics to " + path + " ...")
+
+        
 
     # -----------------------------------------------------------------
 
@@ -283,7 +400,7 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Writing sky histogram to " + self.config.writing.histogram_path)
+        self.log.info("Writing sky histogram to " + self.config.writing.histogram_path +  " ...")
 
         # Create a masked array
         masked = np.ma.masked_array(self.frame, mask=self.mask)
@@ -347,24 +464,5 @@ class SkySubtractor(Configurable):
 
         # Return the standard deviation of the sigma-clipped frame
         return np.ma.masked_array(self.frame, mask=self.mask).std()
-
-    # -----------------------------------------------------------------
-
-    def write_masked_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        self.log.info("Writing the masked frame to " + self.config.writing.masked_frame_path)
-
-        # Create a frame where the objects are masked
-        frame = copy.deepcopy(self.frame)
-        frame[self.mask] = float(self.config.writing.mask_value)
-
-        # Save the masked frame
-        frame.save(self.config.writing.masked_frame_path)
 
 # -----------------------------------------------------------------

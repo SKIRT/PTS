@@ -103,9 +103,9 @@ def get_filter(name, header):
     if "WAVELEN" in header: wavelength = float(header["WAVELEN"])
     else: wavelength = None
 
-    #print("DEBUG: filterid =", filterid)
-    #print("DEBUG: channel =", channel)
-    #print("DEBUG: wavelength =", wavelength)
+    print("DEBUG: filterid =", filterid)
+    print("DEBUG: channel =", channel)
+    print("DEBUG: wavelength =", wavelength)
 
     # -- UV --
 
