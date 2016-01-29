@@ -402,8 +402,21 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
 
     # If there are any nans, return None ??? yes, do we want this ? (temporary fix)
     if np.any(np.isnan(source.cutout)):
-        if special: print("DEBUG: no source can be found (nans present)")
-        return None
+
+        #import os
+        #from ..core import Frame
+        #frame = Frame(source.cutout)
+        #frame.save(os.path.join(os.getcwd(), "lalalalalal-nans.fits"))
+        #plotting.plot_box(source.cutout)
+
+        if special:
+            print("DEBUG: nans present in source cutout, setting corresponding pixels to zero")
+            plotting.plot_box(source.cutout, title="cutout with nans")
+
+        # Set nans zero
+        source.cutout[np.isnan(source.cutout)] = 0.0
+
+        if special: plotting.plot_box(source.cutout, title="nans replaced by 0.0")
 
     # If always subtract background is enabled
     if config.always_subtract_background:
@@ -521,7 +534,7 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
             ellipse *= config.expansion_factor
             expansion_level += 1
 
-            if special: print("DEBUG: expanding to level", expansion_level + 1)
+            if special: print("DEBUG: expanding to level", expansion_level + 1, " (maximum level =", config.max_expansion_level)
 
             # Repeat the procedure for the expanded ellipse
             return find_source_segmentation(frame, ellipse, config, track_record=track_record, expansion_level=expansion_level, special=special)

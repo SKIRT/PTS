@@ -106,6 +106,10 @@ def get_filter(name, header):
     if "WAVELEN" in header: wavelength = float(header["WAVELEN"])
     else: wavelength = None
 
+    #print("DEBUG: filterid =", filterid)
+    #print("DEBUG: channel =", channel)
+    #print("DEBUG: wavelength =", wavelength)
+
     # -- UV --
 
     # GALEX
@@ -133,8 +137,8 @@ def get_filter(name, header):
             elif "z" in filterid: return Filter("SDSS.z")
             else: log.warning("Could not determine which SDSS filter was used for this image")
 
-    # R band
-    elif "r" in filterid and "kpno" in filterid: return Filter("KPNO.Mosaic.R")
+    # R band // not good; H alpha image was also identified as R band ...
+    #elif "r" in filterid and "kpno" in filterid: return Filter("KPNO.Mosaic.R")
 
     # TODO: support other optical instruments
 
