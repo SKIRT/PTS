@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.skysubtraction Contains the SkySubtractor class.
+## \package pts.magic.subtract.skysubtraction Contains the SkySubtractor class.
 
 # -----------------------------------------------------------------
 
@@ -17,13 +17,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import copy
 
-# Import astronomical modules
-from astropy import log
-
 # Import the relevant AstroMagic classes and modules
-from ..basics import Mask, Region
 from ..core import Frame
-from ..tools import statistics, interpolation, plotting
+from ..tools import interpolation, plotting, masks, statistics
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -49,13 +45,19 @@ class SkySubtractor(Configurable):
 
         # -- Attributes --
 
-        # The galaxy and star mask
-        self.mask = None
-
-        # Set the frame to None initially
+        # The image frame
         self.frame = None
 
-        # Set the sky frame to None initially
+        # The input mask (galaxies, stars and other objects)
+        self.input_mask = None
+
+        # The mask of bad pixels
+        self.bad_mask = None
+
+        # The output mask (combined input + bad mask + sigma-clipping mask)
+        self.mask = None
+
+        # The estimated sky frame
         self.sky = None
 
     # -----------------------------------------------------------------
@@ -70,47 +72,81 @@ class SkySubtractor(Configurable):
         """
 
         # Create a new SkySubtractor instance
-        subtractor = cls(arguments.config)
+        if arguments.config is not None: subtractor = cls(arguments.config)
+        elif arguments.settings is not None: subtractor = cls(arguments.settings)
+        else: subtractor = cls()
 
-        # Set the output path
-        subtractor.config.output_path = arguments.output_path
+        # Debug mode
+        if arguments.debug:
+
+            subtractor.config.logging.level = "DEBUG"
+            subtractor.config.logging.cascade = True
+
+        # Report file
+        if arguments.report: subtractor.config.logging.path = "log.txt"
+
+        # Set the input and output path
+        if arguments.input_path is not None: subtractor.config.input_path = arguments.input_path
+        if arguments.output_path is not None: subtractor.config.output_path = arguments.output_path
 
         # Return the new instance
         return subtractor
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, mask):
+    def run(self, frame, input_mask, bad_mask=None):
+
+        """
+        This function ...
+        :param frame:
+        :param input_mask:
+        :param bad_mask:
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup(frame, input_mask, bad_mask)
+
+        # 2. Perform sigma-clipping
+        if self.config.sigma_clip_mask: self.sigma_clip()
+
+        # 3. Estimate the sky
+        #self.estimate()
+
+        # 4. If requested, subtract the sky
+        #if self.config.subtract: self.subtract()
+
+        # 5. Write out the results
+        self.write()
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
 
         """
         This function ...
         :return:
         """
 
-        # 1. Call the setup function
-        self.setup(frame, mask)
+        # Inform the user
+        self.log.info("Clearing the sky extractor ...")
 
-        # 2. Set the extra mask
-        if self.config.extra_region is not None: self.set_extra_mask()
-
-        # 3. Perform sigma-clipping
-        if self.config.sigma_clip_mask: self.sigma_clip_mask()
-
-        # Estimate the sky
-        self.estimate()
-
-        # If requested, subtract the sky
-        if self.config.subtract: self.subtract()
-
-        # Write out the results
-        self.write()
+        # Set all attributes to None
+        self.frame = None
+        self.input_mask = None
+        self.bad_mask = None
+        self.mask = None
+        self.sky = None
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, mask):
+    def setup(self, frame, input_mask, bad_mask=None):
 
         """
         This function ...
+        :param frame:
+        :param input_mask:
+        :param bad_mask:
         :return:
         """
 
@@ -120,30 +156,16 @@ class SkySubtractor(Configurable):
         # Make a local reference to the frame
         self.frame = frame
 
-        # Set the mask
-        self.mask = mask
+        # The input mask and bad pixel mask
+        self.input_mask = input_mask
+        self.bad_mask = bad_mask
+
+        # Set the mask, make a copy of the input mask initially
+        self.mask = masks.union(self.input_mask, self.bad_mask) if self.bad_mask is not None else self.input_mask.copy()
 
     # -----------------------------------------------------------------
 
-    def write(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Write out a histogram of the sky pixels
-        if self.config.write_histogram: self.write_histogram()
-
-        # If requested, write out the frame where the galaxies and stars are masked
-        if self.config.write_masked_frame: self.write_masked_frame()
-
-        # If requested, write out the frame where pixels covered by the sigma-clipped mask are zero
-        if self.config.write_clipped_masked_frame: self.write_clipped_masked_frame()
-
-    # -----------------------------------------------------------------
-
-    def sigma_clip_mask(self):
+    def sigma_clip(self):
 
         """
         This function ...
@@ -151,151 +173,10 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        log.info("Creating a sigma-clipped mask for the sky")
+        self.log.info("Performing sigma-clipping on the pixel values ...")
 
         # Create the sigma-clipped mask
-        #self.clipped_mask = statistics.sigma_clip_mask(self.frame, self.config.sigma_clipping.sigma_level, self.mask)
-
-    # -----------------------------------------------------------------
-
-    def plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Plot the frame with the sky subtracted
-        plotting.plot_difference(self.frame, self.sky)
-
-    # -----------------------------------------------------------------
-
-    def write_histogram(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing sky histogram to " + self.config.writing.histogram_path)
-
-        # Create a masked array
-        masked = np.ma.masked_array(self.frame, mask=self.mask)
-        masked_clipped = np.ma.masked_array(self.frame, mask=self.clipped_mask)
-
-        # Create a figure
-        fig = plt.figure()
-
-        min = self.mean - 4.0 * self.stddev
-        max = self.mean + 4.0 * self.stddev
-
-        # Plot the histograms
-        #b: blue, g: green, r: red, c: cyan, m: magenta, y: yellow, k: black, w: white
-        plt.subplot(211)
-        plt.hist(masked.compressed(), 200, range=(min,max), alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='not clipped')
-        if self.config.histogram.log_scale: plt.semilogy()
-
-        plt.subplot(212)
-        plt.hist(masked_clipped.compressed(), 200, range=(min,max), alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='clipped')
-        if self.config.histogram.log_scale: plt.semilogy()
-
-        # Save the figure
-        plt.savefig(self.config.writing.histogram_path, bbox_inches='tight', pad_inches=0.25)
-        plt.close()
-
-    # -----------------------------------------------------------------
-
-    @property
-    def mean(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Return the sigma-clipped mean
-        return np.ma.mean(np.ma.masked_array(self.frame, mask=self.clipped_mask))
-
-    # -----------------------------------------------------------------
-
-    @property
-    def median(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Return the sigma-clipped median
-        return np.median(np.ma.masked_array(self.frame, mask=self.clipped_mask).compressed())
-
-    # -----------------------------------------------------------------
-
-    @property
-    def stddev(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Return the standard deviation of the sigma-clipped frame
-        return np.ma.masked_array(self.frame, mask=self.clipped_mask).std()
-
-    # -----------------------------------------------------------------
-
-    def write_masked_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the masked frame to " + self.config.writing.masked_frame_path)
-
-        # Create a frame where the objects are masked
-        frame = copy.deepcopy(self.frame)
-        frame[self.mask] = float(self.config.writing.mask_value)
-
-        # Save the masked frame
-        frame.save(self.config.writing.masked_frame_path)
-
-    # -----------------------------------------------------------------
-
-    def write_clipped_masked_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Saving sigma-clipped masked frame to " + self.config.writing.clipped_masked_frame_path)
-
-        # Create a frame with masked pixels
-        frame = copy.deepcopy(self.frame)
-        frame[self.clipped_mask] = float(self.config.writing.mask_value)
-
-        # Save the masked frame
-        frame.save(self.config.writing.clipped_masked_frame_path)
-
-    # -----------------------------------------------------------------
-
-    def set_extra_mask(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating an extra mask from " + self.config.extra_region)
-
-        # Load the region and create a mask from it
-        extra_region = Region.from_file(self.config.extra_region, self.frame.wcs)
-        #self.extra_mask = Mask.from_region(extra_region, self.frame.shape)
+        self.mask = statistics.sigma_clip_mask(self.frame, self.config.sigma_clipping.sigma_level, self.mask)
 
     # -----------------------------------------------------------------
 
@@ -306,10 +187,8 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        # TODO: allow different estimation methods
-
         # Inform the user
-        log.info("Estimating the sky by using " + self.config.estimation.method)
+        self.log.info("Estimating the sky by using " + self.config.estimation.method)
 
         # If the mean sky level should be used
         if self.config.estimation.method == "mean":
@@ -363,7 +242,7 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def clear(self):
+    def write(self):
 
         """
         This function ...
@@ -371,12 +250,121 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        log.info("Clearing the sky extractor")
+        self.log.info("Writing ...")
 
-        # Set the galaxy and star mask to None
-        self.mask = None
+        # Write out a histogram of the sky pixels
+        if self.config.write_histogram: self.write_histogram()
 
-        # Set the frames to None
-        self.frame = None
+        # If requested, write out the frame where the galaxies and stars are masked
+        if self.config.write_masked_frame: self.write_masked_frame()
+
+        # If requested, write out the frame where pixels covered by the sigma-clipped mask are zero
+        if self.config.write_clipped_masked_frame: self.write_clipped_masked_frame()
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot the frame with the sky subtracted
+        plotting.plot_difference(self.frame, self.sky)
+
+    # -----------------------------------------------------------------
+
+    def write_histogram(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Writing sky histogram to " + self.config.writing.histogram_path)
+
+        # Create a masked array
+        masked = np.ma.masked_array(self.frame, mask=self.mask)
+        masked_clipped = np.ma.masked_array(self.frame, mask=self.clipped_mask)
+
+        # Create a figure
+        fig = plt.figure()
+
+        min = self.mean - 4.0 * self.stddev
+        max = self.mean + 4.0 * self.stddev
+
+        # Plot the histograms
+        #b: blue, g: green, r: red, c: cyan, m: magenta, y: yellow, k: black, w: white
+        plt.subplot(211)
+        plt.hist(masked.compressed(), 200, range=(min,max), alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='not clipped')
+        if self.config.histogram.log_scale: plt.semilogy()
+
+        plt.subplot(212)
+        plt.hist(masked_clipped.compressed(), 200, range=(min,max), alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='clipped')
+        if self.config.histogram.log_scale: plt.semilogy()
+
+        # Save the figure
+        plt.savefig(self.config.writing.histogram_path, bbox_inches='tight', pad_inches=0.25)
+        plt.close()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the sigma-clipped mean
+        return np.ma.mean(np.ma.masked_array(self.frame, mask=self.mask))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def median(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the sigma-clipped median
+        return np.median(np.ma.masked_array(self.frame, mask=self.mask).compressed())
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stddev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the standard deviation of the sigma-clipped frame
+        return np.ma.masked_array(self.frame, mask=self.mask).std()
+
+    # -----------------------------------------------------------------
+
+    def write_masked_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.log.info("Writing the masked frame to " + self.config.writing.masked_frame_path)
+
+        # Create a frame where the objects are masked
+        frame = copy.deepcopy(self.frame)
+        frame[self.mask] = float(self.config.writing.mask_value)
+
+        # Save the masked frame
+        frame.save(self.config.writing.masked_frame_path)
 
 # -----------------------------------------------------------------

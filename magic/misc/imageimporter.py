@@ -232,12 +232,14 @@ class ImageImporter(Configurable):
 
             #print(where[0])
 
-            index = segments[where[0].y, where[0].x]
+            for pixel in where:
 
-            #plotting.plot_box(segments == index, "segments == index")
+                index = segments[pixel.y, pixel.x]
 
-            blob_mask[segments == index] = False
-            segments[segments == index] = False
+                #plotting.plot_box(segments == index, "segments == index")
+
+                blob_mask[segments == index] = False
+                segments[segments == index] = False
 
         #plotting.plot_box(segments, "segmentation map")
         #plotting.plot_box(blob_mask[1200:1300, 700:790], "blob mask")

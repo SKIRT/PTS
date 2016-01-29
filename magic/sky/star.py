@@ -237,8 +237,8 @@ class Star(SkyObject):
         if removal_method is None and force: removal_method = "interpolation"
 
         # Stars from the DustPedia catalog should always be removed (because we trust this catalog)
-        # New: only enable this for optical and IR (some stars are not present in UV maps)
-        if frame.wavelength is None or frame.wavelength > 0.39 * u.Unit("micron"):
+        # New: only enable this for optical, NIR and MIR (some stars are not present in UV maps and some IR maps)
+        if frame.wavelength is None or (frame.wavelength > 0.39 * u.Unit("micron") and frame.wavelength < 20.0 * u.Unit("micron")):
             if self.catalog == "DustPedia" and removal_method is None: removal_method = "interpolation"
 
         # Remove the star by subtracting the model if a model was found and the method is set to 'model'
@@ -292,8 +292,9 @@ class Star(SkyObject):
             else: sigma_clip = config.sigma_clip
 
             # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-            # NEW: only enable this for optical and IR (galaxy has smooth emission there but not in UV)
-            if frame.wavelength is None or frame.wavelength > 0.39 * u.Unit("micron"):
+            # NEW: only enable this for optical, NIR and MIR (galaxy has smooth emission there but not in UV)
+            # We take 0.39 micron and 20 micron as the limits for 'smoothness'
+            if frame.wavelength is None or (frame.wavelength > 0.39 * u.Unit("micron") and frame.wavelength < 20.0 * u.Unit("micron")):
                 if self.on_galaxy and config.polynomial_on_galaxy: method = "polynomial"
                 else: method = config.interpolation_method
             else: method = config.interpolation_method

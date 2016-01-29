@@ -18,6 +18,7 @@ from scipy import ndimage
 from skimage import morphology
 
 # Import astronomical modules
+from astropy.io import fits
 from photutils import detect_sources
 
 # Function to create mask from ellipse
@@ -52,6 +53,49 @@ class Mask(np.ndarray):
         obj.description = description
 
         return obj
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path, index=0):
+
+        """
+        This function ...
+        :param file_path:
+        :return:
+        """
+
+        # Show which image we are importing
+        print("INFO: Reading in file: " + path)
+
+        # Open the HDU list for the FITS file
+        hdulist = fits.open(path)
+
+        # Get the primary HDU
+        hdu = hdulist[0]
+
+        # Get the image header
+        header = hdu.header
+
+        # Check whether multiple planes are present in the FITS image
+        nframes = 1
+        if 'NAXIS' in header:
+            # If there are 3 axes, get the size of the third
+            if header['NAXIS'] == 3: nframes = header['NAXIS3']
+
+        if nframes > 1:
+
+            mask = cls(hdu.data[index])
+
+        else:
+
+            # Sometimes, the 2D frame is embedded in a 3D array with shape (1, xsize, ysize)
+            if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
+
+            mask = cls(hdu.data)
+
+        # Return the new mask
+        return mask
 
     # -----------------------------------------------------------------
 

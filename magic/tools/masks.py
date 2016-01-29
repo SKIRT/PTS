@@ -14,6 +14,8 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+import operator
+from functools import reduce
 
 # Import the relevant AstroMagic classes and modules
 from . import regions
@@ -93,31 +95,29 @@ def create_disk_mask(x_size, y_size, x_center, y_center, radius):
 
 # -----------------------------------------------------------------
 
-def union(mask_a, mask_b):
+def union(*args):
 
     """
     This function ...
-    :param mask_a:
-    :param mask_b:
+    :param args:
     :return:
     """
 
-    # Return the unified mask
-    return mask_a + mask_b
+    # Return the union (=the sum)
+    return sum(args)
 
 # -----------------------------------------------------------------
 
-def intersection(mask_a, mask_b):
+def intersection(*args):
 
     """
     This function ...
-    :param mask_a:
-    :param mask_b:
+    :param args:
     :return:
     """
 
-    # Return the intersection
-    return mask_a * mask_b
+    # Return the intersection (=the product)
+    return reduce(operator.mul, args, 1)
 
 # -----------------------------------------------------------------
 

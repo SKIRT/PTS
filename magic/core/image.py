@@ -20,7 +20,7 @@ import copy
 
 # Import astronomical modules
 import aplpy
-import astropy.io.fits as pyfits
+from astropy.io import fits
 from astropy.wcs import WCS
 from astropy import log
 
@@ -213,7 +213,7 @@ class Image(object):
             except ValueError: pass # Some values in the header gives errors in Astropy when adding them again to this new header ... (e.g. ValueError: Illegal value: = 'created by T.H. Jarrett'.)
 
         # Create the HDU from the data array and the header
-        hdu = pyfits.PrimaryHDU(np.array(datacube), header)
+        hdu = fits.PrimaryHDU(np.array(datacube), header)
 
         # Write the HDU to a FITS file
         hdu.writeto(path, clobber=True)
@@ -434,7 +434,7 @@ class Image(object):
         image_with_nans =  maskedimage.filled(np.NaN)
 
         # Create a HDU from this frame with the image header
-        hdu = pyfits.PrimaryHDU(image_with_nans, self.header)
+        hdu = fits.PrimaryHDU(image_with_nans, self.original_header)
 
         if path is None:
 
@@ -479,7 +479,7 @@ class Image(object):
         for region in self.regions.get_selected():
 
             # Get the shape list
-            shapes = self.regions[region].region.as_imagecoord(self.header)
+            shapes = self.regions[region].region.as_imagecoord(self.original_header)
 
             # Add these shapes to the plot
             plot.show_regions(shapes)
@@ -795,7 +795,7 @@ class Image(object):
         log.info("Reading in file: " + filename)
 
         # Open the HDU list for the FITS file
-        hdulist = pyfits.open(filename)
+        hdulist = fits.open(filename)
 
         # Get the primary HDU
         hdu = hdulist[0]
@@ -822,7 +822,10 @@ class Image(object):
 
         # Check whether pixelscale in header is correct
         new_xy_pixelscale = 0.5 * (pixelscale.x.to("arcsec") + pixelscale.y.to("arcsec"))
-        if not np.isclose(old_pixelscale.to("arcsec").value, new_xy_pixelscale.to("arcsec").value): print("WARNING: the pixel scale defined in the header is WRONG")
+        if not np.isclose(old_pixelscale.to("arcsec").value, new_xy_pixelscale.to("arcsec").value):
+            print("WARNING: the pixel scale defined in the header is WRONG:")
+            print("           - header pixelscale: ", old_pixelscale, "arcsec")
+            print("           - actual pixelscale: ", new_xy_pixelscale, " arcsec (x=",pixelscale.x.to("arcsec").value,"y=", pixelscale.y.to("arcsec").value,")")
 
         # Obtain the filter for this image
         filter = headers.get_filter(self.name, original_header)

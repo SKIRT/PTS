@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 from astropy import log
 from astropy.wcs import WCS
 import aplpy
-import astropy.io.fits as pyfits
+from astropy.io import fits
 import astropy.units as u
 import astropy.coordinates as coord
 from astropy.convolution import convolve_fft
@@ -81,7 +81,7 @@ class Frame(np.ndarray):
         log.info("Reading in file: " + path)
 
         # Open the HDU list for the FITS file
-        hdulist = pyfits.open(path)
+        hdulist = fits.open(path)
 
         # Get the primary HDU
         hdu = hdulist[0]
@@ -108,7 +108,10 @@ class Frame(np.ndarray):
 
         # Check whether pixelscale defined in the header is correct
         new_xy_pixelscale = 0.5 * (pixelscale.x.to("arcsec") + pixelscale.y.to("arcsec"))
-        if not np.isclose(old_pixelscale.to("arcsec").value, new_xy_pixelscale.to("arcsec").value): print("WARNING: the pixel scale defined in the header is WRONG")
+        if not np.isclose(old_pixelscale.to("arcsec").value, new_xy_pixelscale.to("arcsec").value):
+            print("WARNING: the pixel scale defined in the header is WRONG:")
+            print("           - header pixelscale: ", old_pixelscale, "arcsec")
+            print("           - actual pixelscale: ", new_xy_pixelscale, "arcsec (x=",pixelscale.x.to("arcsec").value,"y=", pixelscale.y.to("arcsec").value,")")
 
         # Obtain the filter for this image
         filter = headers.get_filter(os.path.basename(path[:-5]), header)
@@ -248,7 +251,7 @@ class Frame(np.ndarray):
         if self.wcs is not None: header = self.wcs.to_header()
 
         # Else, create a new empty header
-        else: header = pyfits.Header()
+        else: header = fits.Header()
 
         # Add properties to the header
         header['NAXIS'] = 2
@@ -695,7 +698,7 @@ class Frame(np.ndarray):
         if header is None: header = self.header
 
         # Create the HDU
-        hdu = pyfits.PrimaryHDU(self, header)
+        hdu = fits.PrimaryHDU(self, header)
 
         # Write the HDU to a FITS file
         hdu.writeto(path, clobber=True)
@@ -715,7 +718,7 @@ class Frame(np.ndarray):
         frame_with_nans = maskedimage.filled(np.NaN)
 
         # Create a HDU from this frame with the image header
-        hdu = pyfits.PrimaryHDU(frame_with_nans, self.wcs.to_header())
+        hdu = fits.PrimaryHDU(frame_with_nans, self.wcs.to_header())
 
         # Create a figure canvas
         figure = plt.figure(figsize=(12, 12))

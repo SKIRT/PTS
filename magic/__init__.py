@@ -19,3 +19,4 @@
 # Import classes to make them available at the level of this subpackage
 from .misc import ImageImporter
 from .extract import Extractor
+from .subtract import SkySubtractor

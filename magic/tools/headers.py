@@ -35,40 +35,37 @@ def get_pixelscale(header):
     :return:
     """
 
-    # Search for 'PIXSCALE' keyword
-    if 'PIXSCALE' in header:
-        #print('PIXSCALE')
-        return header['PIXSCALE'] * u.Unit("arcsec")
+    # Search for different keywords indicating the pixelscale
+    for keyword in ("PIXSCALE", "SECPIX", "PFOV", "PLTSCALE"):
+
+        if keyword in header:
+
+            # Get the scale and try to get the unit
+            scale = header[keyword]
+            try: unit = header.comments[keyword].split("[")[1].split("]")
+            except IndexError: unit = None
+
+            print("DEBUG: pixelscale found in", keyword, "keyword =", scale)
+            print("DEBUG: unit for the pixelscale =", unit)
+
+            # Return the scale
+            return scale * u.Unit("arcsec")
 
     # Search for the 'PXSCAL1' and 'PXSCAL2' keywords
-    elif 'PXSCAL1' in header and 'PXSCAL2' in header:
-        #print('PXSCAL1')
+    if "PXSCAL1" in header and "PXSCAL2" in header:
+
+        scale1 = header["PXSCAL1"]
+        try: unit1 = header.comments["PXSCAL1"].split("[")[1].split("]")
+        except IndexError: unit1 = None
+
+        scale2 = header["PXSCAL2"]
+        try: unit2 = header.comments["PXSCAL2"].split("[")[1].split("]")
+        except IndexError: unit2 = None
+
+        print("DEBUG: pixelscale found in PXSCAL1 and PXSCAL2 keywords = (", scale1, scale2, ")")
+        print("DEBUG: unit for the pixelscale = (", unit1, unit2, ")")
+
         return abs(header['PXSCAL1']) * u.Unit("arcsec")
-
-    # Search for the 'SECPIX' keyword
-    elif 'SECPIX' in header:
-        #print('SECPIX')
-        return header['SECPIX'] * u.Unit("arcsec")
-
-    # Search for 'Pixel Field of View' keyword
-    elif 'PFOV' in header:
-        #print('PFOV')
-        return header['PFOV'] * u.Unit("arcsec")
-
-    # Search for the CD matrix elements
-    elif 'CD1_1' in header and 'CD1_2' in header:
-        #print('CD1_1 and CD1_2')
-        return math.sqrt(header['CD1_1']**2 + header['CD1_2']**2) * 3600.0 * u.Unit("arcsec")
-
-    # Search for the diagonal CD matrix elements
-    elif 'CD1_1' in header:
-        #print('CD1_1')
-        return abs(header['CD1_1']) * 3600.0 * u.Unit("arcsec")
-
-    # Search for the 'CDELT1' keyword
-    elif 'CDELT1' in header:
-        #print('CDELT1')
-        return abs(header['CDELT1']) * 3600.0 * u.Unit("arcsec")
 
     # If none of the above keywords were found, return None
     else: return None
