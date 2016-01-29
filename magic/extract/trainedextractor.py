@@ -23,7 +23,7 @@ from astropy.coordinates import SkyCoord
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame, Source
 from ..basics import Mask, Ellipse
-from ..tools import statistics, masks
+from ..tools import statistics, masks, plotting
 from ..analysis import SExtractor, sources
 from ..train import Classifier
 from ..sky import Star
@@ -167,13 +167,19 @@ class TrainedExtractor(Configurable):
         # Loop over all sources
         for source in self.sources:
 
+            special = self.special_mask.masks(source.center) if self.special_mask is not None else False
+
             # Estimate the background
             interpolation_method = "local_mean"
             sigma_clip = True
             source.estimate_background(interpolation_method, sigma_clip)
 
+            if special: source.plot(title="Estimated background for source")
+
             # Replace the frame with the estimated background
             source.background.replace(self.frame, where=source.mask)
+
+            if special: plotting.plot_box(self.frame[source.cutout.y_slice, source.cutout.x_slice], title="Replaced frame inside this box")
 
             # Update the mask
             self.mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
@@ -191,7 +197,8 @@ class TrainedExtractor(Configurable):
         self.log.info("Constructing elliptical contours to encompass sources ...")
 
         # Return the list of apertures
-        return sources.find_contours(self.frame, self.segments, self.config.detection.apertures.sigma_level)
+        #return sources.find_contours(self.frame, self.segments, self.config.detection.apertures.sigma_level)
+        return sources.find_contours(self.segments, self.segments, self.config.detection.apertures.sigma_level)
 
     # -----------------------------------------------------------------
 
@@ -209,6 +216,8 @@ class TrainedExtractor(Configurable):
         # Loop over all sources
         for source in self.sources:
 
+            special = self.special_mask.masks(source.center) if self.special_mask is not None else False
+
             # Find peaks
             peaks = source.locate_peaks(3.0)
 
@@ -221,7 +230,11 @@ class TrainedExtractor(Configurable):
                 index = None
                 star = Star(index, catalog=None, id=None, position=position, ra_error=None, dec_error=None)
 
+                # Set the source
                 star.source = source
+
+                # Set whether this star should be treated as special
+                star.special = special
 
                 # Try to fit star
                 star.fit_model(self.config.classification.fitting)
@@ -390,6 +403,9 @@ class TrainedExtractor(Configurable):
         # Construct sources
         for contour in contours:
 
+            # Special ...
+            special = self.special_mask.masks(contour.center) if self.special_mask is not None else False
+
             background_factor = 1.5
 
             # If the aperture has to be rescaled
@@ -401,17 +417,34 @@ class TrainedExtractor(Configurable):
             # Create a source from the aperture
             source = Source.from_ellipse(self.frame, contour, background_factor)
 
+            if special: source.plot(title="Source created from contour around segment")
+
             y_min = source.cutout.y_min
             y_max = source.cutout.y_max
             x_min = source.cutout.x_min
             x_max = source.cutout.x_max
 
             # Create source mask from the segmentation map
-            mask = Mask(self.segments[y_min:y_max, x_min:x_max])
+            #mask = Mask(self.segments[y_min:y_max, x_min:x_max])
+
+            #label = self.segments[y_min:y_max, x_min:x_max][]
+
+            segments_cutout = self.segments[y_min:y_max, x_min:x_max]
+
+            label = segments_cutout[int(round(0.5*segments_cutout.shape[0])), int(round(0.5*segments_cutout.shape[1]))]
+
+            mask = Mask(segments_cutout == label)
+
+            if special: plotting.plot_box(mask, title="Mask created from segment")
+
             mask = mask.fill_holes()
+
+            if special: plotting.plot_box(mask, title="Filled holes in mask created from segment")
 
             # Set the source mask
             source.mask = mask
+
+            if special: source.plot(title="Source after mask has been replaced with segment mask")
 
             # Add the source
             self.sources.append(source)

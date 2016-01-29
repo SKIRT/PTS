@@ -377,8 +377,17 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
 
     """
     This function ...
+    :param frame:
+    :param ellipse:
+    :param config:
+    :param track_record:
+    :param expansion_level:
+    :param special:
+    :param sigma_level:
     :return:
     """
+
+    if special: print("DEBUG: finding segmentation source, expansion level =", expansion_level)
 
     # Allow for a custom sigma level
     sigma_level = config.sigma_level if sigma_level is None else sigma_level
@@ -387,10 +396,14 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
     source = Source.from_ellipse(frame, ellipse, config.background_outer_factor)
 
     # If the source cutout is zero or nan everywhere, return None (no source can be found here)
-    if np.all(np.isnan(source.cutout)) or not np.any(source.cutout): return None
+    if np.all(np.isnan(source.cutout)) or not np.any(source.cutout):
+        if special: print("DEBUG: no source can be found (cutout is zero or nan everywhere)")
+        return None
 
     # If there are any nans, return None ??? yes, do we want this ? (temporary fix)
-    if np.any(np.isnan(source.cutout)): return None
+    if np.any(np.isnan(source.cutout)):
+        if special: print("DEBUG: no source can be found (nans present)")
+        return None
 
     # If always subtract background is enabled
     if config.always_subtract_background:
@@ -398,18 +411,24 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         # Subtract the background from the source
         try: # weird error coming out for example with M81 GALEX FUV image (saturation detection)
             source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
-        except: return None
+        except:
+            if special: print("DEBUG: no source can be found (exception encountered while estimating background)")
+            return None
 
     # Create a kernel
     sigma = config.kernel.fwhm * statistics.fwhm_to_sigma
     kernel_size = int(round(4.0 * config.kernel.cutoff_level))
     kernel = Gaussian2DKernel(sigma, x_size=kernel_size, y_size=kernel_size)
 
+    if special: print("DEBUG: looking for center segment")
+
     # Create a mask for the center segment found for the source
     mask = source.find_center_segment(sigma_level, kernel=kernel, min_pixels=config.min_pixels)
 
     # If no center segment was found, subtract the background first
     if not np.any(mask) and not config.always_subtract_background:
+
+        if special: print("DEBUG: no center segment found")
 
         # Add a snapshot of the source to the track record for debugging
         if track_record is not None: track_record.append(copy.deepcopy(source))
@@ -420,7 +439,10 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         # Subtract the background from the source
         try: # weird error coming out for example with M81 GALEX FUV image (saturation detection)
             source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
+            if special: print("DEBUG: no source can be found (exception encountered while estimating background)")
         except: return None
+
+        if special: print("DEBUG: looking for center segment again")
 
         # Search for a center segment again
         mask = source.find_center_segment(sigma_level, kernel=kernel, min_pixels=config.min_pixels)
@@ -434,6 +456,8 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
     # If still no center segment was found, return without source
     if not np.any(mask):
 
+        if special: print("DEBUG: still no center segment found")
+
         # Show a plot for debugging
         if config.debug.no_segment or special: source.plot(title="No center segment was found")
 
@@ -443,8 +467,12 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
     # If the mask extents to the boundary of the cutout box en if enabled, apply binary opening to the mask to
     if masks.overlap(source.background_mask, mask) and config.remove_appendages:
 
+        if special: print("DEBUG: mask overlaps the background mask")
+
         # Show a plot for debugging
         if config.debug.overlap_before or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask before appendage removal")
+
+        if special: print("DEBUG: removing appendages")
 
         # Remove appendages from the mask
         mask = mask.remove_appendages()
@@ -458,6 +486,8 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         # Show a plot for debugging
         if config.debug.overlap_before or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask before second appendage removal")
 
+        if special: print("DEBUG: second appendage removal step")
+
         # Do a second appendage removal
         mask = mask.remove_appendages(super=True)
 
@@ -467,6 +497,8 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
     # If the mask extents to the boundary of the cutout box and if enabled, expand the ellipse and repeat the procedure
     if masks.overlap(source.background_mask, mask) and config.expand:
 
+        if special: print("DEBUG: mask still overlaps")
+
         # Add a snapshot of the source to the track record for debugging
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
@@ -475,6 +507,8 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
 
         # If the maximum expansion level has been reached, no source could be found
         if expansion_level >= config.max_expansion_level:
+
+            if special: print("DEBUG: maximum expansion level reached (", expansion_level, ")")
 
             # To visualize the case where maximum expansion has been reached
             #plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask))
@@ -487,10 +521,14 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
             ellipse *= config.expansion_factor
             expansion_level += 1
 
+            if special: print("DEBUG: expanding to level", expansion_level + 1)
+
             # Repeat the procedure for the expanded ellipse
             return find_source_segmentation(frame, ellipse, config, track_record=track_record, expansion_level=expansion_level, special=special)
 
     else:
+
+        if special: print("DEBUG: center segment does not overlap with background mask")
 
         # Add a snapshot of the source to the track record for debugging
         if track_record is not None: track_record.append(copy.deepcopy(source))
@@ -503,6 +541,8 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         #plotting.plot_box(np.ma.array(source.cutout, mask=source.mask))
         #plotting.plot_box(np.ma.array(source.cutout, mask=mask))
 
+        if special: print("DEBUG: fixing holes in segment mask")
+
         mask = mask.fill_holes()
         source.mask = mask
 
@@ -514,7 +554,9 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         # -- Dilation --
 
         # Dilate the mask if requested
-        if config.dilate: mask = mask.dilated(connectivity=config.connectivity, iterations=config.iterations)
+        if config.dilate:
+            if special: print("DEBUG: dilating the mask")
+            mask = mask.dilated(connectivity=config.connectivity, iterations=config.iterations)
 
         # Set the source mask
         source.mask = mask
@@ -525,7 +567,9 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         # -- Expansion --
 
         # Expand the mask if requested
-        if config.user_expansion: mask = mask.expanded(config.user_expansion_factor)
+        if config.user_expansion:
+            if special: print("DEBUG: expanding the mask")
+            mask = mask.expanded(config.user_expansion_factor)
 
         # Set the source mask
         source.mask = mask
@@ -537,6 +581,8 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
 
         # Inform the user
         #log.debug("Final expansion level: " + str(expansion_level))
+
+        if special: print("DEBUG: source was found")
 
         # Return the source
         return source

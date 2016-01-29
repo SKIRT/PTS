@@ -353,11 +353,15 @@ class Star(SkyObject):
         # If a 'saturation' source was found
         if saturation_source is not None:
 
+            if self.special: print("DEBUG: initial saturation source found")
+
             # Calculate the elliptical contour
             contour = sources.find_contour(saturation_source.cutout, saturation_source.mask, config.apertures.sigma_level)
 
             # Check whether the source centroid matches the star position
             if config.check_centroid:
+
+                if self.special: print("DEBUG: checking contour parameters")
 
                 # Calculate the offset
                 difference = contour.center - self.pixel_position(frame.wcs)
@@ -381,7 +385,12 @@ class Star(SkyObject):
 
                 # Discard this saturation source if the centroid offset or the ellipticity is too large
                 if not masks.overlap(saturation_source.mask, star_mask_cutout):
-                    if difference.norm > config.max_centroid_offset or contour.ellipticity > config.max_centroid_ellipticity: return
+                    if self.special: print("DEBUG: checking offset and ellipticity")
+                    if difference.norm > config.max_centroid_offset or contour.ellipticity > config.max_centroid_ellipticity:
+                        if self.special: print("DEBUG: found to large offset or ellipticity: not a saturation source")
+                        return
+                else:
+                    if self.special: print("DEBUG: saturation mask overlaps other stars, so contour parameters will not be checked")
 
             if config.second_segmentation:
 
@@ -420,6 +429,8 @@ class Star(SkyObject):
             saturation_source.cutout = original_frame.box_like(saturation_source.cutout)
 
             # TODO: check with classifier to verify this is actually a saturation source!
+
+            if self.special: saturation_source.plot(title="Final saturation source")
 
             # Replace the source by a source that covers the saturation
             self.saturation = saturation_source

@@ -414,7 +414,7 @@ def plot_source(cutout, mask, background, peaks=None, title=None, show=True, sca
     plt.imshow(np.ma.masked_array(cutout, mask=mask), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(-0.5, cutout.xsize-0.5)
     plt.ylim(-0.5, cutout.ysize-0.5)
-    plt.title("Background mask")
+    plt.title("Masked source")
 
     plt.subplot(1,number,3)
     plt.imshow(background, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
@@ -426,7 +426,7 @@ def plot_source(cutout, mask, background, peaks=None, title=None, show=True, sca
     plt.imshow(np.ma.masked_array(cutout, mask=mask.inverse()), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(-0.5, cutout.xsize-0.5)
     plt.ylim(-0.5, cutout.ysize-0.5)
-    plt.title("Source mask")
+    plt.title("Masked background")
 
     plt.subplot(1,number,5)
     plt.imshow(cutout-background, origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
@@ -538,14 +538,14 @@ def plot_background_center(cutout, mask, peaks=None, title=None, show=True, scal
     plt.imshow(np.ma.masked_array(cutout, mask=mask), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     plt.xlim(0.5, cutout.xsize-0.5)
     plt.ylim(0.5, cutout.ysize-0.5)
-    plt.title("Background mask")
+    plt.title("Masked source")
 
     plt.subplot(1,3,3)
     plt.imshow(np.ma.masked_array(cutout, mask=mask.inverse()), origin='lower', interpolation="nearest", norm=norm, vmin=vmin, vmax=vmax)
     if peaks is not None: plt.plot(peaks[0], peaks[1], ls='none', color='white', marker='+', ms=40, lw=10, mew=4)
     plt.xlim(0.5, cutout.xsize-0.5)
     plt.ylim(0.5, cutout.ysize-0.5)
-    plt.title("Source mask")
+    plt.title("Masked background")
 
     # Set the main title
     if title is not None: plt.suptitle(title, size=16)
