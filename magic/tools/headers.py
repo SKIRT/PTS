@@ -44,7 +44,7 @@ def get_pixelscale(header):
 
             # Get the scale and try to get the unit
             scale = header[keyword]
-            try: unit = header.comments[keyword].split("[")[1].split("]")
+            try: unit = header.comments[keyword].split("[")[1].split("]")[0]
             except IndexError: unit = None
 
             # Parse the unit with Astropy
@@ -67,11 +67,11 @@ def get_pixelscale(header):
     if "PXSCAL1" in header and "PXSCAL2" in header:
 
         scale1 = header["PXSCAL1"]
-        try: unit1 = header.comments["PXSCAL1"].split("[")[1].split("]")
+        try: unit1 = header.comments["PXSCAL1"].split("[")[1].split("]")[0]
         except IndexError: unit1 = None
 
         scale2 = header["PXSCAL2"]
-        try: unit2 = header.comments["PXSCAL2"].split("[")[1].split("]")
+        try: unit2 = header.comments["PXSCAL2"].split("[")[1].split("]")[0]
         except IndexError: unit2 = None
 
         # Parse the unit with Astropy
