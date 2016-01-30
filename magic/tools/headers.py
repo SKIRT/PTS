@@ -14,15 +14,17 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
-import math
 
 # Import astronomical modules
-import astropy.wcs as pywcs
+from astropy import wcs as astropy_wcs
 from astropy import coordinates
 from astropy import units as u
 from astropy import log
 
-# Import the relevant PTS modules and classes
+# Import the relevant AstroMagic classes and modules
+from ..basics import Extent
+
+# Import the relevant PTS classes and modules
 from ...core.basics.filter import Filter
 
 # -----------------------------------------------------------------
@@ -45,11 +47,21 @@ def get_pixelscale(header):
             try: unit = header.comments[keyword].split("[")[1].split("]")
             except IndexError: unit = None
 
+            # Parse the unit with Astropy
+            unit = unit.replace("asec", "arcsec")
+            if not (unit.endswith("pixel") or unit.endswith("pix")): unit = unit + "/pix"
+            try: unit = u.Unit(unit)
+            except ValueError: unit = None
+
             print("DEBUG: pixelscale found in", keyword, "keyword =", scale)
             print("DEBUG: unit for the pixelscale =", unit)
 
+            # If no unit is found, guess that it's arcseconds / pixel ...
+            if unit is None: unit = u.Unit("arcsec/pix")
+            scale = scale * unit
+
             # Return the scale
-            return scale * u.Unit("arcsec")
+            return Extent(scale, scale)
 
     # Search for the 'PXSCAL1' and 'PXSCAL2' keywords
     if "PXSCAL1" in header and "PXSCAL2" in header:
@@ -62,10 +74,27 @@ def get_pixelscale(header):
         try: unit2 = header.comments["PXSCAL2"].split("[")[1].split("]")
         except IndexError: unit2 = None
 
+        # Parse the unit with Astropy
+        unit1 = unit1.replace("asec", "arcsec")
+        unit2 = unit2.replace("asec", "arcsec")
+        if not (unit1.endswith("pixel") or unit1.endswith("pix")): unit1 = unit1 + "/pix"
+        if not (unit2.endswith("pixel") or unit2.endswith("pix")): unit2 = unit2 + "/pix"
+        try: unit1 = u.Unit(unit1)
+        except ValueError: unit1 = None
+        try: unit2 = u.Unit(unit2)
+        except ValueError: unit2 = None
+
         print("DEBUG: pixelscale found in PXSCAL1 and PXSCAL2 keywords = (", scale1, scale2, ")")
         print("DEBUG: unit for the pixelscale = (", unit1, unit2, ")")
 
-        return abs(header['PXSCAL1']) * u.Unit("arcsec")
+        # If no unit is found, guess that it's arcseconds / pixel ...
+        if unit1 is None: unit1 = u.Unit("arcsec/pix")
+        if unit2 is None: unit2 = u.Unit("arcsec/pix")
+        scale1 = scale1 * unit1
+        scale2 = scale2 * unit2
+
+        # Return the pixelscale
+        return Extent(scale1, scale2)
 
     # If none of the above keywords were found, return None
     else: return None
@@ -349,13 +378,13 @@ def load_wcs_from_header(header):
     :return:
     """
 
-    if issubclass(pywcs.WCS, header.__class__):
+    if issubclass(astropy_wcs.WCS, header.__class__):
         wcs = header
     else:
         try:
-            wcs = pywcs.WCS(header)
+            wcs = astropy_wcs.WCS(header)
         except:
-            raise TypeError("header must either be a pyfits.Header or pywcs.WCS instance")
+            raise TypeError("header must either be a pyfits.Header or astropy.wcs.WCS instance")
 
         if not hasattr(wcs,'naxis1'):
             wcs.naxis1 = header['NAXIS1']

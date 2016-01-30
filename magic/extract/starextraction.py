@@ -1178,7 +1178,7 @@ class StarExtractor(Configurable):
         if self.config.use_frame_fwhm and self.frame.fwhm is not None:
 
             # Return the FWHM in 'number of pixels'
-            return self.frame.fwhm.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec").value
+            return self.frame.fwhm.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
 
         # If the list of FWHM values is empty (the stars were not fitted yet), return None
         if len(self.fwhms) == 0: return None

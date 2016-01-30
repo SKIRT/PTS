@@ -607,15 +607,15 @@ class GalaxyExtractor(Configurable):
 
                 color = "green"
 
-                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.frame.xy_average_pixelscale.value
+                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
                 y_radius = x_radius
 
             else:
 
                 color = "green"
 
-                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.frame.xy_average_pixelscale.value
-                y_radius = 0.5 * galaxy.minor.to("arcsec").value / self.frame.xy_average_pixelscale.value
+                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
+                y_radius = 0.5 * galaxy.minor.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
 
             # Annotation
             if annotation == "name": text = "text = {" + galaxy.name + "}"

@@ -103,16 +103,20 @@ class Frame(np.ndarray):
         wcs = WCS(flat_header)
 
         # Load the frames
-        old_pixelscale = headers.get_pixelscale(header) # OLD WAY, SOMETIMES PLAIN WRONG IN THE HEADER !!
+        header_pixelscale = headers.get_pixelscale(header) # NOTE: SOMETIMES PLAIN WRONG IN THE HEADER !!
         pixelscale = coordinates.pixel_scale(wcs)
 
         # Check whether pixelscale defined in the header is correct
-        if old_pixelscale is not None:
-            new_xy_pixelscale = 0.5 * (pixelscale.x.to("arcsec") + pixelscale.y.to("arcsec"))
-            if not np.isclose(old_pixelscale.to("arcsec").value, new_xy_pixelscale.to("arcsec").value):
+        if header_pixelscale is not None:
+
+            x_isclose = np.isclose(header_pixelscale.x.to("arcsec/pix").value, pixelscale.x.to("arcsec/pix").value)
+            y_isclose = np.isclose(header_pixelscale.y.to("arcsec/pix").value, pixelscale.y.to("arcsec/pix").value)
+
+            if not (x_isclose or y_isclose):
+
                 print("WARNING: the pixel scale defined in the header is WRONG:")
-                print("           - header pixelscale: ", old_pixelscale, "arcsec")
-                print("           - actual pixelscale: ", new_xy_pixelscale, "arcsec (x=",pixelscale.x.to("arcsec").value,"y=", pixelscale.y.to("arcsec").value,")")
+                print("           - header pixelscale: (", header_pixelscale.x, header_pixelscale.y, ")")
+                print("           - actual pixelscale: (", pixelscale.x, pixelscale.y, ")")
 
         # Obtain the filter for this image
         filter = headers.get_filter(os.path.basename(path[:-5]), header)
@@ -160,8 +164,8 @@ class Frame(np.ndarray):
         :return:
         """
 
-        x_pixelscale = self.pixelscale.x.to("arcsec")
-        y_pixelscale = self.pixelscale.y.to("arcsec")
+        x_pixelscale = self.pixelscale.x.to("arcsec/pix")
+        y_pixelscale = self.pixelscale.y.to("arcsec/pix")
 
         if not np.isclose(x_pixelscale.value, y_pixelscale.value):
 
@@ -359,7 +363,7 @@ class Frame(np.ndarray):
         """
 
         # Calculate the zooming factor
-        factor = (self.xy_average_pixelscale.to("arcsec").value / kernel.xy_average_pixelscale.to("arcsec").value)
+        factor = (self.xy_average_pixelscale.to("arcsec/pix").value / kernel.xy_average_pixelscale.to("arcsec/pix").value)
 
         # Rebin the kernel to the same grid of the image
         kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
@@ -551,8 +555,8 @@ class Frame(np.ndarray):
         dec_distance = abs(dec_end - dec_begin)
 
         # Calculate the pixel scale of this image in degrees
-        x_pixelscale_deg = self.pixelscale.x.to("deg").value
-        y_pixelscale_deg = self.pixelscale.y.to("deg").value
+        x_pixelscale_deg = self.pixelscale.x.to("deg/pix").value
+        y_pixelscale_deg = self.pixelscale.y.to("deg/pix").value
 
         # Get the center pixel
         ref_pix = self.wcs.wcs.crpix

@@ -37,8 +37,8 @@ def pixel_scale(wcs):
     # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
     # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
 
-    x_pixelscale = result[0] * u.Unit("deg")
-    y_pixelscale = result[1] * u.Unit("deg")
+    x_pixelscale = result[0] * u.Unit("deg/pix")
+    y_pixelscale = result[1] * u.Unit("deg/pix")
 
     return Extent(x_pixelscale, y_pixelscale)
 

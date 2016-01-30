@@ -144,13 +144,13 @@ class Galaxy(SkyObject):
 
         elif self.minor is None or angle == 0.0:
 
-            x_radius = 0.5 * self.major.to("arcsec").value / pixelscale.to("arcsec").value
+            x_radius = 0.5 * self.major.to("arcsec").value / pixelscale.to("arcsec/pix").value
             y_radius = x_radius
 
         else:
 
-            x_radius = 0.5 * self.major.to("arcsec").value / pixelscale.to("arcsec").value
-            y_radius = 0.5 * self.minor.to("arcsec").value / pixelscale.to("arcsec").value
+            x_radius = 0.5 * self.major.to("arcsec").value / pixelscale.to("arcsec/pix").value
+            y_radius = 0.5 * self.minor.to("arcsec").value / pixelscale.to("arcsec/pix").value
 
         pixel_position = self.pixel_position(wcs)
 

@@ -388,7 +388,7 @@ class SkySubtractor(Configurable):
         # Inform the user
         self.log.info("Writing statistics to " + path + " ...")
 
-        
+
 
     # -----------------------------------------------------------------
 
