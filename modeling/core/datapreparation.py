@@ -291,7 +291,7 @@ class DataPreparer(ModelingComponent):
         """
 
         # Download the extinction table
-        table = IrsaDust.get_extinction_table("M81")
+        table = IrsaDust.get_extinction_table(self.galaxy_name)
 
         # Loop over all images
         for image in self.images:
@@ -362,18 +362,20 @@ class DataPreparer(ModelingComponent):
             else: self.image_preparer.config.extraction.exceptions_path = None
 
             # If this image is not the reference image, set the appropriate options for rebinning and convolution
-            if image.name != self.config.reference:
+            # or this image does not need to be convolved (e.g. SPIRE images)
+            if image.name == self.config.reference or image.name not in aniano_names:
+
+                self.image_preparer.config.rebin = False
+                self.image_preparer.config.convolve = False
+
+            # Images that do need to be convolved
+            else:
 
                 # Set the path to the convolution kernel
                 this_aniano_name = aniano_names[image.name]
                 reference_aniano_name = aniano_names[self.config.reference]
                 kernel_path = os.path.join(self.kernels_path, "Kernel_HiRes_" + this_aniano_name + "_to_" + reference_aniano_name + ".fits")
                 self.image_preparer.config.convolution.kernel_path = kernel_path
-
-                self.image_preparer.config.rebin = True
-                self.image_preparer.config.convolve = True
-
-            else:
 
                 self.image_preparer.config.rebin = True
                 self.image_preparer.config.convolve = True

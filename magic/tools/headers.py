@@ -48,10 +48,12 @@ def get_pixelscale(header):
             except IndexError: unit = None
 
             # Parse the unit with Astropy
-            unit = unit.replace("asec", "arcsec")
-            if not (unit.endswith("pixel") or unit.endswith("pix")): unit = unit + "/pix"
-            try: unit = u.Unit(unit)
-            except ValueError: unit = None
+            if unit is not None:
+
+                unit = unit.replace("asec", "arcsec")
+                if not (unit.endswith("pixel") or unit.endswith("pix")): unit = unit + "/pix"
+                try: unit = u.Unit(unit)
+                except ValueError: unit = None
 
             print("DEBUG: pixelscale found in", keyword, "keyword =", scale)
             print("DEBUG: unit for the pixelscale =", unit)
@@ -75,14 +77,19 @@ def get_pixelscale(header):
         except IndexError: unit2 = None
 
         # Parse the unit with Astropy
-        unit1 = unit1.replace("asec", "arcsec")
-        unit2 = unit2.replace("asec", "arcsec")
-        if not (unit1.endswith("pixel") or unit1.endswith("pix")): unit1 = unit1 + "/pix"
-        if not (unit2.endswith("pixel") or unit2.endswith("pix")): unit2 = unit2 + "/pix"
-        try: unit1 = u.Unit(unit1)
-        except ValueError: unit1 = None
-        try: unit2 = u.Unit(unit2)
-        except ValueError: unit2 = None
+        if unit1 is not None:
+
+            unit1 = unit1.replace("asec", "arcsec")
+            if not (unit1.endswith("pixel") or unit1.endswith("pix")): unit1 = unit1 + "/pix"
+            try: unit1 = u.Unit(unit1)
+            except ValueError: unit1 = None
+
+        if unit2 is not None:
+
+            unit2 = unit2.replace("asec", "arcsec")
+            if not (unit2.endswith("pixel") or unit2.endswith("pix")): unit2 = unit2 + "/pix"
+            try: unit2 = u.Unit(unit2)
+            except ValueError: unit2 = None
 
         print("DEBUG: pixelscale found in PXSCAL1 and PXSCAL2 keywords = (", scale1, scale2, ")")
         print("DEBUG: unit for the pixelscale = (", unit1, unit2, ")")
@@ -132,9 +139,9 @@ def get_filter(name, header):
     if "WAVELEN" in header: wavelength = float(header["WAVELEN"])
     else: wavelength = None
 
-    print("DEBUG: filterid =", filterid)
-    print("DEBUG: channel =", channel)
-    print("DEBUG: wavelength =", wavelength)
+    #print("DEBUG: filterid =", filterid)
+    #print("DEBUG: channel =", channel)
+    #print("DEBUG: wavelength =", wavelength)
 
     # -- UV --
 
