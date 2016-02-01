@@ -52,9 +52,10 @@ class TrainedExtractor(Configurable):
 
         # -- Attributes --
 
-        # The image frame and mask
-        self.frame = None
-        self.input_mask = None
+        # The image (with bad and sources masks)
+        self.image = None
+
+        # Masks ...
         self.special_mask = None
         self.ignore_mask = None
 
@@ -81,7 +82,7 @@ class TrainedExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, input_mask, galaxyextractor=None, starextractor=None, special=None, ignore=None):
+    def run(self, image, galaxyextractor=None, starextractor=None, special=None, ignore=None):
 
         """
         This function ...
@@ -89,7 +90,7 @@ class TrainedExtractor(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup(frame, input_mask, galaxyextractor, starextractor, special, ignore)
+        self.setup(image, galaxyextractor, starextractor, special, ignore)
 
         # 2. Find sources
         self.find_sources()
@@ -100,12 +101,15 @@ class TrainedExtractor(Configurable):
         # 4. Classify sources
         if self.config.classify: self.classify_sources()
 
+        # 5. Update the image mask
+        self.update_mask()
+
         # 6. Writing
         self.write()
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, input_mask, galaxyextractor=None, starextractor=None, special_mask=None, ignore_mask=None):
+    def setup(self, image, galaxyextractor=None, starextractor=None, special_mask=None, ignore_mask=None):
 
         """
         This function ...
@@ -115,14 +119,13 @@ class TrainedExtractor(Configurable):
         # Call the setup function of the base class
         super(TrainedExtractor, self).setup()
 
-        # Make a local reference to the frame
-        self.frame = frame
-        self.input_mask = input_mask
+        # Make a local reference to the image
+        self.image = image
         self.special_mask = special_mask
         self.ignore_mask = ignore_mask
 
         # Create a mask with shape equal to the shape of the frame
-        self.mask = Mask.from_shape(self.frame.shape)
+        self.mask = Mask.from_shape(self.image.shape)
 
         # Make local references to the galaxy and star extractors
         self.galaxy_extractor = galaxyextractor
@@ -177,9 +180,9 @@ class TrainedExtractor(Configurable):
             if special: source.plot(title="Estimated background for source")
 
             # Replace the frame with the estimated background
-            source.background.replace(self.frame, where=source.mask)
+            source.background.replace(self.image.frames.primary, where=source.mask)
 
-            if special: plotting.plot_box(self.frame[source.cutout.y_slice, source.cutout.x_slice], title="Replaced frame inside this box")
+            if special: plotting.plot_box(self.image.frames.primary[source.cutout.y_slice, source.cutout.x_slice], title="Replaced frame inside this box")
 
             # Update the mask
             self.mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
@@ -197,7 +200,6 @@ class TrainedExtractor(Configurable):
         self.log.info("Constructing elliptical contours to encompass sources ...")
 
         # Return the list of apertures
-        #return sources.find_contours(self.frame, self.segments, self.config.detection.apertures.sigma_level)
         return sources.find_contours(self.segments, self.segments, self.config.detection.apertures.sigma_level)
 
     # -----------------------------------------------------------------
@@ -224,7 +226,7 @@ class TrainedExtractor(Configurable):
             if source.has_peak or self.config.classification.fitting.fit_if_undetected:
 
                 # Create sky coordinate from the peak position
-                position = SkyCoord.from_pixel(source.peak.x, source.peak.y, self.frame.wcs, mode="wcs")
+                position = SkyCoord.from_pixel(source.peak.x, source.peak.y, self.image.wcs, mode="wcs")
 
                 # Create star object
                 index = None
@@ -269,6 +271,17 @@ class TrainedExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    def update_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.image.masks.sources += self.mask
+
+    # -----------------------------------------------------------------
+
     def remove_contours(self):
 
         """
@@ -286,13 +299,13 @@ class TrainedExtractor(Configurable):
 
             # Create a source
             ellipse = Ellipse(contour.center, contour.radius * expansion_factor, contour.angle)
-            source = Source.from_ellipse(self.frame, ellipse, self.config.aperture_removal.background_outer_factor)
+            source = Source.from_ellipse(self.image.frames.primary, ellipse, self.config.aperture_removal.background_outer_factor)
 
             # Estimate the background for the source
             source.estimate_background("local_mean", True)
 
             # Replace the frame in the appropriate area with the estimated background
-            source.background.replace(self.frame, where=source.mask)
+            source.background.replace(self.image.frames.primary, where=source.mask)
 
             # Update the mask
             self.mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
@@ -336,11 +349,13 @@ class TrainedExtractor(Configurable):
         """
 
         # Create the sigma-clipped mask
-        clipped_mask = statistics.sigma_clip_mask(self.frame, 3.0, self.input_mask)
+        if "bad" in self.image.masks: mask = self.image.masks.bad + self.image.masks.sources
+        else: mask = self.image.masks.sources
+        clipped_mask = statistics.sigma_clip_mask(self.image.frames.primary, 3.0, mask)
 
         # Calculate the median sky value and the standard deviation
-        median = np.median(np.ma.masked_array(self.frame, mask=clipped_mask).compressed())
-        stddev = np.ma.masked_array(self.frame, mask=clipped_mask).std()
+        median = np.median(np.ma.masked_array(self.image.frames.primary, mask=clipped_mask).compressed())
+        stddev = np.ma.masked_array(self.image.frames.primary, mask=clipped_mask).std()
 
         # Calculate the detection threshold
         threshold = median + (3.0 * stddev)
@@ -349,16 +364,14 @@ class TrainedExtractor(Configurable):
 
         try:
             # Create a segmentation map from the frame
-            self.segments = detect_sources(self.frame, threshold, npixels=5, filter_kernel=kernel).data
+            self.segments = detect_sources(self.image.frames.primary, threshold, npixels=5, filter_kernel=kernel).data
         except RuntimeError:
 
             print("kernel=", kernel)
-            #print("self.frame=", self.frame)
-            print("self.frame.ndim=", self.frame.ndim)
 
             conv_mode = 'constant'
             conv_val = 0.0
-            image = ndimage.convolve(self.frame, kernel.array, mode=conv_mode, cval=conv_val)
+            image = ndimage.convolve(self.image.frames.primary, kernel.array, mode=conv_mode, cval=conv_val)
 
             print("median=", median)
             print("stddev=", stddev)
@@ -372,9 +385,6 @@ class TrainedExtractor(Configurable):
             print("image.ndim=", image.ndim)
             print("type image=", type(image))
             print("image.shape=", image.shape)
-
-        # Write the segmentation map to file
-        #Frame(self.segments).save(self.config.writing.other_segments_path[:-5]+"_or.fits")
 
         # Eliminate the principal galaxy and companion galaxies from the segments
         if self.galaxy_extractor is not None:
@@ -415,7 +425,7 @@ class TrainedExtractor(Configurable):
             # No: use the FWHM ! Hmm.. or not: saturation ?
 
             # Create a source from the aperture
-            source = Source.from_ellipse(self.frame, contour, background_factor)
+            source = Source.from_ellipse(self.image.frames.primary, contour, background_factor)
 
             if special: source.plot(title="Source created from contour around segment")
 
@@ -462,7 +472,7 @@ class TrainedExtractor(Configurable):
         sextractor = SExtractor()
 
         # Run SExtractor on the image frame
-        sextractor.run(self.frame)
+        sextractor.run(self.image.frames.primary)
 
     # -----------------------------------------------------------------
 
@@ -480,7 +490,7 @@ class TrainedExtractor(Configurable):
         self.log.info("Writing masked frame to " + path + " ...")
 
         # Create a frame where the objects are masked
-        frame = self.frame.copy()
+        frame = self.image.frames.primary.copy()
         frame[self.mask] = float(self.config.writing.mask_value)
 
         # Write out the masked frame
@@ -511,7 +521,7 @@ class TrainedExtractor(Configurable):
         for star in self.stars:
 
             # Get the center in pixel coordinates
-            center = star.pixel_position(self.frame.wcs, "wcs")
+            center = star.pixel_position(self.image.wcs, "wcs")
 
             # Determine the color, based on the detection level
             color = "blue"

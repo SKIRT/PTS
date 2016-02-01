@@ -46,20 +46,14 @@ class SkySubtractor(Configurable):
 
         # -- Attributes --
 
-        # The image frame
-        self.frame = None
-
-        # The input mask (galaxies, stars and other objects)
-        self.input_mask = None
-
-        # The mask of bad pixels
-        self.bad_mask = None
+        # The image
+        self.image = None
 
         # The galaxy and saturation region
-        self.galaxy_region = None
-        self.saturation_region = None
+        self.principal_ellipse = None
+        self.saturation_contours = None
 
-        # The output mask (combined input + bad mask + sigma-clipping mask)
+        # The output mask (combined input + bad mask + galaxy annulus mask + expanded saturation mask + sigma-clipping mask)
         self.mask = None
 
         # The estimated sky frame
@@ -99,18 +93,18 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, input_mask, galaxy_region_path, saturation_region_path=None, bad_mask=None):
+    def run(self, image, principal_ellipse, saturation_contours=None):
 
         """
         This function ...
-        :param frame:
-        :param input_mask:
-        :param bad_mask:
+        :param image:
+        :param principal_ellipse:
+        :param saturation_region:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(frame, input_mask, galaxy_region_path, saturation_region_path, bad_mask)
+        self.setup(image, principal_ellipse, saturation_contours)
 
         # 2. Create mask
         self.create_mask()
@@ -123,6 +117,9 @@ class SkySubtractor(Configurable):
 
         # 4. If requested, subtract the sky
         #if self.config.subtract: self.subtract()
+
+        # Update the image mask
+        self.update_mask()
 
         # 5. Write out the results
         self.write()
@@ -140,22 +137,20 @@ class SkySubtractor(Configurable):
         self.log.info("Clearing the sky extractor ...")
 
         # Set all attributes to None
-        self.frame = None
-        self.input_mask = None
-        self.bad_mask = None
+        self.image = None
         self.galaxy_region = None
         self.mask = None
         self.sky = None
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, input_mask, galaxy_region_path, saturation_region_path=None, bad_mask=None):
+    def setup(self, image, principal_ellipse, saturation_contours=None):
 
         """
         This function ...
-        :param frame:
-        :param input_mask:
-        :param bad_mask:
+        :param image:
+        :param galaxy_region:
+        :param saturation_region:
         :return:
         """
 
@@ -168,16 +163,11 @@ class SkySubtractor(Configurable):
         self.config.writing.result_path = "subtracted.fits"
         self.config.writing.masked_frame_path = "masked_sky_frame.fits"
 
-        # Make a local reference to the frame
-        self.frame = frame
+        # Make a local reference to the image
+        self.image = image
 
-        # The input mask and bad pixel mask
-        self.input_mask = input_mask
-        self.bad_mask = bad_mask
-
-        # Set the galaxy region and saturation region
-        self.galaxy_region = Region.from_file(galaxy_region_path)
-        if saturation_region_path is not None: self.saturation_region = Region.from_file(saturation_region_path)
+        self.principal_ellipse = principal_ellipse
+        self.saturation_contours = saturation_contours
 
     # -----------------------------------------------------------------
 
@@ -188,37 +178,26 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        # Get the ellipse describing the principal galaxy
-        principal_ellipse = None
-        for shape in self.galaxy_region:
-
-            if not shape.name == "ellipse" and not shape.name == "circle": continue
-
-            # Get the center and radius of the shape (can be a circle or an ellipse)
-            ellipse = regions.ellipse(shape)
-            if principal_ellipse is None or ellipse.major > principal_ellipse.major: principal_ellipse = ellipse
-
         # Create a mask from the ellipse
         annulus_outer_factor = 1.5
         annulus_inner_factor = 1.0
-        annulus_mask = Mask.from_ellipse(self.frame.xsize, self.frame.ysize, principal_ellipse * annulus_outer_factor).inverse() + \
-                       Mask.from_ellipse(self.frame.xsize, self.frame.ysize, principal_ellipse * annulus_inner_factor)
+        annulus_mask = Mask.from_ellipse(self.image.xsize, self.image.ysize, self.principal_ellipse * annulus_outer_factor).inverse() + \
+                       Mask.from_ellipse(self.image.xsize, self.image.ysize, self.principal_ellipse * annulus_inner_factor)
 
         # Set the mask, make a copy of the input mask initially
-        self.mask = self.input_mask + annulus_mask
+        self.mask = self.image.masks.sources + annulus_mask
 
-        if self.bad_mask is not None: self.mask += self.bad_mask
+        # Add the bad pixels mask
+        if "bad" in self.image.masks: self.mask += self.image.masks.bad
 
-        if self.saturation_region is not None:
+        # Check whether saturation contours are defined
+        if self.saturation_contours is not None:
 
-            for shape in self.saturation_region:
+            # Expand all contours
+            expanded_contours = [contour * 1.5 for contour in self.saturation_contours]
 
-                # Expand
-                shape.coord_list[2] *= 1.5
-                shape.coord_list[3] *= 1.5
-
-            saturation_mask = Mask.from_region(self.saturation_region, self.frame.shape)
-
+            # Create the saturation mask
+            saturation_mask = Mask.new_from_region(expanded_contours, self.image.shape)
             self.mask += saturation_mask
 
     # -----------------------------------------------------------------
@@ -236,16 +215,16 @@ class SkySubtractor(Configurable):
         ### TEMPORARY: WRITE OUT MASK BEFORE CLIPPING
 
         # Create a frame where the objects are masked
-        frame = copy.deepcopy(self.frame)
-        frame[self.mask] = float(self.config.writing.mask_value)
+        #frame = copy.deepcopy(self.image.frames.primary)
+        #frame[self.mask] = float(self.config.writing.mask_value)
 
         # Save the masked frame
-        frame.save("masked_sky_frame_notclipped.fits")
+        #frame.save("masked_sky_frame_notclipped.fits")
 
         ###
 
         # Create the sigma-clipped mask
-        self.mask = statistics.sigma_clip_mask(self.frame, self.config.sigma_clipping.sigma_level, self.mask)
+        self.mask = statistics.sigma_clip_mask(self.image.frames.primary, self.config.sigma_clipping.sigma_level, self.mask)
 
     # -----------------------------------------------------------------
 
@@ -263,22 +242,22 @@ class SkySubtractor(Configurable):
         if self.config.estimation.method == "mean":
 
             # Create a frame filled with the mean value
-            self.sky = Frame(np.full(self.frame.shape, self.mean), self.frame.wcs, self.frame.pixelscale, "estimated sky", False, self.frame.unit)
+            self.sky = Frame(np.full(self.image.shape, self.mean), self.image.wcs, self.image.pixelscale, "estimated sky", False, self.image.unit)
 
         # If the median sky level should be used
         elif self.config.estimation.method == "median":
 
             # Create a frame filled with the median value
-            self.sky = Frame(np.full(self.frame.shape, self.median), self.frame.wcs, self.frame.pixelscale, "estimated sky", False, self.frame.unit)
+            self.sky = Frame(np.full(self.image.shape, self.median), self.image.wcs, self.image.pixelscale, "estimated sky", False, self.image.unit)
 
         # If the sky should be estimated by using low-resolution interpolation
         elif self.config.estimation.method == "low-res-interpolation":
 
             # Estimate the sky
-            data = interpolation.low_res_interpolation(self.frame, self.config.estimation.downsample_factor, self.mask)
+            data = interpolation.low_res_interpolation(self.image.frames.primary, self.config.estimation.downsample_factor, self.mask)
 
             # Create sky map
-            self.sky = Frame(data, self.frame.wcs, self.frame.pixelscale, "estimated sky", False, self.frame.unit)
+            self.sky = Frame(data, self.image.wcs, self.image.pixelscale, "estimated sky", False, self.image.unit)
 
         # if the sky should be approximated by a polynomial function
         elif self.config.estimatation.method == "polynomial":
@@ -307,7 +286,18 @@ class SkySubtractor(Configurable):
             self.log.info("The median sky level exceeds the standard deviation")
 
             # Subtract the estimated sky from the image frame
-            self.frame -= self.sky
+            self.image.frames.primary -= self.sky
+
+    # -----------------------------------------------------------------
+
+    def update_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.image.masks.sky += self.mask
 
     # -----------------------------------------------------------------
 
@@ -349,7 +339,7 @@ class SkySubtractor(Configurable):
         self.log.info("Writing resulting frame to " + path + " ...")
 
         # Write out the resulting frame
-        self.frame.save(path, header)
+        self.image.frames.primary.save(path, header)
 
     # -----------------------------------------------------------------
 
@@ -367,7 +357,7 @@ class SkySubtractor(Configurable):
         self.log.info("Writing masked frame to " + path + " ...")
 
         # Create a frame where the objects are masked
-        frame = self.frame.copy()
+        frame = self.image.frames.primary.copy()
         frame[self.mask] = float(self.config.writing.mask_value)
 
         # Write out the masked frame
@@ -388,8 +378,6 @@ class SkySubtractor(Configurable):
         # Inform the user
         self.log.info("Writing statistics to " + path + " ...")
 
-
-
     # -----------------------------------------------------------------
 
     def write_histogram(self):
@@ -403,8 +391,8 @@ class SkySubtractor(Configurable):
         self.log.info("Writing sky histogram to " + self.config.writing.histogram_path +  " ...")
 
         # Create a masked array
-        masked = np.ma.masked_array(self.frame, mask=self.mask)
-        masked_clipped = np.ma.masked_array(self.frame, mask=self.clipped_mask)
+        masked = np.ma.masked_array(self.image.frames.primary, mask=self.mask)
+        masked_clipped = np.ma.masked_array(self.image.frames.primary, mask=self.clipped_mask)
 
         # Create a figure
         fig = plt.figure()
@@ -437,7 +425,7 @@ class SkySubtractor(Configurable):
         """
 
         # Return the sigma-clipped mean
-        return np.ma.mean(np.ma.masked_array(self.frame, mask=self.mask))
+        return np.ma.mean(np.ma.masked_array(self.image.frames.primary, mask=self.mask))
 
     # -----------------------------------------------------------------
 
@@ -450,7 +438,7 @@ class SkySubtractor(Configurable):
         """
 
         # Return the sigma-clipped median
-        return np.median(np.ma.masked_array(self.frame, mask=self.mask).compressed())
+        return np.median(np.ma.masked_array(self.image.frames.primary, mask=self.mask).compressed())
 
     # -----------------------------------------------------------------
 
@@ -463,6 +451,6 @@ class SkySubtractor(Configurable):
         """
 
         # Return the standard deviation of the sigma-clipped frame
-        return np.ma.masked_array(self.frame, mask=self.mask).std()
+        return np.ma.masked_array(self.image.frames.primary, mask=self.mask).std()
 
 # -----------------------------------------------------------------

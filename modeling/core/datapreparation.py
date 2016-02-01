@@ -19,6 +19,7 @@ import os
 
 # Import astronomical modules
 from astropy import units as u
+from astroquery.irsa_dust import IrsaDust
 
 # Import the relevant AstroMagic classes and modules
 from ...magic import ImageImporter
@@ -27,6 +28,78 @@ from ...magic import ImageImporter
 from .component import ModelingComponent
 from .imagepreparation import ImagePreparer
 from ...core.tools import filesystem, tables, time
+
+# -----------------------------------------------------------------
+
+irsa_names = {"SDSS u": "SDSS u",
+              "SDSS g": "SDSS g",
+              "SDSS r": "SDSS r",
+              "SDSS i": "SDSS i",
+              "SDSS z": "SDSS z",
+              "2MASS J": "2MASS J",
+              "2MASS H": "2MASS H",
+              "2MASS K": "2MASS Ks",
+              "IRAC I1": "IRAC-1",
+              "IRAC I2": "IRAC-2",
+              "IRAC I3": "IRAC-3",
+              "IRAC I4": "IRAC-4",
+              "WISE W1": "WISE-1",
+              "WISE W2": "WISE-2"}
+
+# -----------------------------------------------------------------
+
+aniano_names = {"GALEX FUV": "GALEX_FUV",
+                "GALEX NUV": "GALEX_NUV",
+                "SDSS u": "BiGauss_02.0",
+                "SDSS g": "BiGauss_02.0",
+                "SDSS r": "BiGauss_02.0",
+                "Ha": "Gauss_03.0",
+                "SDSS i": "BiGauss_02.0",
+                "SDSS z": "BiGauss_02.0",
+                "2MASS J": "Gauss_03.5",
+                "2MASS H": "Gauss_03.0",
+                "2MASS K": "Gauss_03.5",
+                "WISE W1": "WISE_FRAME_3.4",
+                "IRAC I1": "IRAC_3.6",
+                "IRAC I2": "IRAC_4.5",
+                "WISE W2": "WISE_FRAME_4.6",
+                "IRAC I3": "IRAC_5.8",
+                "IRAC I4": "IRAC_8.0",
+                "WISE W3": "WISE_FRAME_11.6",
+                "WISE W4": "WISE_FRAME_22.1",
+                "MIPS 24": "MIPS_24",
+                "PACS 70": "PACS_70",
+                "PACS 160": "PACS_160",
+                "SPIRE PSW": None,
+                "SPIRE PLW": None}
+
+# -----------------------------------------------------------------
+
+calibration_uncertainties = {"GALEX FUV": "0.05 mag",
+                             "GALEX NUV": "0.03 mag",
+                             "SDSS u": "2%",
+                             "SDSS g": "2%",
+                             "SDSS r": "2%",
+                             "Ha": "5%",
+                             "SDSS i": "2%",
+                             "SDSS z": "2%",
+                             "2MASS J": "0.03 mag",
+                             "2MASS H": "0.03 mag",
+                             "2MASS K": "0.03 mag",
+                             "WISE W1": "2.4%",
+                             "IRAC I1": "1.8%",
+                             "IRAC I2": "1.9%",
+                             "WISE W2": "2.8%",
+                             "IRAC I3": "2.0%",
+                             "IRAC I4": "2.1%",
+                             "WISE W3": "4.5%",
+                             "WISE W4": "5.7%",
+                             "MIPS 24": "4%",
+                             "PACS 70": "5%",
+                             "PACS 160": "5%",
+                             "SPIRE PSW": "4%",
+                             "SPIRE PMW": "4%",
+                             "SPIRE PLW": "4%"}
 
 # -----------------------------------------------------------------
 
@@ -58,7 +131,6 @@ class DataPreparer(ModelingComponent):
 
         # Information about the images
         self.attenuations = dict()
-        self.aniano_names = dict()
 
     # -----------------------------------------------------------------
 
@@ -101,6 +173,7 @@ class DataPreparer(ModelingComponent):
 
         """
         This function runs the data preparation ...
+        :param path
         :return:
         """
 
@@ -109,6 +182,9 @@ class DataPreparer(ModelingComponent):
 
         # 2. Load the input data
         self.load_data()
+
+        # 3. Get attenuations
+        self.get_attenuations()
 
         # 2. Prepare the images
         self.prepare()
@@ -189,11 +265,15 @@ class DataPreparer(ModelingComponent):
 
             # Get image properties such as the unit and the FWHM of the PSF
             unit = u.Unit(info_table["Unit"][info_index])
-            fwhm = info_table["FWHM"][info_index] * u.Unit(info_table["Unit of FWHM"][info_index]) if not info_table["FWHM"].mask[info_index] else None
+            fwhm = info_table["FWHM"][info_index] * u.Unit(info_table["FWHM unit"][info_index]) if not info_table["FWHM"].mask[info_index] else None
+
+            # Set the path to the region of bad pixels
+            bad_region_path = os.path.join(self.data_path, "bad", image_name + ".reg")
+            if not filesystem.is_file(bad_region_path): bad_region_path = None
 
             # Import the image
             importer = ImageImporter()
-            importer.run(image_path, unit=unit, fwhm=fwhm)
+            importer.run(image_path, bad_region_path, unit=unit, fwhm=fwhm)
 
             # Add the image that has to be processed to the list
             self.images.append(importer.image)
@@ -201,11 +281,62 @@ class DataPreparer(ModelingComponent):
             # Clear the image importer
             self.importer.clear()
 
-            # Set the attenuation
-            self.attenuations[image_name] = info_table["Attenuation"][info_index]
+    # -----------------------------------------------------------------
 
-            # Set the name for the Aniano kernel
-            self.aniano_names[image_name] = info_table["Aniano name"][info_index]
+    def get_attenuations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Download the extinction table
+        table = IrsaDust.get_extinction_table("M81")
+
+        # Loop over all images
+        for image in self.images:
+
+            # Get the image name
+            image_name = image.name
+
+            # GALEX bands
+            if "GALEX" in image.name:
+
+                # Get the A(V) / E(B-V) ratio
+                v_band_index = tables.find_index(table, "CTIO V")
+                av_ebv_ratio = table["A_over_E_B_V_SandF"][v_band_index]
+
+                # Get the attenuation of the V band A(V)
+                attenuation_v = table["A_SandF"][v_band_index]
+
+                # Determine the factor
+                if "NUV" in image.name: factor = 8.0
+                elif "FUV" in image.name: factor = 7.9
+                else: raise ValueError("Unsure which GALEX band this is")
+
+                # Calculate the attenuation
+                attenuation = factor * attenuation_v / av_ebv_ratio
+
+                # Set the attenuation
+                self.attenuations[image_name] = attenuation
+
+            # Fill in the Ha attenuation manually
+            elif "Ha" in image.name: self.attenuations[image_name] = 0.174
+
+            # Other bands for which attenuation is listed by IRSA
+            elif image_name in irsa_names:
+
+                irsa_name = irsa_names[image_name]
+
+                # Find the index of the corresponding table entry
+                index = tables.find_index(table, irsa_name)
+
+                # Get the attenuation and add it to the dictionary
+                attenuation = table["A_SandF"][index]
+                self.attenuations[image_name] = attenuation
+
+            # All other bands: set attenuation to zero
+            else: self.attenuations[image_name] = 0.0
 
     # -----------------------------------------------------------------
 
@@ -219,25 +350,23 @@ class DataPreparer(ModelingComponent):
         # Inform the user
         self.log.info("Preparing the images ...")
 
-        # Loop over the input images
+        # Loop over the input images (and masks)
         for image in self.images:
 
             # Set the attenuation value
             self.preparer.config.attenuation = self.attenuations[image.name]
 
-            # Set extra mask
-            extra_path = os.path.join(self.data_path, "extra", image.name + ".reg")
-            # Check if a region is present
-            # Check whether the extra region file is present
-            if filesystem.is_file(extra_path): self.image_preparer.config.extra_region_path = extra_path
-            else: self.image_preparer.config.extra_region_path = None
+            # Check if there is a file stating the indices of stars that should be treated as exceptions during the extraction procedure
+            exceptions_path = os.path.join(self.data_path, "exceptions", image.name + ".txt")
+            if filesystem.is_file(exceptions_path): self.image_preparer.config.extraction.exceptions_path = exceptions_path
+            else: self.image_preparer.config.extraction.exceptions_path = None
 
             # If this image is not the reference image, set the appropriate options for rebinning and convolution
             if image.name != self.config.reference:
 
                 # Set the path to the convolution kernel
-                this_aniano_name = self.aniano_names[image.name]
-                reference_aniano_name = self.aniano_names[self.config.reference]
+                this_aniano_name = aniano_names[image.name]
+                reference_aniano_name = aniano_names[self.config.reference]
                 kernel_path = os.path.join(self.kernels_path, "Kernel_HiRes_" + this_aniano_name + "_to_" + reference_aniano_name + ".fits")
                 self.image_preparer.config.convolution.kernel_path = kernel_path
 

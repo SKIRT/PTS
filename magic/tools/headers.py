@@ -229,10 +229,20 @@ def get_filter(name, header):
     # SPIRE filters
     elif "spire" in filterid:
 
-        if "PSW" in filterid: return Filter("SPIRE.PSW_ext")
-        elif "PMW" in filterid: return Filter("SPIRE.PMW_ext")
-        elif "PLW" in filterid: return Filter("SPIRE.PLW_ext")
-        else: log.warning("Could not determine which SPIRE filter was used for this image")
+        if "PSW" in filterid or "250" in filterid: return Filter("SPIRE.PSW_ext")
+        elif "PMW" in filterid or "350" in filterid: return Filter("SPIRE.PMW_ext")
+        elif "PLW" in filterid or "500" in filterid: return Filter("SPIRE.PLW_ext")
+        else:
+
+            if channel == 1: return Filter("SPIRE.PSW_ext")
+            elif channel == 2: return Filter("SPIRE.PMW_ext")
+            elif channel == 3: return Filter("SPIRE.PLW_ext")
+            else:
+
+                if wavelength == 250: return Filter("SPIRE.PSW_ext")
+                elif wavelength == 350: return Filter("SPIRE.PMW_ext")
+                elif wavelength == 500: return Filter("SPIRE.PLW_ext")
+                else: log.warning("Could not determine which SPIRE filter was used for this image")
 
     # -- H alpha --
     elif "alpha" in filterid or "6561" in filterid: return Filter("656_1")

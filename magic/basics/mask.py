@@ -186,6 +186,26 @@ class Mask(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
+    def new_from_region(cls, contours, shape):
+
+        """
+        This function ...
+        :param contours:
+        :param shape:
+        :return:
+        """
+
+        mask = Mask(np.zeros(shape))
+
+        # For now, only assume ellipses
+        for contour in contours: mask += Mask.from_ellipse(shape[1], shape[0], contour)
+
+        # Return the total mask
+        return mask
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_rectangle(cls, x_size, y_size, rectangle):
 
         """

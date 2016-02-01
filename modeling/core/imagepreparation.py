@@ -13,11 +13,11 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import numpy as np
 
 # Import astronomical modules
 import astropy.units as u
+from astropy import constants
 
 # Import the relevant AstroMagic classes and modules
 from ...magic.core import Frame
@@ -53,9 +53,6 @@ class ImagePreparer(Configurable):
         # The image
         self.image = None
 
-        # The mask for bad pixels
-        self.bad_mask = None
-
     # -----------------------------------------------------------------
 
     def run(self, image):
@@ -73,7 +70,7 @@ class ImagePreparer(Configurable):
         self.create_mask()
 
         # 3. Extract stars and galaxies from the image
-        self.extract_sources()
+        if self.config.extract_sources: self.extract_sources()
 
         # 4. If requested, subtract the sky
         if self.config.subtract_sky: self.subtract_sky()
@@ -105,14 +102,15 @@ class ImagePreparer(Configurable):
 
         """
         This function ...
+        :param image:
         :return:
         """
 
         # -- Children --
 
         # Add extractor and sky subtractor
-        self.add_child("extractor", Extractor, self.config.galaxy_extraction)
-        self.add_child("sky_subtractor", SkySubtractor, self.config.sky_extraction)
+        self.add_child("extractor", Extractor, self.config.extraction)
+        self.add_child("sky_subtractor", SkySubtractor, self.config.sky_subtraction)
 
         if self.config.write_steps:
 
@@ -131,35 +129,8 @@ class ImagePreparer(Configurable):
         # Call the setup function of the base class
         super(ImagePreparer, self).setup()
 
-        # Make a local reference to the passed image
+        # Make a local reference to the passed image (with mask)
         self.image = image
-
-    # -----------------------------------------------------------------
-
-    def create_mask(self):
-
-        """
-        This fuction ...
-        :return:
-        """
-
-        # Create a mask for the nans in the primary
-        self.bad_mask = Mask.is_nan(self.image.frames["primary"])
-
-        # Make a mask from the extra region
-        if self.config.extra_region_path is not None:
-
-            # Replace pixels in the 'extra' region with zeros
-            extra_path = self.full_input_path(self.config.extra_region_path)
-
-            extra_region = Region.from_file(extra_path)
-            extra_mask = Mask.from_region(extra_region, self.image.frames["primary"].shape)
-
-            # Add the extra mask to the bad pixel mask
-            self.bad_mask += extra_mask
-
-        # Set value of bad pixels to zero
-        self.image.frames["primary"][self.bad_mask] = 0.0
 
     # -----------------------------------------------------------------
 
@@ -170,8 +141,27 @@ class ImagePreparer(Configurable):
         :return:
         """
 
+        # Open the exceptions file if specified
+        if self.config.extraction.exceptions_path is not None:
+
+            not_stars = []
+            remove_stars = []
+            not_saturation = []
+
+            while open(self.config.extraction.exceptions_path, 'r') as exceptions_file:
+                for line in exceptions_file:
+
+                    if "not_stars" in line: not_stars = [int(item) for item in line.split(": ")[1].split(" ")]
+                    if "remove_stars" in line: remove_stars = [int(item) for item in line.split(": ")[1].split(" ")]
+                    if "not_saturation" in line: not_saturation = [int(item) for item in line.split(": ")[1].split(" ")]
+
+            # Set manual indices
+            self.extractor.config.stars.manual_indices.not_stars = not_stars
+            self.extractor.config.stars.manual_indices.remove_stars = remove_stars
+            self.extractor.config.stars.manual_indices.not_saturation = not_saturation
+
         # Run the extractor
-        self.extractor.run(self.image.frames[self.config.primary], self.bad_mask)
+        self.extractor.run(self.image)
 
     # -----------------------------------------------------------------
 
@@ -183,12 +173,12 @@ class ImagePreparer(Configurable):
         """
 
         # Run the sky extraction
-        self.sky_subtractor.run(self.image.frames[self.config.primary], self.extractor.mask + self.bad_mask)
+        self.sky_subtractor.run(self.image, self.extractor.galaxy_extractor.principal_ellipse, self.extractor.star_extractor.saturation_contours)
 
         # Print the statistics of the sky frame
-        self.log.info("Mean sky level = " + str(self.skysub.mean))
-        self.log.info("Median sky level = " + str(self.skysub.median))
-        self.log.info("Standard deviation of sky = " + str(self.skysub.stddev))
+        self.log.info("Mean sky level = " + str(self.sky_subtractor.mean))
+        self.log.info("Median sky level = " + str(self.sky_subtractor.median))
+        self.log.info("Standard deviation of sky = " + str(self.sky_subtractor.stddev))
 
     # -----------------------------------------------------------------
 
@@ -196,17 +186,14 @@ class ImagePreparer(Configurable):
 
         """
         This function ...
-        :param frame:
         :return:
         """
 
-        # ...
-        if self.image.wavelength < 1.0 * u.Unit("micron"):
+        # Inform the user
+        self.log.info("Correcting image for galactic extinction ...")
 
-            # Correct the primary frame for galactic extinction
-            self.image.frames[self.config.primary] *= 10**(0.4 * self.config.attenuation)
-
-        else: self.log.info("No extinction correction for this image")
+        # Correct the primary frame for galactic extinction
+        self.image.frames[self.config.primary] *= 10**(0.4 * self.config.attenuation)
 
     # -----------------------------------------------------------------
 
@@ -231,6 +218,9 @@ class ImagePreparer(Configurable):
 
         ####
 
+        #FUV: Flux [erg sec-1 cm-2 Å-1] = 1.40 x 10-15 x CPS
+        #NUV: Flux [erg sec-1 cm-2 Å-1] = 2.06 x 10-16 x CPS
+
         # THE GALEX FUV IMAGE
         if self.image.name == "GALEX FUV":
 
@@ -249,6 +239,16 @@ class ImagePreparer(Configurable):
 
             # Multiply the image (primary and errors frame) by the conversion factor
             self.image *= factor
+
+        # The GALEX NUV image
+        if self.image.name == "GALEX NUV":
+
+            # Get the pixelscale of the image
+            pixelscale = self.image.frames.primary.xy_average_pixelscale.value
+
+        #if "GALEX" in self.image:
+
+
 
         # THE 2MASS H IMAGE
         elif self.image.name == "2MASS H":

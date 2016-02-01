@@ -103,6 +103,42 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def shape(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.frames.primary.shape
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xsize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.frames.primary.xsize
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ysize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.frames.primary.ysize
+
+    # -----------------------------------------------------------------
+
+    @property
     def filter(self):
 
         """
@@ -167,6 +203,19 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the wcs of the primary frame
+        return self.frames.primary.wcs
+
+    # -----------------------------------------------------------------
+
     def save(self, path=None):
 
         """
@@ -184,10 +233,10 @@ class Image(object):
 
         header = None
 
-        # Export all active frames to the specified file
-        for frame_name in self.frames.get_selected():
+        # Export all frames to the specified file
+        for frame_name in self.frames:
 
-            # Inform the user that this frame is being rebinned
+            # Inform the user that this frame will be saved to the image file
             log.info("Exporting the " + frame_name + " frame to " + path)
 
             if header is None: header = self.frames[frame_name].header
@@ -199,8 +248,24 @@ class Image(object):
             datacube.append(self.frames[frame_name])
             
             # Add the name of the frame to the header
-            header["PLANE" + str(plane_index)] = frame_name
-            
+            header["PLANE" + str(plane_index)] = frame_name + " [frame]"
+
+            # Increment the plane index
+            plane_index += 1
+
+        # Export all masks to the specified file
+        for mask_name in self.masks:
+
+            # Inform the user that this mask will be saved to the image file
+            log.info("Exporting the " + mask_name + " mask to " + path)
+
+            # Add this mask to the data cube
+            datacube.append(self.masks[mask_name].astype(int))
+
+            # Add the name of the mask to the header
+            header["PLANE" + str(plane_index)] = mask_name + " [mask]"
+
+            # Increment the plane index
             plane_index += 1
 
         if plane_index > 1:
@@ -755,31 +820,6 @@ class Image(object):
             # Add the evaluated model as a new frame
             description = "A polynomial fit to the " + frame_name + " primary frame"
             self.add_frame(Frame(evaluated, self.frames[frame_name].coordinates, self.pixelscale, description), frame_name+"_polynomial")
-
-    # -----------------------------------------------------------------
-
-    def subtract(self):
-
-        """
-        This function subtracts the currently active frame(s) from the primary image, in the pixels not covered by
-        any of the currently active masks (the currently active masks 'protect' the primary image from this subtraction
-        :return:
-        """
-
-        # Get the currently active mask
-        total_mask = self.combine_masks(return_mask=True)
-
-        # Determine the negative of the total mask
-        negativetotalmask = np.logical_not(total_mask)
-
-        # For each active frame
-        for frame_name in self.frames.get_selected():
-
-            # Inform the user
-            log.info("Subtracting " + frame_name + " frame from the primary image frame")
-
-            # Subtract the data in this frame from the primary image, in the pixels that the mask does not cover
-            self.frames.primary -= self.frames[frame_name]*negativetotalmask
 
     # -----------------------------------------------------------------
 

@@ -56,9 +56,6 @@ class ImageImporter(Configurable):
         self.unit = None
         self.fwhm = None
 
-        # The mask
-        self.mask = None
-
     # -----------------------------------------------------------------
 
     def run(self, path, bad_region_path=None, unit=None, fwhm=None):
@@ -97,7 +94,6 @@ class ImageImporter(Configurable):
         self.bad_region = None
         self.unit = None
         self.fwhm = None
-        self.mask = None
 
     # -----------------------------------------------------------------
 
@@ -287,14 +283,13 @@ class ImageImporter(Configurable):
             self.image.frames.primary[cutout.y_slice, cutout.x_slice][where_is_cutout_segment] = interpolated_box[where_is_cutout_segment]
             nan_mask[cutout.y_slice, cutout.x_slice][where_is_cutout_segment] = False
 
-        # Set the total mask
-        self.mask = nan_mask
+        # Add the mask
+        self.image.add_mask(nan_mask, "bad")
 
         # Add the bad mask
         if self.bad_region is not None:
 
             bad_mask = Mask.from_region(self.bad_region, self.image.frames.primary.shape)
-
-            self.mask += bad_mask
+            self.image.masks.bad += bad_mask
 
 # -----------------------------------------------------------------

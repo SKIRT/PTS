@@ -21,7 +21,7 @@ import astropy.coordinates as coord
 from astropy.coordinates import Angle
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Mask, Region
+from ..basics import Mask, Region, Extent, Ellipse
 from ..core import Source
 from ..sky import Galaxy
 from ..tools import regions
@@ -55,11 +55,10 @@ class GalaxyExtractor(Configurable):
         # Initialize an empty list to contain the manual sources
         self.manual_sources = []
 
-        # Set the frame to None
-        self.frame = None
+        # The image
+        self.image = None
 
         # The mask covering pixels that should be ignored throughout the entire extraction procedure
-        self.input_mask = None
         self.special_mask = None
         self.ignore_mask = None
 
@@ -74,14 +73,14 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, input_mask, catalog, special=None, ignore=None):
+    def run(self, image, catalog, special=None, ignore=None):
 
         """
         This function ...
         """
 
         # 1. Call the setup function
-        self.setup(frame, input_mask, catalog, special, ignore)
+        self.setup(image, catalog, special, ignore)
 
         # 2. Find and remove the galaxies
         self.find_and_remove_galaxies()
@@ -92,12 +91,15 @@ class GalaxyExtractor(Configurable):
         # 4. Set the statistics
         self.set_statistics()
 
-        # 5. Writing phase
+        # 5. Update the image mask
+        self.update_mask()
+
+        # 6. Writing phase
         self.write()
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, input_mask, catalog, special_mask=None, ignore_mask=None):
+    def setup(self, image, catalog, special_mask=None, ignore_mask=None):
 
         """
         This function ...
@@ -109,15 +111,14 @@ class GalaxyExtractor(Configurable):
         # Inform the user
         self.log.info("Setting up the galaxy extractor ...")
 
-        # Make a local reference to the frame and input mask
-        self.frame = frame
-        self.input_mask = input_mask
+        # Make a local reference to the image
+        self.image = image
         self.catalog = catalog
         self.special_mask = special_mask
         self.ignore_mask = ignore_mask
 
         # Create a mask with shape equal to the shape of the frame
-        self.mask = Mask.from_shape(self.frame.shape)
+        self.mask = Mask.from_shape(self.image.shape)
 
     # -----------------------------------------------------------------
 
@@ -137,8 +138,8 @@ class GalaxyExtractor(Configurable):
         # Clear the list of manual sources
         self.manual_sources = []
 
-        # Clear the frame and the mask
-        self.frame = None
+        # Clear the image and the mask
+        self.image = None
         self.mask = None
 
     # -----------------------------------------------------------------
@@ -194,7 +195,7 @@ class GalaxyExtractor(Configurable):
         for galaxy in self.galaxies:
 
             # Calculate the pixel coordinate in the frame and add it to the list
-            positions.append(galaxy.pixel_position(self.frame.wcs))
+            positions.append(galaxy.pixel_position(self.image.wcs))
 
         # Return the list
         return positions
@@ -260,12 +261,12 @@ class GalaxyExtractor(Configurable):
 
                 outer_factor = self.config.detection.background_outer_factor
                 expansion_factor = self.config.detection.d25_expansion_factor
-                galaxy.source_from_parameters(self.frame, outer_factor, expansion_factor)
+                galaxy.source_from_parameters(self.image.frames.primary, outer_factor, expansion_factor)
 
             else:
 
                 # Find a source
-                try: galaxy.find_source(self.frame, self.config.detection)
+                try: galaxy.find_source(self.image.frames.primary, self.config.detection)
                 except Exception as e:
                     #import traceback
                     self.log.error("Error when finding source")
@@ -278,8 +279,8 @@ class GalaxyExtractor(Configurable):
 
             # If a source was not found for the principal or companion galaxies, force it
             outer_factor = self.config.detection.background_outer_factor
-            if galaxy.principal and not galaxy.has_source: galaxy.source_from_parameters(self.frame, outer_factor)
-            elif galaxy.companion and not galaxy.has_source and galaxy.has_extent: galaxy.source_from_parameters(self.frame, outer_factor)
+            if galaxy.principal and not galaxy.has_source: galaxy.source_from_parameters(self.image.frames.primary, outer_factor)
+            elif galaxy.companion and not galaxy.has_source and galaxy.has_extent: galaxy.source_from_parameters(self.image.frames.primary, outer_factor)
 
         # Inform the user
         self.log.info("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.galaxies), self.have_source/len(self.galaxies)*100.0))
@@ -320,13 +321,13 @@ class GalaxyExtractor(Configurable):
             position = coord.SkyCoord(ra=ra, dec=dec, unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
 
             # If the galaxy falls outside of the frame, skip it
-            if not self.frame.contains(position, self.config.transformation_method): continue
+            if not self.image.frames.primary.contains(position, self.config.transformation_method): continue
 
             # Create a new Galaxy instance
             galaxy = Galaxy(i, name, position, redshift, galaxy_type, names, distance, inclination, d25, major, minor, position_angle)
 
             # Calculate the pixel position of the galaxy in the frame
-            pixel_position = galaxy.pixel_position(self.frame.wcs, self.config.transformation_method)
+            pixel_position = galaxy.pixel_position(self.image.wcs, self.config.transformation_method)
 
             # Set other attributes
             galaxy.principal = principal
@@ -342,7 +343,7 @@ class GalaxyExtractor(Configurable):
             if self.ignore_mask is not None: galaxy.ignore = self.ignore_mask.masks(pixel_position)
 
             # If the input mask masks this star's position, skip it (don't add it to the list of stars)
-            if self.input_mask is not None and self.input_mask.masks(pixel_position): continue
+            if "bad" in self.image.masks and self.image.masks.bad.masks(pixel_position): continue
 
             # Add the new galaxy to the list
             self.galaxies.append(galaxy)
@@ -371,7 +372,7 @@ class GalaxyExtractor(Configurable):
             if galaxy.ignore: continue
 
             # If the galaxy does not have a source, continue
-            if galaxy.has_source: galaxy.find_contour(self.frame, self.config.apertures)
+            if galaxy.has_source: galaxy.find_contour(self.image.frames.primary, self.config.apertures)
 
     # -----------------------------------------------------------------
 
@@ -395,7 +396,7 @@ class GalaxyExtractor(Configurable):
             if galaxy.ignore: continue
 
             # Remove the galaxy from the frame
-            if not galaxy.principal and not galaxy.companion: galaxy.remove(self.frame, self.mask, self.config.removal)
+            if not galaxy.principal and not galaxy.companion: galaxy.remove(self.image.frames.primary, self.mask, self.config.removal)
 
         # Add the principal and companion galaxies to the mask
         self.mask += self.principal_mask
@@ -416,7 +417,7 @@ class GalaxyExtractor(Configurable):
         self.log.info("Setting region for manual galaxy extraction from " + path + " ...")
 
         # Load the region and create a mask from it
-        region = Region.from_file(path, self.frame.wcs)
+        region = Region.from_file(path, self.image.wcs)
 
         # Loop over the shapes in the region
         for shape in region:
@@ -425,7 +426,7 @@ class GalaxyExtractor(Configurable):
             ellipse = regions.ellipse(shape)
 
             # Create a source
-            source = Source.from_ellipse(self.frame, ellipse, self.config.manual.background_outer_factor)
+            source = Source.from_ellipse(self.image.frames.primary, ellipse, self.config.manual.background_outer_factor)
 
             # Add the source to the list of manual sources
             self.manual_sources.append(source)
@@ -448,7 +449,30 @@ class GalaxyExtractor(Configurable):
             source.estimate_background(self.config.manual.interpolation_method, self.config.manual.sigma_clip)
 
             # Replace the frame in the appropriate area with the estimated background
-            source.background.replace(self.frame, where=source.mask)
+            source.background.replace(self.image.frames.primary, where=source.mask)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def principal_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the center in pixel coordinates
+        center = self.principal.pixel_position(self.image.wcs)
+
+        # Get the angle
+        angle = self.principal.pa
+
+        x_radius = 0.5 * self.principal.major.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
+        y_radius = 0.5 * self.principal.minor.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
+        radius = Extent(x_radius, y_radius)
+
+        # Create and return an ellipse
+        return Ellipse(center, radius, angle)
 
     # -----------------------------------------------------------------
 
@@ -461,7 +485,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Create a new mask with the dimensions of the frame
-        mask = Mask.from_shape(self.frame.shape)
+        mask = Mask.from_shape(self.image.shape)
 
         # Add the principal galaxy's mask to the total mask
         mask[self.principal.source.cutout.y_slice, self.principal.source.cutout.x_slice] = self.principal.source.mask
@@ -480,7 +504,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Create a new mask with the dimension of the frame
-        mask = Mask.from_shape(self.frame.shape)
+        mask = Mask.from_shape(self.image.shape)
 
         # Loop over all companion galaxies
         for galaxy in self.companions:
@@ -527,8 +551,8 @@ class GalaxyExtractor(Configurable):
 
             else:
 
-                width = self.config.region.default_radius * self.frame.xy_average_pixelscale.value
-                height = self.config.region.default_radius * self.frame.xy_average_pixelscale.value
+                width = self.config.region.default_radius * self.image.frames.primary.xy_average_pixelscale.value
+                height = self.config.region.default_radius * self.image.frames.primary.xy_average_pixelscale.value
 
             angle = galaxy.pa.degree if galaxy.pa is not None else 0.0
 
@@ -566,6 +590,17 @@ class GalaxyExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    def update_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.image.masks.sources += self.mask
+
+    # -----------------------------------------------------------------
+
     def write_region(self):
 
         """
@@ -591,7 +626,7 @@ class GalaxyExtractor(Configurable):
         for galaxy in self.galaxies:
 
             # Get the center in pixel coordinates
-            center = galaxy.pixel_position(self.frame.wcs)
+            center = galaxy.pixel_position(self.image.wcs)
 
             # Set the angle
             angle = galaxy.pa.degree if galaxy.pa is not None else 0.0
@@ -607,15 +642,15 @@ class GalaxyExtractor(Configurable):
 
                 color = "green"
 
-                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
+                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
                 y_radius = x_radius
 
             else:
 
                 color = "green"
 
-                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
-                y_radius = 0.5 * galaxy.minor.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
+                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
+                y_radius = 0.5 * galaxy.minor.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
 
             # Annotation
             if annotation == "name": text = "text = {" + galaxy.name + "}"
@@ -697,7 +732,7 @@ class GalaxyExtractor(Configurable):
         self.log.info("Writing masked frame to " + path + " ...")
 
         # Create a frame where the objects are masked
-        frame = self.frame.copy()
+        frame = self.image.frames.primary.copy()
         frame[self.mask] = float(self.config.writing.mask_value)
 
         # Write out the masked frame
@@ -772,7 +807,7 @@ class GalaxyExtractor(Configurable):
         self.log.info("Writing resulting frame to " + path + " ...")
 
         # Write out the resulting frame
-        self.frame.save(path)
+        self.image.frames.primary.save(path)
 
     # -----------------------------------------------------------------
 

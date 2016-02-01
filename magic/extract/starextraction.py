@@ -56,12 +56,11 @@ class StarExtractor(Configurable):
         # Initialize an empty list to contain the manual sources
         self.manual_sources = []
 
-        # Set the frame to None
-        self.frame = None
+        # The image and a copy of the original primary image frame
+        self.image = None
         self.original_frame = None
 
         # The mask covering pixels that should be ignored throughout the entire extraction procedure
-        self.input_mask = None
         self.special_mask = None
         self.ignore_mask = None
 
@@ -79,14 +78,19 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, input_mask, galaxyextractor, catalog, special=None, ignore=None):
+    def run(self, image, galaxyextractor, catalog, special=None, ignore=None):
 
         """
         This function ...
+        :param image:
+        :param galaxyextractor:
+        :param catalog:
+        :param special:
+        :param ignore:
         """
 
         # 1. Call the setup function
-        self.setup(frame, input_mask, galaxyextractor, catalog, special, ignore)
+        self.setup(image, galaxyextractor, catalog, special, ignore)
 
         # 2. Find and remove the stars
         self.find_fit_and_remove_stars()
@@ -100,24 +104,31 @@ class StarExtractor(Configurable):
         # 5. Set the statistics
         if not self.config.fetching.use_statistics_file: self.set_statistics()
 
-        # 6. Writing phase
+        # 6. Update the image mask
+        self.update_mask()
+
+        # 7. Writing phase
         self.write()
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, input_mask, galaxyextractor, catalog, special_mask=None, ignore_mask=None):
+    def setup(self, image, galaxyextractor, catalog, special_mask=None, ignore_mask=None):
 
         """
         This function ...
+        :param image:
+        :param galaxyextractor:
+        :param catalog:
+        :param special_mask:
+        :param ignore_mask:
         """
 
         # Call the setup function of the base class
         super(StarExtractor, self).setup()
 
         # Make a local reference to the frame and 'bad' mask
-        self.frame = frame
-        self.original_frame = frame.copy()
-        self.input_mask = input_mask
+        self.image = image
+        self.original_frame = self.image.frames.primary.copy()
         self.catalog = catalog
         self.special_mask = special_mask
         self.ignore_mask = ignore_mask
@@ -126,7 +137,7 @@ class StarExtractor(Configurable):
         self.galaxy_extractor = galaxyextractor
 
         # Create a mask with shape equal to the shape of the frame
-        self.mask = Mask.from_shape(self.frame.shape)
+        self.mask = Mask.from_shape(self.image.shape)
 
     # -----------------------------------------------------------------
 
@@ -146,8 +157,8 @@ class StarExtractor(Configurable):
         # Clear the list of manual sources
         self.manual_sources = []
 
-        # Clear the frame and the mask
-        self.frame = None
+        # Clear the image and the mask
+        self.image = None
         self.mask = None
 
     # -----------------------------------------------------------------
@@ -177,7 +188,7 @@ class StarExtractor(Configurable):
             self.find_sources()
 
             # Fit analytical models to the stars
-            if not self.config.use_frame_fwhm or self.frame.fwhm is None: self.fit_stars()
+            if not self.config.use_frame_fwhm or self.image.fwhm is None: self.fit_stars()
 
             # If requested, remove the stars
             if self.config.remove: self.remove_stars()
@@ -235,7 +246,7 @@ class StarExtractor(Configurable):
         galaxy_type_list = []
         for galaxy in self.galaxy_extractor.galaxies:
 
-            galaxy_pixel_position_list.append(galaxy.pixel_position(self.frame.wcs, self.config.transformation_method))
+            galaxy_pixel_position_list.append(galaxy.pixel_position(self.image.wcs, self.config.transformation_method))
             if galaxy.principal: galaxy_type_list.append("principal")
             elif galaxy.companion: galaxy_type_list.append("companion")
             else: galaxy_type_list.append("other")
@@ -270,14 +281,14 @@ class StarExtractor(Configurable):
             position = coord.SkyCoord(ra=ra, dec=dec, unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
 
             # If the stars falls outside of the frame, skip it
-            if not self.frame.contains(position, self.config.transformation_method): continue
+            if not self.image.frames.primary.contains(position, self.config.transformation_method): continue
 
             # Create a star object
             star = Star(i, catalog=catalog, id=star_id, position=position, ra_error=ra_error,
                         dec_error=dec_error, magnitudes=magnitudes, magnitude_errors=magnitude_errors)
 
             # Get the position of the star in pixel coordinates
-            pixel_position = star.pixel_position(self.frame.wcs, self.config.transformation_method)
+            pixel_position = star.pixel_position(self.image.wcs, self.config.transformation_method)
 
             # -- Checking for foreground or surroudings of galaxy --
 
@@ -309,7 +320,7 @@ class StarExtractor(Configurable):
             if self.ignore_mask is not None: star.ignore = self.ignore_mask.masks(pixel_position)
 
             # If the input mask masks this star's position, skip it (don't add it to the list of stars)
-            if self.input_mask is not None and self.input_mask.masks(pixel_position): continue
+            if "bad" in self.image.masks and self.image.masks.bad.masks(pixel_position): continue
 
             # Don't add stars which are indicated as 'not stars'
             if self.config.manual_indices.not_stars is not None and i in self.config.manual_indices.not_stars: continue
@@ -399,7 +410,7 @@ class StarExtractor(Configurable):
             if star.ignore: continue
 
             # Find a source
-            try: star.find_source(self.frame, self.config.detection)
+            try: star.find_source(self.image.frames.primary, self.config.detection)
             except Exception as e:
 
                 import traceback
@@ -439,10 +450,10 @@ class StarExtractor(Configurable):
             if not star.has_source and self.config.fitting.fit_if_undetected:
 
                 # Get the parameters of the circle
-                ellipse = star.ellipse(self.frame.wcs, self.frame.xy_average_pixelscale, self.config.fitting.initial_radius)
+                ellipse = star.ellipse(self.image.wcs, self.image.frames.primary.xy_average_pixelscale, self.config.fitting.initial_radius)
 
                 # Create a source object
-                source = Source.from_ellipse(self.frame, ellipse, self.config.fitting.background_outer_factor)
+                source = Source.from_ellipse(self.image.frames.primary, ellipse, self.config.fitting.background_outer_factor)
 
             else: source = None
 
@@ -503,11 +514,11 @@ class StarExtractor(Configurable):
 
             # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
             # Note: I forgot why we would ever want to do this ...
-            if not self.config.removal.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
+            if not self.config.removal.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.image.wcs)): continue
 
             # Remove the star in the frame
             force = self.config.manual_indices.remove_stars is not None and star.index in self.config.manual_indices.remove_stars
-            star.remove(self.frame, self.mask, self.config.removal, default_fwhm, force=force)
+            star.remove(self.image.frames.primary, self.mask, self.config.removal, default_fwhm, force=force)
 
     # -----------------------------------------------------------------
 
@@ -541,7 +552,7 @@ class StarExtractor(Configurable):
 
             # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
             # Note: I forgot why we would ever want to do this ...
-            if not self.config.saturation.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.frame.wcs)): continue
+            if not self.config.saturation.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.image.wcs)): continue
 
             # If a model was not found for this star, skip it unless the remove_if_not_fitted flag is enabled
             if not star.has_model and not self.config.saturation.remove_if_not_fitted: continue
@@ -553,7 +564,7 @@ class StarExtractor(Configurable):
             if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
             # Find a saturation source and remove it from the frame
-            star.find_saturation(self.frame, self.original_frame, self.config.saturation, default_fwhm, self.galaxy_extractor.mask, self.mask)
+            star.find_saturation(self.image.frames.primary, self.original_frame, self.config.saturation, default_fwhm, self.galaxy_extractor.mask, self.mask)
             success += star.has_saturation
 
         # Inform the user
@@ -575,7 +586,7 @@ class StarExtractor(Configurable):
             if not star.has_saturation: continue
 
             # Remove the saturation of this star in the frame
-            star.remove_saturation(self.frame, self.mask, self.config.saturation)
+            star.remove_saturation(self.image.frames.primary, self.mask, self.config.saturation)
 
     # -----------------------------------------------------------------
 
@@ -603,7 +614,7 @@ class StarExtractor(Configurable):
 
             # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
             # NEW: only enable this for optical and IR (galaxy has smooth emission there but not in UV)
-            if self.frame.wavelength is None or self.frame.wavelength > 0.39 * u.Unit("micron"):
+            if self.image.wavelength is None or self.image.wavelength > 0.39 * u.Unit("micron"):
                 if star.on_galaxy and self.config.saturation.aperture_removal.polynomial_on_galaxy: interpolation_method = "polynomial"
                 else: interpolation_method = self.config.saturation.aperture_removal.interpolation_method
             else: interpolation_method = self.config.saturation.aperture_removal.interpolation_method
@@ -613,13 +624,13 @@ class StarExtractor(Configurable):
 
             # Create a source
             ellipse = Ellipse(star.contour.center, star.contour.radius * expansion_factor, star.contour.angle)
-            source = Source.from_ellipse(self.frame, ellipse, self.config.saturation.aperture_removal.background_outer_factor)
+            source = Source.from_ellipse(self.image.frames.primary, ellipse, self.config.saturation.aperture_removal.background_outer_factor)
 
             # Estimate the background for the source
             source.estimate_background(interpolation_method, sigma_clip)
 
             # Replace the frame in the appropriate area with the estimated background
-            source.background.replace(self.frame, where=source.mask)
+            source.background.replace(self.image.frames.primary, where=source.mask)
 
             # Update the mask
             self.mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
@@ -639,7 +650,7 @@ class StarExtractor(Configurable):
         self.log.info("Setting region for manual star extraction from " + path + " ...")
 
         # Load the region and create a mask from it
-        region = Region.from_file(path, self.frame.wcs)
+        region = Region.from_file(path, self.image.wcs)
 
         # Loop over the shapes in the region
         for shape in region:
@@ -648,7 +659,7 @@ class StarExtractor(Configurable):
             ellipse = regions.ellipse(shape)
 
             # Create a source
-            source = Source.from_ellipse(self.frame, ellipse, self.config.manual.background_outer_factor)
+            source = Source.from_ellipse(self.image.frames.primary, ellipse, self.config.manual.background_outer_factor)
 
             # Add the source to the list of manual sources
             self.manual_sources.append(source)
@@ -671,7 +682,31 @@ class StarExtractor(Configurable):
             source.estimate_background(self.config.manual.interpolation_method, self.config.manual.sigma_clip)
 
             # Replace the frame in the appropriate area with the estimated background
-            source.background.replace(self.frame, where=source.mask)
+            source.background.replace(self.image.frames.primary, where=source.mask)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def saturation_contours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        contours = []
+
+        # Loop over all stars
+        for star in self.stars:
+
+            # Skip stars without saturation
+            if not star.has_saturation: continue
+
+            # Add the contour
+            contours.append(star.contour)
+
+        # Return the list of contours
+        return contours
 
     # -----------------------------------------------------------------
 
@@ -714,14 +749,14 @@ class StarExtractor(Configurable):
             radius = fwhm * statistics.fwhm_to_sigma * self.config.region.sigma_level
 
             # Add the radius (in arcseconds) and the color the appropriate list
-            radius_list.append(radius * self.frame.xy_average_pixelscale)
+            radius_list.append(radius * self.image.frames.primary.xy_average_pixelscale)
             color_list.append(color)
 
         # Create a region
         region = Region.circles(position_list, radius_list, color_list)
 
         if type == "sky": return region
-        elif type == "image": return region.as_imagecoord(self.frame.wcs.to_header())
+        elif type == "image": return region.as_imagecoord(self.image.wcs.to_header())
         else: raise ValueError("Type should be either 'sky' or 'image'")
 
     # -----------------------------------------------------------------
@@ -753,7 +788,7 @@ class StarExtractor(Configurable):
         for star in self.stars:
 
             # Get the center in pixel coordinates
-            center = star.pixel_position(self.frame.wcs, self.config.transformation_method)
+            center = star.pixel_position(self.image.wcs, self.config.transformation_method)
 
             # Determine the color, based on the detection level
             if star.has_model: color = "blue"
@@ -887,7 +922,7 @@ class StarExtractor(Configurable):
         self.log.info("Writing masked frame to " + path + " ...")
 
         # Create a frame where the objects are masked
-        frame = self.frame.copy()
+        frame = self.image.frames.primary.copy()
         frame[self.mask] = float(self.config.writing.mask_value)
 
         # Write out the masked frame
@@ -997,7 +1032,7 @@ class StarExtractor(Configurable):
         self.log.info("Writing resulting frame to " + path + " ...")
 
         # Write out the resulting frame
-        self.frame.save(path)
+        self.image.frames.primary.save(path)
 
     # -----------------------------------------------------------------
 
@@ -1016,7 +1051,7 @@ class StarExtractor(Configurable):
         for skyobject in self.stars:
 
             # Calculate the pixel coordinate in the frame and add it to the list
-            positions.append(skyobject.pixel_position(self.frame.wcs))
+            positions.append(skyobject.pixel_position(self.image.wcs))
 
         # Return the list
         return positions
@@ -1175,10 +1210,10 @@ class StarExtractor(Configurable):
         """
 
         # If requested, always use the FWHM defined by the frame object
-        if self.config.use_frame_fwhm and self.frame.fwhm is not None:
+        if self.config.use_frame_fwhm and self.image.fwhm is not None:
 
             # Return the FWHM in 'number of pixels'
-            return self.frame.fwhm.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
+            return self.image.fwhm.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
 
         # If the list of FWHM values is empty (the stars were not fitted yet), return None
         if len(self.fwhms) == 0: return None
@@ -1291,6 +1326,17 @@ class StarExtractor(Configurable):
 
         # Create the statistics table
         self.statistics = tables.new(data, names)
+
+    # -----------------------------------------------------------------
+
+    def update_image_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.image.masks.sources += self.mask
 
     # -----------------------------------------------------------------
 

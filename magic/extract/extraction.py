@@ -46,11 +46,10 @@ class Extractor(Configurable):
 
         # -- Attributes --
 
-        # The image frame on which to perform the extraction
-        self.frame = None
+        # The image on which to perform the extraction
+        self.image = None
 
         # The mask covering pixels that should be ignored throughout the entire extraction procedure
-        self.input_mask = None
         self.special_mask = None
         self.ignore_mask = None
 
@@ -141,17 +140,16 @@ class Extractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, input_mask):
+    def run(self, image):
 
         """
         This function ...
-        :param frame:
-        :param input_mask:
+        :param image:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(frame, input_mask)
+        self.setup(image)
 
         # 2. Create the directory that will contain the output
         self.create_output_path()
@@ -176,12 +174,11 @@ class Extractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, input_mask):
+    def setup(self, image):
 
         """
         This function ...
-        :param frame:
-        :param input_mask:
+        :param image:
         :return:
         """
 
@@ -202,9 +199,8 @@ class Extractor(Configurable):
         # Inform the user
         self.log.info("Setting up the extractor ...")
 
-        # Make a local reference to the frame and mask
-        self.frame = frame
-        self.input_mask = input_mask
+        # Make a local reference to the image (mask inside image)
+        self.image = image
 
         # Set the paths to the resulting frame and the total mask
         self.config.writing.result_path = "result.fits"
@@ -212,6 +208,7 @@ class Extractor(Configurable):
 
         # Create a mask with shape equal to the shape of the frame
         self.mask = Mask.from_shape(self.frame.shape)
+        self.image.add_mask(self.mask, "sources")
 
         # Set the appropriate configuration settings for writing out the galactic and stellar statistics
         if self.config.write_statistics:
@@ -303,10 +300,7 @@ class Extractor(Configurable):
         self.log.info("Extracting the galaxies ...")
 
         # Run the galaxy extractor
-        self.galaxy_extractor.run(self.frame, self.input_mask, self.catalog_importer.galactic_catalog, special=self.special_mask, ignore=self.ignore_mask)
-
-        # Add to the total mask
-        self.mask += self.galaxy_extractor.mask
+        self.galaxy_extractor.run(self.image, self.catalog_importer.galactic_catalog, special=self.special_mask, ignore=self.ignore_mask)
 
         # Set the name of the principal galaxy
         self.galaxy_name = self.galaxy_extractor.principal.name
@@ -326,10 +320,7 @@ class Extractor(Configurable):
         if self.frame.wavelength is None or self.frame.wavelength < wavelengths.ranges.ir.mir.max:
 
             # Run the star extractor
-            self.star_extractor.run(self.frame, self.input_mask, self.galaxy_extractor, self.catalog_importer.stellar_catalog, special=self.special_mask, ignore=self.ignore_mask)
-
-            # Add star mask to the total mask
-            self.mask += self.star_extractor.mask
+            self.star_extractor.run(self.image, self.galaxy_extractor, self.catalog_importer.stellar_catalog, special=self.special_mask, ignore=self.ignore_mask)
 
         else: self.log.info("No star extraction for this image")
 
@@ -346,11 +337,7 @@ class Extractor(Configurable):
         self.log.info("Looking for sources in the frame not in the catalog ...")
 
         # Run the trained extractor just to find sources
-        # As the mask, pass the input mask (bad pixels) + self.mask (at this point, combined galaxy and star extraction masks)
-        self.trained_extractor.run(self.frame, self.input_mask + self.mask, self.galaxy_extractor, self.star_extractor, special=self.special_mask, ignore=self.ignore_mask)
-
-        # Add sources to the total mask
-        self.mask += self.trained_extractor.mask
+        self.trained_extractor.run(self.image, self.galaxy_extractor, self.star_extractor, special=self.special_mask, ignore=self.ignore_mask)
 
     # -----------------------------------------------------------------
 
