@@ -15,19 +15,16 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# Import astronomical modules
-import astropy.units as u
-from astropy import constants
-
 # Import the relevant AstroMagic classes and modules
 from ...magic.core import Frame
-from ...magic.basics import Mask, Region
+from ...magic.basics import Region
 from ...magic.extract import Extractor
 from ...magic.subtract import SkySubtractor
 from ...magic.tools import regions, cropping
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
+from .unitconversion import UnitConverter
 
 # -----------------------------------------------------------------
 
@@ -111,6 +108,7 @@ class ImagePreparer(Configurable):
         # Add extractor and sky subtractor
         self.add_child("extractor", Extractor, self.config.extraction)
         self.add_child("sky_subtractor", SkySubtractor, self.config.sky_subtraction)
+        self.add_child("unit_converter", UnitConverter, self.config.unit_conversion)
 
         if self.config.write_steps:
 
@@ -201,132 +199,14 @@ class ImagePreparer(Configurable):
 
         """
         This function ...
-        :param frame:
         :return:
         """
 
-        # TODO: make this function automatic
-
-        # Create a unit object
-        unit = u.Unit(self.config.unit_conversion.to_unit)
-
         # Inform the user
-        self.log.info("Converting image to " + str(unit) + ", but not yet automatic")
+        self.log.info("Converting image to surface brightness units ...")
 
-        # Convert the image to different units (primary and errors frame)
-        #self.image.convert_to(unit)
-
-        ####
-
-        #FUV: Flux [erg sec-1 cm-2 Å-1] = 1.40 x 10-15 x CPS
-        #NUV: Flux [erg sec-1 cm-2 Å-1] = 2.06 x 10-16 x CPS
-
-        # THE GALEX FUV IMAGE
-        if self.image.name == "GALEX FUV":
-
-            # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.xy_average_pixelscale.value
-
-            # Get the wavelength of the image
-            wavelength = self.image.frames.primary.filter.centerwavelength()
-            wavelength = (wavelength * u.Unit("micron")).to("AA")
-
-            # Speed of light in Angstrom per seconds
-            c = (299792458.0 * u.Unit("m") / u.Unit("s")).to("AA/s")
-            spectralfactor = wavelength.value**2 / c.value
-            pixelfactor = (206264.806247 / pixelscale)**2
-            factor = 1.4e-15 * spectralfactor * 1e17 * pixelfactor
-
-            # Multiply the image (primary and errors frame) by the conversion factor
-            self.image *= factor
-
-        # The GALEX NUV image
-        if self.image.name == "GALEX NUV":
-
-            # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.xy_average_pixelscale.value
-
-        #if "GALEX" in self.image:
-
-
-
-        # THE 2MASS H IMAGE
-        elif self.image.name == "2MASS H":
-
-            # Conversion factor to magnitudes
-            m0 = 20.6473999
-
-            # Conversion factor back to fluxes
-            F0 = 1024.0
-
-            # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.xy_average_pixelscale.value
-
-            # Calculate the conversion factor
-            pixelfactor = (206264.806247 / pixelscale)**2
-            factor = 10e-6 * pixelfactor
-            factor *= F0 * np.power(10.0, -m0/2.5)
-
-            # Multiply the image (primary and errors frame) by the conversion factor
-            self.image *= factor
-
-        # THE Halpha IMAGE
-        elif self.image.name == "Ha":
-
-            # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.xy_average_pixelscale.value
-
-            pixelfactor = (206264.806247 / pixelscale)**2
-
-            # The wavelength (in meter)
-            wavelength = 0.657894736 * 1e-6
-
-            # The speed of light (in m / s)
-            c = 299792458
-
-            # The frequency (in Hz)
-            frequency = c / wavelength
-
-            # Calculate the conversion factor
-            factor = 1e23 * 1e-6 * pixelfactor / frequency
-
-            # Multiply the image (primary and errors frame) by the conversion factor
-            self.image *= factor
-
-        # THE IRAC I1 IMAGE IS ALREADY IN MJY/SR
-        elif self.image.name == "IRAC I1": pass
-
-        # THE MIPS 24 IMAGE IS ALREADY IN MJY/SR
-        elif self.image.name == "MIPS 24": pass
-
-        # THE PACS 70 IMAGE
-        elif self.image.name == "PACS 70":
-
-            # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.xy_average_pixelscale.value
-
-            # Calculate the conversion factor
-            pixelfactor = (206264.806247 / pixelscale)**2
-            factor = 1e-6 * pixelfactor
-
-            # Multiply the image (primary and errors frame) by the conversion factor
-            self.image *= factor
-
-        # THE PACS 160 IMAGE
-        elif self.image.name == "PACS 160":
-
-            # Get the pixelscale of the image
-            pixelscale = self.image.frames.primary.xy_average_pixelscale.value
-
-            # Calculate the conversion factor
-            pixelfactor = (206264.806247 / pixelscale)**2
-            factor = 1e-6 * pixelfactor
-
-            # Multiply the image (primary and errors frame) by the conversion factor
-            self.image *= factor
-
-        # UNKOWN IMAGE NAME
-        else: raise ValueError("Unkown image: " + self.image.name)
+        # Run the unit conversion
+        self.unit_converter.run(self.image)
 
     # -----------------------------------------------------------------
 
@@ -334,7 +214,6 @@ class ImagePreparer(Configurable):
 
         """
         This function ...
-        :param frame:
         :return:
         """
 
@@ -357,7 +236,6 @@ class ImagePreparer(Configurable):
 
         """
         This function ...
-        :param frame:
         :return:
         """
 

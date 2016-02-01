@@ -881,6 +881,9 @@ class Image(object):
         # Obtain the units of this image
         unit = headers.get_unit(original_header)
 
+        # Get the magnitude zero-point
+        zero_point = headers.get_zero_point(header)
+
         # Check whether the image is sky-subtracted
         sky_subtracted = headers.is_sky_subtracted(original_header)
 
@@ -914,7 +917,7 @@ class Image(object):
                 subtracted = sky_subtracted if i == 0 else False
 
                 # Add this frame to the frames dictionary
-                self.add_frame(Frame(hdu.data[i], wcs, pixelscale, description, False, unit, name, filter, subtracted), name)
+                self.add_frame(Frame(hdu.data[i], wcs, pixelscale, description, False, unit, name, filter, subtracted, zero_point), name)
 
                 # Select the frame if it is the first one (the primary frame)
                 if i == 0: self.frames[name].select()
@@ -928,7 +931,7 @@ class Image(object):
             if description is None: description = "the primary signal map"
 
             # Add the primary image frame
-            self.add_frame(Frame(hdu.data, wcs, pixelscale, description, False, unit, name, filter, sky_subtracted), name)
+            self.add_frame(Frame(hdu.data, wcs, pixelscale, description, False, unit, name, filter, sky_subtracted, zero_point), name)
 
             # Select the frame
             self.frames[name].select()

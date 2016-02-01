@@ -43,7 +43,7 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def __new__(cls, data, wcs=None, pixelscale=None, description=None, selected=False, unit=None, name=None, filter=None, sky_subtracted=False):
+    def __new__(cls, data, wcs=None, pixelscale=None, description=None, selected=False, unit=None, name=None, filter=None, sky_subtracted=False, zero_point=None):
 
         """
         This function ...
@@ -62,6 +62,7 @@ class Frame(np.ndarray):
         obj.name = name
         obj.filter = filter
         obj.sky_subtracted = sky_subtracted
+        obj.zero_point = zero_point
         obj.fwhm = None
 
         return obj
@@ -124,6 +125,9 @@ class Frame(np.ndarray):
         # Obtain the units of this image
         unit = headers.get_unit(header)
 
+        # Get the magnitude zero-point
+        zero_point = headers.get_zero_point(header)
+
         # Check whether the image is sky-subtracted
         sky_subtracted = headers.is_sky_subtracted(header)
 
@@ -141,7 +145,7 @@ class Frame(np.ndarray):
             if name is None: name = os.path.basename(path[:-5])
 
             # Return the frame
-            return cls(hdu.data[index], wcs, pixelscale, description, False, unit, name, filter, sky_subtracted)
+            return cls(hdu.data[index], wcs, pixelscale, description, False, unit, name, filter, sky_subtracted, zero_point)
 
         else:
 
@@ -152,7 +156,7 @@ class Frame(np.ndarray):
             if name is None: name = os.path.basename(path[:-5])
 
             # Return the frame
-            return cls(hdu.data, wcs, pixelscale, description, False, unit, name, filter, sky_subtracted)
+            return cls(hdu.data, wcs, pixelscale, description, False, unit, name, filter, sky_subtracted, zero_point)
 
     # -----------------------------------------------------------------
 
@@ -209,6 +213,7 @@ class Frame(np.ndarray):
         self.name = getattr(obj, 'name', None)
         self.filter = getattr(obj, 'filter', None)
         self.sky_subtracted = getattr(obj, 'sky_subtracted', False)
+        self.zero_point = getattr(obj, 'zero_point', None)
         self.fwhm = getattr(obj, 'fwhm', None)
 
     # -----------------------------------------------------------------

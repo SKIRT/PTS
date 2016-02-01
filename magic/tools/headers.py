@@ -293,6 +293,24 @@ def get_unit(header):
 
 # -----------------------------------------------------------------
 
+def get_zero_point(header):
+
+    """
+    This function ...
+    :param header:
+    :return:
+    """
+
+    # Loop over all keys in the header
+    for key in header:
+
+        if "MAGZP" in key: return header[key]
+
+    # If no keyword is found that states the zero-point, return None
+    return None
+
+# -----------------------------------------------------------------
+
 def is_sky_subtracted(header):
 
     """
