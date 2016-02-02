@@ -443,13 +443,23 @@ class Frame(np.ndarray):
         :return:
         """
 
-        # TODO: change the WCS
-
         # Calculate the rotated array
-        data = ndimage.interpolation.rotate(self, angle)
+        #frame[np.isnan(frame)] = 0.0
+        data = ndimage.interpolation.rotate(self, angle, reshape=False, order=1, mode='constant', cval=float('nan'))
+        #new_frame = misc.imrotate(frame, angle, interp="bilinear")
+
+        # Convert the wcs to header
+        header = self.wcs.to_header()
+
+        # Rotate the header (Sebastien's script)
+        from ..tools import rotation
+        rotated_header = rotation.rotate_header(header, angle)
+
+        # Create the new WCS
+        rotated_wcs = headers.load_wcs_from_header(rotated_header)
 
         # Return the rotated frame
-        return Frame(data, None, self.pixelscale, self.description, self.selected, self.unit)
+        return Frame(data, rotated_wcs, self.pixelscale, self.description, self.selected, self.unit)
 
     # -----------------------------------------------------------------
 
