@@ -13,19 +13,28 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import os
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.modeling.core import PhotoMeter
+from pts.modeling import PhotoMeter
 
 # -----------------------------------------------------------------
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
 parser.add_argument("image", type=str, help="the name of the image for which to calculate the photometry")
+parser.add_argument("path", type=str, nargs='?', help="the modeling path")
+parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
+parser.add_argument("--report", action='store_true', help='write a report file')
 
 # Parse the command line arguments
 arguments = parser.parse_args()
+
+# -----------------------------------------------------------------
+
+# Set the modeling path
+if arguments.path is None: arguments.path = os.getcwd()
 
 # -----------------------------------------------------------------
 

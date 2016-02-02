@@ -207,7 +207,7 @@ class Extractor(Configurable):
         self.config.writing.mask_path = "mask.fits"
 
         # Create a mask with shape equal to the shape of the frame
-        self.mask = Mask.from_shape(self.frame.shape)
+        self.mask = Mask.from_shape(self.image.shape)
         self.image.add_mask(self.mask, "sources")
 
         # Set the appropriate configuration settings for writing out the galactic and stellar statistics
@@ -286,7 +286,7 @@ class Extractor(Configurable):
         self.log.info("Importing the catalogs ...")
 
         # Run the catalog importer
-        self.catalog_importer.run(self.frame)
+        self.catalog_importer.run(self.image.frames.primary)
 
     # -----------------------------------------------------------------
 
@@ -317,7 +317,7 @@ class Extractor(Configurable):
         self.log.info("Extracting the stars ...")
 
         # Run the star extraction if the wavelength of this image is smaller than 25 micron (or the wavelength is unknown)
-        if self.frame.wavelength is None or self.frame.wavelength < wavelengths.ranges.ir.mir.max:
+        if self.image.wavelength is None or self.image.wavelength < wavelengths.ranges.ir.mir.max:
 
             # Run the star extractor
             self.star_extractor.run(self.image, self.galaxy_extractor, self.catalog_importer.stellar_catalog, special=self.special_mask, ignore=self.ignore_mask)
@@ -367,7 +367,7 @@ class Extractor(Configurable):
         self.log.info("Building the stellar catalog ...")
 
         # Run the catalog builder
-        self.catalog_builder.run(self.frame, self.galaxy_extractor, self.star_extractor, self.trained_extractor)
+        self.catalog_builder.run(self.image.frames.primary, self.galaxy_extractor, self.star_extractor, self.trained_extractor)
 
     # -----------------------------------------------------------------
 
@@ -382,7 +382,7 @@ class Extractor(Configurable):
         self.log.info("Synchronizing with the DustPedia catalog ...")
 
         # Run the catalog synchronizer
-        self.catalog_synchronizer.run(self.frame, self.galaxy_name, self.catalog_builder.galactic_catalog, self.catalog_builder.stellar_catalog)
+        self.catalog_synchronizer.run(self.image.frames.primary, self.galaxy_name, self.catalog_builder.galactic_catalog, self.catalog_builder.stellar_catalog)
 
     # -----------------------------------------------------------------
 
@@ -488,7 +488,7 @@ class Extractor(Configurable):
         self.log.info("Writing resulting frame to " + path + " ...")
 
         # Write out the resulting frame
-        self.frame.save(path, header)
+        self.image.frames.primary.save(path, header)
 
     # -----------------------------------------------------------------
 
@@ -531,8 +531,8 @@ class Extractor(Configurable):
         self.log.info("Creating mask covering objects that require special attention from " + path + " ...")
 
         # Load the region and create a mask from it
-        region = Region.from_file(path, self.frame.wcs)
-        special_mask = Mask(region.get_mask(shape=self.frame.shape))
+        region = Region.from_file(path, self.image.wcs)
+        special_mask = Mask(region.get_mask(shape=self.image.shape))
 
         # Create the mask
         self.special_mask = special_mask
@@ -557,8 +557,8 @@ class Extractor(Configurable):
         self.log.info("Creating mask covering objects that should be ignored from " + path + " ...")
 
         # Load the region and create a mask from it
-        region = Region.from_file(path, self.frame.wcs)
-        ignore_mask = Mask(region.get_mask(shape=self.frame.shape))
+        region = Region.from_file(path, self.image.wcs)
+        ignore_mask = Mask(region.get_mask(shape=self.image.shape))
 
         # Create the mask
         self.ignore_mask = ignore_mask

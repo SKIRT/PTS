@@ -145,8 +145,8 @@ class ImageImporter(Configurable):
         self.select_frames()
 
         # Set the image unit and FWHM
-        self.image.set_unit(self.unit)
-        self.image.set_fwhm(self.fwhm)
+        if self.unit is not None: self.image.set_unit(self.unit)
+        if self.fwhm is not None: self.image.set_fwhm(self.fwhm)
 
     # -----------------------------------------------------------------
 

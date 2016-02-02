@@ -347,7 +347,7 @@ class DataPreparer(ModelingComponent):
         for image in self.images:
 
             # Set the attenuation value
-            self.preparer.config.attenuation = self.attenuations[image.name]
+            self.image_preparer.config.attenuation = self.attenuations[image.name]
 
             # Check if there is a file stating the indices of stars that should be treated as exceptions during the extraction procedure
             exceptions_path = os.path.join(self.data_path, "exceptions", image.name + ".txt")
@@ -356,7 +356,7 @@ class DataPreparer(ModelingComponent):
 
             # If this image is not the reference image, set the appropriate options for rebinning and convolution
             # or this image does not need to be convolved (e.g. SPIRE images)
-            if image.name == self.config.reference or image.name not in aniano_names:
+            if image.name == self.config.reference_image or image.name not in aniano_names:
 
                 self.image_preparer.config.rebin = False
                 self.image_preparer.config.convolve = False
@@ -366,7 +366,7 @@ class DataPreparer(ModelingComponent):
 
                 # Set the path to the convolution kernel
                 this_aniano_name = aniano_names[image.name]
-                reference_aniano_name = aniano_names[self.config.reference]
+                reference_aniano_name = aniano_names[self.config.reference_image]
                 kernel_path = os.path.join(self.kernels_path, "Kernel_HiRes_" + this_aniano_name + "_to_" + reference_aniano_name + ".fits")
                 self.image_preparer.config.convolution.kernel_path = kernel_path
 

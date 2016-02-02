@@ -30,6 +30,57 @@ from ...core.tools import time
 
 # -----------------------------------------------------------------
 
+## FROM GALAXYMODELER CLASS:
+
+# Open the prepared reference image
+#config.cutoff.reference_path = os.path.join(self.prep_path, self.config.reference_image, "final.fits")
+
+# Set the path to the low signal-to-noise cutoff mask file
+#config.saving.cutoff_mask_path = os.path.join(self.prep_path, self.config.reference_image, "cutoff_mask.fits")
+#config.saving.cutoff_mask_segments_path = os.path.join(self.prep_path, self.config.reference_image, "cutoff_mask_segments.fits")
+#config.saving.cutoff_mask_holes_path = os.path.join(self.prep_path, self.config.reference_image, "cutoff_mask_holes.fits")
+#config.saving.cutoff_mask_with_holes_path = os.path.join(self.prep_path, self.config.reference_image, "cutoff_mask_with_holes.fits")
+
+# Set the paths to the processed images
+#config.h_path = os.path.join(self.prep_path, "2MASSH", "final.fits")
+#config.fuv_path = os.path.join(self.prep_path, "GALEXFUV", "final.fits")
+#config.ha_path = os.path.join(self.prep_path, "Ha", "final.fits")
+#config.irac_path = os.path.join(self.prep_path, "IRACI1", "final.fits")
+#config.mips_path = os.path.join(self.prep_path, "MIPS24", "final.fits")
+#config.pacsblue_path = os.path.join(self.prep_path, "PACS70", "final.fits")
+#config.pacsred_path = os.path.join(self.prep_path, "PACS160", "final.fits")
+#config.disk_path = os.path.join(self.prep_path, "Disk", "final.fits")
+#config.bulge_path = os.path.join(self.prep_path, "Bulge", "final.fits")
+
+# Set the paths to the cutoff maps
+#config.saving.h_cutoff_path = os.path.join(self.prep_path, "2MASSH", "cutoff.fits")
+#config.saving.fuv_cutoff_path = os.path.join(self.prep_path, "GALEXFUV", "cutoff.fits")
+#config.saving.ha_cutoff_path = os.path.join(self.prep_path, "Ha", "cutoff.fits")
+#config.saving.irac_cutoff_path = os.path.join(self.prep_path, "IRACI1", "cutoff.fits")
+#config.saving.mips_cutoff_path = os.path.join(self.prep_path, "MIPS24", "cutoff.fits")
+#config.saving.pacsblue_cutoff_path = os.path.join(self.prep_path, "PACS70", "cutoff.fits")
+#config.saving.pacsred_cutoff_path = os.path.join(self.prep_path, "PACS160", "cutoff.fits")
+#config.saving.disk_cutoff_path = os.path.join(self.prep_path, "Disk", "cutoff.fits")
+#config.saving.bulge_cutoff_path = os.path.join(self.prep_path, "Bulge", "cutoff.fits")
+
+# Set the paths to the maps converted to solar luminosities
+#config.conversion.ha_output_path = os.path.join(self.in_path, "solar", "ha.fits")
+#config.conversion.ha_errors_output_path = os.path.join(self.in_path, "solar", "ha_errors.fits")
+#config.conversion.mips_output_path = os.path.join(self.in_path, "solar", "mips.fits")
+#config.conversion.mips_errors_output_path = os.path.join(self.in_path, "solar", "mips_errors.fits")
+#config.conversion.pacsblue_output_path = os.path.join(self.in_path, "solar", "pacsblue.fits")
+#config.conversion.pacsred_output_path = os.path.join(self.in_path, "solar", "pacsred.fits")
+
+# Set the paths to the output maps
+#config.dust.output_path = os.path.join(self.in_path, "dust.fits")
+#config.dust.ssfr.output_path = os.path.join(self.in_path, "ssfr.fits")  # Temporary ...
+#config.dust.ssfr.color_output_path = os.path.join(self.in_path, "fuv_h_color.fits") # Temporary ...
+#config.dust.ssfr.with_nans_output_path = os.path.join(self.in_path, "ssfr_withnans.fits")  # Temporary ...
+#config.dust.tir_to_fuv_output_path = os.path.join(self.in_path, "tir_to_fuv.fits") # Temporary ...
+#config.old_stars.output_path = os.path.join(self.in_path, "old_stars.fits")
+#config.ionizing_stars.output_path = os.path.join(self.in_path, "ionizing_stars.fits")
+#config.non_ionizing_stars.output_path = os.path.join(self.in_path, "non_ionizing_stars.fits")
+
 class MapMaker(ModelingComponent):
 
     """
@@ -95,6 +146,9 @@ class MapMaker(ModelingComponent):
         maker.config.path = arguments.path
         maker.config.input_path = os.path.join(arguments.path, "prep")
         maker.config.output_path = os.path.join(arguments.path, "maps")
+
+        # A single map name can be specified so the procedure is only run for that map
+        maker.config.single_map = arguments.map
 
         # Set logging path
         if arguments.report: maker.config.logging.path = os.path.join(maker.config.output_path, time.unique_name("log") + ".txt")

@@ -297,7 +297,12 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        self.image.masks.sky += self.mask
+        #print("self.image.masks=", self.image.masks)
+        #print("self.mask=", self.mask)
+
+        #self.image.masks.sky += self.mask
+
+        self.image.add_mask(self.mask, "sky")
 
     # -----------------------------------------------------------------
 

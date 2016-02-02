@@ -131,7 +131,7 @@ importer.run(image_path, bad_region_path=bad_region_path)
 extractor = Extractor.from_arguments(arguments)
 
 # Run the extractor
-extractor.run(importer.image.frames.primary, importer.mask)
+extractor.run(importer.image)
 
 # Save the result
 extractor.write_result(importer.image.original_header)

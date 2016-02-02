@@ -44,6 +44,8 @@ def get_pixelscale(header):
 
             # Get the scale and try to get the unit
             scale = header[keyword]
+            if scale == "N/A": continue
+
             try: unit = header.comments[keyword].split("[")[1].split("]")[0]
             except IndexError: unit = None
 
@@ -66,42 +68,46 @@ def get_pixelscale(header):
             return Extent(scale, scale)
 
     # Search for the 'PXSCAL1' and 'PXSCAL2' keywords
-    if "PXSCAL1" in header and "PXSCAL2" in header:
+    for keyword_combination in (("PXSCAL1", "PXSCAL2"), ("XPIXSIZE", "YPIXSIZE")):
 
-        scale1 = header["PXSCAL1"]
-        try: unit1 = header.comments["PXSCAL1"].split("[")[1].split("]")[0]
-        except IndexError: unit1 = None
+        if keyword_combination[0] in header and keyword_combination[1] in header:
 
-        scale2 = header["PXSCAL2"]
-        try: unit2 = header.comments["PXSCAL2"].split("[")[1].split("]")[0]
-        except IndexError: unit2 = None
+            scale1 = header[keyword_combination[0]]
+            if scale1 == "N/A": continue
+            try: unit1 = header.comments[keyword_combination[0]].split("[")[1].split("]")[0]
+            except IndexError: unit1 = None
 
-        # Parse the unit with Astropy
-        if unit1 is not None:
+            scale2 = header[keyword_combination[1]]
+            if scale2 == "N/A": continue
+            try: unit2 = header.comments[keyword_combination[1]].split("[")[1].split("]")[0]
+            except IndexError: unit2 = None
 
-            unit1 = unit1.replace("asec", "arcsec")
-            if not (unit1.endswith("pixel") or unit1.endswith("pix")): unit1 = unit1 + "/pix"
-            try: unit1 = u.Unit(unit1)
-            except ValueError: unit1 = None
+            # Parse the unit with Astropy
+            if unit1 is not None:
 
-        if unit2 is not None:
+                unit1 = unit1.replace("asec", "arcsec")
+                if not (unit1.endswith("pixel") or unit1.endswith("pix")): unit1 = unit1 + "/pix"
+                try: unit1 = u.Unit(unit1)
+                except ValueError: unit1 = None
 
-            unit2 = unit2.replace("asec", "arcsec")
-            if not (unit2.endswith("pixel") or unit2.endswith("pix")): unit2 = unit2 + "/pix"
-            try: unit2 = u.Unit(unit2)
-            except ValueError: unit2 = None
+            if unit2 is not None:
 
-        print("DEBUG: pixelscale found in PXSCAL1 and PXSCAL2 keywords = (", scale1, scale2, ")")
-        print("DEBUG: unit for the pixelscale = (", unit1, unit2, ")")
+                unit2 = unit2.replace("asec", "arcsec")
+                if not (unit2.endswith("pixel") or unit2.endswith("pix")): unit2 = unit2 + "/pix"
+                try: unit2 = u.Unit(unit2)
+                except ValueError: unit2 = None
 
-        # If no unit is found, guess that it's arcseconds / pixel ...
-        if unit1 is None: unit1 = u.Unit("arcsec/pix")
-        if unit2 is None: unit2 = u.Unit("arcsec/pix")
-        scale1 = scale1 * unit1
-        scale2 = scale2 * unit2
+            print("DEBUG: pixelscale found in PXSCAL1 and PXSCAL2 keywords = (", scale1, scale2, ")")
+            print("DEBUG: unit for the pixelscale = (", unit1, unit2, ")")
 
-        # Return the pixelscale
-        return Extent(scale1, scale2)
+            # If no unit is found, guess that it's arcseconds / pixel ...
+            if unit1 is None: unit1 = u.Unit("arcsec/pix")
+            if unit2 is None: unit2 = u.Unit("arcsec/pix")
+            scale1 = scale1 * unit1
+            scale2 = scale2 * unit2
+
+            # Return the pixelscale
+            return Extent(scale1, scale2)
 
     # If none of the above keywords were found, return None
     else: return None
@@ -267,29 +273,26 @@ def get_unit(header):
     :return:
     """
 
-    # Look for the 'BUNIT' keyword
-    if "BUNIT" in header:
+    unit = None
 
-        value = header["BUNIT"].split("   / ")[0].rstrip()
+    for keyword in ("BUNIT", "SIGUNIT", "ZUNITS"):
 
-        if value == "DN": value = "count"
+        if keyword in header:
 
-        return u.Unit(value)
+            value = header[keyword].split("   / ")[0].rstrip()
 
-    # Look for the 'SIGUNIT' keyword
-    elif "SIGUNIT" in header:
+            if value.isupper(): value = value.replace("DN", "count").replace("SEC", "second").lower()
+            else: value = value.replace("DN", "count")
 
-        value = header["SIGUNIT"].split("   / ")[0].rstrip()
-        return u.Unit(value)
+            try:
+                #print(value)
+                unit = u.Unit(value)
+                #print(unit)
+                break
+            except ValueError: continue
 
-    # Look for the 'ZUNITS' keyword
-    elif "ZUNITS" in header:
-
-        value = header["ZUNITS"].split("   / ")[0].rstrip()
-        return u.Unit(value)
-
-    # No unit information was found
-    else: return None
+    # Return the unit
+    return unit
 
 # -----------------------------------------------------------------
 

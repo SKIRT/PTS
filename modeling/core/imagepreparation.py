@@ -63,9 +63,6 @@ class ImagePreparer(Configurable):
         # 1. Call the setup function
         self.setup(image)
 
-        # 2. Create the mask for bad pixels
-        self.create_mask()
-
         # 3. Extract stars and galaxies from the image
         if self.config.extract_sources: self.extract_sources()
 
@@ -114,8 +111,8 @@ class ImagePreparer(Configurable):
 
             # -- Source extraction --
 
-            self.extractor.config.write_result = True
-            self.extractor.config.writing.result_path = "extracted.fits"
+            #self.extractor.config.write_result = True
+            #self.extractor.config.writing.result_path = "extracted.fits"
 
             self.extractor.config.write_catalogs = True
             self.extractor.config.write_statistics = True

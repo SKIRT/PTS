@@ -116,8 +116,8 @@ class Frame(np.ndarray):
             if not (x_isclose or y_isclose):
 
                 print("WARNING: the pixel scale defined in the header is WRONG:")
-                print("           - header pixelscale: (", header_pixelscale.x, header_pixelscale.y, ")")
-                print("           - actual pixelscale: (", pixelscale.x, pixelscale.y, ")")
+                print("           - header pixelscale: (", header_pixelscale.x.to("arcsec/pix"), header_pixelscale.y.to("arcsec/pix"), ")")
+                print("           - actual pixelscale: (", pixelscale.x.to("arcsec/pix"), pixelscale.y.to("arcsec/pix"), ")")
 
         # Obtain the filter for this image
         filter = headers.get_filter(os.path.basename(path[:-5]), header)
@@ -171,7 +171,7 @@ class Frame(np.ndarray):
         x_pixelscale = self.pixelscale.x.to("arcsec/pix")
         y_pixelscale = self.pixelscale.y.to("arcsec/pix")
 
-        if not np.isclose(x_pixelscale.value, y_pixelscale.value):
+        if not np.isclose(x_pixelscale.value, y_pixelscale.value, rtol=0.0005):
 
             print("WARNING: averaging the pixelscale over the x and y direction may not be a good approximation:")
             print("          x pixelscale =", x_pixelscale)
@@ -574,8 +574,13 @@ class Frame(np.ndarray):
         if not silent:
 
             # Check whether the two different ways of calculating the RA width result in approximately the same value
-            assert np.isclose(ra_distance, size_ra_deg, rtol=0.05), "The coordinate system and pixel scale do not match: ra_distance=" + str(ra_distance) + ",size_ra_deg=" + str(size_ra_deg)
-            assert np.isclose(dec_distance, size_dec_deg, rtol=0.05), "The coordinate system and pixel scale do not match: dec_distance=" + str(dec_distance) + ",size_dec_deg=" + str(size_dec_deg)
+            #assert np.isclose(ra_distance, size_ra_deg, rtol=0.05), "The coordinate system and pixel scale do not match: ra_distance=" + str(ra_distance) + ",size_ra_deg=" + str(size_ra_deg)
+            #assert np.isclose(dec_distance, size_dec_deg, rtol=0.05), "The coordinate system and pixel scale do not match: dec_distance=" + str(dec_distance) + ",size_dec_deg=" + str(size_dec_deg)
+
+            if not np.isclose(ra_distance, size_ra_deg, rtol=0.05):
+                print("ERROR: the coordinate system and pixel scale do not match: ra_distance = " + str(ra_distance) + ", size_ra_deg = " + str(size_ra_deg))
+            if not np.isclose(dec_distance, size_dec_deg, rtol=0.05):
+                print("ERROR: the coordinate system and pixel scale do not match: dec_distance = " + str(dec_distance) + ",size_dec_deg = " + str(size_dec_deg))
 
         center = coord.SkyCoord(ra=ra_center, dec=dec_center, unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
 

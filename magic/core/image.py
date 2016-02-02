@@ -216,7 +216,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path=None):
+    def save(self, path=None, add_metadata=False):
 
         """
         This function exports the currently selected frame(s) as a datacube into FITS file
@@ -268,14 +268,19 @@ class Image(object):
             # Increment the plane index
             plane_index += 1
 
+        # Add the meta information to the header
+        if add_metadata:
+            for key in self.metadata:
+                try: header[key] = self.metadata[key]
+                except ValueError: pass # Some values in the header gives errors in Astropy when adding them again to this new header ... (e.g. ValueError: Illegal value: = 'created by T.H. Jarrett'.)
+
+        # Set plane information
         if plane_index > 1:
             header["NAXIS"] = 3
             header["NAXIS3"] = plane_index
 
-        # Add the meta information to the header
-        for key in self.metadata:
-            try: header[key] = self.metadata[key]
-            except ValueError: pass # Some values in the header gives errors in Astropy when adding them again to this new header ... (e.g. ValueError: Illegal value: = 'created by T.H. Jarrett'.)
+        # Set the unit
+        header["BUNIT"] = str(self.unit)
 
         # Create the HDU from the data array and the header
         hdu = fits.PrimaryHDU(np.array(datacube), header)
@@ -868,8 +873,8 @@ class Image(object):
             if not (x_isclose or y_isclose):
 
                 print("WARNING: the pixel scale defined in the header is WRONG:")
-                print("           - header pixelscale: (", header_pixelscale.x, header_pixelscale.y, ")")
-                print("           - actual pixelscale: (", pixelscale.x, pixelscale.y, ")")
+                print("           - header pixelscale: (", header_pixelscale.x.to("arcsec/pix"), header_pixelscale.y.to("arcsec/pix"), ")")
+                print("           - actual pixelscale: (", pixelscale.x.to("arcsec/pix"), pixelscale.y.to("arcsec/pix"), ")")
 
         # Obtain the filter for this image
         filter = headers.get_filter(self.name, original_header)

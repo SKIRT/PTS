@@ -17,7 +17,7 @@ import os
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.modeling.core import MapMaker
+from pts.modeling import MapMaker
 
 # -----------------------------------------------------------------
 

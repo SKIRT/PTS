@@ -17,4 +17,7 @@
 # -----------------------------------------------------------------
 
 # Import classes to make them available at the level of this subpackage
-from .galaxymodeler import GalaxyModeler
+from .core.datapreparation import DataPreparer
+from .core.photometry import PhotoMeter
+from .core.mapmaker import MapMaker
+from .core.decomposer import GalaxyDecomposer

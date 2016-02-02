@@ -164,6 +164,9 @@ class UnitConverter(Configurable):
         # Multiply the image (primary and errors frame) by the conversion factor
         self.image *= self.conversion_factor
 
+        # Set the new unit
+        self.image.set_unit(self.target_unit)
+
     # -----------------------------------------------------------------
 
     def spectral_factor_angstrom_to_hz(self, wavelength):

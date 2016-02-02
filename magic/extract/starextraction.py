@@ -1329,7 +1329,7 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def update_image_mask(self):
+    def update_mask(self):
 
         """
         This function ...
