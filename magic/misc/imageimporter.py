@@ -226,11 +226,15 @@ class ImageImporter(Configurable):
         blob_mask = nan_mask.copy()
         if hits_boundary:
 
-            #print(where[0])
+            indices = set()
 
             for pixel in where:
-
                 index = segments[pixel.y, pixel.x]
+                indices.add(index)
+
+            #print("indices=", indices)
+
+            for index in indices:
 
                 #plotting.plot_box(segments == index, "segments == index")
 

@@ -25,11 +25,12 @@ from ...magic.basics import Mask
 from ...magic.core import Image, Frame
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import Configurable
+from .component import ModelingComponent
+from ...core.tools import time
 
 # -----------------------------------------------------------------
 
-class MapMaker(Configurable):
+class MapMaker(ModelingComponent):
 
     """
     This class...
@@ -44,7 +45,7 @@ class MapMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(MapMaker, self).__init__(config, "modeling")
+        super(MapMaker, self).__init__(config)
 
         # -- Attributes --
 
@@ -81,7 +82,25 @@ class MapMaker(Configurable):
         :return:
         """
 
-        pass
+        # Create a new MapMaker instance
+        maker = cls(arguments.config)
+
+        # Logging
+        if arguments.debug:
+
+            maker.config.logging.level = "DEBUG"
+            maker.config.logging.cascade = True
+
+        # Set the input and output path
+        maker.config.path = arguments.path
+        maker.config.input_path = os.path.join(arguments.path, "prep")
+        maker.config.output_path = os.path.join(arguments.path, "maps")
+
+        # Set logging path
+        if arguments.report: maker.config.logging.path = os.path.join(maker.config.output_path, time.unique_name("log") + ".txt")
+
+        # Return the new instance
+        return maker
 
     # -----------------------------------------------------------------
 

@@ -257,7 +257,7 @@ class DataPreparer(ModelingComponent):
                 continue
 
             # Get image properties such as the unit and the FWHM of the PSF
-            unit = u.Unit(info_table["Unit"][info_index])
+            unit = u.Unit(info_table["Unit"][info_index]) if not info_table["Unit"].mask[info_index] else None
             fwhm = info_table["FWHM"][info_index] * u.Unit(info_table["FWHM unit"][info_index]) if not info_table["FWHM"].mask[info_index] else None
 
             # Set the path to the region of bad pixels
