@@ -121,6 +121,8 @@ class Filter:
                     self._WavelengthMin = 1e-4*float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthMin'][1]/@value")[0])
                     self._WavelengthMax = 1e-4*float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthMax'][1]/@value")[0])
                     self._WavelengthCen = 1e-4*float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthCen'][1]/@value")[0])
+                    self._WavelengthMean = 1e-4*float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthMean'][1]/@value")[0])
+                    self._WavelengthEff = 1e-4*float(tree.xpath("//RESOURCE/PARAM[@name='WavelengthEff'][1]/@value")[0])
                     self._FilterID = tree.xpath("//RESOURCE/PARAM[@name='filterID'][1]/@value")[0]
                     self._Description = tree.xpath("//RESOURCE/PARAM[@name='Description'][1]/@value")[0]
                     self._Description = self._Description.replace("&#956;m", "micron")
@@ -153,6 +155,8 @@ class Filter:
         else:
             self._WavelengthMin, self._WavelengthMax = map(float,filterspec)
             self._WavelengthCen = 0.5 * (self._WavelengthMin + self._WavelengthMax)
+            self._WavelengthMean = self._WavelengthCen
+            self._WavelengthEff = self._WavelengthCen
             self._FilterID = "Uniform_[{},{}]".format(self._WavelengthMin,self._WavelengthMax)
             self._Description = "Uniform filter in range [{},{}]".format(self._WavelengthMin,self._WavelengthMax)
             self._Wavelengths = np.array((self._WavelengthMin,self._WavelengthMax))
@@ -170,6 +174,14 @@ class Filter:
     ## This function returns a human-readable description for the filter.
     def description(self):
         return self._Description
+
+    ## This function returns the mean wavelength for the filter, in micron.
+    def meanwavelength(self):
+        return self._WavelengthMean
+
+    ## This function returns the effective wavelength for the filter, in micron.
+    def effectivewavelength(self):
+        return self._WavelengthEff
 
     ## This function returns the minimum wavelength for the filter, in micron.
     def minwavelength(self):
