@@ -75,31 +75,31 @@ aniano_names = {"GALEX FUV": "GALEX_FUV",
 
 # -----------------------------------------------------------------
 
-calibration_uncertainties = {"GALEX FUV": "0.05 mag",
-                             "GALEX NUV": "0.03 mag",
-                             "SDSS u": "2%",
-                             "SDSS g": "2%",
-                             "SDSS r": "2%",
-                             "Ha": "5%",
-                             "SDSS i": "2%",
-                             "SDSS z": "2%",
-                             "2MASS J": "0.03 mag",
-                             "2MASS H": "0.03 mag",
-                             "2MASS K": "0.03 mag",
-                             "WISE W1": "2.4%",
-                             "IRAC I1": "1.8%",
-                             "IRAC I2": "1.9%",
-                             "WISE W2": "2.8%",
-                             "IRAC I3": "2.0%",
-                             "IRAC I4": "2.1%",
-                             "WISE W3": "4.5%",
-                             "WISE W4": "5.7%",
-                             "MIPS 24": "4%",
-                             "PACS 70": "5%",
-                             "PACS 160": "5%",
-                             "SPIRE PSW": "4%",
-                             "SPIRE PMW": "4%",
-                             "SPIRE PLW": "4%"}
+calibration_errors = {"GALEX FUV": "0.05 mag",
+                      "GALEX NUV": "0.03 mag",
+                      "SDSS u": "2%",
+                      "SDSS g": "2%",
+                      "SDSS r": "2%",
+                      "Ha": "5%",
+                      "SDSS i": "2%",
+                      "SDSS z": "2%",
+                      "2MASS J": "0.03 mag",
+                      "2MASS H": "0.03 mag",
+                      "2MASS K": "0.03 mag",
+                      "WISE W1": "2.4%",
+                      "IRAC I1": "1.8%",
+                      "IRAC I2": "1.9%",
+                      "WISE W2": "2.8%",
+                      "IRAC I3": "2.0%",
+                      "IRAC I4": "2.1%",
+                      "WISE W3": "4.5%",
+                      "WISE W4": "5.7%",
+                      "MIPS 24": "4%",
+                      "PACS 70": "5%",
+                      "PACS 160": "5%",
+                      "SPIRE PSW": "4%",
+                      "SPIRE PMW": "4%",
+                      "SPIRE PLW": "4%"}
 
 # -----------------------------------------------------------------
 
@@ -376,6 +376,7 @@ class DataPreparer(ModelingComponent):
             # Set the path to the noise region
             noise_path = os.path.join(self.data_path, "noise.reg")
             self.image_preparer.config.uncertainties.noise_path = noise_path
+            self.image_preparer.config.uncertainties.calibration_error = calibration_errors[image.name]
 
             # Determine the output path for this image
             image_output_path = os.path.join(self.prep_path, image.name)

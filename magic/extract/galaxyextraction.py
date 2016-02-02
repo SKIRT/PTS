@@ -736,7 +736,7 @@ class GalaxyExtractor(Configurable):
         frame[self.mask] = float(self.config.writing.mask_value)
 
         # Write out the masked frame
-        frame.save(path)
+        frame.save(path, origin=self.name)
 
     # -----------------------------------------------------------------
 
@@ -766,7 +766,7 @@ class GalaxyExtractor(Configurable):
 
                 # Save the cutout as a FITS file
                 path = os.path.join(directory_path, "galaxy_principal_" + str(principals) + ".fits")
-                galaxy.source.save(path)
+                galaxy.source.save(path, origin=self.name)
 
                 # Increment the counter of the number of principal galaxies (there should only be one, really...)
                 principals += 1
@@ -776,7 +776,7 @@ class GalaxyExtractor(Configurable):
 
                 # Save the cutout as a FITS file
                 path = os.path.join(directory_path, "galaxy_companion_" + str(companions) + ".fits")
-                galaxy.source.save(path)
+                galaxy.source.save(path, origin=self.name)
 
                 # Increment the counter of the number of companion galaxies
                 companions += 1
@@ -786,7 +786,7 @@ class GalaxyExtractor(Configurable):
 
                 # Save the cutout as a FITS file
                 path = os.path.join(directory_path, "galaxy_source_" + str(principals) + ".fits")
-                galaxy.source.save(path)
+                galaxy.source.save(path, origin=self.name)
 
                 # Increment the counter of the number of galaxies with a source
                 with_source += 1
@@ -807,7 +807,7 @@ class GalaxyExtractor(Configurable):
         self.log.info("Writing resulting frame to " + path + " ...")
 
         # Write out the resulting frame
-        self.image.frames.primary.save(path)
+        self.image.frames.primary.save(path, origin=self.name)
 
     # -----------------------------------------------------------------
 

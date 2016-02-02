@@ -216,7 +216,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path=None, add_metadata=False):
+    def save(self, path=None, add_metadata=False, origin=None):
 
         """
         This function exports the currently selected frame(s) as a datacube into FITS file
@@ -281,6 +281,10 @@ class Image(object):
 
         # Set the unit
         header["BUNIT"] = str(self.unit)
+
+        # Add origin description
+        if origin is not None: header["ORIGIN"] = origin
+        else: header["ORIGIN"] = "Image class of PTS package"
 
         # Create the HDU from the data array and the header
         hdu = fits.PrimaryHDU(np.array(datacube), header)

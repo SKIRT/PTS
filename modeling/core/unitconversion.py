@@ -88,6 +88,9 @@ class UnitConverter(Configurable):
         # 2. Determine the conversion factor
         self.convert()
 
+        # ..
+        self.calculate_ab_magnitudes()
+
         # 3. Apply the conversion to the image
         self.apply()
 
@@ -148,6 +151,33 @@ class UnitConverter(Configurable):
         elif "PACS" in self.image.name: self.convert_pacs()
         elif "SPIRE" in self.image.name: self.convert_spire()
         else: raise ValueError("Unkown image: " + self.image.name)
+
+    # -----------------------------------------------------------------
+
+    def calculate_ab_magnitudes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # GALEX images
+        if "GALEX" in self.image.name:
+
+            #FUV: mAB = -2.5 x log10(CPS) + 18.82
+            #NUV: mAB = -2.5 x log10(CPS) + 20.08
+
+            magnitude_term = {"GALEX FUV": 18.82, "GALEX NUV": 20.08}
+
+            ab_frame = -2.5 * np.log10(self.image.frames.primary) + magnitude_term[self.image.name]
+
+        # 2MASS images
+        elif "2MASS" in self.image.name:
+
+            pass
+
+        # Do not calculate the AB magnitude for other images
+        else: pass
 
     # -----------------------------------------------------------------
 
@@ -292,7 +322,7 @@ class UnitConverter(Configurable):
         """
 
         # Conversion from erg / [s * cm**2] to erg / [s * cm * Hz]
-        self.conversion_factor *= self.spectral_factor_cm_to_hz(self.image.frames.primary.filter.effectivewavelength())
+        self.conversion_factor *= self.spectral_factor_cm_to_hz(self.image.wavelength)
 
         # Conversion from erg / [s * cm * Hz] to the target unit (MJy / sr)
         self.convert_from_ergscmhz()
@@ -341,7 +371,7 @@ class UnitConverter(Configurable):
         self.conversion_factor *= f_0 * np.power(10.0, -m_0/2.5)
 
         # Conversion from W / [cm2 * micron] (per pixel) to W / [cm2 * Hz] (per pixel)
-        self.conversion_factor *= self.spectral_factor_micron_to_hz(self.image.frames.primary.filter.effectivewavelength())
+        self.conversion_factor *= self.spectral_factor_micron_to_hz(self.image.wavelength)
 
         # Conversion from W / [cm2 * Hz] (per pixel) to W / [m2 * Hz] (per pixel)
         self.conversion_factor *= 100.0**2

@@ -14,9 +14,10 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import numpy as np
 
 # Import the relevant AstroMagic classes and modules
-from ..core import Image, Box
+from ..core import Image, Frame, Box
 from ..basics import Mask, Region
 
 # Import the relevant PTS classes and modules
@@ -161,14 +162,20 @@ class ImageImporter(Configurable):
         self.log.info("Looking for an error frame ...")
 
         # If no error map was found in the FITS file, try to find a seperate FITS file containing error data
-        if self.image.frames.errors is None:
+        if "errors" not in self.image.frames:
 
             # self.directory_path is the same directory as where the image is located
             error_path = os.path.join(self.directory_path, self.image_name + " error.fits")
             if os.path.isfile(error_path): self.image.load_frames(error_path, 0, "errors", "the error map")
 
         # Still no errors frame
-        if self.image.frames.errors is None: self.log.warning("No error data found for " + self.image_name + ".fits")
+        if "errors" not in self.image.frames:
+
+            self.log.warning("No error data found for " + self.image_name + ".fits, adding errors frame that is zero everywhere")
+
+            # Create a new errors frame (all zeros) and add it to the image
+            new_error_frame = Frame(np.zeros(self.image.shape))
+            self.image.add_frame(new_error_frame, "errors")
 
     # -----------------------------------------------------------------
 

@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant AstroMagic classes and modules
-from ...magic.core import Frame
+from ...magic.core import Frame, Source
 from ...magic.basics import Region
 from ...magic.extract import Extractor
 from ...magic.subtract import SkySubtractor
@@ -110,9 +110,6 @@ class ImagePreparer(Configurable):
         if self.config.write_steps:
 
             # -- Source extraction --
-
-            #self.extractor.config.write_result = True
-            #self.extractor.config.writing.result_path = "extracted.fits"
 
             self.extractor.config.write_catalogs = True
             self.extractor.config.write_statistics = True
@@ -236,8 +233,7 @@ class ImagePreparer(Configurable):
         self.image.convolve(kernel)
 
         # Save convolved frame
-        path = self.full_output_path("convolved.fits")
-        if self.config.write_steps: self.image.frames["primary"].save(path)
+        if self.config.write_steps: self.write_intermediate_result("convolved.fits")
 
     # -----------------------------------------------------------------
 
@@ -258,12 +254,63 @@ class ImagePreparer(Configurable):
         self.image.rebin(reference)
 
         # Save rebinned frame
-        path = self.full_output_path("rebinned.fits")
-        if self.config.write_steps: self.image.frames["primary"].save(path)
+        if self.config.write_steps: self.write_intermediate_result("rebinned.fits")
 
     # -----------------------------------------------------------------
 
     def set_uncertainties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create noise region
+        region = Region.from_file(self.config.uncertainties.noise_path, self.image.wcs)
+
+        means = []
+        stddevs = []
+
+        for shape in region:
+
+            # Create ellipse
+            ellipse = regions.ellipse(shape)
+
+            # Create source for ellipse
+            source = Source.from_ellipse(self.image.frames.primary, ellipse, 1.5)
+
+            # Calculate the mean and standard deviation in the box
+            mean = np.ma.mean(np.ma.masked_array(source.cutout, mask=source.background_mask))
+            stddev = np.median(np.ma.masked_array(source.cutout, mask=source.background_mask).compressed())
+
+            # Add the mean and standard deviation to the appropriate list
+            means.append(mean)
+            stddevs.append(stddev)
+
+        # Create numpy arrays
+        means = np.array(means)
+        stddevs = np.array(stddevs)
+
+        # Calculate the global uncertainty
+        uncertainty = np.sqrt(np.std(means)**2 + np.median(stddevs)**2)
+
+        # Add the uncertainty to the errors quadratically
+        self.image.frames.errors = np.sqrt(np.power(self.image.frames[self.config.errors], 2) + uncertainty**2)
+
+        # Add the calibration uncertainty
+        if "mag" in self.config.uncertainties.calibration_error:
+
+            pass
+
+        elif "%" in self.config.uncertainties.calibration_error:
+
+            pass
+
+        else: self.log.warning("Unrecognized calibration error")
+
+    # -----------------------------------------------------------------
+
+    def set_uncertainties_old(self):
 
         """
         This function ...
@@ -382,7 +429,7 @@ class ImagePreparer(Configurable):
         self.log.info("Writing resulting image to " + path + " ...")
 
         # Write out the resulting image
-        self.image.save(path)
+        self.image.save(path, origin=self.name)
 
     # -----------------------------------------------------------------
 
@@ -400,6 +447,6 @@ class ImagePreparer(Configurable):
         self.log.info("Writing intermediate result to " + path + " ...")
 
         # Write out the image
-        self.image.save(path)
+        self.image.save(path, origin=self.name)
 
 # -----------------------------------------------------------------

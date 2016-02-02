@@ -212,8 +212,13 @@ class TrainedExtractor(Configurable):
         """
 
         fwhms = self.star_extractor.fwhms
-        min_fwhm = min(fwhms)
-        max_fwhm = max(fwhms)
+        if len(fwhms) > 0:
+            min_fwhm = min(fwhms)
+            max_fwhm = max(fwhms)
+        else:
+            fwhm = self.star_extractor.fwhm
+            min_fwhm = fwhm * 0.5
+            max_fwhm = fwhm * 1.5
 
         # Loop over all sources
         for source in self.sources:
@@ -494,7 +499,7 @@ class TrainedExtractor(Configurable):
         frame[self.mask] = float(self.config.writing.mask_value)
 
         # Write out the masked frame
-        frame.save(path)
+        frame.save(path, origin=self.name)
 
     # -----------------------------------------------------------------
 
@@ -567,6 +572,6 @@ class TrainedExtractor(Configurable):
         self.log.info("Writing the segmentation map to " + path + " ...")
 
         # Save the segmentation map
-        Frame(self.segments).save(path)
+        Frame(self.segments).save(path, origin=self.name)
 
 # -----------------------------------------------------------------

@@ -118,6 +118,10 @@ class Extractor(Configurable):
         extractor.config.write_result = True
         extractor.config.write_mask = True
 
+        # Set the paths to the resulting frame and the total mask
+        extractor.config.writing.result_path = "result.fits"
+        extractor.config.writing.mask_path = "mask.fits"
+
         # Manual indices
         if arguments.not_stars is not None: extractor.config.stars.manual_indices.not_stars = arguments.not_stars
         if arguments.remove_stars is not None: extractor.config.stars.manual_indices.remove_stars = arguments.remove_stars
@@ -201,10 +205,6 @@ class Extractor(Configurable):
 
         # Make a local reference to the image (mask inside image)
         self.image = image
-
-        # Set the paths to the resulting frame and the total mask
-        self.config.writing.result_path = "result.fits"
-        self.config.writing.mask_path = "mask.fits"
 
         # Create a mask with shape equal to the shape of the frame
         self.mask = Mask.from_shape(self.image.shape)
@@ -488,7 +488,7 @@ class Extractor(Configurable):
         self.log.info("Writing resulting frame to " + path + " ...")
 
         # Write out the resulting frame
-        self.image.frames.primary.save(path, header)
+        self.image.frames.primary.save(path, header, origin=self.name)
 
     # -----------------------------------------------------------------
 
@@ -509,7 +509,7 @@ class Extractor(Configurable):
         frame = Frame(self.mask.astype(int))
 
         # Write out the total mask
-        frame.save(path)
+        frame.save(path, origin=self.name)
 
     # -----------------------------------------------------------------
 

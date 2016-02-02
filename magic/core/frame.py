@@ -283,7 +283,7 @@ class Frame(np.ndarray):
 
         # Return the pivot wavelength of the frame's filter, if defined
         if self.filter is None: return None
-        else: return self.filter.pivotwavelength() * u.Unit("micron")
+        else: return self.filter.effectivewavelength() * u.Unit("micron")
 
     # -----------------------------------------------------------------
 
@@ -704,13 +704,17 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def save(self, path, header=None):
+    def save(self, path, header=None, origin=None):
 
         """
         This function ...
         """
 
         if header is None: header = self.header
+
+        # Add origin description
+        if origin is not None: header["ORIGIN"] = origin
+        else: header["ORIGIN"] = "Frame class of PTS package"
 
         # Create the HDU
         hdu = fits.PrimaryHDU(self, header)

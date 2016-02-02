@@ -428,7 +428,7 @@ class Source(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path, frame=None):
+    def save(self, path, frame=None, origin=None):
 
         """
         This function ...
@@ -477,7 +477,6 @@ class Source(object):
             image.metadata["peak_y"] = self.peak.y
 
         # Save the image
-        image.frames.select_all()
-        image.save(path)
+        image.save(path, origin=origin)
 
 # -----------------------------------------------------------------

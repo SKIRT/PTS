@@ -926,7 +926,7 @@ class StarExtractor(Configurable):
         frame[self.mask] = float(self.config.writing.mask_value)
 
         # Write out the masked frame
-        frame.save(path)
+        frame.save(path, origin=self.name)
 
     # -----------------------------------------------------------------
 
@@ -964,7 +964,7 @@ class StarExtractor(Configurable):
                 path = os.path.join(directory_path, "saturation_" + str(star.index) + ".fits")
 
                 # Save the saturation source as a FITS file
-                star.saturation.save(path)
+                star.saturation.save(path, origin=self.name)
 
             # -- PSF sources ---
 
@@ -982,7 +982,7 @@ class StarExtractor(Configurable):
                 source.estimate_background(method, sigma_clip)
 
                 # Save the source as a FITS file
-                source.save(path)
+                source.save(path, origin=self.name)
 
             # Check if a source was found for this star
             elif star.has_source:
@@ -998,7 +998,7 @@ class StarExtractor(Configurable):
                 source.estimate_background(method, sigma_clip)
 
                 # Save the source as a FITS file
-                source.save(path)
+                source.save(path, origin=self.name)
 
             # If no source was found for this star
             else:
@@ -1014,7 +1014,7 @@ class StarExtractor(Configurable):
                 source.estimate_background(method, sigma_clip)
 
                 # Save the cutout as a FITS file
-                source.save(path)
+                source.save(path, origin=self.name)
 
     # -----------------------------------------------------------------
 
@@ -1032,7 +1032,7 @@ class StarExtractor(Configurable):
         self.log.info("Writing resulting frame to " + path + " ...")
 
         # Write out the resulting frame
-        self.image.frames.primary.save(path)
+        self.image.frames.primary.save(path, origin=self.name)
 
     # -----------------------------------------------------------------
 
