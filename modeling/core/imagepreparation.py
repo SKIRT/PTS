@@ -76,10 +76,10 @@ class ImagePreparer(Configurable):
         if self.config.convert_unit: self.convert_unit()
 
         # 7. If requested, convolve
-        #if self.config.convolve: self.convolve()
+        if self.config.convolve: self.convolve()
 
         # 8. If requested, rebin
-        #if self.config.rebin: self.rebin()
+        if self.config.rebin: self.rebin()
 
         # 9. If requested, set the uncertainties
         #if self.config.set_uncertainties: self.set_uncertainties()
