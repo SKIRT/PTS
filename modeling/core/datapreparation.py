@@ -115,10 +115,6 @@ class DataPreparer(ModelingComponent):
 
         """
         The constructor ...
-        :param directory:
-        :param filter_name:
-        :param plot:
-        :param save:
         :param config:
         :return:
         """
@@ -144,41 +140,44 @@ class DataPreparer(ModelingComponent):
         """
 
         # Create a new Modeler instance
-        modeler = cls(arguments.config)
+        preparer = cls(arguments.config)
 
         # Logging
         if arguments.debug:
 
-            modeler.config.logging.level = "DEBUG"
-            modeler.config.logging.cascade = True
+            preparer.config.logging.level = "DEBUG"
+            preparer.config.logging.cascade = True
 
-        modeler.config.write_steps = arguments.steps
+        preparer.config.preparation.write_steps = arguments.steps
+
+        # Set the reference image
+        if arguments.reference is not None: preparer.reference_image = arguments.reference
 
         # Set the input and output path
-        modeler.config.input_path = arguments.input_path
-        modeler.config.output_path = arguments.output_path
+        preparer.config.path = arguments.path
+        preparer.config.input_path = os.path.join(arguments.path, "data")
+        preparer.config.output_path = os.path.join(arguments.path, "prep")
 
         # A single image can be specified so the preparation is only run with that image
-        modeler.config.single_image = arguments.image
+        preparer.config.single_image = arguments.image
 
         # Set logging path
-        if arguments.report: modeler.config.logging.path = os.path.join(modeler.config.output_path, time.unique_name("log") + ".txt")
+        if arguments.report: preparer.config.logging.path = os.path.join(preparer.config.output_path, time.unique_name("log") + ".txt")
 
         # Return the new instance
-        return modeler
+        return preparer
 
     # -----------------------------------------------------------------
 
-    def run(self, path):
+    def run(self):
 
         """
         This function runs the data preparation ...
-        :param path
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(path)
+        self.setup()
 
         # 2. Load the input data
         self.load_data()
@@ -191,29 +190,23 @@ class DataPreparer(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self, path):
+    def setup(self):
 
         """
         This function ...
-        :param path:
         :return:
         """
 
         # -- Children --
 
         # Create the preparation object
-        self.add_child("importer", ImageImporter)
-        self.add_child("preparer", ImagePreparer)
+        self.add_child("importer", ImageImporter, self.config.importation)
+        self.add_child("image_preparer", ImagePreparer, self.config.preparation)
 
         # -- Setup of the base class --
 
         # Call the setup function of the base class
-        super(DataPreparer, self).setup(path)
-
-        # -- Attributes --
-
-        # Create the prep path if it does not exist yet
-        filesystem.create_directory(self.prep_path)
+        super(DataPreparer, self).setup()
 
         # -- Fixed properties for the image preparer (valid for all target images)
 
@@ -392,9 +385,9 @@ class DataPreparer(ModelingComponent):
             self.image_preparer.config.output_path = image_output_path
 
             # Run the image preparation
-            self.preparer.run(image)
+            self.image_preparer.run(image)
 
             # Clear the image preparer
-            self.preparer.clear()
+            self.image_preparer.clear()
 
 # -----------------------------------------------------------------

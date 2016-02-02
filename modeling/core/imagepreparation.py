@@ -79,16 +79,16 @@ class ImagePreparer(Configurable):
         if self.config.convert_unit: self.convert_unit()
 
         # 7. If requested, convolve
-        if self.config.convolve: self.convolve()
+        #if self.config.convolve: self.convolve()
 
         # 8. If requested, rebin
-        if self.config.rebin: self.rebin()
+        #if self.config.rebin: self.rebin()
 
         # 9. If requested, set the uncertainties
-        if self.config.set_uncertainties: self.set_uncertainties()
+        #if self.config.set_uncertainties: self.set_uncertainties()
 
         # 10. If requested, crop
-        if self.config.crop: self.crop()
+        #if self.config.crop: self.crop()
 
         # Writing
         self.write()
@@ -146,7 +146,7 @@ class ImagePreparer(Configurable):
             remove_stars = []
             not_saturation = []
 
-            while open(self.config.extraction.exceptions_path, 'r') as exceptions_file:
+            with open(self.config.extraction.exceptions_path, 'r') as exceptions_file:
                 for line in exceptions_file:
 
                     if "not_stars" in line: not_stars = [int(item) for item in line.split(": ")[1].split(" ")]
@@ -160,6 +160,9 @@ class ImagePreparer(Configurable):
 
         # Run the extractor
         self.extractor.run(self.image)
+
+        # Write intermediate result
+        if self.config.write_steps: self.write_intermediate_result("extracted.fits")
 
     # -----------------------------------------------------------------
 
@@ -178,6 +181,9 @@ class ImagePreparer(Configurable):
         self.log.info("Median sky level = " + str(self.sky_subtractor.median))
         self.log.info("Standard deviation of sky = " + str(self.sky_subtractor.stddev))
 
+        # Write intermediate result
+        if self.config.write_steps: self.write_intermediate_result("sky_subtracted.fits")
+
     # -----------------------------------------------------------------
 
     def correct_for_extinction(self):
@@ -193,6 +199,9 @@ class ImagePreparer(Configurable):
         # Correct the primary frame for galactic extinction
         self.image.frames[self.config.primary] *= 10**(0.4 * self.config.attenuation)
 
+        # Write intermediate result
+        if self.config.write_steps: self.write_intermediate_result("corrected_for_extinction.fits")
+
     # -----------------------------------------------------------------
 
     def convert_unit(self):
@@ -207,6 +216,9 @@ class ImagePreparer(Configurable):
 
         # Run the unit conversion
         self.unit_converter.run(self.image)
+
+        # Write intermediate result
+        if self.config.write_steps: self.write_intermediate_result("converted_unit.fits")
 
     # -----------------------------------------------------------------
 
@@ -373,6 +385,24 @@ class ImagePreparer(Configurable):
         self.log.info("Writing resulting image to " + path + " ...")
 
         # Write out the resulting image
+        self.image.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_intermediate_result(self, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the result file
+        path = self.full_output_path(path)
+
+        # Inform the user
+        self.log.info("Writing intermediate result to " + path + " ...")
+
+        # Write out the image
         self.image.save(path)
 
 # -----------------------------------------------------------------

@@ -167,7 +167,7 @@ def files_in_path(path, recursive=False, ignore_hidden=True, extension=None, con
         thing = [item_path]
         if names: thing.append(item_name)
         if extensions: thing.append(item_extension)
-        file_paths.append(item_path if len(item_path) > 1 else item_path[0])
+        file_paths.append(thing if len(thing) > 1 else thing[0])
 
     # Return the list of file paths
     return file_paths
@@ -205,7 +205,7 @@ def directories_in_path(path, recursive=False, ignore_hidden=True, names=False):
         # Add the directory path to the list
         thing = [item_path]
         if names: thing.append(item)
-        directory_paths.append(item_path if len(item_path) > 1 else item_path[0])
+        directory_paths.append(thing if len(thing) > 1 else thing[0])
 
     # Return the list of directory paths
     return directory_paths
