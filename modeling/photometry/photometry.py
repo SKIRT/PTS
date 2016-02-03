@@ -5,20 +5,23 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.sedfitter Contains the SEDFitter class
+## \package pts.modeling.photometry.photometry Contains the PhotoMeter class.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import os
+
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import Configurable
-from ...core.launch.remotelauncher import SkirtRemoteLauncher
+from ..core import ModelingComponent
+from ...core.tools import time
 
 # -----------------------------------------------------------------
 
-class SEDFitter(Configurable):
+class PhotoMeter(ModelingComponent):
     
     """
     This class...
@@ -33,7 +36,7 @@ class SEDFitter(Configurable):
         """
 
         # Call the constructor of the base class
-        super(SEDFitter, self).__init__(config, "modeling")
+        super(PhotoMeter, self).__init__(config)
 
     # -----------------------------------------------------------------
 
@@ -46,7 +49,28 @@ class SEDFitter(Configurable):
         :return:
         """
 
-        pass
+        # Create a new PhotoMeter instance
+        photometer = cls(arguments.config)
+
+        # Logging
+        if arguments.debug:
+
+            photometer.config.logging.level = "DEBUG"
+            photometer.config.logging.cascade = True
+
+        # Set the input and output path
+        photometer.config.path = arguments.path
+        photometer.config.input_path = os.path.join(arguments.path, "data")
+        photometer.config.output_path = os.path.join(arguments.path, "prep")
+
+        # A single image can be specified so the photometry is only calculated for that image
+        photometer.config.single_image = arguments.image
+
+        # Set logging path
+        if arguments.report: photometer.config.logging.path = os.path.join(photometer.config.output_path, time.unique_name("log") + ".txt")
+
+        # Return the new instance
+        return photometer
 
     # -----------------------------------------------------------------
 

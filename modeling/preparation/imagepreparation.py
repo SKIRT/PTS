@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.imagepreparation Contains the ImagePreparer class.
+## \package pts.modeling.preparation.imagepreparation Contains the ImagePreparer class.
 
 # -----------------------------------------------------------------
 

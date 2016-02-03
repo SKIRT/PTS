@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.decomposition Contains the GalaxyDecomposer class.
+## \package pts.modeling.decomposition.decomposition Contains the GalaxyDecomposer class.
 
 # -----------------------------------------------------------------
 
@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .component import ModelingComponent
+from ..core import ModelingComponent
 
 # -----------------------------------------------------------------
 

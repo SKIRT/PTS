@@ -5,23 +5,20 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.photometry Contains the PhotoMeter class.
+## \package pts.modeling.fitting.sedfitting Contains the SEDFitter class
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import os
-
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import Configurable
-from ...core.tools import time
+from ..core import ModelingComponent
+from ...core.launch.remotelauncher import SkirtRemoteLauncher
 
 # -----------------------------------------------------------------
 
-class PhotoMeter(Configurable):
+class SEDFitter(ModelingComponent):
     
     """
     This class...
@@ -36,7 +33,7 @@ class PhotoMeter(Configurable):
         """
 
         # Call the constructor of the base class
-        super(PhotoMeter, self).__init__(config, "modeling")
+        super(SEDFitter, self).__init__(config)
 
     # -----------------------------------------------------------------
 
@@ -49,28 +46,7 @@ class PhotoMeter(Configurable):
         :return:
         """
 
-        # Create a new PhotoMeter instance
-        photometer = cls(arguments.config)
-
-        # Logging
-        if arguments.debug:
-
-            photometer.config.logging.level = "DEBUG"
-            photometer.config.logging.cascade = True
-
-        # Set the input and output path
-        photometer.config.path = arguments.path
-        photometer.config.input_path = os.path.join(arguments.path, "data")
-        photometer.config.output_path = os.path.join(arguments.path, "prep")
-
-        # A single image can be specified so the photometry is only calculated for that image
-        photometer.config.single_image = arguments.image
-
-        # Set logging path
-        if arguments.report: photometer.config.logging.path = os.path.join(photometer.config.output_path, time.unique_name("log") + ".txt")
-
-        # Return the new instance
-        return photometer
+        pass
 
     # -----------------------------------------------------------------
 

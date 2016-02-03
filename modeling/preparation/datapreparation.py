@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.datapreparation Contains the DataPreparer class
+## \package pts.modeling.preparation.datapreparation Contains the DataPreparer class
 #
 # Info ...
 
@@ -25,7 +25,7 @@ from astroquery.irsa_dust import IrsaDust
 from ...magic import ImageImporter
 
 # Import the relevant PTS classes and modules
-from .component import ModelingComponent
+from ..core import ModelingComponent
 from .imagepreparation import ImagePreparer
 from ...core.tools import filesystem, tables, time
 

@@ -15,7 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 import matplotlib.pyplot as plt
-import copy
+
+# Import astronomical modules
+from photutils.background import Background
 
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame
@@ -268,9 +270,21 @@ class SkySubtractor(Configurable):
             self.sky = Frame(data, self.image.wcs, self.image.pixelscale, "estimated sky", False, self.image.unit)
 
         # if the sky should be approximated by a polynomial function
-        elif self.config.estimatation.method == "polynomial":
+        elif self.config.estimation.method == "polynomial":
 
             pass
+
+        elif self.config.estimation.method == "photutils":
+
+            bkg = Background(self.image.frames.primary, (50, 50), filter_shape=(3, 3), method='median', mask=self.mask)
+
+            plotting.plot_box(bkg.background, title="background")
+            plotting.plot_box(bkg.background_low_res, title="low-res background")
+            plotting.plot_box(bkg.background_rms, title="background rms")
+            plotting.plot_box(bkg.background_rms_low_res, title="low-res rms")
+
+            print("background median = ", bkg.background_median)
+            print("background rms median = ", bkg.background_rms_median)
 
         # Unkown estimation method
         else: raise ValueError("Unkown sky estimation method")

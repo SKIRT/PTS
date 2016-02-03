@@ -17,4 +17,6 @@
 # -----------------------------------------------------------------
 
 # Import classes to make them available at the level of this subpackage
-from .component import ModelingComponent
+from .datapreparation import DataPreparer
+from .imagepreparation import ImagePreparer
+from .unitconversion import UnitConverter

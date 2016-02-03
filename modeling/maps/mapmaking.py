@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.mapmaking Contains the MapMaker class.
+## \package pts.modeling.maps.mapmaking Contains the MapMaker class.
 
 # -----------------------------------------------------------------
 
@@ -25,7 +25,7 @@ from ...magic.basics import Mask
 from ...magic.core import Image, Frame
 
 # Import the relevant PTS classes and modules
-from .component import ModelingComponent
+from ..core import ModelingComponent
 from ...core.tools import time
 
 # -----------------------------------------------------------------

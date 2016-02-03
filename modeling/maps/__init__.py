@@ -9,7 +9,7 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.modeling.core TO DO
+## \package pts.modeling.maps TO DO
 #
 # This package ...
 #
@@ -17,4 +17,4 @@
 # -----------------------------------------------------------------
 
 # Import classes to make them available at the level of this subpackage
-from .component import ModelingComponent
+from .mapmaking import MapMaker

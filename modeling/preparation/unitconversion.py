@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.unitconversion Contains the UnitConverter class.
+## \package pts.modeling.preparation.unitconversion Contains the UnitConverter class.
 
 # -----------------------------------------------------------------
 
