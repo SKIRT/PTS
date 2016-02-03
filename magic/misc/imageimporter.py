@@ -16,6 +16,9 @@ from __future__ import absolute_import, division, print_function
 import os
 import numpy as np
 
+# Import astronomical modules
+from astropy import units as u
+
 # Import the relevant AstroMagic classes and modules
 from ..core import Image, Frame, Box
 from ..basics import Mask, Region
@@ -166,7 +169,28 @@ class ImageImporter(Configurable):
 
             # self.directory_path is the same directory as where the image is located
             error_path = os.path.join(self.directory_path, self.image_name + " error.fits")
-            if os.path.isfile(error_path): self.image.load_frames(error_path, 0, "errors", "the error map")
+            #if os.path.isfile(error_path): self.image.load_frames(error_path, 0, "errors", "the error map") # is now possible, i added the "rebin_to_wcs flag" ...
+
+            # Check if the errors frame exists
+            if os.path.isfile(error_path):
+
+                # Open the errors frame
+                error_frame = Frame.from_file(error_path, name="errors", description="the error map")
+
+                # Check if the shape of the error frame matches the shape of the image
+                if self.image.shape != error_frame.shape:
+
+                    # Inform the user
+                    self.log.warning("The error frame does not have the same shape as the image, errors frame will be rebinned")
+
+                    # Check if the unit is a surface brightness unit
+                    if error_frame.unit != u.Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(error_frame.unit) + " is not recognized as a surface brightness unit")
+
+                    # Do the rebinning
+                    error_frame = error_frame.rebinned(self.image.frames.primary)
+
+                # Add the error frame
+                self.image.add_frame(error_frame, "errors")
 
         # Still no errors frame
         if "errors" not in self.image.frames:

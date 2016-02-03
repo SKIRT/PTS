@@ -23,6 +23,7 @@ import aplpy
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy import log
+from astropy import units as u
 
 # Import the relevant AstroMagic classes and modules
 from ..basics import Layers, Region, Mask
@@ -478,10 +479,8 @@ class Image(object):
             # Inform the user
             log.info("Rebinning the " + frame_name + " frame ...")
 
-            # Rebin this frame
-            self.frames[frame_name] = self.frames[frame_name].rebin(reference)
-
-            # Set the
+            # Rebin this frame (the reference wcs is automatically set in the new frame)
+            self.frames[frame_name] = self.frames[frame_name].rebinned(reference)
 
         # Loop over the masks
         for mask_name in self.masks:
@@ -861,7 +860,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def load_frames(self, filename, index=None, name=None, description=None, always_call_first_primary=True):
+    def load_frames(self, filename, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False):
 
         """
         This function ...
@@ -942,6 +941,25 @@ class Image(object):
                 # The sky-subtracted flag should only be set for the primary frame
                 subtracted = sky_subtracted if i == 0 else False
 
+                # Check the shape of this new frame
+                if self.shape is not None:
+
+                    if hdu.data[i].shape != self.shape:
+
+                        if rebin_to_wcs:
+
+                            # Inform the user
+                            log.warning("Rebinning the " + name + " frame (plane " + str(i) + ") of " + filename + " to match the shape of this image")
+
+                            # Check if the unit is a surface brightness unit
+                            if unit != u.Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(unit) + " is not recognized as a surface brightness unit")
+
+                            # Change the data and the WCS
+                            hdu.data[i] = transformations.align_and_rebin(hdu.data[i], header, self.wcs.to_header())
+                            wcs = self.wcs
+
+                        else: raise ValueError("The shape of the " + name + " frame (plane " + str(i) + ") of " + filename + " does not match the shape of this image")
+
                 # Add this frame to the frames dictionary
                 self.add_frame(Frame(hdu.data[i], wcs, description, False, unit, name, filter, subtracted, zero_point), name)
 
@@ -955,6 +973,25 @@ class Image(object):
 
             if name is None: name = "primary"
             if description is None: description = "the primary signal map"
+
+            # Check the shape of this new frame
+            if self.shape is not None:
+
+                if hdu.data.shape != self.shape:
+
+                    if rebin_to_wcs:
+
+                        # Inform the user
+                        log.warning("Rebinning the " + name + " frame (plane 0) of " + filename + " to match the shape of this image")
+
+                        # Check if the unit is a surface brightness unit
+                        if unit != u.Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(unit) + " is not recognized as a surface brightness unit")
+
+                        # Change the data and the WCS
+                        hdu.data = transformations.align_and_rebin(hdu.data, header, self.wcs.to_header())
+                        wcs = self.wcs
+
+                    else: raise ValueError("The shape of the " + name + " frame (plane 0) of " + filename + " does not match the shape of this image")
 
             # Add the primary image frame
             self.add_frame(Frame(hdu.data, wcs, description, False, unit, name, filter, sky_subtracted, zero_point), name)

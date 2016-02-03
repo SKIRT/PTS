@@ -477,67 +477,80 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         # No source was found
         return None
 
-    # If the mask extents to the boundary of the cutout box en if enabled, apply binary opening to the mask to
-    if masks.overlap(source.background_mask, mask) and config.remove_appendages:
+    # If overlapping is not allowed, see whether removing appendages helps by making it not overlap
+    if not config.allow_overlap:
 
-        if special: print("DEBUG: mask overlaps the background mask")
+        # If the mask extents to the boundary of the cutout box en if enabled, apply binary opening to the mask to
+        if masks.overlap(source.background_mask, mask) and config.remove_appendages:
 
-        # Show a plot for debugging
-        if config.debug.overlap_before or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask before appendage removal")
+            if special: print("DEBUG: mask overlaps the background mask")
 
-        if special: print("DEBUG: removing appendages")
+            # Show a plot for debugging
+            if config.debug.overlap_before or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask before appendage removal")
 
-        # Remove appendages from the mask
-        mask = mask.remove_appendages()
+            if special: print("DEBUG: removing appendages")
 
-        # Show a plot for debugging
-        if config.debug.overlap_after or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask after appendage removal")
+            # Remove appendages from the mask
+            mask = mask.remove_appendages()
 
-    ## NEW: second appendage removal step
-    if masks.overlap(source.background_mask, mask):
+            # Show a plot for debugging
+            if config.debug.overlap_after or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask after appendage removal")
 
-        # Show a plot for debugging
-        if config.debug.overlap_before or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask before second appendage removal")
+        ## NEW: second appendage removal step
+        if masks.overlap(source.background_mask, mask) and config.remove_appendages:
 
-        if special: print("DEBUG: second appendage removal step")
+            # Show a plot for debugging
+            if config.debug.overlap_before or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask before second appendage removal")
 
-        # Do a second appendage removal
-        mask = mask.remove_appendages(super=True)
+            if special: print("DEBUG: second appendage removal step")
 
-        # Show a plot for debugging
-        if config.debug.overlap_after or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask after second appendage removal")
+            # Do a second appendage removal
+            mask = mask.remove_appendages(super=True)
 
-    # If the mask extents to the boundary of the cutout box and if enabled, expand the ellipse and repeat the procedure
-    if masks.overlap(source.background_mask, mask) and config.expand:
+            # Show a plot for debugging
+            if config.debug.overlap_after or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask after second appendage removal")
+
+    # If:
+    #  - if overlapping with the source's background mask is allowed, check whether the mask does not hit the boundary.
+    #     -> if it hits the boundary, (config.allow_overlap and not hits_boundary) evaluates to False, so that not (..) evaluates to True --> enter the if if it also overlaps (will be True because it also hits the boundary of the box)
+    #     -> if it doesn't hit the boundary, this first part evaluates to False --> do not enter the if
+    #  - if overlapping with the source's background mask is not allowed, config.allow_overlap = False -> (config.allow_overlap and ... ) = False --> not ( ... ) = True --> check right part to enter if ()
+    if not (config.allow_overlap and not mask.hits_boundary(min_pixels=2)) and masks.overlap(source.background_mask, mask):
 
         if special: print("DEBUG: mask still overlaps")
 
-        # Add a snapshot of the source to the track record for debugging
-        if track_record is not None: track_record.append(copy.deepcopy(source))
+        # If expanding is enabled
+        if config.expand:
 
-        # Show a plot for debugging
-        if config.debug.expand or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=masks.union(mask, source.background_mask)), title="Masked segment hits boundary [expansion level = " + str(expansion_level) + "]")
+            # Add a snapshot of the source to the track record for debugging
+            if track_record is not None: track_record.append(copy.deepcopy(source))
 
-        # If the maximum expansion level has been reached, no source could be found
-        if expansion_level >= config.max_expansion_level:
+            # Show a plot for debugging
+            if config.debug.expand or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=masks.union(mask, source.background_mask)), title="Masked segment hits boundary [expansion level = " + str(expansion_level) + "]")
 
-            if special: print("DEBUG: maximum expansion level reached (", expansion_level, ")")
+            # If the maximum expansion level has been reached, no source could be found
+            if expansion_level >= config.max_expansion_level:
 
-            # To visualize the case where maximum expansion has been reached
-            #plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask))
+                if special: print("DEBUG: maximum expansion level reached (", expansion_level, ")")
 
-            return None
+                # To visualize the case where maximum expansion has been reached
+                #plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask))
 
-        else:
+                return None
 
-            # Calculate the expanded parameters
-            ellipse *= config.expansion_factor
-            expansion_level += 1
+            else:
 
-            if special: print("DEBUG: expanding to level", expansion_level + 1, " (maximum level =", config.max_expansion_level)
+                # Calculate the expanded parameters
+                ellipse *= config.expansion_factor
+                expansion_level += 1
 
-            # Repeat the procedure for the expanded ellipse
-            return find_source_segmentation(frame, ellipse, config, track_record=track_record, expansion_level=expansion_level, special=special)
+                if special: print("DEBUG: expanding to level", expansion_level + 1, " (maximum level =", config.max_expansion_level)
+
+                # Repeat the procedure for the expanded ellipse
+                return find_source_segmentation(frame, ellipse, config, track_record=track_record, expansion_level=expansion_level, special=special)
+
+        # If expanding is disabled, no source can be found
+        else: return None
 
     else:
 
