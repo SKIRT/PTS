@@ -110,6 +110,7 @@ class Image(object):
         :return:
         """
 
+        if "primary" in self.frames: return None
         return self.frames.primary.shape
 
     # -----------------------------------------------------------------
@@ -122,6 +123,7 @@ class Image(object):
         :return:
         """
 
+        if "primary" not in self.frames: return None
         return self.frames.primary.xsize
 
     # -----------------------------------------------------------------
@@ -134,6 +136,7 @@ class Image(object):
         :return:
         """
 
+        if "primary" in self.frames: return None
         return self.frames.primary.ysize
 
     # -----------------------------------------------------------------
@@ -145,6 +148,8 @@ class Image(object):
         This function ...
         :return:
         """
+
+        if "primary" not in self.frames: return None
 
         # Return the filter of the primary frame
         return self.frames.primary.filter
@@ -159,6 +164,8 @@ class Image(object):
         :return:
         """
 
+        if "primary" not in self.frames: return None
+
         # Return the wavelength of the primary frame
         return self.frames.primary.wavelength
 
@@ -171,6 +178,8 @@ class Image(object):
         This function ...
         :return:
         """
+
+        if "primary" not in self.frames: return None
 
         # Return the unit of the primary frame
         return self.frames.primary.unit
@@ -185,6 +194,8 @@ class Image(object):
         :return:
         """
 
+        if "primary" not in self.frames: return None
+
         # Return the pixelscale of the primary frame
         return self.frames.primary.pixelscale
 
@@ -198,6 +209,8 @@ class Image(object):
         :return:
         """
 
+        if "primary" not in self.frames: return None
+
         # Return the FWHM of the primary frame
         return self.frames.primary.fwhm
 
@@ -210,6 +223,8 @@ class Image(object):
         This function ...
         :return:
         """
+
+        if "primary" not in self.frames: return None
 
         # Return the wcs of the primary frame
         return self.frames.primary.wcs
@@ -975,7 +990,8 @@ class Image(object):
         if name in self.frames and not overwrite: raise RuntimeError("A frame with this name already exists")
 
         # Check if the shape matches the shape of this image
-        if frame.shape != self.shape: raise ValueError("Frame does not have the correct shape for this image")
+        if self.shape is not None:
+            if frame.shape != self.shape: raise ValueError("Frame does not have the correct shape for this image")
 
         # Set the WCS
         frame.wcs = self.wcs
