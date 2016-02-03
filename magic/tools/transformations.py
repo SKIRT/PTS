@@ -41,6 +41,8 @@ def align_and_rebin(image, header1, header2, preserve_bad_pixels=True, **kwargs)
     header1's naxis1 and naxis2.
     """
 
+    # TODO: take WCS objects instead of headers (so we don't have to convert the wcs to a header each time in the Frame class)
+
     #print header2
 
     # Remove the third axis of the reference header

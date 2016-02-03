@@ -25,9 +25,9 @@ from astropy.wcs import WCS
 from astropy import log
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Layers, Region
+from ..basics import Layers, Region, Mask
 from .frame import Frame
-from ..tools import headers, fitting, plotting, statistics, catalogs, coordinates
+from ..tools import headers, fitting, plotting, statistics, catalogs, coordinates, transformations
 
 # -----------------------------------------------------------------
 
@@ -441,13 +441,13 @@ class Image(object):
         """
 
         # Loop over all currently selected frames
-        for frame_name in self.frames.get_selected():
+        for frame_name in self.frames:
 
             # Inform the user
-            log.info("Convolving the " + frame_name + " frame")
+            log.info("Convolving the " + frame_name + " frame ...")
 
             # Convolve this frame
-            self.frames[frame_name] = self.frames[frame_name].convolve(kernel)
+            self.frames[frame_name] = self.frames[frame_name].convolved(kernel)
 
     # -----------------------------------------------------------------
 
@@ -458,13 +458,25 @@ class Image(object):
         """
 
         # Loop over all currently selected frames
-        for frame_name in self.frames.get_selected():
+        for frame_name in self.frames:
 
             # Inform the user
-            log.info("Rebinning the " + frame_name + " frame")
+            log.info("Rebinning the " + frame_name + " frame ...")
 
             # Rebin this frame
             self.frames[frame_name] = self.frames[frame_name].rebin(reference)
+
+        # Loop over the masks
+        for mask_name in self.masks:
+
+            # Inform the user
+            log.info("Rebinning the " + mask_name + " mask ...")
+
+            # Rebin this mask
+            data = transformations.align_and_rebin(self, self.wcs.to_header(), reference.header)
+
+            # Return the rebinned mask
+            self.masks[mask_name] = Mask(data, self.masks[mask_name].selected, self.masks[mask_name].description)
 
     # -----------------------------------------------------------------
 

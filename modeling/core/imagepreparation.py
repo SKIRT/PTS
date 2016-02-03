@@ -67,7 +67,7 @@ class ImagePreparer(Configurable):
         if self.config.extract_sources: self.extract_sources()
 
         # 4. If requested, subtract the sky
-        if self.config.subtract_sky: self.subtract_sky()
+        #if self.config.subtract_sky: self.subtract_sky()
 
         # 5. If requested, correct for galactic extinction
         if self.config.correct_for_extinction: self.correct_for_extinction()
@@ -81,11 +81,14 @@ class ImagePreparer(Configurable):
         # 8. If requested, rebin
         if self.config.rebin: self.rebin()
 
+        # 4. If requested, subtract the sky
+        if self.config.subtract_sky: self.subtract_sky()
+
         # 9. If requested, set the uncertainties
-        #if self.config.set_uncertainties: self.set_uncertainties()
+        if self.config.set_uncertainties: self.set_uncertainties()
 
         # 10. If requested, crop
-        #if self.config.crop: self.crop()
+        if self.config.crop: self.crop()
 
         # Writing
         self.write()
@@ -294,19 +297,46 @@ class ImagePreparer(Configurable):
         # Calculate the global uncertainty
         uncertainty = np.sqrt(np.std(means)**2 + np.median(stddevs)**2)
 
-        # Add the uncertainty to the errors quadratically
-        self.image.frames.errors = np.sqrt(np.power(self.image.frames[self.config.errors], 2) + uncertainty**2)
+
 
         # Add the calibration uncertainty
         if "mag" in self.config.uncertainties.calibration_error:
 
-            pass
+            mag_error = float(self.config.uncertainties.calibration_error.split("mag")[0])
+
+            # a = image[mag] - mag_error
+            a = image_mag - mag_error
+
+            # b = image[mag] + mag_error
+            b = image_mag + mag_error
+
+            # Convert a and b to Jy
+            a = a
+            b = b
+
+            # c = a[Jy] - image[Jy]
+            c = None
+
+            # d = image[Jy] - b[Jy]
+            d = None
+
+            # Calibration errors = max(c, d)
+            calibration_errors = Frame(np.zeros(self.image.shape))
+            for x in self.image.xsize:
+                for y in self.image.ysize:
+                    calibration_errors = max(c[y,x], d[y,x])
 
         elif "%" in self.config.uncertainties.calibration_error:
 
-            pass
+            fraction = float(self.config.uncertainties.calibration_error.split("%")[0]) * 0.01
 
-        else: self.log.warning("Unrecognized calibration error")
+            calibration_errors = self.image.frames.primary * fraction
+
+        else: raise ValueError("Unrecognized calibration error")
+
+        # Add the uncertainty AND THE CALIBRATION ERRORS to the errors quadratically
+        # IS THIS THE RIGHT WAY ??
+        self.image.frames.errors = np.sqrt(np.power(self.image.frames.errors, 2) + uncertainty**2 + np.power(calibration_errors, 2))
 
     # -----------------------------------------------------------------
 
@@ -390,13 +420,15 @@ class ImagePreparer(Configurable):
         """
 
         # Get the cropping limits
-        x_min = self.config.cropping.limits[0]
-        x_max = self.config.cropping.limits[1]
-        y_min = self.config.cropping.limits[2]
-        y_max = self.config.cropping.limits[3]
+        #x_min = self.config.cropping.limits[0]
+        #x_max = self.config.cropping.limits[1]
+        #y_min = self.config.cropping.limits[2]
+        #y_max = self.config.cropping.limits[3]
 
         # Crop the image (the primary and errors frame)
-        self.image.crop(x_min, x_max, y_min, y_max)
+        #self.image.crop(x_min, x_max, y_min, y_max)
+
+        pass
 
     # -----------------------------------------------------------------
 

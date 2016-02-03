@@ -359,7 +359,7 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def convolve(self, kernel):
+    def convolved(self, kernel):
 
         """
         This function ...
@@ -381,7 +381,7 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def rebin(self, ref_frame):
+    def rebinned(self, ref_frame):
 
         """
         This function ...
