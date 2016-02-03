@@ -242,9 +242,9 @@ def get_filter(name, header):
     # SPIRE filters
     elif "spire" in filterid:
 
-        if "PSW" in filterid or "250" in filterid: return Filter("SPIRE.PSW_ext")
-        elif "PMW" in filterid or "350" in filterid: return Filter("SPIRE.PMW_ext")
-        elif "PLW" in filterid or "500" in filterid: return Filter("SPIRE.PLW_ext")
+        if "psw" in filterid or "250" in filterid: return Filter("SPIRE.PSW_ext")
+        elif "pmw" in filterid or "350" in filterid: return Filter("SPIRE.PMW_ext")
+        elif "plw" in filterid or "500" in filterid: return Filter("SPIRE.PLW_ext")
         else:
 
             if channel == 1: return Filter("SPIRE.PSW_ext")
