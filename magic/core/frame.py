@@ -43,7 +43,7 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def __new__(cls, data, wcs=None, pixelscale=None, description=None, selected=False, unit=None, name=None, filter=None, sky_subtracted=False, zero_point=None):
+    def __new__(cls, data, wcs=None, description=None, selected=False, unit=None, name=None, filter=None, sky_subtracted=False, zero_point=None):
 
         """
         This function ...
@@ -55,7 +55,6 @@ class Frame(np.ndarray):
 
         obj = np.asarray(data).view(cls)
         obj.wcs = wcs
-        obj.pixelscale = pixelscale
         obj.description = description
         obj.selected = selected
         obj.unit = unit
@@ -145,7 +144,7 @@ class Frame(np.ndarray):
             if name is None: name = os.path.basename(path[:-5])
 
             # Return the frame
-            return cls(hdu.data[index], wcs, pixelscale, description, False, unit, name, filter, sky_subtracted, zero_point)
+            return cls(hdu.data[index], wcs, description, False, unit, name, filter, sky_subtracted, zero_point)
 
         else:
 
@@ -156,7 +155,19 @@ class Frame(np.ndarray):
             if name is None: name = os.path.basename(path[:-5])
 
             # Return the frame
-            return cls(hdu.data, wcs, pixelscale, description, False, unit, name, filter, sky_subtracted, zero_point)
+            return cls(hdu.data, wcs, description, False, unit, name, filter, sky_subtracted, zero_point)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return coordinates.pixel_scale(self.wcs)
 
     # -----------------------------------------------------------------
 
@@ -206,7 +217,6 @@ class Frame(np.ndarray):
 
         if obj is None: return
         self.wcs = getattr(obj, 'wcs', None)
-        self.pixelscale = getattr(obj, 'pixelscale', None)
         self.description = getattr(obj, 'description', None)
         self.selected = getattr(obj, 'selected', False)
         self.unit = getattr(obj, 'unit', None)
@@ -377,7 +387,7 @@ class Frame(np.ndarray):
         data = convolve_fft(self, kernel, normalize_kernel=True)
 
         # Return the convolved frame
-        return Frame(data, self.wcs, self.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+        return Frame(data, self.wcs, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
     # -----------------------------------------------------------------
 
@@ -393,7 +403,7 @@ class Frame(np.ndarray):
         data = transformations.align_and_rebin(self, self.header, ref_frame.header)
 
         # Return the rebinned frame
-        return Frame(data, ref_frame.wcs, ref_frame.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+        return Frame(data, ref_frame.wcs, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
     # -----------------------------------------------------------------
 
@@ -414,7 +424,7 @@ class Frame(np.ndarray):
         data = cropping.crop_check(self, x_min, x_max, y_min, y_max)
 
         # Return the cropped frame
-        return Frame(data, None, self.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+        return Frame(data, None, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
     # -----------------------------------------------------------------
 
@@ -431,7 +441,7 @@ class Frame(np.ndarray):
         data = ndimage.interpolation.zoom(self, zoom=1.0/factor)
 
         # Return the downsampled frame
-        return Frame(data, None, self.pixelscale*factor, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+        return Frame(data, None, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
     # -----------------------------------------------------------------
 
@@ -459,7 +469,7 @@ class Frame(np.ndarray):
         rotated_wcs = headers.load_wcs_from_header(rotated_header)
 
         # Return the rotated frame
-        return Frame(data, rotated_wcs, self.pixelscale, self.description, self.selected, self.unit)
+        return Frame(data, rotated_wcs, self.description, self.selected, self.unit)
 
     # -----------------------------------------------------------------
 
@@ -476,7 +486,7 @@ class Frame(np.ndarray):
         data = ndimage.interpolation.shift(self, (extent.y, extent.x))
 
         # Return the shifted frame
-        return Frame(data, None, self.pixelscale, self.description, self.selected, self.unit)
+        return Frame(data, None, self.description, self.selected, self.unit)
 
     # -----------------------------------------------------------------
 
@@ -644,7 +654,7 @@ class Frame(np.ndarray):
         data = fitting.evaluate_model(polynomial, 0, self.xsize, 0, self.ysize)
 
         # Return a new Frame
-        return Frame(data, self.wcs, self.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+        return Frame(data, self.wcs, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
     # -----------------------------------------------------------------
 
@@ -671,7 +681,7 @@ class Frame(np.ndarray):
             data = interpolation.in_paint(self, mask)
 
             # Return a new Frame
-            return Frame(data, self.wcs, self.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+            return Frame(data, self.wcs, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
         # Interpolate using inverse distance weighing
         elif method == "idw":
@@ -680,7 +690,7 @@ class Frame(np.ndarray):
             data = interpolation.in_paint(self, mask, method="idw")
 
             # Return a new Frame
-            return Frame(data, self.wcs, self.pixelscale, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+            return Frame(data, self.wcs, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
         # Calculate the mean value of the data
         elif method == "mean":

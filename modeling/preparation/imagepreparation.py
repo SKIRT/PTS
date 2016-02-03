@@ -381,13 +381,13 @@ class ImagePreparer(Configurable):
         if not self.config.errors in self.image.frames:
 
             wcs = self.image.frames[self.config.primary].wcs
-            pixelscale = self.image.frames[self.config.primary].pixelscale
+            #pixelscale = self.image.frames[self.config.primary].pixelscale
             unit = self.image.frames[self.config.primary].unit
             filter = self.image.frames[self.config.primary].filter
             selected = True
 
             # Create the errors frame (select it)
-            frame = Frame(np.full(self.image.frames[self.config.primary].shape, uncertainty), wcs, pixelscale, None, selected, unit, self.config.errors, filter)
+            frame = Frame(np.full(self.image.frames[self.config.primary].shape, uncertainty), wcs, None, selected, unit, self.config.errors, filter)
 
             # Add the errors frame to the image
             self.image.add_frame(frame, self.config.errors)

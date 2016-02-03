@@ -842,7 +842,7 @@ class Image(object):
 
             # Add the evaluated model as a new frame
             description = "A polynomial fit to the " + frame_name + " primary frame"
-            self.add_frame(Frame(evaluated, self.frames[frame_name].coordinates, self.pixelscale, description), frame_name+"_polynomial")
+            self.add_frame(Frame(evaluated, self.frames[frame_name].coordinates, description), frame_name+"_polynomial")
 
     # -----------------------------------------------------------------
 
@@ -878,21 +878,9 @@ class Image(object):
         # Obtain the world coordinate system
         wcs = WCS(header)
 
-        # Pixelscale
-        header_pixelscale = headers.get_pixelscale(header) # NOTE: SOMETIMES PLAIN WRONG IN THE HEADER !!
-        pixelscale = coordinates.pixel_scale(wcs)
-
-        # Check whether pixelscale defined in the header is correct
-        if header_pixelscale is not None:
-
-            x_isclose = np.isclose(header_pixelscale.x.to("arcsec/pix").value, pixelscale.x.to("arcsec/pix").value)
-            y_isclose = np.isclose(header_pixelscale.y.to("arcsec/pix").value, pixelscale.y.to("arcsec/pix").value)
-
-            if not (x_isclose or y_isclose):
-
-                print("WARNING: the pixel scale defined in the header is WRONG:")
-                print("           - header pixelscale: (", header_pixelscale.x.to("arcsec/pix"), header_pixelscale.y.to("arcsec/pix"), ")")
-                print("           - actual pixelscale: (", pixelscale.x.to("arcsec/pix"), pixelscale.y.to("arcsec/pix"), ")")
+        # Pixelscale ## WILL BE CHECKED IN THE FRAME CONSTRUCTOR
+        #header_pixelscale = headers.get_pixelscale(header) # NOTE: SOMETIMES PLAIN WRONG IN THE HEADER !!
+        #pixelscale = coordinates.pixel_scale(wcs)
 
         # Obtain the filter for this image
         filter = headers.get_filter(self.name, original_header)
@@ -940,7 +928,7 @@ class Image(object):
                 subtracted = sky_subtracted if i == 0 else False
 
                 # Add this frame to the frames dictionary
-                self.add_frame(Frame(hdu.data[i], wcs, pixelscale, description, False, unit, name, filter, subtracted, zero_point), name)
+                self.add_frame(Frame(hdu.data[i], wcs, description, False, unit, name, filter, subtracted, zero_point), name)
 
                 # Select the frame if it is the first one (the primary frame)
                 if i == 0: self.frames[name].select()
@@ -954,7 +942,7 @@ class Image(object):
             if description is None: description = "the primary signal map"
 
             # Add the primary image frame
-            self.add_frame(Frame(hdu.data, wcs, pixelscale, description, False, unit, name, filter, sky_subtracted, zero_point), name)
+            self.add_frame(Frame(hdu.data, wcs, description, False, unit, name, filter, sky_subtracted, zero_point), name)
 
             # Select the frame
             self.frames[name].select()
@@ -971,7 +959,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def add_frame(self, frame, name):
+    def add_frame(self, frame, name, overwrite=False):
 
         """
         This function ...
@@ -981,7 +969,16 @@ class Image(object):
         """
 
         # Inform the user
-        log.info("Adding '" + name + "' to the set of image frames")
+        log.info("Adding '" + name + "' to the set of frames ...")
+
+        # Check whether a frame with this name already exists
+        if name in self.frames and not overwrite: raise RuntimeError("A frame with this name already exists")
+
+        # Check if the shape matches the shape of this image
+        if frame.shape != self.shape: raise ValueError("Frame does not have the correct shape for this image")
+
+        # Set the WCS
+        frame.wcs = self.wcs
 
         # Add the layer to the layers dictionary
         self.frames[name] = frame
@@ -999,7 +996,7 @@ class Image(object):
         """
 
         # Inform the user
-        log.info("Adding '" + name + "' to the set of regions")
+        log.info("Adding '" + name + "' to the set of regions ...")
 
         # Check whether a region with this name already exists
         if name in self.regions and not overwrite: raise RuntimeError("A region with this name already exists")
@@ -1019,10 +1016,13 @@ class Image(object):
         """
 
         # Inform the user
-        log.info("Adding '" + name + "' to the set of masks")
+        log.info("Adding '" + name + "' to the set of masks ...")
 
         # Check whether a mask with this name already exists
         if name in self.masks and not overwrite: raise RuntimeError("A mask with this name already exists")
+
+        # Check if the shape matches the shape of this image
+        if mask.shape != self.shape: raise ValueError("Mask does not have the correct shape for this image")
 
         # Add the mask to the set of masks
         self.masks[name] = mask

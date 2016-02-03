@@ -252,13 +252,13 @@ class SkySubtractor(Configurable):
         if self.config.estimation.method == "mean":
 
             # Create a frame filled with the mean value
-            self.sky = Frame(np.full(self.image.shape, self.mean), self.image.wcs, self.image.pixelscale, "estimated sky", False, self.image.unit)
+            self.sky = Frame(np.full(self.image.shape, self.mean), self.image.wcs, "estimated sky", False, self.image.unit)
 
         # If the median sky level should be used
         elif self.config.estimation.method == "median":
 
             # Create a frame filled with the median value
-            self.sky = Frame(np.full(self.image.shape, self.median), self.image.wcs, self.image.pixelscale, "estimated sky", False, self.image.unit)
+            self.sky = Frame(np.full(self.image.shape, self.median), self.image.wcs, "estimated sky", False, self.image.unit)
 
         # If the sky should be estimated by using low-resolution interpolation
         elif self.config.estimation.method == "low-res-interpolation":
@@ -267,7 +267,7 @@ class SkySubtractor(Configurable):
             data = interpolation.low_res_interpolation(self.image.frames.primary, self.config.estimation.downsample_factor, self.mask)
 
             # Create sky map
-            self.sky = Frame(data, self.image.wcs, self.image.pixelscale, "estimated sky", False, self.image.unit)
+            self.sky = Frame(data, self.image.wcs, "estimated sky", False, self.image.unit)
 
         # if the sky should be approximated by a polynomial function
         elif self.config.estimation.method == "polynomial":

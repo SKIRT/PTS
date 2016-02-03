@@ -174,7 +174,7 @@ class ImageImporter(Configurable):
             self.log.warning("No error data found for " + self.image_name + ".fits, adding errors frame that is zero everywhere")
 
             # Create a new errors frame (all zeros) and add it to the image
-            new_error_frame = Frame(np.zeros(self.image.shape))
+            new_error_frame = Frame(np.zeros(self.image.shape), self.image.wcs)
             self.image.add_frame(new_error_frame, "errors")
 
     # -----------------------------------------------------------------
