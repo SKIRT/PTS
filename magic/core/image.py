@@ -110,7 +110,7 @@ class Image(object):
         :return:
         """
 
-        if "primary" in self.frames: return None
+        if "primary" not in self.frames: return None
         return self.frames.primary.shape
 
     # -----------------------------------------------------------------
@@ -136,7 +136,7 @@ class Image(object):
         :return:
         """
 
-        if "primary" in self.frames: return None
+        if "primary" not in self.frames: return None
         return self.frames.primary.ysize
 
     # -----------------------------------------------------------------
@@ -994,7 +994,7 @@ class Image(object):
             if frame.shape != self.shape: raise ValueError("Frame does not have the correct shape for this image")
 
         # Set the WCS
-        frame.wcs = self.wcs
+        if self.wcs is not None: frame.wcs = self.wcs
 
         # Add the layer to the layers dictionary
         self.frames[name] = frame
