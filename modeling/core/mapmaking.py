@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.mapmaker Contains the MapMaker class.
+## \package pts.modeling.core.mapmaking Contains the MapMaker class.
 
 # -----------------------------------------------------------------
 

@@ -19,5 +19,5 @@
 # Import classes to make them available at the level of this subpackage
 from .core.datapreparation import DataPreparer
 from .core.photometry import PhotoMeter
-from .core.mapmaker import MapMaker
-from .core.decomposer import GalaxyDecomposer
+from .core.mapmaking import MapMaker
+from .core.decomposition import GalaxyDecomposer
