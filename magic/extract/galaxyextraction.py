@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import copy
 
 # Import astronomical modules
 import astropy.units as u
@@ -57,6 +58,7 @@ class GalaxyExtractor(Configurable):
 
         # The image
         self.image = None
+        self.original_wcs = None
 
         # The mask covering pixels that should be ignored throughout the entire extraction procedure
         self.special_mask = None
@@ -116,6 +118,8 @@ class GalaxyExtractor(Configurable):
         self.catalog = catalog
         self.special_mask = special_mask
         self.ignore_mask = ignore_mask
+
+        self.original_wcs = copy.deepcopy(self.image.wcs)
 
         # Create a mask with shape equal to the shape of the frame
         self.mask = Mask.from_shape(self.image.shape)
@@ -473,6 +477,27 @@ class GalaxyExtractor(Configurable):
 
         # Create and return an ellipse
         return Ellipse(center, radius, angle)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def principal_sky_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..basics.geometry import SkyEllipse
+
+        # Get the ellipse in image coordinates
+        ellipse = self.principal_ellipse
+
+        # Create a SkyEllipse
+        sky_ellipse = SkyEllipse.from_ellipse(ellipse, self.original_wcs)
+
+        # Return the sky ellipse
+        return sky_ellipse
 
     # -----------------------------------------------------------------
 

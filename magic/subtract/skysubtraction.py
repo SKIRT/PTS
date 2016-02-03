@@ -51,7 +51,7 @@ class SkySubtractor(Configurable):
 
         # The galaxy and saturation region
         self.principal_ellipse = None
-        self.saturation_contours = None
+        self.saturation_region = None
 
         # The output mask (combined input + bad mask + galaxy annulus mask + expanded saturation mask + sigma-clipping mask)
         self.mask = None
@@ -93,7 +93,7 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, image, principal_ellipse, saturation_contours=None):
+    def run(self, image, principal_ellipse, saturation_region=None):
 
         """
         This function ...
@@ -104,7 +104,7 @@ class SkySubtractor(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup(image, principal_ellipse, saturation_contours)
+        self.setup(image, principal_ellipse, saturation_region)
 
         # 2. Create mask
         self.create_mask()
@@ -113,13 +113,19 @@ class SkySubtractor(Configurable):
         if self.config.sigma_clip_mask: self.sigma_clip()
 
         # 3. Estimate the sky
-        #self.estimate()
+        self.estimate()
 
         # 4. If requested, subtract the sky
-        #if self.config.subtract: self.subtract()
+        if self.config.subtract: self.subtract()
 
         # Update the image mask
         self.update_mask()
+
+        # Add the sky frame
+        self.add_sky_frame()
+
+        # Set zero outside
+        self.set_zero_outside()
 
         # 5. Write out the results
         self.write()
@@ -138,18 +144,19 @@ class SkySubtractor(Configurable):
 
         # Set all attributes to None
         self.image = None
-        self.galaxy_region = None
+        self.principal_ellipse = None
+        self.saturation_region = None
         self.mask = None
         self.sky = None
 
     # -----------------------------------------------------------------
 
-    def setup(self, image, principal_ellipse, saturation_contours=None):
+    def setup(self, image, principal_ellipse, saturation_region=None):
 
         """
         This function ...
         :param image:
-        :param galaxy_region:
+        :param principal_ellipse:
         :param saturation_region:
         :return:
         """
@@ -166,8 +173,9 @@ class SkySubtractor(Configurable):
         # Make a local reference to the image
         self.image = image
 
-        self.principal_ellipse = principal_ellipse
-        self.saturation_contours = saturation_contours
+        # Convert the principal ellipse and saturation region to image coordinates
+        self.principal_ellipse = principal_ellipse.to_image_coordinates(self.image.wcs)
+        self.saturation_region = saturation_region.to_ellipse(self.image.wcs) if saturation_region is not None else None
 
     # -----------------------------------------------------------------
 
@@ -280,13 +288,16 @@ class SkySubtractor(Configurable):
         self.log.info("Subtracting the sky from the frame ...")
 
         # Check whether the median sky level exceeds the standard deviation
-        if self.median > self.stddev:
+        #if self.median > self.stddev:
 
             # Inform the user
-            self.log.info("The median sky level exceeds the standard deviation")
+            #self.log.info("The median sky level exceeds the standard deviation")
 
             # Subtract the estimated sky from the image frame
-            self.image.frames.primary -= self.sky
+            #self.image.frames.primary -= self.sky
+
+        # Subtract the estimated sky from the image frame
+        self.image.frames.primary -= self.sky
 
     # -----------------------------------------------------------------
 
@@ -303,6 +314,33 @@ class SkySubtractor(Configurable):
         #self.image.masks.sky += self.mask
 
         self.image.add_mask(self.mask, "sky")
+
+    # -----------------------------------------------------------------
+
+    def add_sky_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.image.add_frame(self.sky, "sky")
+
+    # -----------------------------------------------------------------
+
+    def set_zero_outside(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a mask from the principal galaxy region
+        annulus_outer_factor = 1.5
+        mask = Mask.from_ellipse(self.image.xsize, self.image.ysize, self.principal_ellipse * annulus_outer_factor).inverse()
+
+        # Set the primary frame zero outside the principal ellipse
+        self.image.frames.primary[mask] = 0.0
 
     # -----------------------------------------------------------------
 

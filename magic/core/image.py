@@ -466,6 +466,8 @@ class Image(object):
             # Rebin this frame
             self.frames[frame_name] = self.frames[frame_name].rebin(reference)
 
+            # Set the
+
         # Loop over the masks
         for mask_name in self.masks:
 

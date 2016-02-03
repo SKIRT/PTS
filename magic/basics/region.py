@@ -18,6 +18,63 @@ import astropy.coordinates as coord
 
 # Import the relevant AstroMagic classes and modules
 from .vector import Extent
+from .geometry import SkyEllipse
+
+# -----------------------------------------------------------------
+
+class newRegion(list):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the constructor of the base class
+        super(newRegion, self).__init__()
+
+    # -----------------------------------------------------------------
+
+    def to_image_coordinates(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Initialize a new list contain the ellipses in image coordinates
+        new_list = []
+
+        # Fill the new list
+        for i in range(len(self)): new_list.append(self[i].to_ellipse(wcs))
+
+        # Return the list of ellipses in image coordinates
+        return new_list
+
+    # -----------------------------------------------------------------
+
+    def to_sky_coordinates(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Initialize a new list to contain the ellipses in sky coordinates
+        new_list = []
+
+        # Fill the new list
+        for i in range(len(self)): new_list.append(SkyEllipse.from_ellipse(self[i], wcs))
+
+        # Return the list of ellipses in sky coordinates
+        return new_list
 
 # -----------------------------------------------------------------
 

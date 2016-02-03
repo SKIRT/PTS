@@ -711,6 +711,33 @@ class StarExtractor(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def saturation_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..basics.region import newRegion
+        from ..basics.geometry import SkyEllipse
+
+        ellipses = self.saturation_contours
+
+        # Create a new newRegion instance
+        region = newRegion()
+
+        # Loop over the ellipses (in image coordinates)
+        for ellipse in ellipses:
+
+            # Create a sky ellipse and add it to the list
+            region.append(SkyEllipse.from_ellipse(ellipse, self.original_frame.wcs))
+
+        # Return the region
+        return region
+
+    # -----------------------------------------------------------------
+
+    @property
     def region(self):
 
         """

@@ -85,10 +85,10 @@ class ImagePreparer(Configurable):
         if self.config.subtract_sky: self.subtract_sky()
 
         # 9. If requested, set the uncertainties
-        if self.config.set_uncertainties: self.set_uncertainties()
+        #if self.config.set_uncertainties: self.set_uncertainties()
 
         # 10. If requested, crop
-        if self.config.crop: self.crop()
+        #if self.config.crop: self.crop()
 
         # Writing
         self.write()
@@ -160,26 +160,6 @@ class ImagePreparer(Configurable):
 
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("extracted.fits")
-
-    # -----------------------------------------------------------------
-
-    def subtract_sky(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Run the sky extraction
-        self.sky_subtractor.run(self.image, self.extractor.galaxy_extractor.principal_ellipse, self.extractor.star_extractor.saturation_contours)
-
-        # Print the statistics of the sky frame
-        self.log.info("Mean sky level = " + str(self.sky_subtractor.mean))
-        self.log.info("Median sky level = " + str(self.sky_subtractor.median))
-        self.log.info("Standard deviation of sky = " + str(self.sky_subtractor.stddev))
-
-        # Write intermediate result
-        if self.config.write_steps: self.write_intermediate_result("sky_subtracted.fits")
 
     # -----------------------------------------------------------------
 
@@ -258,6 +238,26 @@ class ImagePreparer(Configurable):
 
         # Save rebinned frame
         if self.config.write_steps: self.write_intermediate_result("rebinned.fits")
+
+    # -----------------------------------------------------------------
+
+    def subtract_sky(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Run the sky extraction
+        self.sky_subtractor.run(self.image, self.extractor.galaxy_extractor.principal_sky_ellipse, self.extractor.star_extractor.saturation_region)
+
+        # Print the statistics of the sky frame
+        self.log.info("Mean sky level = " + str(self.sky_subtractor.mean))
+        self.log.info("Median sky level = " + str(self.sky_subtractor.median))
+        self.log.info("Standard deviation of sky = " + str(self.sky_subtractor.stddev))
+
+        # Write intermediate result
+        if self.config.write_steps: self.write_intermediate_result("sky_subtracted.fits")
 
     # -----------------------------------------------------------------
 
