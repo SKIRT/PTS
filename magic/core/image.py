@@ -21,14 +21,13 @@ import copy
 # Import astronomical modules
 import aplpy
 from astropy.io import fits
-from astropy.wcs import WCS
 from astropy import log
 from astropy import units as u
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Layers, Region, Mask
+from ..basics import Layers, Region, Mask, CoordinateSystem
 from .frame import Frame
-from ..tools import headers, fitting, plotting, statistics, catalogs, coordinates, transformations
+from ..tools import headers, fitting, plotting, statistics, catalogs, transformations
 
 # -----------------------------------------------------------------
 
@@ -865,6 +864,11 @@ class Image(object):
         """
         This function ...
         :param filename:
+        :param index:
+        :param name:
+        :param description:
+        :param always_call_first_primary:
+        :param rebin_to_wcs:
         :return:
         """
 
@@ -890,11 +894,9 @@ class Image(object):
             if "PLANE" in key: del header[key]
 
         # Obtain the world coordinate system
-        wcs = WCS(header)
+        wcs = CoordinateSystem(header)
 
-        # Pixelscale ## WILL BE CHECKED IN THE FRAME CONSTRUCTOR
-        #header_pixelscale = headers.get_pixelscale(header) # NOTE: SOMETIMES PLAIN WRONG IN THE HEADER !!
-        #pixelscale = coordinates.pixel_scale(wcs)
+        # Pixelscale: WILL BE CHECKED IN THE FRAME CONSTRUCTOR
 
         # Obtain the filter for this image
         filter = headers.get_filter(self.name, original_header)

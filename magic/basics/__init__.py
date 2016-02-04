@@ -24,3 +24,4 @@ from .region import Region
 from .trackrecord import TrackRecord
 from .geometry import Ellipse, Rectangle
 from .catalogcoverage import CatalogCoverage
+from .coordinatesystem import CoordinateSystem

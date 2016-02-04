@@ -143,7 +143,6 @@ def new_memory_log():
 
     f = MemuseFilter()                        # Create filter
     log.handlers[0].addFilter(f)         # The ugly part:adding filter to handler
-    log.warning("Foo")
 
     return log
 

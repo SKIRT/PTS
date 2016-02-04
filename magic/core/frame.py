@@ -30,7 +30,7 @@ from astropy.convolution import convolve_fft
 
 # Import the relevant AstroMagic classes and modules
 from . import Box
-from ..basics import Position, Extent, Rectangle
+from ..basics import Position, Extent, Rectangle, CoordinateSystem
 from ..tools import coordinates, cropping, transformations, interpolation, headers, fitting
 
 # -----------------------------------------------------------------
@@ -100,11 +100,11 @@ class Frame(np.ndarray):
             if "PLANE" in key: del flat_header[key]
 
         # Obtain the world coordinate system from the 'flattened' header
-        wcs = WCS(flat_header)
+        wcs = CoordinateSystem(flat_header)
 
         # Load the frames
         header_pixelscale = headers.get_pixelscale(header) # NOTE: SOMETIMES PLAIN WRONG IN THE HEADER !!
-        pixelscale = coordinates.pixel_scale(wcs)
+        pixelscale = wcs.pixelscale
 
         # Check whether pixelscale defined in the header is correct
         if header_pixelscale is not None:
@@ -167,7 +167,7 @@ class Frame(np.ndarray):
         :return:
         """
 
-        return coordinates.pixel_scale(self.wcs)
+        return self.wcs.pixelscale
 
     # -----------------------------------------------------------------
 
@@ -466,7 +466,7 @@ class Frame(np.ndarray):
         rotated_header = rotation.rotate_header(header, angle)
 
         # Create the new WCS
-        rotated_wcs = headers.load_wcs_from_header(rotated_header)
+        rotated_wcs = CoordinateSystem(rotated_header)
 
         # Return the rotated frame
         return Frame(data, rotated_wcs, self.description, self.selected, self.unit)

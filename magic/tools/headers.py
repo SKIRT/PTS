@@ -26,6 +26,7 @@ from ..basics import Extent
 
 # Import the relevant PTS classes and modules
 from ...core.basics.filter import Filter
+from ..basics import CoordinateSystem
 
 # -----------------------------------------------------------------
 
@@ -408,31 +409,6 @@ def get_frame_name(description):
 
 # -----------------------------------------------------------------
 
-def load_wcs_from_header(header):
-
-    """
-    This function ...
-    :param header:
-    :return:
-    """
-
-    if issubclass(astropy_wcs.WCS, header.__class__):
-        wcs = header
-    else:
-        try:
-            wcs = astropy_wcs.WCS(header)
-        except:
-            raise TypeError("header must either be a pyfits.Header or astropy.wcs.WCS instance")
-
-        if not hasattr(wcs,'naxis1'):
-            wcs.naxis1 = header['NAXIS1']
-        if not hasattr(wcs,'naxis2'):
-            wcs.naxis2 = header['NAXIS2']
-
-    return wcs
-
-# -----------------------------------------------------------------
-
 def check_header_matches_image(image, header):
 
     """
@@ -442,7 +418,8 @@ def check_header_matches_image(image, header):
     :return:
     """
 
-    wcs = load_wcs_from_header(header)
+    #wcs = load_wcs_from_header(header)
+    wcs = CoordinateSystem(header)
 
     # wcs.naxis attributes are deprecated, so we perform this check conditionally
     if ((hasattr(wcs,'naxis1') and hasattr(wcs,'naxis2')) and not
@@ -464,8 +441,10 @@ def get_pixel_mapping(header1, header2):
     """
 
     # Get the WCS from the two headers
-    wcs1 = load_wcs_from_header(header1)
-    wcs2 = load_wcs_from_header(header2)
+    #wcs1 = load_wcs_from_header(header1)
+    #wcs2 = load_wcs_from_header(header2)
+    wcs1 = CoordinateSystem(header1)
+    wcs2 = CoordinateSystem(header2)
 
     # Convert the coordinates
     if not all([w1==w2 for w1,w2 in zip(wcs1.wcs.ctype,wcs2.wcs.ctype)]):
