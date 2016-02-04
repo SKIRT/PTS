@@ -14,9 +14,37 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import resource
+from sys import platform
 import psutil
 import multiprocessing
 import numpy as np
+
+# -----------------------------------------------------------------
+
+def memory_usage():
+
+    # If we are on linux
+    if platform == "linux" or platform == "linux2":
+
+        kilobytes = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss # peak memory usage (bytes on OS X, kilobytes on Linux)
+        gigabytes = kilobytes * 1e-6
+
+        return gigabytes
+
+    # If we are on Mac OS X
+    elif platform == "darwin":
+
+        kilobytes = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss # peak memory usage (bytes on OS X, kilobytes on Linux)
+        gigabytes = kilobytes * 1e-9
+
+        return gigabytes
+
+    # We don't support Windows
+    elif platform == "win32": raise EnvironmentError("The Windows operating system is not supported")
+
+    # Unrecognized platform
+    else: raise EnvironmentError("Unrecognized platform")
 
 # -----------------------------------------------------------------
 

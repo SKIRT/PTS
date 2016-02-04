@@ -32,13 +32,26 @@ def pixel_scale(wcs):
     :return:
     """
 
-    result = utils.proj_plane_pixel_scales(wcs)
+    #result = utils.proj_plane_pixel_scales(wcs)
     # returns: A vector (ndarray) of projection plane increments corresponding to each pixel side (axis).
     # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
     # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
+    #x_pixelscale = result[0] * u.Unit("deg/pix")
+    #y_pixelscale = result[1] * u.Unit("deg/pix")
 
-    x_pixelscale = result[0] * u.Unit("deg/pix")
-    y_pixelscale = result[1] * u.Unit("deg/pix")
+    # This is all that utils.proj_plane_pixel_scales does:
+    #return np.sqrt((wcs.pixel_scale_matrix**2).sum(axis=0, dtype=np.float))
+
+    ## PROBLEM: we also want negative pixelscales to represent the orientation of the
+
+    # SOLUTION (FOR NOW): ONLY USE THE DIAGNOAL MATRIX ELEMENTS ...
+
+    # Give a warning if there are non-diagonal elements
+    if wcs.pixel_scale_matrix[0,1] != 0.0 or wcs.pixel_scale_matrix[1,0] != 0.0:
+        print("WARNING: pixel scale matrix has non-diagonal elements: resulting pixel scale values will not be valid")
+
+    x_pixelscale = wcs.pixel_scale_matrix[0,0] * u.Unit("deg/pix")
+    y_pixelscale = wcs.pixel_scale_matrix[1,1] * u.Unit("deg/pix")
 
     return Extent(x_pixelscale, y_pixelscale)
 

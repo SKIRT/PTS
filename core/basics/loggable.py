@@ -49,7 +49,8 @@ class Loggable(object):
         """
     
         # Create the logger
-        self.log = logging.new_log(self.name, level)
+        #self.log = logging.new_log(self.name, level)
+        self.log = logging.new_memory_log()
         if path is not None: logging.link_file_log(self.log, path, level)
 
     # -----------------------------------------------------------------

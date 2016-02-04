@@ -179,14 +179,14 @@ class Frame(np.ndarray):
         :return:
         """
 
-        x_pixelscale = self.pixelscale.x.to("arcsec/pix")
-        y_pixelscale = self.pixelscale.y.to("arcsec/pix")
+        x_pixelscale = abs(self.pixelscale.x.to("arcsec/pix"))
+        y_pixelscale = abs(self.pixelscale.y.to("arcsec/pix"))
 
         if not np.isclose(x_pixelscale.value, y_pixelscale.value, rtol=0.0005):
 
             print("WARNING: averaging the pixelscale over the x and y direction may not be a good approximation:")
-            print("          x pixelscale =", x_pixelscale)
-            print("          y pixelscale =", y_pixelscale)
+            print("          x pixelscale (absolute value) =", x_pixelscale)
+            print("          y pixelscale (absolute value) =", y_pixelscale)
 
         # Return a single value for the pixelscale in arcseconds
         return 0.5 * (x_pixelscale + y_pixelscale)

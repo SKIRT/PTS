@@ -472,6 +472,7 @@ def create_galaxy_catalog(frame):
 
     """
     This function ...
+    :param frame:
     :return:
     """
 

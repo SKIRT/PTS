@@ -111,33 +111,31 @@ class Star(SkyObject):
 
     # -----------------------------------------------------------------
 
-    def ellipse(self, wcs, pixelscale, default_radius):
+    def ellipse(self, wcs, default_radius):
 
         """
         This function ...
         :param wcs:
-        :param pixelscale:
         :param default_radius:
         :return:
         """
 
-        center, radius, angle = self.ellipse_parameters(wcs, pixelscale, default_radius)
+        center, radius, angle = self.ellipse_parameters(wcs, default_radius)
         return Ellipse(center, radius, angle)
 
     # -----------------------------------------------------------------
 
-    def ellipse_parameters(self, wcs, pixelscale, default_radius):
+    def ellipse_parameters(self, wcs, default_radius):
 
         """
         This function ...
         :param wcs:
-        :param pixelscale:
-        :param initial_radius:
+        :param default_radius:
         :return:
         """
 
         # Return the parameters
-        return self.pixel_position(wcs), default_radius, Angle(0.0, u.deg)
+        return self.pixel_position(wcs), default_radius, Angle(0.0, u.Unit("deg"))
 
     # -----------------------------------------------------------------
 

@@ -107,12 +107,11 @@ class SkyObject(object):
     # -----------------------------------------------------------------
 
     @abstractmethod
-    def ellipse(self, wcs, pixelscale, initial_radius):
+    def ellipse(self, wcs, initial_radius):
 
         """
         This function ...
         :param wcs:
-        :param pixelscale:
         :param initial_radius:
         :return:
         """
@@ -122,12 +121,11 @@ class SkyObject(object):
     # -----------------------------------------------------------------
 
     @abstractmethod
-    def ellipse_parameters(self, wcs, pixelscale, initial_radius):
+    def ellipse_parameters(self, wcs, initial_radius):
 
         """
         This function ...
         :param wcs:
-        :param pixelscale:
         :param initial_radius:
         :return:
         """
@@ -156,6 +154,8 @@ class SkyObject(object):
 
         """
         This function ...
+        :param frame:
+        :param config:
         :return:
         """
 
@@ -163,7 +163,7 @@ class SkyObject(object):
         if self.has_track_record: self.track_record.set_stage("detection")
 
         # Get the parameters of the circle
-        ellipse = self.ellipse(frame.wcs, frame.xy_average_pixelscale, config.initial_radius)
+        ellipse = self.ellipse(frame.wcs, config.initial_radius)
 
         # Find a source
         self.source = sources.find_source(frame, ellipse, config, self.track_record, special=self.special)

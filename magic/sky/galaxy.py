@@ -20,7 +20,7 @@ from astropy.coordinates import Angle
 from ..core import Source
 from .skyobject import SkyObject
 from ..basics import Extent, Ellipse
-from ..tools import catalogs
+from ..tools import catalogs, coordinates
 
 # -----------------------------------------------------------------
 
@@ -111,28 +111,30 @@ class Galaxy(SkyObject):
 
     # -----------------------------------------------------------------
 
-    def ellipse(self, wcs, pixelscale, default_radius):
+    def ellipse(self, wcs, default_radius):
 
         """
         This function ...
         :param wcs:
-        :param pixelscale:
         :param default_radius:
         :return:
         """
 
-        center, radius, angle = self.ellipse_parameters(wcs, pixelscale, default_radius)
+        center, radius, angle = self.ellipse_parameters(wcs, default_radius)
         return Ellipse(center, radius, angle)
 
     # -----------------------------------------------------------------
 
-    def ellipse_parameters(self, wcs, pixelscale, default_radius):
+    def ellipse_parameters(self, wcs, default_radius):
 
         """
         This function ...
+        :param wcs:
         :param default_radius:
         :return:
         """
+
+        pixelscale = coordinates.pixel_scale(wcs)
 
         if self.pa is None: angle = Angle(0.0, u.Unit("deg"))
         else: angle = self.pa
@@ -144,13 +146,13 @@ class Galaxy(SkyObject):
 
         elif self.minor is None or angle == 0.0:
 
-            x_radius = 0.5 * self.major.to("arcsec").value / pixelscale.to("arcsec/pix").value
+            x_radius = 0.5 * self.major.to("arcsec").value / pixelscale.x.to("arcsec/pix").value
             y_radius = x_radius
 
         else:
 
-            x_radius = 0.5 * self.major.to("arcsec").value / pixelscale.to("arcsec/pix").value
-            y_radius = 0.5 * self.minor.to("arcsec").value / pixelscale.to("arcsec/pix").value
+            x_radius = 0.5 * self.major.to("arcsec").value / pixelscale.x.to("arcsec/pix").value
+            y_radius = 0.5 * self.minor.to("arcsec").value / pixelscale.y.to("arcsec/pix").value
 
         pixel_position = self.pixel_position(wcs)
 
@@ -167,7 +169,7 @@ class Galaxy(SkyObject):
         """
 
         # Get the parameters describing the elliptical contour
-        ellipse = self.ellipse(frame.wcs, frame.xy_average_pixelscale, None)
+        ellipse = self.ellipse(frame.wcs, None)
 
         if ellipse.center.x < 0 or ellipse.center.y < 0:
             self.source = None
