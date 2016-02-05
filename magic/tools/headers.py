@@ -125,6 +125,10 @@ def get_filter(name, header):
 
     filterid = name.lower()
 
+    if "kernel" in filterid:
+        log.warning("The image represents a kernel, so no filter will be set")
+        return None
+
     # Get information from the header
 
     # Get information regarding the telescope and instrument
@@ -149,11 +153,13 @@ def get_filter(name, header):
     #print("DEBUG: channel =", channel)
     #print("DEBUG: wavelength =", wavelength)
 
+    final_filter_name = None
+
     # -- UV --
 
     # GALEX
-    if "fuv" in filterid: return Filter("GALEX.FUV")
-    elif "nuv" in filterid: return Filter("GALEX.NUV")
+    if "fuv" in filterid: final_filter_name = "GALEX.FUV"
+    elif "nuv" in filterid: final_filter_name = "GALEX.NUV"
 
     # TODO: support other UV instruments
 
@@ -162,18 +168,18 @@ def get_filter(name, header):
     # SDSS
     elif "sdss" in filterid:
 
-        if "-u" in filterid: return Filter("SDSS.u")
-        elif "-g" in filterid: return Filter("SDSS.g")
-        elif "-r" in filterid: return Filter("SDSS.r")
-        elif "-i" in filterid: return Filter("SDSS.i")
-        elif "-z" in filterid: return Filter("SDSS.z")
+        if "-u" in filterid: final_filter_name = "SDSS.u"
+        elif "-g" in filterid: final_filter_name = "SDSS.g"
+        elif "-r" in filterid: final_filter_name = "SDSS.r"
+        elif "-i" in filterid: final_filter_name = "SDSS.i"
+        elif "-z" in filterid: final_filter_name = "SDSS.z"
         else:
 
-            if "u" in filterid: return Filter("SDSS.u")
-            elif "g" in filterid: return Filter("SDSS.g")
-            elif "r" in filterid: return Filter("SDSS.r")
-            elif "i" in filterid: return Filter("SDSS.i")
-            elif "z" in filterid: return Filter("SDSS.z")
+            if "u" in filterid: final_filter_name = "SDSS.u"
+            elif "g" in filterid: final_filter_name = "SDSS.g"
+            elif "r" in filterid: final_filter_name = "SDSS.r"
+            elif "i" in filterid: final_filter_name = "SDSS.i"
+            elif "z" in filterid: final_filter_name = "SDSS.z"
             else: log.warning("Could not determine which SDSS filter was used for this image")
 
     # R band // not good; H alpha image was also identified as R band ...
@@ -186,24 +192,24 @@ def get_filter(name, header):
     # 2MASS filters
     elif "2mass" in filterid:
 
-        if "h" in filterid: return Filter("2MASS.H")
-        elif "j" in filterid: return Filter("2MASS.J")
-        elif "k" in filterid: return Filter("2MASS.Ks")
+        if "h" in filterid: final_filter_name = "2MASS.H"
+        elif "j" in filterid: final_filter_name = "2MASS.J"
+        elif "k" in filterid: final_filter_name = "2MASS.Ks"
         else: log.warning("Could not determine which 2MASS filter was used for this image")
 
     # IRAC filters
     elif "irac" in filterid:
 
-        if "3.6" in filterid or "i1" in filterid: return Filter("IRAC.I1")
-        elif "4.5" in filterid or "i2" in filterid: return Filter("IRAC.I2")
-        elif "5.8" in filterid or "i3" in filterid: return Filter("IRAC.I3")
-        elif "8.0" in filterid or "i4" in filterid: return Filter("IRAC.I4")
+        if "3.6" in filterid or "i1" in filterid: final_filter_name = "IRAC.I1"
+        elif "4.5" in filterid or "i2" in filterid: final_filter_name = "IRAC.I2"
+        elif "5.8" in filterid or "i3" in filterid: final_filter_name = "IRAC.I3"
+        elif "8.0" in filterid or "i4" in filterid: final_filter_name = "IRAC.I4"
         elif channel is not None:  # Look at the channel number
 
-            if channel == 1: return Filter("IRAC.I1")
-            elif channel == 2: return Filter("IRAC.I2")
-            elif channel == 3: return Filter("IRAC.I3")
-            elif channel == 4: return Filter("IRAC.I4")
+            if channel == 1: final_filter_name = "IRAC.I1"
+            elif channel == 2: final_filter_name = "IRAC.I2"
+            elif channel == 3: final_filter_name = "IRAC.I3"
+            elif channel == 4: final_filter_name = "IRAC.I4"
             else: log.warning("Could not determine which IRAC filter was used for this image")
 
         else: log.warning("Could not determine which IRAC filter was used for this image")
@@ -211,57 +217,60 @@ def get_filter(name, header):
     # WISE filters
     elif "wise" in filterid:
 
-        if "w1" in filterid: return Filter("WISE.W1")
-        elif "w2" in filterid: return Filter("WISE.W2")
-        elif "w3" in filterid: return Filter("WISE.W3")
-        elif "w4" in filterid: return Filter("WISE.W4")
+        if "w1" in filterid: final_filter_name = "WISE.W1"
+        elif "w2" in filterid: final_filter_name = "WISE.W2"
+        elif "w3" in filterid: final_filter_name = "WISE.W3"
+        elif "w4" in filterid: final_filter_name = "WISE.W4"
         else:
 
-            if channel == 1: return Filter("WISE.W1")
-            elif channel == 2: return Filter("WISE.W2")
-            elif channel == 3: return Filter("WISE.W3")
-            elif channel == 4: return Filter("WISE.W4")
+            if channel == 1: final_filter_name = "WISE.W1"
+            elif channel == 2: final_filter_name = "WISE.W2"
+            elif channel == 3: final_filter_name = "WISE.W3"
+            elif channel == 4: final_filter_name = "WISE.W4"
             else: log.warning("Could not determine which WISE filter was used for this image")
 
     # MIPS filters
     elif "mips" in filterid:
 
-        if "24" in filterid: return Filter("MIPS.24")
-        elif "70" in filterid: return Filter("MIPS.70")
-        elif "160" in filterid: return Filter("MIPS.160")
+        if "24" in filterid: final_filter_name = "MIPS.24"
+        elif "70" in filterid: final_filter_name = "MIPS.70"
+        elif "160" in filterid: final_filter_name = "MIPS.160"
         else: log.warning("Could not determine which MIPS filter was used for this image")
 
     # PACS filters
     elif "pacs" in filterid:
 
-        if '70' in filterid or 'blue' in filterid: return Filter("Pacs.blue")
-        elif '100' in filterid or 'green' in filterid: return Filter("Pacs.green")
-        elif '160' in filterid or 'red' in filterid: return Filter("Pacs.red")
+        if '70' in filterid or 'blue' in filterid: final_filter_name = "Pacs.blue"
+        elif '100' in filterid or 'green' in filterid: final_filter_name = "Pacs.green"
+        elif '160' in filterid or 'red' in filterid: final_filter_name = "Pacs.red"
         else: log.warning("Could not determine which PACS filter was used for this image")
 
     # SPIRE filters
     elif "spire" in filterid:
 
-        if "psw" in filterid or "250" in filterid: return Filter("SPIRE.PSW_ext")
-        elif "pmw" in filterid or "350" in filterid: return Filter("SPIRE.PMW_ext")
-        elif "plw" in filterid or "500" in filterid: return Filter("SPIRE.PLW_ext")
+        if "psw" in filterid or "250" in filterid: final_filter_name = "SPIRE.PSW_ext"
+        elif "pmw" in filterid or "350" in filterid: final_filter_name = "SPIRE.PMW_ext"
+        elif "plw" in filterid or "500" in filterid: final_filter_name = "SPIRE.PLW_ext"
         else:
 
-            if channel == 1: return Filter("SPIRE.PSW_ext")
-            elif channel == 2: return Filter("SPIRE.PMW_ext")
-            elif channel == 3: return Filter("SPIRE.PLW_ext")
+            if channel == 1: final_filter_name = "SPIRE.PSW_ext"
+            elif channel == 2: final_filter_name = "SPIRE.PMW_ext"
+            elif channel == 3: final_filter_name = "SPIRE.PLW_ext"
             else:
 
-                if wavelength == 250: return Filter("SPIRE.PSW_ext")
-                elif wavelength == 350: return Filter("SPIRE.PMW_ext")
-                elif wavelength == 500: return Filter("SPIRE.PLW_ext")
+                if wavelength == 250: final_filter_name = "SPIRE.PSW_ext"
+                elif wavelength == 350: final_filter_name = "SPIRE.PMW_ext"
+                elif wavelength == 500: final_filter_name = "SPIRE.PLW_ext"
                 else: log.warning("Could not determine which SPIRE filter was used for this image")
 
     # -- H alpha --
-    elif "alpha" in filterid or "6561" in filterid: return Filter("656_1")
+    elif "alpha" in filterid or "6561" in filterid: final_filter_name = "656_1"
 
-    # The filter could not be determined from the specified header
-    else: return None
+    # Inform the user
+    if final_filter_name is not None: log.warning("Filter was identified as " + final_filter_name)
+
+    # Create and return a Filter object
+    return Filter(final_filter_name) if final_filter_name is not None else None
 
 # -----------------------------------------------------------------
 

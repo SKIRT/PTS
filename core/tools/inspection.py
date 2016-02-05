@@ -236,6 +236,8 @@ def add_dependencies(dependencies, script_path, prefix=""):
 
         for module in modules:
 
+            if module in dependencies: continue
+
             # Check if the imported module refers to a PTS module or an external package
             if module.startswith("/"): add_dependencies(dependencies, module, prefix=prefix+"  ")
             else: dependencies[module].add(script_path)

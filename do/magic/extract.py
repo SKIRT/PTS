@@ -123,10 +123,8 @@ logfile_path = os.path.join(arguments.output_path, time.unique_name("log") + ".t
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
-#log = logging.init_log(level=level, path=logfile_path)
-#log = logging.setup_custom_logger(level="DEBUG")
+logging.setup_log(level=level, path=logfile_path)
 logging.log.info("Starting extract script ...")
-logging.log.warning("Test ...")
 
 # -----------------------------------------------------------------
 

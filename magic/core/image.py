@@ -873,7 +873,7 @@ class Image(object):
         """
 
         # Show which image we are importing
-        log.info("Reading in file: " + filename)
+        log.info("Reading in file " + filename + " ...")
 
         # Open the HDU list for the FITS file
         hdulist = fits.open(filename)

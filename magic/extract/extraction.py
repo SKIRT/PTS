@@ -75,15 +75,6 @@ class Extractor(Configurable):
         elif arguments.settings is not None: extractor = cls(arguments.settings)
         else: extractor = cls()
 
-        # Debug mode
-        if arguments.debug:
-
-            extractor.config.logging.level = "DEBUG"
-            extractor.config.logging.cascade = True
-
-        # Report file
-        if arguments.report: extractor.config.logging.path = "log.txt"
-
         # Ignore and special region
         if arguments.ignore is not None: extractor.config.ignore_region = arguments.ignore
         if arguments.special is not None: extractor.config.special_region = arguments.special
@@ -289,6 +280,9 @@ class Extractor(Configurable):
         # Run the catalog importer
         self.catalog_importer.run(self.image.frames.primary)
 
+        # Inform the user
+        log.success("Catalog imported")
+
     # -----------------------------------------------------------------
 
     def extract_galaxies(self):
@@ -306,6 +300,9 @@ class Extractor(Configurable):
         # Set the name of the principal galaxy
         self.galaxy_name = self.galaxy_extractor.principal.name
 
+        # Inform the user
+        log.success("Galaxies extracted")
+
     # -----------------------------------------------------------------
     
     def extract_stars(self):
@@ -314,16 +311,20 @@ class Extractor(Configurable):
         This function ...
         """
 
-        # Inform the user
-        log.info("Extracting the stars ...")
-
         # Run the star extraction if the wavelength of this image is smaller than 25 micron (or the wavelength is unknown)
         if self.image.wavelength is None or self.image.wavelength < wavelengths.ranges.ir.mir.max:
+
+            # Inform the user
+            log.info("Extracting the stars ...")
 
             # Run the star extractor
             self.star_extractor.run(self.image, self.galaxy_extractor, self.catalog_importer.stellar_catalog, special=self.special_mask, ignore=self.ignore_mask)
 
-        else: log.info("No star extraction for this image")
+            # Inform the user
+            log.success("Stars extracted")
+
+        # No star subtraction for this image
+        else: log.info("Star subtraction will not be performed for this image")
 
     # -----------------------------------------------------------------
 
@@ -339,6 +340,9 @@ class Extractor(Configurable):
 
         # Run the trained extractor just to find sources
         self.trained_extractor.run(self.image, self.galaxy_extractor, self.star_extractor, special=self.special_mask, ignore=self.ignore_mask)
+
+        # Inform the user
+        log.success("Other sources extracted")
 
     # -----------------------------------------------------------------
 
@@ -370,6 +374,9 @@ class Extractor(Configurable):
         # Run the catalog builder
         self.catalog_builder.run(self.image.frames.primary, self.galaxy_extractor, self.star_extractor, self.trained_extractor)
 
+        # Inform the user
+        log.success("Stellar catalog built")
+
     # -----------------------------------------------------------------
 
     def synchronize_catalog(self):
@@ -384,6 +391,9 @@ class Extractor(Configurable):
 
         # Run the catalog synchronizer
         self.catalog_synchronizer.run(self.image.frames.primary, self.galaxy_name, self.catalog_builder.galactic_catalog, self.catalog_builder.stellar_catalog)
+
+        # Inform the user
+        log.success("Catalog synchronization done")
 
     # -----------------------------------------------------------------
 

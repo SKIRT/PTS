@@ -26,6 +26,7 @@ from photutils.geometry import elliptical_overlap_grid
 
 # Import the relevant AstroMagic classes and modules
 from .vector import Extent, Position
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -66,7 +67,7 @@ class Mask(np.ndarray):
         """
 
         # Show which image we are importing
-        print("INFO: Reading in file: " + path)
+        log.info("Reading in file " + path + " ...")
 
         # Open the HDU list for the FITS file
         hdulist = fits.open(path)

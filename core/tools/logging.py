@@ -19,43 +19,125 @@ import logging
 
 # -----------------------------------------------------------------
 
-log = None
-
-def setup_custom_logger(level="INFO"):
-
-    global log
-
-    log = logging.getLogger("pts")
-
-    formatter = logging.Formatter("%(asctime)s.%(msecs)03d - %(message)s (%(module)s)", "%d/%m/%Y %H:%M:%S")
-
-    #handler = logging.StreamHandler()
-    handler = ColorizingStreamHandler()
-    handler.setFormatter(formatter)
-
-    #log = logging.getLogger(name)
-    log.setLevel(level)
-    log.addHandler(handler)
-
-    return log
+# Add the 'SUCCESS' log level
+SUCCESS = 25
+logging.addLevelName(SUCCESS, "SUCCESS")
+Logger = logging.getLoggerClass()
+def success(self, message, *args, **kwargs):
+    print(self.getEffectiveLevel())
+    if self.isEnabledFor(SUCCESS): self._log(SUCCESS, message, args, **kwargs)
+logging.Logger.success = success
 
 # -----------------------------------------------------------------
 
-# Add the 'SUCCESS' log level
-#SUCCESS = 25
-#logging.addLevelName(SUCCESS, "SUCCESS")
+# The global log = a singleton of this module
+log = None
 
-#Logger = logging.getLoggerClass()
+# -----------------------------------------------------------------
 
-#def success(self, message, *args, **kwargs):
-#    print(self.getEffectiveLevel())
-#    if self.isEnabledFor(SUCCESS): self._log(SUCCESS, message, args, **kwargs)
+def init_log(level="INFO"):
 
-#logging.Logger.success = success
+    """
+    This function ...
+    :return:
+    """
 
-#class PTSLogger(Logger):
-    #def success(self, message, *args, **kwargs):
-        #if self.isEnabledFor(SUCCESS): self._log(SUCCESS, message, args, **kwargs)
+    global log
+
+    # Create a new named logger
+    log = logging.getLogger("pts")
+
+    # Create formatter
+    #formatter = logging.Formatter("%(asctime)s.%(msecs)03d - %(message)s (%(module)s)", "%d/%m/%Y %H:%M:%S")
+    formatter = MyFormatter()
+
+    # Create handler
+    handler = ColorizingStreamHandler()
+    handler.setFormatter(formatter)
+
+    # Set level and stream handler
+    log.setLevel(level)
+    log.addHandler(handler)
+
+    # Show welcome message
+    log.info("Welcome to PTS")
+
+# -----------------------------------------------------------------
+
+def setup_log(level="INFO", path=None, memory=False):
+
+    """
+    This function ...
+    :param level:
+    :param path:
+    :param memory:
+    :return:
+    """
+
+    log.setLevel(level)
+
+    if path is not None:
+
+        # Create file handler
+        fh = logging.FileHandler(path)
+
+        # Set the formatter
+        fh.setFormatter(log.handlers[0].formatter)
+
+        # Set the level
+        fh.setLevel(level)
+
+        # Add the handler to the log instance
+        log.addHandler(fh)
+
+# -----------------------------------------------------------------
+
+# Custom formatter
+class MyFormatter(logging.Formatter):
+
+    timestamp = "%(asctime)s.%(msecs)03d"
+    message = "%(message)s"
+    module = "(%(module)s)"
+
+    debug_char = "D"
+    info_char = " "
+    success_char = "-"
+    warning_char = "!"
+    error_char = "*"
+
+    def __init__(self, fmt="%(levelno)s: %(msg)s", datefmt="%d/%m/%Y %H:%M:%S"):
+        logging.Formatter.__init__(self, fmt, datefmt)
+
+
+    def format(self, record):
+
+        # Save the original format configured by the user
+        # when the logger formatter was instantiated
+        format_orig = self._fmt
+
+        # Replace the original format with one customized by logging level
+        if record.levelno == logging.DEBUG:
+            self._fmt = MyFormatter.timestamp + " " + MyFormatter.debug_char + " " + MyFormatter.message
+
+        elif record.levelno == logging.INFO:
+            self._fmt = MyFormatter.timestamp + " " + MyFormatter.info_char + " " + MyFormatter.message
+
+        elif record.levelno == logging._levelNames["SUCCESS"]:
+            self._fmt = MyFormatter.timestamp + " " + MyFormatter.success_char + " " + MyFormatter.message
+
+        elif record.levelno == logging.WARNING:
+            self._fmt = MyFormatter.timestamp + " " + MyFormatter.warning_char + " " + MyFormatter.message
+
+        elif record.levelno == logging.ERROR:
+            self._fmt = MyFormatter.timestamp + " " + MyFormatter.error_char + " " + MyFormatter.message
+
+        # Call the original formatter class to do the grunt work
+        result = logging.Formatter.format(self, record)
+
+        # Restore the original format configured by the user
+        self._fmt = format_orig
+
+        return result
 
 # -----------------------------------------------------------------
 
@@ -117,7 +199,7 @@ class ColorizingStreamHandler(logging.StreamHandler):
     level_map = {
         logging.DEBUG: (None, 'blue', False),
         logging.INFO: (None, None, False),
-        #logging._levelNames["SUCCESS"]: (None, 'yellow', False),
+        logging._levelNames["SUCCESS"]: (None, 'green', False),
         logging.WARNING: (None, 'magenta', False),
         logging.ERROR: (None, 'red', False),
         logging.CRITICAL: ('red', 'white', True) }
@@ -154,7 +236,7 @@ class ColorizingStreamHandler(logging.StreamHandler):
 
 # -----------------------------------------------------------------
 
-def init_log(name=None, level="INFO", path=None, memory=False):
+def init_log_deprecated(name=None, level="INFO", path=None, memory=False):
 
     """
     Initializes the PTS log--in most circumstances this is called
@@ -286,3 +368,13 @@ def new_memory_log():
     return log
 
 # -----------------------------------------------------------------
+
+#formatter = logging.Formatter("%(asctime)s.%(msecs)03d - %(message)s (%(module)s)", "%d/%m/%Y %H:%M:%S")
+#handler = logging.StreamHandler()
+#handler = ColorizingStreamHandler()
+#handler.setFormatter(formatter)
+#log = logging.getLogger(name)
+#log.setLevel("INFO")
+#log.addHandler(handler)
+
+init_log()
