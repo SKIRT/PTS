@@ -106,14 +106,14 @@ class CoordinateSystem(wcs.WCS):
 
     # -----------------------------------------------------------------
 
-    def to_header(self):
+    def to_header(self, relax=None, key=None):
 
         """
         This function ...
         :return:
         """
 
-        header = super(CoordinateSystem, self).to_header()
+        header = super(CoordinateSystem, self).to_header(relax, key)
 
         header["NAXIS1"] = self._naxis1
         header["NAXIS2"] = self._naxis2
