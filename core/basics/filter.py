@@ -111,7 +111,7 @@ class Filter:
                     if len(filterfiles) < 1: raise ValueError("no filter found with spec " + filterspec)
 
                     # load the XML tree
-                    tree = etree.parse(os.path.join(filterdir, filterfiles[0]))
+                    tree = etree.parse(open(os.path.join(filterdir, filterfiles[0]), 'r'))
 
                     # verify the wavelength unit to be Angstrom
                     unit = tree.xpath("//RESOURCE/PARAM[@name='WavelengthUnit'][1]/@value")[0]
