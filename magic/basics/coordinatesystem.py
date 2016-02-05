@@ -106,6 +106,22 @@ class CoordinateSystem(wcs.WCS):
 
     # -----------------------------------------------------------------
 
+    def to_header(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        header = super(CoordinateSystem, self).to_header()
+
+        header["NAXIS1"] = self._naxis1
+        header["NAXIS2"] = self._naxis2
+
+        return header
+
+    # -----------------------------------------------------------------
+
     def to_sky_coordinate(self, coordinate):
 
         """
