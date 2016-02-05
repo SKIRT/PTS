@@ -188,7 +188,7 @@ class ImageImporter(Configurable):
                     if error_frame.unit != u.Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(error_frame.unit) + " is not recognized as a surface brightness unit")
 
                     # Do the rebinning
-                    error_frame = error_frame.rebinned(self.image.frames.primary)
+                    error_frame = error_frame.rebinned(self.image.frames.primary.wcs)
 
                 # Add the error frame
                 self.image.add_frame(error_frame, "errors")
