@@ -24,7 +24,6 @@ SUCCESS = 25
 logging.addLevelName(SUCCESS, "SUCCESS")
 Logger = logging.getLoggerClass()
 def success(self, message, *args, **kwargs):
-    print(self.getEffectiveLevel())
     if self.isEnabledFor(SUCCESS): self._log(SUCCESS, message, args, **kwargs)
 logging.Logger.success = success
 
@@ -89,6 +88,9 @@ def setup_log(level="INFO", path=None, memory=False):
 
         # Add the handler to the log instance
         log.addHandler(fh)
+
+    # Memory logging
+    if memory: pass
 
 # -----------------------------------------------------------------
 
@@ -225,68 +227,6 @@ class ColorizingStreamHandler(logging.StreamHandler):
 
 # -----------------------------------------------------------------
 
-# Global logger
-#log = logging.getLogger("pts")
-#log = None
-#sh = ColorizingStreamHandler(sys.stdout)
-#sh.setLevel(logging.INFO)
-#formatter = logging.Formatter("%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s (%(origin)s)", "%d/%m/%Y %H:%M:%S")
-#sh.setFormatter(formatter)
-#log.addHandler(sh)
-
-# -----------------------------------------------------------------
-
-def init_log_deprecated(name=None, level="INFO", path=None, memory=False):
-
-    """
-    Initializes the PTS log--in most circumstances this is called
-    when a pts do script is launched. Parameters:
-    :param name:
-    :param level:
-    :param path:
-    """
-
-    global log
-
-    # Set the name to 'pts' if none was given
-    if name is None: name = "pts"
-
-    # Create a logger
-    #log = logging.getLogger(name) # Does not provide a functioning log ??
-    #log = logger.AstropyLogger(name)
-    #log = logging.Logger(name)
-
-    # Create a stream handler
-    sh = ColorizingStreamHandler(sys.stdout)
-    sh.setLevel(logging.INFO)
-
-    # Create and set the formatter
-    formatter = logging.Formatter("%(asctime)s.%(msecs)03d - %(message)s (%(origin)s)", "%d/%m/%Y %H:%M:%S")
-    sh.setFormatter(formatter)
-
-    # Add the stream handler
-    log.addHandler(sh)
-
-    # Add file handler if requested
-    if path is not None:
-
-        # Create file handler
-        fh = logging.FileHandler(path)
-
-        # Set the formatter
-        fh.setFormatter(formatter)
-
-        # Set the level
-        fh.setLevel(level)
-
-        # Add the handler to the log instance
-        log.addHandler(fh)
-
-    # Return the logger so that the do script that calls this function can immediately use it
-    return log
-
-# -----------------------------------------------------------------
-
 class MemuseFilter(logging.Filter):
 
     def filter(self, record):
@@ -369,12 +309,5 @@ def new_memory_log():
 
 # -----------------------------------------------------------------
 
-#formatter = logging.Formatter("%(asctime)s.%(msecs)03d - %(message)s (%(module)s)", "%d/%m/%Y %H:%M:%S")
-#handler = logging.StreamHandler()
-#handler = ColorizingStreamHandler()
-#handler.setFormatter(formatter)
-#log = logging.getLogger(name)
-#log.setLevel("INFO")
-#log.addHandler(handler)
-
+# Initialize a global logger
 init_log()

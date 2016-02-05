@@ -466,10 +466,11 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def rebin(self, reference):
+    def rebin(self, reference_system):
 
         """
         This function ...
+        :param reference_system:
         """
 
         # Loop over all currently selected frames
@@ -479,7 +480,7 @@ class Image(object):
             log.info("Rebinning the " + frame_name + " frame ...")
 
             # Rebin this frame (the reference wcs is automatically set in the new frame)
-            self.frames[frame_name] = self.frames[frame_name].rebinned(reference)
+            self.frames[frame_name] = self.frames[frame_name].rebinned(reference_system)
 
         # Loop over the masks
         for mask_name in self.masks:
@@ -488,7 +489,7 @@ class Image(object):
             log.info("Rebinning the " + mask_name + " mask ...")
 
             # Rebin this mask
-            data = transformations.align_and_rebin(self, self.wcs.to_header(), reference.header)
+            data = transformations.align_and_rebin(self, self.wcs.to_header(), reference_system.to_header())
 
             # Return the rebinned mask
             self.masks[mask_name] = Mask(data, self.masks[mask_name].selected, self.masks[mask_name].description)

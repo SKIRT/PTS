@@ -390,19 +390,19 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def rebinned(self, ref_frame):
+    def rebinned(self, coordinate_system):
 
         """
         This function ...
-        :param ref_frame:
+        :param coordinate_system:
         :return:
         """
 
         # Do the rebinning
-        data = transformations.align_and_rebin(self, self.header, ref_frame.header)
+        data = transformations.align_and_rebin(self, self.header, coordinate_system.to_header())
 
         # Return the rebinned frame
-        return Frame(data, ref_frame.wcs, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+        return Frame(data, coordinate_system, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
     # -----------------------------------------------------------------
 

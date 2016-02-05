@@ -17,7 +17,7 @@ import numpy as np
 
 # Import the relevant AstroMagic classes and modules
 from ...magic.core import Frame, Source
-from ...magic.basics import Region
+from ...magic.basics import Region, CoordinateSystem
 from ...magic.extract import Extractor
 from ...magic.subtract import SkySubtractor
 from ...magic.tools import regions, cropping
@@ -230,11 +230,11 @@ class ImagePreparer(Configurable):
         # Inform the user
         self.log.info("Rebinning the image to the pixel grid of " + self.config.rebinning.rebin_to + " ...")
 
-        # Open the reference frame
-        reference = Frame.from_file(self.config.rebinning.rebin_to)
+        # Get the coordinate system of the reference frame
+        reference_system = CoordinateSystem.from_file(self.config.rebinning.rebin_to)
 
         # Rebin the image (the primary and errors frame)
-        self.image.rebin(reference)
+        self.image.rebin(reference_system)
 
         # Save rebinned frame
         if self.config.write_steps: self.write_intermediate_result("rebinned.fits")

@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from astropy import wcs
 from astropy.wcs import utils
 from astropy import units as u
+from astropy.io import fits
 
 # Import the relevant AstroMagic classes and modules
 from .vector import Extent
@@ -42,6 +43,20 @@ class CoordinateSystem(wcs.WCS):
         if header is not None:
             if not hasattr(self, "naxis1"): self.naxis1 = header["NAXIS1"]
             if not hasattr(self, "naxis2"): self.naxis2 = header["NAXIS2"]
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        header = fits.getheader(path)
+        return cls(header)
 
     # -----------------------------------------------------------------
 

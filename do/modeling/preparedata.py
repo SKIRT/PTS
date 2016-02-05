@@ -18,6 +18,7 @@ import argparse
 
 # Import the relevant PTS classes and modules
 from pts.modeling import DataPreparer
+from pts.core.tools import logging, time
 
 # -----------------------------------------------------------------
 
@@ -38,6 +39,18 @@ arguments = parser.parse_args()
 
 # Set the modeling path
 if arguments.path is None: arguments.path = os.getcwd()
+
+# -----------------------------------------------------------------
+
+# Determine the log file path
+logfile_path = os.path.join(arguments.path, time.unique_name("preparation") + ".txt") if arguments.report else None
+
+# Determine the log level
+level = "DEBUG" if arguments.debug else "INFO"
+
+# Initialize the logger
+logging.setup_log(level=level, path=logfile_path)
+logging.log.info("Starting data preparation ...")
 
 # -----------------------------------------------------------------
 

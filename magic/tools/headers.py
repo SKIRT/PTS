@@ -57,8 +57,8 @@ def get_pixelscale(header):
                 try: unit = u.Unit(unit)
                 except ValueError: unit = None
 
-            print("DEBUG: pixelscale found in", keyword, "keyword =", scale)
-            print("DEBUG: unit for the pixelscale =", unit)
+            log.debug("pixelscale found in", keyword, "keyword =", scale)
+            log.debug("unit for the pixelscale =", unit)
 
             # If no unit is found, guess that it's arcseconds / pixel ...
             if unit is None: unit = u.Unit("arcsec/pix")
@@ -97,8 +97,8 @@ def get_pixelscale(header):
                 try: unit2 = u.Unit(unit2)
                 except ValueError: unit2 = None
 
-            print("DEBUG: pixelscale found in PXSCAL1 and PXSCAL2 keywords = (", scale1, scale2, ")")
-            print("DEBUG: unit for the pixelscale = (", unit1, unit2, ")")
+            log.debug("pixelscale found in PXSCAL1 and PXSCAL2 keywords = (", scale1, scale2, ")")
+            log.debug("unit for the pixelscale = (", unit1, unit2, ")")
 
             # If no unit is found, guess that it's arcseconds / pixel ...
             if unit1 is None: unit1 = u.Unit("arcsec/pix")
@@ -126,7 +126,7 @@ def get_filter(name, header):
     filterid = name.lower()
 
     if "kernel" in filterid:
-        log.warning("The image represents a kernel, so no filter will be set")
+        log.debug("The image represents a kernel, so no filter will be set")
         return None
 
     # Get information from the header
@@ -149,9 +149,9 @@ def get_filter(name, header):
     if "WAVELEN" in header: wavelength = float(header["WAVELEN"])
     else: wavelength = None
 
-    #print("DEBUG: filterid =", filterid)
-    #print("DEBUG: channel =", channel)
-    #print("DEBUG: wavelength =", wavelength)
+    log.debug("filterid =", filterid)
+    log.debug("channel =", channel)
+    log.debug("wavelength =", wavelength)
 
     final_filter_name = None
 
@@ -267,7 +267,7 @@ def get_filter(name, header):
     elif "alpha" in filterid or "6561" in filterid: final_filter_name = "656_1"
 
     # Inform the user
-    if final_filter_name is not None: log.warning("Filter was identified as " + final_filter_name)
+    if final_filter_name is not None: log.debug("Filter was identified as " + final_filter_name)
 
     # Create and return a Filter object
     return Filter(final_filter_name) if final_filter_name is not None else None

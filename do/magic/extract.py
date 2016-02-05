@@ -117,7 +117,7 @@ else: arguments.output_path = os.getcwd()
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = os.path.join(arguments.output_path, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = os.path.join(arguments.output_path, time.unique_name("extraction") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"

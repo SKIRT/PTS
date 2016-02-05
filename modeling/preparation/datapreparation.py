@@ -27,7 +27,8 @@ from ...magic import ImageImporter
 # Import the relevant PTS classes and modules
 from ..core import ModelingComponent
 from .imagepreparation import ImagePreparer
-from ...core.tools import filesystem, tables, time
+from ...core.tools import filesystem, tables
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -142,12 +143,6 @@ class DataPreparer(ModelingComponent):
         # Create a new Modeler instance
         preparer = cls(arguments.config)
 
-        # Logging
-        if arguments.debug:
-
-            preparer.config.logging.level = "DEBUG"
-            preparer.config.logging.cascade = True
-
         preparer.config.preparation.write_steps = arguments.steps
 
         # Set the reference image
@@ -160,9 +155,6 @@ class DataPreparer(ModelingComponent):
 
         # A single image can be specified so the preparation is only run with that image
         preparer.config.single_image = arguments.image
-
-        # Set logging path
-        if arguments.report: preparer.config.logging.path = os.path.join(preparer.config.output_path, time.unique_name("log") + ".txt")
 
         # Return the new instance
         return preparer
@@ -230,7 +222,7 @@ class DataPreparer(ModelingComponent):
         """
 
         # Inform the user
-        self.log.info("Loading the images ...")
+        log.info("Loading the images ...")
 
         # Load image information
         info_path = os.path.join(self.data_path, "info.dat")
@@ -253,7 +245,7 @@ class DataPreparer(ModelingComponent):
             info_index = tables.find_index(info_table, image_name)
             if info_index is None:
                 # TEMP: skip image if not defined in table !!
-                self.log.warning("No information about " + image_name + ": skipping")
+                log.warning("No information about " + image_name + ": skipping")
                 continue
 
             # Get image properties such as the unit and the FWHM of the PSF
@@ -341,7 +333,7 @@ class DataPreparer(ModelingComponent):
         """
 
         # Inform the user
-        self.log.info("Preparing the images ...")
+        log.info("Preparing the images ...")
 
         # Loop over the input images (and masks)
         for image in self.images:
