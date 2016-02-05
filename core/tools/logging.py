@@ -13,9 +13,20 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import warnings
+
+# Import astronomical modules
+from astropy.utils.exceptions import AstropyWarning
+
+# Import standard modules
 import os
 import sys
 import logging
+
+# -----------------------------------------------------------------
+
+# Suppress Astropy warnings
+warnings.simplefilter('ignore', category=AstropyWarning)
 
 # -----------------------------------------------------------------
 
@@ -311,3 +322,5 @@ def new_memory_log():
 
 # Initialize a global logger
 init_log()
+
+# -----------------------------------------------------------------

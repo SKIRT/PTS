@@ -16,23 +16,68 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-from astropy.wcs import utils
 import astropy.units as u
-
-# Import the relevant AstroMagic classes and modules
-from ..basics import Extent
+from astropy.coordinates import SkyCoord
 
 # -----------------------------------------------------------------
 
-def is_distorted(wcs):
+def pixel_mapping(wcs1, wcs2):
 
     """
-    This function ...
-    :param wcs:
-    :return:
+    This function determines the mapping from pixel coordinates in header1 to pixel coordinates in header2 (the
+    reference header). It takes the following arguments:
+    :param wcs1:
+    :param wcs2:
+    :return: a NumPy array describing a grid of y,x pixel locations in the input header's pixel units but the output
+    header's world units. It raises a TypeError if neither header is not a Header or WCS instance, and a
+    NotImplementedError if the CTYPE in the header is not recognized.
     """
 
-    return utils.is_proj_plane_distorted(wcs)
+    # Convert the coordinates
+    if not all([w1==w2 for w1,w2 in zip(wcs1.wcs.ctype,wcs2.wcs.ctype)]):
+        allowed_coords = ('GLON','GLAT','RA','DEC')
+        if all([(any(word in w1 for word in allowed_coords) and
+                 any(word in w2 for word in allowed_coords))
+                for w1,w2 in zip(wcs1.wcs.ctype,wcs2.wcs.ctype)]):
+            csys1 = wcs1.csys
+            csys2 = wcs2.csys
+            convert_coordinates = True
+        else:
+            # do unit conversions
+            raise NotImplementedError("Unit conversions between {0} and {1} have not yet been implemented.".format(wcs1.wcs.ctype,wcs2.wcs.ctype))
+
+    else: convert_coordinates = False
+
+    # sigh... why does numpy use matrix convention?  Makes everything so
+    # much harder...
+    # WCS has naxis attributes because it is loaded with
+    # _load_wcs_from_header
+    outshape = [wcs2.naxis2,wcs2.naxis1]
+
+    yy2,xx2 = np.indices(outshape)
+
+    # get the world coordinates of the output image
+    lon2,lat2 = wcs2.wcs_pix2world(xx2, yy2, 0)
+
+    # Alternative
+    #x = np.arange(wcs2.naxis1)
+    #y = np.arange(wcs2.naxis2)
+    #X, Y = np.meshgrid(x, y)
+    #lon2, lat2 = wcs2.wcs_pix2world(X, Y, 0)
+
+    if convert_coordinates:
+
+        # Transform the world coordinates from the output image into the coordinate
+        # system of the input image
+        C2 = SkyCoord(lon2,lat2,unit=(u.Unit("deg"),u.Unit("deg")), frame=csys2)
+        C1 = C2.transform_to(csys1)
+        lon2,lat2 = C1.spherical.lon.deg,C1.spherical.lat.deg
+
+    xx1,yy1 = wcs1.wcs_world2pix(lon2, lat2, 0)
+    grid = np.array([yy1.reshape(outshape),xx1.reshape(outshape)])
+
+    # Return the grid
+    return grid
 
 # -----------------------------------------------------------------
 

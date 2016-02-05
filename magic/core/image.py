@@ -489,7 +489,7 @@ class Image(object):
             log.info("Rebinning the " + mask_name + " mask ...")
 
             # Rebin this mask
-            data = transformations.align_and_rebin(self, self.wcs.to_header(), reference_system.to_header())
+            data = transformations.align_and_rebin(self.masks[mask_name], self.wcs.to_header(), reference_system.to_header())
 
             # Return the rebinned mask
             self.masks[mask_name] = Mask(data, self.masks[mask_name].selected, self.masks[mask_name].description)
@@ -896,8 +896,6 @@ class Image(object):
 
         # Obtain the world coordinate system
         wcs = CoordinateSystem(header)
-
-        # Pixelscale: WILL BE CHECKED IN THE FRAME CONSTRUCTOR
 
         # Obtain the filter for this image
         filter = headers.get_filter(self.name, original_header)

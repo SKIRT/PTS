@@ -445,7 +445,6 @@ def check_header_matches_image(image, header):
     :return:
     """
 
-    #wcs = load_wcs_from_header(header)
     wcs = CoordinateSystem(header)
 
     # wcs.naxis attributes are deprecated, so we perform this check conditionally
@@ -468,14 +467,12 @@ def get_pixel_mapping(header1, header2):
     """
 
     # Get the WCS from the two headers
-    #wcs1 = load_wcs_from_header(header1)
-    #wcs2 = load_wcs_from_header(header2)
     wcs1 = CoordinateSystem(header1)
     wcs2 = CoordinateSystem(header2)
 
     # Convert the coordinates
-    if not all([w1==w2 for w1,w2 in zip(wcs1.wcs.ctype,wcs2.wcs.ctype)]):
-        allowed_coords = ('GLON','GLAT','RA','DEC')
+    if not all([w1 == w2 for w1,w2 in zip(wcs1.wcs.ctype,wcs2.wcs.ctype)]):
+        allowed_coords = ('GLON', 'GLAT', 'RA', 'DEC')
         if all([(any(word in w1 for word in allowed_coords) and
                  any(word in w2 for word in allowed_coords))
                 for w1,w2 in zip(wcs1.wcs.ctype,wcs2.wcs.ctype)]):
@@ -485,8 +482,8 @@ def get_pixel_mapping(header1, header2):
         else:
             # do unit conversions
             raise NotImplementedError("Unit conversions between {0} and {1} have not yet been implemented.".format(wcs1.wcs.ctype,wcs2.wcs.ctype))
-    else:
-        convert_coordinates = False
+
+    else: convert_coordinates = False
 
     # sigh... why does numpy use matrix convention?  Makes everything so
     # much harder...

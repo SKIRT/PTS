@@ -22,7 +22,41 @@ import scipy.ndimage
 import astropy.io.fits as pyfits
 
 # Import the relevant AstroMagic classes and modules
-from . import headers
+from . import headers, coordinates
+
+# -----------------------------------------------------------------
+
+def new_align_and_rebin(frame, coordinate_system, reference_system, preserve_nans=True, **kwargs):
+
+    """
+    This function ...
+    :param frame:
+    :param coordinate_system:
+    :param reference_system:
+    :param preserve_nans:
+    :param kwargs:
+    :return:
+    """
+
+    # Get the mapping from pixels in the image to pixels defined on the coordinate system of the reference header
+    mapping = coordinates.pixel_mapping(coordinate_system, reference_system)
+
+    # Look for bad pixels (NaN's or infinities)
+    bad_pixels = np.isnan(frame) + np.isinf(frame)
+
+    # Mask the bad pixels
+    frame[bad_pixels] = 0
+
+    # Use Scipy to create the new image
+    data = scipy.ndimage.map_coordinates(frame, mapping, **kwargs)
+
+    if preserve_nans:
+
+        newbad = scipy.ndimage.map_coordinates(bad_pixels, mapping, order=0, mode='constant', cval=np.nan)
+        data[newbad] = np.nan
+
+    # Return the new frame
+    return data
 
 # -----------------------------------------------------------------
 
@@ -43,13 +77,9 @@ def align_and_rebin(image, header1, header2, preserve_bad_pixels=True, **kwargs)
 
     # TODO: take WCS objects instead of headers (so we don't have to convert the wcs to a header each time in the Frame class)
 
-    #print header2
-
     # Remove the third axis of the reference header
     header2["NAXIS"] = 2
     header2.pop("NAXIS3", None)
-
-    #print header2
 
     # Check whether the passed image matches the information in header1
     headers.check_header_matches_image(image, header1)

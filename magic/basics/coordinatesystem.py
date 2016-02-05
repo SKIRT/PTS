@@ -174,4 +174,25 @@ class CoordinateSystem(wcs.WCS):
 
         pass
 
+    # -----------------------------------------------------------------
+
+    @property
+    def csys(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        ctype = self.wcs.ctype[0]
+        if 'RA' in ctype or 'DEC' in ctype:
+            if self.wcs.equinox == 2000:
+                return 'fk5'
+            elif self.wcs.equinox == 1950:
+                return 'fk4'
+            else:
+                raise NotImplementedError("Non-fk4/fk5 equinoxes are not allowed")
+        elif 'GLON' in ctype or 'GLAT' in ctype:
+            return 'galactic'
+
 # -----------------------------------------------------------------
