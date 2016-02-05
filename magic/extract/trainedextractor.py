@@ -30,6 +30,7 @@ from ..sky import Star
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -141,7 +142,7 @@ class TrainedExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Looking for sources in the frame ...")
+        log.info("Looking for sources in the frame ...")
 
         # Find sources by locating peaks
         if self.config.detection.method == "peaks": self.find_sources_peaks()
@@ -165,7 +166,7 @@ class TrainedExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Removing the sources from the frame ...")
+        log.info("Removing the sources from the frame ...")
 
         # Loop over all sources
         for source in self.sources:
@@ -197,7 +198,7 @@ class TrainedExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Constructing elliptical contours to encompass sources ...")
+        log.info("Constructing elliptical contours to encompass sources ...")
 
         # Return the list of apertures
         return sources.find_contours(self.segments, self.segments, self.config.detection.apertures.sigma_level)
@@ -272,7 +273,7 @@ class TrainedExtractor(Configurable):
                 #self.galaxies.append(galaxy)
 
             # Not a star or a galaxy
-            #else: self.log.debug("The source does not correspond to a star or galaxy")
+            #else: log.debug("The source does not correspond to a star or galaxy")
 
     # -----------------------------------------------------------------
 
@@ -492,7 +493,7 @@ class TrainedExtractor(Configurable):
         path = self.full_output_path(self.config.writing.masked_frame_path)
 
         # Inform the user
-        self.log.info("Writing masked frame to " + path + " ...")
+        log.info("Writing masked frame to " + path + " ...")
 
         # Create a frame where the objects are masked
         frame = self.image.frames.primary.copy()
@@ -514,7 +515,7 @@ class TrainedExtractor(Configurable):
         path = self.full_output_path(self.config.writing.star_region_path)
 
         # Inform the user
-        self.log.info("Writing star region to " + path + " ...")
+        log.info("Writing star region to " + path + " ...")
 
         # Create a file
         f = open(path, 'w')
@@ -569,7 +570,7 @@ class TrainedExtractor(Configurable):
         path = self.full_output_path(self.config.writing.segments_path)
 
         # Inform the user
-        self.log.info("Writing the segmentation map to " + path + " ...")
+        log.info("Writing the segmentation map to " + path + " ...")
 
         # Save the segmentation map
         Frame(self.segments).save(path, origin=self.name)

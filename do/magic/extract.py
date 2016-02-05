@@ -18,7 +18,8 @@ import argparse
 
 # Import the relevant AstroMagic classes and modules
 from pts.magic import ImageImporter, Extractor
-from pts.core.tools import configuration
+from pts.core.tools import configuration, time
+from pts.core.tools import logging
 
 # -----------------------------------------------------------------
 
@@ -112,6 +113,20 @@ if arguments.output is not None:
 
 # If no output directory is given, place the output in the current working directory
 else: arguments.output_path = os.getcwd()
+
+# -----------------------------------------------------------------
+
+# Determine the log file path
+logfile_path = os.path.join(arguments.output_path, time.unique_name("log") + ".txt") if arguments.report else None
+
+# Determine the log level
+level = "DEBUG" if arguments.debug else "INFO"
+
+# Initialize the logger
+#log = logging.init_log(level=level, path=logfile_path)
+#log = logging.setup_custom_logger(level="DEBUG")
+logging.log.info("Starting extract script ...")
+logging.log.warning("Test ...")
 
 # -----------------------------------------------------------------
 

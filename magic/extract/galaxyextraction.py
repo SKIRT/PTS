@@ -30,6 +30,7 @@ from ..tools import regions
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.tools import tables
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -111,7 +112,7 @@ class GalaxyExtractor(Configurable):
         super(GalaxyExtractor, self).setup()
 
         # Inform the user
-        self.log.info("Setting up the galaxy extractor ...")
+        log.info("Setting up the galaxy extractor ...")
 
         # Make a local reference to the image
         self.image = image
@@ -134,7 +135,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Clearing the galaxy extractor ...")
+        log.info("Clearing the galaxy extractor ...")
 
         # Clear the list of galaxies
         self.galaxies = []
@@ -252,7 +253,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Looking for sources near the galaxy positions ...")
+        log.info("Looking for sources near the galaxy positions ...")
 
         # Loop over all galaxies in the list
         for galaxy in self.galaxies:
@@ -273,13 +274,13 @@ class GalaxyExtractor(Configurable):
                 try: galaxy.find_source(self.image.frames.primary, self.config.detection)
                 except Exception as e:
                     #import traceback
-                    self.log.error("Error when finding source")
+                    log.error("Error when finding source")
                     print(type(e))
                     print(e)
                     #traceback.print_exc()
                     if self.config.plot_track_record_if_exception:
                         if galaxy.has_track_record: galaxy.track_record.plot()
-                        else: self.log.warning("Track record is not enabled")
+                        else: log.warning("Track record is not enabled")
 
             # If a source was not found for the principal or companion galaxies, force it
             outer_factor = self.config.detection.background_outer_factor
@@ -287,7 +288,7 @@ class GalaxyExtractor(Configurable):
             elif galaxy.companion and not galaxy.has_source and galaxy.has_extent: galaxy.source_from_parameters(self.image.frames.primary, outer_factor)
 
         # Inform the user
-        self.log.info("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.galaxies), self.have_source/len(self.galaxies)*100.0))
+        log.info("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.galaxies), self.have_source/len(self.galaxies)*100.0))
 
     # -----------------------------------------------------------------
 
@@ -299,7 +300,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Loading the galaxies from the catalog ...")
+        log.info("Loading the galaxies from the catalog ...")
 
         # Create the list of galaxies
         for i in range(len(self.catalog)):
@@ -353,8 +354,8 @@ class GalaxyExtractor(Configurable):
             self.galaxies.append(galaxy)
 
         # Debug messages
-        self.log.debug(self.principal.name + " is the principal galaxy in the frame")
-        self.log.debug("The following galaxies are its companions: " + str(self.principal.companions))
+        log.debug(self.principal.name + " is the principal galaxy in the frame")
+        log.debug("The following galaxies are its companions: " + str(self.principal.companions))
 
     # -----------------------------------------------------------------
 
@@ -367,7 +368,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Constructing elliptical contours to encompass the detected galaxies ...")
+        log.info("Constructing elliptical contours to encompass the detected galaxies ...")
 
         # Loop over all galaxies
         for galaxy in self.galaxies:
@@ -391,7 +392,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Removing the galaxies from the frame (except for the principal galaxy and its companions) ...")
+        log.info("Removing the galaxies from the frame (except for the principal galaxy and its companions) ...")
 
         # Loop over all galaxies
         for galaxy in self.galaxies:
@@ -418,7 +419,7 @@ class GalaxyExtractor(Configurable):
         path = self.full_input_path(self.config.manual_region)
 
         # Inform the user
-        self.log.info("Setting region for manual galaxy extraction from " + path + " ...")
+        log.info("Setting region for manual galaxy extraction from " + path + " ...")
 
         # Load the region and create a mask from it
         region = Region.from_file(path, self.image.wcs)
@@ -444,7 +445,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Removing manually specified galaxies from the frame ...")
+        log.info("Removing manually specified galaxies from the frame ...")
 
         # Loop over each item in the list of manual sources
         for source in self.manual_sources:
@@ -639,7 +640,7 @@ class GalaxyExtractor(Configurable):
         annotation = self.config.writing.region_annotation
 
         # Inform the user
-        self.log.info("Writing galaxy region to " + path + " ...")
+        log.info("Writing galaxy region to " + path + " ...")
 
         # Create a file
         f = open(path, 'w')
@@ -719,7 +720,7 @@ class GalaxyExtractor(Configurable):
         path = self.full_output_path(self.config.writing.catalog_path)
 
         # Inform the user
-        self.log.info("Writing galactic catalog to " + path + " ...")
+        log.info("Writing galactic catalog to " + path + " ...")
 
         # Write the catalog to file
         tables.write(self.catalog, path)
@@ -737,7 +738,7 @@ class GalaxyExtractor(Configurable):
         path = self.full_output_path(self.config.writing.statistics_path)
 
         # Inform the user
-        self.log.info("Writing galactic statistics to " + path + " ...")
+        log.info("Writing galactic statistics to " + path + " ...")
 
         # Write the statistics to file
         tables.write(self.statistics, path)
@@ -754,7 +755,7 @@ class GalaxyExtractor(Configurable):
         path = self.full_output_path(self.config.writing.masked_frame_path)
 
         # Inform the user
-        self.log.info("Writing masked frame to " + path + " ...")
+        log.info("Writing masked frame to " + path + " ...")
 
         # Create a frame where the objects are masked
         frame = self.image.frames.primary.copy()
@@ -776,7 +777,7 @@ class GalaxyExtractor(Configurable):
         directory_path = self.full_output_path(self.config.writing.cutouts_path)
 
         # Inform the user
-        self.log.info("Writing cutout boxes to " + directory_path + " ...")
+        log.info("Writing cutout boxes to " + directory_path + " ...")
 
         # Keep track of the number of stars encountered
         principals = 0
@@ -829,7 +830,7 @@ class GalaxyExtractor(Configurable):
         path = self.full_output_path(self.config.writing.result_path)
 
         # Inform the user
-        self.log.info("Writing resulting frame to " + path + " ...")
+        log.info("Writing resulting frame to " + path + " ...")
 
         # Write out the resulting frame
         self.image.frames.primary.save(path, origin=self.name)

@@ -16,10 +16,8 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-from astropy import wcs as astropy_wcs
 from astropy import coordinates
 from astropy import units as u
-from astropy import log
 
 # Import the relevant AstroMagic classes and modules
 from ..basics import Extent
@@ -27,6 +25,7 @@ from ..basics import Extent
 # Import the relevant PTS classes and modules
 from ...core.basics.filter import Filter
 from ..basics import CoordinateSystem
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 

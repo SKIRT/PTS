@@ -21,13 +21,13 @@ import copy
 # Import astronomical modules
 import aplpy
 from astropy.io import fits
-from astropy import log
 from astropy import units as u
 
 # Import the relevant AstroMagic classes and modules
 from ..basics import Layers, Region, Mask, CoordinateSystem
 from .frame import Frame
 from ..tools import headers, fitting, plotting, statistics, catalogs, transformations
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 

@@ -17,10 +17,191 @@ import os
 import sys
 import logging
 
-# Import astronomical modules
-from astropy import logger
+# -----------------------------------------------------------------
 
-from . import inspection
+log = None
+
+def setup_custom_logger(level="INFO"):
+
+    global log
+
+    log = logging.getLogger("pts")
+
+    formatter = logging.Formatter("%(asctime)s.%(msecs)03d - %(message)s (%(module)s)", "%d/%m/%Y %H:%M:%S")
+
+    #handler = logging.StreamHandler()
+    handler = ColorizingStreamHandler()
+    handler.setFormatter(formatter)
+
+    #log = logging.getLogger(name)
+    log.setLevel(level)
+    log.addHandler(handler)
+
+    return log
+
+# -----------------------------------------------------------------
+
+# Add the 'SUCCESS' log level
+#SUCCESS = 25
+#logging.addLevelName(SUCCESS, "SUCCESS")
+
+#Logger = logging.getLoggerClass()
+
+#def success(self, message, *args, **kwargs):
+#    print(self.getEffectiveLevel())
+#    if self.isEnabledFor(SUCCESS): self._log(SUCCESS, message, args, **kwargs)
+
+#logging.Logger.success = success
+
+#class PTSLogger(Logger):
+    #def success(self, message, *args, **kwargs):
+        #if self.isEnabledFor(SUCCESS): self._log(SUCCESS, message, args, **kwargs)
+
+# -----------------------------------------------------------------
+
+class ColorizingStreamHandler(logging.StreamHandler):
+
+    @property
+    def is_tty(self):
+        isatty = getattr(self.stream, 'isatty', None)
+        return isatty and isatty()
+
+    # -----------------------------------------------------------------
+
+    def emit(self, record):
+        try:
+            message = self.format(record)
+            stream = self.stream
+            if not self.is_tty:
+                stream.write(message)
+            else:
+                self.output_colorized(message)
+            stream.write(getattr(self, 'terminator', '\n'))
+            self.flush()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            self.handleError(record)
+
+    # -----------------------------------------------------------------
+
+    def output_colorized(self, message):
+            self.stream.write(message)
+
+    # -----------------------------------------------------------------
+
+    def format(self, record):
+        message = logging.StreamHandler.format(self, record)
+        if self.is_tty:
+            # Don't colorize any traceback
+            parts = message.split('\n', 1)
+            parts[0] = self.colorize(parts[0], record)
+            message = '\n'.join(parts)
+        return message
+
+    # -----------------------------------------------------------------
+
+    # color names to indices
+    color_map = {
+        'black': 0,
+        'red': 1,
+        'green': 2,
+        'yellow': 3,
+        'blue': 4,
+        'magenta': 5,
+        'cyan': 6,
+        'white': 7,
+    }
+
+    #levels to (background, foreground, bold/intense)
+    level_map = {
+        logging.DEBUG: (None, 'blue', False),
+        logging.INFO: (None, None, False),
+        #logging._levelNames["SUCCESS"]: (None, 'yellow', False),
+        logging.WARNING: (None, 'magenta', False),
+        logging.ERROR: (None, 'red', False),
+        logging.CRITICAL: ('red', 'white', True) }
+
+    csi = '\x1b['
+    reset = '\x1b[0m'
+
+    def colorize(self, message, record):
+
+        if record.levelno in self.level_map:
+            bg, fg, bold = self.level_map[record.levelno]
+            params = []
+            if bg in self.color_map:
+                params.append(str(self.color_map[bg] + 40))
+            if fg in self.color_map:
+                params.append(str(self.color_map[fg] + 30))
+            if bold:
+                params.append('1')
+            if params:
+                message = ''.join((self.csi, ';'.join(params),
+                                   'm', message, self.reset))
+        return message
+
+# -----------------------------------------------------------------
+
+# Global logger
+#log = logging.getLogger("pts")
+#log = None
+#sh = ColorizingStreamHandler(sys.stdout)
+#sh.setLevel(logging.INFO)
+#formatter = logging.Formatter("%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s (%(origin)s)", "%d/%m/%Y %H:%M:%S")
+#sh.setFormatter(formatter)
+#log.addHandler(sh)
+
+# -----------------------------------------------------------------
+
+def init_log(name=None, level="INFO", path=None, memory=False):
+
+    """
+    Initializes the PTS log--in most circumstances this is called
+    when a pts do script is launched. Parameters:
+    :param name:
+    :param level:
+    :param path:
+    """
+
+    global log
+
+    # Set the name to 'pts' if none was given
+    if name is None: name = "pts"
+
+    # Create a logger
+    #log = logging.getLogger(name) # Does not provide a functioning log ??
+    #log = logger.AstropyLogger(name)
+    #log = logging.Logger(name)
+
+    # Create a stream handler
+    sh = ColorizingStreamHandler(sys.stdout)
+    sh.setLevel(logging.INFO)
+
+    # Create and set the formatter
+    formatter = logging.Formatter("%(asctime)s.%(msecs)03d - %(message)s (%(origin)s)", "%d/%m/%Y %H:%M:%S")
+    sh.setFormatter(formatter)
+
+    # Add the stream handler
+    log.addHandler(sh)
+
+    # Add file handler if requested
+    if path is not None:
+
+        # Create file handler
+        fh = logging.FileHandler(path)
+
+        # Set the formatter
+        fh.setFormatter(formatter)
+
+        # Set the level
+        fh.setLevel(level)
+
+        # Add the handler to the log instance
+        log.addHandler(fh)
+
+    # Return the logger so that the do script that calls this function can immediately use it
+    return log
 
 # -----------------------------------------------------------------
 
@@ -77,48 +258,6 @@ class MemuseFilter(logging.Filter):
 
 # -----------------------------------------------------------------
 
-def new_log(name, level, style="astropy"):
-
-    """
-    This function ...
-    :param level:
-    :return:
-    """
-
-    # Create the logger
-    log = logger.AstropyLogger(name)
-
-    # Astropy logging style
-    if style == "astropy":
-
-        # Initialize the logger
-        log._set_defaults()
-        # Set the log level
-        log.setLevel(level)
-
-    # SKIRT logging style
-    elif style == "skirt":
-
-        # Create a stream handler
-        sh = logging.StreamHandler(sys.stdout)
-        if level == "INFO": sh.setLevel(logging.INFO)
-        elif level == "DEBUG": sh.setLevel(logging.DEBUG)
-        elif level == "WARNING": sh.setLevel(logging.WARNING)
-        elif level == "ERROR": sh.setLevel(logging.ERROR)
-        else: raise ValueError("Unknown log level")
-
-        # Create and set the formatter
-        formatter = logging.Formatter("%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s (%(origin)s)", "%d/%m/%Y %H:%M:%S")
-        sh.setFormatter(formatter)
-
-        # Add the stream handler
-        log.addHandler(sh)
-
-    # Return the logger
-    return log
-
-# -----------------------------------------------------------------
-
 def new_memory_log():
 
     """
@@ -145,28 +284,5 @@ def new_memory_log():
     log.handlers[0].addFilter(f)         # The ugly part:adding filter to handler
 
     return log
-
-# -----------------------------------------------------------------
-
-def link_file_log(log, path, level):
-    
-    """
-    This function ...
-    """
-    
-    # Create a file handler
-    fh = logger.FileHandler(path)
-    
-    # Create a formatter
-    formatter = logging.Formatter("%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s (%(origin)s)", "%d/%m/%Y %H:%M:%S")
-
-    # Set the formatter
-    fh.setFormatter(formatter)
-    
-    # Set the level 
-    fh.setLevel(level)
-    
-    # Add the handler to the log instance
-    log.addHandler(fh)
 
 # -----------------------------------------------------------------

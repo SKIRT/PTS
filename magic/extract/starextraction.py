@@ -30,6 +30,7 @@ from ..tools import statistics, fitting, regions
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.tools import tables
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -149,7 +150,7 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Clearing the star extractor ...")
+        log.info("Clearing the star extractor ...")
 
         # Clear the list of stars
         self.stars = []
@@ -236,7 +237,7 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Loading the stars from the catalog ...")
+        log.info("Loading the stars from the catalog ...")
 
         # Copy the list of galaxies, so that we can removed already encounted galaxies (TODO: change this to use
         # an 'encountered' list as well
@@ -332,7 +333,7 @@ class StarExtractor(Configurable):
         if "On galaxy" not in self.catalog.colnames: self.catalog["On galaxy"] = on_galaxy_column
 
         # Inform the user
-        if self.config.fetching.cross_reference_with_galaxies: self.log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
+        if self.config.fetching.cross_reference_with_galaxies: log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
 
     # -----------------------------------------------------------------
 
@@ -347,7 +348,7 @@ class StarExtractor(Configurable):
         path = self.full_input_path(self.config.fetching.statistics_path)
 
         # Inform the user
-        self.log.info("Importing stellar statistics from file: " + path)
+        log.info("Importing stellar statistics from file: " + path)
 
         # Load the catalog
         self.statistics = tables.from_file(path)
@@ -401,7 +402,7 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Looking for sources near the star positions ...")
+        log.info("Looking for sources near the star positions ...")
 
         # Loop over all stars in the list
         for star in self.stars:
@@ -414,7 +415,7 @@ class StarExtractor(Configurable):
             except Exception as e:
 
                 import traceback
-                self.log.error("Error when finding source")
+                log.error("Error when finding source")
                 print(type(e))
                 print(e)
                 traceback.print_exc()
@@ -422,12 +423,12 @@ class StarExtractor(Configurable):
                 if self.config.plot_track_record_if_exception:
 
                     if star.has_track_record: star.track_record.plot()
-                    else: self.log.warning("Track record is not enabled")
+                    else: log.warning("Track record is not enabled")
 
-                self.log.error("Continuing with next source")
+                log.error("Continuing with next source")
 
         # Inform the user
-        self.log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.stars), self.have_source / len(self.stars) * 100.0))
+        log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.stars), self.have_source / len(self.stars) * 100.0))
 
     # -----------------------------------------------------------------
 
@@ -438,7 +439,7 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Fitting analytical profiles to the sources ...")
+        log.info("Fitting analytical profiles to the sources ...")
 
         # Loop over all stars in the list
         for star in self.stars:
@@ -477,7 +478,7 @@ class StarExtractor(Configurable):
                 if star.fwhm > upper or star.fwhm < lower: star.model = None
 
         # Inform the user
-        self.log.debug("Found a model for {0} out of {1} stars with source ({2:.2f}%)".format(self.have_model, self.have_source, self.have_model/self.have_source*100.0))
+        log.debug("Found a model for {0} out of {1} stars with source ({2:.2f}%)".format(self.have_model, self.have_source, self.have_model/self.have_source*100.0))
 
     # -----------------------------------------------------------------
 
@@ -488,13 +489,13 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Removing the stars from the frame ...")
+        log.info("Removing the stars from the frame ...")
 
         # Calculate the default FWHM, for the stars for which a model was not found
         default_fwhm = self.fwhm
 
         # Inform the user
-        self.log.debug("Default FWHM used when star could not be fitted: {0:.2f} pixels".format(default_fwhm))
+        log.debug("Default FWHM used when star could not be fitted: {0:.2f} pixels".format(default_fwhm))
 
         if self.config.removal.method == "model":
 
@@ -530,10 +531,10 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Looking for saturated stars ...")
+        log.info("Looking for saturated stars ...")
 
         # Inform the user on the number of stars that have a source
-        self.log.debug("Number of stars with source = " + str(self.have_source))
+        log.debug("Number of stars with source = " + str(self.have_source))
 
         # Calculate the default FWHM, for the stars for which a model was not found
         default_fwhm = self.fwhm
@@ -568,7 +569,7 @@ class StarExtractor(Configurable):
             success += star.has_saturation
 
         # Inform the user
-        self.log.debug("Found saturation in " + str(success) + " out of " + str(self.have_source) + " stars with source ({0:.2f}%)".format(success / self.have_source * 100.0))
+        log.debug("Found saturation in " + str(success) + " out of " + str(self.have_source) + " stars with source ({0:.2f}%)".format(success / self.have_source * 100.0))
 
     # -----------------------------------------------------------------
 
@@ -600,7 +601,7 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Replacing regions within elliptical contours with the estimated background ...")
+        log.info("Replacing regions within elliptical contours with the estimated background ...")
 
         # Loop over all stars
         for star in self.stars:
@@ -647,7 +648,7 @@ class StarExtractor(Configurable):
         path = self.full_input_path(self.config.manual_region)
 
         # Inform the user
-        self.log.info("Setting region for manual star extraction from " + path + " ...")
+        log.info("Setting region for manual star extraction from " + path + " ...")
 
         # Load the region and create a mask from it
         region = Region.from_file(path, self.image.wcs)
@@ -673,7 +674,7 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Removing manually specified stars from the frame ...")
+        log.info("Removing manually specified stars from the frame ...")
 
         # Loop over each item in the list of manual sources
         for source in self.manual_sources:
@@ -800,7 +801,7 @@ class StarExtractor(Configurable):
         path = self.full_output_path(self.config.writing.star_region_path)
 
         # Inform the user
-        self.log.info("Writing star region to " + path + " ...")
+        log.info("Writing star region to " + path + " ...")
 
         # Create a file
         f = open(path, 'w')
@@ -865,7 +866,7 @@ class StarExtractor(Configurable):
         path = self.full_output_path(self.config.writing.saturation_region_path)
 
         # Inform the user
-        self.log.info("Writing saturation region to " + path + " ...")
+        log.info("Writing saturation region to " + path + " ...")
 
         # Create a file
         f = open(path, 'w')
@@ -911,7 +912,7 @@ class StarExtractor(Configurable):
         path = self.full_output_path(self.config.writing.catalog_path)
 
         # Inform the user
-        self.log.info("Writing stellar catalog to " + path + " ...")
+        log.info("Writing stellar catalog to " + path + " ...")
 
         # Write the catalog to file
         tables.write(self.catalog, path)
@@ -929,7 +930,7 @@ class StarExtractor(Configurable):
         path = self.full_output_path(self.config.writing.statistics_path)
 
         # Inform the user
-        self.log.info("Writing stellar statistics to " + path + " ...")
+        log.info("Writing stellar statistics to " + path + " ...")
 
         # Write the catalog to file
         tables.write(self.statistics, path)
@@ -946,7 +947,7 @@ class StarExtractor(Configurable):
         path = self.full_output_path(self.config.writing.masked_frame_path)
 
         # Inform the user
-        self.log.info("Writing masked frame to " + path + " ...")
+        log.info("Writing masked frame to " + path + " ...")
 
         # Create a frame where the objects are masked
         frame = self.image.frames.primary.copy()
@@ -974,7 +975,7 @@ class StarExtractor(Configurable):
         directory_path = self.full_output_path(self.config.writing.cutouts_path)
 
         # Inform the user
-        self.log.info("Writing cutout boxes to " + directory_path + " ...")
+        log.info("Writing cutout boxes to " + directory_path + " ...")
 
         # Calculate the default FWHM based on the stars that could be fitted
         default_fwhm = self.fwhm
@@ -1056,7 +1057,7 @@ class StarExtractor(Configurable):
         path = self.full_output_path(self.config.writing.result_path)
 
         # Inform the user
-        self.log.info("Writing resulting frame to " + path + " ...")
+        log.info("Writing resulting frame to " + path + " ...")
 
         # Write out the resulting frame
         self.image.frames.primary.save(path, origin=self.name)

@@ -24,6 +24,7 @@ from ..tools import wavelengths
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem, tables
 from ...core.basics.configurable import Configurable
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -201,7 +202,7 @@ class Extractor(Configurable):
         super(Extractor, self).setup()
 
         # Inform the user
-        self.log.info("Setting up the extractor ...")
+        log.info("Setting up the extractor ...")
 
         # Make a local reference to the image (mask inside image)
         self.image = image
@@ -268,7 +269,7 @@ class Extractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Creating the output directory if necessary ...")
+        log.info("Creating the output directory if necessary ...")
 
         # Create the directory if necessary
         if self.config.output_path is not None: filesystem.create_directory(self.config.output_path)
@@ -283,7 +284,7 @@ class Extractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Importing the catalogs ...")
+        log.info("Importing the catalogs ...")
 
         # Run the catalog importer
         self.catalog_importer.run(self.image.frames.primary)
@@ -297,7 +298,7 @@ class Extractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Extracting the galaxies ...")
+        log.info("Extracting the galaxies ...")
 
         # Run the galaxy extractor
         self.galaxy_extractor.run(self.image, self.catalog_importer.galactic_catalog, special=self.special_mask, ignore=self.ignore_mask)
@@ -314,7 +315,7 @@ class Extractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Extracting the stars ...")
+        log.info("Extracting the stars ...")
 
         # Run the star extraction if the wavelength of this image is smaller than 25 micron (or the wavelength is unknown)
         if self.image.wavelength is None or self.image.wavelength < wavelengths.ranges.ir.mir.max:
@@ -322,7 +323,7 @@ class Extractor(Configurable):
             # Run the star extractor
             self.star_extractor.run(self.image, self.galaxy_extractor, self.catalog_importer.stellar_catalog, special=self.special_mask, ignore=self.ignore_mask)
 
-        else: self.log.info("No star extraction for this image")
+        else: log.info("No star extraction for this image")
 
     # -----------------------------------------------------------------
 
@@ -334,7 +335,7 @@ class Extractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Looking for sources in the frame not in the catalog ...")
+        log.info("Looking for sources in the frame not in the catalog ...")
 
         # Run the trained extractor just to find sources
         self.trained_extractor.run(self.image, self.galaxy_extractor, self.star_extractor, special=self.special_mask, ignore=self.ignore_mask)
@@ -364,7 +365,7 @@ class Extractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Building the stellar catalog ...")
+        log.info("Building the stellar catalog ...")
 
         # Run the catalog builder
         self.catalog_builder.run(self.image.frames.primary, self.galaxy_extractor, self.star_extractor, self.trained_extractor)
@@ -379,7 +380,7 @@ class Extractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Synchronizing with the DustPedia catalog ...")
+        log.info("Synchronizing with the DustPedia catalog ...")
 
         # Run the catalog synchronizer
         self.catalog_synchronizer.run(self.image.frames.primary, self.galaxy_name, self.catalog_builder.galactic_catalog, self.catalog_builder.stellar_catalog)
@@ -394,7 +395,7 @@ class Extractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Writing ...")
+        log.info("Writing ...")
 
         # If requested, write out the result
         if self.config.write_result: self.write_result()
@@ -449,7 +450,7 @@ class Extractor(Configurable):
         path = self.full_output_path(self.config.writing.galactic_catalog_path)
 
         # Inform the user
-        self.log.info("Writing galactic catalog to " + path + " ...")
+        log.info("Writing galactic catalog to " + path + " ...")
 
         # Write the catalog to file
         tables.write(self.catalog_builder.galactic_catalog, path)
@@ -467,7 +468,7 @@ class Extractor(Configurable):
         path = self.full_output_path(self.config.writing.stellar_catalog_path)
 
         # Inform the user
-        self.log.info("Writing stellar catalog to " + path + " ...")
+        log.info("Writing stellar catalog to " + path + " ...")
 
         # Write the catalog to file
         tables.write(self.catalog_builder.stellar_catalog, path)
@@ -485,7 +486,7 @@ class Extractor(Configurable):
         path = self.full_output_path(self.config.writing.result_path)
 
         # Inform the user
-        self.log.info("Writing resulting frame to " + path + " ...")
+        log.info("Writing resulting frame to " + path + " ...")
 
         # Write out the resulting frame
         self.image.frames.primary.save(path, header, origin=self.name)
@@ -503,7 +504,7 @@ class Extractor(Configurable):
         path = self.full_output_path(self.config.writing.mask_path)
 
         # Inform the user
-        self.log.info("Writing the total mask to " + path + " ...")
+        log.info("Writing the total mask to " + path + " ...")
 
         # Create a frame for the total mask
         frame = Frame(self.mask.astype(int))
@@ -528,7 +529,7 @@ class Extractor(Configurable):
         path = self.full_input_path(self.config.special_region)
 
         # Inform the user
-        self.log.info("Creating mask covering objects that require special attention from " + path + " ...")
+        log.info("Creating mask covering objects that require special attention from " + path + " ...")
 
         # Load the region and create a mask from it
         region = Region.from_file(path, self.image.wcs)
@@ -554,7 +555,7 @@ class Extractor(Configurable):
         path = self.full_input_path(self.config.ignore_region)
 
         # Inform the user
-        self.log.info("Creating mask covering objects that should be ignored from " + path + " ...")
+        log.info("Creating mask covering objects that should be ignored from " + path + " ...")
 
         # Load the region and create a mask from it
         region = Region.from_file(path, self.image.wcs)

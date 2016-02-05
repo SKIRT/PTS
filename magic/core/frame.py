@@ -20,8 +20,6 @@ from scipy import ndimage
 import matplotlib.pyplot as plt
 
 # Import astronomical modules
-from astropy import log
-from astropy.wcs import WCS
 import aplpy
 from astropy.io import fits
 import astropy.units as u
@@ -32,6 +30,7 @@ from astropy.convolution import convolve_fft
 from . import Box
 from ..basics import Position, Extent, Rectangle, CoordinateSystem
 from ..tools import coordinates, cropping, transformations, interpolation, headers, fitting
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 

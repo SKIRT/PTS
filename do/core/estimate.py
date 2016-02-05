@@ -16,11 +16,9 @@ from __future__ import absolute_import, division, print_function
 import os
 import argparse
 
-# Import astronomical modules
-from astropy import log
-
 # Import the relevant PTS classes and modules
 from pts.core.test.resources import ResourceEstimator
+from pts.core.tools import logging
 
 # -----------------------------------------------------------------
 
@@ -32,6 +30,12 @@ parser.add_argument("processes", type=int, help="the number of parallel processe
 
 # Parse the command line arguments
 arguments = parser.parse_args()
+
+# -----------------------------------------------------------------
+
+# Initialize the logger
+log = logging.init_log()
+log.info("Starting estimate script ...")
 
 # -----------------------------------------------------------------
 

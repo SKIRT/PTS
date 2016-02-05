@@ -19,7 +19,6 @@ import copy
 
 # Import astronomical modules
 from astropy.convolution import Gaussian2DKernel
-from astropy import log
 from photutils import daofind
 from astropy.stats import sigma_clipped_stats
 
@@ -32,6 +31,7 @@ from photutils import source_properties, properties_table
 from ..tools import fitting, plotting, statistics, coordinates, cropping, interpolation, masks, regions
 from ..core import Source
 from ..basics import Position, Extent, Ellipse
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 

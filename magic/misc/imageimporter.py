@@ -25,6 +25,7 @@ from ..basics import Mask, Region
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -137,7 +138,7 @@ class ImageImporter(Configurable):
         """
 
         # Inform the user
-        self.log.info("Importing image from " + self.image_path + " ...")
+        log.info("Importing image from " + self.image_path + " ...")
 
         # Open the image
         self.image = Image(self.image_path)
@@ -162,7 +163,7 @@ class ImageImporter(Configurable):
         """
 
         # Inform the user
-        self.log.info("Looking for an error frame ...")
+        log.info("Looking for an error frame ...")
 
         # If no error map was found in the FITS file, try to find a seperate FITS file containing error data
         if "errors" not in self.image.frames:
@@ -181,7 +182,7 @@ class ImageImporter(Configurable):
                 if self.image.shape != error_frame.shape:
 
                     # Inform the user
-                    self.log.warning("The error frame does not have the same shape as the image, errors frame will be rebinned")
+                    log.warning("The error frame does not have the same shape as the image, errors frame will be rebinned")
 
                     # Check if the unit is a surface brightness unit
                     if error_frame.unit != u.Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(error_frame.unit) + " is not recognized as a surface brightness unit")
@@ -195,7 +196,7 @@ class ImageImporter(Configurable):
         # Still no errors frame
         if "errors" not in self.image.frames:
 
-            self.log.warning("No error data found for " + self.image_name + ".fits, adding errors frame that is zero everywhere")
+            log.warning("No error data found for " + self.image_name + ".fits, adding errors frame that is zero everywhere")
 
             # Create a new errors frame (all zeros) and add it to the image
             new_error_frame = Frame(np.zeros(self.image.shape), self.image.wcs)
@@ -211,7 +212,7 @@ class ImageImporter(Configurable):
         """
 
         # Inform the user
-        self.log.info("Selecting the appropriate frames ...")
+        log.info("Selecting the appropriate frames ...")
 
         # Select the primary and errors frame (if present)
         self.image.deselect_all()
@@ -228,7 +229,7 @@ class ImageImporter(Configurable):
         """
 
         # Inform the user
-        self.log.info("Creating a mask to cover bad pixels ...")
+        log.info("Creating a mask to cover bad pixels ...")
 
         # Create a mask for the nans in the primary
         nan_mask = Mask.is_nan(self.image.frames.primary)

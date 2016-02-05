@@ -23,6 +23,7 @@ from ..tools import catalogs
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.tools import inspection, tables, filesystem
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -116,7 +117,7 @@ class CatalogImporter(Configurable):
         """
 
         # Inform the user
-        self.log.info("Importing galactic catalog ...")
+        log.info("Importing galactic catalog ...")
 
         # Use catalog file if specified
         if self.config.galaxies.use_catalog_file: self.import_galactic_catalog_from_file()
@@ -133,7 +134,7 @@ class CatalogImporter(Configurable):
         """
 
         # Inform the user
-        self.log.info("Importing stellar catalog ...")
+        log.info("Importing stellar catalog ...")
 
         # Use catalog file if specified
         if self.config.stars.use_catalog_file: self.import_stellar_catalog_from_file()
@@ -169,7 +170,7 @@ class CatalogImporter(Configurable):
             if coverage.matches(bounding_box):
 
                 # Debug info
-                self.log.debug("Found a match with DustPedia catalog for galaxy " + galaxy_name)
+                log.debug("Found a match with DustPedia catalog for galaxy " + galaxy_name)
 
                 self._has_dustpedia_catalog = True
                 self.galaxy_name = galaxy_name
@@ -195,7 +196,7 @@ class CatalogImporter(Configurable):
         path = self.full_input_path(self.config.galaxies.catalog_path)
 
         # Inform the user
-        self.log.info("Importing galactic catalog from file " + path + " ...")
+        log.info("Importing galactic catalog from file " + path + " ...")
 
         # Load the catalog
         self.galactic_catalog = tables.from_file(path)
@@ -213,7 +214,7 @@ class CatalogImporter(Configurable):
         path = self.full_input_path(self.config.stars.catalog_path)
 
         # Inform the user
-        self.log.info("Importing stellar catalog from file " + path + " ...")
+        log.info("Importing stellar catalog from file " + path + " ...")
 
         # Load the catalog
         self.stellar_catalog = tables.from_file(path)
@@ -228,7 +229,7 @@ class CatalogImporter(Configurable):
         """
 
         # Inform the user
-        self.log.info("Importing galactic DustPedia catalog for " + self.galaxy_name)
+        log.info("Importing galactic DustPedia catalog for " + self.galaxy_name)
 
         # Determine the path to the DustPedia galactic catalog for this galaxy
         galaxy_path = os.path.join(self.catalogs_user_path, self.galaxy_name)
@@ -247,7 +248,7 @@ class CatalogImporter(Configurable):
         """
 
         # Inform the user
-        self.log.info("Importing stellar DustPedia catalog for " + self.galaxy_name)
+        log.info("Importing stellar DustPedia catalog for " + self.galaxy_name)
 
         # Determine the path to the DustPedia stellar catalog for this galaxy
         galaxy_path = os.path.join(self.catalogs_user_path, self.galaxy_name)
@@ -266,13 +267,13 @@ class CatalogImporter(Configurable):
         """
 
         # Inform the user
-        self.log.info("Fetching galaxy positions from an online catalog ...")
+        log.info("Fetching galaxy positions from an online catalog ...")
 
         # Create the galaxy catalog
         self.galactic_catalog = catalogs.create_galaxy_catalog(self.frame)
 
         # Inform the user
-        self.log.debug("Number of galaxies: " + str(len(self.galactic_catalog)))
+        log.debug("Number of galaxies: " + str(len(self.galactic_catalog)))
 
     # -----------------------------------------------------------------
 
@@ -284,7 +285,7 @@ class CatalogImporter(Configurable):
         """
 
         # Inform the user
-        self.log.info("Fetching star positions from online catalogs ...")
+        log.info("Fetching star positions from online catalogs ...")
 
         # Check whether the 'catalogs' setting defines a single catalog name or a list of such names
         if isinstance(self.config.stars.fetching.catalogs, basestring): catalog_list = [self.config.stars.fetching.catalogs]
@@ -295,6 +296,6 @@ class CatalogImporter(Configurable):
         self.stellar_catalog = catalogs.create_star_catalog(self.frame, catalog_list)
 
         # Inform the user
-        self.log.debug("Number of stars: " + str(len(self.stellar_catalog)))
+        log.debug("Number of stars: " + str(len(self.stellar_catalog)))
 
 # -----------------------------------------------------------------

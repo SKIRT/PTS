@@ -19,3 +19,6 @@
 # To facilitate things even further, the \c __main__ module in this package allows executing any of the scripts
 # residing in this directory from the command line, without having to specify its location.
 #
+
+from ..core.tools import logging
+log = logging.setup_custom_logger("INFO")
