@@ -184,7 +184,7 @@ def get_all_dependencies():
     """
 
     # Create an empty dictionary to contain the required modules together with the places of use
-    modules = defaultdict(list)
+    modules = defaultdict(set)
 
     # Recursively loop over all files inside this working directory
     for directory, subdirs, files in os.walk(pts_package_dir):
@@ -208,13 +208,13 @@ def get_all_dependencies():
                     module = line.split()[1].split(".")[0]
 
                     # Add the module name to the list
-                    if module: modules[module].append(filepath)
+                    if module: modules[module].add(filepath)
 
     return modules
 
 # -----------------------------------------------------------------
 
-def add_dependencies(dependencies, script_path, prefix=""):
+def add_dependencies(dependencies, script_path, encountered_internal_modules, prefix=""):
 
     """
     This function ...
@@ -226,20 +226,30 @@ def add_dependencies(dependencies, script_path, prefix=""):
     if not script_path.endswith(".py"): raise ValueError("Not a valid script path")
 
     # Read the lines of the script file
+    import_lines = []
     for line in open(script_path, 'r'):
 
         # If the current line does not contain an 'import yyy' or 'from yyy import zzz' statement, skip it
         if not (line.startswith("import ") or (line.startswith("from ") and "import" in line)): continue
+
+        import_lines.append(line)
+
+    # Loop over the lines where something is imported
+    for line in import_lines:
 
         # Get the path to the modules that are being imported in the current line
         modules = get_modules(line, script_path)
 
         for module in modules:
 
-            if module in dependencies: continue
-
             # Check if the imported module refers to a PTS module or an external package
-            if module.startswith("/"): add_dependencies(dependencies, module, prefix=prefix+"  ")
+            if module.startswith("/"): # a PTS module
+
+                if module in encountered_internal_modules: continue
+                else:
+                    encountered_internal_modules.add(module)
+                    add_dependencies(dependencies, module, encountered_internal_modules, prefix=prefix+"  ")
+
             else: dependencies[module].add(script_path)
 
 # -----------------------------------------------------------------

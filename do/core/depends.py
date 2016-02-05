@@ -53,7 +53,7 @@ else:
 
     # List the dependencies of the matching script
     dependencies = defaultdict(set)
-    inspection.add_dependencies(dependencies, script_path)
+    inspection.add_dependencies(dependencies, script_path, set())
 
 # Get the versions of all installed python packages
 if arguments.version: versions = inspection.get_pip_versions()
