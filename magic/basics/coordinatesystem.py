@@ -55,7 +55,13 @@ class CoordinateSystem(wcs.WCS):
         :return:
         """
 
+        # Get the header and flatten it (remove references to third axis)
         header = fits.getheader(path)
+        header["NAXIS"] = 2
+        if "NAXIS3" in header: del header["NAXIS3"]
+        for key in header:
+            if "PLANE" in key: del header[key]
+
         return cls(header)
 
     # -----------------------------------------------------------------

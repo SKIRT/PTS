@@ -25,6 +25,7 @@ from ...magic.tools import regions, cropping
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from .unitconversion import UnitConverter
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -171,7 +172,7 @@ class ImagePreparer(Configurable):
         """
 
         # Inform the user
-        self.log.info("Correcting image for galactic extinction ...")
+        log.info("Correcting image for galactic extinction ...")
 
         # Correct the primary frame for galactic extinction
         self.image.frames[self.config.primary] *= 10**(0.4 * self.config.attenuation)
@@ -189,7 +190,7 @@ class ImagePreparer(Configurable):
         """
 
         # Inform the user
-        self.log.info("Converting image to surface brightness units ...")
+        log.info("Converting image to surface brightness units ...")
 
         # Run the unit conversion
         self.unit_converter.run(self.image)
@@ -207,7 +208,7 @@ class ImagePreparer(Configurable):
         """
 
         # Inform the user
-        self.log.info("Convolving the image with kernel " + self.config.convolution.kernel_path + " ...")
+        log.info("Convolving the image with kernel " + self.config.convolution.kernel_path + " ...")
 
         # Open the kernel frame
         kernel = Frame.from_file(self.config.convolution.kernel_path)
@@ -228,7 +229,7 @@ class ImagePreparer(Configurable):
         """
 
         # Inform the user
-        self.log.info("Rebinning the image to the pixel grid of " + self.config.rebinning.rebin_to + " ...")
+        log.info("Rebinning the image to the pixel grid of " + self.config.rebinning.rebin_to + " ...")
 
         # Get the coordinate system of the reference frame
         reference_system = CoordinateSystem.from_file(self.config.rebinning.rebin_to)
@@ -252,9 +253,9 @@ class ImagePreparer(Configurable):
         self.sky_subtractor.run(self.image, self.extractor.galaxy_extractor.principal_sky_ellipse, self.extractor.star_extractor.saturation_region)
 
         # Print the statistics of the sky frame
-        self.log.info("Mean sky level = " + str(self.sky_subtractor.mean))
-        self.log.info("Median sky level = " + str(self.sky_subtractor.median))
-        self.log.info("Standard deviation of sky = " + str(self.sky_subtractor.stddev))
+        log.info("Mean sky level = " + str(self.sky_subtractor.mean))
+        log.info("Median sky level = " + str(self.sky_subtractor.median))
+        log.info("Standard deviation of sky = " + str(self.sky_subtractor.stddev))
 
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("sky_subtracted.fits")
@@ -440,7 +441,7 @@ class ImagePreparer(Configurable):
         """
 
         # Inform the user
-        self.log.info("Writing ...")
+        log.info("Writing ...")
 
         # If requested, write out the result
         if self.config.write_result: self.write_result()
@@ -458,7 +459,7 @@ class ImagePreparer(Configurable):
         path = self.full_output_path(self.config.writing.result_path)
 
         # Inform the user
-        self.log.info("Writing resulting image to " + path + " ...")
+        log.info("Writing resulting image to " + path + " ...")
 
         # Write out the resulting image
         self.image.save(path, origin=self.name)
@@ -476,7 +477,7 @@ class ImagePreparer(Configurable):
         path = self.full_output_path(path)
 
         # Inform the user
-        self.log.info("Writing intermediate result to " + path + " ...")
+        log.info("Writing intermediate result to " + path + " ...")
 
         # Write out the image
         self.image.save(path, origin=self.name)

@@ -92,11 +92,7 @@ class Frame(np.ndarray):
         nframes = headers.get_number_of_frames(header)
 
         # Remove references to a potential third axis
-        flat_header = copy.deepcopy(header)
-        flat_header["NAXIS"] = 2
-        if "NAXIS3" in flat_header: del flat_header["NAXIS3"]
-        for key in flat_header:
-            if "PLANE" in key: del flat_header[key]
+        flat_header = headers.flattened(header)
 
         # Obtain the world coordinate system from the 'flattened' header
         wcs = CoordinateSystem(flat_header)

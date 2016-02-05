@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import copy
 import numpy as np
 
 # Import astronomical modules
@@ -26,6 +27,24 @@ from ..basics import Extent
 from ...core.basics.filter import Filter
 from ..basics import CoordinateSystem
 from ...core.tools.logging import log
+
+# -----------------------------------------------------------------
+
+def flattened(header):
+
+    """
+    This function ...
+    :param header:
+    :return:
+    """
+
+    flat_header = copy.deepcopy(header)
+    flat_header["NAXIS"] = 2
+    if "NAXIS3" in flat_header: del flat_header["NAXIS3"]
+    for key in flat_header:
+        if "PLANE" in key: del flat_header[key]
+
+    return flat_header
 
 # -----------------------------------------------------------------
 
