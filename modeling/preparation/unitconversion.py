@@ -28,21 +28,21 @@ from ...core.basics.configurable import Configurable
 speed_of_light = constants.c
 
 # 2MASS F_0 (in Jy)
-f_0_2mass = {"2MASS J": 1594.0, "2MASS H": 1024.0, "2MASS K": 666.7}
+f_0_2mass = {"2MASS.J": 1594.0, "2MASS.H": 1024.0, "2MASS.Ks": 666.7}
 
 # WISE F_0 (in W / cm2 / um) (from http://wise2.ipac.caltech.edu/docs/release/prelim/expsup/figures/sec4_3gt4.gif)
-f_0_wise = {"WISE W1": 8.1787e-15, "WISE W2": 2.4150e-15, "WISE W3": 6.5151e-17, "WISE W4": 5.0901e-18}
+f_0_wise = {"WISE.W1": 8.1787e-15, "WISE.W2": 2.4150e-15, "WISE.W3": 6.5151e-17, "WISE.W4": 5.0901e-18}
 
 # GALEX conversion factors from count/s to flux
 #  - FUV: Flux [erg sec-1 cm-2 Angstrom-1] = 1.40 x 10-15 x CPS
 #  - NUV: Flux [erg sec-1 cm-2 Angstrom-1] = 2.06 x 10-16 x CPS
-galex_conversion_factors = {"GALEX FUV": 1.40e-15, "GALEX NUV": 2.06e-16}
+galex_conversion_factors = {"GALEX.FUV": 1.40e-15, "GALEX.NUV": 2.06e-16}
 
 # 1 Jy = 1e-23 erg/s/cm/Hz (erg / [s * cm * Hz])
 ergscmHz_to_Jy = 1e23
 
 # Effective wavelengths for GALEX
-effective_wavelengths = {"GALEX FUV": 1528.0 * u.Unit("Angstrom"), "GALEX NUV": 2271.0 * u.Unit("Angstrom")}
+effective_wavelengths = {"GALEX.FUV": 1528.0 * u.Unit("Angstrom"), "GALEX.NUV": 2271.0 * u.Unit("Angstrom")}
 
 # -----------------------------------------------------------------
 
@@ -143,13 +143,13 @@ class UnitConverter(Configurable):
         if self.image.unit == self.target_unit: return
 
         # Apply a specific conversion for each instrument
-        if "GALEX" in self.image.name: self.convert_galex()
-        elif "SDSS" in self.image.name: self.convert_sdss()
-        elif "Ha" in self.image.name: self.convert_ha()
-        elif "2MASS" in self.image.name: self.convert_2mass()
-        elif "WISE" in self.image.name: self.convert_wise()
-        elif "PACS" in self.image.name: self.convert_pacs()
-        elif "SPIRE" in self.image.name: self.convert_spire()
+        if "GALEX" in self.image.filter.name: self.convert_galex()
+        elif "SDSS" in self.image.filter.name: self.convert_sdss()
+        elif "Ha" in self.image.filter.name: self.convert_ha()
+        elif "2MASS" in self.image.filter.name: self.convert_2mass()
+        elif "WISE" in self.image.filter.name: self.convert_wise()
+        elif "Pacs" in self.image.filter.name: self.convert_pacs()
+        elif "SPIRE" in self.image.filter.name: self.convert_spire()
         else: raise ValueError("Unkown image: " + self.image.name)
 
     # -----------------------------------------------------------------
@@ -162,7 +162,7 @@ class UnitConverter(Configurable):
         """
 
         # GALEX images
-        if "GALEX" in self.image.name:
+        if "GALEX" in self.image.filter.name:
 
             #FUV: mAB = -2.5 x log10(CPS) + 18.82
             #NUV: mAB = -2.5 x log10(CPS) + 20.08
@@ -172,7 +172,7 @@ class UnitConverter(Configurable):
             ab_frame = -2.5 * np.log10(self.image.frames.primary) + magnitude_term[self.image.name]
 
         # 2MASS images
-        elif "2MASS" in self.image.name:
+        elif "2MASS" in self.image.filter.name:
 
             pass
 
@@ -254,7 +254,7 @@ class UnitConverter(Configurable):
         :return:
         """
 
-        # Conversion from erg / [s * cm * Hz] (per pixel) to Jy (= 1e-23 erg / [s * cm * Hz]) (per pixel)
+        # Conversion from erg / [s * cm2 * Hz] (per pixel) to Jy (= 1e-23 erg / [s * cm2 * Hz]) (per pixel)
         self.conversion_factor *= ergscmHz_to_Jy
 
         # Convert from Jy per pixel to the target unit (MJy / sr)
@@ -272,7 +272,7 @@ class UnitConverter(Configurable):
         # Conversion from Jy to MJy
         self.conversion_factor *= 1e-6
 
-        # Conversion from MJy ( / pixel) to MJy / sr
+        # Conversion from MJy (per pixel2) to MJy / sr
         self.conversion_factor *= self.pixel_factor(self.image.frames.primary.xy_average_pixelscale)
 
     # -----------------------------------------------------------------
@@ -284,14 +284,14 @@ class UnitConverter(Configurable):
         :return:
         """
 
-        # Conversion from count/s (per pixel) to erg / [s * cm * Å] (per pixel)
-        self.conversion_factor *= galex_conversion_factors[self.image.name]
+        # Conversion from count/s (per pixel) to erg / [s * cm2 * Angstrom] (per pixel2)
+        self.conversion_factor *= galex_conversion_factors[self.image.filter.name]
 
-        # Conversion from erg / [s * cm * Å] (per pixel) to erg / [s * cm * Hz] (per pixel)
-        wavelength = effective_wavelengths[self.image.name] # -> differs from self.image.frames.primary.filter.effectivewavelength()
+        # Conversion from erg / [s * cm2 * Angstrom] (per pixel2) to erg / [s * cm2 * Hz] (per pixel)
+        wavelength = effective_wavelengths[self.image.filter.name] # -> differs from self.image.frames.primary.filter.effectivewavelength()
         self.conversion_factor *= self.spectral_factor_angstrom_to_hz(wavelength)
 
-        # Conversion from erg / [s * cm * Hz] per pixel to the target unit (MJy / sr)
+        # Conversion from erg / [s * cm2 * Hz] per pixel2 to the target unit (MJy / sr)
         self.convert_from_ergscmhz()
 
     # -----------------------------------------------------------------
@@ -306,10 +306,10 @@ class UnitConverter(Configurable):
         # Unit = nanomaggies
         # 1 nanomaggie = 3.613e-6 Jy
 
-        # Conversion from nanomaggies to Jy (per pixel)
+        # Conversion from nanomaggies to Jy (per pixel2)
         self.conversion_factor *= 3.613e-6
 
-        # Conversion from Jy per pixel to the target unit (MJy / sr)
+        # Conversion from Jy per pixel2 to the target unit (MJy / sr)
         self.convert_from_jy()
 
     # -----------------------------------------------------------------
@@ -321,10 +321,10 @@ class UnitConverter(Configurable):
         :return:
         """
 
-        # Conversion from erg / [s * cm**2] to erg / [s * cm * Hz]
+        # Conversion from erg / [s * cm2] (per pixel2) to erg / [s * cm2 * Hz] (per pixel2)
         self.conversion_factor *= self.spectral_factor_cm_to_hz(self.image.wavelength)
 
-        # Conversion from erg / [s * cm * Hz] to the target unit (MJy / sr)
+        # Conversion from erg / [s * cm2 * Hz] per pixel2 to the target unit (MJy / sr)
         self.convert_from_ergscmhz()
 
     # -----------------------------------------------------------------
@@ -350,10 +350,10 @@ class UnitConverter(Configurable):
         # The two equations combine to:
         #  F(X) = F_0 * 10^(-m_0/2.5) * X
         m_0 = self.image.frames.primary.zero_point
-        f_0 = f_0_2mass[self.image.name]
+        f_0 = f_0_2mass[self.image.filter.name]
         self.conversion_factor *= f_0 * np.power(10.0, -m_0/2.5)
 
-        # Conversion from Jy per pixel to the target unit (MJy / sr)
+        # Conversion from Jy per pixel2 to the target unit (MJy / sr)
         self.convert_from_jy()
 
     # -----------------------------------------------------------------
@@ -367,16 +367,16 @@ class UnitConverter(Configurable):
 
         # Conversion from dimensionless unit (DN, or count) to flux (in W / [cm2 * micron]) (per pixel)
         m_0 = self.image.frames.primary.zero_point
-        f_0 = f_0_wise[self.image.name]
+        f_0 = f_0_wise[self.image.filter.name]
         self.conversion_factor *= f_0 * np.power(10.0, -m_0/2.5)
 
-        # Conversion from W / [cm2 * micron] (per pixel) to W / [cm2 * Hz] (per pixel)
+        # Conversion from W / [cm2 * micron] (per pixel2) to W / [cm2 * Hz] (per pixel)
         self.conversion_factor *= self.spectral_factor_micron_to_hz(self.image.wavelength)
 
-        # Conversion from W / [cm2 * Hz] (per pixel) to W / [m2 * Hz] (per pixel)
+        # Conversion from W / [cm2 * Hz] (per pixel2) to W / [m2 * Hz] (per pixel2)
         self.conversion_factor *= 100.0**2
 
-        # Conversion from W / [m2 * Hz] (per pixel) to Jy per pixel (1 Jy = 1e-26 W / [m2 * Hz])
+        # Conversion from W / [m2 * Hz] (per pixel2) to Jy per pixel (1 Jy = 1e-26 W / [m2 * Hz])
         self.conversion_factor *= 1e26
 
         # Conversion from Jy per pixel to the target unit (MJy / sr)

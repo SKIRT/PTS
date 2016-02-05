@@ -167,6 +167,12 @@ class Filter:
 
     # ---------- Retrieving information -------------------------------
 
+    @property
+    def name(self): return self._FilterID.split("/")[1]
+
+    @property
+    def observatory(self): return self._FilterID.split("/")[0]
+
     ## This function returns a unique identifier for the filter.
     def filterID(self):
         return self._FilterID
