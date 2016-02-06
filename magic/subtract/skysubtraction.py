@@ -176,8 +176,8 @@ class SkySubtractor(Configurable):
         self.image = image
 
         # Convert the principal ellipse and saturation region to image coordinates
-        self.principal_ellipse = principal_ellipse.to_image_coordinates(self.image.wcs)
-        self.saturation_region = saturation_region.to_ellipse(self.image.wcs) if saturation_region is not None else None
+        self.principal_ellipse = principal_ellipse.to_ellipse(self.image.wcs)
+        self.saturation_region = saturation_region.to_image_coordinates(self.image.wcs) if saturation_region is not None else None
 
     # -----------------------------------------------------------------
 
