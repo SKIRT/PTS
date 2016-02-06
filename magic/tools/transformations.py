@@ -45,7 +45,7 @@ def new_align_and_rebin(frame, coordinate_system, reference_system, preserve_nan
     bad_pixels = np.isnan(frame) + np.isinf(frame)
 
     # Mask the bad pixels
-    frame[bad_pixels] = 0
+    frame[bad_pixels] = 0.0
 
     # Use Scipy to create the new image
     data = scipy.ndimage.map_coordinates(frame, mapping, **kwargs)
