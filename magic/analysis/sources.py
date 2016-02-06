@@ -476,6 +476,8 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         # No source was found
         return None
 
+    mask_without_appendages = mask.copy()
+
     # If overlapping is not allowed, see whether removing appendages helps by making it not overlap
     if not config.allow_overlap:
 
@@ -490,33 +492,27 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
             if special: log.debug("removing appendages")
 
             # Remove appendages from the mask
-            mask = mask.remove_appendages()
+            mask_without_appendages = mask.remove_appendages()
 
             # Show a plot for debugging
-            if config.debug.overlap_after or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask after appendage removal")
+            if config.debug.overlap_after or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask_without_appendages), title="Overlapping mask after appendage removal")
 
         ## NEW: second appendage removal step
-        if masks.overlap(source.background_mask, mask) and config.remove_appendages:
+        if masks.overlap(source.background_mask, mask_without_appendages) and config.remove_appendages:
 
             # Show a plot for debugging
-            if config.debug.overlap_before or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask before second appendage removal")
+            if config.debug.overlap_before or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask_without_appendages), title="Overlapping mask before second appendage removal")
 
             if special: log.debug("second appendage removal step")
 
             # Do a second appendage removal
-            mask = mask.remove_appendages(super=True)
+            mask_without_appendages = mask_without_appendages.remove_appendages(super=True)
 
             # Show a plot for debugging
-            if config.debug.overlap_after or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask), title="Overlapping mask after second appendage removal")
+            if config.debug.overlap_after or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask_without_appendages), title="Overlapping mask after second appendage removal")
 
-    # If:
-    #  - if overlapping with the source's background mask is allowed, check whether the mask does not hit the boundary.
-    #     -> if it hits the boundary, (config.allow_overlap and not hits_boundary) evaluates to False, so that not (..) evaluates to True --> enter the if if it also overlaps (will be True because it also hits the boundary of the box)
-    #     -> if it doesn't hit the boundary, this first part evaluates to False --> do not enter the if
-    #  - if overlapping with the source's background mask is not allowed, config.allow_overlap = False -> (config.allow_overlap and ... ) = False --> not ( ... ) = True --> check right part to enter if ()
-    if not (config.allow_overlap and not mask.hits_boundary(min_pixels=2)) and masks.overlap(source.background_mask, mask):
-
-        if special: log.debug("mask still overlaps")
+    # Check if the mask hits the boundary of the cutout or overlaps with the background mask (depending on the configuration settings)
+    if segmentation_expand_condition(mask_without_appendages, source.background_mask, config, special):
 
         # If expanding is enabled
         if config.expand:
@@ -530,11 +526,14 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
             # If the maximum expansion level has been reached, no source could be found
             if expansion_level >= config.max_expansion_level:
 
-                if special: log.debug("maximum expansion level reached (", expansion_level, ")")
+                if special:
 
-                # To visualize the case where maximum expansion has been reached
-                #plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask))
+                    log.debug("maximum expansion level reached (", expansion_level, ")")
 
+                    # To visualize the case where maximum expansion has been reached
+                    plotting.plot_box(np.ma.masked_array(source.cutout, mask=mask))
+
+                # No source can be found
                 return None
 
             else:
@@ -563,15 +562,9 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
 
         # -- Fill holes --
 
-        #plotting.plot_box(np.ma.array(source.cutout, mask=source.mask))
-        #plotting.plot_box(np.ma.array(source.cutout, mask=mask))
-
         if special: log.debug("fixing holes in segment mask")
-
         mask = mask.fill_holes()
         source.mask = mask
-
-        #plotting.plot_box(np.ma.array(source.cutout, mask=source.mask))
 
         # Show a plot for debugging
         if config.debug.holes or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Removed holes")
@@ -738,5 +731,48 @@ def find_source_peaks(frame, ellipse, config, track_record=None, level=0, specia
 
         # Else, return the source
         else: return source
+
+# -----------------------------------------------------------------
+
+def segmentation_expand_condition(mask, background_mask, config, special=False):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # If:
+    #  - if overlapping with the source's background mask is allowed, check whether the mask does not hit the boundary.
+    #     -> if it hits the boundary, (config.allow_overlap and not hits_boundary) evaluates to False, so that not (..) evaluates to True --> enter the if if it also overlaps (will be True because it also hits the boundary of the box)
+    #     -> if it doesn't hit the boundary, this first part evaluates to False --> do not enter the if
+    #  - if overlapping with the source's background mask is not allowed, config.allow_overlap = False -> (config.allow_overlap and ... ) = False --> not ( ... ) = True --> check right part to enter if ()
+    if config.allow_overlap:
+
+        if special: log.debug("Overlapping allowed; checking whether center segment hits boundary")
+
+        if mask.hits_boundary(min_pixels=2):
+
+            if special: log.debug("Center segment hits boundary of box: expand")
+            return True
+
+        else:
+
+            if special: log.debug("Mask from center segment does not hit boundary: keep this mask for the saturation source")
+            return False
+
+    # Overlapping not allowed
+    else:
+
+        if special: log.debug("Overlapping no allowed; checking wether center segment overlaps source's background mask")
+
+        if masks.overlap(background_mask, mask):
+
+            if special: log.debug("Center segment overlaps background mask: expand")
+            return True
+
+        else:
+
+            if special: log.debug("Mask from center segment does not overlap background mask: keep this mask for the saturation source")
+            return False
 
 # -----------------------------------------------------------------
