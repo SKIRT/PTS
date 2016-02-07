@@ -102,6 +102,30 @@ class SkyEllipse(object):
 
     # -----------------------------------------------------------------
 
+    def __mul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return SkyEllipse(self.center, self.radius * value, self.angle)
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return Ellipse(self.center, self.radius / value, self.angle)
+
+    # -----------------------------------------------------------------
+
     def to_ellipse(self, wcs):
 
         """

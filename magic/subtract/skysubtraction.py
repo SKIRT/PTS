@@ -201,13 +201,13 @@ class SkySubtractor(Configurable):
         if "bad" in self.image.masks: self.mask += self.image.masks.bad
 
         # Check whether saturation contours are defined
-        if self.saturation_contours is not None:
+        if self.saturation_region is not None:
 
             # Expand all contours
-            expanded_contours = [contour * 1.5 for contour in self.saturation_contours]
+            expanded_region = self.saturation_region * 1.5
 
             # Create the saturation mask
-            saturation_mask = Mask.new_from_region(expanded_contours, self.image.shape)
+            saturation_mask = expanded_region.to_mask(self.image.wcs)
             self.mask += saturation_mask
 
     # -----------------------------------------------------------------

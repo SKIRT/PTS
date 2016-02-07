@@ -12,13 +12,125 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import astronomical modules
 import pyregion
-import astropy.coordinates as coord
+from astropy import coordinates as coord
 
 # Import the relevant AstroMagic classes and modules
 from .vector import Extent
-from .geometry import SkyEllipse
+from .geometry import Ellipse, SkyEllipse
+from .mask import Mask
+
+# -----------------------------------------------------------------
+
+class SkyRegion(list):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the constructor of the base class
+        super(SkyRegion, self).__init__()
+
+    # -----------------------------------------------------------------
+
+    def append(self, shape):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the shape is in sky coordinates
+        if not isinstance(shape, SkyEllipse): raise ValueError("Shape must be of type SkyEllipse (for now)")
+
+        # Otherwise, add the shape
+        super(SkyRegion, self).append(shape)
+
+    # -----------------------------------------------------------------
+
+    def __mul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new_region = SkyRegion()
+
+        for ellipse in self: new_region.append(ellipse * value)
+
+        # Return the new region
+        return new_region
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new_region = SkyRegion()
+
+        for ellipse in self: new_region.append(ellipse / value)
+
+        # Return the new region
+        return new_region
+
+    # -----------------------------------------------------------------
+
+    def to_image_coordinates(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Initialize a new list contain the ellipses in image coordinates
+        new_region = newRegion()
+
+        # Fill the new list
+        for i in range(len(self)): new_region.append(self[i].to_ellipse(wcs))
+
+        # Return the list of ellipses in image coordinates
+        return new_region
+
+    # -----------------------------------------------------------------
+
+    def to_mask(self, wcs):
+
+        """
+        This function ...
+        :return:
+        """
+
+        x_size = wcs.naxis1
+        y_size = wcs.naxis2
+
+        mask = Mask(np.zeros(y_size, x_size))
+
+        for shape in self:
+
+            ellipse = shape.to_ellipse(wcs)
+            mask += Mask.from_ellipse(x_size, y_size, ellipse)
+
+        # Return the mask
+        return mask
 
 # -----------------------------------------------------------------
 
@@ -40,22 +152,19 @@ class newRegion(list):
 
     # -----------------------------------------------------------------
 
-    def to_image_coordinates(self, wcs):
+    def append(self, shape):
 
         """
         This function ...
-        :param wcs:
+        :param shape:
         :return:
         """
 
-        # Initialize a new list contain the ellipses in image coordinates
-        new_list = []
+        # Check whether the shape is in sky coordinates
+        if not isinstance(shape, Ellipse): raise ValueError("Shape must be of type Ellipse (for now)")
 
-        # Fill the new list
-        for i in range(len(self)): new_list.append(self[i].to_ellipse(wcs))
-
-        # Return the list of ellipses in image coordinates
-        return new_list
+        # Otherwise, add the shape
+        super(newRegion, self).append(shape)
 
     # -----------------------------------------------------------------
 
@@ -68,13 +177,35 @@ class newRegion(list):
         """
 
         # Initialize a new list to contain the ellipses in sky coordinates
-        new_list = []
+        new_region = SkyRegion()
 
         # Fill the new list
-        for i in range(len(self)): new_list.append(SkyEllipse.from_ellipse(self[i], wcs))
+        for i in range(len(self)): new_region.append(SkyEllipse.from_ellipse(self[i], wcs))
 
         # Return the list of ellipses in sky coordinates
-        return new_list
+        return new_region
+
+    # -----------------------------------------------------------------
+
+    def to_mask(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        x_size = wcs.naxis1
+        y_size = wcs.naxis2
+
+        mask = Mask(np.zeros(y_size, x_size))
+
+        for shape in self:
+
+            mask += Mask.from_ellipse(x_size, y_size, shape)
+
+        # Return the mask
+        return mask
 
 # -----------------------------------------------------------------
 
