@@ -22,7 +22,7 @@ import astropy.coordinates as coord
 from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Extent, Mask, Region, Ellipse
+from ..basics import Extent, Mask, Region, SkyRegion, Ellipse
 from ..core import Source
 from ..sky import Star
 from ..tools import statistics, fitting, regions
@@ -725,12 +725,12 @@ class StarExtractor(Configurable):
         ellipses = self.saturation_contours
 
         # Create a new newRegion instance
-        region = newRegion()
+        region = SkyRegion()
 
         # Loop over the ellipses (in image coordinates)
         for ellipse in ellipses:
 
-            # Create a sky ellipse and add it to the list
+            # Create a sky ellipse and add it to the sky region
             region.append(SkyEllipse.from_ellipse(ellipse, self.original_frame.wcs))
 
         # Return the region

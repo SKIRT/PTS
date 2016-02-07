@@ -20,8 +20,8 @@
 from .vector import Position, Extent
 from .layers import Layers
 from .mask import Mask
-from .region import Region
+from .region import Region, SkyRegion
 from .trackrecord import TrackRecord
-from .geometry import Ellipse, Rectangle
+from .geometry import Ellipse, Rectangle, SkyEllipse
 from .catalogcoverage import CatalogCoverage
 from .coordinatesystem import CoordinateSystem
