@@ -340,6 +340,8 @@ class DataPreparer(ModelingComponent):
         # Loop over the input images (and masks)
         for image in self.images:
 
+            log.info("Starting preparation of " + image.name + " image ...")
+
             # Set the attenuation value
             self.image_preparer.config.attenuation = self.attenuations[image.name]
 
@@ -350,7 +352,7 @@ class DataPreparer(ModelingComponent):
 
             # If this image is not the reference image, set the appropriate options for rebinning and convolution
             # or this image does not need to be convolved (e.g. SPIRE images)
-            if image.name == self.config.reference_image or image.name not in aniano_names:
+            if image.name == self.config.reference_image or aniano_names[image.name] is None:
 
                 self.image_preparer.config.rebin = False
                 self.image_preparer.config.convolve = False
@@ -358,12 +360,16 @@ class DataPreparer(ModelingComponent):
             # Images that do need to be convolved
             else:
 
+                # Debugging information
+                log.debug("Setting path to the convolution kernel ...")
+
                 # Set the path to the convolution kernel
                 this_aniano_name = aniano_names[image.name]
                 reference_aniano_name = aniano_names[self.config.reference_image]
                 kernel_path = os.path.join(self.kernels_path, "Kernel_HiRes_" + this_aniano_name + "_to_" + reference_aniano_name + ".fits")
                 self.image_preparer.config.convolution.kernel_path = kernel_path
 
+                # Set flags to True
                 self.image_preparer.config.rebin = True
                 self.image_preparer.config.convolve = True
 
@@ -371,6 +377,9 @@ class DataPreparer(ModelingComponent):
             noise_path = os.path.join(self.data_path, "noise.reg")
             self.image_preparer.config.uncertainties.noise_path = noise_path
             self.image_preparer.config.uncertainties.calibration_error = calibration_errors[image.name]
+
+            # Debugging information
+            log.debug("Creating output directory for this image ...")
 
             # Determine the output path for this image
             image_output_path = os.path.join(self.prep_path, image.name)
