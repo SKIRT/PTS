@@ -399,7 +399,7 @@ def get_frame_name_and_description(header, i, always_call_first_primary=True):
     plane_type = "frame"
 
     # FITS file created by AstroMagic
-    if "[" in description and "]" in description:
+    if description is not None and "[" in description and "]" in description:
 
         name = description.split(" [")[0]
         plane_type = description.split("[")[1].split("]")[0]
