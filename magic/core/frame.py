@@ -68,7 +68,7 @@ class Frame(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, index=0, name=None, description=None, plane=None):
+    def from_file(cls, path, index=0, name=None, description=None, plane=None, hdulist_index=0):
 
         """
         This function ...
@@ -86,7 +86,7 @@ class Frame(np.ndarray):
         hdulist = fits.open(path)
 
         # Get the primary HDU
-        hdu = hdulist[0]
+        hdu = hdulist[hdulist_index]
 
         # Get the image header
         header = hdu.header
