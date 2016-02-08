@@ -19,6 +19,9 @@ import numpy as np
 from astropy import units as u
 from astropy import constants
 
+# Import the relevant AstroMagic classes and modules
+from ...magic.basics import Mask
+
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
@@ -27,6 +30,9 @@ from ...core.tools.logging import log
 
 # The speed of light
 speed_of_light = constants.c
+
+# Flux zero point for AB magnitudes
+ab_mag_zero_point = 3631. * u.Unit("Jy")
 
 # 2MASS F_0 (in Jy)
 f_0_2mass = {"2MASS.J": 1594.0, "2MASS.H": 1024.0, "2MASS.Ks": 666.7}
@@ -86,11 +92,11 @@ class UnitConverter(Configurable):
         # 1. Call the setup function
         self.setup(image)
 
-        # 2. Determine the conversion factor
-        self.convert()
-
         # ..
         self.calculate_ab_magnitudes()
+
+        # 2. Determine the conversion factor
+        self.convert()
 
         # 3. Apply the conversion to the image
         self.apply()
@@ -167,15 +173,35 @@ class UnitConverter(Configurable):
 
             #FUV: mAB = -2.5 x log10(CPS) + 18.82
             #NUV: mAB = -2.5 x log10(CPS) + 20.08
-
+            zeros = Mask.is_zero(self.image.frames.primary)
             magnitude_term = {"GALEX FUV": 18.82, "GALEX NUV": 20.08}
-
             ab_frame = -2.5 * np.log10(self.image.frames.primary) + magnitude_term[self.image.name]
+
+            # Set infinites to zero
+            ab_frame[zeros] = 0.0
+
+            # Add the frame with AB magnitudes and the mask with zeros
+            self.image.add_mask(zeros, "zeros")
+            self.image.add_frame(ab_frame, "abmag")
 
         # 2MASS images
         elif "2MASS" in self.image.filter.name:
 
-            pass
+            m_0 = self.image.frames.primary.zero_point
+            f_0 = f_0_2mass[self.image.filter.name]
+            to_jy_conversion_factor = f_0 * np.power(10.0, -m_0/2.5)
+
+            jansky_frame = self.image.frames.primary * to_jy_conversion_factor
+
+            zeros = Mask.is_zero(jansky_frame)
+            ab_frame = -5./2. * np.log10(jansky_frame / ab_mag_zero_point.to("Jy").value)
+
+            # Set infinites to zero
+            ab_frame[zeros] = 0.0
+
+            # Add the frame with AB magnitudes and the mask with zeros
+            self.image.add_mask(zeros, "zeros")
+            self.image.add_frame(ab_frame, "abmag")
 
         # Do not calculate the AB magnitude for other images
         else: pass
