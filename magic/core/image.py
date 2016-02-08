@@ -37,7 +37,7 @@ class Image(object):
     This class ...
     """
 
-    def __init__(self, filepath=None, always_call_first_primary=True):
+    def __init__(self, name):
 
         """
         The constructor ...
@@ -51,7 +51,7 @@ class Image(object):
         self.regions = Layers()
 
         # The image name and path
-        self.name = None
+        self.name = name
         self.path = None
 
         # The original image header
@@ -60,17 +60,31 @@ class Image(object):
         # The dictionary containing meta information
         self.metadata = dict()
 
-        if filepath is not None:
+    # -----------------------------------------------------------------
 
-            # Check if the specified file exists, otherwise exit with an error
-            if not os.path.isfile(filepath): raise IOError("No such file: " + filepath)
+    @classmethod
+    def from_file(cls, path, name=None, always_call_first_primary=True):
 
-            # Set the name of the image
-            self.name = os.path.splitext(os.path.basename(filepath))[0]
+        """
+        This function ...
+        :param path:
+        :return:
+        """
 
-            # Read in the image
-            self.load_frames(filepath, always_call_first_primary=always_call_first_primary)
-            self.path = filepath
+        # If no name is given, determine the name from the file path
+        if name is None: name = os.path.splitext(os.path.basename(path))[0]
+
+        # Create a new image
+        image = cls(name)
+
+        # Set the image path
+        image.path = path
+
+        # Load the image frames
+        image.load_frames(path, always_call_first_primary=always_call_first_primary)
+
+        # Return the image
+        return image
 
     # -----------------------------------------------------------------
 
@@ -886,38 +900,32 @@ class Image(object):
         hdu = hdulist[0]
 
         # Get the image header
-        header = hdu.header
+        self.original_header = hdu.header
 
-        # Get a copy of the original header
-        original_header = header.copy()
-
-        # Remove references to the third axis
-        header["NAXIS"] = 2
-        if "NAXIS3" in header: del header["NAXIS3"]
-        for key in header:
-            if "PLANE" in key: del header[key]
+        # Get flattened form of the header
+        flattened_header = headers.flattened(self.original_header)
 
         # Obtain the world coordinate system
-        wcs = CoordinateSystem(header)
+        wcs = CoordinateSystem(flattened_header)
 
         # Obtain the filter for this image
-        filter = headers.get_filter(self.name, original_header)
+        filter = headers.get_filter(self.name, self.original_header)
 
         # Inform the user on the filter
         if filter is not None: log.info("The filter for this image is " + filter.filterID())
         else: log.warning("Could not determine the filter for this image")
 
         # Obtain the units of this image
-        unit = headers.get_unit(original_header)
+        unit = headers.get_unit(self.original_header)
 
         # Get the magnitude zero-point
-        zero_point = headers.get_zero_point(header)
+        zero_point = headers.get_zero_point(self.original_header)
 
         # Check whether the image is sky-subtracted
-        sky_subtracted = headers.is_sky_subtracted(original_header)
+        sky_subtracted = headers.is_sky_subtracted(self.original_header)
 
         # Check whether multiple planes are present in the FITS image
-        nframes = headers.get_number_of_frames(original_header)
+        nframes = headers.get_number_of_frames(self.original_header)
         if nframes > 1:
 
             # For each frame
@@ -926,21 +934,8 @@ class Image(object):
                 # If only a frame with specific index needs to be imported, skip this frame if it does not correspond
                 if index is not None and i != index: continue
 
-                if index is None:
-
-                    # Get the name of this frame, but the first frame always gets the name 'primary' unless the
-                    # 'always_call_first_primary' flag is disabled
-                    if i == 0 and always_call_first_primary:
-                        description = "the primary signal map"
-                        name = "primary"
-                    else:
-
-                        description = headers.get_frame_description(original_header, i)
-
-                        if description is None:
-                            description = ""
-                            name = "frame"+str(i)
-                        else: name = headers.get_frame_name(description)
+                # Get name and description of frame
+                name, description, plane_type = headers.get_frame_name_and_description(self.original_header, i, always_call_first_primary)
 
                 # The sky-subtracted flag should only be set for the primary frame
                 subtracted = sky_subtracted if i == 0 else False
@@ -959,13 +954,21 @@ class Image(object):
                             if unit != u.Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(unit) + " is not recognized as a surface brightness unit")
 
                             # Change the data and the WCS
-                            hdu.data[i] = transformations.align_and_rebin(hdu.data[i], header, self.wcs.to_header())
+                            hdu.data[i] = transformations.align_and_rebin(hdu.data[i], flattened_header, self.wcs.to_header())
                             wcs = self.wcs
 
                         else: raise ValueError("The shape of the " + name + " frame (plane " + str(i) + ") of " + filename + " does not match the shape of this image")
 
                 # Add this frame to the frames dictionary
-                self.add_frame(Frame(hdu.data[i], wcs, description, False, unit, name, filter, subtracted, zero_point), name)
+                if plane_type == "frame":
+
+                    self.add_frame(Frame(hdu.data[i], wcs, description, False, unit, name, filter, subtracted, zero_point), name)
+
+                elif plane_type == "mask":
+
+                    self.add_mask(Mask(hdu.data[i], False, description), name)
+
+                else: raise ValueError("Unrecognized type (must be frame or mask)")
 
                 # Select the frame if it is the first one (the primary frame)
                 if i == 0: self.frames[name].select()
@@ -977,6 +980,8 @@ class Image(object):
 
             if name is None: name = "primary"
             if description is None: description = "the primary signal map"
+
+            dummy_name, dummy_description, plane_type = headers.get_frame_name_and_description(self.original_header, 0)
 
             # Check the shape of this new frame
             if self.shape is not None:
@@ -992,23 +997,29 @@ class Image(object):
                         if unit != u.Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(unit) + " is not recognized as a surface brightness unit")
 
                         # Change the data and the WCS
-                        hdu.data = transformations.align_and_rebin(hdu.data, header, self.wcs.to_header())
+                        hdu.data = transformations.align_and_rebin(hdu.data, flattened_header, self.wcs.to_header())
                         wcs = self.wcs
 
                     else: raise ValueError("The shape of the " + name + " frame (plane 0) of " + filename + " does not match the shape of this image")
 
-            # Add the primary image frame
-            self.add_frame(Frame(hdu.data, wcs, description, False, unit, name, filter, sky_subtracted, zero_point), name)
+            if plane_type == "frame":
+
+                # Add the primary image frame
+                self.add_frame(Frame(hdu.data, wcs, description, False, unit, name, filter, sky_subtracted, zero_point), name)
+
+            elif plane_type == "mask":
+
+                # Add the mask
+                self.add_mask(Mask(hdu.data, False, description), name)
+
+            else: raise ValueError("Unrecognized type (must be frame or mask)")
 
             # Select the frame
-            self.frames[name].select()
+            #self.frames[name].select()
 
         # Add meta information
-        for key in original_header:
-            self.metadata[key.lower()] = original_header[key]
-
-        # Let the original header remain accessible
-        self.original_header = original_header
+        for key in self.original_header:
+            self.metadata[key.lower()] = self.original_header[key]
 
         # Close the FITS file
         hdulist.close()

@@ -349,7 +349,7 @@ class Mask(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def disk_dilation(self, radius=5):
+    def disk_dilation(self, radius=5, iterations=1):
 
         """
         This function ...
@@ -358,7 +358,7 @@ class Mask(np.ndarray):
         """
 
         structure = morphology.disk(radius, dtype=bool)
-        data = ndimage.binary_dilation(self, structure)
+        data = ndimage.binary_dilation(self, structure, iterations)
 
         # Return the dilated mask
         return Mask(data)

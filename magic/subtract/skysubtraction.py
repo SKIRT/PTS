@@ -26,6 +26,7 @@ from ..tools import interpolation, plotting, masks, statistics, regions
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -142,7 +143,7 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Clearing the sky extractor ...")
+        log.info("Clearing the sky extractor ...")
 
         # Set all attributes to None
         self.image = None
@@ -220,7 +221,7 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Performing sigma-clipping on the pixel values ...")
+        log.info("Performing sigma-clipping on the pixel values ...")
 
         ### TEMPORARY: WRITE OUT MASK BEFORE CLIPPING
 
@@ -246,7 +247,7 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Estimating the sky by using " + self.config.estimation.method + " ...")
+        log.info("Estimating the sky by using " + self.config.estimation.method + " ...")
 
         # If the mean sky level should be used
         if self.config.estimation.method == "mean":
@@ -299,13 +300,13 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Subtracting the sky from the frame ...")
+        log.info("Subtracting the sky from the frame ...")
 
         # Check whether the median sky level exceeds the standard deviation
         #if self.median > self.stddev:
 
             # Inform the user
-            #self.log.info("The median sky level exceeds the standard deviation")
+            #log.info("The median sky level exceeds the standard deviation")
 
             # Subtract the estimated sky from the image frame
             #self.image.frames.primary -= self.sky
@@ -366,7 +367,7 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Writing ...")
+        log.info("Writing ...")
 
         # Write out the result
         #if self.config.write_result: self.write_result()
@@ -393,7 +394,7 @@ class SkySubtractor(Configurable):
         path = self.full_output_path(self.config.writing.result_path)
 
         # Inform the user
-        self.log.info("Writing resulting frame to " + path + " ...")
+        log.info("Writing resulting frame to " + path + " ...")
 
         # Write out the resulting frame
         self.image.frames.primary.save(path, header)
@@ -411,7 +412,7 @@ class SkySubtractor(Configurable):
         path = self.full_output_path(self.config.writing.masked_frame_path)
 
         # Inform the user
-        self.log.info("Writing masked frame to " + path + " ...")
+        log.info("Writing masked frame to " + path + " ...")
 
         # Create a frame where the objects are masked
         frame = self.image.frames.primary.copy()
@@ -433,7 +434,7 @@ class SkySubtractor(Configurable):
         path = self.full_output_path(self.config.writing.statistics_path)
 
         # Inform the user
-        self.log.info("Writing statistics to " + path + " ...")
+        log.info("Writing statistics to " + path + " ...")
 
     # -----------------------------------------------------------------
 
@@ -445,7 +446,7 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        self.log.info("Writing sky histogram to " + self.config.writing.histogram_path +  " ...")
+        log.info("Writing sky histogram to " + self.config.writing.histogram_path +  " ...")
 
         # Create a masked array
         masked = np.ma.masked_array(self.image.frames.primary, mask=self.mask)

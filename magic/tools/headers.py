@@ -381,6 +381,55 @@ def get_number_of_frames(header):
 
 # -----------------------------------------------------------------
 
+def get_frame_name_and_description(header, i, always_call_first_primary=True):
+
+    """
+    This function ...
+    :param header:
+    :param i:
+    :return:
+    """
+
+    planeX = "PLANE" + str(i)
+
+    # Return the description
+    if planeX in header: description = header[planeX]
+    else: description = None
+
+    plane_type = "frame"
+
+    # FITS file created by AstroMagic
+    if "[" in description and "]" in description:
+
+        name = description.split(" [")[0]
+        plane_type = description.split("[")[1].split("]")[0]
+
+    elif i == 0 and always_call_first_primary:
+
+        # Get the name of this frame, but the first frame always gets the name 'primary' unless the
+        # 'always_call_first_primary' flag is disabled
+
+        description = "the primary signal map"
+        name = "primary"
+
+    elif description is not None:
+
+        # Convert spaces to underscores and ignore things between parentheses
+        name = description.split("(")[0].rstrip(" ").replace(" ", "_")
+
+        # If the frame name contains 'error', use the standard name "errors" for this frame
+        if 'error' in name: name = "errors"
+
+    else: ## description is None
+
+        description = ""
+        name = "frame"+str(i)
+
+    # Return the name and description
+    return name, description, plane_type
+
+# -----------------------------------------------------------------
+
 def get_frame_description(header, i):
 
     """
@@ -427,9 +476,7 @@ def get_frame_name(description):
     name = description.split("(")[0].rstrip(" ").replace(" ", "_")
 
     # If the frame name contains 'error', use the standard name "errors" for this frame
-    if 'error' in name:
-
-        name = "errors"
+    if 'error' in name: name = "errors"
 
     # Return the frame name
     return name

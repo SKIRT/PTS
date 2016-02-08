@@ -595,7 +595,7 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
             if special: source.plot(title="zoomed-out source before mask dilation")
 
             # Dilate the mask
-            source.mask = source.mask.disk_dilation(radius=10)
+            source.mask = source.mask.disk_dilation(radius=10, iterations=expansion_level)
             #mask = mask.dilated(connectivity=config.connectivity, iterations=config.iterations)
 
         # Show a plot for debugging
@@ -615,9 +615,9 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         # -- Final source --
 
         # Inform the user
-        log.debug("Final expansion level: " + str(expansion_level))
-
-        if special: log.debug("source was found")
+        if special:
+            log.debug("source was found")
+            log.debug("Final expansion level: " + str(expansion_level))
 
         # Return the source
         return source
@@ -701,7 +701,7 @@ def find_source_peaks(frame, ellipse, config, track_record=None, level=0, specia
         # Scale the ellipse in which to look for a source
         ellipse *= config.scale_factor
 
-        log.debug("zooming in to find peak")
+        if special: log.debug("zooming in to find peak")
 
         # Find a source in the zoomed-out region
         return find_source_peaks(frame, ellipse, config, track_record=track_record, level=level+1, special=special)
