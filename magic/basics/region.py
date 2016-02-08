@@ -168,6 +168,40 @@ class newRegion(list):
 
     # -----------------------------------------------------------------
 
+    def __mul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new_region = newRegion()
+
+        for ellipse in self: new_region.append(ellipse * value)
+
+        # Return the new region
+        return new_region
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new_region = newRegion()
+
+        for ellipse in self: new_region.append(ellipse / value)
+
+        # Return the new region
+        return new_region
+
+    # -----------------------------------------------------------------
+
     def to_sky_coordinates(self, wcs):
 
         """
