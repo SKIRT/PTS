@@ -21,6 +21,7 @@ from astropy import constants
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -137,7 +138,7 @@ class UnitConverter(Configurable):
         """
 
         # Inform the user
-        self.log.info("Calculating the conversion factor to set image in " + str(self.target_unit) + " units ...")
+        log.info("Calculating the conversion factor to set image in " + str(self.target_unit) + " units ...")
 
         # Skip the unit conversion for images that are already in the right unit
         if self.image.unit == self.target_unit: return
@@ -189,7 +190,7 @@ class UnitConverter(Configurable):
         """
 
         # Inform the user
-        self.log.info("Applying the unit conversion factor to the image ...")
+        log.info("Applying the unit conversion factor to the image ...")
 
         # Multiply the image (primary and errors frame) by the conversion factor
         self.image *= self.conversion_factor

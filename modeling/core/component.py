@@ -68,13 +68,17 @@ class ModelingComponent(Configurable):
         # Get the full path to the 'data', 'prep' and 'in' directories
         self.data_path = os.path.join(self.config.path, "data")
         self.prep_path = os.path.join(self.config.path, "prep")
-        self.maps_path = os.path.join(self.config.path, "maps")
         self.phot_path = os.path.join(self.config.path, "phot")
+        self.maps_path = os.path.join(self.config.path, "maps")
+        self.bulge_path = os.path.join(self.config.path, "bulge")
+        self.disk_path = os.path.join(self.config.path, "disk")
+        self.fit_path = os.path.join(self.config.path, "fit")
+        self.analysis_path = os.path.join(self.config.path, "analysis")
 
         # Determine the path to the kernels user directory
         self.kernels_path = os.path.join(inspection.pts_user_dir, "kernels")
 
         # Create the prep path if it does not exist yet
-        filesystem.create_directories([self.prep_path, self.maps_path, self.phot_path])
+        filesystem.create_directories([self.prep_path, self.maps_path, self.phot_path, self.maps_path, self.bulge_path, self.disk_path, self.fit_path, self.analysis_path])
 
 # -----------------------------------------------------------------

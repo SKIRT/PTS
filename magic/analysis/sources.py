@@ -30,7 +30,7 @@ from photutils import source_properties, properties_table
 # Import the relevant AstroMagic classes and modules
 from ..tools import fitting, plotting, statistics, coordinates, cropping, interpolation, masks, regions
 from ..core import Source
-from ..basics import Position, Extent, Ellipse
+from ..basics import Position, Extent, Ellipse, Mask
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
@@ -563,8 +563,7 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         # -- Fill holes --
 
         if special: log.debug("fixing holes in segment mask")
-        mask = mask.fill_holes()
-        source.mask = mask
+        source.mask = mask.fill_holes()
 
         # Show a plot for debugging
         if config.debug.holes or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Removed holes")
@@ -573,11 +572,31 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
 
         # Dilate the mask if requested
         if config.dilate:
-            if special: log.debug("dilating the mask")
-            mask = mask.dilated(connectivity=config.connectivity, iterations=config.iterations)
 
-        # Set the source mask
-        source.mask = mask
+            if special: log.debug("dilating the mask")
+
+            original_x_min = source.cutout.x_min
+            original_y_min = source.cutout.y_min
+            original_x_max = source.cutout.x_max
+            original_y_max = source.cutout.y_max
+
+            source = source.zoom_out(1.5, frame)
+
+            source.mask = Mask(np.zeros(source.cutout.shape))
+
+            rel_x_min = original_x_min - source.cutout.x_min
+            rel_y_min = original_y_min - source.cutout.y_min
+            rel_x_max = original_x_max - source.cutout.x_min
+            rel_y_max = original_y_max - source.cutout.y_min
+
+            # Replace source's mask by found center segment mask
+            source.mask[rel_y_min:rel_y_max, rel_x_min:rel_x_max] = mask
+
+            if special: source.plot(title="zoomed-out source before mask dilation")
+
+            # Dilate the mask
+            source.mask = source.mask.disk_dilation(radius=10)
+            #mask = mask.dilated(connectivity=config.connectivity, iterations=config.iterations)
 
         # Show a plot for debugging
         if config.debug.dilated or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Dilated mask")
@@ -586,19 +605,17 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
 
         # Expand the mask if requested
         if config.user_expansion:
-            if special: log.debug("expanding the mask")
-            mask = mask.expanded(config.user_expansion_factor)
 
-        # Set the source mask
-        source.mask = mask
+            if special: log.debug("expanding the mask")
+            source.mask = mask.expanded(config.user_expansion_factor)
 
         # Show a plot for debugging
         if config.debug.user_expansion or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="User-expanded mask")
 
-        ##
+        # -- Final source --
 
         # Inform the user
-        #log.debug("Final expansion level: " + str(expansion_level))
+        log.debug("Final expansion level: " + str(expansion_level))
 
         if special: log.debug("source was found")
 

@@ -344,8 +344,24 @@ class Mask(np.ndarray):
         # Make the new mask, made from 100 iterations with the structure array
         data = ndimage.binary_dilation(self, structure, iterations)
 
-        # Reassign this object
+        # Return the dilated mask
         return Mask(data, self.selected, self.description)
+
+    # -----------------------------------------------------------------
+
+    def disk_dilation(self, radius=5):
+
+        """
+        This function ...
+        :param radius:
+        :return:
+        """
+
+        structure = morphology.disk(radius, dtype=bool)
+        data = ndimage.binary_dilation(self, structure)
+
+        # Return the dilated mask
+        return Mask(data)
 
     # -----------------------------------------------------------------
 

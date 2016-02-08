@@ -122,7 +122,7 @@ class SkyRegion(list):
         x_size = wcs.naxis1
         y_size = wcs.naxis2
 
-        mask = Mask(np.zeros(y_size, x_size))
+        mask = Mask(np.zeros((y_size, x_size)))
 
         for shape in self:
 
@@ -232,7 +232,7 @@ class newRegion(list):
         x_size = wcs.naxis1
         y_size = wcs.naxis2
 
-        mask = Mask(np.zeros(y_size, x_size))
+        mask = Mask(np.zeros((y_size, x_size)))
 
         for shape in self:
 

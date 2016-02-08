@@ -365,8 +365,7 @@ class Source(object):
         rel_center = source.cutout.rel_position(self.center)
 
         # Decrease the radius
-
-        try:
+        try: ## SOMETIMES, THIS FAILS (WHY??)
             source.radius = self.radius / factor
         except TypeError:
             #print(type(self.radius), type(factor))
@@ -383,6 +382,36 @@ class Source(object):
 
         # Return the new source
         return source
+
+    # -----------------------------------------------------------------
+
+    def zoom_out(self, factor, frame):
+
+        """
+        This function ...
+        :param factor:
+        :param frame:
+        :return:
+        """
+
+        new_radius = self.radius * factor
+
+        # Create cutout box
+        ellipse = Ellipse(self.center, new_radius * self.factor, self.angle) # new, expanded ellipse
+        cutout = Box.from_ellipse(frame, ellipse)
+
+        # Calculate the relative coordinate of the center for the cutout box
+        rel_center = cutout.rel_position(self.center)
+
+        # Create source mask
+        ellipse = Ellipse(rel_center, new_radius, self.angle)
+        mask = Mask.from_ellipse(cutout.xsize, cutout.ysize, ellipse)
+
+        # Create the new source
+        new_source = Source(self.center, new_radius, self.angle, self.factor, cutout, mask, peak=self.peak)
+
+        # Return the zoomed-out source
+        return new_source
 
     # -----------------------------------------------------------------
 
