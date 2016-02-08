@@ -126,6 +126,7 @@ class Filter:
                     self._FilterID = tree.xpath("//RESOURCE/PARAM[@name='filterID'][1]/@value")[0]
                     self._Description = tree.xpath("//RESOURCE/PARAM[@name='Description'][1]/@value")[0]
                     self._Description = self._Description.replace("&#956;m", "micron")
+                    self._EffWidth = 1e-4*float(tree.xpath("//RESOURCE/PARAM[@name='WidthEff'][1]/@value")[0])
 
                     # load the transmission table (converting wavelengths from Angstrom to micron)
                     values = np.array(tree.xpath("//RESOURCE/TABLE/DATA/TABLEDATA[1]/TR/TD/text()"), dtype=float)
@@ -164,6 +165,7 @@ class Filter:
             self._PhotonCounter = False
             self._IntegratedTransmission = self._WavelengthMax - self._WavelengthMin
             self._WavelengthPivot = np.sqrt(self._WavelengthMin * self._WavelengthMax)
+            self._EffWidth = self._WavelengthMax - self._WavelengthMin
 
     # ---------- Retrieving information -------------------------------
 
@@ -214,6 +216,10 @@ class Filter:
     #     { \int T(\lambda) \,\mathrm{d}\lambda/\lambda^2 } }. \f]
     def pivotwavelength(self):
         return self._WavelengthPivot
+
+    ## This functino returns the effective bandwith, in micron.
+    def effective_bandwidth(self):
+        return self._EffWidth
 
     # ---------- Integrating --------------------------------------
 

@@ -348,8 +348,11 @@ class UnitConverter(Configurable):
         :return:
         """
 
-        # Conversion from erg / [s * cm2] (per pixel2) to erg / [s * cm2 * Hz] (per pixel2)
-        self.conversion_factor *= self.spectral_factor_cm_to_hz(self.image.wavelength)
+        # Conversion from erg / [s * cm2] (per pixel2) to erg / [s * cm2 * micron] (per pixel2) --> divide by eff. bandwidth
+        self.conversion_factor *= 1.0 / self.image.filter.effective_bandwidth()
+
+        # Conversion from erg / [s * cm2 * micron] (per pixel2) to erg / [s * cm2 * Hz] (per pixel2)
+        self.conversion_factor *= self.spectral_factor_micron_to_hz(self.image.wavelength)
 
         # Conversion from erg / [s * cm2 * Hz] per pixel2 to the target unit (MJy / sr)
         self.convert_from_ergscmhz()
