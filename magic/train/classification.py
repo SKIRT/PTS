@@ -181,7 +181,7 @@ class Classifier(Configurable):
             for path in paths[label]:
 
                 # Open the image, select all frames
-                image = Image(path, always_call_first_primary=False)
+                image = Image.from_file(path, always_call_first_primary=False)
                 image.frames.select_all()
 
                 # Create a source

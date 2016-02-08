@@ -178,7 +178,7 @@ class Collector(Configurable):
             info, index = name.split("_")
 
             # Open the image, select all frames
-            image = Image(file_path, always_call_first_primary=False)
+            image = Image.from_file(file_path, always_call_first_primary=False)
             image.frames.select_all()
 
             # Create a source

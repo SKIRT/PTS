@@ -17,7 +17,7 @@ import numpy as np
 
 # Import the relevant AstroMagic classes and modules
 from ...magic.core import Frame, Source
-from ...magic.basics import Region, CoordinateSystem
+from ...magic.basics import Region, CoordinateSystem, Mask
 from ...magic.extract import Extractor
 from ...magic.subtract import SkySubtractor
 from ...magic.tools import regions, cropping
@@ -66,9 +66,6 @@ class ImagePreparer(Configurable):
 
         # 3. Extract stars and galaxies from the image
         if self.config.extract_sources: self.extract_sources()
-
-        # 4. If requested, subtract the sky
-        #if self.config.subtract_sky: self.subtract_sky()
 
         # 5. If requested, correct for galactic extinction
         if self.config.correct_for_extinction: self.correct_for_extinction()
@@ -234,8 +231,14 @@ class ImagePreparer(Configurable):
         # Get the coordinate system of the reference frame
         reference_system = CoordinateSystem.from_file(self.config.rebinning.rebin_to)
 
+        # Add a mask to the image that covers the complete current pixel grid
+        self.image.add_mask(Mask.full_like(self.image.frames.primary), "padded")
+
         # Rebin the image (the primary and errors frame)
         self.image.rebin(reference_system)
+
+        # Invert the 'padded' mask -> this mask now covers pixels added to the frame after rebinning
+        self.image.masks.padded = self.image.masks.padded.inverse()
 
         # Save rebinned frame
         if self.config.write_steps: self.write_intermediate_result("rebinned.fits")

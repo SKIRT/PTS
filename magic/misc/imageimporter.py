@@ -141,7 +141,7 @@ class ImageImporter(Configurable):
         log.info("Importing image from " + self.image_path + " ...")
 
         # Open the image
-        self.image = Image(self.image_path)
+        self.image = Image.from_file(self.image_path)
 
         # Load error frame
         self.load_error_frame()

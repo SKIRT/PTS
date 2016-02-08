@@ -469,7 +469,7 @@ class Source(object):
         cutout = frame.box_like(self.cutout) if frame is not None else self.cutout
 
         # Create an image to contain the cutout box and source mask
-        image = Image()
+        image = Image("source")
         image.add_frame(Frame(cutout), "cutout")
 
         # Add the background-subtracted cutout, if present

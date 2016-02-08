@@ -305,7 +305,7 @@ class MapMaker(ModelingComponent):
         if os.path.isfile(self.config.cutoff.reference_path):
 
             # Open the reference image
-            reference = Image(self.config.cutoff.reference_path)
+            reference = Image.from_file(self.config.cutoff.reference_path)
 
             # Check whether the errors frame is present
             assert self.config.errors in reference.frames, "An error map could not be found for the reference image"
