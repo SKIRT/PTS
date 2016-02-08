@@ -133,7 +133,7 @@ def get_pixelscale(header):
 
 # -----------------------------------------------------------------
 
-def get_filter(name, header):
+def get_filter(name, header=None):
 
     """
     This function ...
@@ -143,31 +143,35 @@ def get_filter(name, header):
     """
 
     filterid = name.lower()
+    channel = None
+    wavelength = None
 
     if "kernel" in filterid:
         log.debug("The image represents a kernel, so no filter will be set")
         return None
 
     # Get information from the header
+    if header is not None:
 
-    # Get information regarding the telescope and instrument
-    if "TELESCOP" in header: filterid += header["TELESCOP"].lower()
-    if "INSTRUME" in header: filterid += header['INSTRUME'].lower()
-    if "ORIGIN" in header: filterid += header['ORIGIN'].lower()
+        # Get information regarding the telescope and instrument
+        if "TELESCOP" in header: filterid += header["TELESCOP"].lower()
+        if "INSTRUME" in header: filterid += header['INSTRUME'].lower()
+        if "ORIGIN" in header: filterid += header['ORIGIN'].lower()
 
-    # Get a name describing the filter
-    if "FILTER" in header: filterid += header['FILTER'].lower()
-    if "FLTRNM" in header: filterid += header['FLTRNM'].lower()
+        # Get a name describing the filter
+        if "FILTER" in header: filterid += header['FILTER'].lower()
+        if "FLTRNM" in header: filterid += header['FLTRNM'].lower()
 
-    # Get information about the channel number
-    if "CHNLNUM" in header: channel = int(header["CHNLNUM"])
-    elif "BAND" in header: channel = int(header["BAND"])
-    else: channel = None
+        # Get information about the channel number
+        if "CHNLNUM" in header: channel = int(header["CHNLNUM"])
+        elif "BAND" in header: channel = int(header["BAND"])
+        else: channel = None
 
-    # Get the wavelength
-    if "WAVELEN" in header: wavelength = float(header["WAVELEN"])
-    else: wavelength = None
+        # Get the wavelength
+        if "WAVELEN" in header: wavelength = float(header["WAVELEN"])
+        else: wavelength = None
 
+    # Debug information
     log.debug("filterid =", filterid)
     log.debug("channel =", channel)
     log.debug("wavelength =", wavelength)

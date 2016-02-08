@@ -41,6 +41,7 @@ class CoordinateSystem(wcs.WCS):
 
         # Set the number of pixels in both axis directions
         if header is not None:
+
             if not hasattr(self, "naxis1"): self.naxis1 = header["NAXIS1"]
             if not hasattr(self, "naxis2"): self.naxis2 = header["NAXIS2"]
 
