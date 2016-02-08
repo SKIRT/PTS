@@ -63,7 +63,7 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, name=None, always_call_first_primary=True):
+    def from_file(cls, path, name=None, always_call_first_primary=True, hdulist_index=0):
 
         """
         This function ...
@@ -81,7 +81,7 @@ class Image(object):
         image.path = path
 
         # Load the image frames
-        image.load_frames(path, always_call_first_primary=always_call_first_primary)
+        image.load_frames(path, always_call_first_primary=always_call_first_primary, hdulist_index=hdulist_index)
 
         # Return the image
         return image
@@ -877,7 +877,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def load_frames(self, filename, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False):
+    def load_frames(self, filename, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False, hdulist_index=0):
 
         """
         This function ...
@@ -897,7 +897,7 @@ class Image(object):
         hdulist = fits.open(filename)
 
         # Get the primary HDU
-        hdu = hdulist[0]
+        hdu = hdulist[hdulist_index]
 
         # Get the image header
         self.original_header = hdu.header
