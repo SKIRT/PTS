@@ -492,10 +492,10 @@ class Image(object):
             log.info("Rebinning the " + mask_name + " mask ...")
 
             # Rebin this mask
-            data = transformations.new_align_and_rebin(self.masks[mask_name], original_wcs, reference_wcs)
+            data = transformations.new_align_and_rebin(self.masks[mask_name].astype(float), original_wcs, reference_wcs)
 
             # Return the rebinned mask
-            self.masks[mask_name] = Mask(data, self.masks[mask_name].selected, self.masks[mask_name].description)
+            self.masks[mask_name] = Mask(data > 0.5, self.masks[mask_name].selected, self.masks[mask_name].description)
 
     # -----------------------------------------------------------------
 

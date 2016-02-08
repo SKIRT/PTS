@@ -73,6 +73,9 @@ class Frame(np.ndarray):
         """
         This function ...
         :param path:
+        :param index:
+        :param description:
+        :param plane:
         :return:
         """
 
