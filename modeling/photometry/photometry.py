@@ -46,6 +46,9 @@ class PhotoMeter(ModelingComponent):
         # The list of images
         self.images = []
 
+        # The photometry table
+        self.table = None
+
     # -----------------------------------------------------------------
 
     @classmethod

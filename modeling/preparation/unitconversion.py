@@ -37,8 +37,17 @@ ab_mag_zero_point = 3631. * u.Unit("Jy")
 # 2MASS F_0 (in Jy)
 f_0_2mass = {"2MASS.J": 1594.0, "2MASS.H": 1024.0, "2MASS.Ks": 666.7}
 
+# Wise magnitude zero points (those in the header are rounded)
+m_0_wise = {"WISE.W1": 20.73, "WISE.W2": 19.567, "WISE.W3": 17.600, "WISE.W4": 12.980}
+
 # WISE F_0 (in W / cm2 / um) (from http://wise2.ipac.caltech.edu/docs/release/prelim/expsup/figures/sec4_3gt4.gif)
 f_0_wise = {"WISE.W1": 8.1787e-15, "WISE.W2": 2.4150e-15, "WISE.W3": 6.5151e-17, "WISE.W4": 5.0901e-18}
+
+# Absolute calibration magnitudes for WISE bands
+absolute_calibration_wise = {"WISE.W1": 0.034, "WISE.W2": 0.041, "WISE.W3": -0.030, "WISE.W4": 0.029}
+
+# Correction factor for the calibration discrepancy between WISE photometric standard blue stars and red galaxies
+calibration_discrepancy_wise_w4 = 0.92
 
 # GALEX conversion factors from count/s to flux
 #  - FUV: Flux [erg sec-1 cm-2 Angstrom-1] = 1.40 x 10-15 x CPS
@@ -396,7 +405,9 @@ class UnitConverter(Configurable):
         """
 
         # Conversion from dimensionless unit (DN, or count) to flux (in W / [cm2 * micron]) (per pixel)
-        m_0 = self.image.frames.primary.zero_point
+        #m_0 = self.image.frames.primary.zero_point # rounded values in the header
+        m_0 = m_0_wise[self.image.filter.name] + absolute_calibration_wise[self.image.filter.name]
+        if self.image.filter.name == "WISE.W4": m_0 += calibration_discrepancy_wise_w4
         f_0 = f_0_wise[self.image.filter.name]
         self.conversion_factor *= f_0 * np.power(10.0, -m_0/2.5)
 
