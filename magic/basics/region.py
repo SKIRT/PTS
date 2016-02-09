@@ -17,10 +17,12 @@ import numpy as np
 
 # Import astronomical modules
 import pyregion
+from astropy import units as u
+from astropy.coordinates import Angle
 from astropy import coordinates as coord
 
 # Import the relevant AstroMagic classes and modules
-from .vector import Extent
+from .vector import Position, Extent
 from .geometry import Ellipse, SkyEllipse
 from .mask import Mask
 
@@ -41,6 +43,55 @@ class SkyRegion(list):
 
         # Call the constructor of the base class
         super(SkyRegion, self).__init__()
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        raise ValueError("This function is not ready yet")
+
+        # Create a new sky region
+        region = cls()
+
+        # Open the region file with pyregion and check if its in image coordinates
+        _region = pyregion.open(path)
+        def check_sky_coord(_region):
+            if [s for s in _region if s.coord_format != "fk5"]: return False
+            else: return True
+        if not check_sky_coord(_region): raise ValueError("Region is not in sky coordinates")
+
+        for shape in _region:
+
+            x_center = shape.coord_list[0]
+            y_center = shape.coord_list[1]
+            x_radius = shape.coord_list[2]
+            if shape.name == "ellipse":
+                y_radius = shape.coord_list[3]
+                try: angle = Angle(shape.coord_list[4], u.Unit("deg"))
+                except: angle = Angle(0.0, u.Unit("deg"))
+            elif shape.name == "circle":
+                y_radius = shape.coord_list[2]
+                angle = Angle(0.0, u.Unit("deg"))
+            else: raise ValueError("Shapes other than ellipses or circles are not supported yet")
+
+            center = coord.SkyCoord(ra=ra_center, dec=dec_center, unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
+            radius = Extent(x_radius, y_radius)
+
+            # Only works for ellipses for now
+            ellipse = Ellipse(center, radius, angle)
+
+            # Add the ellipse to the region
+            region.append(ellipse)
+
+        # Return the new region
+        return region
 
     # -----------------------------------------------------------------
 
@@ -152,6 +203,50 @@ class newRegion(list):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Create a new region
+        region = cls()
+
+        # Open the region file with pyregion and check if its in image coordinates
+        _region = pyregion.open(path)
+        if not _region.check_imagecoord(): raise ValueError("Region is not in image coordinates")
+
+        for shape in _region:
+
+            x_center = shape.coord_list[0]
+            y_center = shape.coord_list[1]
+            x_radius = shape.coord_list[2]
+            if shape.name == "ellipse":
+                y_radius = shape.coord_list[3]
+                try: angle = Angle(shape.coord_list[4], u.Unit("deg"))
+                except: angle = Angle(0.0, u.Unit("deg"))
+            elif shape.name == "circle":
+                y_radius = shape.coord_list[2]
+                angle = Angle(0.0, u.Unit("deg"))
+            else: raise ValueError("Shapes other than ellipses or circles are not supported yet")
+
+            center = Position(x_center, y_center)
+            radius = Extent(x_radius, y_radius)
+
+            # Only works for ellipses for now
+            ellipse = Ellipse(center, radius, angle)
+
+            # Add the ellipse to the region
+            region.append(ellipse)
+
+        # Return the new region
+        return region
+
+    # -----------------------------------------------------------------
+
     def append(self, shape):
 
         """
@@ -240,6 +335,40 @@ class newRegion(list):
 
         # Return the mask
         return mask
+
+    # -----------------------------------------------------------------
+
+    def save(self, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a file
+        f = open(path, 'w')
+
+        # Initialize the region string
+        print("# Region file format: DS9 version 4.1", file=f)
+
+        # Loop over all ellipses
+        for ellipse in self:
+
+            # Get aperture properties
+            center = ellipse.center
+            major = ellipse.major
+            minor = ellipse.minor
+            angle = ellipse.angle.degree
+
+            # Write to region file
+            #suffix = " # "
+            #color_suffix = "color = white"
+            #text_suffix = "text = {" + text + "}"
+            #suffix += color_suffix + " " + text_suffix
+            print("image;ellipse({},{},{},{},{})".format(center.x+1, center.y+1, major, minor, angle), file=f)
+
+        # Close the file
+        f.close()
 
 # -----------------------------------------------------------------
 

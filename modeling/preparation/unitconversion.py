@@ -40,8 +40,8 @@ f_0_2mass = {"2MASS.J": 1594.0, "2MASS.H": 1024.0, "2MASS.Ks": 666.7}
 # Extended source photometrical correction coefficients
 photometrical_correction_irac = {"IRAC.I1": 0.91, "IRAC.I2": 0.94, "IRAC.I3": 0.66, "IRAC.I4": 0.74}
 
-# Wise magnitude zero points (those in the header are rounded)
-m_0_wise = {"WISE.W1": 20.73, "WISE.W2": 19.567, "WISE.W3": 17.600, "WISE.W4": 12.980}
+# Wise magnitude zero points (those in the header are rounded ??)
+#m_0_wise = {"WISE.W1": 20.73, "WISE.W2": 19.567, "WISE.W3": 17.600, "WISE.W4": 12.980}
 
 # WISE F_0 (in W / cm2 / um) (from http://wise2.ipac.caltech.edu/docs/release/prelim/expsup/figures/sec4_3gt4.gif)
 f_0_wise = {"WISE.W1": 8.1787e-15, "WISE.W2": 2.4150e-15, "WISE.W3": 6.5151e-17, "WISE.W4": 5.0901e-18}
@@ -361,14 +361,27 @@ class UnitConverter(Configurable):
         :return:
         """
 
+        # What I thought the unit conversion should be:
+
         # Conversion from erg / [s * cm2] (per pixel2) to erg / [s * cm2 * micron] (per pixel2) --> divide by eff. bandwidth
-        self.conversion_factor *= 1.0 / self.image.filter.effective_bandwidth()
+        #self.conversion_factor *= 1.0 / self.image.filter.effective_bandwidth()
 
         # Conversion from erg / [s * cm2 * micron] (per pixel2) to erg / [s * cm2 * Hz] (per pixel2)
-        self.conversion_factor *= self.spectral_factor_micron_to_hz(self.image.wavelength)
+        #self.conversion_factor *= self.spectral_factor_micron_to_hz(self.image.wavelength)
+
+        # What Ilse says it should be:
+
+        # Get the frequency of Ha
+        frequency = self.image.wavelength.to("Hz", equivalencies=u.spectral())
+
+        # Conversion from erg / [s * cm2] (per pixel2) to erg / [s * cm2 * Hz] (per pixel2)
+        self.conversion_factor *= 1.0 / frequency.value
 
         # Conversion from erg / [s * cm2 * Hz] per pixel2 to the target unit (MJy / sr)
         self.convert_from_ergscmhz()
+
+        # Correct for contribution of NII (Bendo et. al 2015) NII/Halpha = 0.55 for M81 => divide by a factor of 1.55
+        self.conversion_factor *= 1.0 / 1.55
 
     # -----------------------------------------------------------------
 
@@ -421,8 +434,8 @@ class UnitConverter(Configurable):
         """
 
         # Conversion from dimensionless unit (DN, or count) to flux (in W / [cm2 * micron]) (per pixel)
-        #m_0 = self.image.frames.primary.zero_point # rounded values in the header
-        m_0 = m_0_wise[self.image.filter.name] + absolute_calibration_wise[self.image.filter.name]
+        m_0 = self.image.frames.primary.zero_point # rounded values in the header ??
+        #m_0 = m_0_wise[self.image.filter.name] + absolute_calibration_wise[self.image.filter.name]
         if self.image.filter.name == "WISE.W4": m_0 += calibration_discrepancy_wise_w4
         f_0 = f_0_wise[self.image.filter.name]
         self.conversion_factor *= f_0 * np.power(10.0, -m_0/2.5)
