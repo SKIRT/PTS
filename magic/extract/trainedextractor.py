@@ -218,7 +218,9 @@ class TrainedExtractor(Configurable):
             min_fwhm = min(fwhms)
             max_fwhm = max(fwhms)
         else:
-            fwhm = self.star_extractor.fwhm
+            if self.star_extractor.config.use_frame_fwhm and self.image.fwhm is not None:
+                fwhm = self.image.fwhm.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
+            else: fwhm = self.star_extractor.fwhm
             min_fwhm = fwhm * 0.5
             max_fwhm = fwhm * 1.5
 
