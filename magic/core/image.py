@@ -736,7 +736,7 @@ class Image(object):
         """
 
         # Loop over all currently selected frames
-        for frame_name in self.frames.get_selected():
+        for frame_name in self.frames:
 
             # Inform the user
             log.info("Multiplying the " + frame_name + " frame by a factor of " + str(factor))
@@ -758,7 +758,7 @@ class Image(object):
         """
 
         # Loop over all currently selected frames
-        for frame_name in self.frames.get_selected():
+        for frame_name in self.frames:
 
             # Inform the user
             log.info("Dividing the " + frame_name + " frame by a factor of " + str(factor))
