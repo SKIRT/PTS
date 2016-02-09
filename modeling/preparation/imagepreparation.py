@@ -238,7 +238,7 @@ class ImagePreparer(Configurable):
         self.image.rebin(reference_system)
 
         # Invert the 'padded' mask -> this mask now covers pixels added to the frame after rebinning
-        self.image.masks.padded = self.image.masks.padded.inverse()
+        self.image.masks.padded = self.image.masks.padded.inverse().disk_dilation(radius=10)
 
         # Save rebinned frame
         if self.config.write_steps: self.write_intermediate_result("rebinned.fits")

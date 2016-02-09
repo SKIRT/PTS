@@ -19,6 +19,7 @@ from scipy import ndimage
 # Import astronomical modules
 from photutils import detect_sources
 from astropy.coordinates import SkyCoord
+from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame, Source
@@ -366,7 +367,14 @@ class TrainedExtractor(Configurable):
         # Calculate the detection threshold
         threshold = median + (3.0 * stddev)
 
-        kernel = self.star_extractor.kernel
+        #kernel = self.star_extractor.kernel # doesn't work when there was no star extraction on the image, self.star_extractor does not have attribute image thus cannot give image.fwhm
+        if self.star_extractor.config.use_frame_fwhm and self.image.fwhm is not None:
+
+            fwhm = self.image.fwhm.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
+            sigma = fwhm * statistics.fwhm_to_sigma
+            kernel = Gaussian2DKernel(sigma)
+
+        else: kernel = self.star_extractor.kernel
 
         try:
             # Create a segmentation map from the frame
