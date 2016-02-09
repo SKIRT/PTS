@@ -70,7 +70,7 @@ class ScalingExtractor(object):
         self.threads = simulation.threads()
 
         # Set the path to the scaling file
-        self.scaling_file_path = simulation.scaling_file_path
+        self.scaling_file_path = simulation.scaling_data_file
 
         # Cache local references to the timeline and memory extractors
         self.te = timeline_extractor
