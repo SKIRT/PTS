@@ -37,6 +37,9 @@ ab_mag_zero_point = 3631. * u.Unit("Jy")
 # 2MASS F_0 (in Jy)
 f_0_2mass = {"2MASS.J": 1594.0, "2MASS.H": 1024.0, "2MASS.Ks": 666.7}
 
+# Extended source photometrical correction coefficients
+photometrical_correction_irac = {"IRAC.I1": 0.91, "IRAC.I2": 0.94, "IRAC.I3": 0.66, "IRAC.I4": 0.74}
+
 # Wise magnitude zero points (those in the header are rounded)
 m_0_wise = {"WISE.W1": 20.73, "WISE.W2": 19.567, "WISE.W3": 17.600, "WISE.W4": 12.980}
 
@@ -163,6 +166,7 @@ class UnitConverter(Configurable):
         elif "SDSS" in self.image.filter.name: self.convert_sdss()
         elif "Ha" in self.image.filter.name: self.convert_ha()
         elif "2MASS" in self.image.filter.name: self.convert_2mass()
+        elif "IRAC" in self.image.filter.name: self.convert_irac()
         elif "WISE" in self.image.filter.name: self.convert_wise()
         elif "Pacs" in self.image.filter.name: self.convert_pacs()
         elif "SPIRE" in self.image.filter.name: self.convert_spire()
@@ -394,6 +398,18 @@ class UnitConverter(Configurable):
 
         # Conversion from Jy per pixel2 to the target unit (MJy / sr)
         self.convert_from_jy()
+
+    # -----------------------------------------------------------------
+
+    def convert_irac(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Multiplication with the appropriate extended source photometrical correction coefficients
+        self.conversion_factor *= photometrical_correction_irac[self.image.filter.name]
 
     # -----------------------------------------------------------------
 

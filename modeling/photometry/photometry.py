@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import numpy as np
 
 # Import the relevant AstroMagic classes and modules
 from ...magic.core import Image
