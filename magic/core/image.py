@@ -60,6 +60,9 @@ class Image(object):
         # The dictionary containing meta information
         self.metadata = dict()
 
+        # Temporary fix because fwhm is sometimes not transferred to a new primary Frame and therefore fwhm information is lost on the complete image
+        self._fwhm = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -222,6 +225,8 @@ class Image(object):
         This function ...
         :return:
         """
+
+        if self._fwhm is not None: return self._fwhm
 
         if "primary" not in self.frames: return None
 
@@ -434,6 +439,8 @@ class Image(object):
         :param fwhm:
         :return:
         """
+
+        self._fwhm = fwhm
 
         # Loop over all currently selected frames
         for frame_name in self.frames.get_selected():

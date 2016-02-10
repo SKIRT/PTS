@@ -265,7 +265,10 @@ class ImagePreparer(Configurable):
         self.extractor.run(self.image)
 
         # Print the FWHM if it has been fitted by the extractor
-        if not (self.extractor.config.stars.use_frame_fwhm and self.image.fwhm is not None):
+        #print("image fwhm=", self.image.fwhm)
+        #print("use frame fwhm=", self.extractor.star_extractor.config.use_frame_fwhm)
+        fwhm_not_fitted = (self.extractor.star_extractor.config.use_frame_fwhm and self.image.fwhm is not None)
+        if not fwhm_not_fitted:
 
             # Get the FWHM from the star extractor (in pixels -> in arcsec)
             fwhm = self.extractor.star_extractor.fwhm
