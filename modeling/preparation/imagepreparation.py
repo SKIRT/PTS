@@ -17,7 +17,7 @@ import numpy as np
 
 # Import the relevant AstroMagic classes and modules
 from ...magic.core import Frame, Source
-from ...magic.basics import Region, CoordinateSystem, Mask
+from ...magic.basics import Region, CoordinateSystem, Mask, SkyRegion
 from ...magic.extract import Extractor
 from ...magic.subtract import SkySubtractor
 from ...magic.tools import regions, cropping
@@ -50,6 +50,9 @@ class ImagePreparer(Configurable):
 
         # The image
         self.image = None
+
+        # Temporary ...
+        self.principal_ellipse_skycoord = None
 
     # -----------------------------------------------------------------
 
@@ -280,6 +283,9 @@ class ImagePreparer(Configurable):
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("extracted.fits")
 
+        # Get ellipse of principal galaxy
+        self.principal_ellipse_skycoord = self.extractor.galaxy_extractor.principal_sky_ellipse
+
     # -----------------------------------------------------------------
 
     def correct_for_extinction(self):
@@ -373,8 +379,17 @@ class ImagePreparer(Configurable):
         :return:
         """
 
+        # Write out the principal_sky_ellipse and saturation_region in sky coordinates
+        principal_sky_region = SkyRegion()
+        principal_sky_region.append(self.principal_ellipse_skycoord)
+        principal_sky_region_path = self.full_output_path("principal_skycoord.reg")
+        principal_sky_region.save(principal_sky_region_path)
+
+        saturation_sky_region_path = self.full_output_path("saturation_skycoord.reg")
+        self.extractor.star_extractor.saturation_region.save(saturation_sky_region_path)
+
         # Run the sky extraction
-        self.sky_subtractor.run(self.image, self.extractor.galaxy_extractor.principal_sky_ellipse, self.extractor.star_extractor.saturation_region)
+        self.sky_subtractor.run(self.image, self.principal_ellipse_skycoord, self.extractor.star_extractor.saturation_region)
 
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("sky_subtracted.fits")

@@ -74,6 +74,9 @@ class GalaxyExtractor(Configurable):
         # Set the mask to None
         self.mask = None
 
+        # Temporary
+        self.original_frame = None
+
     # -----------------------------------------------------------------
 
     def run(self, image, catalog, special=None, ignore=None):
@@ -124,6 +127,9 @@ class GalaxyExtractor(Configurable):
 
         # Create a mask with shape equal to the shape of the frame
         self.mask = Mask.from_shape(self.image.shape)
+
+        # Temporary
+        self.original_frame = self.image.frames.primary.copy()
 
     # -----------------------------------------------------------------
 
@@ -495,7 +501,7 @@ class GalaxyExtractor(Configurable):
         ellipse = self.principal_ellipse
 
         # Create a SkyEllipse
-        sky_ellipse = SkyEllipse.from_ellipse(ellipse, self.original_wcs)
+        sky_ellipse = SkyEllipse.from_ellipse(ellipse, self.original_frame.wcs)
 
         # Return the sky ellipse
         return sky_ellipse

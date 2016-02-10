@@ -278,14 +278,14 @@ class Frame(np.ndarray):
         # ISSUE: see bug #4592 on Astropy GitHub (WCS.to_header issue)
         # temporary fix !!
         # I don't know whether this is a good fix.. but it seems to fix it for a particular situation
-        if "PC1_1" in header:
+        #if "PC1_1" in header:
 
-            if "NAXIS1" in header: header.remove("NAXIS1")
-            if "NAXIS2" in header: header.remove("NAXIS2")
-            if "CDELT1" in header: header.remove("CDELT1")
-            if "CDELT2" in header: header.remove("CDELT2")
-            header.rename_keyword("PC1_1", "CD1_1")
-            header.rename_keyword("PC2_2", "CD2_2")
+            #if "NAXIS1" in header: header.remove("NAXIS1")
+            #if "NAXIS2" in header: header.remove("NAXIS2")
+            #if "CDELT1" in header: header.remove("CDELT1")
+            #if "CDELT2" in header: header.remove("CDELT2")
+            #header.rename_keyword("PC1_1", "CD1_1")
+            #header.rename_keyword("PC2_2", "CD2_2")
 
         # Return the header
         return header

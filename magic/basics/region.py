@@ -183,6 +183,41 @@ class SkyRegion(list):
         # Return the mask
         return mask
 
+    # -----------------------------------------------------------------
+
+    def save(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Create a file
+        f = open(path, 'w')
+
+        # Initialize the region string
+        print("# Region file format: DS9 version 4.1", file=f)
+
+        # Loop over all ellipses
+        for ellipse in self:
+
+            # Get aperture properties
+            ra_deg = ellipse.center.ra.to("deg").value
+            dec_deg = ellipse.center.dec.to("deg").value
+            major = ellipse.major.to("arcsec").value
+            minor = ellipse.minor.to("arcsec").value
+            angle = ellipse.angle.degree
+
+            line = "fk5;ellipse(%s,%s,%.2f\",%.2f\",%s)" % (ra_deg, dec_deg, major, minor, angle)
+
+            # Write to region file
+            #print("fk5;ellipse({},{},{},{},{})".format(ra_deg, dec_deg, major, minor, angle), file=f)
+            print(line, file=f)
+
+        # Close the file
+        f.close()
+
 # -----------------------------------------------------------------
 
 class newRegion(list):
@@ -364,10 +399,6 @@ class newRegion(list):
             angle = ellipse.angle.degree
 
             # Write to region file
-            #suffix = " # "
-            #color_suffix = "color = white"
-            #text_suffix = "text = {" + text + "}"
-            #suffix += color_suffix + " " + text_suffix
             print("image;ellipse({},{},{},{},{})".format(center.x+1, center.y+1, major, minor, angle), file=f)
 
         # Close the file
