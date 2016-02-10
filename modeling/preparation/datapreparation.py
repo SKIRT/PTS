@@ -373,9 +373,15 @@ class DataPreparer(ModelingComponent):
                 self.image_preparer.config.rebin = True
                 self.image_preparer.config.convolve = True
 
+            # Check whether the image has to be sky subtracted
+            if image.frames.primary.sky_subtracted:
+
+                log.debug("The " + image.name + " image has already been sky subtracted")
+                self.image_preparer.config.sky_subtraction.subtract = False
+
+            else: self.image.preparer.config.sky_subtraction.subtract = True
+
             # Set the path to the noise region
-            noise_path = os.path.join(self.data_path, "noise.reg")
-            self.image_preparer.config.uncertainties.noise_path = noise_path
             self.image_preparer.config.uncertainties.calibration_error = calibration_errors[image.name]
 
             # Debugging information

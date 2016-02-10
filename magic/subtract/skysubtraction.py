@@ -21,8 +21,8 @@ from photutils.background import Background
 
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame
-from ..basics import Region, Mask
-from ..tools import interpolation, plotting, masks, statistics, regions
+from ..basics import Mask
+from ..tools import interpolation, plotting, statistics, fitting
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -190,7 +190,7 @@ class SkySubtractor(Configurable):
         """
 
         # Create a mask from the ellipse
-        annulus_outer_factor = 1.5
+        annulus_outer_factor = 3.0
         annulus_inner_factor = 1.0
         annulus_mask = Mask.from_ellipse(self.image.xsize, self.image.ysize, self.principal_ellipse * annulus_outer_factor).inverse() + \
                        Mask.from_ellipse(self.image.xsize, self.image.ysize, self.principal_ellipse * annulus_inner_factor)
@@ -210,6 +210,9 @@ class SkySubtractor(Configurable):
             # Create the saturation mask
             saturation_mask = expanded_region.to_mask(self.image.wcs)
             self.mask += saturation_mask
+
+        # Add the mask of padded pixels (during rebinning)
+        if "padded" in self.image.masks: self.mask += self.image.masks.padded
 
     # -----------------------------------------------------------------
 
@@ -273,11 +276,25 @@ class SkySubtractor(Configurable):
         # if the sky should be approximated by a polynomial function
         elif self.config.estimation.method == "polynomial":
 
-            pass
+            polynomial = fitting.fit_polynomial(self.image.frames.primary, 3, mask=self.mask)
+
+            # Evaluate the polynomial
+            data = fitting.evaluate_model(polynomial, 0, self.image.frames.primary.xsize, 0, self.image.frames.primary.ysize)
+
+            plotting.plot_box(data, title="background")
+
+            # Create sky map
+            self.sky = Frame(data, self.image.wcs, "estimated sky", False, self.image.unit)
 
         elif self.config.estimation.method == "photutils":
 
-            bkg = Background(self.image.frames.primary, (50, 50), filter_shape=(3, 3), method='median', mask=self.mask)
+            #bkg = Background(self.image.frames.primary, (20, 20), filter_shape=(3, 3), method='median', mask=self.mask)
+
+            #method = "sextractor" # default
+            method = "mean"
+
+            bkg = Background(self.image.frames.primary, (20, 20), filter_shape=(3, 3), filter_threshold=None, mask=self.mask,
+                      method=method, backfunc=None, interp_order=3, sigclip_sigma=3.0, sigclip_iters=10)
 
             plotting.plot_box(bkg.background, title="background")
             plotting.plot_box(bkg.background_low_res, title="low-res background")
@@ -286,6 +303,27 @@ class SkySubtractor(Configurable):
 
             print("background median = ", bkg.background_median)
             print("background rms median = ", bkg.background_rms_median)
+
+            # Create sky map
+            self.sky = Frame(bkg.background, self.image.wcs, "estimated sky", False, self.image.unit)
+
+        elif self.config.estimation.method == "hybrid":
+
+            bkg = Background(self.image.frames.primary, (50, 50), filter_shape=(3, 3), filter_threshold=None, mask=self.mask,
+                      method="sextractor", backfunc=None, interp_order=3, sigclip_sigma=3.0, sigclip_iters=10)
+
+            # Masked background
+            masked_background = np.ma.masked_array(bkg.background, mask=self.mask)
+            #plotting.plot_box(masked_background, title="masked background")
+
+            mean_sky = np.ma.mean(masked_background)
+            median_sky = np.median(masked_background.compressed())
+
+            self.image.add_frame(Frame(bkg.background, self.image.wcs, "photutils background", False, self.image.unit), "phot_sky")
+            self.image.add_frame(Frame(bkg.background_rms, self.image.wcs, "photutils rms", False, self.image.unit), "phot_rms")
+
+            # Create sky map of median sky level
+            self.sky = Frame(np.full(self.image.shape, median_sky), self.image.wcs, "estimated sky", False, self.image.unit)
 
         # Unkown estimation method
         else: raise ValueError("Unkown sky estimation method")
@@ -302,15 +340,6 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Subtracting the sky from the frame ...")
 
-        # Check whether the median sky level exceeds the standard deviation
-        #if self.median > self.stddev:
-
-            # Inform the user
-            #log.info("The median sky level exceeds the standard deviation")
-
-            # Subtract the estimated sky from the image frame
-            #self.image.frames.primary -= self.sky
-
         # Subtract the estimated sky from the image frame
         self.image.frames.primary -= self.sky
 
@@ -322,11 +351,6 @@ class SkySubtractor(Configurable):
         This function ...
         :return:
         """
-
-        #print("self.image.masks=", self.image.masks)
-        #print("self.mask=", self.mask)
-
-        #self.image.masks.sky += self.mask
 
         self.image.add_mask(self.mask, "sky")
 
@@ -351,11 +375,14 @@ class SkySubtractor(Configurable):
         """
 
         # Create a mask from the principal galaxy region
-        annulus_outer_factor = 1.5
+        annulus_outer_factor = 1.2
         mask = Mask.from_ellipse(self.image.xsize, self.image.ysize, self.principal_ellipse * annulus_outer_factor).inverse()
 
         # Set the primary frame zero outside the principal ellipse
         self.image.frames.primary[mask] = 0.0
+
+        # Add mask
+        self.image.add_mask(mask, "outside")
 
     # -----------------------------------------------------------------
 

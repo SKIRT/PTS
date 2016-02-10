@@ -104,9 +104,6 @@ class UnitConverter(Configurable):
         # 1. Call the setup function
         self.setup(image)
 
-        # ..
-        self.calculate_ab_magnitudes()
-
         # 2. Determine the conversion factor
         self.convert()
 
@@ -174,53 +171,6 @@ class UnitConverter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def calculate_ab_magnitudes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # GALEX images
-        if "GALEX" in self.image.filter.name:
-
-            #FUV: mAB = -2.5 x log10(CPS) + 18.82
-            #NUV: mAB = -2.5 x log10(CPS) + 20.08
-            zeros = Mask.is_zero(self.image.frames.primary)
-            magnitude_term = {"GALEX FUV": 18.82, "GALEX NUV": 20.08}
-            ab_frame = -2.5 * np.log10(self.image.frames.primary) + magnitude_term[self.image.name]
-
-            # Set infinites to zero
-            ab_frame[zeros] = 0.0
-
-            # Add the frame with AB magnitudes and the mask with zeros
-            self.image.add_mask(zeros, "zeros")
-            self.image.add_frame(ab_frame, "abmag")
-
-        # 2MASS images
-        elif "2MASS" in self.image.filter.name:
-
-            m_0 = self.image.frames.primary.zero_point
-            f_0 = f_0_2mass[self.image.filter.name]
-            to_jy_conversion_factor = f_0 * np.power(10.0, -m_0/2.5)
-
-            jansky_frame = self.image.frames.primary * to_jy_conversion_factor
-
-            zeros = Mask.is_zero(jansky_frame)
-            ab_frame = -5./2. * np.log10(jansky_frame / ab_mag_zero_point.to("Jy").value)
-
-            # Set infinites to zero
-            ab_frame[zeros] = 0.0
-
-            # Add the frame with AB magnitudes and the mask with zeros
-            self.image.add_mask(zeros, "zeros")
-            self.image.add_frame(ab_frame, "abmag")
-
-        # Do not calculate the AB magnitude for other images
-        else: pass
-
-    # -----------------------------------------------------------------
-
     def apply(self):
 
         """
@@ -231,8 +181,10 @@ class UnitConverter(Configurable):
         # Inform the user
         log.info("Applying the unit conversion factor to the image ...")
 
-        # Multiply the image (primary and errors frame) by the conversion factor
+        # Multiply the image (primary, errors and calibration_errors frame) by the conversion factor
         self.image *= self.conversion_factor
+        #self.image.frames.primary = self.image.frames.primary * self.conversion_factor
+        #if "errors" in self.image.frames: self.image.frames.errors = self.image.frames.errors * self.conversion_factor
 
         # Set the new unit
         self.image.set_unit(self.target_unit)

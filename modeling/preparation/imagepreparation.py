@@ -64,6 +64,9 @@ class ImagePreparer(Configurable):
         # 1. Call the setup function
         self.setup(image)
 
+        # 2. ..
+        self.calculate_calibration_uncertainties()
+
         # 3. Extract stars and galaxies from the image
         if self.config.extract_sources: self.extract_sources()
 
@@ -83,10 +86,10 @@ class ImagePreparer(Configurable):
         if self.config.subtract_sky: self.subtract_sky()
 
         # 9. If requested, set the uncertainties
-        #if self.config.set_uncertainties: self.set_uncertainties()
+        if self.config.set_uncertainties: self.set_uncertainties()
 
         # 10. If requested, crop
-        #if self.config.crop: self.crop()
+        if self.config.crop: self.crop()
 
         # Writing
         self.write()
@@ -127,6 +130,113 @@ class ImagePreparer(Configurable):
 
     # -----------------------------------------------------------------
 
+    def calculate_calibration_uncertainties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from . import unitconversion
+
+        # GALEX images
+        if "GALEX" in self.image.filter.name:
+
+            #FUV: mAB = -2.5 x log10(CPS) + 18.82
+            #NUV: mAB = -2.5 x log10(CPS) + 20.08
+            zeros = Mask.is_zero(self.image.frames.primary)
+            magnitude_term = {"GALEX FUV": 18.82, "GALEX NUV": 20.08}
+            ab_frame = -2.5 * np.log10(self.image.frames.primary) + magnitude_term[self.image.name]
+
+            # Set infinites to zero
+            ab_frame[zeros] = 0.0
+
+            # Calculate data in Jansky
+            jansky_frame = unitconversion.ab_mag_zero_point.to("Jy").value * np.power(10.0, -2./5. * ab_frame)
+
+            # Add the frame with AB magnitudes and the mask with zeros
+            #self.image.add_mask(zeros, "zeros")
+            #self.image.add_frame(ab_frame, "abmag")
+
+        # 2MASS images
+        elif "2MASS" in self.image.filter.name:
+
+            m_0 = self.image.frames.primary.zero_point
+            f_0 = unitconversion.f_0_2mass[self.image.filter.name]
+            to_jy_conversion_factor = f_0 * np.power(10.0, -m_0/2.5)
+
+            jansky_frame = self.image.frames.primary * to_jy_conversion_factor
+
+            zeros = Mask.is_zero(jansky_frame)
+            ab_frame = -5./2. * np.log10(jansky_frame / unitconversion.ab_mag_zero_point.to("Jy").value)
+
+            # Set infinites to zero
+            ab_frame[zeros] = 0.0
+
+            # Add the frame with AB magnitudes and the mask with zeros
+            #self.image.add_mask(zeros, "zeros")
+            #self.image.add_frame(ab_frame, "abmag")
+
+        # Do not calculate the AB magnitude for other images
+        else:
+
+            janksy_frame = None
+            zeros = None
+            ab_frame = None
+
+        # Add the calibration uncertainty
+        if "mag" in self.config.uncertainties.calibration_error:
+
+            # The calibration uncertainty in AB magnitude
+            mag_error = float(self.config.uncertainties.calibration_error.split("mag")[0])
+
+            # a = image[mag] - mag_error
+            a = ab_frame - mag_error
+
+            # b = image[mag] + mag_error
+            b = ab_frame + mag_error
+
+            # Convert a and b to Jy
+            a = unitconversion.ab_mag_zero_point.to("Jy").value * np.power(10.0, -2./5.*a)
+            b = unitconversion.ab_mag_zero_point.to("Jy").value * np.power(10.0, -2./5.*b)
+
+            # c = a[Jy] - image[Jy]
+            c = a - janksy_frame
+
+            # d = image[Jy] - b[Jy]
+            d = jansky_frame - b
+
+            # Calibration errors = max(c, d)
+            calibration_errors = Frame(np.zeros(self.image.shape))
+            for x in self.image.xsize:
+                for y in self.image.ysize:
+                    calibration_errors = max(c[y,x], d[y,x])
+            calibration_errors[zeros] = 0.0 # set zero where AB magnitude could not be calculated
+
+            ## CONVERT THE CALIBRATION ERRORS TO MJY/SR !! --> NO, TO THE ORIGINAL UNIT OF THE DATA
+
+            relative_calibration_errors = calibration_errors / janksy_frame
+            relative_calibration_errors[zeros] = 0.0
+
+            # Check that there are no infinities or nans in the result
+            assert np.any(np.isinf(relative_calibration_errors)) and not np.any(np.isnan(relative_calibration_errors))
+
+            # The actual calibration errors in the same unit as the data
+            calibration_frame = self.image.frames.primary * relative_calibration_errors
+
+        elif "%" in self.config.uncertainties.calibration_error:
+
+            # Calculate calibration errors with percentage
+            fraction = float(self.config.uncertainties.calibration_error.split("%")[0]) * 0.01
+            calibration_frame = self.image.frames.primary * fraction
+
+        else: raise ValueError("Unrecognized calibration error")
+
+        # Add the calibration frame
+        self.image.add_frame(calibration_frame, "calibration_errors")
+
+    # -----------------------------------------------------------------
+
     def extract_sources(self):
 
         """
@@ -155,6 +265,16 @@ class ImagePreparer(Configurable):
 
         # Run the extractor
         self.extractor.run(self.image)
+
+        # Print the FWHM if it has been fitted by the extractor
+        if not (self.extractor.config.stars.use_frame_fwhm and self.image.fwhm is not None):
+
+            # Get the FWHM from the star extractor (in pixels -> in arcsec)
+            fwhm = self.extractor.star_extractor.fwhm
+            fwhm = fwhm * self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
+
+            # Debug info
+            log.debug("The fitted FWHM is " + str(fwhm) + " arcseconds")
 
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("extracted.fits")
@@ -255,11 +375,6 @@ class ImagePreparer(Configurable):
         # Run the sky extraction
         self.sky_subtractor.run(self.image, self.extractor.galaxy_extractor.principal_sky_ellipse, self.extractor.star_extractor.saturation_region)
 
-        # Print the statistics of the sky frame
-        log.info("Mean sky level = " + str(self.sky_subtractor.mean))
-        log.info("Median sky level = " + str(self.sky_subtractor.median))
-        log.info("Standard deviation of sky = " + str(self.sky_subtractor.stddev))
-
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("sky_subtracted.fits")
 
@@ -272,146 +387,22 @@ class ImagePreparer(Configurable):
         :return:
         """
 
-        # Create noise region
-        region = Region.from_file(self.config.uncertainties.noise_path, self.image.wcs)
+        sky_mask = self.image.masks.sky
 
-        means = []
-        stddevs = []
+        photutils_estimated_sky = np.ma.masked_array(np.asarray(self.image.frames.phot_sky), mask=sky_mask)
+        photutils_rms = np.ma.masked_array(np.asarray(self.image.frames.phot_rms), mask=sky_mask)
 
-        for shape in region:
+        #plotting.plot_box(photutils_rms, title="masked rms")
 
-            # Create ellipse
-            ellipse = regions.ellipse(shape)
+        # LARGE SCALE VARIATIONS = STANDARD DEVIATION OF ESTIMATED SKY PIXELS
+        large_scale_variations_error = photutils_estimated_sky.std()
 
-            # Create source for ellipse
-            source = Source.from_ellipse(self.image.frames.primary, ellipse, 1.5)
+        # PIXEL TO PIXEL NOISE = MEAN OF RMS
+        pixel_to_pixel_noise = np.ma.mean(photutils_rms) # Mean pixel-by-pixel variations
 
-            # Calculate the mean and standard deviation in the box
-            mean = np.ma.mean(np.ma.masked_array(source.cutout, mask=source.background_mask))
-            stddev = np.median(np.ma.masked_array(source.cutout, mask=source.background_mask).compressed())
-
-            # Add the mean and standard deviation to the appropriate list
-            means.append(mean)
-            stddevs.append(stddev)
-
-        # Create numpy arrays
-        means = np.array(means)
-        stddevs = np.array(stddevs)
-
-        # Calculate the global uncertainty
-        uncertainty = np.sqrt(np.std(means)**2 + np.median(stddevs)**2)
-
-
-
-        # Add the calibration uncertainty
-        if "mag" in self.config.uncertainties.calibration_error:
-
-            mag_error = float(self.config.uncertainties.calibration_error.split("mag")[0])
-
-            # a = image[mag] - mag_error
-            a = image_mag - mag_error
-
-            # b = image[mag] + mag_error
-            b = image_mag + mag_error
-
-            # Convert a and b to Jy
-            a = a
-            b = b
-
-            # c = a[Jy] - image[Jy]
-            c = None
-
-            # d = image[Jy] - b[Jy]
-            d = None
-
-            # Calibration errors = max(c, d)
-            calibration_errors = Frame(np.zeros(self.image.shape))
-            for x in self.image.xsize:
-                for y in self.image.ysize:
-                    calibration_errors = max(c[y,x], d[y,x])
-
-        elif "%" in self.config.uncertainties.calibration_error:
-
-            fraction = float(self.config.uncertainties.calibration_error.split("%")[0]) * 0.01
-
-            calibration_errors = self.image.frames.primary * fraction
-
-        else: raise ValueError("Unrecognized calibration error")
-
-        # Add the uncertainty AND THE CALIBRATION ERRORS to the errors quadratically
-        # IS THIS THE RIGHT WAY ??
-        self.image.frames.errors = np.sqrt(np.power(self.image.frames.errors, 2) + uncertainty**2 + np.power(calibration_errors, 2))
-
-    # -----------------------------------------------------------------
-
-    def set_uncertainties_old(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create noise region
-        region = Region.from_file(self.config.uncertainties.noise_path, self.image.frames[self.config.primary].wcs)
-
-        # Initialize lists for the mean value and standard deviation in the different shapes
-        means = []
-        stddevs = []
-
-        # Loop over all shapes
-        for shape in region:
-
-
-            # TODO: use angle
-
-            x_center, y_center, x_radius, y_radius, angle = regions.ellipse_parameters(shape)
-
-            box, x_min, x_max, y_min, y_max = cropping.crop(self.image.frames[self.config.primary], x_center, y_center, x_radius, y_radius)
-
-            # Calculate the mean and standard deviation in the box
-            mean = np.mean(box)
-            stddev = np.std(box)
-
-            means.append(mean)
-            stddevs.append(stddev)
-
-        means = np.array(means)
-        stddevs = np.array(stddevs)
-
-        # Calculate the global uncertainty
-        uncertainty = np.sqrt(np.std(means)**2 + np.median(stddevs)**2)
-
-        # If there is no errors frame
-        if not self.config.errors in self.image.frames:
-
-            wcs = self.image.frames[self.config.primary].wcs
-            #pixelscale = self.image.frames[self.config.primary].pixelscale
-            unit = self.image.frames[self.config.primary].unit
-            filter = self.image.frames[self.config.primary].filter
-            selected = True
-
-            # Create the errors frame (select it)
-            frame = Frame(np.full(self.image.frames[self.config.primary].shape, uncertainty), wcs, None, selected, unit, self.config.errors, filter)
-
-            # Add the errors frame to the image
-            self.image.add_frame(frame, self.config.errors)
-
-        # If there is an errors frame, add the uncertainty to the errors quadratically
-        else: self.image.frames[self.config.errors] = np.sqrt(np.power(self.image.frames[self.config.errors], 2) + uncertainty**2)
-
-        ### CALIBRATION ERRORS
-
-        if self.config.uncertainties.add_calibration_error:
-
-            # Get calibration error
-            if self.config.uncertainties.calibration_error_type == "abs":
-
-                self.image.frames[self.config.errors] += self.config.uncertainties.calibration_error
-
-            elif self.config.uncertainties.calibration_error_type == "rel":
-
-                # Create frame for the calibration error map
-                self.image.frames[self.config.errors] += self.config.uncertainties.calibration_error * self.image.frames[self.config.primary]
+        # Add all the errors quadratically: existing error map + large scale variations + pixel to pixel noise + calibration error
+        self.image.frames.errors = np.sqrt(self.image.frames.errors**2 + large_scale_variations_error**2 + \
+                                           + pixel_to_pixel_noise**2 + self.image.frames.calibration_errors**2)
 
     # -----------------------------------------------------------------
 
@@ -419,7 +410,6 @@ class ImagePreparer(Configurable):
 
         """
         This function ...
-        :param frame:
         :return:
         """
 

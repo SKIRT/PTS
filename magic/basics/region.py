@@ -221,6 +221,9 @@ class newRegion(list):
 
         for shape in _region:
 
+            # Skip shapes that are not ellipses or circles
+            if shape.name != "ellipse" and shape.name != "circle": continue
+
             x_center = shape.coord_list[0]
             y_center = shape.coord_list[1]
             x_radius = shape.coord_list[2]
