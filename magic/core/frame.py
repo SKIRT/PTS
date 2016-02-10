@@ -275,6 +275,18 @@ class Frame(np.ndarray):
         header['NAXIS1'] = self.xsize
         header['NAXIS2'] = self.ysize
 
+        # ISSUE: see bug #4592 on Astropy GitHub (WCS.to_header issue)
+        # temporary fix !!
+        # I don't know whether this is a good fix.. but it seems to fix it for a particular situation
+        if "PC1_1" in header:
+
+            if "NAXIS1" in header: header.remove("NAXIS1")
+            if "NAXIS2" in header: header.remove("NAXIS2")
+            if "CDELT1" in header: header.remove("CDELT1")
+            if "CDELT2" in header: header.remove("CDELT2")
+            header.rename_keyword("PC1_1", "CD1_1")
+            header.rename_keyword("PC2_2", "CD2_2")
+
         # Return the header
         return header
 
@@ -774,18 +786,6 @@ class Frame(np.ndarray):
         # Add origin description
         if origin is not None: header["ORIGIN"] = origin
         else: header["ORIGIN"] = "Frame class of PTS package"
-
-        # ISSUE: see bug #4592 on Astropy GitHub (WCS.to_header issue)
-        # temporary fix !!
-        # I don't know whether this is a good fix.. but it seems to fix it for a particular situation
-        if "PC1_1" in header:
-
-            if "NAXIS1" in header: header.remove("NAXIS1")
-            if "NAXIS2" in header: header.remove("NAXIS2")
-            if "CDELT1" in header: header.remove("CDELT1")
-            if "CDELT2" in header: header.remove("CDELT2")
-            header.rename_keyword("PC1_1", "CD1_1")
-            header.rename_keyword("PC2_2", "CD2_2")
 
         # Create the HDU
         hdu = fits.PrimaryHDU(self, header)
