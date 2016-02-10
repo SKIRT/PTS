@@ -122,7 +122,7 @@ def remove_file(path):
 
 # -----------------------------------------------------------------
 
-def files_in_path(path, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None, names=False, extensions=False):
+def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None, names=False, extensions=False):
 
     """
     This function ...
@@ -130,6 +130,8 @@ def files_in_path(path, recursive=False, ignore_hidden=True, extension=None, con
     :param recursive:
     :return:
     """
+
+    if path is None: path = os.getcwd()
 
     # Initialize a list to contain the paths of the files that are found in the given directory
     file_paths = []
@@ -174,7 +176,7 @@ def files_in_path(path, recursive=False, ignore_hidden=True, extension=None, con
 
 # -----------------------------------------------------------------
 
-def directories_in_path(path, recursive=False, ignore_hidden=True, names=False):
+def directories_in_path(path=None, recursive=False, ignore_hidden=True, names=False):
 
     """
     This function ...
@@ -182,6 +184,8 @@ def directories_in_path(path, recursive=False, ignore_hidden=True, names=False):
     :param recursive:
     :return:
     """
+
+    if path is None: path = os.getcwd()
 
     # Initialize a list to contain the paths of the directories that are found in the given directory
     directory_paths = []

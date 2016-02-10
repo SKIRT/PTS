@@ -338,6 +338,10 @@ class Extractor(Configurable):
         # Inform the user
         log.info("Looking for sources in the frame not in the catalog ...")
 
+        # If the wavelength of this image is greater than 25 micron, don't classify the sources that are found
+        if self.image.wavelength is not None and self.image.wavelength < wavelengths.ranges.ir.mir.max: self.trained_extractor.config.classify = False
+        else: self.trained_extractor.config.classify = True
+
         # Run the trained extractor just to find sources
         self.trained_extractor.run(self.image, self.galaxy_extractor, self.star_extractor, special=self.special_mask, ignore=self.ignore_mask)
 
@@ -368,14 +372,17 @@ class Extractor(Configurable):
         :return:
         """
 
-        # Inform the user
-        log.info("Building the stellar catalog ...")
+        # Build the stellar catalog if the wavelength of this image is smaller than 25 micron (or the wavelength is unknown)
+        if self.image.wavelength is None or self.image.wavelength < wavelengths.ranges.ir.mir.max:
 
-        # Run the catalog builder
-        self.catalog_builder.run(self.image.frames.primary, self.galaxy_extractor, self.star_extractor, self.trained_extractor)
+            # Inform the user
+            log.info("Building the stellar catalog ...")
 
-        # Inform the user
-        log.success("Stellar catalog built")
+            # Run the catalog builder
+            self.catalog_builder.run(self.image.frames.primary, self.galaxy_extractor, self.star_extractor, self.trained_extractor)
+
+            # Inform the user
+            log.success("Stellar catalog built")
 
     # -----------------------------------------------------------------
 
@@ -386,14 +393,17 @@ class Extractor(Configurable):
         :return:
         """
 
-        # Inform the user
-        log.info("Synchronizing with the DustPedia catalog ...")
+        # Synchronize the catalog if the wavelength of this image is smaller than 25 micron (or the wavelength is unknown)
+        if self.image.wavelength is None or self.image.wavelength < wavelengths.ranges.ir.mir.max:
 
-        # Run the catalog synchronizer
-        self.catalog_synchronizer.run(self.image.frames.primary, self.galaxy_name, self.catalog_builder.galactic_catalog, self.catalog_builder.stellar_catalog)
+            # Inform the user
+            log.info("Synchronizing with the DustPedia catalog ...")
 
-        # Inform the user
-        log.success("Catalog synchronization done")
+            # Run the catalog synchronizer
+            self.catalog_synchronizer.run(self.image.frames.primary, self.galaxy_name, self.catalog_builder.galactic_catalog, self.catalog_builder.stellar_catalog)
+
+            # Inform the user
+            log.success("Catalog synchronization done")
 
     # -----------------------------------------------------------------
 

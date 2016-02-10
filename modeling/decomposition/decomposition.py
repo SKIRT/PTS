@@ -14,6 +14,28 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..core import ModelingComponent
+from ...core.basics.map import Map
+
+# -----------------------------------------------------------------
+
+# Bulge properties from S4G
+bulge = Map()
+bulge.type = "Sersic"
+bulge.xc = 1455.27
+bulge.yc = 1905.39
+bulge.mag = 7.0877
+bulge.re = 102.9578
+bulge.n = 3.5566
+bulge.ar = 0.6540
+bulge.pa = -34.9801
+
+# Disk properties from S4G
+disk = Map()
+disk.type = "ExpDisk"
+disk.mag = 6.9121
+disk.rs = 204.2269
+disk.ar = 0.5426
+disk.pa = -23.6950
 
 # -----------------------------------------------------------------
 

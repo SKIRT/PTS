@@ -63,6 +63,10 @@ class CatalogSynchronizer(Configurable):
 
         """
         This function ...
+        :param frame:
+        :param galaxy_name:
+        :param galactic_catalog:
+        :param stellar_catalog:
         :return:
         """
 
