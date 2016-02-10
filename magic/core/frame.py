@@ -405,7 +405,7 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def crop(self, x_min, x_max, y_min, y_max):
+    def cropped(self, x_min, x_max, y_min, y_max):
 
         """
         This function ...
@@ -416,13 +416,18 @@ class Frame(np.ndarray):
         :return:
         """
 
-        # TODO: change the WCS
-
         # Crop the frame
         data = cropping.crop_check(self, x_min, x_max, y_min, y_max)
 
+        # Change the WCS
+        new_wcs = self.wcs.copy()
+
+        # Change the center pixel position
+        new_wcs.wcs.crpix[0] -= x_min
+        new_wcs.wcs.crpix[1] -= y_min
+
         # Return the cropped frame
-        return Frame(data, None, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+        return Frame(data, new_wcs, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 
     # -----------------------------------------------------------------
 
