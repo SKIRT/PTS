@@ -76,8 +76,8 @@ def get_pixelscale(header):
                 try: unit = u.Unit(unit)
                 except ValueError: unit = None
 
-            log.debug("pixelscale found in", keyword, "keyword =", scale)
-            log.debug("unit for the pixelscale =", unit)
+            log.debug("pixelscale found in " + str(keyword) + " keyword = " + str(scale))
+            log.debug("unit for the pixelscale = " + str(unit))
 
             # If no unit is found, guess that it's arcseconds / pixel ...
             if unit is None: unit = u.Unit("arcsec/pix")
@@ -154,13 +154,13 @@ def get_filter(name, header=None):
     if header is not None:
 
         # Get information regarding the telescope and instrument
-        if "TELESCOP" in header: filterid += header["TELESCOP"].lower()
-        if "INSTRUME" in header: filterid += header['INSTRUME'].lower()
-        if "ORIGIN" in header: filterid += header['ORIGIN'].lower()
+        if "TELESCOP" in header: filterid += " " + header["TELESCOP"].lower()
+        if "INSTRUME" in header: filterid += " " + header['INSTRUME'].lower()
+        if "ORIGIN" in header: filterid += " " + header['ORIGIN'].lower()
 
         # Get a name describing the filter
-        if "FILTER" in header: filterid += header['FILTER'].lower()
-        if "FLTRNM" in header: filterid += header['FLTRNM'].lower()
+        if "FILTER" in header: filterid += " " + header['FILTER'].lower()
+        if "FLTRNM" in header: filterid += " " + header['FLTRNM'].lower()
 
         # Get information about the channel number
         if "CHNLNUM" in header: channel = int(header["CHNLNUM"])
@@ -198,11 +198,11 @@ def get_filter(name, header=None):
         elif "-z" in filterid: final_filter_name = "SDSS.z"
         else:
 
-            if "u" in filterid: final_filter_name = "SDSS.u"
-            elif "g" in filterid: final_filter_name = "SDSS.g"
-            elif "r" in filterid: final_filter_name = "SDSS.r"
-            elif "i" in filterid: final_filter_name = "SDSS.i"
-            elif "z" in filterid: final_filter_name = "SDSS.z"
+            if "sdss u" in filterid: final_filter_name = "SDSS.u"
+            elif "sdss g" in filterid: final_filter_name = "SDSS.g"
+            elif "sdss r" in filterid: final_filter_name = "SDSS.r"
+            elif "sdss i" in filterid: final_filter_name = "SDSS.i"
+            elif "sdss z" in filterid: final_filter_name = "SDSS.z"
             else: log.warning("Could not determine which SDSS filter was used for this image")
 
     # R band // not good; H alpha image was also identified as R band ...

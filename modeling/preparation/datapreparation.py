@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import urllib
 
 # Import astronomical modules
 from astropy import units as u
@@ -101,6 +102,10 @@ calibration_errors = {"GALEX FUV": "0.05 mag",
                       "SPIRE PSW": "4%",
                       "SPIRE PMW": "4%",
                       "SPIRE PLW": "4%"}
+
+# -----------------------------------------------------------------
+
+aniano_link = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012_May/Kernels_fits_Files/Hi_Resolution/"
 
 # -----------------------------------------------------------------
 
@@ -366,8 +371,11 @@ class DataPreparer(ModelingComponent):
                 # Set the path to the convolution kernel
                 this_aniano_name = aniano_names[image.name]
                 reference_aniano_name = aniano_names[self.config.reference_image]
-                kernel_path = os.path.join(self.kernels_path, "Kernel_HiRes_" + this_aniano_name + "_to_" + reference_aniano_name + ".fits")
-                self.image_preparer.config.convolution.kernel_path = kernel_path
+                kernel_file_basename = "Kernel_HiRes_" + this_aniano_name + "_to_" + reference_aniano_name
+                kernel_file_path = os.path.join(self.kernels_path, kernel_file_basename + ".fits")
+                # Download the kernel if it is not present
+                if not filesystem.is_file(kernel_file_path): download_kernel(kernel_file_basename, self.kernels_path)
+                self.image_preparer.config.convolution.kernel_path = kernel_file_path
 
                 # Set flags to True
                 self.image_preparer.config.rebin = True
@@ -399,5 +407,40 @@ class DataPreparer(ModelingComponent):
 
             # Clear the image preparer
             self.image_preparer.clear()
+
+# -----------------------------------------------------------------
+
+def download_kernel(kernel_basename, kernels_path):
+
+    """
+    This function ...
+    :param kernel_name:
+    :param kernels_path:
+    :return:
+    """
+
+    kernel_fitsname = kernel_basename + ".fits"
+    kernel_gzname = kernel_basename + ".fits.gz"
+
+    kernel_link = aniano_link + kernel_gzname
+
+    gz_path = os.path.join(kernels_path, kernel_gzname)
+    fits_path = os.path.join(kernels_path, kernel_fitsname)
+
+    log.info("Downloading kernel " + kernel_basename + " from " + kernels_path + " ...")
+
+    urllib.urlretrieve(kernel_link, gz_path)
+
+    log.info("Unzipping kernel ...")
+
+    # Unzip the kernel FITS file
+    import gzip
+    import shutil
+    with gzip.open(gz_path, 'rb') as f_in:
+        with open(fits_path, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+
+    # Remove the fits.gz file
+    filesystem.remove_file(gz_path)
 
 # -----------------------------------------------------------------

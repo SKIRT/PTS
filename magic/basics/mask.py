@@ -127,6 +127,19 @@ class Mask(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
+    def is_zero_or_less(cls, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        return cls(frame <= 0.0)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def empty_like(cls, frame):
 
         """

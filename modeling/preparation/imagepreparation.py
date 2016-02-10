@@ -64,31 +64,31 @@ class ImagePreparer(Configurable):
         # 1. Call the setup function
         self.setup(image)
 
-        # 2. ..
+        # 2. Calculate the calibration uncertainties
         self.calculate_calibration_uncertainties()
 
         # 3. Extract stars and galaxies from the image
         if self.config.extract_sources: self.extract_sources()
 
-        # 5. If requested, correct for galactic extinction
+        # 4. If requested, correct for galactic extinction
         if self.config.correct_for_extinction: self.correct_for_extinction()
 
-        # 6. If requested, convert the unit
+        # 5. If requested, convert the unit
         if self.config.convert_unit: self.convert_unit()
 
-        # 7. If requested, convolve
+        # 6. If requested, convolve
         #if self.config.convolve: self.convolve()
 
-        # 8. If requested, rebin
+        # 7. If requested, rebin
         if self.config.rebin: self.rebin()
 
-        # 4. If requested, subtract the sky
+        # 8. If requested, subtract the sky
         if self.config.subtract_sky: self.subtract_sky()
 
         # 9. If requested, set the uncertainties
         if self.config.set_uncertainties: self.set_uncertainties()
 
-        # 10. If requested, crop
+        # 10. If requested, crop to a smaller coordinate grid
         if self.config.crop: self.crop()
 
         # Writing
@@ -139,17 +139,21 @@ class ImagePreparer(Configurable):
 
         from . import unitconversion
 
+        jansky_frame = None
+        invalid = None
+        ab_frame = None
+
         # GALEX images
         if "GALEX" in self.image.filter.name:
 
             #FUV: mAB = -2.5 x log10(CPS) + 18.82
             #NUV: mAB = -2.5 x log10(CPS) + 20.08
-            zeros = Mask.is_zero(self.image.frames.primary)
+            invalid = Mask.is_zero_or_less(self.image.frames.primary)
             magnitude_term = {"GALEX FUV": 18.82, "GALEX NUV": 20.08}
             ab_frame = -2.5 * np.log10(self.image.frames.primary) + magnitude_term[self.image.name]
 
             # Set infinites to zero
-            ab_frame[zeros] = 0.0
+            ab_frame[invalid] = 0.0
 
             # Calculate data in Jansky
             jansky_frame = unitconversion.ab_mag_zero_point.to("Jy").value * np.power(10.0, -2./5. * ab_frame)
@@ -167,25 +171,22 @@ class ImagePreparer(Configurable):
 
             jansky_frame = self.image.frames.primary * to_jy_conversion_factor
 
-            zeros = Mask.is_zero(jansky_frame)
+            # Pixels that are zero or less cannot be converted into magnitude scale
+            invalid = Mask.is_zero_or_less(jansky_frame)
             ab_frame = -5./2. * np.log10(jansky_frame / unitconversion.ab_mag_zero_point.to("Jy").value)
 
             # Set infinites to zero
-            ab_frame[zeros] = 0.0
+            ab_frame[invalid] = 0.0
 
             # Add the frame with AB magnitudes and the mask with zeros
             #self.image.add_mask(zeros, "zeros")
             #self.image.add_frame(ab_frame, "abmag")
 
-        # Do not calculate the AB magnitude for other images
-        else:
-
-            janksy_frame = None
-            zeros = None
-            ab_frame = None
-
         # Add the calibration uncertainty
         if "mag" in self.config.uncertainties.calibration_error:
+
+            # Check that the frame has been calculated in Janskys
+            assert jansky_frame is not None
 
             # The calibration uncertainty in AB magnitude
             mag_error = float(self.config.uncertainties.calibration_error.split("mag")[0])
@@ -201,25 +202,22 @@ class ImagePreparer(Configurable):
             b = unitconversion.ab_mag_zero_point.to("Jy").value * np.power(10.0, -2./5.*b)
 
             # c = a[Jy] - image[Jy]
-            c = a - janksy_frame
+            c = a - jansky_frame
 
             # d = image[Jy] - b[Jy]
             d = jansky_frame - b
 
             # Calibration errors = max(c, d)
-            calibration_errors = Frame(np.zeros(self.image.shape))
-            for x in self.image.xsize:
-                for y in self.image.ysize:
-                    calibration_errors = max(c[y,x], d[y,x])
-            calibration_errors[zeros] = 0.0 # set zero where AB magnitude could not be calculated
+            calibration_errors = np.maximum(c, d)  # element-wise maxima
+            calibration_errors[invalid] = 0.0 # set zero where AB magnitude could not be calculated
 
             ## CONVERT THE CALIBRATION ERRORS TO MJY/SR !! --> NO, TO THE ORIGINAL UNIT OF THE DATA
 
-            relative_calibration_errors = calibration_errors / janksy_frame
-            relative_calibration_errors[zeros] = 0.0
+            relative_calibration_errors = calibration_errors / jansky_frame
+            relative_calibration_errors[invalid] = 0.0
 
             # Check that there are no infinities or nans in the result
-            assert np.any(np.isinf(relative_calibration_errors)) and not np.any(np.isnan(relative_calibration_errors))
+            assert not np.any(np.isinf(relative_calibration_errors)) and not np.any(np.isnan(relative_calibration_errors))
 
             # The actual calibration errors in the same unit as the data
             calibration_frame = self.image.frames.primary * relative_calibration_errors
