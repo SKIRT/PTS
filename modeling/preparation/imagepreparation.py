@@ -77,7 +77,7 @@ class ImagePreparer(Configurable):
         if self.config.convert_unit: self.convert_unit()
 
         # 7. If requested, convolve
-        if self.config.convolve: self.convolve()
+        #if self.config.convolve: self.convolve()
 
         # 8. If requested, rebin
         if self.config.rebin: self.rebin()

@@ -116,8 +116,8 @@ def get_pixelscale(header):
                 try: unit2 = u.Unit(unit2)
                 except ValueError: unit2 = None
 
-            log.debug("pixelscale found in PXSCAL1 and PXSCAL2 keywords = (", scale1, scale2, ")")
-            log.debug("unit for the pixelscale = (", unit1, unit2, ")")
+            log.debug("pixelscale found in PXSCAL1 and PXSCAL2 keywords = (" + str(scale1) + "," +str(scale2) + ")")
+            log.debug("unit for the pixelscale = (" + str(unit1) + "," + str(unit2) + ")")
 
             # If no unit is found, guess that it's arcseconds / pixel ...
             if unit1 is None: unit1 = u.Unit("arcsec/pix")
@@ -172,9 +172,9 @@ def get_filter(name, header=None):
         else: wavelength = None
 
     # Debug information
-    log.debug("filterid =", filterid)
-    log.debug("channel =", channel)
-    log.debug("wavelength =", wavelength)
+    log.debug("filterid = " + str(filterid))
+    log.debug("channel = " + str(channel))
+    log.debug("wavelength = " + str(wavelength))
 
     final_filter_name = None
 

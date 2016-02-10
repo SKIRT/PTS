@@ -379,7 +379,7 @@ class DataPreparer(ModelingComponent):
                 log.debug("The " + image.name + " image has already been sky subtracted")
                 self.image_preparer.config.sky_subtraction.subtract = False
 
-            else: self.image.preparer.config.sky_subtraction.subtract = True
+            else: self.image_preparer.config.sky_subtraction.subtract = True # Has yet to be sky subtracted
 
             # Set the path to the noise region
             self.image_preparer.config.uncertainties.calibration_error = calibration_errors[image.name]
