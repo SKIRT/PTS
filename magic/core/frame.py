@@ -426,6 +426,16 @@ class Frame(np.ndarray):
         new_wcs.wcs.crpix[0] -= x_min
         new_wcs.wcs.crpix[1] -= y_min
 
+        # Change the number of pixels
+        new_wcs.naxis1 = x_max - x_min
+        new_wcs.naxis2 = y_max - y_min
+
+        new_wcs._naxis1 = new_wcs.naxis1
+        new_wcs._naxis2 = new_wcs.naxis2
+
+        # Check shape of data
+        assert data.shape[1] == (x_max - x_min) and data.shape[0] == (y_max - y_min)
+
         # Return the cropped frame
         return Frame(data, new_wcs, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
 

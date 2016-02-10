@@ -161,13 +161,13 @@ class UnitConverter(Configurable):
         # Apply a specific conversion for each instrument
         if "GALEX" in self.image.filter.name: self.convert_galex()
         elif "SDSS" in self.image.filter.name: self.convert_sdss()
-        elif "Ha" in self.image.filter.name: self.convert_ha()
+        elif "656_1" in self.image.filter.name: self.convert_ha()
         elif "2MASS" in self.image.filter.name: self.convert_2mass()
         elif "IRAC" in self.image.filter.name: self.convert_irac()
         elif "WISE" in self.image.filter.name: self.convert_wise()
         elif "Pacs" in self.image.filter.name: self.convert_pacs()
         elif "SPIRE" in self.image.filter.name: self.convert_spire()
-        else: raise ValueError("Unkown image: " + self.image.name)
+        else: raise ValueError("Unknown image: " + self.image.name)
 
     # -----------------------------------------------------------------
 
