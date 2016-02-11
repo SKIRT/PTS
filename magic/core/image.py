@@ -476,7 +476,8 @@ class Image(object):
             data = transformations.new_align_and_rebin(self.masks[mask_name].astype(float), original_wcs, reference_wcs)
 
             # Return the rebinned mask
-            self.masks[mask_name] = Mask(data > 0.5, self.masks[mask_name].selected, self.masks[mask_name].description)
+            # data, name, description
+            self.masks[mask_name] = Mask(data > 0.5, name=self.masks[mask_name].name, description=self.masks[mask_name].description)
 
     # -----------------------------------------------------------------
 

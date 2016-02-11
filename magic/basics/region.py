@@ -425,9 +425,6 @@ class Region(pyregion.ShapeList):
         # Call the ShapeList constructor
         super(Region, self).__init__()
 
-        # Set as unselected initially
-        self.selected = False
-
     # -----------------------------------------------------------------
 
     @classmethod
@@ -446,9 +443,6 @@ class Region(pyregion.ShapeList):
 
         # Change the class name of the ShapeList instance to our own Region class
         region.__class__ = cls
-
-        # Set the attributes that are added in the Region subclass
-        region.selected = False
 
         # Return the Region object
         return region

@@ -12,6 +12,9 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import astronomical modules
 from astropy import wcs
 from astropy.wcs import utils
@@ -86,6 +89,29 @@ class CoordinateSystem(wcs.WCS):
 
         # Return the pixel scale as an extent
         return Extent(x_pixelscale, y_pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xy_average_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pixelscale = self.pixelscale
+
+        x_pixelscale = abs(pixelscale.x.to("arcsec/pix"))
+        y_pixelscale = abs(pixelscale.y.to("arcsec/pix"))
+
+        if not np.isclose(x_pixelscale.value, y_pixelscale.value, rtol=0.0005):
+            print("WARNING: averaging the pixelscale over the x and y direction may not be a good approximation:")
+            print("          x pixelscale (absolute value) =", x_pixelscale)
+            print("          y pixelscale (absolute value) =", y_pixelscale)
+
+        # Return a single value for the pixelscale in arcseconds
+        return 0.5 * (x_pixelscale + y_pixelscale)
 
     # -----------------------------------------------------------------
 

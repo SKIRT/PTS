@@ -22,7 +22,7 @@ from astropy.io import fits
 from photutils import detect_sources
 
 # Function to create mask from ellipse
-from photutils.geometry import elliptical_overlap_grid
+from photutils.geometry import elliptical_overlap_grid, circular_overlap_grid, rectangular_overlap_grid
 
 # Import the relevant AstroMagic classes and modules
 from .vector import Extent, Position
@@ -305,6 +305,57 @@ class Mask(np.ndarray):
         #    If ``use_exact`` is 0, each pixel is resampled by this factor in each
         #    dimension. Thus, each pixel is divided into ``subpixels ** 2``
         #    subpixels.
+
+        return cls(fraction)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_circle(cls, x_size, y_size, circle):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :param circle:
+        :return:
+        """
+
+        rel_center = circle.center
+
+        x_min = - rel_center.x
+        x_max = x_size - rel_center.x
+        y_min = - rel_center.y
+        y_max = y_size - rel_center.y
+
+        fraction = circular_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, circle.radius, use_exact=0, subpixels=1)
+
+        return cls(fraction)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def new_from_rectangle(cls, x_size, y_size, rectangle):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :param rectangle:
+        :return:
+        """
+
+        rel_center = rectangle.center
+
+        x_min = - rel_center.x
+        x_max = x_size - rel_center.x
+        y_min = - rel_center.y
+        y_max = y_size - rel_center.y
+
+        width = 2. * rectangle.radius.x
+        height = 2. * rectangle.radius.y
+
+        fraction = rectangular_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, width, height, use_exact=0, subpixels=1)
 
         return cls(fraction)
 
