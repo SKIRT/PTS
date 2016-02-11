@@ -38,19 +38,18 @@ class Mask(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def __new__(cls, data, selected=False, description=None):
+    def __new__(cls, data, name=None, description=None):
 
         """
         This function ...
         :param cls:
         :param data:
-        :param selected:
         :param description:
         :return:
         """
 
         obj = np.asarray(data, dtype=bool).view(cls)
-        obj.selected = selected
+        obj.name = name
         obj.description = description
 
         return obj
@@ -174,7 +173,7 @@ class Mask(np.ndarray):
         """
 
         if obj is None: return
-        self.selected = getattr(obj, 'selected', False)
+        self.name = getattr(obj, 'name', None)
         self.description = getattr(obj, 'description', None)
 
     # -----------------------------------------------------------------
@@ -397,7 +396,8 @@ class Mask(np.ndarray):
         data = ndimage.binary_dilation(self, structure, iterations)
 
         # Return the dilated mask
-        return Mask(data, self.selected, self.description)
+        #data, name=None, description=None
+        return Mask(data, name=self.name, description=self.description)
 
     # -----------------------------------------------------------------
 
@@ -413,7 +413,8 @@ class Mask(np.ndarray):
         data = ndimage.binary_dilation(self, structure, iterations)
 
         # Return the dilated mask
-        return Mask(data)
+        #data, name=None, description=None
+        return Mask(data, name=self.name, description=self.description)
 
     # -----------------------------------------------------------------
 
@@ -437,7 +438,8 @@ class Mask(np.ndarray):
             print(structure)
 
         # Reassign this object
-        return Mask(data, self.selected, self.description)
+        #data, name=None, description=None
+        return Mask(data, name=self.name, description=self.description)
 
     # -----------------------------------------------------------------
 
@@ -451,7 +453,8 @@ class Mask(np.ndarray):
         data = ndimage.binary_opening(self, structure, iterations)
 
         # Return the new mask
-        return Mask(data)
+        #data, name=None, description=None
+        return Mask(data, name=self.name, description=self.description)
 
     # -----------------------------------------------------------------
 
@@ -466,38 +469,8 @@ class Mask(np.ndarray):
         data = ndimage.binary_closing(self, structure, iterations)
 
         # Return the new mask
-        return Mask(data)
-
-    # -----------------------------------------------------------------
-
-    def expanded(self, factor):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # TODO: use radius from aperture of mask (application: saturation)?
-        radius = 0.5*self.xsize
-
-        #structure = np.array([[False, True, True, True, False],
-        #                      [True, True, True, True, True],
-        #                      [True, True, True, True, True],
-        #                      [True, True, True, True, True],
-        #                      [False, True, True, True, False]])
-
-
-        extra_pixels = radius * (factor - 1.0)
-
-        iterations = int(round(extra_pixels/4.0))
-
-        print("Factor = " + str(factor))
-        print("number of iterations = " + str(iterations))
-
-        disk_structure = morphology.disk(4)
-
-        if iterations < 1: return self
-        else: return self.dilated(disk_structure, iterations=iterations)
+        #data, name=None, description=None
+        return Mask(data, name=self.name, description=self.description)
 
     # -----------------------------------------------------------------
 
@@ -524,18 +497,19 @@ class Mask(np.ndarray):
         label = segments[int(0.5*segments.shape[0]), int(0.5*segments.shape[1])]
 
         # Return the new mask with the appendages removed
-        return Mask((segments == label))
+        #data, name=None, description=None
+        return Mask((segments == label), name=self.name, description=self.description)
 
     # -----------------------------------------------------------------
 
-    def apply(self, frame, fill=0.0):
+    def apply(self, frame, fill_value=0.0):
 
         """
         This function ...
         """
 
         # Replace the masked pixel values with the given fill value
-        frame[self] = fill
+        frame[self] = fill_value
 
     # -----------------------------------------------------------------
 
@@ -554,8 +528,7 @@ class Mask(np.ndarray):
 
         """
         This function ...
-        :param mask_a:
-        :param mask_b:
+        :param mask:
         :return:
         """
 
@@ -646,6 +619,7 @@ class Mask(np.ndarray):
 
         """
         This function ...
+        :param position:
         """
 
         # Calculate x and y of the pixel corresponding to the object's position

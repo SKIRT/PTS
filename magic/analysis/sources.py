@@ -601,17 +601,6 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         # Show a plot for debugging
         if config.debug.dilated or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Dilated mask")
 
-        # -- Expansion --
-
-        # Expand the mask if requested
-        if config.user_expansion:
-
-            if special: log.debug("expanding the mask")
-            source.mask = mask.expanded(config.user_expansion_factor)
-
-        # Show a plot for debugging
-        if config.debug.user_expansion or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="User-expanded mask")
-
         # -- Final source --
 
         # Inform the user

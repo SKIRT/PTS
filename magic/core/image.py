@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import copy
 
 # Import astronomical modules
 import aplpy
@@ -26,7 +25,7 @@ from astropy import units as u
 # Import the relevant AstroMagic classes and modules
 from ..basics import Layers, Region, Mask, CoordinateSystem
 from .frame import Frame
-from ..tools import headers, fitting, plotting, statistics, catalogs, transformations
+from ..tools import headers, transformations
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
@@ -37,11 +36,11 @@ class Image(object):
     This class ...
     """
 
-    def __init__(self, name):
+    def __init__(self, name="untitled"):
 
         """
         The constructor ...
-        :param filepath:
+        :param name:
         :return:
         """
 
@@ -71,6 +70,9 @@ class Image(object):
         """
         This function ...
         :param path:
+        :param name:
+        :param always_call_first_primary:
+        :param hdulist_index:
         :return:
         """
 
@@ -88,34 +90,6 @@ class Image(object):
 
         # Return the image
         return image
-
-    # -----------------------------------------------------------------
-
-    def select_all(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Select all frames, regions and masks
-        self.frames.select_all()
-        self.regions.select_all()
-        self.masks.select_all()
-
-    # -----------------------------------------------------------------
-
-    def deselect_all(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Deselect all frames, regions and masks
-        self.frames.deselect_all()
-        self.regions.deselect_all()
-        self.masks.deselect_all()
 
     # -----------------------------------------------------------------
 
@@ -250,10 +224,10 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path=None, add_metadata=False, origin=None):
+    def save(self, path=None, add_metadata=False, origin=None, add_masks=True):
 
         """
-        This function exports the currently selected frame(s) as a datacube into FITS file
+        This function exports the image (frames and masks) as a datacube into FITS file.
         :param path:
         :return:
         """
@@ -287,20 +261,23 @@ class Image(object):
             # Increment the plane index
             plane_index += 1
 
-        # Export all masks to the specified file
-        for mask_name in self.masks:
+        # Add the masks
+        if add_masks:
 
-            # Inform the user that this mask will be saved to the image file
-            log.info("Exporting the " + mask_name + " mask to " + path)
+            # Export all masks to the specified file
+            for mask_name in self.masks:
 
-            # Add this mask to the data cube
-            datacube.append(self.masks[mask_name].astype(int))
+                # Inform the user that this mask will be saved to the image file
+                log.info("Exporting the " + mask_name + " mask to " + path)
 
-            # Add the name of the mask to the header
-            header["PLANE" + str(plane_index)] = mask_name + " [mask]"
+                # Add this mask to the data cube
+                datacube.append(self.masks[mask_name].astype(int))
 
-            # Increment the plane index
-            plane_index += 1
+                # Add the name of the mask to the header
+                header["PLANE" + str(plane_index)] = mask_name + " [mask]"
+
+                # Increment the plane index
+                plane_index += 1
 
         # Add the meta information to the header
         if add_metadata:
@@ -348,25 +325,6 @@ class Image(object):
 
         # Add the region to the set of regions
         self.add_region(region, name, overwrite)
-
-    # -----------------------------------------------------------------
-
-    def export_region(self, path):
-
-        """
-        This function exports the currently selected region(s) to a DS9 region file
-        :param path:
-        :return:
-        """
-
-        # Find the active region
-        region = self.regions.get_selected(require_single=True)
-
-        # Inform the user
-        log.info("Creating " + path + " from the " + region + " region")
-
-        # Write the region file
-        self.regions[region].region.write(path)
 
     # -----------------------------------------------------------------
 
@@ -421,8 +379,8 @@ class Image(object):
         This function ...
         """
 
-        # Loop over all currently selected frames
-        for frame_name in self.frames.get_selected():
+        # Loop over all frames
+        for frame_name in self.frames:
 
             # Inform the user
             log.info("Setting the unit of the " + frame_name + " frame to " + str(unit))
@@ -442,8 +400,8 @@ class Image(object):
 
         self._fwhm = fwhm
 
-        # Loop over all currently selected frames
-        for frame_name in self.frames.get_selected():
+        # Loop over all frames
+        for frame_name in self.frames:
 
             # Inform the user
             log.info("Setting the FWHM of the " + frame_name + " frame to " + str(fwhm))
@@ -457,10 +415,11 @@ class Image(object):
 
         """
         This function ...
+        :param unit:
         """
 
-        # Loop over all currently selected frames
-        for frame_name in self.frames.get_selected():
+        # Loop over all frames
+        for frame_name in self.frames:
 
             # Inform the user
             log.info("Converting the unit of the " + frame_name + " frame to " + str(unit))
@@ -474,6 +433,7 @@ class Image(object):
 
         """
         This function ...
+        :param kernel:
         """
 
         # Loop over all currently selected frames
@@ -524,16 +484,29 @@ class Image(object):
 
         """
         This function ...
+        :param x_min:
+        :param x_max:
+        :param y_min:
+        :param y_max:
         """
 
         # Loop over all currently selected frames
-        for frame_name in self.frames.get_selected():
+        for frame_name in self.frames:
 
             # Inform the user
             log.info("Cropping the " + frame_name + " frame")
 
             # Rebin this frame
             self.frames[frame_name] = self.frames[frame_name].crop(x_min, x_max, y_min, y_max)
+
+        # Loop over all masks
+        for mask_name in self.masks:
+
+            # Inform the user
+            log.info("Cropping the " + mask_name + " mask")
+
+            # Rebin this mask
+            self.masks[mask_name] = self.masks[mask_name][y_min:y_max, x_min:x_max]
 
     # -----------------------------------------------------------------
 
@@ -621,116 +594,51 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def delete_frames(self):
+    def delete_frame(self, frame_name):
 
         """
-        This function removes the currently selected frame(s)
+        This function removes the specified frame
+        :param frame_name:
         :return:
         """
 
-        # For each active frame
-        for frame_name in self.frames.get_selected(allow_none=False):
+        # Inform the user
+        log.info("Deleting the " + frame_name + " frame ...")
 
-            # Inform the user
-            log.info("Deleting the " + frame_name + " frame")
-
-            # Remove this frame from the frames dictionary
-            del self.frames[frame_name]
+        # Remove this frame from the frames dictionary
+        del self.frames[frame_name]
 
     # -----------------------------------------------------------------
 
-    def copy_frames(self):
+    def delete_region(self, region_name):
 
         """
-        This function ...
+        This function removes the specified region
+        :param region_name:
         :return:
         """
 
-        # For each selected frame
-        for frame_name in self.frames.get_selected(allow_none=False):
+        # Inform the user
+        log.info("Deleting the " + region_name + " region ...")
 
-            # Inform the user
-            log.info("Copying the " + frame_name + " frame as another frame")
-
-            # Copy the data and add it as a new frame
-            data_copy = copy.deepcopy(self.frames[frame_name])
-            #coordinates = self.frames[frame_name].coordinates
-
-            data_copy.description = "Copy of the "+frame_name+" frame"
-
-            self.add_frame(data_copy, frame_name+"_copy")
+        # Remove this region from the regions dictionary
+        del self.regions[region_name]
 
     # -----------------------------------------------------------------
 
-    def delete_regions(self):
+    def delete_mask(self, mask_name):
 
         """
-        This function removes the currently selected region(s)
+        This function removes the specified mask
+        :param mask_name:
         :return:
         """
 
-        # For each active region
-        for region_name in self.regions.get_selected(allow_none=False):
+        # Inform the user
+        log.info("Deleting the " + mask_name + " mask ...")
 
-            # Inform the user
-            log.info("Deleting the " + region_name + " region")
-
-            # Remove this region from the regions dictionary
-            del self.regions[region_name]
-
-    # -----------------------------------------------------------------
-
-    def delete_masks(self):
-
-        """
-        This function removes the currently selected mask(s)
-        :return:
-        """
-
-        # For each active mask
-        for mask_name in self.masks.get_selected(allow_none=False):
-
-            # Inform the user
-            log.info("Deleting the " + mask_name + " mask")
-
-            # Remove this mask from the masks dictionary
-            del self.masks[mask_name]
-
-    # -----------------------------------------------------------------
-
-    def apply_masks(self, fill=0.0):
-
-        """
-        This function ...
-        :param fill:
-        :return:
-        """
-
-        # Loop over all selected frames
-        for frame_name in self.frames.get_selected(allow_none=False):
-
-            # Loop over all selected masks
-            for mask_name in self.masks.get_selected(allow_none=False):
-
-                # Inform the user
-                log.info("Applying the " + mask_name + " mask to the " + frame_name + " frame")
-
-                # Apply the mask
-                self.masks[mask_name].apply(self.frames[frame_name], fill)
-
-    # -----------------------------------------------------------------
-
-    def combine_masks(self, name=None, allow_none=True, return_mask=False):
-
-        """
-        This function ...
-        :param name:
-        :param allow_none:
-        :return:
-        """
-
-        # TODO: rewrite this function
-        pass
+        # Remove this mask from the masks dictionary
+        del self.masks[mask_name]
 
     # -----------------------------------------------------------------
 
@@ -738,7 +646,7 @@ class Image(object):
 
         """
         This function ...
-        :param other:
+        :param factor:
         :return:
         """
 
@@ -753,6 +661,18 @@ class Image(object):
 
         # Return a reference to this instance
         return self
+
+    # -----------------------------------------------------------------
+
+    def __itruediv__(self, factor):
+
+        """
+        This function ...
+        :param factor:
+        :return:
+        """
+
+        return self.__idiv__(factor)
 
     # -----------------------------------------------------------------
 
@@ -778,109 +698,45 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def create_mask(self, return_mask=False):
-
-        """
-        This function creates a mask from the currently selected region(s)
-        :return:
-        """
-
-        # TODO: rewrite this function
-        pass
-
-    # -----------------------------------------------------------------
-
-    def get_galactic_extinction(self, galaxy_name):
-
-        """
-        This function ...
-        """
-
-        return catalogs.fetch_galactic_extinction(galaxy_name, self.filter)
-
-    # -----------------------------------------------------------------
-
-    def rename_region(self, name):
-
-        """
-        This function renames a region
-        :param name:
-        :return:
-        """
-
-        # Get the name of the currently selected region
-        region_name = self.regions.get_selected(require_single=True)
-
-        # Remove the region of the dictionary of regions and re-add it under a different key
-        self.regions[name] = self.regions.pop(region_name)
-
-    # -----------------------------------------------------------------
-
-    def rename_frame(self, name):
+    def rename_frame(self, old_name, new_name):
 
         """
         This function renames a frame
-        :param name:
+        :param old_name:
+        :param new_name:
         :return:
         """
 
-        # Get the name of the currently selected frame
-        frame_name = self.frames.get_selected(require_single=True)
-
         # Remove the frame from the dictionary of frames and re-add it under a different key
-        self.frames[name] = self.frames.pop(frame_name)
+        self.frames[new_name] = self.frames.pop(old_name)
 
     # -----------------------------------------------------------------
 
-    def rename_mask(self, name):
+    def rename_region(self, old_name, new_name):
+
+        """
+        This function renames a region
+        :param old_name:
+        :param new_name:
+        :return:
+        """
+
+        # Remove the region of the dictionary of regions and re-add it under a different key
+        self.regions[new_name] = self.regions.pop(old_name)
+
+    # -----------------------------------------------------------------
+
+    def rename_mask(self, old_name, new_name):
 
         """
         This function ...
-        :param name:
+        :param old_name:
+        :param new_name:
         :return:
         """
-
-        # Get the name of the currently selected mask
-        mask_name = self.masks.get_selected(require_single=True)
 
         # Remove the mask from the dictionary of masks and re-add it under a different key
-        self.masks[name] = self.masks.pop(mask_name)
-
-    # -----------------------------------------------------------------
-
-    def fit_polynomial(self, plot=False, degree=3, sigma_clipping=True):
-
-        """
-        This function fits a polynomial function to each of the currently active frames
-        :param plot:
-        :param upsample_factor:
-        :return:
-        """
-
-        # Get the currently active mask
-        total_mask = self.combine_masks(return_mask=True)
-
-        # For each currently active frame
-        for frame_name in self.frames.get_selected(allow_none=False):
-
-            # Inform the user
-            log.info("Fitting a polynomial function to the " + frame_name + " frame")
-
-            if sigma_clipping: new_mask = statistics.sigma_clip_mask(self.frames[frame_name], mask=total_mask)
-            else: new_mask = total_mask
-
-            # Fit the model
-            polynomial = fitting.fit_polynomial(self.frames[frame_name], mask=new_mask, degree=degree)
-
-            # Plot the difference between the data and the model, if requested
-            if plot: plotting.plot_difference_model(self.frames[frame_name], polynomial)
-
-            # Evaluate the model
-            evaluated = fitting.evaluate_model(polynomial, 0, self.frames[frame_name].xsize, 0, self.frames[frame_name].ysize)
-
-            # Add the evaluated model as a new frame
-            description = "A polynomial fit to the " + frame_name + " primary frame"
-            self.add_frame(Frame(evaluated, self.frames[frame_name].coordinates, description), frame_name+"_polynomial")
+        self.masks[new_name] = self.masks.pop(old_name)
 
     # -----------------------------------------------------------------
 
@@ -894,6 +750,7 @@ class Image(object):
         :param description:
         :param always_call_first_primary:
         :param rebin_to_wcs:
+        :param hdulist_index:
         :return:
         """
 
@@ -969,16 +826,24 @@ class Image(object):
                 # Add this frame to the frames dictionary
                 if plane_type == "frame":
 
-                    self.add_frame(Frame(hdu.data[i], wcs, description, False, unit, name, filter, subtracted, zero_point), name)
+                    # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+                    frame = Frame(hdu.data[i],
+                                  wcs=wcs,
+                                  name=name,
+                                  description=description,
+                                  unit=unit,
+                                  zero_point=zero_point,
+                                  filter=filter,
+                                  sky_subtracted=subtracted)
+                    self.add_frame(frame, name)
 
                 elif plane_type == "mask":
 
-                    self.add_mask(Mask(hdu.data[i], False, description), name)
+                    #data, name=None, description=None
+                    mask = Mask(hdu.data[i], name=name, description=description)
+                    self.add_mask(mask, name)
 
                 else: raise ValueError("Unrecognized type (must be frame or mask)")
-
-                # Select the frame if it is the first one (the primary frame)
-                if i == 0: self.frames[name].select()
 
         else:
 
@@ -1011,22 +876,29 @@ class Image(object):
 
             if plane_type == "frame":
 
+                # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+                frame = Frame(hdu.data,
+                              wcs=wcs,
+                              name=name,
+                              description=description,
+                              unit=unit,
+                              zero_point=zero_point,
+                              filter=filter,
+                              sky_subtracted=sky_subtracted)
                 # Add the primary image frame
-                self.add_frame(Frame(hdu.data, wcs, description, False, unit, name, filter, sky_subtracted, zero_point), name)
+                self.add_frame(frame, name)
 
             elif plane_type == "mask":
 
+                #data, name=None, description=None
+                mask = Mask(hdu.data, name=name, description=description)
                 # Add the mask
-                self.add_mask(Mask(hdu.data, False, description), name)
+                self.add_mask(mask, name)
 
             else: raise ValueError("Unrecognized type (must be frame or mask)")
 
-            # Select the frame
-            #self.frames[name].select()
-
         # Add meta information
-        for key in self.original_header:
-            self.metadata[key.lower()] = self.original_header[key]
+        for key in self.original_header: self.metadata[key.lower()] = self.original_header[key]
 
         # Close the FITS file
         hdulist.close()
@@ -1039,6 +911,7 @@ class Image(object):
         This function ...
         :param frame:
         :param name:
+        :param overwrite:
         :return:
         """
 

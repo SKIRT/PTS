@@ -337,6 +337,9 @@ class ImagePreparer(Configurable):
         # Open the kernel frame
         kernel = Frame.from_file(self.config.convolution.kernel_path)
 
+        # Set the kernel FWHM
+        kernel.fwhm = self.config.convolution.kernel_fwhm
+
         # Convolve the image (the primary and errors frame)
         self.image.convolve(kernel)
 

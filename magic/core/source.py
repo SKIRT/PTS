@@ -118,7 +118,7 @@ class Source(object):
         if "radius" in image.metadata: radius = float(image.metadata["radius"])
         elif "radius_x" in image.metadata: radius = Extent(float(image.metadata["radius_x"]), float(image.metadata["radius_y"]))
         else: RuntimeError("Radius information is missing in metadata")
-        angle = Angle(float(image.metadata["angle"]), u.deg)
+        angle = Angle(float(image.metadata["angle"]), u.Unit("deg"))
         factor = float(image.metadata["factor"])
         if "peak_x" in image.metadata: peak = Position(float(image.metadata["peak_x"]), float(image.metadata["peak_y"]))
         else: peak = None

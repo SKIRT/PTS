@@ -256,13 +256,31 @@ class SkySubtractor(Configurable):
         if self.config.estimation.method == "mean":
 
             # Create a frame filled with the mean value
-            self.sky = Frame(np.full(self.image.shape, self.mean), self.image.wcs, "estimated sky", False, self.image.unit)
+            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+            self.sky = Frame(np.full(self.image.shape, self.mean),
+                             wcs=self.image.wcs,
+                             name="sky",
+                             description="estimated sky",
+                             unit=self.image.unit,
+                             zero_point=self.image.frames.primary.zero_point,
+                             filter=self.image.filter,
+                             sky_subtracted=False,
+                             fwhm=self.image.fwhm)
 
         # If the median sky level should be used
         elif self.config.estimation.method == "median":
 
             # Create a frame filled with the median value
-            self.sky = Frame(np.full(self.image.shape, self.median), self.image.wcs, "estimated sky", False, self.image.unit)
+            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+            self.sky = Frame(np.full(self.image.shape, self.median),
+                             wcs=self.image.wcs,
+                             name="sky",
+                             description="estimated sky",
+                             unit=self.image.unit,
+                             zero_point=self.image.frames.primary.zero_point,
+                             filter=self.image.filter,
+                             sky_subtracted=False,
+                             fwhm=self.image.fwhm)
 
         # If the sky should be estimated by using low-resolution interpolation
         elif self.config.estimation.method == "low-res-interpolation":
@@ -271,7 +289,16 @@ class SkySubtractor(Configurable):
             data = interpolation.low_res_interpolation(self.image.frames.primary, self.config.estimation.downsample_factor, self.mask)
 
             # Create sky map
-            self.sky = Frame(data, self.image.wcs, "estimated sky", False, self.image.unit)
+            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+            self.sky = Frame(data,
+                             wcs=self.image.wcs,
+                             name="sky",
+                             description="estimated sky",
+                             unit=self.image.unit,
+                             zero_point=self.image.frames.primary.zero_point,
+                             filter=self.image.filter,
+                             sky_subtracted=False,
+                             fwhm=self.image.fwhm)
 
         # if the sky should be approximated by a polynomial function
         elif self.config.estimation.method == "polynomial":
@@ -284,7 +311,16 @@ class SkySubtractor(Configurable):
             plotting.plot_box(data, title="background")
 
             # Create sky map
-            self.sky = Frame(data, self.image.wcs, "estimated sky", False, self.image.unit)
+            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+            self.sky = Frame(data,
+                             wcs=self.image.wcs,
+                             name="sky",
+                             description="estimated sky",
+                             unit=self.image.unit,
+                             zero_point=self.image.frames.primary.zero_point,
+                             filter=self.image.filter,
+                             sky_subtracted=False,
+                             fwhm=self.image.fwhm)
 
         elif self.config.estimation.method == "photutils":
 
@@ -305,7 +341,16 @@ class SkySubtractor(Configurable):
             print("background rms median = ", bkg.background_rms_median)
 
             # Create sky map
-            self.sky = Frame(bkg.background, self.image.wcs, "estimated sky", False, self.image.unit)
+            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+            self.sky = Frame(bkg.background,
+                             wcs=self.image.wcs,
+                             name="sky",
+                             description="estimated sky",
+                             unit=self.image.unit,
+                             zero_point=self.image.frames.primary.zero_point,
+                             filter=self.image.filter,
+                             sky_subtracted=False,
+                             fwhm=self.image.fwhm)
 
         elif self.config.estimation.method == "hybrid":
 
@@ -319,11 +364,41 @@ class SkySubtractor(Configurable):
             mean_sky = np.ma.mean(masked_background)
             median_sky = np.median(masked_background.compressed())
 
-            self.image.add_frame(Frame(bkg.background, self.image.wcs, "photutils background", False, self.image.unit), "phot_sky")
-            self.image.add_frame(Frame(bkg.background_rms, self.image.wcs, "photutils rms", False, self.image.unit), "phot_rms")
+            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+            phot_sky_frame = Frame(bkg.background,
+                                   wcs=self.image.wcs,
+                                   name="phot_sky",
+                                   description="photutils background",
+                                   unit=self.image.unit,
+                                   zero_point=self.image.frames.primary.zero_point,
+                                   filter=self.image.filter,
+                                   sky_subtracted=False,
+                                   fwhm=self.image.fwhm)
+            self.image.add_frame(phot_sky_frame, "phot_sky")
+
+            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+            phot_rms_frame = Frame(bkg.background_rms,
+                                   wcs=self.image.wcs,
+                                   name="phot_rms",
+                                   description="photutils rms",
+                                   unit=self.image.unit,
+                                   zero_point=self.image.frames.primary.zero_point,
+                                   filter=self.image.filter,
+                                   sky_subtracted=False,
+                                   fwhm=self.image.fwhm)
+            self.image.add_frame(phot_rms_frame, "phot_rms")
 
             # Create sky map of median sky level
-            self.sky = Frame(np.full(self.image.shape, median_sky), self.image.wcs, "estimated sky", False, self.image.unit)
+            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+            self.sky = Frame(np.full(self.image.shape, median_sky),
+                             wcs=self.image.wcs,
+                             name="sky",
+                             description="estimated sky",
+                             unit=self.image.unit,
+                             zero_point=self.image.frames.primary.zero_point,
+                             filter=self.image.filter,
+                             sky_subtracted=False,
+                             fwhm=self.image.fwhm)
 
         # Unkown estimation method
         else: raise ValueError("Unkown sky estimation method")
@@ -414,6 +489,7 @@ class SkySubtractor(Configurable):
 
         """
         This function ...
+        :param header:
         :return:
         """
 

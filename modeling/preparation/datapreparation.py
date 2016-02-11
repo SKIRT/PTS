@@ -134,6 +134,9 @@ class DataPreparer(ModelingComponent):
         # Information about the images
         self.attenuations = dict()
 
+        # The FWHM of the reference image
+        self.reference_fwhm = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -260,6 +263,9 @@ class DataPreparer(ModelingComponent):
             unit = u.Unit(info_table["Unit"][info_index]) if not info_table["Unit"].mask[info_index] else None
             fwhm = info_table["FWHM"][info_index] * u.Unit(info_table["FWHM unit"][info_index]) if not info_table["FWHM"].mask[info_index] else None
 
+            # Set the FWHM of the reference image so that we can set it for the convolution kernel
+            if image_name == self.config.reference_image: self.reference_fwhm = fwhm
+
             # Set the path to the region of bad pixels
             bad_region_path = os.path.join(self.data_path, "bad", image_name + ".reg")
             if not filesystem.is_file(bad_region_path): bad_region_path = None
@@ -273,6 +279,8 @@ class DataPreparer(ModelingComponent):
 
             # Clear the image importer
             self.importer.clear()
+
+        assert self.reference_fwhm is not None
 
     # -----------------------------------------------------------------
 
@@ -416,7 +424,8 @@ class DataPreparer(ModelingComponent):
                 kernel_file_path = os.path.join(self.kernels_path, kernel_file_basename + ".fits")
                 # Download the kernel if it is not present
                 if not filesystem.is_file(kernel_file_path): download_kernel(kernel_file_basename, self.kernels_path)
-                self.image_preparer.config.convolution.kernel_path = kernel_file_path
+                self.image_preparer.config.convolution.kernel_path = kernel_file_path # set kernel path
+                self.image_preparer.config.convolution.kernel_fwhm = self.reference_fwhm # set kernel FWHM (is a quantity here)
 
                 # Set flags to True
                 self.image_preparer.config.rebin = True

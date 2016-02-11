@@ -41,33 +41,39 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def __new__(cls, data, wcs=None, description=None, selected=False, unit=None, name=None, filter=None, sky_subtracted=False, zero_point=None):
+    def __new__(cls, data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None):
 
         """
         This function ...
         :param cls:
         :param data:
         :param wcs:
+        :param name:
+        :param description:
+        :param unit:
+        :param zero_point:
+        :param filter:
+        :param sky_subtracted:
+        :param fwhm:
         :return:
         """
 
         obj = np.asarray(data).view(cls)
         obj.wcs = wcs
         obj.description = description
-        obj.selected = selected
         obj.unit = unit
         obj.name = name
         obj.filter = filter
         obj.sky_subtracted = sky_subtracted
         obj.zero_point = zero_point
-        obj.fwhm = None
+        obj.fwhm = fwhm
 
         return obj
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, index=0, name=None, description=None, plane=None, hdulist_index=0):
+    def from_file(cls, path, index=0, name=None, description=None, plane=None, hdulist_index=0, fwhm=None):
 
         """
         This function ...
@@ -141,7 +147,16 @@ class Frame(np.ndarray):
             if name is None: name = os.path.basename(path[:-5])
 
             # Return the frame
-            return cls(hdu.data[index], wcs, description, False, unit, name, filter, sky_subtracted, zero_point)
+            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+            return cls(hdu.data[index],
+                       wcs=wcs,
+                       name=name,
+                       description=description,
+                       unit=unit,
+                       zero_point=zero_point,
+                       filter=filter,
+                       sky_subtracted=sky_subtracted,
+                       fwhm=fwhm)
 
         else:
 
@@ -152,7 +167,16 @@ class Frame(np.ndarray):
             if name is None: name = os.path.basename(path[:-5])
 
             # Return the frame
-            return cls(hdu.data, wcs, description, False, unit, name, filter, sky_subtracted, zero_point)
+            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+            return cls(hdu.data,
+                       wcs=wcs,
+                       name=name,
+                       description=description,
+                       unit=unit,
+                       zero_point=zero_point,
+                       filter=filter,
+                       sky_subtracted=sky_subtracted,
+                       fwhm=fwhm)
 
     # -----------------------------------------------------------------
 
@@ -214,13 +238,12 @@ class Frame(np.ndarray):
 
         if obj is None: return
         self.wcs = getattr(obj, 'wcs', None)
-        self.description = getattr(obj, 'description', None)
-        self.selected = getattr(obj, 'selected', False)
-        self.unit = getattr(obj, 'unit', None)
         self.name = getattr(obj, 'name', None)
+        self.description = getattr(obj, 'description', None)
+        self.unit = getattr(obj, 'unit', None)
+        self.zero_point = getattr(obj, 'zero_point', None)
         self.filter = getattr(obj, 'filter', None)
         self.sky_subtracted = getattr(obj, 'sky_subtracted', False)
-        self.zero_point = getattr(obj, 'zero_point', None)
         self.fwhm = getattr(obj, 'fwhm', None)
 
     # -----------------------------------------------------------------
@@ -386,6 +409,8 @@ class Frame(np.ndarray):
         :return:
         """
 
+        kernel_fwhm = kernel.fwhm
+
         # Calculate the zooming factor
         factor = (self.xy_average_pixelscale.to("arcsec/pix").value / kernel.xy_average_pixelscale.to("arcsec/pix").value)
 
@@ -396,7 +421,16 @@ class Frame(np.ndarray):
         data = convolve_fft(self, kernel, normalize_kernel=True)
 
         # Return the convolved frame
-        return Frame(data, self.wcs, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+        return Frame(data,
+                     wcs=self.wcs,
+                     name=self.name,
+                     description=self.description,
+                     unit=self.unit,
+                     zero_point=self.zero_point,
+                     filter=self.filter,
+                     sky_subtracted=self.sky_subtracted,
+                     fwhm=kernel_fwhm)
 
     # -----------------------------------------------------------------
 
@@ -412,7 +446,16 @@ class Frame(np.ndarray):
         data = transformations.new_align_and_rebin(self, self.wcs, reference_wcs)
 
         # Return the rebinned frame
-        return Frame(data, reference_wcs, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+        return Frame(data,
+                     wcs=reference_wcs,
+                     name=self.name,
+                     description=self.description,
+                     unit=self.unit,
+                     zero_point=self.zero_point,
+                     filter=self.filter,
+                     sky_subtracted=self.sky_subtracted,
+                     fwhm=self.fwhm)
 
     # -----------------------------------------------------------------
 
@@ -448,7 +491,16 @@ class Frame(np.ndarray):
         assert data.shape[1] == (x_max - x_min) and data.shape[0] == (y_max - y_min)
 
         # Return the cropped frame
-        return Frame(data, new_wcs, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+        return Frame(data,
+                     wcs=new_wcs,
+                     name=self.name,
+                     description=self.description,
+                     unit=self.unit,
+                     zero_point=self.zero_point,
+                     filter=self.filter,
+                     sky_subtracted=self.sky_subtracted,
+                     fwhm=self.fwhm)
 
     # -----------------------------------------------------------------
 
@@ -459,13 +511,22 @@ class Frame(np.ndarray):
         :return:
         """
 
-        # TODO: change the WCS
+        # TODO: change the WCS !!!
 
         # Calculate the downsampled array
         data = ndimage.interpolation.zoom(self, zoom=1.0/factor)
 
         # Return the downsampled frame
-        return Frame(data, None, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+        return Frame(data,
+                     wcs=None,
+                     name=self.name,
+                     description=self.description,
+                     unit=self.unit,
+                     zero_point=self.zero_point,
+                     filter=self.filter,
+                     sky_subtracted=self.sky_subtracted,
+                     fwhm=self.fwhm)
 
     # -----------------------------------------------------------------
 
@@ -483,17 +544,29 @@ class Frame(np.ndarray):
         #new_frame = misc.imrotate(frame, angle, interp="bilinear")
 
         # Convert the wcs to header
-        header = self.wcs.to_header()
+        #header = self.wcs.to_header()
 
         # Rotate the header (Sebastien's script)
-        from ..tools import rotation
-        rotated_header = rotation.rotate_header(header, angle)
+        #from ..tools import rotation
+        #rotated_header = rotation.rotate_header(header, angle)
 
         # Create the new WCS
-        rotated_wcs = CoordinateSystem(rotated_header)
+        #rotated_wcs = CoordinateSystem(rotated_header)
+
+        rotated_wcs = self.wcs.deepcopy()
+        rotated_wcs.rotateCD(angle) # STILL UNTESTED
 
         # Return the rotated frame
-        return Frame(data, rotated_wcs, self.description, self.selected, self.unit)
+        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+        return Frame(data,
+                     wcs=rotated_wcs,
+                     name=self.name,
+                     description=self.description,
+                     unit=self.unit,
+                     zero_point=self.zero_point,
+                     filter=self.filter,
+                     sky_subtracted=self.sky_subtracted,
+                     fwhm=self.fwhm)
 
     # -----------------------------------------------------------------
 
@@ -504,13 +577,22 @@ class Frame(np.ndarray):
         :return:
         """
 
-        # TODO: change the WCS
+        # TODO: change the WCS !!!
 
         # Transform the data
         data = ndimage.interpolation.shift(self, (extent.y, extent.x))
 
         # Return the shifted frame
-        return Frame(data, None, self.description, self.selected, self.unit)
+        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+        return Frame(data,
+                     wcs=None,
+                     name=self.name,
+                     description=self.description,
+                     unit=self.unit,
+                     zero_point=self.zero_point,
+                     filter=self.filter,
+                     sky_subtracted=self.sky_subtracted,
+                     fwhm=self.fwhm)
 
     # -----------------------------------------------------------------
 
@@ -705,7 +787,16 @@ class Frame(np.ndarray):
         data = fitting.evaluate_model(polynomial, 0, self.xsize, 0, self.ysize)
 
         # Return a new Frame
-        return Frame(data, self.wcs, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+        return Frame(data,
+                     wcs=self.wcs,
+                     name=self.name,
+                     description=self.description,
+                     unit=self.unit,
+                     zero_point=self.zero_point,
+                     filter=self.filter,
+                     sky_subtracted=self.sky_subtracted,
+                     fwhm=self.fwhm)
 
     # -----------------------------------------------------------------
 
@@ -732,7 +823,16 @@ class Frame(np.ndarray):
             data = interpolation.in_paint(self, mask)
 
             # Return a new Frame
-            return Frame(data, self.wcs, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+            return Frame(data,
+                         wcs=self.wcs,
+                         name=self.name,
+                         description=self.description,
+                         unit=self.unit,
+                         zero_point=self.zero_point,
+                         filter=self.filter,
+                         sky_subtracted=self.sky_subtracted,
+                         fwhm=self.fwhm)
 
         # Interpolate using inverse distance weighing
         elif method == "idw":
@@ -741,19 +841,28 @@ class Frame(np.ndarray):
             data = interpolation.in_paint(self, mask, method="idw")
 
             # Return a new Frame
-            return Frame(data, self.wcs, self.description, self.selected, self.unit, self.name, self.filter, self.sky_subtracted)
+            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+            return Frame(data,
+                         wcs=self.wcs,
+                         name=self.name,
+                         description=self.description,
+                         unit=self.unit,
+                         zero_point=self.zero_point,
+                         filter=self.filter,
+                         sky_subtracted=self.sky_subtracted,
+                         fwhm=self.fwhm)
 
         # Calculate the mean value of the data
         elif method == "mean":
 
             mean = np.ma.mean(np.ma.masked_array(self, mask=mask))
-            return self.full(mean)
+            return self.fill(mean)
 
         # Calculate the median value of the data
         elif method == "median":
 
-            median = np.ma.median(np.ma.masked_array(self, mask=mask))
-            return self.full(median)
+            median = np.median(np.ma.masked_array(self, mask=mask).compressed())
+            return self.fill(median)
 
         # Invalid option
         else: raise ValueError("Unknown interpolation method")
