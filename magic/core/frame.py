@@ -248,28 +248,6 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def select(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        self.selected = True
-
-    # -----------------------------------------------------------------
-
-    def deselect(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        self.selected = False
-
-    # -----------------------------------------------------------------
-
     @property
     def xsize(self): return self.shape[1]
 

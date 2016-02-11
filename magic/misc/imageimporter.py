@@ -146,9 +146,6 @@ class ImageImporter(Configurable):
         # Load error frame
         self.load_error_frame()
 
-        # Select the appropriate frames
-        self.select_frames()
-
         # Set the image unit and FWHM
         if self.unit is not None: self.image.set_unit(self.unit)
         if self.fwhm is not None: self.image.set_fwhm(self.fwhm)
@@ -210,23 +207,6 @@ class ImageImporter(Configurable):
                                     sky_subtracted=False,
                                     fwhm=self.image.fwhm)
             self.image.add_frame(new_error_frame, "errors")
-
-    # -----------------------------------------------------------------
-
-    def select_frames(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Selecting the appropriate frames ...")
-
-        # Select the primary and errors frame (if present)
-        self.image.deselect_all()
-        self.image.frames.primary.select()
-        if "errors" in self.image.frames: self.image.frames.primary.select()
 
     # -----------------------------------------------------------------
 

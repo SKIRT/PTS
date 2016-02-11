@@ -550,36 +550,4 @@ class Region(pyregion.ShapeList):
         # Create a region and return it
         return pyregion.parse(region_string)
 
-    # -----------------------------------------------------------------
-
-    def select(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        self.selected = True
-
-    # -----------------------------------------------------------------
-
-    def deselect(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        self.selected = False
-
-    # -----------------------------------------------------------------
-
-    def expand(self, factor):
-
-        """
-        This function ...
-        """
-
-        pass
-
 # -----------------------------------------------------------------
