@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
 import numpy as np
 from scipy import ndimage
 
@@ -108,6 +109,16 @@ class Box(np.ndarray):
         y_min = int(round(rectangle.y_min))
         y_max = int(round(rectangle.y_max))
 
+        if x_min == x_max:
+            x_min = int(math.floor(rectangle.x_min))
+            x_max = int(math.ceil(rectangle.x_max))
+        if y_min == y_max:
+            y_min = int(math.floor(rectangle.y_min))
+            y_max = int(math.ceil(rectangle.y_max))
+
+        if x_max - x_min < 2: x_max = x_min + 2
+        if y_max - y_min < 2: y_max = y_min + 2
+
         # Create cutout
         return cls.cutout_limits(frame, x_min, x_max, y_min, y_max, absolute)
 
@@ -118,7 +129,9 @@ class Box(np.ndarray):
 
         """
         This function ...
+        :param frame:
         :param ellipse:
+        :param shape:
         :return:
         """
 

@@ -266,6 +266,8 @@ class Mask(np.ndarray):
 
         """
         This function ...
+        :param x_size:
+        :param y_size:
         :param ellipse:
         :return:
         """

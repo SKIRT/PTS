@@ -87,6 +87,7 @@ def find_contour(box, mask, sigma_level):
 
     # Since there is only one segment in the self.source.mask (the center segment), the props
     # list contains only one entry (one galaxy)
+    if len(props) == 0: return None
     properties = props[0]
 
     # Obtain the position, orientation and extent

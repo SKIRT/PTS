@@ -174,6 +174,9 @@ class SkyObject(object):
 
         """
         This function ...
+        :param frame:
+        :param config:
+        :param saturation:
         :return:
         """
 
@@ -189,6 +192,8 @@ class SkyObject(object):
 
         # Get the aperture
         contour = sources.find_contour(box, mask, config.sigma_level)
+
+        if contour is None: return
 
         # Calculate the difference (in number of pixels) between the aperture center and the position of the sky object
         difference = self.pixel_position(frame.wcs) - contour.center

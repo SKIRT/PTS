@@ -280,6 +280,11 @@ class DataPreparer(ModelingComponent):
             # Clear the image importer
             self.importer.clear()
 
+        if self.reference_fwhm is None:
+
+            reference_index = tables.find_index(info_table, self.config.reference_image)
+            self.reference_fwhm = info_table["FWHM"][reference_index] * u.Unit(info_table["FWHM unit"][reference_index])
+
         assert self.reference_fwhm is not None
 
     # -----------------------------------------------------------------
