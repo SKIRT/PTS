@@ -128,7 +128,7 @@ class SkySubtractor(Configurable):
         self.add_sky_frame()
 
         # Set zero outside
-        self.set_zero_outside()
+        #self.set_zero_outside()
 
         # 5. Write out the results
         self.write()
