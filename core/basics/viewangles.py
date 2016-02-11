@@ -19,7 +19,7 @@ import time
 
 # Use an interactive back-end that supports animation
 import matplotlib
-if matplotlib.get_backend().lower() != "tkagg": matplotlib.use("tkagg")
+if matplotlib.get_backend().lower() != "TkAgg": matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
@@ -78,7 +78,7 @@ class ViewAngles:
         delay = 1. / timeline.getrate()
         for shape,size,viewport,crosshair,upwards,focal in timeline.getframes():
             self.perspective(viewport,crosshair,upwards,focal,size[0])
-            time.sleep(delay)
+            plt.pause(delay)
 
     ## This function closes the figure.
     def close(self):
