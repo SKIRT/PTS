@@ -19,7 +19,7 @@ import time
 
 # Use an interactive back-end that supports animation
 import matplotlib
-if matplotlib.get_backend().lower() != "TkAgg": matplotlib.use("TkAgg")
+if matplotlib.get_backend().lower() != "tkagg": matplotlib.use("tkagg")
 import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
