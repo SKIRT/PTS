@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 # Import the relevant PTS classes and modules
 from ..basics.map import Map
 from .plotter import Plotter
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -79,7 +80,7 @@ class MemoryPlotter(Plotter):
         """
 
         # Inform the user
-        self.log.info("Preparing the input data into plottable format...")
+        log.info("Preparing the input data into plottable format...")
 
         # Get the number of processes
         ranks = np.unique(self.table["Process rank"])
@@ -154,7 +155,7 @@ class MemoryPlotter(Plotter):
         """
 
         # Inform the user
-        self.log.info("Making the plots...")
+        log.info("Making the plots...")
 
         # Make a plot of the memory usage as a function of time
         self.plot_memory()

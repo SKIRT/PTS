@@ -21,6 +21,7 @@ from astropy.io import ascii
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -112,7 +113,7 @@ class Plotter(Configurable):
         super(Plotter, self).setup()
 
         # Inform the user
-        self.log.info("Reading input data...")
+        log.info("Reading input data...")
 
         # If the input is a Table object
         if isinstance(input, Table): self.table = input

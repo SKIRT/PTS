@@ -27,6 +27,7 @@ from ..plot.seds import plotseds
 from ..plot.grids import plotgrids
 from ..plot.rgbimages import makergbimages
 from ..plot.wavemovie import makewavemovie
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -177,7 +178,7 @@ class SimulationAnalyser(Configurable):
         """
 
         # Inform the user
-        self.log.info("Extracting the progress information...")
+        log.info("Extracting the progress information...")
 
         # Determine the path to the progress file
         path = os.path.join(self.simulation.extraction_path, "progress.dat")
@@ -195,7 +196,7 @@ class SimulationAnalyser(Configurable):
         """
 
         # Inform the user
-        self.log.info("Extracting the timeline information...")
+        log.info("Extracting the timeline information...")
 
         # Determine the path to the timeline file
         path = os.path.join(self.simulation.extraction_path, "timeline.dat")
@@ -213,7 +214,7 @@ class SimulationAnalyser(Configurable):
         """
 
         # Inform the user
-        self.log.info("Extracting the memory information...")
+        log.info("Extracting the memory information...")
 
         # Determine the path to the memory file
         path = os.path.join(self.simulation.extraction_path, "memory.dat")
@@ -231,7 +232,7 @@ class SimulationAnalyser(Configurable):
         """
 
         # Inform the user
-        self.log.info("Plotting SEDs...")
+        log.info("Plotting SEDs...")
 
         # Plot the SEDs for the simulation
         plotseds(self.simulation, output_path=self.simulation.plotting_path)
@@ -246,7 +247,7 @@ class SimulationAnalyser(Configurable):
         """
 
         # Inform the user
-        self.log.info("Plotting grids...")
+        log.info("Plotting grids...")
 
         # Plot the dust grid for the simulation
         plotgrids(self.simulation, output_path=self.simulation.plotting_path)
@@ -261,7 +262,7 @@ class SimulationAnalyser(Configurable):
         """
 
         # Inform the user
-        self.log.info("Plotting the progress information...")
+        log.info("Plotting the progress information...")
 
         # Create and run a ProgressPlotter object
         plotter = ProgressPlotter()
@@ -277,7 +278,7 @@ class SimulationAnalyser(Configurable):
         """
 
         # Inform the user
-        self.log.info("Plotting the timeline...")
+        log.info("Plotting the timeline...")
 
         # Create and run a TimeLinePlotter object
         plotter = TimeLinePlotter()
@@ -293,7 +294,7 @@ class SimulationAnalyser(Configurable):
         """
 
         # Inform the user
-        self.log.info("Plotting the memory information...")
+        log.info("Plotting the memory information...")
 
         # Create and run a MemoryPlotter object
         plotter = MemoryPlotter()
@@ -309,7 +310,7 @@ class SimulationAnalyser(Configurable):
         """
 
         # Inform the user
-        self.log.info("Making RGB images...")
+        log.info("Making RGB images...")
 
         # Make RGB images from the output images
         makergbimages(self.simulation, output_path=self.simulation.plotting_path)
@@ -324,7 +325,7 @@ class SimulationAnalyser(Configurable):
         """
 
         # Inform the user
-        self.log.info("Making wave movies...")
+        log.info("Making wave movies...")
 
         # Make wave movies from the output images
         makewavemovie(self.simulation, output_path=self.simulation.plotting_path)

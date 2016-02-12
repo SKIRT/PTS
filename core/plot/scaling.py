@@ -30,6 +30,7 @@ from .plotter import Plotter
 from ..basics.quantity import Quantity
 from ..basics.map import Map
 from .timeline import create_timeline_plot
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -102,7 +103,7 @@ class ScalingPlotter(Plotter):
         """
 
         # Inform the user
-        self.log.info("Preparing the input data into plottable format...")
+        log.info("Preparing the input data into plottable format...")
 
         # Initialize a data structure to contain the scaling information in plottable format
         self.data = defaultdict(lambda: defaultdict(lambda: Map({"processor_counts": [], "times": [], "errors": []})))
@@ -243,7 +244,7 @@ class ScalingPlotter(Plotter):
         """
 
         # Inform the user
-        self.log.info("Making the plots...")
+        log.info("Making the plots...")
 
         # Plot the runtimes, speedups and efficiencies for the total simulation
         self.plot_total()
@@ -328,7 +329,7 @@ class ScalingPlotter(Plotter):
         """
 
         # Inform the user
-        self.log.info("Plotting the runtimes for the " + phase_names[phase] + "...")
+        log.info("Plotting the runtimes for the " + phase_names[phase] + "...")
 
         # Initialize figure with the appropriate size
         plt.figure(figsize=size)
@@ -392,7 +393,7 @@ class ScalingPlotter(Plotter):
         """
 
         # Inform the user of the fact that the speedups are being calculated and plotted
-        self.log.info("Calculating and plotting the speedups for the " + phase_names[phase] + "...")
+        log.info("Calculating and plotting the speedups for the " + phase_names[phase] + "...")
 
         # Initialize figure with the appropriate size
         plt.figure(figsize=size)
@@ -556,7 +557,7 @@ class ScalingPlotter(Plotter):
         """
 
         # Inform the user of the fact that the efficiencies are being calculated and plotted
-        self.log.info("Calculating and plotting the efficiencies for the " + phase_names[phase] + "...")
+        log.info("Calculating and plotting the efficiencies for the " + phase_names[phase] + "...")
 
         # Initialize figure with the appropriate size
         plt.figure(figsize=size)
@@ -639,7 +640,7 @@ class ScalingPlotter(Plotter):
         """
 
         # Inform the user
-        self.log.info("Plotting the scaling timeline...")
+        log.info("Plotting the scaling timeline...")
 
         # Loop over the different parallelization modes
         for mode in self.data["total"]:
@@ -743,7 +744,7 @@ class ScalingPlotter(Plotter):
         """
 
         # Inform the user
-        self.log.info("Plotting the memory scaling...")
+        log.info("Plotting the memory scaling...")
 
         # Determine the file path for this plot
         file_path = os.path.join(self.output_path, "memory.pdf")

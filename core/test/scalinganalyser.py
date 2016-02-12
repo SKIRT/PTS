@@ -17,6 +17,7 @@ from __future__ import absolute_import, division, print_function
 from ..basics.configurable import Configurable
 from ..extract.scaling import ScalingExtractor
 from ..plot.scaling import ScalingPlotter
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -111,7 +112,7 @@ class ScalingAnalyser(Configurable):
         """
 
         # Inform the user
-        self.log.info("Extracting the scaling information...")
+        log.info("Extracting the scaling information...")
 
         # Create and run a ScalingExtractor object
         extractor = ScalingExtractor()
@@ -130,7 +131,7 @@ class ScalingAnalyser(Configurable):
         """
 
         # Inform the user
-        self.log.info("Plotting the scaling information...")
+        log.info("Plotting the scaling information...")
 
         # Create and run a ScalingPlotter object
         plotter = ScalingPlotter()

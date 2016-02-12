@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
 from .plotter import Plotter
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -138,7 +139,7 @@ class TimeLinePlotter(Plotter):
         """
 
         # Inform the user
-        self.log.info("Making the plots...")
+        log.info("Making the plots...")
 
         # Create the plot
         plot_path = os.path.join(self.output_path, "timeline.pdf")

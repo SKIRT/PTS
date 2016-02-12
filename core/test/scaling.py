@@ -30,6 +30,7 @@ from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
 from ..extract.timeline import TimeLineExtractor
 from ..tools import time, filesystem
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -77,9 +78,6 @@ class ScalingTest(Configurable):
         test = cls()
 
         ## Adjust the configuration settings according to the command-line arguments
-
-        # Logging
-        if arguments.debug: test.config.logging.level = "DEBUG"
 
         # Ski file
         test.config.ski_path = arguments.filepath
@@ -287,7 +285,7 @@ class ScalingTest(Configurable):
         """
 
         # Inform the user
-        self.log.info("Clearing for the next scaling test run")
+        log.info("Clearing for the next scaling test run")
 
         # Set default values for attributes
         self.simulations = []
@@ -308,10 +306,10 @@ class ScalingTest(Configurable):
         """
 
         # Log the remote host name, the parallelization mode and the version of SKIRT used for this test
-        self.log.info("Starting scaling test run " + self.scaling_run_name + ":")
-        self.log.info("  - remote host: " + self.remote.system_name)
-        self.log.info("  - parallelization mode: " + self.mode_info_long)
-        self.log.info("Using " + self.remote.skirt_version)
+        log.info("Starting scaling test run " + self.scaling_run_name + ":")
+        log.info("  - remote host: " + self.remote.system_name)
+        log.info("  - parallelization mode: " + self.mode_info_long)
+        log.info("Using " + self.remote.skirt_version)
 
         # Perform the simulations with increasing number of processors
         processors = self.min_processors
@@ -331,8 +329,8 @@ class ScalingTest(Configurable):
             self.remote.start_queue(self.long_scaling_run_name, shell_script_path)
 
         # End with some log messages
-        self.log.info("Finished scaling test run")
-        self.log.info("The results are / will be written to " + self.scaling_file_path)
+        log.info("Finished scaling test run")
+        log.info("The results are / will be written to " + self.scaling_file_path)
 
     # -----------------------------------------------------------------
 
@@ -344,7 +342,7 @@ class ScalingTest(Configurable):
         """
 
         # Inform the user
-        self.log.info("Retrieving finished simulations...")
+        log.info("Retrieving finished simulations...")
 
         # Get a list of the simulations that have been succesfully retrieved
         self.simulations = self.remote.retrieve()
@@ -359,7 +357,7 @@ class ScalingTest(Configurable):
         """
 
         # Inform the user
-        self.log.info("Analysing retrieved simulations...")
+        log.info("Analysing retrieved simulations...")
 
         # Loop over the list of simulations and analyse them
         for simulation in self.simulations:
@@ -431,16 +429,16 @@ class ScalingTest(Configurable):
         if self.config.mode == "threads" and threads > self.cores:
 
             # Show a warning and return immediately
-            self.log.warning("The number of threads " + str(threads) + " exceeds the number of cores per node: skipping")
+            log.warning("The number of threads " + str(threads) + " exceeds the number of cores per node: skipping")
             return
 
         # Inform the user about the number of processors, processes, threads per process, nodes and processors per node
-        self.log.info("Scheduling simulation with:")
-        self.log.info(" - total number of processors = " + str(processors))
-        self.log.info(" - number of parallel processes = " + str(processes))
-        self.log.info(" - number of parallel threads per process = " + str(threads))
-        self.log.info(" - number of nodes = " + str(nodes))
-        self.log.info(" - number of requested processors per node = " + str(ppn))
+        log.info("Scheduling simulation with:")
+        log.info(" - total number of processors = " + str(processors))
+        log.info(" - number of parallel processes = " + str(processes))
+        log.info(" - number of parallel threads per process = " + str(threads))
+        log.info(" - number of nodes = " + str(nodes))
+        log.info(" - number of requested processors per node = " + str(ppn))
 
         # Write the number of nodes and processors per node to the info file
         infofile.write(" - number of used nodes: " + str(nodes) + "\n")
@@ -449,7 +447,7 @@ class ScalingTest(Configurable):
         # Calculate the expected walltime for this number of processors if a scheduling system is used
         if self.scheduler:
             walltime = self.estimate_walltime(processes, threads)
-            self.log.info(" - expected walltime: " + str(walltime) + " seconds")
+            log.info(" - expected walltime: " + str(walltime) + " seconds")
         else: walltime = None
 
         ###

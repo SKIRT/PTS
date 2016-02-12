@@ -21,6 +21,7 @@ from ..test.scalinganalyser import ScalingAnalyser
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
 from ..tools import filesystem
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -74,9 +75,6 @@ class RemoteSynchronizer(Configurable):
         synchronizer = cls()
 
         ## Adjust the configuration settings according to the command-line arguments
-
-        # Logging
-        if arguments.debug: synchronizer.config.logging.level = "DEBUG"
 
         # Set the remote name and the delete dictionary
         if hasattr(arguments, "remote"): synchronizer.config.remote = arguments.remote
@@ -148,7 +146,7 @@ class RemoteSynchronizer(Configurable):
         """
 
         # Inform the user
-        self.log.info("Clearing the synchronizer...")
+        log.info("Clearing the synchronizer...")
 
         # Set default values for attributes
         self.simulations = []
@@ -163,10 +161,13 @@ class RemoteSynchronizer(Configurable):
         """
 
         # Inform the user
-        self.log.info("Retrieving the output of finished simulations...")
+        log.info("Retrieving the output of finished simulations...")
 
         # Loop over the different remotes
         for remote in self.remotes:
+
+            # Inform the user
+            log.debug("Retreiving the simulations of remote " + remote.sytem_name + " ...")
 
             # Retrieve simulations
             self.simulations += remote.retrieve()
@@ -181,7 +182,7 @@ class RemoteSynchronizer(Configurable):
         """
 
         # Inform the user
-        self.log.info("Analysing the output of retrieved simulations...")
+        log.info("Analysing the output of retrieved simulations...")
 
         # Loop over the list of simulations and analyse them
         for simulation in self.simulations:
@@ -215,7 +216,7 @@ class RemoteSynchronizer(Configurable):
             status = remote.status
 
             # Show the name of the current remote
-            if len(status) > 0: self.log.info("Simulations on remote '" + remote.host_id + "':")
+            if len(status) > 0: log.info("Simulations on remote '" + remote.host_id + "':")
             print()
 
             # Get the status of the different simulations
@@ -236,9 +237,9 @@ class RemoteSynchronizer(Configurable):
                     if (self.config.ids is not None and simulation.id in self.config.ids[remote.config.host_id])\
                             or (self.config.statuses is not None and "finished" in self.config.statuses):
 
-                        self.log.warning("The simulation with ID " + str(simulation.id) + " has finished, but has not been"
-                                         " retrieved yet. Deleting it now would mean all simulation output is lost. Run "
-                                         " 'pts status' again to retrieve the simulation output.")
+                        log.warning("The simulation with ID " + str(simulation.id) + " has finished, but has not been"
+                                    " retrieved yet. Deleting it now would mean all simulation output is lost. Run "
+                                    " 'pts status' again to retrieve the simulation output.")
 
                     formatter = format.BLUE
 
@@ -277,8 +278,8 @@ class RemoteSynchronizer(Configurable):
 
                             simulation_status += " -> aborted"
 
-                        else: self.log.warning("Aborting simulations not running on a host with a scheduling system is not"
-                                               " implemented yet. ")
+                        else: log.warning("Aborting simulations not running on a host with a scheduling system is not"
+                                          " implemented yet. ")
 
                     formatter = format.END
 
@@ -359,8 +360,8 @@ class RemoteSynchronizer(Configurable):
 
                             simulation_status += " -> cancelled"
 
-                        else: self.log.warning("Cancelling simulations not running on a host with a scheduling system is not"
-                                               " implemented yet. ")
+                        else: log.warning("Cancelling simulations not running on a host with a scheduling system is not"
+                                          " implemented yet. ")
 
                     formatter = format.END
 

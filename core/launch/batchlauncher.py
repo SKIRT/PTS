@@ -19,6 +19,7 @@ import os
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
 from ..tools import inspection, configuration
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -125,8 +126,8 @@ class BatchLauncher(Configurable):
             config_file = open(config_file_path, 'w')
             config.save(config_file)
 
-            self.log.error("No remote configuration files were found. Placing a template into PTS/user/hosts. Adjust it"
-                           " for the remote hosts you want to use before using 'pts launch' or 'pts status'.")
+            log.error("No remote configuration files were found. Placing a template into PTS/user/hosts. Adjust it"
+                      " for the remote hosts you want to use before using 'pts launch' or 'pts status'.")
             exit()
 
         # Loop over the configuration files in the hosts directory
@@ -208,6 +209,6 @@ class BatchLauncher(Configurable):
         """
 
         # Inform the user
-        self.log.info("Clearing the batch launcher...")
+        log.info("Clearing the batch launcher...")
 
 # -----------------------------------------------------------------

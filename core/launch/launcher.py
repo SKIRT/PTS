@@ -23,6 +23,7 @@ from ..simulation.arguments import SkirtArguments
 from ..basics.configurable import Configurable
 from ..test.resources import ResourceEstimator
 from ..tools import monitoring
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -201,7 +202,7 @@ class SkirtLauncher(Configurable):
         """
 
         # Inform the user
-        self.log.info("Determining the parallelization scheme by estimating the memory requirements...")
+        log.info("Determining the parallelization scheme by estimating the memory requirements...")
 
         # Create and run a ResourceEstimator instance
         estimator = ResourceEstimator()
@@ -214,7 +215,7 @@ class SkirtLauncher(Configurable):
         if processes < 1:
 
             # Exit with an error
-            self.log.error("Not enough memory available to run this simulation")
+            log.error("Not enough memory available to run this simulation")
             exit()
 
         # Calculate the maximum number of threads per process based on the current cpu load of the system
@@ -240,7 +241,7 @@ class SkirtLauncher(Configurable):
         """
 
         # Inform the user
-        self.log.info("Performing the simulation...")
+        log.info("Performing the simulation...")
 
         # Run the simulation
         arguments = SkirtArguments(self.config.arguments)
@@ -256,7 +257,7 @@ class SkirtLauncher(Configurable):
         """
 
         # Inform the user
-        self.log.info("Analysing the simulation output...")
+        log.info("Analysing the simulation output...")
 
         # Set simulation analysis options
         self.simulation.extract_progress = self.config.extraction.progress

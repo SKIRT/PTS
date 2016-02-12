@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
-import json
 
 # Import the relevant PTS classes and modules
 from .analyser import SimulationAnalyser
@@ -23,6 +22,7 @@ from ..simulation.remote import SkirtRemote
 from ..simulation.arguments import SkirtArguments
 from ..basics.configurable import Configurable
 from ..test.resources import ResourceEstimator
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -218,15 +218,15 @@ class SkirtRemoteLauncher(Configurable):
         :return:
         """
 
-        #self.log.info("free cores: " + str(self.remote.free_cores))
-        #self.log.info("free memory: " + str(self.remote.free_memory))
-        #self.log.info("free space: " + str(self.remote.free_space))
-        #self.log.info("cores: " + str(self.remote.cores))
-        #self.log.info("cpu load: " + str(self.remote.cpu_load))
-        #self.log.info("memory load: " + str(self.remote.memory_load))
+        #log.info("free cores: " + str(self.remote.free_cores))
+        #log.info("free memory: " + str(self.remote.free_memory))
+        #log.info("free space: " + str(self.remote.free_space))
+        #log.info("cores: " + str(self.remote.cores))
+        #log.info("cpu load: " + str(self.remote.cpu_load))
+        #log.info("memory load: " + str(self.remote.memory_load))
 
         # Inform the user
-        self.log.info("Determining the parallelization scheme by estimating the memory requirements...")
+        log.info("Determining the parallelization scheme by estimating the memory requirements...")
 
         # Calculate the amount of required memory for this simulation
         estimator = ResourceEstimator()
@@ -239,7 +239,7 @@ class SkirtRemoteLauncher(Configurable):
         if processes < 1:
 
             # Exit with an error
-            self.log.error("Not enough memory available to run this simulation")
+            log.error("Not enough memory available to run this simulation")
             exit()
 
         # Calculate the maximum number of threads per process based on the current cpu load of the system
@@ -265,7 +265,7 @@ class SkirtRemoteLauncher(Configurable):
         """
 
         # Inform the user
-        self.log.info("Performing the simulation...")
+        log.info("Performing the simulation...")
 
         # Run the simulation
         arguments = SkirtArguments(self.config.arguments)
@@ -287,7 +287,7 @@ class SkirtRemoteLauncher(Configurable):
         """
 
         # Inform the user
-        self.log.info("Retrieving finished simulations...")
+        log.info("Retrieving finished simulations...")
 
         # Get a list of the simulations that have been succesfully retrieved
         self.simulations = self.remote.retrieve()
@@ -302,7 +302,7 @@ class SkirtRemoteLauncher(Configurable):
         """
 
         # Inform the user
-        self.log.info("Analysing the output of retrieved simulations...")
+        log.info("Analysing the output of retrieved simulations...")
 
         # Loop over the list of simulations and analyse them
         for simulation in self.simulations:

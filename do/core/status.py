@@ -13,10 +13,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import os
 import argparse
 
 # Import the relevant PTS classes and modules
 from pts.core.launch.synchronizer import RemoteSynchronizer
+from pts.core.tools import logging, time
 
 # -----------------------------------------------------------------
 
@@ -24,9 +26,22 @@ from pts.core.launch.synchronizer import RemoteSynchronizer
 parser = argparse.ArgumentParser()
 parser.add_argument('remote', nargs='?', default=None, help="(optional) the name of the remote host")
 parser.add_argument("--debug", action="store_true", help="add this option to enable debug output")
+parser.add_argument("--report", action="store_true", help="write a report file")
 
 # Parse the command line arguments
 arguments = parser.parse_args()
+
+# -----------------------------------------------------------------
+
+# Determine the log file path
+logfile_path = os.path.join(os.getcwd(), time.unique_name("status") + ".txt") if arguments.report else None
+
+# Determine the log level
+level = "DEBUG" if arguments.debug else "INFO"
+
+# Initialize the logger
+logging.setup_log(level=level, path=logfile_path)
+logging.log.info("Starting status ...")
 
 # -----------------------------------------------------------------
 

@@ -19,6 +19,7 @@ import tempfile
 # Import the relevant PTS classes and modules
 from .host import Host
 from .loggable import Loggable
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -73,7 +74,7 @@ class Remote(Loggable):
         # Load the necessary modules
         if self.host.modules is not None:
 
-            self.log.info("Loading necessary modules...")
+            log.info("Loading necessary modules...")
             self.execute("module load " + " ".join(self.host.modules), output=False)
 
         # Check whether the output directory exists
@@ -101,7 +102,7 @@ class Remote(Loggable):
         """
 
         # Inform the user
-        self.log.info("Logging in to the remote SKIRT environment on host '" + self.host.id + "'")
+        log.info("Logging in to the remote SKIRT environment on host '" + self.host.id + "'")
 
         # Connect to the remote host
         self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password)
@@ -119,7 +120,7 @@ class Remote(Loggable):
         """
 
         # Inform the user
-        self.log.info("Logging out from the remote SKIRT environment")
+        log.info("Logging out from the remote SKIRT environment")
 
         # Disconnect
         if self.connected: self.ssh.logout()
@@ -417,7 +418,7 @@ class Remote(Loggable):
         # Add the destination path to the command
         copy_command += destination.replace(" ", "\ ") + "/"
 
-        self.log.debug("Copy command: " + copy_command)
+        log.debug("Copy command: " + copy_command)
 
         # Temporary file for output of the scp command
         temp_file_path = tempfile.mktemp()
@@ -443,7 +444,7 @@ class Remote(Loggable):
         # Raise an error if something went wrong
         if child.exitstatus != 0: raise RuntimeError(stdout)
 
-        self.log.debug("Copy stdout: " + str(stdout))
+        log.debug("Copy stdout: " + str(stdout))
 
     # -----------------------------------------------------------------
 
@@ -487,7 +488,7 @@ class Remote(Loggable):
 
         # Add the host address and the destination directory
         copy_command += self.host.user + "@" + self.host.name + ":" + destination.replace(" ", "\ ") + "/"
-        self.log.debug("Copy command: " + copy_command)
+        log.debug("Copy command: " + copy_command)
 
         # Temporary file for output of the scp command
         temp_file_path = tempfile.mktemp()
@@ -516,7 +517,7 @@ class Remote(Loggable):
         # Raise an error if something went wrong
         if child.exitstatus != 0: raise RuntimeError(stdout)
 
-        self.log.debug("Copy stdout: " + str(stdout))
+        log.debug("Copy stdout: " + str(stdout))
 
     # -----------------------------------------------------------------
 

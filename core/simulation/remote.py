@@ -23,6 +23,7 @@ from .jobscript import JobScript
 from ..tools import time, inspection
 from ..test.resources import ResourceEstimator
 from .simulation import RemoteSimulation
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -89,7 +90,7 @@ class SkirtRemote(Remote):
         # Give a warning if the remote SKIRT version is different from the local SKIRT version
         local_version = inspection.skirt_version().split("built on")[0]
         remote_version = self.skirt_version.split("built on")[0]
-        if remote_version != local_version: self.log.warning("Remote SKIRT version is different from local SKIRT version")
+        if remote_version != local_version: log.warning("Remote SKIRT version is different from local SKIRT version")
 
     # -----------------------------------------------------------------
 
@@ -102,7 +103,7 @@ class SkirtRemote(Remote):
         """
 
         # Inform the user
-        self.log.info("Adding simulation to the queue...")
+        log.info("Adding simulation to the queue...")
 
         # First create a copy of the arguments
         arguments = arguments.copy()
@@ -152,11 +153,11 @@ class SkirtRemote(Remote):
         # If a scheduling system is used by the remote host, we don't need to do anything, simulations added to the queue
         # are already waiting to be executed (or are already being executed)
         if self.host.scheduler:
-            self.log.warning("The remote host uses its own scheduling system so calling 'start_queue' will have no effect")
+            log.warning("The remote host uses its own scheduling system so calling 'start_queue' will have no effect")
             return
 
         # Inform the user
-        self.log.info("Starting the queued simulations remotely...")
+        log.info("Starting the queued simulations remotely...")
 
         # Create a unique screen name indicating we are running SKIRT simulations if none is given
         if screen_name is None: screen_name = time.unique_name("SKIRT")
@@ -375,7 +376,7 @@ class SkirtRemote(Remote):
         """
 
         # Inform the suer
-        self.log.info("Scheduling simulation on the remote host")
+        log.info("Scheduling simulation on the remote host")
 
         if scheduling_options is None:
 
@@ -450,7 +451,7 @@ class SkirtRemote(Remote):
         """
 
         # Inform the user
-        self.log.info("Starting simulation on the remote host")
+        log.info("Starting simulation on the remote host")
 
         # Send the command to the remote machine using a screen session so that we can safely detach from the
         # remote shell
@@ -580,8 +581,14 @@ class SkirtRemote(Remote):
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)
 
+                # Debug info
+                log.debug("Retreiving simulation " + str(simulation.name) + " with id " + str(simulation.id) + " ...")
+
                 # If retrieve file types are not defined, download the complete output directory
                 if simulation.retrieve_types is None or simulation.retrieve_types == "None":
+
+                    # Debug info
+                    log.debug("Retrieve file types are not defined, retrieving complete remote output directory ...")
 
                     # Download the simulation output
                     self.download(simulation.remote_output_path, simulation.output_path)
@@ -622,12 +629,18 @@ class SkirtRemote(Remote):
                         elif filename.endswith("_ds_convergence.dat"):
                             if "convergence" in simulation.retrieve_types: copy_paths.append(filepath)
 
+                    # Debug info
+                    log.debug("Retrieving files: " + str(copy_paths))
+
                     # Download the list of files to the local output directory
                     self.download(copy_paths, simulation.output_path)
 
                 # If retreival was succesful, add this information to the simulation file
                 simulation.retrieved = True
                 simulation.save()
+
+                # Debug info
+                log.debug("Successfully retrieved the necessary simulation output")
 
                 # Remove the remote input, if present, if requested
                 if simulation.remove_remote_input and simulation.has_input: self.remove_directory(simulation.remote_input_path)

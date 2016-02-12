@@ -19,6 +19,7 @@ import argparse
 
 # Import the relevant PTS classes and modules
 from pts.core.test.scaling import ScalingTest
+from pts.core.tools import logging, time
 
 # -----------------------------------------------------------------
 
@@ -36,6 +37,18 @@ parser.add_argument("--debug", action="store_true", help="add this option to ena
 
 # Parse the command line arguments
 arguments = parser.parse_args()
+
+# -----------------------------------------------------------------
+
+# Determine the log file path
+logfile_path = os.path.join(os.getcwd(), time.unique_name("scaling") + ".txt") if arguments.report else None
+
+# Determine the log level
+level = "DEBUG" if arguments.debug else "INFO"
+
+# Initialize the logger
+logging.setup_log(level=level, path=logfile_path)
+logging.log.info("Starting scaling test procedure ...")
 
 # -----------------------------------------------------------------
 
