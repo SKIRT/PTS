@@ -167,7 +167,7 @@ class RemoteSynchronizer(Configurable):
         for remote in self.remotes:
 
             # Inform the user
-            log.debug("Retreiving the simulations of remote " + remote.sytem_name + " ...")
+            log.debug("Retreiving the simulations of remote " + remote.system_name + " ...")
 
             # Retrieve simulations
             self.simulations += remote.retrieve()
