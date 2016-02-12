@@ -73,6 +73,7 @@ aniano_names = {"GALEX FUV": "GALEX_FUV",
                 "PACS 70": "PACS_70",
                 "PACS 160": "PACS_160",
                 "SPIRE PSW": None,
+                "SPIRE PMW": None,
                 "SPIRE PLW": None}
 
 # -----------------------------------------------------------------
