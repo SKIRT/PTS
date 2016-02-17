@@ -199,7 +199,7 @@ class Extractor(Configurable):
         self.image = image
 
         # Create a mask with shape equal to the shape of the frame
-        self.mask = Mask.from_shape(self.image.shape)
+        self.mask = Mask.empty_like(self.image.frames.primary)
         self.image.add_mask(self.mask, "sources")
 
         # Set the appropriate configuration settings for writing out the galactic and stellar statistics
@@ -552,8 +552,8 @@ class Extractor(Configurable):
         log.info("Creating mask covering objects that require special attention from " + path + " ...")
 
         # Load the region and create a mask from it
-        region = Region.from_file(path, self.image.wcs)
-        special_mask = Mask(region.get_mask(shape=self.image.shape))
+        region = Region.from_file(path)
+        special_mask = Mask.from_region(region, self.image.xsize, self.image.ysize)
 
         # Create the mask
         self.special_mask = special_mask
@@ -578,8 +578,8 @@ class Extractor(Configurable):
         log.info("Creating mask covering objects that should be ignored from " + path + " ...")
 
         # Load the region and create a mask from it
-        region = Region.from_file(path, self.image.wcs)
-        ignore_mask = Mask(region.get_mask(shape=self.image.shape))
+        region = Region.from_file(path)
+        ignore_mask = Mask.from_region(region, self.image.xsize, self.image.ysize)
 
         # Create the mask
         self.ignore_mask = ignore_mask

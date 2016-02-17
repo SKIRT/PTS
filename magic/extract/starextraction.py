@@ -22,10 +22,10 @@ import astropy.coordinates as coord
 from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Extent, Mask, Region, SkyRegion, Ellipse
+from ..basics import Extent, Mask, Region, SkyRegion, Ellipse, SkyEllipse
 from ..core import Source
 from ..sky import Star
-from ..tools import statistics, fitting, regions
+from ..tools import statistics, fitting
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -138,7 +138,7 @@ class StarExtractor(Configurable):
         self.galaxy_extractor = galaxyextractor
 
         # Create a mask with shape equal to the shape of the frame
-        self.mask = Mask.from_shape(self.image.shape)
+        self.mask = Mask.empty_like(self.image.frames.primary)
 
     # -----------------------------------------------------------------
 
@@ -651,16 +651,13 @@ class StarExtractor(Configurable):
         log.info("Setting region for manual star extraction from " + path + " ...")
 
         # Load the region and create a mask from it
-        region = Region.from_file(path, self.image.wcs)
+        region = Region.from_file(path)
 
         # Loop over the shapes in the region
         for shape in region:
 
-            # Get the center and radius of the shape (can be a circle or an ellipse)
-            ellipse = regions.ellipse(shape)
-
             # Create a source
-            source = Source.from_ellipse(self.image.frames.primary, ellipse, self.config.manual.background_outer_factor)
+            source = Source.from_shape(self.image.frames.primary, shape, self.config.manual.background_outer_factor)
 
             # Add the source to the list of manual sources
             self.manual_sources.append(source)
@@ -719,12 +716,9 @@ class StarExtractor(Configurable):
         :return:
         """
 
-        from ..basics.region import newRegion
-        from ..basics.geometry import SkyEllipse
-
         ellipses = self.saturation_contours
 
-        # Create a new newRegion instance
+        # Create a new SkyRegion instance
         region = SkyRegion()
 
         # Loop over the ellipses (in image coordinates)
@@ -735,57 +729,6 @@ class StarExtractor(Configurable):
 
         # Return the region
         return region
-
-    # -----------------------------------------------------------------
-
-    @property
-    def region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # TODO: improve this function
-
-        type = "sky"
-
-        # Initialize lists
-        position_list = []
-        radius_list = []
-        color_list = []
-
-        # Calculate the default FWHM (calculated based on fitted stars)
-        default_fwhm = self.fwhm
-
-        # Loop over all galaxies
-        for star in self.stars:
-
-            position_list.append(star.position)
-
-            if star.has_model:
-
-                fwhm = star.fwhm
-                color = "green"
-
-            else:
-
-                fwhm = default_fwhm
-                color = "red"
-
-            # Calculate the radius in pixels
-            radius = fwhm * statistics.fwhm_to_sigma * self.config.region.sigma_level
-
-            # Add the radius (in arcseconds) and the color the appropriate list
-            radius_list.append(radius * self.image.frames.primary.xy_average_pixelscale)
-            color_list.append(color)
-
-        # Create a region
-        region = Region.circles(position_list, radius_list, color_list)
-
-        if type == "sky": return region
-        elif type == "image": return region.as_imagecoord(self.image.wcs.to_header())
-        else: raise ValueError("Type should be either 'sky' or 'image'")
 
     # -----------------------------------------------------------------
 

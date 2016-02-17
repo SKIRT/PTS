@@ -14,145 +14,126 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import numpy as np
 
-# Import astronomical modules
-from astropy.coordinates import SkyCoord
-from astropy.wcs import utils
-import astropy.units as u
+# Function to create mask from ellipse
+from photutils.geometry import elliptical_overlap_grid, circular_overlap_grid, rectangular_overlap_grid
 
 # Import the relevant PTS classes and modules
 from .vector import Position, Extent
+from .mask import Mask
 
 # -----------------------------------------------------------------
 
-class SkyEllipse(object):
+class Line(object):
 
     """
     This class ...
     """
 
-    def __init__(self, center, radius, angle):
+    def __init__(self, start, end):
+
+        """
+        This function ...
+        :param start:
+        :param end:
+        :return:
+        """
+
+        self.start = start
+        self.end = end
+
+    # -----------------------------------------------------------------
+
+    @property
+    def length(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Extent(self.end.x - self.start.x, self.end.y - self.start.y).norm
+
+    # -----------------------------------------------------------------
+
+    def to_mask(self, x_size, y_size):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :return:
+        """
+
+        return Mask.empty(x_size, y_size)
+
+# -----------------------------------------------------------------
+
+class Circle(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, center, radius):
 
         """
         This function ...
         :param center:
         :param radius:
-        :param angle:
         :return:
         """
 
         self.center = center
         self.radius = radius
-        self.angle = angle
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_ellipse(cls, ellipse, wcs):
-
-        """
-        This function ...
-        :param ellipse:
-        :param wcs:
-        :return:
-        """
-
-        center = SkyCoord.from_pixel(ellipse.center.x, ellipse.center.y, wcs, mode="wcs")
-
-        ## GET THE PIXELSCALE
-        result = utils.proj_plane_pixel_scales(wcs)
-        # returns: A vector (ndarray) of projection plane increments corresponding to each pixel side (axis).
-        # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
-        # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
-        x_pixelscale = result[0] * u.Unit("deg/pix")
-        y_pixelscale = result[1] * u.Unit("deg/pix")
-        #pixelscale = Extent(x_pixelscale, y_pixelscale)
-
-        major = ellipse.major * u.Unit("pix") * x_pixelscale
-        minor = ellipse.minor * u.Unit("pix") * y_pixelscale
-
-        radius = Extent(major, minor)
-
-        # Create a new SkyEllipse
-        return cls(center, radius, ellipse.angle)
 
     # -----------------------------------------------------------------
 
     @property
-    def major(self):
+    def circumference(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.radius.x
+        return 2. * math.pi * self.radius
 
     # -----------------------------------------------------------------
 
     @property
-    def minor(self):
+    def area(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.radius.y
+        return math.pi * self.radius**2
 
     # -----------------------------------------------------------------
 
-    def __mul__(self, value):
+    def to_mask(self, x_size, y_size):
 
         """
         This function ...
-        :param value:
+        :param x_size:
+        :param y_size:
         :return:
         """
 
-        return SkyEllipse(self.center, self.radius * value, self.angle)
+        rel_center = self.center
 
-    # -----------------------------------------------------------------
+        x_min = - rel_center.x
+        x_max = x_size - rel_center.x
+        y_min = - rel_center.y
+        y_max = y_size - rel_center.y
 
-    def __div__(self, value):
+        fraction = circular_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, self.radius, use_exact=0, subpixels=1)
 
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        return Ellipse(self.center, self.radius / value, self.angle)
-
-    # -----------------------------------------------------------------
-
-    def to_ellipse(self, wcs):
-
-        """
-        This function ...
-        :param wcs:
-        :return:
-        """
-
-        pixel_center_x, pixel_center_y = self.center.to_pixel(wcs, origin=0, mode='wcs')
-        center = Position(pixel_center_x, pixel_center_y)
-
-        ## GET THE PIXELSCALE
-        result = utils.proj_plane_pixel_scales(wcs)
-        # returns: A vector (ndarray) of projection plane increments corresponding to each pixel side (axis).
-        # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
-        # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
-        x_pixelscale = result[0] * u.Unit("deg/pix")
-        y_pixelscale = result[1] * u.Unit("deg/pix")
-        #pixelscale = Extent(x_pixelscale, y_pixelscale)
-
-        major = (self.major / x_pixelscale).to("pix").value
-        minor = (self.minor / y_pixelscale).to("pix").value
-
-        radius = Extent(major, minor)
-
-        # Create a new Ellipse and return it
-        return Ellipse(center, radius, self.angle)
+        # Return a new mask
+        return Mask(fraction)
 
 # -----------------------------------------------------------------
 
@@ -211,6 +192,33 @@ class Ellipse(object):
         """
 
         return (self.major - self.minor) / self.major
+
+    # -----------------------------------------------------------------
+
+    @property
+    def circumference(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        h = (self.radius.x - self.radius.y)**2 / (self.radius.x + self.radius.y)**2
+
+        # Approximation
+        return math.pi * (self.radius.x + self.radius.y) * (1. + 3. * h / (10. + math.sqrt(4.-3.*h)))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return math.pi * self.radius.x * self.radius.y
 
     # -----------------------------------------------------------------
 
@@ -298,25 +306,52 @@ class Ellipse(object):
         # Return the bounding box
         return Rectangle(self.center, radius)
 
-# -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-class Circle(object):
-
-    """
-    This class ...
-    """
-
-    def __init__(self, center, radius):
+    def to_mask(self, x_size, y_size):
 
         """
         This function ...
-        :param center:
-        :param radius:
+        :param x_size:
+        :param y_size:
         :return:
         """
 
-        self.center = center
-        self.radius = radius
+        rel_center = self.center
+
+        a = self.radius.x if isinstance(self.radius, Extent) else self.radius
+        b = self.radius.y if isinstance(self.radius, Extent) else self.radius
+
+        # theta in radians !
+        theta = self.angle.radian
+
+        x_min = - rel_center.x
+        x_max = x_size - rel_center.x
+        y_min = - rel_center.y
+        y_max = y_size - rel_center.y
+
+        # Calculate the mask
+        fraction = elliptical_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, a, b, theta, use_exact=0, subpixels=1)
+
+        #xmin, xmax, ymin, ymax : float
+        #    Extent of the grid in the x and y direction.
+        #nx, ny : int
+        #    Grid dimensions.
+        #rx : float
+        #    The semimajor axis of the ellipse.
+        #ry : float
+        #    The semiminor axis of the ellipse.
+        #theta : float
+        #    The position angle of the semimajor axis in radians (counterclockwise).
+        #use_exact : 0 or 1
+        #    If set to 1, calculates the exact overlap, while if set to 0, uses a
+        #    subpixel sampling method with ``subpixel`` subpixels in each direction.
+        #subpixels : int
+        #    If ``use_exact`` is 0, each pixel is resampled by this factor in each
+        #    dimension. Thus, each pixel is divided into ``subpixels ** 2``
+        #    subpixels.
+
+        return Mask(fraction)
 
 # -----------------------------------------------------------------
 
@@ -344,10 +379,35 @@ class Rectangle(object):
 
         """
         This function ...
+        :param position:
         :return:
         """
 
         return self.x_min <= position.x <= self.x_max and self.y_min <= position.y <= self.y_max
+
+    # -----------------------------------------------------------------
+
+    @property
+    def circumference(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 4. * (self.radius.x + self.radius.y)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 4. * self.radius.x * self.radius.y
 
     # -----------------------------------------------------------------
 
@@ -456,5 +516,47 @@ class Rectangle(object):
         """
 
         return [self.lower_right, self.upper_right, self.upper_left, self.lower_left]
+
+    # -----------------------------------------------------------------
+
+    def to_mask(self, x_size, y_size):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :return:
+        """
+
+        ## NAIVE WAY
+
+        data = np.zeros((y_size, x_size))
+
+        # Convert into integers
+        x_min = int(round(self.x_min))
+        x_max = int(round(self.x_max))
+        y_min = int(round(self.y_min))
+        y_max = int(round(self.y_max))
+
+        data[y_min:y_max, x_min:x_max] = 1
+
+        # Return a new Mask object
+        return Mask(data)
+
+        ## OTHER WAY
+
+        #rel_center = rectangle.center
+
+        #x_min = - rel_center.x
+        #x_max = x_size - rel_center.x
+        #y_min = - rel_center.y
+        #y_max = y_size - rel_center.y
+
+        #width = 2. * rectangle.radius.x
+        #height = 2. * rectangle.radius.y
+
+        #fraction = rectangular_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, width, height, use_exact=0, subpixels=1)
+
+        #return cls(fraction)
 
 # -----------------------------------------------------------------

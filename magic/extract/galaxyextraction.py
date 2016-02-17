@@ -126,7 +126,7 @@ class GalaxyExtractor(Configurable):
         self.original_wcs = copy.deepcopy(self.image.wcs)
 
         # Create a mask with shape equal to the shape of the frame
-        self.mask = Mask.from_shape(self.image.shape)
+        self.mask = Mask.empty_like(self.image.frames.primary)
 
         # Temporary
         self.original_frame = self.image.frames.primary.copy()
@@ -428,16 +428,13 @@ class GalaxyExtractor(Configurable):
         log.info("Setting region for manual galaxy extraction from " + path + " ...")
 
         # Load the region and create a mask from it
-        region = Region.from_file(path, self.image.wcs)
+        region = Region.from_file(path)
 
         # Loop over the shapes in the region
         for shape in region:
 
-            # Get the center and radius of the shape (can be a circle or an ellipse)
-            ellipse = regions.ellipse(shape)
-
             # Create a source
-            source = Source.from_ellipse(self.image.frames.primary, ellipse, self.config.manual.background_outer_factor)
+            source = Source.from_shape(self.image.frames.primary, shape, self.config.manual.background_outer_factor)
 
             # Add the source to the list of manual sources
             self.manual_sources.append(source)
@@ -517,7 +514,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Create a new mask with the dimensions of the frame
-        mask = Mask.from_shape(self.image.shape)
+        mask = Mask.empty_like(self.image.frames.primary)
 
         # Add the principal galaxy's mask to the total mask
         mask[self.principal.source.cutout.y_slice, self.principal.source.cutout.x_slice] = self.principal.source.mask
@@ -536,7 +533,7 @@ class GalaxyExtractor(Configurable):
         """
 
         # Create a new mask with the dimension of the frame
-        mask = Mask.from_shape(self.image.shape)
+        mask = Mask.empty_like(self.image.frames.primary)
 
         # Loop over all companion galaxies
         for galaxy in self.companions:

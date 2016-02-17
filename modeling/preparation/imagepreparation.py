@@ -17,10 +17,9 @@ import numpy as np
 
 # Import the relevant AstroMagic classes and modules
 from ...magic.core import Frame, Source
-from ...magic.basics import Region, CoordinateSystem, Mask, SkyRegion
+from ...magic.basics import CoordinateSystem, Mask, SkyRegion
 from ...magic.extract import Extractor
 from ...magic.subtract import SkySubtractor
-from ...magic.tools import regions, cropping
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable

@@ -55,17 +55,18 @@ def write(table, path):
 
 # -----------------------------------------------------------------
 
-def from_file(path):
+def from_file(path, format="ascii.commented_header"):
 
     """
     This function ...
     :param path:
+    :param format:
     :return:
     """
 
     # Read the table from file
     fill_values = [('--', '0')]
-    table = Table.read(path, fill_values=fill_values, format="ascii.commented_header")
+    table = Table.read(path, fill_values=fill_values, format=format)
 
     # Fix boolean values
     fix_logical(table)
@@ -79,6 +80,8 @@ def new(data, names, meta=None):
 
     """
     This function ...
+    :param names:
+    :param meta:
     :return:
     """
 

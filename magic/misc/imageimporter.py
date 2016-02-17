@@ -147,8 +147,8 @@ class ImageImporter(Configurable):
         self.load_error_frame()
 
         # Set the image unit and FWHM
-        if self.unit is not None: self.image.set_unit(self.unit)
-        if self.fwhm is not None: self.image.set_fwhm(self.fwhm)
+        if self.unit is not None: self.image.unit = self.unit
+        if self.fwhm is not None: self.image.fwhm = self.fwhm
 
     # -----------------------------------------------------------------
 

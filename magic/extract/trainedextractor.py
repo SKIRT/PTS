@@ -127,7 +127,7 @@ class TrainedExtractor(Configurable):
         self.ignore_mask = ignore_mask
 
         # Create a mask with shape equal to the shape of the frame
-        self.mask = Mask.from_shape(self.image.shape)
+        self.mask = Mask.empty_like(self.image.frames.primary)
 
         # Make local references to the galaxy and star extractors
         self.galaxy_extractor = galaxyextractor

@@ -297,30 +297,6 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def set_unit(self, unit):
-
-        """
-        This function ...
-        :param unit:
-        :return:
-        """
-
-        self.unit = unit
-
-    # -----------------------------------------------------------------
-
-    def set_fwhm(self, fwhm):
-
-        """
-        This function ...
-        :param fwhm:
-        :return:
-        """
-
-        self.fwhm = fwhm
-
-    # -----------------------------------------------------------------
-
     def convert_to(self, unit):
 
         """

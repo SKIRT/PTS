@@ -88,6 +88,8 @@ class Plotter(Configurable):
 
         """
         This function should be called to invoke the plotting routine ...
+        :param input:
+        :param output_path:
         :return:
         """
 

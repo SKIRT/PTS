@@ -317,6 +317,7 @@ class Image(object):
         This function imports a new region from a DS9 region file
         :param path:
         :param name:
+        :param overwrite:
         :return:
         """
 
@@ -373,24 +374,28 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def set_unit(self, unit):
+    @unit.setter
+    def unit(self, unit):
 
         """
         This function ...
+        :param unit:
+        :return:
         """
 
         # Loop over all frames
         for frame_name in self.frames:
 
             # Inform the user
-            log.info("Setting the unit of the " + frame_name + " frame to " + str(unit))
+            log.info("Setting the unit of the " + frame_name + " frame to " + str(unit) + " ...")
 
             # Set the unit for this frame
-            self.frames[frame_name].set_unit(unit)
+            self.frames[frame_name].unit = unit
 
     # -----------------------------------------------------------------
 
-    def set_fwhm(self, fwhm):
+    @fwhm.setter
+    def fwhm(self, fwhm):
 
         """
         This function ...
@@ -404,10 +409,50 @@ class Image(object):
         for frame_name in self.frames:
 
             # Inform the user
-            log.info("Setting the FWHM of the " + frame_name + " frame to " + str(fwhm))
+            log.info("Setting the FWHM of the " + frame_name + " frame to " + str(fwhm) + " ...")
 
             # Set the unit for this frame
-            self.frames[frame_name].set_fwhm(fwhm)
+            self.frames[frame_name].fwhm = fwhm
+
+    # -----------------------------------------------------------------
+
+    @filter.setter
+    def filter(self, filter):
+
+        """
+        This function ...
+        :param filter:
+        :return:
+        """
+
+        # Loop over all frames
+        for frame_name in self.frames:
+
+            # Inform the user
+            log.info("Setting the filter of the " + frame_name + " frame to " + filter.description() + " ...")
+
+            # Set the filter for this frame
+            self.frames[frame_name].filter = filter
+
+    # -----------------------------------------------------------------
+
+    @wcs.setter
+    def wcs(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Loop over all frames
+        for frame_name in self.frames:
+
+            # Inform the user
+            log.info("Setting the coordinate system of the " + frame_name + " frame ...")
+
+            # Set the wcs for this frame
+            self.frames[frame_name].wcs = wcs
 
     # -----------------------------------------------------------------
 
@@ -418,14 +463,22 @@ class Image(object):
         :param unit:
         """
 
-        # Loop over all frames
-        for frame_name in self.frames:
+        # Inform the user
+        log.info("Converting the unit of the image from " + str(self.unit) + " to " + str(unit) + " ...")
 
-            # Inform the user
-            log.info("Converting the unit of the " + frame_name + " frame to " + str(unit))
+        # Calculate the conversion factor
+        a = 1.0 * self.unit
+        b = 1.0 * unit
+        factor = (a/b).decompose().value
 
-            # Set the unit for this frame
-            self.frames[frame_name].set_unit(unit)
+        # Debug message
+        log.debug("Conversion factor = " + str(factor))
+
+        # Multiply the image with the conversion factor
+        self.__imul__(factor)
+
+        # Set the new unit
+        self.unit = unit
 
     # -----------------------------------------------------------------
 

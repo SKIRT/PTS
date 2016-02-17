@@ -16,14 +16,19 @@ from __future__ import absolute_import, division, print_function
 import os
 import numpy as np
 
+# Import astronomical modules
+from astropy import units as u
+from astropy.coordinates import Angle
+
 # Import the relevant AstroMagic classes and modules
 from ...magic.core import Image
 from ...magic.tools import headers
 
 # Import the relevant PTS classes and modules
 from ..core import ModelingComponent
-from ...core.tools import filesystem, tables
+from ...core.tools import filesystem
 from ...core.tools.logging import log
+from ..core import ObservedSED
 
 # -----------------------------------------------------------------
 
@@ -47,8 +52,8 @@ class PhotoMeter(ModelingComponent):
         # The list of images
         self.images = []
 
-        # The photometry table
-        self.table = None
+        # The SED
+        self.sed = None
 
     # -----------------------------------------------------------------
 
@@ -81,7 +86,6 @@ class PhotoMeter(ModelingComponent):
 
         """
         This function ...
-        :param image:
         :return:
         """
 
@@ -107,7 +111,10 @@ class PhotoMeter(ModelingComponent):
         """
 
         # Call the setup function of the base class
-        super(PhotoMeter, self).__init__()
+        super(PhotoMeter, self).setup()
+
+        # Create an observed SED
+        self.sed = ObservedSED()
 
     # -----------------------------------------------------------------
 
@@ -123,6 +130,9 @@ class PhotoMeter(ModelingComponent):
 
         # Loop over all directories in the preparation directory
         for directory_path, directory_name in filesystem.directories_in_path(self.prep_path, names=True):
+
+            # If only a single image has to be processeds, skip the other images
+            if self.config.single_image is not None and directory_name != self.config.single_image: continue
 
             # Determine the filter
             filter_name = directory_name
@@ -157,17 +167,96 @@ class PhotoMeter(ModelingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Performing the photometry calculation ...")
+
         wavelength_column = []
         flux_column = []
 
+        ## GET STRUCTURAL PARAMETERS
+
+        from astroquery.vizier import Vizier
+        vizier = Vizier(keywords=["galaxies"])
+
+        # Get parameters from S4G catalog
+        result = vizier.query_object(self.galaxy_name, catalog=["J/PASP/122/1397/s4g"])
+        table = result[0]
+
+        name = table["Name"][0]
+
+        ra_center = table["_RAJ2000"][0]
+        dec_center = table["_DEJ2000"][0]
+
+        major = table["amaj"][0] * u.Unit("arcsec")
+        ellipticity = table["ell"][0]
+        position_angle = Angle(table["PA"][0] - 90.0, u.Unit("deg"))
+
+        minor = (1.0-ellipticity)*major
+
+        from ...magic.basics import Extent
+
+        radius = Extent(major, minor)
+
+
+        from ...magic.sky import SkyEllipse, SkyCoord
+
+        center = SkyCoord(ra=ra_center, dec=dec_center, unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
+
+        sky_ellipse = SkyEllipse(center, radius, position_angle)
+
+        from ...magic.basics import SkyRegion
+
+        region = SkyRegion()
+        region.append(sky_ellipse)
+        region_path = self.full_output_path("galaxy.reg")
+        region.save(region_path)
+
+        ##
+
         for image in self.images:
 
-            wavelength_column.append(image.wavelength)
-            flux_column.append(np.sum(image.frames.primary))
+            ellipse = sky_ellipse.to_ellipse(image.wcs)
+            from ...magic.basics import Mask
 
-        data = [wavelength_column, flux_column]
-        names = ["Wavelength", "Flux"]
-        self.table = tables.new(data, names)
+            # Create mask
+            mask = Mask.from_ellipse(self.images[0].xsize, self.images[0].ysize, ellipse)
+            inverted_mask = mask.inverse()
+
+            # Inform the user
+            log.debug("Performing photometry for " + image.name + " image ...")
+
+            wavelength_column.append(image.wavelength.to("micron").value)
+
+            # Convert from MJy/sr to Janskys
+
+            # Convert from MJy/sr to Jy/sr
+            conversion_factor = 1.0
+
+            # Conversion from Jy to MJy
+            conversion_factor *= 1e6
+
+            # Conversion from MJy (per pixel2) to MJy / sr
+            pixelscale = image.frames.primary.xy_average_pixelscale
+            pixel_factor = (1.0/pixelscale**2).to("pix2/sr").value
+            conversion_factor /= pixel_factor
+
+            # Frame in Janskys
+            jansky_frame = image.frames.primary * conversion_factor
+            jansky_frame[inverted_mask] = 0.0
+
+            # Calculate the total flux in Jansky
+            flux = np.sum(jansky_frame)
+            #flux_column.append(flux)
+
+            # Add this entry to the SED
+            self.sed.add_entry(image.filter, flux)
+
+        #data = [wavelength_column, flux_column]
+
+        #names = ["Wavelength", "Flux"]
+        #self.table = tables.new(data, names)
+        #self.table["Wavelength"].unit = "micron"
+        #self.table["Flux"].unit = "Jy"
 
     # -----------------------------------------------------------------
 
@@ -178,11 +267,11 @@ class PhotoMeter(ModelingComponent):
         :return:
         """
 
-        self.write_table()
+        self.write_sed()
 
     # -----------------------------------------------------------------
 
-    def write_table(self):
+    def write_sed(self):
 
         """
         This function ...
@@ -192,7 +281,7 @@ class PhotoMeter(ModelingComponent):
         # Determine the full path to the output file
         path = self.full_output_path("fluxes.dat")
 
-        # Write the photometry table
-        tables.write(self.table, path)
+        # Save the SED
+        self.sed.save(path)
 
 # -----------------------------------------------------------------

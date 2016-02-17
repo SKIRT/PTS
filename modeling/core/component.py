@@ -43,8 +43,12 @@ class ModelingComponent(Configurable):
 
         self.data_path = None
         self.prep_path = None
-        self.maps_path = None
         self.phot_path = None
+        self.maps_path = None
+        self.bulge_path = None
+        self.disk_path = None
+        self.fit_path = None
+        self.analysis_path = None
 
         self.kernels_path = None
 
@@ -64,6 +68,8 @@ class ModelingComponent(Configurable):
 
         # Get the name of the galaxy (the name of the base directory)
         self.galaxy_name = os.path.basename(self.config.path)
+
+        print("path=", self.config.path)
 
         # Get the full path to the 'data', 'prep' and 'in' directories
         self.data_path = os.path.join(self.config.path, "data")

@@ -47,7 +47,7 @@ line_styles = ['-','--','-.',':']
 
 
 
-def plotseds(data,model_data, plotfile, labels, figsize=(10,6), xlim=None, ylim=None):
+def plotseds(data, model_data, plotfile, labels, figsize=(10,6), xlim=None, ylim=None):
     assert plotfile.endswith(".pdf")
 
     # Setup the figure

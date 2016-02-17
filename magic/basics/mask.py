@@ -21,11 +21,8 @@ from skimage import morphology
 from astropy.io import fits
 from photutils import detect_sources
 
-# Function to create mask from ellipse
-from photutils.geometry import elliptical_overlap_grid, circular_overlap_grid, rectangular_overlap_grid
-
 # Import the relevant AstroMagic classes and modules
-from .vector import Extent, Position
+from .vector import Position
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
@@ -139,6 +136,20 @@ class Mask(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
+    def empty(cls, x_size, y_size):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :return:
+        """
+
+        return cls(np.zeros((y_size, x_size)))
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def empty_like(cls, frame):
 
         """
@@ -148,6 +159,20 @@ class Mask(np.ndarray):
         """
 
         return cls(np.zeros(frame.shape))
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def full(cls, x_size, y_size):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :return:
+        """
+
+        return cls(np.ones((y_size, x_size)))
 
     # -----------------------------------------------------------------
 
@@ -189,175 +214,34 @@ class Mask(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_shape(cls, shape):
+    def from_shape(cls, shape, x_size, y_size):
 
         """
         This function ...
         :param shape:
+        :param x_size:
+        :param y_size
         :return:
         """
 
-        return cls(np.zeros(shape))
+        # Return a new Mask object
+        return shape.to_mask(x_size, y_size)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_region(cls, region, shape):
+    def from_region(cls, region, x_size, y_size):
 
         """
         This function ...
         :param region:
+        :param x_size:
+        :param y_size
         :return:
         """
 
         # Return a new Mask object
-        return cls(region.get_mask(shape=shape))
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def new_from_region(cls, contours, shape):
-
-        """
-        This function ...
-        :param contours:
-        :param shape:
-        :return:
-        """
-
-        mask = Mask(np.zeros(shape))
-
-        # For now, only assume ellipses
-        for contour in contours: mask += Mask.from_ellipse(shape[1], shape[0], contour)
-
-        # Return the total mask
-        return mask
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_rectangle(cls, x_size, y_size, rectangle):
-
-        """
-        This function ...
-        :param x_size:
-        :param y_size:
-        :param rectangle:
-        :return:
-        """
-
-        data = np.zeros((y_size, x_size))
-
-        # Convert into integers
-        x_min = int(round(rectangle.x_min))
-        x_max = int(round(rectangle.x_max))
-        y_min = int(round(rectangle.y_min))
-        y_max = int(round(rectangle.y_max))
-
-        data[y_min:y_max, x_min:x_max] = 1
-
-        # Return a new Mask object
-        return cls(data)
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_ellipse(cls, x_size, y_size, ellipse):
-
-        """
-        This function ...
-        :param x_size:
-        :param y_size:
-        :param ellipse:
-        :return:
-        """
-
-        rel_center = ellipse.center
-
-        a = ellipse.radius.x if isinstance(ellipse.radius, Extent) else ellipse.radius
-        b = ellipse.radius.y if isinstance(ellipse.radius, Extent) else ellipse.radius
-
-        # theta in radians !
-        theta = ellipse.angle.radian
-
-        x_min = - rel_center.x
-        x_max = x_size - rel_center.x
-        y_min = - rel_center.y
-        y_max = y_size - rel_center.y
-
-        # Calculate the mask
-        fraction = elliptical_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, a, b, theta, use_exact=0, subpixels=1)
-
-        #xmin, xmax, ymin, ymax : float
-        #    Extent of the grid in the x and y direction.
-        #nx, ny : int
-        #    Grid dimensions.
-        #rx : float
-        #    The semimajor axis of the ellipse.
-        #ry : float
-        #    The semiminor axis of the ellipse.
-        #theta : float
-        #    The position angle of the semimajor axis in radians (counterclockwise).
-        #use_exact : 0 or 1
-        #    If set to 1, calculates the exact overlap, while if set to 0, uses a
-        #    subpixel sampling method with ``subpixel`` subpixels in each direction.
-        #subpixels : int
-        #    If ``use_exact`` is 0, each pixel is resampled by this factor in each
-        #    dimension. Thus, each pixel is divided into ``subpixels ** 2``
-        #    subpixels.
-
-        return cls(fraction)
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_circle(cls, x_size, y_size, circle):
-
-        """
-        This function ...
-        :param x_size:
-        :param y_size:
-        :param circle:
-        :return:
-        """
-
-        rel_center = circle.center
-
-        x_min = - rel_center.x
-        x_max = x_size - rel_center.x
-        y_min = - rel_center.y
-        y_max = y_size - rel_center.y
-
-        fraction = circular_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, circle.radius, use_exact=0, subpixels=1)
-
-        return cls(fraction)
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def new_from_rectangle(cls, x_size, y_size, rectangle):
-
-        """
-        This function ...
-        :param x_size:
-        :param y_size:
-        :param rectangle:
-        :return:
-        """
-
-        rel_center = rectangle.center
-
-        x_min = - rel_center.x
-        x_max = x_size - rel_center.x
-        y_min = - rel_center.y
-        y_max = y_size - rel_center.y
-
-        width = 2. * rectangle.radius.x
-        height = 2. * rectangle.radius.y
-
-        fraction = rectangular_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, width, height, use_exact=0, subpixels=1)
-
-        return cls(fraction)
+        return region.to_mask(x_size, y_size)
 
     # -----------------------------------------------------------------
 

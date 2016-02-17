@@ -62,6 +62,25 @@ class Source(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_shape(cls, frame, shape, factor):
+
+        """
+        This function ...
+        :param frame:
+        :param shape:
+        :param factor:
+        :return:
+        """
+
+        if shape.type == "ellipse": return cls.from_ellipse(frame, shape, factor)
+        elif shape.type == "circle":
+            ellipse = Ellipse(shape.center, Extent(shape.radius, shape.radius), Angle(0.0, u.Unit("deg")))
+            return cls.from_ellipse(frame, ellipse, factor)
+        else: raise ValueError("Shape should be ellipse or circle (for now)")
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_ellipse(cls, frame, ellipse, factor, shape=None):
 
         """

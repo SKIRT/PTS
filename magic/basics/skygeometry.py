@@ -12,13 +12,94 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import math
+
 # Import astronomical modules
 from astropy.coordinates import SkyCoord
 from astropy.wcs import utils
 import astropy.units as u
 
 # Import the relevant PTS classes and modules
-from ..basics import Position, Extent, Ellipse, Circle, Rectangle
+from .vector import Position, Extent
+from .geometry import Line, Circle, Ellipse, Rectangle
+from ..tools import coordinates
+
+# -----------------------------------------------------------------
+
+class SkyLine(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, start, end):
+
+        """
+        This function ...
+        :param start:
+        :param end:
+        :return:
+        """
+
+        self.start = start
+        self.end = end
+
+    # -----------------------------------------------------------------
+
+    @property
+    def length(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        dec_start = self.start.dec.to("deg").value
+        dec_end = self.end.dec.to("deg").value
+
+        dec_center = 0.5 * (dec_start + dec_end)
+
+        ra_start = self.start.ra.to("deg").value
+        ra_end = self.end.ra.to("deg").value
+
+        # Calculate the actual RA and DEC distance in degrees
+        ra_distance = abs(coordinates.ra_distance(dec_center, ra_start, ra_end))
+        dec_distance = abs(dec_end - dec_start)
+
+        ra_span = ra_distance * u.Unit("deg")
+        dec_span = dec_distance * u.Unit("deg")
+
+        return math.sqrt(ra_span**2 + dec_span**2)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_line(cls, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+
+
+    # -----------------------------------------------------------------
+
+    def to_line(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        start_x, start_y = self.start.to_pixel(wcs, mode="wcs", origin=0)
+        end_x, end_y = self.end.to_pixel(wcs, mode="wcs", origin=0)
+
+        # Return a new Line
+        return Line(Position(start_x, start_y), Position(end_x, end_y))
 
 # -----------------------------------------------------------------
 
@@ -213,7 +294,7 @@ class SkyCircle(object):
         :return:
         """
 
-        return SkyEllipse(self.center, self.radius * value)
+        return SkyCircle(self.center, self.radius * value)
 
     # -----------------------------------------------------------------
 
@@ -249,7 +330,15 @@ class SkyCircle(object):
         :return:
         """
 
-        pass
+        pixel_center_x, pixel_center_y = self.center.to_pixel(wcs, origin=0, mode='wcs')
+        center = Position(pixel_center_x, pixel_center_y)
+
+        ## GET THE PIXELSCALE
+        pixelscale = wcs.xy_average_pixelscale
+        radius = (self.radius / pixelscale).to("pix").value
+
+        # Create a new Circle and return it
+        return Circle(center, radius)
 
 # -----------------------------------------------------------------
 
@@ -270,5 +359,80 @@ class SkyRectangle(object):
 
         self.center = center
         self.radius = radius
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_rectangle(cls, rectangle, wcs):
+
+        """
+        This function ...
+        :param rectangle:
+        :param wcs:
+        :return:
+        """
+
+        center = SkyCoord.from_pixel(rectangle.center.x, rectangle.center.y, wcs, mode="wcs")
+
+        # Get the pixelscale
+        radius = rectangle.radius * u.Unit("pix") * wcs.xy_average_pixelscale
+
+        # Create a new SkyRectangle
+        return cls(center, radius)
+
+    # -----------------------------------------------------------------
+
+    def __mul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return SkyRectangle(self.center, self.radius * value)
+
+    # -----------------------------------------------------------------
+
+    def __truediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__div__(value)
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return SkyRectangle(self.center, self.radius / value)
+
+    # -----------------------------------------------------------------
+
+    def to_rectangle(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        pixel_center_x, pixel_center_y = self.center.to_pixel(wcs, origin=0, mode='wcs')
+        center = Position(pixel_center_x, pixel_center_y)
+
+        pixelscale = wcs.xy_average_pixelscale
+        radius = (self.radius / pixelscale).to("pix").value
+
+        # Return a new rectangle
+        return Rectangle(center, radius)
 
 # -----------------------------------------------------------------

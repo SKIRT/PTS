@@ -40,7 +40,7 @@ frame = Frame.from_file(arguments.image)
 
 # Load the region
 region_name = os.path.splitext(os.path.basename(arguments.region))[0]
-region = Region.from_file(arguments.region, frame.wcs)
+region = Region.from_file(arguments.region)
 
 # Create the mask
 mask = Mask(region.get_mask(shape=frame.shape))

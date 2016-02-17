@@ -175,6 +175,12 @@ class Filter:
     @property
     def observatory(self): return self._FilterID.split("/")[0]
 
+    @property
+    def instrument(self): return self._FilterID.split("/")[1].split(".")[0]
+
+    @property
+    def band(self): return self._FilterID.split("/")[1].split(".")[1]
+
     ## This function returns a unique identifier for the filter.
     def filterID(self):
         return self._FilterID

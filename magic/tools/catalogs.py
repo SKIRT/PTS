@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
-import math
 import numpy as np
 
 # Import astronomical modules
@@ -23,7 +22,6 @@ import astropy.units as u
 import astropy.coordinates as coord
 from astroquery.vizier import Vizier
 from astroquery.ned import Ned
-from astroquery.irsa_dust import IrsaDust
 import astroquery.exceptions
 from astropy.coordinates import Angle
 
@@ -846,24 +844,5 @@ def fetch_object_by_name(name, radius):
 
     # Return the region
     return regions.parse(region_string)
-
-# -----------------------------------------------------------------
-
-def fetch_galactic_extinction(name, filter_name):
-
-    """
-    This function ...
-    :param name:
-    :param filter_name:
-    :return:
-    """
-
-    table = IrsaDust.get_extinction_table(name)
-
-    for index, item in enumerate(table["Filter_name"]):
-
-        if item == filter_name: break
-
-    return table["A_SandF"][index]
 
 # -----------------------------------------------------------------

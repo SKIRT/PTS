@@ -183,11 +183,9 @@ class UnitConverter(Configurable):
 
         # Multiply the image (primary, errors and calibration_errors frame) by the conversion factor
         self.image *= self.conversion_factor
-        #self.image.frames.primary = self.image.frames.primary * self.conversion_factor
-        #if "errors" in self.image.frames: self.image.frames.errors = self.image.frames.errors * self.conversion_factor
 
         # Set the new unit
-        self.image.set_unit(self.target_unit)
+        self.image.unit = self.target_unit
 
     # -----------------------------------------------------------------
 
