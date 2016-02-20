@@ -16,7 +16,7 @@ import os
 import os.path
 import types
 import numpy as np
-import pyfits
+import astropy.io.fits as pyfits
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from PIL import Image

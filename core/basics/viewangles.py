@@ -78,7 +78,7 @@ class ViewAngles:
         delay = 1. / timeline.getrate()
         for shape,size,viewport,crosshair,upwards,focal in timeline.getframes():
             self.perspective(viewport,crosshair,upwards,focal,size[0])
-            time.sleep(delay)
+            plt.pause(delay)
 
     ## This function closes the figure.
     def close(self):
