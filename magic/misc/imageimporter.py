@@ -314,7 +314,7 @@ class ImageImporter(Configurable):
         # Add the bad mask
         if self.bad_region is not None:
 
-            bad_mask = Mask.from_region(self.bad_region, self.image.frames.primary.shape)
+            bad_mask = Mask.from_region(self.bad_region, self.image.xsize, self.image.ysize)
             self.image.masks.bad += bad_mask
 
 # -----------------------------------------------------------------

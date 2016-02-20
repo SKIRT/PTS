@@ -308,6 +308,8 @@ class GalaxyExtractor(Configurable):
         # Inform the user
         log.info("Loading the galaxies from the catalog ...")
 
+        print(self.catalog)
+
         # Create the list of galaxies
         for i in range(len(self.catalog)):
 
@@ -492,7 +494,7 @@ class GalaxyExtractor(Configurable):
         :return:
         """
 
-        from ..basics.geometry import SkyEllipse
+        from ..basics.skygeometry import SkyEllipse
 
         # Get the ellipse in image coordinates
         ellipse = self.principal_ellipse

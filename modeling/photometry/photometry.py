@@ -198,7 +198,7 @@ class PhotoMeter(ModelingComponent):
         radius = Extent(major, minor)
 
 
-        from ...magic.sky import SkyEllipse, SkyCoord
+        from ...magic.basics.skygeometry import SkyEllipse, SkyCoord
 
         center = SkyCoord(ra=ra_center, dec=dec_center, unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
 
@@ -219,7 +219,7 @@ class PhotoMeter(ModelingComponent):
             from ...magic.basics import Mask
 
             # Create mask
-            mask = Mask.from_ellipse(self.images[0].xsize, self.images[0].ysize, ellipse)
+            mask = Mask.from_shape(ellipse, image.xsize, image.ysize)
             inverted_mask = mask.inverse()
 
             # Inform the user
@@ -246,17 +246,13 @@ class PhotoMeter(ModelingComponent):
 
             # Calculate the total flux in Jansky
             flux = np.sum(jansky_frame)
-            #flux_column.append(flux)
+
+            jansky_errors_frame = image.frames.errors * conversion_factor
+            jansky_errors_frame[inverted_mask] = 0.0
+            flux_error = np.sum(jansky_errors_frame)
 
             # Add this entry to the SED
-            self.sed.add_entry(image.filter, flux)
-
-        #data = [wavelength_column, flux_column]
-
-        #names = ["Wavelength", "Flux"]
-        #self.table = tables.new(data, names)
-        #self.table["Wavelength"].unit = "micron"
-        #self.table["Flux"].unit = "Jy"
+            self.sed.add_entry(image.filter, flux, flux_error)
 
     # -----------------------------------------------------------------
 
@@ -267,7 +263,11 @@ class PhotoMeter(ModelingComponent):
         :return:
         """
 
+        # Write SED table
         self.write_sed()
+
+        # Plot the SED
+        self.plot_sed()
 
     # -----------------------------------------------------------------
 
@@ -283,5 +283,25 @@ class PhotoMeter(ModelingComponent):
 
         # Save the SED
         self.sed.save(path)
+
+    # -----------------------------------------------------------------
+
+    def plot_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..plotting import SEDPlotter
+
+        plotter = SEDPlotter()
+
+        # Add the SED
+        plotter.add_observed_sed(self.sed, "Observation")
+
+        # Determine the full path to the plot file
+        path = self.full_output_path("sed.pdf")
+        plotter.run(path)
 
 # -----------------------------------------------------------------

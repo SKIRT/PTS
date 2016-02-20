@@ -18,10 +18,46 @@ import numpy as np
 
 # Function to create mask from ellipse
 from photutils.geometry import elliptical_overlap_grid, circular_overlap_grid, rectangular_overlap_grid
+from PIL import Image, ImageDraw
 
 # Import the relevant PTS classes and modules
 from .vector import Position, Extent
 from .mask import Mask
+
+# -----------------------------------------------------------------
+
+class Composite(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, base, exclude):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.base = base
+        self.exclude = exclude
+
+    # -----------------------------------------------------------------
+
+    def to_mask(self, x_size, y_size):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :return:
+        """
+
+        base = self.base.to_mask(x_size, y_size)
+        exclude = self.exclude.to_mask(x_size, y_size)
+
+        # Return the mask
+        return base + np.logical_not(exclude)
 
 # -----------------------------------------------------------------
 
@@ -558,5 +594,77 @@ class Rectangle(object):
         #fraction = rectangular_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, width, height, use_exact=0, subpixels=1)
 
         #return cls(fraction)
+
+# -----------------------------------------------------------------
+
+class Polygon(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        :return:
+        """
+
+        self.points = []
+
+    # -----------------------------------------------------------------
+
+    def add_point(self, point):
+
+        """
+        This function ...
+        :param point:
+        :return:
+        """
+
+        self.points.append(point)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def circumference(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        total = 0.0
+
+        # Calculate the circumference
+        for i in range(1, len(self.points)): total += (self.points[i]-self.points[i-1]).norm
+        total += (self.points[0] - self.points[len(self.points)-1]).norm
+
+        # Return the result
+        return total
+
+    # -----------------------------------------------------------------
+
+    def to_mask(self, x_size, y_size):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :return:
+        """
+
+        width = x_size
+        height = y_size
+
+        #points = [(x1,y1),(x2,y2),...] or [x1,y1,x2,y2,...]
+        points = []
+        for point in self.points:
+            points.append((point.x, point.y))
+
+        img = Image.new('L', (width, height), 0)
+        ImageDraw.Draw(img).polygon(points, outline=1, fill=1)
+
+        return Mask(np.array(img))
 
 # -----------------------------------------------------------------

@@ -192,8 +192,8 @@ class SkySubtractor(Configurable):
         # Create a mask from the ellipse
         annulus_outer_factor = 3.0
         annulus_inner_factor = 1.0
-        annulus_mask = Mask.from_ellipse(self.image.xsize, self.image.ysize, self.principal_ellipse * annulus_outer_factor).inverse() + \
-                       Mask.from_ellipse(self.image.xsize, self.image.ysize, self.principal_ellipse * annulus_inner_factor)
+        annulus_mask = Mask.from_shape(self.principal_ellipse * annulus_outer_factor, self.image.xsize, self.image.ysize).inverse() + \
+                       Mask.from_shape(self.principal_ellipse * annulus_inner_factor, self.image.xsize, self.image.ysize)
 
         # Set the mask, make a copy of the input mask initially
         self.mask = self.image.masks.sources + annulus_mask
@@ -208,7 +208,7 @@ class SkySubtractor(Configurable):
             expanded_region = self.saturation_region * 1.5
 
             # Create the saturation mask
-            saturation_mask = expanded_region.to_mask(self.image.wcs)
+            saturation_mask = expanded_region.to_mask(self.image.xsize, self.image.ysize)
             self.mask += saturation_mask
 
         # Add the mask of padded pixels (during rebinning)
@@ -451,7 +451,7 @@ class SkySubtractor(Configurable):
 
         # Create a mask from the principal galaxy region
         annulus_outer_factor = 1.2
-        mask = Mask.from_ellipse(self.image.xsize, self.image.ysize, self.principal_ellipse * annulus_outer_factor).inverse()
+        mask = Mask.from_shape(self.principal_ellipse * annulus_outer_factor, self.image.xsize, self.image.ysize).inverse()
 
         # Set the primary frame zero outside the principal ellipse
         self.image.frames.primary[mask] = 0.0

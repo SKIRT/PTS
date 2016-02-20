@@ -22,7 +22,7 @@ import astropy.units as u
 
 # Import the relevant PTS classes and modules
 from .vector import Position, Extent
-from .geometry import Line, Circle, Ellipse, Rectangle
+from .geometry import Line, Circle, Ellipse, Rectangle, Polygon
 from ..tools import coordinates
 
 # -----------------------------------------------------------------
@@ -83,7 +83,7 @@ class SkyLine(object):
         :return:
         """
 
-
+        pass
 
     # -----------------------------------------------------------------
 
@@ -434,5 +434,74 @@ class SkyRectangle(object):
 
         # Return a new rectangle
         return Rectangle(center, radius)
+
+# -----------------------------------------------------------------
+
+class SkyPolygon(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.points = []
+
+    # -----------------------------------------------------------------
+
+    def add_point(self, point):
+
+        """
+        This function ...
+        :param point:
+        :return:
+        """
+
+        self.points.append(point)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_polygon(cls, polygon, wcs):
+
+        """
+        This function ...
+        :param polygon:
+        :param wcs:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def to_polygon(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Create a new polygon
+        polygon = Polygon()
+
+        # Loop over the points in this SkyPolygon
+        for point in self.points:
+
+            # Convert the coordinate to a pixel position
+            pixel_center_x, pixel_center_y = point.to_pixel(wcs, origin=0, mode='wcs')
+            position = Position(pixel_center_x, pixel_center_y)
+
+            # Add the pixel position to the points
+            polygon.add_point(position)
+
+        # Return the new polygon
+        return polygon
 
 # -----------------------------------------------------------------

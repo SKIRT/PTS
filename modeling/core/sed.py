@@ -35,7 +35,7 @@ class ObservedSED(object):
         """
 
         # Attributes
-        self.table = Table(names=["Observatory", "Instrument", "Band", "Wavelength", "Flux"], dtype=('S10', 'S10', 'S10', 'f8', 'f8'))
+        self.table = Table(names=["Observatory", "Instrument", "Band", "Wavelength", "Flux", "Error"], dtype=('S10', 'S10', 'S10', 'f8', 'f8', 'f8'))
         self.table["Wavelength"].unit = u.Unit("micron")
         self.table["Flux"].unit = u.Unit("Jy")
 
@@ -57,16 +57,77 @@ class ObservedSED(object):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, filter, flux):
+    def add_entry(self, filter, flux, error):
 
         """
         This function ...
         :param filter:
         :param flux:
+        :param error:
         :return:
         """
 
-        self.table.add_row([filter.observatory, filter.instrument, filter.band, filter.pivotwavelength(), flux])
+        self.table.add_row([filter.observatory, filter.instrument, filter.band, filter.pivotwavelength(), flux, error])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.table["Instrument"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.table["Band"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.table["Wavelength"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.table["Flux"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.table["Error"]
 
     # -----------------------------------------------------------------
 
@@ -101,6 +162,43 @@ class SED(object):
 
         # Attributes
         self.table = None
+        self.errors = []
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.table["Wavelength"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.table["Flux"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.errors) > 0 and len(self.errors) == len(self.table["Wavelength"])
 
     # -----------------------------------------------------------------
 

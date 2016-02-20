@@ -105,7 +105,7 @@ class Source(object):
 
         # Create source mask
         ellipse = Ellipse(rel_center, radius, angle)
-        mask = Mask.from_ellipse(cutout.xsize, cutout.ysize, ellipse)
+        mask = Mask.from_shape(ellipse, cutout.xsize, cutout.ysize)
 
         # Set (estimated) background and removed to None
         background = None
@@ -393,7 +393,7 @@ class Source(object):
 
         # Create smaller mask
         ellipse = Ellipse(rel_center, source.radius, source.angle)
-        source.mask = Mask.from_ellipse(source.cutout.xsize, source.cutout.ysize, ellipse)
+        source.mask = Mask.from_shape(ellipse, source.cutout.xsize, source.cutout.ysize)
 
         # Set other properties to None
         source.background = None
@@ -424,7 +424,7 @@ class Source(object):
 
         # Create source mask
         ellipse = Ellipse(rel_center, new_radius, self.angle)
-        mask = Mask.from_ellipse(cutout.xsize, cutout.ysize, ellipse)
+        mask = Mask.from_shape(ellipse, cutout.xsize, cutout.ysize)
 
         # Create the new source
         new_source = Source(self.center, new_radius, self.angle, self.factor, cutout, mask, peak=self.peak)
