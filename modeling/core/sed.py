@@ -42,15 +42,21 @@ class ObservedSED(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls):
+    def from_file(cls, path):
 
         """
         This function ...
+        :param path:
         :return:
         """
 
         # Create a new observed SED
         sed = cls()
+
+        # Open the SED table
+        sed.table = tables.from_file(path, format="ascii.commented_header")
+        sed.table["Wavelength"].unit = u.Unit("micron")
+        sed.table["Flux"].unit = u.Unit("Jy")
 
         # Return the observed SED
         return sed

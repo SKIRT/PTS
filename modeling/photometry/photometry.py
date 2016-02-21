@@ -300,6 +300,12 @@ class PhotoMeter(ModelingComponent):
         # Add the SED
         plotter.add_observed_sed(self.sed, "Observation")
 
+        # Add the SED of photometry measurements found on NED
+        ned_path = os.path.join(self.config.path, "ned")
+        ned_sed_path = os.path.join(ned_path, "fluxes.dat")
+        ned_sed = ObservedSED.from_file(ned_sed_path)
+        plotter.add_observed_sed(ned_sed, "Literature")
+
         # Determine the full path to the plot file
         path = self.full_output_path("sed.pdf")
         plotter.run(path)
