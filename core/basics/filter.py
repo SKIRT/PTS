@@ -167,6 +167,70 @@ class Filter:
             self._WavelengthPivot = np.sqrt(self._WavelengthMin * self._WavelengthMax)
             self._EffWidth = self._WavelengthMax - self._WavelengthMin
 
+    # ---------- Alternative construction -------------------------------
+
+    @classmethod
+    def from_string(cls, name):
+
+        """
+        This function allows constructing a Filter object from a less strict name.
+        :param name:
+        :return:
+        """
+
+        # Define the different possible names for each of the filters
+        galex_fuv_names = ["GALEX.FUV", "GALEX FUV", "FUV"]
+        galex_nuv_names = ["GALEX.NUV", "GALEX NUV", "NUV"]
+        sdss_u_names = ["SDSS.u", "SDSS u", "u"]
+        sdss_g_names = ["SDSS.g", "SDSS g", "g"]
+        sdss_r_names = ["SDSS.r", "SDSS r", "r"]
+        sdss_i_names = ["SDSS.i", "SDSS i", "i"]
+        sdss_z_names = ["SDSS.z", "SDSS z", "z"]
+        mass_h_names = ["2MASS.H", "2MASS H", "H"]
+        mass_j_names = ["2MASS.J", "2MASS J", "J"]
+        mass_k_names = ["2MASS.K", "2MASS.Ks", "2MASS K", "2MASS Ks", "K", "Ks"]
+        irac_i1_names = ["IRAC.I1", "IRAC I1", "IRAC 3.6", "IRAC 3.6um", "IRAC 3.6mu", "I1"]
+        irac_i2_names = ["IRAC.I2", "IRAC I2", "IRAC 4.5", "IRAC 4.5um", "IRAC 4.5mu", "I2"]
+        irac_i3_names = ["IRAC.I3", "IRAC I3", "IRAC 5.8", "IRAC 5.8um", "IRAC 5.8mu", "I3"]
+        irac_i4_names = ["IRAC.I4", "IRAC I4", "IRAC 8.0", "IRAC 8.0um", "IRAC 8.0mu", "I4"]
+        wise_w1_names = ["WISE.W1", "WISE W1", "W1"]
+        wise_w2_names = ["WISE.W2", "WISE W2", "W2"]
+        wise_w3_names = ["WISE.W3", "wISE W3", "w3"]
+        wise_w4_names = ["WISE.W4", "WISE W4", "w4"]
+        pacs_blue_names = ["Pacs.blue", "PACS.BLUE", "PACS blue", "PACS BLUE", "Pacs 70mu", "Pacs 70um", "PACS 70mu", "PACS 70um"]
+        pacs_green_names = ["Pacs.green", "PACS.GREEN", "PACS green", "PACS GREEN", "Pacs 100mu", "Pacs 100um", "PACS 100mu", "PACS 100um"]
+        pacs_red_names = ["Pacs.red", "PACS.RED", "PACS red", "PACS RED", "Pacs 160mu", "Pacs 160um", "PACS 160mu", "PACS 160um"]
+        spire_psw_names = ["SPIRE.PSW", "SPIRE PSW", "SPIRE 250mu", "SPIRE 250um"]
+        spire_pmw_names = ["SPIRE.PMW", "SPIRE PMW", "SPIRE 350mu", "SPIRE 350um"]
+        spire_plw_names = ["SPIRE.PLW", "SPIRE PLW", "SPIRE 500mu", "SPIRE 500um"]
+
+        # Select the right filter
+        if name in galex_fuv_names: return cls("GALEX.FUV")
+        elif name in galex_nuv_names: return cls("GALEX.NUV")
+        elif name in sdss_u_names: return cls("SDSS.u")
+        elif name in sdss_g_names: return cls("SDSS.g")
+        elif name in sdss_r_names: return cls("SDSS.r")
+        elif name in sdss_i_names: return cls("SDSS.i")
+        elif name in sdss_z_names: return cls("SDSS.z")
+        elif name in mass_h_names: return cls("2MASS.H")
+        elif name in mass_j_names: return cls("2MASS.J")
+        elif name in mass_k_names: return cls("2MASS.Ks")
+        elif name in irac_i1_names: return cls("IRAC.I1")
+        elif name in irac_i2_names: return cls("IRAC.I2")
+        elif name in irac_i3_names: return cls("IRAC.I3")
+        elif name in irac_i4_names: return cls("IRAC.I4")
+        elif name in wise_w1_names: return cls("WISE.W1")
+        elif name in wise_w2_names: return cls("WISE.W2")
+        elif name in wise_w3_names: return cls("WISE.W3")
+        elif name in wise_w4_names: return cls("WISE.W4")
+        elif name in pacs_blue_names: return cls("Pacs.blue")
+        elif name in pacs_green_names: return cls("Pacs.green")
+        elif name in pacs_red_names: return cls("Pacs.red")
+        elif name in spire_psw_names: return cls("SPIRE.PSW_ext")
+        elif name in spire_pmw_names: return cls("SPIRE.PMW_ext")
+        elif name in spire_plw_names: return cls("SPIRE.PLW_ext")
+        else: raise ValueError("No corresponding filter found")
+
     # ---------- Retrieving information -------------------------------
 
     @property
