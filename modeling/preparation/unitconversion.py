@@ -19,11 +19,9 @@ import numpy as np
 from astropy import units as u
 from astropy import constants
 
-# Import the relevant AstroMagic classes and modules
-from ...magic.basics import Mask
-
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
+from ...core.tools import tables
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
@@ -62,6 +60,97 @@ ergscmHz_to_Jy = 1e23
 
 # Effective wavelengths for GALEX
 effective_wavelengths = {"GALEX.FUV": 1528.0 * u.Unit("Angstrom"), "GALEX.NUV": 2271.0 * u.Unit("Angstrom")}
+
+# -----------------------------------------------------------------
+
+def ab_to_jansky(ab_magnitude):
+
+    """
+    This function ...
+    :param ab_magnitude:
+    :return:
+    """
+
+    return ab_mag_zero_point.to("Jy").value * np.power(10.0, -2./5. * ab_magnitude)
+
+# -----------------------------------------------------------------
+
+def jansky_to_ab(jansky_fluxes):
+
+    """
+    This function ...
+    :param jansky_fluxes:
+    :return:
+    """
+
+    return -5./2. * np.log10(jansky_fluxes / ab_mag_zero_point.to("Jy").value)
+
+# -----------------------------------------------------------------
+
+# Construct table for conversion between AB and Vega magnitude scale
+
+# Band lambda_eff "mAB - mVega" MSun(AB) MSun(Vega)
+# U	3571 0.79 6.35 5.55
+# B	4344 -0.09 5.36 5.45
+# V	5456 0.02 4.80 4.78
+# R	6442 0.21 4.61 4.41
+# I	7994 0.45 4.52 4.07
+# J	12355 0.91 4.56 3.65
+# H	16458 1.39 4.71 3.32
+# Ks 21603 1.85	5.14 3.29
+# u	3546 0.91 6.38 5.47
+# g	4670 -0.08 5.12 5.20
+# r	6156 0.16 4.64 4.49
+# i	7472 0.37 4.53 4.16
+# z	8917 0.54 4.51 3.97
+
+# From: http://cosmo.nyu.edu/mb144/kcorrect/linear.ps
+# or http://astroweb.case.edu/ssm/ASTR620/alternateabsmag.html
+band_column = ["U", "B", "V", "R", "I", "J", "H", "Ks", "u", "g", "r", "i", "z"]
+lambda_column = [3571., 4344., 5456., 6442., 7994., 12355., 16458., 21603., 3546., 4670., 6156., 7472., 8917.]
+mab_mvega_column = [0.79, -0.09, 0.02, 0.21, 0.45, 0.91, 1.39, 1.85, 0.91, -0.08, 0.16, 0.37, 0.54]
+msun_ab_column = [6.35, 5.36, 4.80, 4.61, 4.52, 4.56, 4.71, 5.14, 6.38, 5.12, 4.64, 4.53, 4.51]
+msun_vega_column = [5.55, 5.45, 4.78, 4.41, 4.07, 3.65, 3.32, 3.29, 5.47, 5.20, 4.49, 4.16, 3.97]
+
+data = [band_column, lambda_column, mab_mvega_column, msun_ab_column, msun_vega_column]
+names = ["Band", "Effective wavelength", "mAB - mVega", "MSun(AB)", "MSun(Vega"]
+
+# Create the table
+ab_vega_conversion_table = tables.new(data, names)
+
+# -----------------------------------------------------------------
+
+def vega_to_ab(vega_magnitude, band):
+
+    """
+    This function ...
+    :param vega_magnitude:
+    :param band:
+    :return:
+    """
+
+    # Get the index of the row corresponding to the specified band
+    band_index = tables.find_index(ab_vega_conversion_table, band)
+
+    # Return the magnitude in the AB scale
+    return vega_magnitude + ab_vega_conversion_table["mAB - mVega"][band_index]
+
+# -----------------------------------------------------------------
+
+def ab_to_vega(ab_magnitude, band):
+
+    """
+    This function ...
+    :param ab_magnitude:
+    :param band:
+    :return:
+    """
+
+    # Get the index of the row corresponding to the specified band
+    band_index = tables.find_index(ab_vega_conversion_table, band)
+
+    # Return the magnitude in the Vega system
+    return ab_magnitude - ab_vega_conversion_table["mAB - mVega"][band_index]
 
 # -----------------------------------------------------------------
 
