@@ -784,7 +784,7 @@ def fetch_objects_in_box(box, catalog, keywords, radius, limit=None, column_filt
     viz.ROW_LIMIT = limit if limit is not None else -1
 
     # Query the box of our image frame
-    result = viz.query_region(coordinate, width=box[3]*u.deg, height=box[2]*u.deg, catalog=catalog)
+    result = viz.query_region(coordinate, width=box[3] * u.Unit("deg"), height=box[2] * u.Unit("deg"), catalog=catalog)
 
     region_string = "# Region file format: DS9 version 3.0\n"
     region_string += "global color=green\n"
@@ -801,7 +801,6 @@ def fetch_objects_in_box(box, catalog, keywords, radius, limit=None, column_filt
 
             # Create a string with the coordinates of the star
             regline = "fk5;circle(%s,%s,%.2f\")\n" % (ra, dec, radius)
-            #regline = "image;circle(%s,%s,%s)\n" % (ra, dec, radius)
 
             # Add the parameters of this star to the region string
             region_string += regline

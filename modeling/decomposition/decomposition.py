@@ -45,7 +45,7 @@ disk.pa = -23.6950
 
 s4g_decomposition_table_link = "http://www.oulu.fi/astronomy/S4G_PIPELINE4/s4g_p4_table8.dat"
 
-local_table_path = os.path.join(inspection.pts_dat_dir("modeling"), "s4G", "s4g_p4_table8.dat")
+local_table_path = os.path.join(inspection.pts_dat_dir("modeling"), "s4g", "s4g_p4_table8.dat")
 
 # -----------------------------------------------------------------
 

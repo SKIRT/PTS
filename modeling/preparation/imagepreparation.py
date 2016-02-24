@@ -158,7 +158,7 @@ class ImagePreparer(Configurable):
             ab_frame[invalid] = 0.0
 
             # Calculate data in Jansky
-            jansky_frame = unitconversion.ab_mag_zero_point.to("Jy").value * np.power(10.0, -2./5. * ab_frame)
+            jansky_frame = unitconversion.ab_to_jansky(ab_frame)
 
             # Add the frame with AB magnitudes and the mask with zeros
             #self.image.add_mask(zeros, "zeros")
@@ -175,7 +175,7 @@ class ImagePreparer(Configurable):
 
             # Pixels that are zero or less cannot be converted into magnitude scale
             invalid = Mask.is_zero_or_less(jansky_frame)
-            ab_frame = -5./2. * np.log10(jansky_frame / unitconversion.ab_mag_zero_point.to("Jy").value)
+            ab_frame = unitconversion.jansky_to_ab(jansky_frame)
 
             # Set infinites to zero
             ab_frame[invalid] = 0.0
@@ -224,12 +224,14 @@ class ImagePreparer(Configurable):
             # The actual calibration errors in the same unit as the data
             calibration_frame = self.image.frames.primary * relative_calibration_errors
 
+        # The calibration uncertainty is expressed in a percentage (from the flux values)
         elif "%" in self.config.uncertainties.calibration_error:
 
             # Calculate calibration errors with percentage
             fraction = float(self.config.uncertainties.calibration_error.split("%")[0]) * 0.01
             calibration_frame = self.image.frames.primary * fraction
 
+        # Unrecognized calibration error (not a magnitude, not a percentage)
         else: raise ValueError("Unrecognized calibration error")
 
         # Add the calibration frame
