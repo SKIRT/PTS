@@ -508,7 +508,7 @@ class Galaxy:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # define discretionary HII region properties
-        f_PDR = 0.20        # PDR covering fraction
+        f_PDR = 0.15        # PDR covering fraction
         b_PDR = 10.         # boost factor for negative gas mass compensating for PDR dust emission,
                             #   M_negative_gas = SFR * infant_age * b_PDR
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -581,7 +581,7 @@ class Galaxy:
                 # using SKIRT's standard smoothing kernel mass/size normalization: rho = 8/pi * M/h^3;
                 # and randomly shift the positions of the HII regions within a similarly enlarged range
                 hiiregions['h_mapp'] = (10. * ms[isinfant] / (np.pi/8 * sdat['rho_born'][idxs][isinfant] * densconv))**(1/3.)
-                sf.stochShiftPos(hiiregions['r'], 10.**(1/3.) * hiiregions['h'], hiiregions['h_mapp'])
+                sf.stochShiftPos(hiiregions['r'], hiiregions['h'], hiiregions['h_mapp'])
 
                 # append to MAPPINGSIII array
                 mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
@@ -639,7 +639,7 @@ class Galaxy:
                 # using SKIRT's standard smoothing kernel mass/size normalization: rho = 8/pi * M/h^3;
                 # and randomly shift the positions of the HII regions within a similarly enlarged range
                 hiiregions['h_mapp'] = (10. * ms[isinfant] / (np.pi/8 * gdat['rho'][idxs][isinfant] * densconv))**(1/3.)
-                sf.stochShiftPos(hiiregions['r'], 10.**(1/3.) * hiiregions['h'], hiiregions['h_mapp'])
+                sf.stochShiftPos(hiiregions['r'], hiiregions['h'], hiiregions['h_mapp'])
 
                 # append to MAPPINGSIII array
                 mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
