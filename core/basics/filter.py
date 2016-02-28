@@ -98,7 +98,13 @@ class Filter:
     #| WISE/WISE.W2 | 4.644 | 4.641 | Pho | WISE W2 filter
     #| WISE/WISE.W3 | 13.22 | 12.57 | Pho | WISE W3 filter
     #| WISE/WISE.W4 | 22.22 | 22.31 | Pho | WISE W4 filter
-    #
+    #| Generic/Johnson.U | Johnson U
+    #| Generic/Johnson.B | Johnson B
+    #| Generic/Johnson.V | Johnson V
+    #| Generic/Johnson.R | Johnson R
+    #| Generic/Johnson.I | Johnson I
+    #| Generic/Johnson.J | Johnson J
+    #| Generic/Johnson.M | Johnson M
     def __init__(self, filterspec):
 
         # string --> load from appropriate resource file
@@ -178,6 +184,10 @@ class Filter:
         :return:
         """
 
+        # First try an exact match
+        #try: return cls(name)
+        #except ValueError: pass
+
         # Define the different possible names for each of the filters
         galex_fuv_names = ["GALEX.FUV", "GALEX FUV", "FUV"]
         galex_nuv_names = ["GALEX.NUV", "GALEX NUV", "NUV"]
@@ -197,12 +207,28 @@ class Filter:
         wise_w2_names = ["WISE.W2", "WISE W2", "W2"]
         wise_w3_names = ["WISE.W3", "wISE W3", "w3"]
         wise_w4_names = ["WISE.W4", "WISE W4", "w4"]
+        mips_24_names = ["MIPS.24mu", "MIPS.24um", "MIPS.24", "MIPS 24mu", "MIPS 24um", "MIPS 24", "24mu", "24um"]
+        mips_70_names = ["MIPS.70mu", "MIPS.70um", "MIPS.70", "MIPS 70mu", "MIPS 70um", "MIPS 70"]
+        mips_160_names = ["MIPS.160mu", "MIPS.160um", "MIPS.160", "MIPS 160mu", "MIPS 160um", "MIPS 160"]
         pacs_blue_names = ["Pacs.blue", "PACS.BLUE", "PACS blue", "PACS BLUE", "Pacs 70mu", "Pacs 70um", "PACS 70mu", "PACS 70um"]
         pacs_green_names = ["Pacs.green", "PACS.GREEN", "PACS green", "PACS GREEN", "Pacs 100mu", "Pacs 100um", "PACS 100mu", "PACS 100um"]
         pacs_red_names = ["Pacs.red", "PACS.RED", "PACS red", "PACS RED", "Pacs 160mu", "Pacs 160um", "PACS 160mu", "PACS 160um"]
         spire_psw_names = ["SPIRE.PSW", "SPIRE PSW", "SPIRE 250mu", "SPIRE 250um"]
         spire_pmw_names = ["SPIRE.PMW", "SPIRE PMW", "SPIRE 350mu", "SPIRE 350um"]
         spire_plw_names = ["SPIRE.PLW", "SPIRE PLW", "SPIRE 500mu", "SPIRE 500um"]
+
+        # Generic filters
+        johnson_u_names = ["Johnson U", "U"]
+        johnson_b_names = ["Johnson B", "B"]
+        johnson_v_names = ["Johnson V", "V"]
+        johnson_r_names = ["Johnson R", "R"]
+        johnson_i_names = ["Johnson I", "I"]
+
+        # IRAS filters
+        iras_12_names = ["IRAS.12", "IRAS 12", "IRAS.12um", "IRAS 12um", "IRAS.12mu", "IRAS 12mu"]
+        iras_25_names = ["IRAS.25", "IRAS 25", "IRAS.25um", "IRAS 25um", "IRAS.25mu", "IRAS 25mu"]
+        iras_60_names = ["IRAS 60", "IRAS 60", "IRAS.60um", "IRAS 60um", "IRAS.60mu", "IRAS 60mu"]
+        iras_100_names = ["IRAS 100", "IRAS 100", "IRAS.100um", "IRAS 100um", "IRAS.100mu", "IRAS 100mu"]
 
         # Select the right filter
         if name in galex_fuv_names: return cls("GALEX.FUV")
@@ -223,12 +249,24 @@ class Filter:
         elif name in wise_w2_names: return cls("WISE.W2")
         elif name in wise_w3_names: return cls("WISE.W3")
         elif name in wise_w4_names: return cls("WISE.W4")
+        elif name in mips_24_names: return cls("MIPS.24mu")
+        elif name in mips_70_names: return cls("MIPS.70mu")
+        elif name in mips_160_names: return cls("MIPS.160mu")
         elif name in pacs_blue_names: return cls("Pacs.blue")
         elif name in pacs_green_names: return cls("Pacs.green")
         elif name in pacs_red_names: return cls("Pacs.red")
         elif name in spire_psw_names: return cls("SPIRE.PSW_ext")
         elif name in spire_pmw_names: return cls("SPIRE.PMW_ext")
         elif name in spire_plw_names: return cls("SPIRE.PLW_ext")
+        elif name in johnson_u_names: return cls("Johnson.U")
+        elif name in johnson_b_names: return cls("Johnson.B")
+        elif name in johnson_v_names: return cls("Johnson.V")
+        elif name in johnson_r_names: return cls("Johnson.R")
+        elif name in johnson_i_names: return cls("Johnson.I")
+        elif name in iras_12_names: return cls("IRAS.12mu")
+        elif name in iras_25_names: return cls("IRAS.25mu")
+        elif name in iras_60_names: return cls("IRAS.60mu")
+        elif name in iras_100_names: return cls("IRAS.100mu")
         else: raise ValueError("No corresponding filter found")
 
     # ---------- Retrieving information -------------------------------
