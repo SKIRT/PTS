@@ -21,6 +21,19 @@ from . import time
 
 # -----------------------------------------------------------------
 
+def join(path_a, path_b):
+
+    """
+    This function ...
+    :param path_a:
+    :param path_b:
+    :return:
+    """
+
+    return os.path.join(path_a, path_b)
+
+# -----------------------------------------------------------------
+
 def is_file(path):
 
     """
