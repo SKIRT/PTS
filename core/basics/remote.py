@@ -18,12 +18,11 @@ import tempfile
 
 # Import the relevant PTS classes and modules
 from .host import Host
-from .loggable import Loggable
 from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
-class Remote(Loggable):
+class Remote(object):
 
     """
     This function ...
@@ -59,11 +58,10 @@ class Remote(Loggable):
 
         """
         This function ...
+        :param host_id:
+        :param cluster:
         :return:
         """
-
-        # Call the setup function of the base class
-        super(Remote, self).setup()
 
         # Create the host object
         self.host = Host(host_id, cluster)

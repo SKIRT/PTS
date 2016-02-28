@@ -17,12 +17,11 @@ from __future__ import absolute_import, division, print_function
 import os
 
 # Import the relevant PTS classes and modules
-from .loggable import Loggable
 from ..tools import configuration
 
 # -----------------------------------------------------------------
 
-class Configurable(Loggable):
+class Configurable(object):
 
     """
     This class ...
@@ -84,30 +83,30 @@ class Configurable(Loggable):
         """
 
         # Determine the full path to the log file
-        path = self.full_output_path(self.config.logging.path) if self.config.logging.path is not None else None
+        #path = self.full_output_path(self.config.logging.path) if self.config.logging.path is not None else None
 
         # Call the setup function of the Loggable base class
-        super(Configurable, self).setup(self.config.logging.level, path)
+        #super(Configurable, self).setup(self.config.logging.level, path)
 
         # Call the setup functions of the children
-        for child_name in self.children:
+        #for child_name in self.children:
 
-            child = self.children[child_name]
+        #    child = self.children[child_name]
 
             # Set the input and output path for the child
-            child.config.input_path = self.config.input_path
-            child.config.output_path = self.config.output_path
+        #    child.config.input_path = self.config.input_path
+        #    child.config.output_path = self.config.output_path
 
             # Options for logging
-            child.config.logging.level = "WARNING"
-            child.config.logging.path = self.config.logging.path
+        #    child.config.logging.level = "WARNING"
+        #    child.config.logging.path = self.config.logging.path
 
             # Set the log level and path for the different children of this object, if cascading is enabled
-            if self.config.logging.cascade:
+        #    if self.config.logging.cascade:
 
                 # Galaxy extractor
-                child.config.logging.cascade = True
-                child.config.logging.level = self.config.logging.level
+        #        child.config.logging.cascade = True
+        #        child.config.logging.level = self.config.logging.level
 
     # -----------------------------------------------------------------
 
@@ -172,5 +171,19 @@ class Configurable(Loggable):
         if os.path.isabs(name): return name
         elif "output_path" in self.config and self.config.output_path is not None: return os.path.join(self.config.output_path, name)
         else: return os.path.join(os.getcwd(), name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        name = type(self).__name__.lower()
+        if "plotter" in name: return "plotter"
+        else: return name
 
 # -----------------------------------------------------------------
