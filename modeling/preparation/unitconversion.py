@@ -61,6 +61,82 @@ ergscmHz_to_Jy = 1e23
 # Effective wavelengths for GALEX
 effective_wavelengths = {"GALEX.FUV": 1528.0 * u.Unit("Angstrom"), "GALEX.NUV": 2271.0 * u.Unit("Angstrom")}
 
+# Conversion between flux density in SI units and Jansky
+jansky_to_si = 1e-26  # 1 Jy in W / [ m2 * Hz]
+si_to_jansky = 1e26  # 1 W / [m2 * Hz] in Jy
+
+# -----------------------------------------------------------------
+
+def spectral_factor(wavelength, wavelength_unit, frequency_unit):
+
+    """
+    This function ...
+    :param wavelength:
+    :param wavelength_unit:
+    :param frequency_unit:
+    :return:
+    """
+
+    # Convert string units to Unit objects
+    if isinstance(wavelength_unit, basestring): wavelength_unit = u.Unit(wavelength_unit)
+    if isinstance(frequency_unit, basestring): frequency_unit = u.Unit(frequency_unit)
+
+    conversion_factor_unit = wavelength_unit / frequency_unit
+
+    #print(conversion_factor_unit)
+    #print(wavelength)
+    #print(speed_of_light)
+
+    # Calculate the conversion factor
+    return (wavelength**2 / speed_of_light).to(conversion_factor_unit).value
+
+# -----------------------------------------------------------------
+
+def neutral_fluxdensity_to_jansky(flux_density, wavelength):
+
+    """
+    This function converts a flux density in W/m2 (lambda F_lambda = nu F_nu) to Jansky
+    :param flux_density:
+    :param wavelength:
+    :return:
+    """
+
+    # Conversion from W / m2 to W / m3
+    wavelength_fluxdensity = flux_density / wavelength.to("m").value
+
+    # Conversion from W / m3 to Jy
+    return wavelength_fluxdensity_to_jansky(wavelength_fluxdensity, wavelength)
+
+# -----------------------------------------------------------------
+
+def wavelength_fluxdensity_to_jansky(flux_density, wavelength):
+
+    """
+    This function converts a flux density in W/m3 (F_lambda) to Jansky
+    :param flux_density:
+    :param wavelength:
+    :return:
+    """
+
+    # Conversion from W / m3 to W / [ m2 * Hz]
+    frequency_fluxdensity = flux_density * spectral_factor(wavelength, "m", "Hz")
+
+    # Conversion from W / [m2 * Hz] to Jy
+    return frequency_fluxdensity_to_jansky(frequency_fluxdensity)
+
+# -----------------------------------------------------------------
+
+def frequency_fluxdensity_to_jansky(flux_density):
+
+    """
+    This function converts a flux density in W/m2/Hz (F_nu) to Jansky
+    :param flux_density:
+    :return:
+    """
+
+    # Conversion from W / [m2 * Hz] (per pixel2) to Jy per pixel
+    return flux_density * si_to_jansky
+
 # -----------------------------------------------------------------
 
 def ab_to_jansky(ab_magnitude):
@@ -151,6 +227,50 @@ def ab_to_vega(ab_magnitude, band):
 
     # Return the magnitude in the Vega system
     return ab_magnitude - ab_vega_conversion_table["mAB - mVega"][band_index]
+
+# -----------------------------------------------------------------
+
+def photometry_2mass_mag_to_jy(magnitude, band):
+
+    """
+    This function ...
+    :param magnitude:
+    :param band:
+    :return:
+    """
+
+    return f_0_2mass["2MASS."+band] * 10.**(-magnitude/2.5)
+
+# -----------------------------------------------------------------
+
+# Get magnitudes (asinh magnitudes: Lupton et al. (1999))
+# whereby the logarithmic magnitude scale transitions to a linear scale in flux density f at low S/N:
+#
+# m = −2.5/ln(10) * [ asinh((f/f0)/(2b)) + ln(b) ]
+#
+# f0 = 3631 Jy, the zero point of the AB flux scale
+# The quantity b for the co-addition is given in Table 2, along with the asinh magnitude associated with a zero-flux object.
+
+# From THE SEVENTH DATA RELEASE OF THE SLOAN DIGITAL SKY SURVEY (Kevork N. Abazajian, 2009)
+# Table 2
+# Asinh Magnitude Softening Parameters for the Co-Addition
+# Band    b            Zero-Flux Magnitude    m
+#                      (m(f/f0 = 0))          (f/f0 = 10b)
+# -----------------------------------------------------------------
+# u      1.0 × 10−11   27.50                  24.99
+# g      0.43 × 10−11  28.42                  25.91
+# r      0.81 × 10−11  27.72                  25.22
+# i      1.4 × 10−11   27.13                  24.62
+# z      3.7 × 10−11   26.08                  23.57
+
+band_column = ["u", "g", "r", "i", "z"]
+b_column = [1.0e-11, 0.43e-11, 0.81e-11, 1.4e-11, 3.7e-11]
+zeroflux_column = [27.50, 28.42, 27.72, 27.13, 26.08]
+m_column = [24.99, 25.91, 25.22, 24.62, 23.57]
+
+data = [band_column, b_column, zeroflux_column, m_column]
+names = ["Band", "b", "Zero-flux magnitude", "m"]
+#sdss_asinh_parameters_table = tables.new(data, names)
 
 # -----------------------------------------------------------------
 
@@ -286,7 +406,7 @@ class UnitConverter(Configurable):
         :return:
         """
 
-        return (wavelength**2 / speed_of_light).to("Angstrom / Hz").value
+        return spectral_factor(wavelength, "Angstrom", "Hz")
 
     # -----------------------------------------------------------------
 
@@ -298,7 +418,7 @@ class UnitConverter(Configurable):
         :return:
         """
 
-        return (wavelength**2 / speed_of_light).to("cm / Hz").value
+        return spectral_factor(wavelength, "cm", "Hz")
 
     # -----------------------------------------------------------------
 
@@ -310,7 +430,19 @@ class UnitConverter(Configurable):
         :return:
         """
 
-        return (wavelength**2 / speed_of_light).to("micron / Hz").value
+        return spectral_factor(wavelength, "micron", "Hz")
+
+    # -----------------------------------------------------------------
+
+    def spectral_factor_meter_to_hz(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        return spectral_factor(wavelength, "m", "Hz")
 
     # -----------------------------------------------------------------
 
