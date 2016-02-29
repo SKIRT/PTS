@@ -51,7 +51,7 @@
                     </PanStellarComp>
                     <PanStellarComp>
                         <geometry type="Geometry">
-                            <ReadFitsGeometry filename="non_ionizing_stars.fits" pixelScale="49.74188368 pc" positionAngle="67 deg" inclination="59 deg" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="150 pc"/>
+                            <ReadFitsGeometry filename="young_stars.fits" pixelScale="49.74188368 pc" positionAngle="67 deg" inclination="59 deg" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="150 pc"/>
                         </geometry>
                         <sed type="StellarSED">
                             <StarburstSED metallicity="0.02"/>
@@ -84,42 +84,7 @@
                                     <ReadFitsGeometry filename="dust.fits" pixelScale="49.74188368 pc" positionAngle="67 deg" inclination="59 deg" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="260.5 pc"/>
                                 </geometry>
                                 <mix type="DustMix">
-                                    <ConfigurableDustMix writeMix="true" writeMeanMix="true" writeSize="true">
-                                        <populations type="DustMixPopulation">
-                                            <DustMixPopulation subPops="25">
-                                                <composition type="GrainComposition">
-                                                    <AmHydrocarbonGrainComposition/>
-                                                </composition>
-                                                <sizeDistribution type="GrainSizeDistribution">
-                                                    <ModifiedPowerLawGrainSizeDistribution factor="8.535444088e-39" minSize="0.0004 micron" maxSize="4.9 micron" alpha="-5" at="0.01 micron" ac="0.05 micron" gamma="1" au="0.0001 micron" zeta="0" eta="0"/>
-                                                </sizeDistribution>
-                                            </DustMixPopulation>
-                                            <DustMixPopulation subPops="25">
-                                                <composition type="GrainComposition">
-                                                    <AmHydrocarbonGrainComposition/>
-                                                </composition>
-                                                <sizeDistribution type="GrainSizeDistribution">
-                                                    <LogNormalGrainSizeDistribution factor="1.021994012e-07" minSize="0.0005 micron" maxSize="4.9 micron" centroid="0.007 micron" width="1"/>
-                                                </sizeDistribution>
-                                            </DustMixPopulation>
-                                            <DustMixPopulation subPops="25">
-                                                <composition type="GrainComposition">
-                                                    <ForsteriteGrainComposition type="Amorphous"/>
-                                                </composition>
-                                                <sizeDistribution type="GrainSizeDistribution">
-                                                    <LogNormalGrainSizeDistribution factor="2.111201902e-07" minSize="0.001 micron" maxSize="4.9 micron" centroid="0.008 micron" width="1"/>
-                                                </sizeDistribution>
-                                            </DustMixPopulation>
-                                            <DustMixPopulation subPops="25">
-                                                <composition type="GrainComposition">
-                                                    <EnstatiteGrainComposition type="Amorphous"/>
-                                                </composition>
-                                                <sizeDistribution type="GrainSizeDistribution">
-                                                    <LogNormalGrainSizeDistribution factor="2.111201902e-07" minSize="0.001 micron" maxSize="4.9 micron" centroid="0.008 micron" width="1"/>
-                                                </sizeDistribution>
-                                            </DustMixPopulation>
-                                        </populations>
-                                    </ConfigurableDustMix>
+                                    <ThemisDustMix writeMix="true" writeMeanMix="true" writeSize="true" hydrocarbonPops="25" enstatitePops="25" forsteritePops="25"/>
                                 </mix>
                                 <normalization type="DustCompNormalization">
                                     <DustMassDustCompNormalization dustMass="2e7 Msun"/>

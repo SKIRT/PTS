@@ -17,4 +17,7 @@
 # -----------------------------------------------------------------
 
 # Import classes to make them available at the level of this subpackage
+from .initialization import InputInitializer
+from .parameterexploration import ParameterExplorer
 from .sedfitting import SEDFitter
+
