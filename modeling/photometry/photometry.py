@@ -26,6 +26,7 @@ from ...magic.tools import headers
 
 # Import the relevant PTS classes and modules
 from ..core import ModelingComponent
+from .sedfetching import SEDFetcher
 from ...core.tools import filesystem
 from ...core.tools.logging import log
 from ..core import ObservedSED
@@ -54,6 +55,9 @@ class PhotoMeter(ModelingComponent):
 
         # The SED
         self.sed = None
+
+        # The SEDFetcher
+        self.sed_fetcher = None
 
     # -----------------------------------------------------------------
 
@@ -98,6 +102,9 @@ class PhotoMeter(ModelingComponent):
         # 3. Do the photometry
         self.do_photometry()
 
+        # 4. Get the photometric flux points from the literature for comparison
+        self.get_references()
+
         # 4. Writing
         self.write()
 
@@ -115,6 +122,9 @@ class PhotoMeter(ModelingComponent):
 
         # Create an observed SED
         self.sed = ObservedSED()
+
+        # Create an SEDFetcher instance
+        self.sed_fetcher = SEDFetcher()
 
     # -----------------------------------------------------------------
 
@@ -256,6 +266,18 @@ class PhotoMeter(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_references(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Fetch the reference SEDs
+        self.sed_fetcher.run(self.galaxy_name)
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -300,11 +322,8 @@ class PhotoMeter(ModelingComponent):
         # Add the SED
         plotter.add_observed_sed(self.sed, "Observation")
 
-        # Add the SED of photometry measurements found on NED
-        ned_path = os.path.join(self.config.path, "ned")
-        ned_sed_path = os.path.join(ned_path, "fluxes.dat")
-        ned_sed = ObservedSED.from_file(ned_sed_path)
-        plotter.add_observed_sed(ned_sed, "Literature")
+        # Add the reference SEDs
+        for label in self.sed_fetcher.seds: plotter.add_observed_sed(self.sed_fetcher.seds[label], label)
 
         # Determine the full path to the plot file
         path = self.full_output_path("sed.pdf")
