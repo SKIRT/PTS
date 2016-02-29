@@ -76,17 +76,19 @@ def from_file(path, format="ascii.commented_header"):
 
 # -----------------------------------------------------------------
 
-def new(data, names, meta=None):
+def new(data, names, meta=None, dtypes=None):
 
     """
     This function ...
+    :param data:
     :param names:
     :param meta:
+    :param dtypes:
     :return:
     """
 
     # Create a new table from the data
-    table = Table(data, names=names, meta=meta, masked=True)
+    table = Table(data, names=names, meta=meta, masked=True, dtype=dtypes)
 
     # Set mask for each column from None values
     for column_index in range(len(names)):

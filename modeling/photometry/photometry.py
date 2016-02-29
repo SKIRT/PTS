@@ -30,6 +30,8 @@ from .sedfetching import SEDFetcher
 from ...core.tools import filesystem
 from ...core.tools.logging import log
 from ..core import ObservedSED
+from ...core.basics.errorbar import ErrorBar
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -58,6 +60,9 @@ class PhotoMeter(ModelingComponent):
 
         # The SEDFetcher
         self.sed_fetcher = None
+
+        # The differences
+        self.differences = None
 
     # -----------------------------------------------------------------
 
@@ -104,6 +109,9 @@ class PhotoMeter(ModelingComponent):
 
         # 4. Get the photometric flux points from the literature for comparison
         self.get_references()
+
+        # 5. Calculate the differences between the calculated photometry and the reference SEDs
+        self.calculate_differences()
 
         # 4. Writing
         self.write()
@@ -261,8 +269,11 @@ class PhotoMeter(ModelingComponent):
             jansky_errors_frame[inverted_mask] = 0.0
             flux_error = np.sum(jansky_errors_frame)
 
+            # Create errorbar
+            errorbar = ErrorBar(float(flux_error))
+
             # Add this entry to the SED
-            self.sed.add_entry(image.filter, flux, flux_error)
+            self.sed.add_entry(image.filter, flux, errorbar)
 
     # -----------------------------------------------------------------
 
@@ -278,6 +289,76 @@ class PhotoMeter(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def calculate_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        instruments = self.sed.instruments()
+        bands = self.sed.bands()
+        fluxes = self.sed.fluxes(unit="Jy")
+
+        number_of_points = len(instruments)
+
+        reference_labels = self.sed_fetcher.seds.keys()
+
+        data = [[] for _ in range(len(reference_labels)+3)]
+        names = ["Instrument", "Band", "Flux"]
+        #dtypes = ['S10', 'S10', 'f8']
+        for label in reference_labels:
+            names.append(label)
+            #dtypes.append('f8')
+
+        # Create table of differences
+        #self.differences = tables.new(data, names=names, dtypes=dtypes)
+
+        for i in range(len(instruments)):
+
+            #row = []
+            #row.append(instruments[i])
+            #row.append(bands[i])
+            #row.append(fluxes[i])
+
+            data[0].append(instruments[i])
+            data[1].append(bands[i])
+            data[2].append(fluxes[i])
+
+            column_index = 3
+
+            # Loop over the different reference SEDs
+            for label in reference_labels:
+
+                relative_difference = None
+
+                # Loop over the data points in the reference SED
+                for j in range(len(self.sed_fetcher.seds[label].table["Wavelength"])):
+
+                    if self.sed_fetcher.seds[label].table["Instrument"][j] == instruments[i] and self.sed_fetcher.seds[label].table["Band"][j] == bands[i]:
+
+                        difference = fluxes[i] - self.sed_fetcher.seds[label].table["Flux"][j]
+                        relative_difference = difference / self.sed_fetcher.seds[label].table["Flux"][j] * 100.
+
+                        # Break because a match has been found within this reference SED
+                        break
+
+                # Add percentage to the table (or None if no match was found in this reference SED)
+                #row.append(relative_difference)
+                data[column_index].append(relative_difference)
+
+                column_index += 1
+
+            #self.differences.add_row(row)
+
+        # Create table of differences
+        self.differences = tables.new(data, names=names)
+
+        print(self.differences)
+        print(self.differences["2MASS"].mask)
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -287,6 +368,9 @@ class PhotoMeter(ModelingComponent):
 
         # Write SED table
         self.write_sed()
+
+        # Write the differences
+        self.write_differences()
 
         # Plot the SED
         self.plot_sed()
@@ -305,6 +389,21 @@ class PhotoMeter(ModelingComponent):
 
         # Save the SED
         self.sed.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the output file
+        path = self.full_output_path("differences.dat")
+
+        # Save the differences table
+        tables.write(self.differences, path)
 
     # -----------------------------------------------------------------
 

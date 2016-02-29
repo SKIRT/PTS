@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
@@ -62,6 +63,17 @@ class SEDPlotter(object):
         self.models = OrderedDict()
         self.observations = OrderedDict()
 
+        # Keep track of the minimal and maximal wavelength and flux encountered during the plotting
+        self._min_wavelength = None
+        self._max_wavelength = None
+        self._min_flux = None
+        self._max_flux = None
+
+        # Store the figure and its axes as references
+        self._figure = None
+        self._main_axis = None
+        self._residual_axes = []
+
     # -----------------------------------------------------------------
 
     def add_modeled_sed(self, sed, label):
@@ -105,6 +117,26 @@ class SEDPlotter(object):
 
     # -----------------------------------------------------------------
 
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set default values for all attributes
+        self.models = OrderedDict()
+        self.observations = OrderedDict()
+        self._min_wavelength = None
+        self._max_wavelength = None
+        self._min_flux = None
+        self._max_flux = None
+        self._figure = None
+        self._main_axis = None
+        self._residual_axes = []
+
+    # -----------------------------------------------------------------
+
     def plot(self, path):
 
         """
@@ -122,6 +154,7 @@ class SEDPlotter(object):
 
         """
         This function ...
+        :param path:
         :return:
         """
 
@@ -138,14 +171,15 @@ class SEDPlotter(object):
         :return:
         """
 
+        # Determine color map class
+        colormap = plt.get_cmap("rainbow")
+
+        # The size of the figure
         figsize = (10,6)
 
         # Setup the figure
-        figure = plt.figure(figsize=figsize)
-
-        # Keep track of the minimum and maximum flux encountered
-        min_flux = None
-        max_flux = None
+        self._figure = plt.figure(figsize=figsize)
+        self._main_axis = self._figure.gca()
 
         # Get the first (only) observation
         observation = self.observations[self.observations.keys()[0]]
@@ -157,66 +191,14 @@ class SEDPlotter(object):
         bands = observation.bands()
         errors = observation.errors(unit="Jy")
 
-        # Get labels and descriptions
-        labels, descriptions = get_labels_and_descriptions(instruments, bands)
+        # Create colors
+        colors = colormap(np.linspace(0, 1, len(wavelengths)))
 
-        # Determine color map class
-        colormap = plt.get_cmap("rainbow")
+        # Plot
+        self.draw_observation(instruments, bands, wavelengths, fluxes, errors, colors)
 
-        # Create color range
-        color_range = iter(colormap(np.linspace(0, 1, len(wavelengths))))
-
-        # Unique labels
-        unique_labels = list(set(list(labels)))
-
-        # Markers for the unique labels
-        markers = filled_markers[:len(unique_labels)]
-
-        # Used labels
-        used_labels = []
-
-        # Loop over the wavelengths
-        for k in range(len(wavelengths)):
-
-            # Check validity of flux value
-            if fluxes[k] <= 0.0:
-                log.warning("Negative flux encountered for " + str(descriptions[k]) + " band")
-                continue
-
-            # Keep track of minimum and maximum flux
-            if min_flux is None or fluxes[k] < min_flux: min_flux = fluxes[k]
-            if max_flux is None or fluxes[k] > max_flux: max_flux = fluxes[k]
-
-            # Get next color
-            color = next(color_range)
-
-            # Get marker
-            marker = markers[unique_labels.index(labels[k])]
-
-            # Plot on the main axis with the specified marker and color
-            plot_wavelength(plt.gca(), labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
-
-        # Set axis limits if requested
-        log_min_flux = np.log10(min_flux)
-        log_max_flux = np.log10(max_flux)
-        plot_min = 0.9 * log_min_flux if log_min_flux > 0 else 1.1 * log_min_flux
-        plot_max = 1.1 * log_max_flux
-        plt.gca().set_ylim((plot_min, plot_max))
-
-        # Hide ticks
-        figure.subplots_adjust(hspace=0)
-        plt.setp([a.get_xticklabels() for a in figure.axes[:-1]], visible=False)
-
-        # Add axis labels and a legend
-        plt.gca().set_xscale('log')
-        plt.gca().set_ylabel(r"Log $F_\nu$$[Jy]$", fontsize='large')
-
-        # Add the legend
-        plt.gca().legend(numpoints=1, loc=4, frameon=True, ncol=2, fontsize=11)
-
-        # Save the figure
-        plt.savefig(path, bbox_inches='tight', pad_inches=0.25)
-        plt.close()
+        # Finish the plot
+        self.finish_plot(path)
 
     # -----------------------------------------------------------------
 
@@ -228,6 +210,7 @@ class SEDPlotter(object):
         :return:
         """
 
+        # The size of the figure
         figsize = (10,6)
 
         # http://matplotlib.org/examples/color/colormaps_reference.html
@@ -243,17 +226,14 @@ class SEDPlotter(object):
         #ax_number = add_subplot_axes(ax,rect)
 
         # Setup the figure
-        figure = plt.figure(figsize=figsize)
+        self._figure = plt.figure(figsize=figsize)
         gs = gridspec.GridSpec(2, 1, height_ratios=[4,1])
-        ax1 = plt.subplot(gs[0])
-        ax2 = plt.subplot(gs[1], sharex=ax1)
+        self._main_axis = plt.subplot(gs[0])
+        ax2 = plt.subplot(gs[1], sharex=self._main_axis)
+        self._residual_axes.append(ax2)
 
         # Count the number of observed SEDs
         number_of_observations = len(self.observations)
-
-        # Keep track of the minimum and maximum flux encountered
-        min_flux = None
-        max_flux = None
 
         # Keep track of whether we are plotting the first observed SED
         first = True
@@ -312,10 +292,6 @@ class SEDPlotter(object):
                     log.warning("Negative flux encountered for " + str(descriptions[k]) + " band")
                     continue
 
-                # Keep track of minimum and maximum flux
-                if min_flux is None or fluxes[k] < min_flux: min_flux = fluxes[k]
-                if max_flux is None or fluxes[k] > max_flux: max_flux = fluxes[k]
-
                 # Get next color
                 color = next(color_range)
 
@@ -323,7 +299,7 @@ class SEDPlotter(object):
                 marker = markers[unique_labels.index(labels[k])]
 
                 # Plot the flux data point on the main axis with the specified marker and color
-                plot_wavelength(ax1, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
+                self.plot_wavelength(self._main_axis, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
 
                 # Plot on axis 2
                 if first:
@@ -357,33 +333,8 @@ class SEDPlotter(object):
             # The next observation is not the first anymore
             first = False
 
-        # Set linestyle and limit for axis2
-        ax2.axhline(y=0., color='black', ls='-.')
-        ax2.set_ylim(-95, 95)
-
-        # Set axis limits if requested
-        log_min_flux = np.log10(min_flux)
-        log_max_flux = np.log10(max_flux)
-        plot_min = 0.9 * log_min_flux if log_min_flux > 0 else 1.1 * log_min_flux
-        plot_max = 1.1 * log_max_flux
-        ax1.set_ylim((plot_min, plot_max))
-
-        figure.subplots_adjust(hspace=0)
-        plt.setp([a.get_xticklabels() for a in figure.axes[:-1]], visible=False)
-
-        # Add axis labels and a legend
-        ax2.set_xscale('log')
-        ax1.set_xscale('log')
-        ax2.set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
-        ax1.set_ylabel(r"Log $F_\nu$$[Jy]$", fontsize='large')
-        ax2.set_ylabel(r"Residuals $[\%]$", fontsize='large')
-
-        # Add the legend
-        ax1.legend(numpoints=1, loc=4, frameon=True, ncol=2, fontsize=11)
-
-        # Save the figure
-        plt.savefig(path, bbox_inches='tight', pad_inches=0.25)
-        plt.close()
+        # Finish the plot
+        self.finish_plot(path)
 
     # -----------------------------------------------------------------
 
@@ -407,17 +358,15 @@ class SEDPlotter(object):
         :return:
         """
 
+        # The size of the figure
         figsize = (10,6)
 
         # Setup the figure
-        figure = plt.figure(figsize=figsize)
+        self._figure = plt.figure(figsize=figsize)
         gs = gridspec.GridSpec(2, 1, height_ratios=[4,1])
-        ax1 = plt.subplot(gs[0])
-        ax2 = plt.subplot(gs[1], sharex=ax1)
-
-        # Keep track of the minimum and maximum flux encountered
-        min_flux = None
-        max_flux = None
+        self._main_axis = plt.subplot(gs[0])
+        ax2 = plt.subplot(gs[1], sharex=self._main_axis)
+        self._residual_axes.append(ax2)
 
         # Get the first (only) observation
         observation = self.observations[self.observations.keys()[0]]
@@ -455,10 +404,6 @@ class SEDPlotter(object):
                 log.warning("Negative flux encountered for " + str(descriptions[k]) + " band")
                 continue
 
-            # Keep track of minimum and maximum flux
-            if min_flux is None or fluxes[k] < min_flux: min_flux = fluxes[k]
-            if max_flux is None or fluxes[k] > max_flux: max_flux = fluxes[k]
-
             # Get next color
             color = next(color_range)
 
@@ -466,7 +411,7 @@ class SEDPlotter(object):
             marker = markers[unique_labels.index(labels[k])]
 
             # Plot on the main axis with the specified marker and color
-            plot_wavelength(ax1, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
+            self.plot_wavelength(self._main_axis, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
 
             # Plot point at y=0.0 with errorbar on axis 2
             value = 0.0
@@ -493,7 +438,7 @@ class SEDPlotter(object):
             model_label = model_labels[j]
 
             log_model = np.log10(self.models[model_label].fluxes(unit="Jy"))
-            ax1.plot(self.models[model_label].wavelengths(unit="micron"), log_model, line_styles[j], color='black', label=model_label)
+            self._main_axis.plot(self.models[model_label].wavelengths(unit="micron"), log_model, line_styles[j], color='black', label=model_label)
 
             if self.models[model_label].has_errors:
 
@@ -511,188 +456,11 @@ class SEDPlotter(object):
                 log_bottom = np.log10(bottom)
                 log_top = np.log10(top)
 
-                ax1.fill_between(self.models[model_label].wavelengths, log_bottom, log_top, where=log_top<=log_bottom, facecolor='cyan', edgecolor='cyan', interpolate=True, alpha=0.5)
-                ax1.plot([], [], color='cyan', linewidth=10, label='spread')
+                self._main_axis.fill_between(self.models[model_label].wavelengths, log_bottom, log_top, where=log_top<=log_bottom, facecolor='cyan', edgecolor='cyan', interpolate=True, alpha=0.5)
+                self._main_axis.plot([], [], color='cyan', linewidth=10, label='spread')
 
-        # Format residual subplot axis
-        ax2.axhline(y=0., color='black', ls='-.')
-        ax2.set_ylim(-95,95)
-
-        # Set axis limits if requested
-        log_min_flux = np.log10(min_flux)
-        log_max_flux = np.log10(max_flux)
-        plot_min = 0.9 * log_min_flux if log_min_flux > 0 else 1.1 * log_min_flux
-        plot_max = 1.1 * log_max_flux
-        plt.gca().set_ylim((plot_min, plot_max))
-
-        # Hide ticks
-        figure.subplots_adjust(hspace=0)
-        plt.setp([a.get_xticklabels() for a in figure.axes[:-1]], visible=False)
-
-        # Add axis labels and a legend
-        ax2.set_xscale('log')
-        ax1.set_xscale('log')
-        ax2.set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
-        ax1.set_ylabel(r"Log $F_\nu$$[Jy]$", fontsize='large')
-        ax2.set_ylabel(r"Residuals $[\%]$", fontsize='large')
-
-        # Add the legend
-        ax1.legend(numpoints=1, loc=4, frameon=True, ncol=2, fontsize=11)
-
-        # Save the figure
-        plt.savefig(path, bbox_inches='tight', pad_inches=0.25)
-        plt.close()
-
-        # ---
-
-        return
-
-        figsize = (10,6)
-
-        # Setup the figure
-        figure = plt.figure(figsize=figsize)
-        gs = gridspec.GridSpec(2, 1, height_ratios=[4,1])
-        ax1 = plt.subplot(gs[0])
-        #ax2 = plt.subplot(gs[1], sharex=ax1)
-
-        min_flux = None
-        max_flux = None
-
-
-
-        # Make iterable from color map names
-        color_maps = iter(distinguishable_colormaps)
-
-        # Loop over the different observed SEDs
-        for label in self.observations:
-
-            # Get wavelengths, fluxes, instruments, bands, errors
-            wavelengths = self.observations[label].wavelengths
-            fluxes = self.observations[label].fluxes
-            instruments = self.observations[label].instruments
-            bands = self.observations[label].bands
-            errors = self.observations[label].errors
-
-            # Filter descriptions
-            descriptions = []
-            for j in range(len(instruments)):
-
-                masked = False
-                try: masked = instruments.mask[j]
-                except AttributeError: pass
-
-                if masked: descriptions.append(bands[j])
-                else: descriptions.append(instruments[j])
-
-            # Determine color map class
-            if len(self.observations) == 1: colormap = plt.get_cmap("rainbow")
-            else: colormap = plt.get_cmap(next(color_maps))
-
-            # Create color range
-            color_range = iter(colormap(np.linspace(0, 1 , len(wavelengths))))
-
-            labels = list(set(list(descriptions)))
-
-            markers = filled_markers[:len(labels)]
-
-            used_labels = []
-
-            # Loop over the wavelengths
-            for k in range(len(wavelengths)):
-
-                if fluxes[k] <= 0.0:
-
-                    log.warning("Negative flux encountered for " + str(descriptions[k]) + " band")
-                    continue
-
-                if min_flux is None or fluxes[k] < min_flux: min_flux = fluxes[k]
-                if max_flux is None or fluxes[k] > max_flux: max_flux = fluxes[k]
-
-                color = next(color_range)
-
-                if descriptions[k] in labels:
-
-                    # get marker
-                    marker = markers[labels.index(descriptions[k])]
-
-                    if descriptions[k] not in used_labels:
-
-                        error_bar = np.array([[np.fabs(np.log10(fluxes[k]) - np.log10(fluxes[k] - errors[k])), np.fabs(np.log10(fluxes[k])-np.log10(fluxes[k] + errors[k]))]]).T
-                        used_labels.append(descriptions[k])
-
-                        ax1.errorbar(wavelengths[k], np.log10(fluxes[k]), yerr=error_bar, fmt=marker, markersize=7, color=color,markeredgecolor='black', ecolor=color, capthick=2)
-                        ax1.plot(wavelengths[k], np.log10(fluxes[k]), marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color, label=descriptions[k])
-                        ax2.errorbar(wavelengths[k], 0., yerr=errors[k]/fluxes[k] * 100., fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
-
-                    else:
-
-                        error_bar = np.array([[np.fabs(np.log10(fluxes[k])-np.log10(fluxes[k]-errors[k])), np.fabs(np.log10(fluxes[k]) - np.log10(fluxes[k] + errors[k]))]]).T
-                        ax1.errorbar(wavelengths[k], np.log10(fluxes[k]), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
-                        ax2.errorbar(wavelengths[k], 0., yerr=errors[k]/fluxes[k] * 100., fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
-
-            # Residuals
-            model_labels = self.models.keys()
-            for j in range(len(model_labels)):
-
-                model_label = model_labels[j]
-
-                log_model = np.log10(self.models[model_label].fluxes)
-
-                f2 = interp1d(self.models[model_label].wavelengths, log_model, kind='cubic')
-                ax2.plot(wavelengths, -(fluxes - f2(wavelengths))/fluxes * 100., line_styles[j], color='black', label='model')
-
-        # Add model SEDs
-        model_labels = self.models.keys()
-        for j in range(len(model_labels)):
-
-            log_model = np.log10(self.models[model_label].fluxes)
-            ax1.plot(self.models[model_label].wavelengths, log_model, line_styles[j], color='black', label=label)
-
-            if self.models[model_label].has_errors:
-
-                bottom = []
-                top = []
-                for j in range(len(self.models[label].errors)):
-
-                    value = self.models[model_label].fluxes[j]
-                    bottom.append(value + self.models[model_label].errors[j][0])
-                    top.append(value + self.models[model_label].errors[j][1])
-
-                bottom = np.array(bottom)
-                top = np.array(top)
-
-                log_bottom = np.log10(bottom)
-                log_top = np.log10(top)
-
-                ax1.fill_between(self.models[model_label].wavelengths, log_bottom, log_top, where=log_top<=log_bottom, facecolor='cyan', edgecolor='cyan', interpolate=True, alpha=0.5)
-                ax1.plot([], [], color='cyan', linewidth=10, label='spread')
-
-        ax2.axhline(y=0., color='black', ls='-.')
-        ax2.set_ylim(-95,95)
-
-        # Set axis limits if requested
-        log_min_flux = np.log10(min_flux)
-        log_max_flux = np.log10(max_flux)
-        plot_min = 0.9 * log_min_flux if log_min_flux > 0 else 1.1 * log_min_flux
-        plot_max = 1.1 * log_max_flux
-        ax1.set_ylim((plot_min, plot_max))
-
-        figure.subplots_adjust(hspace=0)
-        plt.setp([a.get_xticklabels() for a in figure.axes[:-1]], visible=False)
-
-        # Add axis labels and a legend
-        ax2.set_xscale('log')
-        ax1.set_xscale('log')
-        ax2.set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
-        ax1.set_ylabel(r"Log $F_\nu$$[Jy]$", fontsize='large')
-        ax2.set_ylabel(r"Residuals $[\%]$", fontsize='large')
-
-        # Add the legend
-        ax1.legend(numpoints=1, loc=4, frameon=True, ncol=2, fontsize=11)
-
-        # Save the figure
-        plt.savefig(path, bbox_inches='tight', pad_inches=0.25)
-        plt.close()
+        # Finish the plot
+        self.finish_plot(path)
 
     # -----------------------------------------------------------------
 
@@ -714,22 +482,13 @@ class SEDPlotter(object):
         for _ in range(number_of_observations): height_ratios.append(1)
 
         # Setup the figure
-        figure = plt.figure(figsize=figsize)
+        self._figure = plt.figure(figsize=figsize)
         gs = gridspec.GridSpec(1 + number_of_observations, 1, height_ratios=height_ratios)
-        ax1 = plt.subplot(gs[0])
-        residual_axes = []
+        self._main_axis = plt.subplot(gs[0])
         for i in range(number_of_observations):
-            ax = plt.subplot(gs[1+i], sharex=ax1)
-            residual_axes.append(ax)
-        residual_axes = iter(residual_axes)
-
-        # Keep track of the minimum and maximum flux encountered
-        min_flux = None
-        max_flux = None
-
-        # Keep track of whether we are plotting the first observed SED
-        first = True
-        reference_sed = None
+            ax = plt.subplot(gs[1+i], sharex=self._main_axis)
+            self._residual_axes.append(ax)
+        residual_axes = iter(self._residual_axes)
 
         # Make iterable from color map names
         color_maps = iter(distinguishable_colormaps+other_colormaps)
@@ -772,9 +531,6 @@ class SEDPlotter(object):
             if number_of_observations <= 3: color_range = iter(colormap(np.linspace(0, 1, len(wavelengths))))
             else: color_range = iter([color_hex[next(colors)]] * len(wavelengths))
 
-            # Reference SED for comparison with other observed SEDs
-            if first: reference_sed = observation
-
             # Loop over the wavelengths
             for k in range(len(wavelengths)):
 
@@ -783,10 +539,6 @@ class SEDPlotter(object):
                     log.warning("Negative flux encountered for " + str(descriptions[k]) + " band")
                     continue
 
-                # Keep track of minimum and maximum flux
-                if min_flux is None or fluxes[k] < min_flux: min_flux = fluxes[k]
-                if max_flux is None or fluxes[k] > max_flux: max_flux = fluxes[k]
-
                 # Get next color
                 color = next(color_range)
 
@@ -794,7 +546,7 @@ class SEDPlotter(object):
                 marker = markers[unique_labels.index(labels[k])]
 
                 # Plot the flux data point on the main axis with the specified marker and color
-                plot_wavelength(ax1, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
+                self.plot_wavelength(self._main_axis, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
 
                 # Plot measurement points on residual plot
                 value = 0.0
@@ -813,73 +565,202 @@ class SEDPlotter(object):
                 f2 = interp1d(self.models[model_label].wavelengths(unit="micron"), log_model, kind='cubic')
                 ax2.plot(wavelengths, -(fluxes - f2(wavelengths))/fluxes * 100., line_styles[j], color='black', label='model')
 
-            # The next observation is not the first anymore
-            first = False
-
-            # Set linestyle and limit for axis2
-            ax2.axhline(y=0., color='black', ls='-.')
-            ax2.set_ylim(-95, 95)
-
-            # Set axis label
-            ax2.set_xscale('log')
-            ax2.set_ylabel(r"Res. $[\%]$", fontsize='large')
-
-        # Set x label of the last residual plot
-        ax2.set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
-
         # Add model SEDs
         model_labels = self.models.keys()
         for j in range(len(model_labels)):
 
             model_label = model_labels[j]
 
+            # Get fluxes, wavelengths and errors
             fluxes = self.models[model_label].fluxes(unit="Jy")
             wavelengths = self.models[model_label].wavelengths(unit="micron")
+            errors = self.models[model_label].errors(unit="Jy") if self.models[model_label].has_errors else None
 
-            log_model = np.log10(fluxes)
-            ax1.plot(wavelengths, log_model, line_styles[j], color='black', label=model_label)
+            # Plot the model SED as a line (with errors if present)
+            self.draw_model(self._main_axis, wavelengths, fluxes, line_styles[j], model_label, errors=errors)
 
-            if self.models[model_label].has_errors:
+        # Finish the plot
+        self.finish_plot(path)
 
-                errors = self.models[model_label].errors(unit="Jy")
+    # -----------------------------------------------------------------
 
-                bottom = []
-                top = []
-                for j in range(len(errors)):
+    def plot_wavelength(self, axis, label, used_labels, wavelength, flux, error, marker, color):
 
-                    value = fluxes[j]
-                    error = errors[j]
+        """
+        This function ...
+        :param axis:
+        :param label:
+        :param used_labels:
+        :param wavelength:
+        :param flux:
+        :param error:
+        :param marker:
+        :param color:
+        :return:
+        """
 
-                    bottom.append(value + error.lower)
-                    top.append(value + error.upper)
+        # Keep track of minimum and maximum flux
+        if self._min_flux is None or flux < self._min_flux: self._min_flux = flux
+        if self._max_flux is None or flux > self._max_flux: self._max_flux = flux
 
-                bottom = np.array(bottom)
-                top = np.array(top)
+        # Keep track of the minimal and maximal wavelength
+        if self._min_wavelength is None or wavelength < self._min_wavelength: self._min_wavelength = wavelength
+        if self._max_wavelength is None or wavelength > self._max_wavelength: self._max_wavelength = wavelength
 
-                log_bottom = np.log10(bottom)
-                log_top = np.log10(top)
+        if label not in used_labels:
 
-                ax1.fill_between(self.models[model_label].wavelengths(unit="micron"), log_bottom, log_top, where=log_top<=log_bottom, facecolor='cyan', edgecolor='cyan', interpolate=True, alpha=0.5)
-                ax1.plot([], [], color='cyan', linewidth=10, label='spread')
+            lower_flux = flux + error.lower
+            upper_flux = flux + error.upper
 
-        # Set axis limits if requested
-        log_min_flux = np.log10(min_flux)
-        log_max_flux = np.log10(max_flux)
-        plot_min = 0.9 * log_min_flux if log_min_flux > 0 else 1.1 * log_min_flux
-        plot_max = 1.1 * log_max_flux
-        ax1.set_ylim((plot_min, plot_max))
+            if lower_flux <= 0:
+                flux_lower_flux = float("-inf")
+            else: flux_lower_flux = flux/lower_flux
 
-        figure.subplots_adjust(hspace=0)
-        plt.setp([a.get_xticklabels() for a in figure.axes[:-1]], visible=False)
+            flux_upper_flux = flux/upper_flux
+
+            error_bar = np.array([[np.fabs(np.log10(flux_lower_flux)), np.fabs(np.log10(flux_upper_flux))]]).T
+            used_labels.append(label)
+
+            axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+            axis.plot(wavelength, np.log10(flux), marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color, label=label)
+
+        else:
+
+            error_bar = np.array([[np.fabs(np.log10(flux)-np.log10(flux + error.lower)), np.fabs(np.log10(flux) - np.log10(flux + error.upper))]]).T
+            axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+
+    # -----------------------------------------------------------------
+
+    def draw_observation(self, instruments, bands, wavelengths, fluxes, errors, colors):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get labels and descriptions
+        labels, descriptions = get_labels_and_descriptions(instruments, bands)
+
+        # Unique labels
+        unique_labels = list(set(list(labels)))
+
+        # Markers for the unique labels
+        markers = filled_markers[:len(unique_labels)]
+
+        # Used labels
+        used_labels = []
+
+        # Loop over the wavelengths
+        for k in range(len(wavelengths)):
+
+            # Check validity of flux value
+            if fluxes[k] <= 0.0:
+                log.warning("Negative flux encountered for " + str(descriptions[k]) + " band")
+                continue
+
+            # Get next color
+            color = colors[k]
+
+            # Get marker
+            marker = markers[unique_labels.index(labels[k])]
+
+            # Plot on the main axis with the specified marker and color
+            self.plot_wavelength(self._main_axis, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
+
+    # -----------------------------------------------------------------
+
+    def draw_model(self, axis, wavelengths, fluxes, linestyle, label, errors=None):
+
+        """
+        This function ...
+        :param axis:
+        :param wavelengths:
+        :param fluxes:
+        :param linestyle:
+        :param label:
+        :param errors:
+        :return:
+        """
+
+        # Keep track of the minimal and maximal wavelength
+        min_flux_model = min(fluxes)
+        max_flux_model = max(fluxes)
+        if min_flux_model < self._min_flux: self._min_flux = min_flux_model
+        if max_flux_model > self._max_flux: self._max_flux = max_flux_model
+
+        # Keep track of the minimal and maximal wavelength
+        min_wavelength_model = min(wavelengths)
+        max_wavelength_model = max(wavelengths)
+        if min_wavelength_model < self._min_wavelength: self._min_wavelength = min_wavelength_model
+        if max_wavelength_model > self._max_wavelength: self._max_wavelength = max_wavelength_model
+
+        # Plot the data points (as a line) on the axis
+        log_model = np.log10(fluxes)
+        axis.plot(wavelengths, log_model, linestyle, color='black', label=label)
+
+        # Plot errors
+        if errors is not None:
+
+            bottom = []
+            top = []
+            for j in range(len(errors)):
+
+                value = fluxes[j]
+                error = errors[j]
+
+                bottom.append(value + error.lower)
+                top.append(value + error.upper)
+
+            bottom = np.array(bottom)
+            top = np.array(top)
+
+            log_bottom = np.log10(bottom)
+            log_top = np.log10(top)
+
+            axis.fill_between(wavelengths, log_bottom, log_top, where=log_top<=log_bottom, facecolor='cyan', edgecolor='cyan', interpolate=True, alpha=0.5)
+            axis.plot([], [], color='cyan', linewidth=10, label='spread')
+
+    # -----------------------------------------------------------------
+
+    def finish_plot(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Format residual axes
+        for res_axis in self._residual_axes:
+
+            # Set linestyle and limit for axis2
+            res_axis.axhline(y=0., color='black', ls='-.')
+            res_axis.set_ylim(-95, 95)
+
+            # Set axis label
+            res_axis.set_xscale('log')
+            res_axis.set_ylabel(r"Res. $[\%]$", fontsize='large')
+
+        # Set x label of the last residual plot
+        if len(self._residual_axes) > 0: self._residual_axes[len(self._residual_axes)-1].set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
+
+        self._figure.subplots_adjust(hspace=0)
+        plt.setp([a.get_xticklabels() for a in self._figure.axes[:-1]], visible=False)
 
         # Add axis labels and a legend
-        ax1.set_xscale('log')
-        ax1.set_ylabel(r"Log $F_\nu$$[Jy]$", fontsize='large')
+        self._main_axis.set_xscale('log')
+        self._main_axis.set_ylabel(r"Log $F_\nu$$[Jy]$", fontsize='large')
 
-        ax1.set_xlim(0.1,1000)
+        # Set flux axis limits
+        plot_min, plot_max = get_plot_flux_limits(self._min_flux, self._max_flux)
+        self._main_axis.set_ylim((plot_min, plot_max))
+
+        # Set wavelength axis limits
+        plot_min_wavelength, plot_max_wavelength = get_plot_wavelength_limits(self._min_wavelength, self._max_wavelength)
+        self._main_axis.set_xlim(plot_min_wavelength, plot_max_wavelength)
 
         # Add the legend
-        ax1.legend(numpoints=1, loc=4, frameon=True, ncol=2, fontsize=11)
+        self._main_axis.legend(numpoints=1, loc=4, frameon=True, ncol=2, fontsize=11)
 
         # Save the figure
         plt.savefig(path, bbox_inches='tight', pad_inches=0.25)
@@ -913,36 +794,6 @@ def get_labels_and_descriptions(instruments, bands):
             descriptions.append(instruments[j] + " " + bands[j])
 
     return labels, descriptions
-
-# -----------------------------------------------------------------
-
-def plot_wavelength(axis, label, used_labels, wavelength, flux, error, marker, color):
-
-    """
-    This function ...
-    :param axis:
-    :param label:
-    :param used_labels:
-    :param wavelength:
-    :param flux:
-    :param error:
-    :param marker:
-    :param color:
-    :return:
-    """
-
-    if label not in used_labels:
-
-        error_bar = np.array([[np.fabs(np.log10(flux) - np.log10(flux + error.lower)), np.fabs(np.log10(flux) - np.log10(flux + error.upper))]]).T
-        used_labels.append(label)
-
-        axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
-        axis.plot(wavelength, np.log10(flux), marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color, label=label)
-
-    else:
-
-        error_bar = np.array([[np.fabs(np.log10(flux)-np.log10(flux + error.lower)), np.fabs(np.log10(flux) - np.log10(flux + error.upper))]]).T
-        axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
 
 # -----------------------------------------------------------------
 
@@ -1024,5 +875,43 @@ def get_unique_labels(observations):
 
     # Return the list of unique labels
     return unique_labels
+
+# -----------------------------------------------------------------
+
+def get_plot_flux_limits(min_flux, max_flux):
+
+    """
+    This function ...
+    :return:
+    """
+
+    log_min_flux = np.log10(min_flux)
+    log_max_flux = np.log10(max_flux)
+    plot_min = 0.9 * log_min_flux if log_min_flux > 0 else 1.1 * log_min_flux
+    plot_max = 1.1 * log_max_flux
+
+    return plot_min, plot_max
+
+# -----------------------------------------------------------------
+
+def get_plot_wavelength_limits(min_wavelength, max_wavelength):
+
+    """
+    This function ...
+    :param min_wavelength:
+    :param max_wavelength:
+    :return:
+    """
+
+    log_min_wavelength = np.log10(min_wavelength)
+    log_max_wavelength = np.log10(max_wavelength)
+
+    plot_min_log_wavelength = math.floor(log_min_wavelength)
+    plot_max_log_wavelength = math.ceil(log_max_wavelength)
+
+    plot_min_wavelength = 10.**plot_min_log_wavelength
+    plot_max_wavelength = 10.**plot_max_log_wavelength
+
+    return plot_min_wavelength, plot_max_wavelength
 
 # -----------------------------------------------------------------
