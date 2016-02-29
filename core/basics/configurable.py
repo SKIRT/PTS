@@ -82,31 +82,7 @@ class Configurable(object):
         This function ...
         """
 
-        # Determine the full path to the log file
-        #path = self.full_output_path(self.config.logging.path) if self.config.logging.path is not None else None
-
-        # Call the setup function of the Loggable base class
-        #super(Configurable, self).setup(self.config.logging.level, path)
-
-        # Call the setup functions of the children
-        #for child_name in self.children:
-
-        #    child = self.children[child_name]
-
-            # Set the input and output path for the child
-        #    child.config.input_path = self.config.input_path
-        #    child.config.output_path = self.config.output_path
-
-            # Options for logging
-        #    child.config.logging.level = "WARNING"
-        #    child.config.logging.path = self.config.logging.path
-
-            # Set the log level and path for the different children of this object, if cascading is enabled
-        #    if self.config.logging.cascade:
-
-                # Galaxy extractor
-        #        child.config.logging.cascade = True
-        #        child.config.logging.level = self.config.logging.level
+        pass
 
     # -----------------------------------------------------------------
 

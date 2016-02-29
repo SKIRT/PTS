@@ -24,11 +24,11 @@ from ..core import Frame
 
 # Import the relevant PTS classes and modules
 from ...core.tools import inspection, filesystem
-from ...core.basics.loggable import Loggable
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-class SExtractor(Loggable):
+class SExtractor(object):
     
     """
     This class ...
@@ -39,9 +39,6 @@ class SExtractor(Loggable):
         """
         The constructor ...
         """
-
-        # Call the constructor of the base class
-        super(SExtractor, self).__init__()
 
         # Set the path to the dat/sextractor directory
         self.data_path = os.path.join(inspection.pts_dat_dir("magic"), "sextractor")
@@ -154,10 +151,10 @@ class SExtractor(Loggable):
         command += " -VERBOSE_TYPE=QUIET"
 
         # Inform the user
-        self.log.debug("SExtractor command: " + command)
+        log.debug("SExtractor command: " + command)
 
         # Inform the user
-        self.log.info("Running SExtractor...")
+        log.info("Running SExtractor...")
 
         # Launch the SExtractor command as a seperate process
         subprocess.call(command, shell=True)
