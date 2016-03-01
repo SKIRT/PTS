@@ -293,10 +293,10 @@ class SEDFetcher(Configurable):
             b_mag_lower = b_mag - abs(b_mag_error)
             b_mag_upper = b_mag + abs(b_mag_error)
 
-            print("bmag", b_mag)
-            print("bmagerror", b_mag_error)
-            print("bmaglower", b_mag_lower)
-            print("bmagupper", b_mag_upper)
+            #print("bmag", b_mag)
+            #print("bmagerror", b_mag_error)
+            #print("bmaglower", b_mag_lower)
+            #print("bmagupper", b_mag_upper)
 
             # B band flux
             b = unitconversion.ab_to_jansky(b_mag)
@@ -713,10 +713,10 @@ class SEDFetcher(Configurable):
         i4_log_lower = i4_log - i4_log_error
         i4_log_upper = i4_log + i4_log_error
 
-        print("i4log", i4_log)
-        print("i4_log_error", i4_log_error)
-        print("i4_log_lower", i4_log_lower)
-        print("i4_log_upper", i4_log_upper)
+        #print("i4log", i4_log)
+        #print("i4_log_error", i4_log_error)
+        #print("i4_log_lower", i4_log_lower)
+        #print("i4_log_upper", i4_log_upper)
 
         # 24 micron
         mips24_log = result[6][galaxy_index]["logF24"]

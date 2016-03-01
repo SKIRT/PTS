@@ -26,6 +26,7 @@ from astropy import units as u
 from ..basics import Layers, Region, Mask, CoordinateSystem
 from .frame import Frame
 from ..tools import headers, transformations
+from ...core.tools import filesystem
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
@@ -224,6 +225,17 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def __repr__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "<" + self.__class__.__name__ + " '" + self.name + "' with " + str(len(self.frames)) + " frame, " + str(len(self.regions)) + " regions and " + str(len(self.masks)) + " masks>"
+
+    # -----------------------------------------------------------------
+
     def save(self, path=None, add_metadata=False, origin=None, add_masks=True):
 
         """
@@ -320,6 +332,9 @@ class Image(object):
         :param overwrite:
         :return:
         """
+
+        # Check if the region file exists
+        if not filesystem.is_file(path): raise IOError("")
 
         # Create an Region object from the regions file
         region = Region.from_file(path)
@@ -807,6 +822,9 @@ class Image(object):
         :param hdulist_index:
         :return:
         """
+
+        # Check if the file exists
+        if not filesystem.is_file(filename): raise IOError("File " + filename + " does not exist")
 
         # Show which image we are importing
         log.info("Reading in file " + filename + " ...")

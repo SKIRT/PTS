@@ -160,7 +160,6 @@ class PhotoMeter(ModelingComponent):
             # Look for a file called 'result.fits'
             image_path = os.path.join(directory_path, "result.fits")
             if not filesystem.is_file(image_path):
-
                 log.warning("Prepared image could not be found for " + directory_name)
                 continue
 
@@ -188,10 +187,150 @@ class PhotoMeter(ModelingComponent):
         # Inform the user
         log.info("Performing the photometry calculation ...")
 
-        wavelength_column = []
-        flux_column = []
+        # Get ellipse in sky coordinates
+        sky_ellipse = self.get_truncation_ellipse()
 
-        ## GET STRUCTURAL PARAMETERS
+        # Create directory to contain the images in Jansky with truncation
+        truncated_path = self.full_output_path("truncated")
+        filesystem.create_directory(truncated_path)
+
+        # Loop over all the images
+        for image in self.images:
+
+            # Inform the user
+            log.debug("Performing photometry for " + image.name + " image ...")
+
+            # Inform the user
+            log.debug("Creating mask of truncated pixels ...")
+
+            # Create ellipse in image coordinates from ellipse in sky coordinates
+            ellipse = sky_ellipse.to_ellipse(image.wcs)
+            from ...magic.basics import Mask
+
+            # Create mask from ellipse
+            inverted_mask = Mask.from_shape(ellipse, image.xsize, image.ysize, invert=True)
+
+            # Get mask of padded (and bad) pixels, for example for WISE, this mask even covers pixel within the elliptical region
+            mask = inverted_mask + image.masks.bad
+            if "padded" in image.masks: mask += image.masks.padded
+
+            # Inform the user
+            log.debug("Converting image to Jansky ...")
+
+            # Convert from MJy/sr to Jy/sr
+            conversion_factor = 1.0
+            conversion_factor *= 1e6
+
+            # Conversion from Jy / sr to Jy / pixel
+            pixelscale = image.frames.primary.xy_average_pixelscale
+            pixel_factor = (1.0/pixelscale**2).to("pix2/sr").value
+            conversion_factor /= pixel_factor
+
+            # Frame in Janskys
+            jansky_frame = image.frames.primary * conversion_factor
+            jansky_frame[mask] = 0.0
+
+            # Debugging
+            log.debug("Calculating the total flux and flux error ...")
+
+            # Calculate the total flux in Jansky
+            flux = np.sum(jansky_frame)
+
+            jansky_errors_frame = image.frames.errors * conversion_factor
+            jansky_errors_frame[mask] = 0.0
+            flux_error = np.sum(jansky_errors_frame)
+
+            # Create new image with primary and errors frame in Jansky and save it
+            new_image = Image()
+            new_image.add_frame(jansky_frame, "primary")
+            new_image.add_frame(jansky_errors_frame, "errors")
+            new_image_path = filesystem.join(truncated_path, image.name + ".fits")
+            new_image.save(new_image_path)
+
+            # Create errorbar
+            errorbar = ErrorBar(float(flux_error))
+
+            # Add this entry to the SED
+            self.sed.add_entry(image.filter, flux, errorbar)
+
+    # -----------------------------------------------------------------
+
+    def get_references(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Fetch the reference SEDs
+        self.sed_fetcher.run(self.galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    def calculate_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get list of instruments, bands and fluxes of the calculated SED
+        instruments = self.sed.instruments()
+        bands = self.sed.bands()
+        fluxes = self.sed.fluxes(unit="Jy")
+
+        # The number of data points
+        number_of_points = len(instruments)
+
+        # Initialize data and names
+        reference_labels = self.sed_fetcher.seds.keys()
+        data = [[] for _ in range(len(reference_labels)+3)]
+        names = ["Instrument", "Band", "Flux"]
+        for label in reference_labels:
+            names.append(label)
+
+        # Loop over the different points in the calculated SED
+        for i in range(number_of_points):
+
+            # Add instrument, band and flux
+            data[0].append(instruments[i])
+            data[1].append(bands[i])
+            data[2].append(fluxes[i])
+
+            column_index = 3
+
+            # Loop over the different reference SEDs
+            for label in reference_labels:
+
+                relative_difference = None
+
+                # Loop over the data points in the reference SED
+                for j in range(len(self.sed_fetcher.seds[label].table["Wavelength"])):
+
+                    if self.sed_fetcher.seds[label].table["Instrument"][j] == instruments[i] and self.sed_fetcher.seds[label].table["Band"][j] == bands[i]:
+
+                        difference = fluxes[i] - self.sed_fetcher.seds[label].table["Flux"][j]
+                        relative_difference = difference / fluxes[i] * 100.
+
+                        # Break because a match has been found within this reference SED
+                        break
+
+                # Add percentage to the table (or None if no match was found in this reference SED)
+                data[column_index].append(relative_difference)
+
+                column_index += 1
+
+        # Create table of differences
+        self.differences = tables.new(data, names=names)
+
+    # -----------------------------------------------------------------
+
+    def get_truncation_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         from astroquery.vizier import Vizier
         vizier = Vizier(keywords=["galaxies"])
@@ -229,133 +368,8 @@ class PhotoMeter(ModelingComponent):
         region_path = self.full_output_path("galaxy.reg")
         region.save(region_path)
 
-        ##
-
-        for image in self.images:
-
-            ellipse = sky_ellipse.to_ellipse(image.wcs)
-            from ...magic.basics import Mask
-
-            # Create mask
-            mask = Mask.from_shape(ellipse, image.xsize, image.ysize)
-            inverted_mask = mask.inverse()
-
-            # Inform the user
-            log.debug("Performing photometry for " + image.name + " image ...")
-
-            wavelength_column.append(image.wavelength.to("micron").value)
-
-            # Convert from MJy/sr to Janskys
-
-            # Convert from MJy/sr to Jy/sr
-            conversion_factor = 1.0
-
-            # Conversion from Jy to MJy
-            conversion_factor *= 1e6
-
-            # Conversion from MJy (per pixel2) to MJy / sr
-            pixelscale = image.frames.primary.xy_average_pixelscale
-            pixel_factor = (1.0/pixelscale**2).to("pix2/sr").value
-            conversion_factor /= pixel_factor
-
-            # Frame in Janskys
-            jansky_frame = image.frames.primary * conversion_factor
-            jansky_frame[inverted_mask] = 0.0
-
-            # Calculate the total flux in Jansky
-            flux = np.sum(jansky_frame)
-
-            jansky_errors_frame = image.frames.errors * conversion_factor
-            jansky_errors_frame[inverted_mask] = 0.0
-            flux_error = np.sum(jansky_errors_frame)
-
-            # Create errorbar
-            errorbar = ErrorBar(float(flux_error))
-
-            # Add this entry to the SED
-            self.sed.add_entry(image.filter, flux, errorbar)
-
-    # -----------------------------------------------------------------
-
-    def get_references(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Fetch the reference SEDs
-        self.sed_fetcher.run(self.galaxy_name)
-
-    # -----------------------------------------------------------------
-
-    def calculate_differences(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        instruments = self.sed.instruments()
-        bands = self.sed.bands()
-        fluxes = self.sed.fluxes(unit="Jy")
-
-        number_of_points = len(instruments)
-
-        reference_labels = self.sed_fetcher.seds.keys()
-
-        data = [[] for _ in range(len(reference_labels)+3)]
-        names = ["Instrument", "Band", "Flux"]
-        #dtypes = ['S10', 'S10', 'f8']
-        for label in reference_labels:
-            names.append(label)
-            #dtypes.append('f8')
-
-        # Create table of differences
-        #self.differences = tables.new(data, names=names, dtypes=dtypes)
-
-        for i in range(len(instruments)):
-
-            #row = []
-            #row.append(instruments[i])
-            #row.append(bands[i])
-            #row.append(fluxes[i])
-
-            data[0].append(instruments[i])
-            data[1].append(bands[i])
-            data[2].append(fluxes[i])
-
-            column_index = 3
-
-            # Loop over the different reference SEDs
-            for label in reference_labels:
-
-                relative_difference = None
-
-                # Loop over the data points in the reference SED
-                for j in range(len(self.sed_fetcher.seds[label].table["Wavelength"])):
-
-                    if self.sed_fetcher.seds[label].table["Instrument"][j] == instruments[i] and self.sed_fetcher.seds[label].table["Band"][j] == bands[i]:
-
-                        difference = fluxes[i] - self.sed_fetcher.seds[label].table["Flux"][j]
-                        relative_difference = difference / self.sed_fetcher.seds[label].table["Flux"][j] * 100.
-
-                        # Break because a match has been found within this reference SED
-                        break
-
-                # Add percentage to the table (or None if no match was found in this reference SED)
-                #row.append(relative_difference)
-                data[column_index].append(relative_difference)
-
-                column_index += 1
-
-            #self.differences.add_row(row)
-
-        # Create table of differences
-        self.differences = tables.new(data, names=names)
-
-        print(self.differences)
-        print(self.differences["2MASS"].mask)
+        # Return the sky ellipse
+        return sky_ellipse
 
     # -----------------------------------------------------------------
 

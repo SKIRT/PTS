@@ -17,6 +17,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
+import matplotlib.patches as patches
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
@@ -243,8 +244,7 @@ class SEDPlotter(object):
         color_maps = iter(distinguishable_colormaps+other_colormaps)
 
         # Make iterable from distinct colors
-        #colors = iter(color_plt_identifiers)
-        colors = iter(pretty_colors)
+        different_colors = iter(pretty_colors)
 
         # Unique labels
         unique_labels = get_unique_labels(self.observations)
@@ -255,8 +255,17 @@ class SEDPlotter(object):
         # Used labels
         used_labels = []
 
+        legend_patches = []
+        legend_labels = []
+
+        legend_rectangles = []
+        rectangle_labels = []
+
         # Loop over the different observed SEDs
         for label in self.observations:
+
+            # Determine color map class
+            colormap = plt.get_cmap(next(color_maps))
 
             # Get the observed SED
             observation = self.observations[label]
@@ -268,18 +277,12 @@ class SEDPlotter(object):
             bands = observation.bands()
             errors = observation.errors(unit="Jy")
 
+            # Create color range
+            if number_of_observations <= 3: colors = colormap(np.linspace(0, 1, len(wavelengths)))
+            else: colors = [color_hex[next(different_colors)]] * len(wavelengths)
+
             # Get labels and descriptions
             labels, descriptions = get_labels_and_descriptions(instruments, bands)
-
-            # Determine color map class
-            colormap = plt.get_cmap(next(color_maps))
-
-            #ax3 = next(colormap_axes)
-            #ax3.imshow(gradient, aspect='auto', cmap=colormap)
-
-            # Create color range
-            if number_of_observations <= 3: color_range = iter(colormap(np.linspace(0, 1, len(wavelengths))))
-            else: color_range = iter([color_hex[next(colors)]] * len(wavelengths))
 
             # Reference SED for comparison with other observed SEDs
             if first: reference_sed = observation
@@ -292,24 +295,21 @@ class SEDPlotter(object):
                     log.warning("Negative flux encountered for " + str(descriptions[k]) + " band")
                     continue
 
-                # Get next color
-                color = next(color_range)
-
                 # Get marker
                 marker = markers[unique_labels.index(labels[k])]
 
                 # Plot the flux data point on the main axis with the specified marker and color
-                self.plot_wavelength(self._main_axis, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
+                patch = self.plot_wavelength(self._main_axis, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, colors[k], return_patch=True)
+
+                if patch is not None:
+                    legend_patches.append(patch)
+                    legend_labels.append(labels[k])
 
                 # Plot on axis 2
                 if first:
 
                     value = 0.0
-                    try:
-                        error = errors[k] / fluxes[k] * 100.
-                    except TypeError:
-                        print(errors[k])
-                        print(fluxes[k])
+                    error = errors[k] / fluxes[k] * 100.
 
                 else:
 
@@ -328,13 +328,27 @@ class SEDPlotter(object):
                 if value is not None:
 
                     error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
-                    ax2.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+                    ax2.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=colors[k], markeredgecolor='black', ecolor=colors[k], capthick=2)
 
             # The next observation is not the first anymore
             first = False
 
+            # If color gradient is used for observations instead of single colors ...
+            #ax3 = next(colormap_axes)
+            #ax3.imshow(gradient, aspect='auto', cmap=colormap)
+
+            # Create rectangle for
+            rectangle = patches.Rectangle((0, 0), 1, 1, fc=colors[0])
+            legend_rectangles.append(rectangle)
+            rectangle_labels.append(label)
+
+        # Extra legend: the different observations
+        #loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False
+        #observations_legend = self._main_axis.legend(legend_rectangles, rectangle_labels, loc=2)
+        observations_legend = self._main_axis.legend(legend_rectangles, rectangle_labels, loc='upper left', fancybox=True, shadow=False, fontsize=11, ncol=3)
+
         # Finish the plot
-        self.finish_plot(path)
+        self.finish_plot(path, for_legend_patches=legend_patches, for_legend_parameters=legend_labels, extra_legend=observations_legend)
 
     # -----------------------------------------------------------------
 
@@ -584,7 +598,7 @@ class SEDPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def plot_wavelength(self, axis, label, used_labels, wavelength, flux, error, marker, color):
+    def plot_wavelength(self, axis, label, used_labels, wavelength, flux, error, marker, color, return_patch=False):
 
         """
         This function ...
@@ -607,6 +621,10 @@ class SEDPlotter(object):
         if self._min_wavelength is None or wavelength < self._min_wavelength: self._min_wavelength = wavelength
         if self._max_wavelength is None or wavelength > self._max_wavelength: self._max_wavelength = wavelength
 
+        # If requested, the patch is returned
+        patch = None
+
+        # Check if a data point of this instrument has already been plotted
         if label not in used_labels:
 
             lower_flux = flux + error.lower
@@ -622,12 +640,16 @@ class SEDPlotter(object):
             used_labels.append(label)
 
             axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
-            axis.plot(wavelength, np.log10(flux), marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color, label=label)
+            patch = axis.plot(wavelength, np.log10(flux), marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color, label=label)
 
+        # A data point of this instrument has already been plotted
         else:
 
             error_bar = np.array([[np.fabs(np.log10(flux)-np.log10(flux + error.lower)), np.fabs(np.log10(flux) - np.log10(flux + error.upper))]]).T
             axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+
+        # Return the patch if requested
+        if return_patch: return patch
 
     # -----------------------------------------------------------------
 
@@ -722,7 +744,7 @@ class SEDPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def finish_plot(self, path):
+    def finish_plot(self, path, for_legend_patches=None, for_legend_parameters=None, extra_legend=None):
 
         """
         This function ...
@@ -751,6 +773,9 @@ class SEDPlotter(object):
         self._main_axis.set_xscale('log')
         self._main_axis.set_ylabel(r"Log $F_\nu$$[Jy]$", fontsize='large')
 
+        # Enable grid
+        self._main_axis.grid('on')
+
         # Set flux axis limits
         plot_min, plot_max = get_plot_flux_limits(self._min_flux, self._max_flux)
         self._main_axis.set_ylim((plot_min, plot_max))
@@ -760,7 +785,16 @@ class SEDPlotter(object):
         self._main_axis.set_xlim(plot_min_wavelength, plot_max_wavelength)
 
         # Add the legend
-        self._main_axis.legend(numpoints=1, loc=4, frameon=True, ncol=2, fontsize=11)
+        if for_legend_patches is not None:
+
+            # Set legend
+            self._main_axis.legend([l[0] for l in for_legend_patches], for_legend_parameters, numpoints=1, loc=4, frameon=True, ncol=2, fontsize=11)
+
+            # Extra legend
+            if extra_legend is not None: self._main_axis.add_artist(extra_legend)
+
+        # No extra legend, no patches for the legend
+        else: self._main_axis.legend(numpoints=1, loc=4, frameon=True, ncol=2, fontsize=11)
 
         # Save the figure
         plt.savefig(path, bbox_inches='tight', pad_inches=0.25)

@@ -140,6 +140,8 @@ class SkirtInstaller(Configurable):
         # Create a
         urllib.urlretrieve(self.config.qt_link, path)
 
+        # FOR HPC: module load Qt/5.2.1-intel-2015a
+
     # -----------------------------------------------------------------
 
     def get(self):

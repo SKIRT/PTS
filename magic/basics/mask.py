@@ -214,18 +214,23 @@ class Mask(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_shape(cls, shape, x_size, y_size):
+    def from_shape(cls, shape, x_size, y_size, invert=False):
 
         """
         This function ...
         :param shape:
         :param x_size:
-        :param y_size
+        :param y_size:
+        :param invert:
         :return:
         """
 
         # Return a new Mask object
-        return shape.to_mask(x_size, y_size)
+        mask = shape.to_mask(x_size, y_size)
+
+        # Return the mask (inverted if requested)
+        if invert: return mask.inverse()
+        else: return mask
 
     # -----------------------------------------------------------------
 
