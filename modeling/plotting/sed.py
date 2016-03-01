@@ -53,12 +53,15 @@ class SEDPlotter(object):
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, title=None):
 
         """
         This function ...
         :return:
         """
+
+        # Set the title
+        self.title = title
 
         # Create ordered dictionaries for the model and observed SEDs (the order of adding SEDs is remembered)
         self.models = OrderedDict()
@@ -74,6 +77,18 @@ class SEDPlotter(object):
         self._figure = None
         self._main_axis = None
         self._residual_axes = []
+
+    # -----------------------------------------------------------------
+
+    def set_title(self, title):
+
+        """
+        This function ...
+        :param title:
+        :return:
+        """
+
+        self.title = title
 
     # -----------------------------------------------------------------
 
@@ -343,9 +358,8 @@ class SEDPlotter(object):
             rectangle_labels.append(label)
 
         # Extra legend: the different observations
-        #loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False
-        #observations_legend = self._main_axis.legend(legend_rectangles, rectangle_labels, loc=2)
-        observations_legend = self._main_axis.legend(legend_rectangles, rectangle_labels, loc='upper left', fancybox=True, shadow=False, fontsize=11, ncol=3)
+        # fancybox=True makes the legend corners rounded
+        observations_legend = self._main_axis.legend(legend_rectangles, rectangle_labels, loc='upper left', shadow=False, fontsize=11, ncol=3)
 
         # Finish the plot
         self.finish_plot(path, for_legend_patches=legend_patches, for_legend_parameters=legend_labels, extra_legend=observations_legend)
@@ -788,13 +802,17 @@ class SEDPlotter(object):
         if for_legend_patches is not None:
 
             # Set legend
-            self._main_axis.legend([l[0] for l in for_legend_patches], for_legend_parameters, numpoints=1, loc=4, frameon=True, ncol=2, fontsize=11)
+            # fancybox=True makes the legend corners rounded
+            self._main_axis.legend([l[0] for l in for_legend_patches], for_legend_parameters, numpoints=1, loc="lower right", frameon=True, ncol=2, fontsize=11, shadow=False)
 
             # Extra legend
             if extra_legend is not None: self._main_axis.add_artist(extra_legend)
 
         # No extra legend, no patches for the legend
-        else: self._main_axis.legend(numpoints=1, loc=4, frameon=True, ncol=2, fontsize=11)
+        else: self._main_axis.legend(numpoints=1, loc="lower right", frameon=True, ncol=2, fontsize=11, shadow=False)
+
+        # Add title if requested
+        if self.title is not None: self._figure.suptitle(self.title, fontsize=14, fontweight='bold')
 
         # Save the figure
         plt.savefig(path, bbox_inches='tight', pad_inches=0.25)

@@ -433,7 +433,7 @@ class PhotoMeter(ModelingComponent):
         """
 
         # Create a new SEDPlotter instance
-        plotter = SEDPlotter()
+        plotter = SEDPlotter("M81")
 
         # Add the SED
         plotter.add_observed_sed(self.sed, "PTS")
@@ -452,7 +452,7 @@ class PhotoMeter(ModelingComponent):
         """
 
         # Create a new SEDPlotter instance
-        plotter = SEDPlotter()
+        plotter = SEDPlotter("M81")
 
         # Add the SED
         plotter.add_observed_sed(self.sed, "PTS")
