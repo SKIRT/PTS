@@ -16,7 +16,8 @@ from __future__ import absolute_import, division, print_function
 import os
 
 # Import the relevant PTS classes and modules
-from ..tools import configuration, old_logging, inspection
+from ..tools import configuration, inspection
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -26,9 +27,6 @@ def find_host_ids():
     This function ...
     :return:
     """
-
-    # Create a temporary logger
-    log = old_logging.new_log("host", "INFO")
 
     # Create a list to contain the host ids
     ids = []
