@@ -32,6 +32,7 @@ from ...core.tools.logging import log
 from ..core import ObservedSED
 from ...core.basics.errorbar import ErrorBar
 from ...core.tools import tables
+from ..plotting import SEDPlotter
 
 # -----------------------------------------------------------------
 
@@ -389,6 +390,9 @@ class PhotoMeter(ModelingComponent):
         # Plot the SED
         self.plot_sed()
 
+        # Plot the SED with references
+        self.plot_sed_with_references()
+
     # -----------------------------------------------------------------
 
     def write_sed(self):
@@ -428,18 +432,36 @@ class PhotoMeter(ModelingComponent):
         :return:
         """
 
-        from ..plotting import SEDPlotter
-
+        # Create a new SEDPlotter instance
         plotter = SEDPlotter()
 
         # Add the SED
-        plotter.add_observed_sed(self.sed, "Observation")
+        plotter.add_observed_sed(self.sed, "PTS")
+
+        # Determine the full path to the plot file
+        path = self.full_output_path("sed.pdf")
+        plotter.run(path)
+
+    # -----------------------------------------------------------------
+
+    def plot_sed_with_references(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a new SEDPlotter instance
+        plotter = SEDPlotter()
+
+        # Add the SED
+        plotter.add_observed_sed(self.sed, "PTS")
 
         # Add the reference SEDs
         for label in self.sed_fetcher.seds: plotter.add_observed_sed(self.sed_fetcher.seds[label], label)
 
         # Determine the full path to the plot file
-        path = self.full_output_path("sed.pdf")
+        path = self.full_output_path("sed_with_references.pdf")
         plotter.run(path)
 
 # -----------------------------------------------------------------
