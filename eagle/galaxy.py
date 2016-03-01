@@ -573,7 +573,7 @@ class Galaxy:
                 hiiregions['SFR']   = ms[isinfant] / infant_age          # Assume constant SFR over HII region lifetime
                 hiiregions['Z']     = sdat['Z'][idxs][isinfant]
                 hiiregions['P']     = sdat['P'][idxs][isinfant] * 0.1   # Convert to Pa for output
-                hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
+                hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN']) + 0.4
                 hiiregions['fPDR']  = np.zeros_like(ts[isinfant]) + f_PDR  # Covering fraction is set to constant value
 
                 # calculate the HII region smoothing length from the mass of the surrounding PDR region,
@@ -631,7 +631,7 @@ class Galaxy:
                 hiiregions['SFR']   = ms[isinfant] / infant_age          # Assume constant SFR over HII region lifetime
                 hiiregions['Z']     = gdat['Z'][idxs][isinfant]
                 hiiregions['P']     = gdat['P'][idxs][isinfant] * 0.1     # convert to Pa
-                hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
+                hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN']) + 0.4
                 hiiregions['fPDR']  = np.zeros_like(ts[isinfant]) + f_PDR  # Covering fraction is set to constant value
 
                 # calculate the HII region smoothing length from the mass of the surrounding PDR region,
