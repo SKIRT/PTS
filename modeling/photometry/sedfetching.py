@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astroquery.vizier import Vizier
-from astroquery.simbad import Simbad
 
 # Import the relevant PTS classes and modules
 from ..core import ObservedSED
@@ -24,6 +23,7 @@ from ...core.tools.logging import log
 from ...core.basics.errorbar import ErrorBar
 from ...core.basics.configurable import Configurable
 from ..preparation import unitconversion
+from ...magic.tools import catalogs
 
 # -----------------------------------------------------------------
 
@@ -53,10 +53,6 @@ class SEDFetcher(Configurable):
         # The Vizier querying object
         self.vizier = Vizier(keywords=["galaxies"])
         self.vizier.ROW_LIMIT = -1
-
-        # The Simbad querying object
-        self.simbad = Simbad()
-        self.simbad.ROW_LIMIT = -1
 
         # The observed SED
         self.seds = dict()
@@ -154,14 +150,7 @@ class SEDFetcher(Configurable):
         self.galaxy_name = galaxy_name
 
         # Get the NGC ID of the galaxy
-        result = self.simbad.query_objectids(self.galaxy_name)
-        for name in result["ID"]:
-            if "NGC" in name:
-                splitted = name.split("NGC")
-                if splitted[0] == "":
-                    number = int(splitted[1])
-                    self.ngc_id = "NGC " + str(number)
-                    break
+        self.ngc_id = catalogs.get_ngc_name(self.galaxy_name)
 
         # Create a dictionary of filters
         keys = ["FUV", "NUV", "U", "B", "V", "R", "J", "H", "K", "IRAS 12", "IRAS 25", "IRAS 60", "IRAS 100", "I1", "I2", "I3", "I4", "MIPS 24", "MIPS 70", "MIPS 160", "SDSS u", "SDSS g", "SDSS r", "SDSS i", "SDSS z"]

@@ -16,13 +16,11 @@ from __future__ import absolute_import, division, print_function
 import os
 import numpy as np
 
-# Import astronomical modules
-from astropy import units as u
-from astropy.coordinates import Angle
-
 # Import the relevant AstroMagic classes and modules
 from ...magic.core import Image
 from ...magic.tools import headers
+from ...magic.basics import Mask
+from ...magic.basics.skyregion import SkyRegion
 
 # Import the relevant PTS classes and modules
 from ..core import ModelingComponent
@@ -55,6 +53,9 @@ class PhotoMeter(ModelingComponent):
 
         # The list of images
         self.images = []
+
+        # The disk ellipse
+        self.disk_ellipse = None
 
         # The SED
         self.sed = None
@@ -105,16 +106,19 @@ class PhotoMeter(ModelingComponent):
         # 2. Load the prepared images
         self.load_images()
 
-        # 3. Do the photometry
+        # 3. Get the disk ellipse
+        self.get_disk_ellipse()
+
+        # 4. Do the photometry
         self.do_photometry()
 
-        # 4. Get the photometric flux points from the literature for comparison
+        # 5. Get the photometric flux points from the literature for comparison
         self.get_references()
 
-        # 5. Calculate the differences between the calculated photometry and the reference SEDs
+        # 6. Calculate the differences between the calculated photometry and the reference SEDs
         self.calculate_differences()
 
-        # 4. Writing
+        # 7. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -178,6 +182,24 @@ class PhotoMeter(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_disk_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the path to the disk region
+        path = filesystem.join(self.components_path, "disk.reg")
+
+        # Open the region
+        region = SkyRegion.from_file(path)
+
+        # Get ellipse in sky coordinates
+        self.disk_ellipse = region[0]
+
+    # -----------------------------------------------------------------
+
     def do_photometry(self):
 
         """
@@ -187,9 +209,6 @@ class PhotoMeter(ModelingComponent):
 
         # Inform the user
         log.info("Performing the photometry calculation ...")
-
-        # Get ellipse in sky coordinates
-        sky_ellipse = self.get_truncation_ellipse()
 
         # Create directory to contain the images in Jansky with truncation
         truncated_path = self.full_output_path("truncated")
@@ -204,9 +223,8 @@ class PhotoMeter(ModelingComponent):
             # Inform the user
             log.debug("Creating mask of truncated pixels ...")
 
-            # Create ellipse in image coordinates from ellipse in sky coordinates
-            ellipse = sky_ellipse.to_ellipse(image.wcs)
-            from ...magic.basics import Mask
+            # Create ellipse in image coordinates from ellipse in sky coordinates for this image
+            ellipse = self.disk_ellipse.to_ellipse(image.wcs)
 
             # Create mask from ellipse
             inverted_mask = Mask.from_shape(ellipse, image.xsize, image.ysize, invert=True)
@@ -323,54 +341,6 @@ class PhotoMeter(ModelingComponent):
 
         # Create table of differences
         self.differences = tables.new(data, names=names)
-
-    # -----------------------------------------------------------------
-
-    def get_truncation_ellipse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        from astroquery.vizier import Vizier
-        vizier = Vizier(keywords=["galaxies"])
-
-        # Get parameters from S4G catalog
-        result = vizier.query_object(self.galaxy_name, catalog=["J/PASP/122/1397/s4g"])
-        table = result[0]
-
-        name = table["Name"][0]
-
-        ra_center = table["_RAJ2000"][0]
-        dec_center = table["_DEJ2000"][0]
-
-        major = table["amaj"][0] * u.Unit("arcsec")
-        ellipticity = table["ell"][0]
-        position_angle = Angle(table["PA"][0] - 90.0, u.Unit("deg"))
-
-        minor = (1.0-ellipticity)*major
-
-        from ...magic.basics import Extent
-
-        radius = Extent(major, minor)
-
-
-        from ...magic.basics.skygeometry import SkyEllipse, SkyCoord
-
-        center = SkyCoord(ra=ra_center, dec=dec_center, unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
-
-        sky_ellipse = SkyEllipse(center, radius, position_angle)
-
-        from ...magic.basics import SkyRegion
-
-        region = SkyRegion()
-        region.append(sky_ellipse)
-        region_path = self.full_output_path("galaxy.reg")
-        region.save(region_path)
-
-        # Return the sky ellipse
-        return sky_ellipse
 
     # -----------------------------------------------------------------
 

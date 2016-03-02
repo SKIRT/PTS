@@ -186,9 +186,6 @@ class DataPreparer(ModelingComponent):
         # 3. Get attenuations
         self.get_attenuations()
 
-        # 4. Get structural parameters of the galaxy
-        self.get_structural_parameters()
-
         # 2. Prepare the images
         self.prepare()
 
@@ -346,44 +343,6 @@ class DataPreparer(ModelingComponent):
 
             # All other bands: set attenuation to zero
             else: self.attenuations[image_name] = 0.0
-
-    # -----------------------------------------------------------------
-
-    def get_structural_parameters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        from astroquery.vizier import Vizier
-        vizier = Vizier(keywords=["galaxies"])
-
-        # Get parameters from S4G catalog
-        result = vizier.query_object(self.galaxy_name, catalog=["J/PASP/122/1397/s4g"])
-        table = result[0]
-
-        name = table["Name"][0]
-
-        ra_center = table["_RAJ2000"][0]
-        dec_center = table["_DEJ2000"][0]
-
-        major = table["amaj"][0] * u.Unit("arcsec")
-        ellipticity = table["ell"][0]
-        position_angle = table["PA"][0] * u.Unit("deg")
-
-        distance = table["Dmean"][0] * u.Unit("Mpc")
-        distance_error = table["e_Dmean"][0] * u.Unit("Mpc")
-
-        asymptotic_ab_magnitude_i1 = table["__3.6_"][0]
-        asymptotic_ab_magnitude_i2 = table["__4.5_"][0]
-        asymptotic_ab_magnitude_i1_error = table["e__3.6_"][0]
-        asymptotic_ab_magnitude_i2_error = table["e__4.5_"][0]
-
-        absolute_magnitude_i1 = table["M3.6"][0]
-        absolute_magnitude_i2 = table["M4.5"][0]
-
-        stellar_mass = 10.0**table["logM_"][0] * u.Unit("Msun")
 
     # -----------------------------------------------------------------
 

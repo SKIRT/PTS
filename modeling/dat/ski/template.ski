@@ -11,9 +11,9 @@
     <instrumentSystem type="InstrumentSystem">
       <InstrumentSystem>
         <instruments type="Instrument">
-          <SimpleInstrument instrumentName="i59" distance="3.6 Mpc" inclination="59 deg" azimuth="0 deg" positionAngle="157 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
-          <SimpleInstrument instrumentName="i0" distance="3.6 Mpc" inclination="0 deg" azimuth="0 deg" positionAngle="0 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
-          <SimpleInstrument instrumentName="i90" distance="3.6 Mpc" inclination="90 deg" azimuth="0 deg" positionAngle="0 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+          <SimpleInstrument instrumentName="earth" distance="3.6 Mpc" inclination="59 deg" azimuth="0 deg" positionAngle="157 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+          <SimpleInstrument instrumentName="face-on" distance="3.6 Mpc" inclination="0 deg" azimuth="0 deg" positionAngle="0 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+          <SimpleInstrument instrumentName="edge-on" distance="3.6 Mpc" inclination="90 deg" azimuth="0 deg" positionAngle="0 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
         </instruments>
       </InstrumentSystem>
     </instrumentSystem>
@@ -26,9 +26,9 @@
           <!-- Evolved stellar bulge -->
           <PanStellarComp>
             <geometry type="Geometry">
-              <TriaxialGeometryDecorator yFlattening="0.58" zFlattening="1">
+              <TriaxialGeometryDecorator yFlattening="1" zFlattening="1">
                 <geometry type="SpheGeometry">
-                  <SersicGeometry index="4.27" radius="1594 pc"/>
+                  <SersicGeometry index="1" radius="1000 pc"/>
                 </geometry>
               </TriaxialGeometryDecorator>
             </geometry>

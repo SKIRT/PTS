@@ -41,15 +41,16 @@ class ModelingComponent(Configurable):
         # Attributes
         self.galaxy_name = None
 
+        # Modeling directories
         self.data_path = None
         self.prep_path = None
         self.phot_path = None
         self.maps_path = None
-        self.bulge_path = None
-        self.disk_path = None
+        self.components_path = None
         self.fit_path = None
         self.analysis_path = None
 
+        # PTS directories
         self.kernels_path = None
 
     # -----------------------------------------------------------------
@@ -69,15 +70,12 @@ class ModelingComponent(Configurable):
         # Get the name of the galaxy (the name of the base directory)
         self.galaxy_name = os.path.basename(self.config.path)
 
-        print("path=", self.config.path)
-
         # Get the full path to the 'data', 'prep' and 'in' directories
         self.data_path = os.path.join(self.config.path, "data")
         self.prep_path = os.path.join(self.config.path, "prep")
         self.phot_path = os.path.join(self.config.path, "phot")
         self.maps_path = os.path.join(self.config.path, "maps")
-        self.bulge_path = os.path.join(self.config.path, "bulge")
-        self.disk_path = os.path.join(self.config.path, "disk")
+        self.components_path = os.path.join(self.config.path, "components")
         self.fit_path = os.path.join(self.config.path, "fit")
         self.analysis_path = os.path.join(self.config.path, "analysis")
 
@@ -85,6 +83,6 @@ class ModelingComponent(Configurable):
         self.kernels_path = os.path.join(inspection.pts_user_dir, "kernels")
 
         # Create the prep path if it does not exist yet
-        filesystem.create_directories([self.prep_path, self.maps_path, self.phot_path, self.maps_path, self.bulge_path, self.disk_path, self.fit_path, self.analysis_path])
+        filesystem.create_directories([self.prep_path, self.maps_path, self.phot_path, self.maps_path, self.components_path, self.fit_path, self.analysis_path])
 
 # -----------------------------------------------------------------

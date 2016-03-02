@@ -18,8 +18,9 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from ..core import ModelingComponent
-from ...core.tools import inspection
+from ...core.tools import inspection, tables, filesystem
 from ...core.simulation.skifile import SkiFile
+from ...core.basics.filter import Filter
 
 # -----------------------------------------------------------------
 
@@ -45,6 +46,9 @@ class InputInitializer(ModelingComponent):
         super(InputInitializer, self).__init__(config)
 
         # -- Attributes --
+
+        # The path to the fit/in directory
+        self.fit_in_path = None
 
         # The ski file
         self.ski_file = None
@@ -85,6 +89,21 @@ class InputInitializer(ModelingComponent):
 
         # 5. Place ski file
         self.place_ski_file()
+
+    # -----------------------------------------------------------------
+
+    def setup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(InputInitializer, self).setup()
+
+        # Set the path to the fit/in path
+        self.fit_in_path = filesystem.join(self.fit_path, "in")
 
     # -----------------------------------------------------------------
 
@@ -134,7 +153,37 @@ class InputInitializer(ModelingComponent):
         for wavelength in base_grid:
             if wavelength > self.config.wavelengths.max_zoom: total_grid.append(wavelength)
 
-        # Add the wavelengths of the bands of interest
+        # -- Add the wavelengths of the bands of interest --
+
+        # Open the fluxes.dat table to get the filters that are used for the SED
+        fluxes_table_path = filesystem.join(self.phot_path, "fluxes.dat")
+        fluxes_table = tables.from_file(fluxes_table_path)
+
+        # Loop over the entries in the fluxes table, get the filter
+        for entry in fluxes_table:
+
+            # Get the filter
+            filter_id = entry["Instrument"] + "." + entry["Band"]
+            filter = Filter.from_string(filter_id)
+
+            # Get the wavelength in micron
+            wavelength = filter.pivotwavelength()
+
+            # Insert the wavelength at the appropriate place
+            for i in range(len(total_grid)):
+                if total_grid[i] > wavelength:
+                    total_grid.insert(i, wavelength)
+                    break
+            # If no break is encountered, no value in the grid was greater than our filter wavelength,
+            # so add the filter wavelength at the end
+            else: total_grid.append(wavelength)
+
+        # Create table for the wavelength grid
+        grid_table = tables.new([total_grid], names=["Wavelength"])
+
+        # Save the wavelength grid
+        grid_path = filesystem.join(self.fit_in_path, "wavelengths.txt")
+        tables.write(grid_table, grid_path)
 
     # -----------------------------------------------------------------
 
