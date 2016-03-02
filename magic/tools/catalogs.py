@@ -21,6 +21,7 @@ import numpy as np
 import astropy.units as u
 import astropy.coordinates as coord
 from astroquery.vizier import Vizier
+from astroquery.simbad import Simbad
 from astroquery.ned import Ned
 import astroquery.exceptions
 from astropy.coordinates import Angle
@@ -31,6 +32,34 @@ from ...core.tools import tables
 # Import the relevant AstroMagic classes and modules
 from . import regions
 from ..basics import Position
+
+# -----------------------------------------------------------------
+
+def get_ngc_name(galaxy_name, delimiter=" "):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :param delimiter:
+    :return:
+    """
+
+    # The Simbad querying object
+    simbad = Simbad()
+    simbad.ROW_LIMIT = -1
+
+    result = simbad.query_objectids(galaxy_name)
+    for name in result["ID"]:
+
+        if "NGC" in name:
+
+            splitted = name.split("NGC")
+            if splitted[0] == "":
+                number = int(splitted[1])
+                return "NGC" + delimiter + str(number)
+
+    # If nothing is found, return None
+    return None
 
 # -----------------------------------------------------------------
 
