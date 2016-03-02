@@ -264,7 +264,7 @@ class SkiFile:
         # get the value of the wavelengths attribute on the OligoWavelengthGrid element (as a list of query results)
         results = self.tree.xpath("//OligoWavelengthGrid/@wavelengths")
         # if not found, return an empty list
-        if len(results) != 1: return [ ]
+        if len(results) != 1: return []
         # split the first result in separate strings, extract the numbers using the appropriate units
         units = self.units()
         return [units.convert(s,to_unit='micron',quantity='wavelength') for s in results[0].split(",")]
@@ -474,42 +474,12 @@ class SkiFile:
     ## This function returns the stellar system
     def get_stellar_system(self):
 
-        # Get the stellar system
-        parents = self.tree.xpath("//stellarSystem")
-
-        # Check if only one stellar system is present
-        if len(parents) == 0: raise ValueError("No stellar system in ski file")
-        if len(parents) > 1: raise ValueError("Multiple stellar systems in ski file")
-
-        parents = parents[0]
-
-        # Check if only one stellar system is present
-        if len(parents) == 0: raise ValueError("No stellar system in ski file")
-        if len(parents) > 1: raise ValueError("Multiple stellar systems in ski file")
-
-        # Return the actual stellar system
-        stellar_system = parents[0]
-        return stellar_system
+        return self.get_unique_base_element("stellarSystem")
 
     ## This function returns the dust system
     def get_dust_system(self):
 
-        # Get the dust system
-        parents = self.tree.xpath("//dustSystem")
-
-        # Check if only one dust system is present
-        if len(parents) == 0: raise ValueError("No dust system in ski file")
-        if len(parents) > 1: raise ValueError("Multiple dust systems in ski file")
-
-        parents = parents[0]
-
-        # Check if only one dust system is present
-        if len(parents) == 0: raise ValueError("No dust system in ski file")
-        if len(parents) > 1: raise ValueError("Multiple dust systems in ski file")
-
-        # Return the actual dust system
-        dust_system = parents[0]
-        return dust_system
+        return self.get_unique_base_element("dustSystem")
 
     ## This function returns the list of stellar components
     def get_stellar_components(self, include_comments=False):
@@ -535,22 +505,8 @@ class SkiFile:
         # Get the dust system
         dust_system = self.get_dust_system()
 
-        parents = dust_system.xpath("dustDistribution")
-
-        # Check if only one 'dustDistribution' element is present
-        if len(parents) == 0: raise ValueError("Missing dust distribution element")
-        elif len(parents) > 1: raise ValueError("Multiple dust distribution elements")
-
-        parents = parents[0]
-
-        # Check if only one DustDistribution subclass is present
-        if len(parents) == 0: raise ValueError("Missing dust distribution")
-        elif len(parents) > 1: raise ValueError("Multiple dust distributions")
-
-        dust_distribution = parents[0]
-
-        # Return the dust distribution element
-        return dust_distribution
+        # Return the dust distribution
+        return get_unique_element(dust_system, "dustDistribution")
 
     ## This function returns the list of dust components
     def get_dust_components(self, include_comments=False):
@@ -647,7 +603,7 @@ class SkiFile:
         # Invalid component id
         else: raise ValueError("Invalid component identifier (should be integer or string)")
 
-    def get_stellar_component_normalization(self, component_id=None):
+    def get_stellar_component_normalization(self, component_id):
 
         """
         This function returns the normalization element of the specified stellar component
@@ -655,25 +611,11 @@ class SkiFile:
         :return:
         """
 
-        if component_id is None: stellar_component = self.get_stellar_component(0)
-        else: stellar_component = self.get_stellar_component(component_id)
+        # Get the stellar component
+        stellar_component = self.get_stellar_component(component_id)
 
         # Get normalization of this component
-        parents = stellar_component.xpath("normalization")
-
-        # Check if only one 'normalization' element is present
-        if len(parents) == 0: raise ValueError("Invalid ski file: no 'normalization' elements within stellar component")
-        elif len(parents) > 1: raise ValueError("Invalid ski file: multiple 'normalization' elements within stellar component")
-
-        parents = parents[0]
-
-        # Check if only one StellarCompNormalization object is present
-        if len(parents) == 0: raise ValueError("Invalid ski file: no 'normalization' elements within stellar component")
-        elif len(parents) > 1: raise ValueError("Invalid ski file: multiple 'normalization' elements within stellar component")
-
-        # Return the actual StellarCompNormalization object
-        normalization = parents[0]
-        return normalization
+        return get_unique_element(stellar_component, "normalization")
 
     def get_stellar_component_luminosity(self, component_id):
 
@@ -774,21 +716,8 @@ class SkiFile:
         # Get the dust component
         dust_component = self.get_dust_component(component_id)
 
-        # Get normalization of this component
-        parents = dust_component.xpath("normalization")
-
-        # Check if only one 'normalization' element is present
-        if len(parents) == 0: raise ValueError("Invalid ski file: no 'normalization' elements within dust component")
-        elif len(parents) > 1: raise ValueError("Invalid ski file: multiple 'normalization' elements within dust component")
-        parents = parents[0]
-
-        # Check if only one DustCompNormalization object is present
-        if len(parents) == 0: raise ValueError("Invalid ski file: no 'normalization' elements within dust component")
-        elif len(parents) > 1: raise ValueError("Invalid ski file: multiple 'normalization' elements within dust component")
-
-        # Return the actual DustCompNormalization object
-        normalization = parents[0]
-        return normalization
+        # Return the normalization
+        return get_unique_element(dust_component, "normalization")
 
     def get_dust_component_mass(self, component_id):
 
@@ -797,9 +726,6 @@ class SkiFile:
         :param component_id:
         :return:
         """
-
-        # Import astropy here to avoid import errors with other users
-        from astropy.units import Unit
 
         # Get the dust component normalization of the component
         normalization = self.get_dust_component_normalization(component_id)
@@ -828,6 +754,231 @@ class SkiFile:
         # Set the new dust mass
         normalization.set("dustMass", str(mass.to("Msun")) + " Msun")
 
+    def get_wavelength_grid(self):
+
+        """
+        This function returns the wavelength grid
+        :return:
+        """
+
+        # Get the wavelength grid
+        return self.get_unique_base_element("wavelengthGrid")
+
+    def set_file_wavelength_grid(self, filename):
+
+        """
+        This function sets the wavelength grid to a file
+        :param filename:
+        :return:
+        """
+
+        # Get the wavelength grid
+        wavelength_grid = self.get_wavelength_grid()
+
+        # Get the parent
+        parent = wavelength_grid.getparent()
+
+        # Remove the old wavelength grid
+        parent.remove(wavelength_grid)
+
+        # Make and add the new wavelength grid
+        attrs = {"filename": filename}
+        parent.append(parent.makeelement("FileWavelengthGrid", attrs))
+
+    def get_stellar_component_geometry(self, component_id):
+
+        """
+        This function ...
+        :param component_id:
+        :return:
+        """
+
+        # Get the stellar component
+        stellar_component = self.get_stellar_component(component_id)
+
+        # Return the geometry element of the stellar component
+        return get_unique_element(stellar_component, "geometry")
+
+    def set_stellar_component_fits_geometry(self, component_id, filename, pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height):
+
+        """
+        This function ...
+        :param component_id:
+        :param filename:
+        :param pixelscale:
+        :param position_angle:
+        :param inclination:
+        :param x_size:
+        :param y_size:
+        :param x_center:
+        :param y_center:
+        :param scale_height:
+        :return:
+        """
+
+        # Get the stellar component geometry
+        geometry = self.get_stellar_component_geometry(component_id)
+
+        # Get the parent
+        parent = geometry.getparent()
+
+        # Remove the old geometry
+        parent.remove(geometry)
+
+        # Create and add the new geometry
+        attrs = {"filename": filename, "pixelScale": str(pixelscale), "positionAngle": str(position_angle.to("deg")) + " deg",
+                 "inclination": str(position_angle.to("deg")) + " deg", "xelements": str(x_size), "yelements": str(y_size),
+                 "xcenter": str(x_center), "ycenter": str(y_center)}
+        parent.append(parent.makeelement("ReadFitsGeometry", attrs))
+
+    def set_stellar_component_sersic_geometry(self, component_id, index, radius, y_flattening=1, z_flattening=1):
+
+        """
+        This function ...
+        :param component_id:
+        :param index:
+        :param radius:
+        :param y_flattening:
+        :param z_flattening:
+        :return:
+        """
+
+        # Get the stellar component geometry
+        geometry = self.get_stellar_component_geometry(component_id)
+
+        # Get the parent
+        parent = geometry.getparent()
+
+        # Remove the old geometry
+        parent.remove(geometry)
+
+        # Create and add the new geometry
+        attrs = {"yFlattening": str(y_flattening), "zFlattening": str(z_flattening)}
+        new_geometry = parent.makeelement("TriaxialGeometryDecorator", attrs)
+
+        # Add sersic profile to the geometry
+        attrs = {"index": str(index), "radius": str(radius)}
+        new_geometry.append(new_geometry.makeelement("SersicGeometry", attrs))
+
+        # Add the new geometry
+        parent.append(new_geometry)
+
+    def get_stellar_component_sed(self, component_id):
+
+        """
+        This function ...
+        :param component_id:
+        :return:
+        """
+
+        # Get the stellar component
+        component = self.get_stellar_component(component_id)
+
+        # Get the SED element
+        return get_unique_element(component, "sed")
+
+    def set_stellar_component_sed(self, component_id, template, age, metallicity):
+
+        """
+        This function ...
+        :param component_id:
+        :param template:
+        :param age:
+        :param metallicity:
+        :return:
+        """
+
+        # The name of the template class in SKIRT
+        template_class = template + "SED"
+
+        # Get the stellar component SED
+        sed = self.get_stellar_component_sed(component_id)
+
+        # Get the parent
+        parent = sed.getparent()
+
+        # Remove the old SED element
+        parent.remove(sed)
+
+        # Create and add the new geometry
+        attrs = {"age": str(age), "metallicity": str(metallicity)}
+        parent.append(parent.makeelement(template_class, attrs))
+
+    def get_dust_lib(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Return the dust lib element
+        return get_unique_element(dust_system, "dustLib")
+
+    def set_allcells_dust_lib(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the dust lib
+        lib = self.get_dust_lib()
+
+        # Get the parent
+        parent = lib.getparent()
+
+        # Remove the old DustLib element
+        parent.remove(lib)
+
+        # Create and add the new library
+        parent.append(parent.makeelement("AllCellsDustLib"), {})
+
+    def set_2d_dust_lib(self, temperature_points=25, wavelength_points=10):
+
+        """
+        This function ...
+        :param temperature_points:
+        :param wavelength_points:
+        :return:
+        """
+
+        # Get the dust lib
+        lib = self.get_dust_lib()
+
+        # Get the parent
+        parent = lib.getparent()
+
+        # Remove the old DustLib element
+        parent.remove(lib)
+
+        # Create and add the new library
+        attrs = {"pointsTemperature": str(temperature_points), "pointsWavelength": str(wavelength_points)}
+        parent.append(parent.makeelement("Dim2DustLib"), attrs)
+
+    def set_1d_dust_lib(self, points):
+
+        """
+        This function ...
+        :param points:
+        :return:
+        """
+
+        # Get the dust lib
+        lib = self.get_dust_lib()
+
+        # Get the parent
+        parent = lib.getparent()
+
+        # Remove the old DustLib element
+        parent.remove(lib)
+
+        # Create and add the new library
+        attrs = {"entries": str(points)}
+        parent.append(parent.makeelement("Dim1DustLib"), attrs)
+
     def to_dict(self):
 
         """
@@ -846,6 +997,43 @@ class SkiFile:
 
         import json
         return json.dumps(self.to_dict())
+
+    def get_unique_base_element(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return get_unique_element(self.tree.getroot(), "//"+name)
+
+# -----------------------------------------------------------------
+
+def get_unique_element(element, name):
+
+    """
+    This function ...
+    :param element:
+    :param name:
+    :return:
+    """
+
+    # Get child element of the given element
+    parents = element.xpath(name)
+
+    # Check if only one child element is present
+    if len(parents) == 0: raise ValueError("Invalid ski file: no '" + name + "' elements within '" + element.tag + "'")
+    elif len(parents) > 1: raise ValueError("Invalid ski file: multiple '" + name + "' elements within '" + element.tag + "'")
+    parents = parents[0]
+
+    # Check if only one child object is present
+    if len(parents) == 0: raise ValueError("Invalid ski file: no '" + name + "' elements within '" + element.tag + "'")
+    elif len(parents) > 1: raise ValueError("Invalid ski file: multiple '" + name + "' elements within '" + element.tag + "'")
+    child = parents[0]
+
+    # Return the child element
+    return child
 
 # -----------------------------------------------------------------
 

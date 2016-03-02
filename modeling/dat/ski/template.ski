@@ -104,7 +104,7 @@
           <TransientDustEmissivity/>
         </dustEmissivity>
         <dustLib type="DustLib">
-          <Dim2DustLib pointsTemperature="25" pointsWavelength="10"/>
+          <AllCellsDustLib/>
         </dustLib>
       </PanDustSystem>
     </dustSystem>
