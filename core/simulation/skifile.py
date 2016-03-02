@@ -863,6 +863,32 @@ class SkiFile:
         # Add the new geometry
         parent.append(new_geometry)
 
+    def set_stellar_component_expdisk_geometry(self, component_id, radial_scale, axial_scale, radial_truncation=0, axial_truncation=0, inner_radius=0):
+
+        """
+        This function ...
+        :param component_id:
+        :param radial_scale:
+        :param axial_scale:
+        :param radial_truncation:
+        :param axial_truncation:
+        :param inner_radius:
+        :return:
+        """
+
+        # Get the stellar component geometry
+        geometry = self.get_stellar_component_geometry(component_id)
+
+        # Get the parent
+        parent = geometry.getparent()
+
+        # Remove the old geometry
+        parent.remove(geometry)
+
+        # Create and add the new exponential disk geometry
+        attrs = {"radialScale": str(radial_scale), "axialScale": str(axial_scale), "radialTrunc": str(radial_truncation), "axialTrunc": str(axial_truncation), "innerRadius": str(inner_radius)}
+        parent.append(parent.makeelement("ExpDiskGeometry", attrs))
+
     def get_stellar_component_sed(self, component_id):
 
         """

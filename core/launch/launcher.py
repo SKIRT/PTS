@@ -69,6 +69,7 @@ class SkirtLauncher(Configurable):
 
         """
         This function ...
+        :param arguments:
         :return:
         """
 
@@ -76,9 +77,6 @@ class SkirtLauncher(Configurable):
         launcher = cls()
 
         ## Adjust the configuration settings according to the command-line arguments
-
-        # Logging
-        if arguments.debug: launcher.config.logging.level = "DEBUG"
 
         # Ski file
         launcher.config.arguments.ski_pattern = arguments.filepath
