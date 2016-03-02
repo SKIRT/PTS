@@ -464,4 +464,134 @@ class SkiFile:
         for attr in self.tree.xpath("//*/@extentY"): attr.getparent().set("extentY", strvalue)
         for attr in self.tree.xpath("//*/@extentZ"): attr.getparent().set("extentZ", strvalue)
 
+    ## This function returns the stellar system
+    def get_stellar_system(self):
+
+        # Get the stellar system
+        parents = self.tree.xpath("//stellarSystem")
+
+        # Check if only one stellar system is present
+        if len(parents) == 0: raise ValueError("No stellar system in ski file")
+        if len(parents) > 1: raise ValueError("Multiple stellar systems in ski file")
+
+        parents = parents[0]
+
+        # Check if only one stellar system is present
+        if len(parents) == 0: raise ValueError("No stellar system in ski file")
+        if len(parents) > 1: raise ValueError("Multiple stellar systems in ski file")
+
+        # Return the actual stellar system
+        stellar_system = parents[0]
+        return stellar_system
+
+    ## This function returns the dust system
+    def get_dust_system(self):
+
+        # Get the dust system
+        parents = self.tree.xpath("//dustSystem")
+
+        # Check if only one dust system is present
+        if len(parents) == 0: raise ValueError("No dust system in ski file")
+        if len(parents) > 1: raise ValueError("Multiple dust systems in ski file")
+
+        parents = parents[0]
+
+        # Check if only one dust system is present
+        if len(parents) == 0: raise ValueError("No dust system in ski file")
+        if len(parents) > 1: raise ValueError("Multiple dust systems in ski file")
+
+        # Return the actual dust system
+        dust_system = parents[0]
+        return dust_system
+
+    ## This function returns the list of stellar components
+    def get_stellar_components(self, include_comments=False):
+
+        # Get the stellar system
+        stellar_system = self.get_stellar_system()
+
+        # Get the 'components' element
+        stellar_components_parents = stellar_system.xpath("components")
+
+        # Check if only one 'components' element is present
+        if len(stellar_components_parents) == 0: raise ValueError("Stellar system is not composed of components")
+        elif len(stellar_components_parents) > 1: raise ValueError("Invalid ski file: multiple 'components' objects within stellar system")
+        stellar_components = stellar_components_parents[0]
+
+        # Return the stellar components as a list
+        if include_comments: return stellar_components.getchildren()
+        else: return [component for component in stellar_components.getchildren() if component.tag is not etree.Comment]
+
+    ## This function returns the dust distribution
+    def get_dust_distribution(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        parents = dust_system.xpath("dustDistribution")
+
+        # Check if only one 'dustDistribution' element is present
+        if len(parents) == 0: raise ValueError("Missing dust distribution element")
+        elif len(parents) > 1: raise ValueError("Multiple dust distribution elements")
+
+        parents = parents[0]
+
+        # Check if only one DustDistribution subclass is present
+        if len(parents) == 0: raise ValueError("Missing dust distribution")
+        elif len(parents) > 1: raise ValueError("Multiple dust distributions")
+
+        dust_distribution = parents[0]
+
+        # Return the dust distribution element
+        return dust_distribution
+
+    ## This function returns the list of dust components
+    def get_dust_components(self, include_comments=False):
+
+        # Get the dust distribution
+        dust_distribution = self.get_dust_distribution()
+
+        # Check whether the dust distribution is a CompDustDistribution
+        if not dust_distribution.tag == "CompDustDistribution": raise ValueError("Dust distribution is not composed of components")
+
+        # Get the 'components' element
+        dust_components_parents = dust_distribution.xpath("components")
+
+        # Check if only one 'components' element is present
+        if len(dust_components_parents) == 0: raise ValueError("Dust distribution is not composed of components")
+        elif len(dust_components_parents) > 1: raise ValueError("Invalid ski file: multiple 'components' objects within dust distribution")
+        dust_components = dust_components_parents[0]
+
+        # Return the dust components as a list
+        if include_comments: return dust_components.getchildren()
+        else: return [component for component in dust_components.getchildren() if component.tag is not etree.Comment]
+
+    ## This function returns the stellar component which is preceeded by a comment matching the description
+    def get_stellar_component(self, description):
+
+        # Get the stellar components
+        components = self.get_stellar_components(include_comments=True)
+
+        # Loop over the different components
+        for child in components:
+
+            if child.tag is etree.Comment and child.text.strip() == description:
+
+                # Return the child element right after the comment element
+                return child.getnext()
+
+    ## This function returns the dust component which is preceeded by a comment matching the description
+    def get_dust_component(self, description):
+
+        # Get the dust system
+        components = self.get_dust_components(include_comments=True)
+
+        # Loop over the different components
+        for child in components:
+
+            if child.tag is etree.Comment and child.text.strip() == description:
+
+                # Return the child element right after the comment element
+                return child.getnext()
+
 # -----------------------------------------------------------------
