@@ -79,6 +79,18 @@ class ErrorBar(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def average(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.5 * (abs(self.lower) + self.upper)
+
+    # -----------------------------------------------------------------
+
     def __mul__(self, value):
 
         """

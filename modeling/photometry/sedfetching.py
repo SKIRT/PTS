@@ -122,6 +122,9 @@ class SEDFetcher(Configurable):
         # If requested, query the Imperial IRAS-FSC redshift catalogue (IIFSCz) (Wang+, 2009)
         if "IRAS-FSC" in self.config.catalogs: self.get_iras_fsc()
 
+        # If requested, query the S4G catalog for IRAC fluxes
+        if "S4G" in self.config.catalogs: self.get_s4g()
+
         # SPECIFIC for M81: not enabled, no time to figure out the unit conversion now
         #if self.ngc_id == "NGC 3031": self.get_m81()
 
@@ -1052,6 +1055,47 @@ class SEDFetcher(Configurable):
 
         # Add the SED to the dictionary
         self.seds["IRAS-FSC"] = sed
+
+    # -----------------------------------------------------------------
+
+    def get_s4g(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create an SED
+        sed = ObservedSED()
+
+        # Get parameters from S4G catalog
+        result = self.vizier.query_object(self.galaxy_name, catalog=["J/PASP/122/1397/s4g"])
+        table = result[0]
+
+        # Magnitudes
+        i1_mag = table["__3.6_"][0]
+        i2_mag = table["__4.5_"][0]
+        i1_mag_error = table["e__3.6_"][0]
+        i2_mag_error = table["e__4.5_"][0]
+
+        i1_fluxdensity = unitconversion.ab_to_jansky(i1_mag)
+        i1_fluxdensity_lower = unitconversion.ab_to_jansky(i1_mag + i1_mag_error)
+        i1_fluxdensity_upper = unitconversion.ab_to_jansky(i1_mag - i1_mag_error)
+        i1_error = ErrorBar(i1_fluxdensity_lower, i1_fluxdensity_upper, at=i1_fluxdensity)
+
+        # Add data point to SED
+        sed.add_entry(self.filters["I1"], i1_fluxdensity, i1_error)
+
+        i2_fluxdensity = unitconversion.ab_to_jansky(i2_mag)
+        i2_fluxdensity_lower = unitconversion.ab_to_jansky(i2_mag + i2_mag_error)
+        i2_fluxdensity_upper = unitconversion.ab_to_jansky(i2_mag - i2_mag_error)
+        i2_error = ErrorBar(i2_fluxdensity_lower, i2_fluxdensity_upper, at=i2_fluxdensity)
+
+        # Add data point to SED
+        sed.add_entry(self.filters["I2"], i2_fluxdensity, i2_error)
+
+        # Add the SED to the dictionary
+        self.seds["S4G"] = sed
 
     # -----------------------------------------------------------------
 

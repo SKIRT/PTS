@@ -26,6 +26,8 @@ from ...core.basics.map import Map
 from ...core.tools import inspection, filesystem
 from ...core.tools.logging import log
 from ...core.simulation.skifile import SkiFile
+from ..preparation import unitconversion
+from ...core.basics.errorbar import ErrorBar
 
 # Import the relevant AstroMagic classes and modules
 from ...magic.tools import catalogs
@@ -204,7 +206,7 @@ class GalaxyDecomposer(ModelingComponent):
         # Major axis, ellipticity, position angle
         self.parameters.major = table["amaj"][0] * Unit("arcsec")
         self.parameters.ellipticity = table["ell"][0]
-        self.parameters.position_angle = Angle(table["PA"][0] - 90.0, Unit("deg"))
+        self.parameters.position_angle = Angle(table["PA"][0] + 90.0, Unit("deg"))
 
         # Distance
         self.parameters.distance = table["Dmean"][0] * Unit("Mpc")
@@ -220,6 +222,18 @@ class GalaxyDecomposer(ModelingComponent):
         self.parameters.i1_mag_error = asymptotic_ab_magnitude_i1_error
         self.parameters.i2_mag = asymptotic_ab_magnitude_i2
         self.parameters.i2_mag_error = asymptotic_ab_magnitude_i2_error
+
+        self.parameters.i1_fluxdensity = unitconversion.ab_to_jansky(self.parameters.i1_mag)
+        i1_fluxdensity_lower = unitconversion.ab_to_jansky(self.parameters.i1_mag + self.parameters.i1_mag_error)
+        i1_fluxdensity_upper = unitconversion.ab_to_jansky(self.parameters.i1_mag - self.parameters.i1_mag_error)
+        i1_error = ErrorBar(i1_fluxdensity_lower, i1_fluxdensity_upper, at=self.parameters.i1_fluxdensity)
+        self.parameters.i1_error = i1_error.average
+
+        self.parameters.i2_fluxdensity = unitconversion.ab_to_jansky(self.parameters.i2_mag)
+        i2_fluxdensity_lower = unitconversion.ab_to_jansky(self.parameters.i2_mag + self.parameters.i2_mag_error)
+        i2_fluxdensity_upper = unitconversion.ab_to_jansky(self.parameters.i2_mag - self.parameters.i2_mag_error)
+        i2_error = ErrorBar(i2_fluxdensity_lower, i2_fluxdensity_upper, at=self.parameters.i2_fluxdensity)
+        self.parameters.i2_error = i2_error.average
 
         # Other ...
         #absolute_magnitude_i1 = table["M3.6"][0]
@@ -297,23 +311,25 @@ class GalaxyDecomposer(ModelingComponent):
 
                 # BULGE
                 self.parameters.bulge = Map()
-                self.parameters.bulge.interpretation = splitted[sersic_1_index].split("|")[1] # COMMON with disk
-                self.parameters.bulge.rel = splitted[sersic_1_index + 1] # COMMON with disk
-                self.parameters.bulge.mag = splitted[sersic_1_index + 2] # COMMON with disk
-                self.parameters.bulge.re = splitted[sersic_1_index + 3] # re ??? effective radius?
-                self.parameters.bulge.ar = splitted[sersic_1_index + 4] # COMMON with disk
-                self.parameters.bulge.pa = splitted[sersic_1_index + 5] # COMMON with disk
-                self.parameters.bulge.n = splitted[sersic_1_index + 6]
+                self.parameters.bulge.interpretation = splitted[sersic_1_index].split("|")[1]
+                self.parameters.bulge.rel = float(splitted[sersic_1_index + 1])
+                self.parameters.bulge.mag = float(splitted[sersic_1_index + 2])
+                self.parameters.bulge.fluxdensity = unitconversion.ab_to_jansky(self.parameters.bulge.mag) * Unit("Jy")
+                self.parameters.bulge.re = float(splitted[sersic_1_index + 3]) # re ??? effective radius?
+                self.parameters.bulge.ar = float(splitted[sersic_1_index + 4])
+                self.parameters.bulge.pa = float(splitted[sersic_1_index + 5])
+                self.parameters.bulge.n = float(splitted[sersic_1_index + 6])
 
                 # DISK
                 self.parameters.disk = Map()
-                self.parameters.disk.interpretation = splitted[disk_1_index].split("|")[1] # COMMON
-                self.parameters.disk.rel = splitted[disk_1_index + 1] # COMMON
-                self.parameters.disk.mag = splitted[disk_1_index + 2] # COMMON
-                self.parameters.disk.hr = splitted[disk_1_index + 3]
-                self.parameters.disk.ar = splitted[disk_1_index + 4] # COMMON
-                self.parameters.disk.pa = splitted[disk_1_index + 5] # COMMON
-                self.parameters.disk.mu0 = splitted[disk_1_index + 6]
+                self.parameters.disk.interpretation = splitted[disk_1_index].split("|")[1]
+                self.parameters.disk.rel = float(splitted[disk_1_index + 1])
+                self.parameters.disk.mag = float(splitted[disk_1_index + 2])
+                self.parameters.disk.fluxdensity = unitconversion.ab_to_jansky(self.parameters.disk.mag) * Unit("Jy")
+                self.parameters.disk.hr = float(splitted[disk_1_index + 3])
+                self.parameters.disk.ar = float(splitted[disk_1_index + 4])
+                self.parameters.disk.pa = float(splitted[disk_1_index + 5])
+                self.parameters.disk.mu0 = float(splitted[disk_1_index + 6])
 
     # -----------------------------------------------------------------
 
@@ -388,13 +404,15 @@ class GalaxyDecomposer(ModelingComponent):
 
             # Add general info
             print("Galaxy name:", self.parameters.galaxy_name, file=parameter_file)
-            print("Center:", str(self.parameters.center), file=parameter_file)
+            print("Center: ", self.parameters.center.to_string(style="decimal"), file=parameter_file)
             print("Major axis length:", str(self.parameters.major), file=parameter_file)
             print("Ellipticity:", self.parameters.ellipticity, file=parameter_file)
-            print("Position angle:", self.parameters.position_angle, file=parameter_file)
+            print("Position angle:", str(self.parameters.position_angle.to("deg").value) + " deg", file=parameter_file)
             print("Distance:", str(self.parameters.distance) + " +/- " + str(self.parameters.distance_error), file=parameter_file)
             print("I1 magnitude:", self.parameters.i1_mag, "+/-", self.parameters.i1_mag_error, file=parameter_file)
+            print("I1 flux density:", self.parameters.i1_fluxdensity, "+/-", self.parameters.i1_error, file=parameter_file)
             print("I2 magnitude:", self.parameters.i2_mag, "+/-", self.parameters.i2_mag_error, file=parameter_file)
+            print("I2 flux density:", self.parameters.i2_fluxdensity, "+/-", self.parameters.i2_error, file=parameter_file)
 
             print("Model type:", self.parameters.model_type, file=parameter_file)
             print("Number of components:", self.parameters.number_of_components, file=parameter_file)
@@ -407,6 +425,7 @@ class GalaxyDecomposer(ModelingComponent):
                 print("    Interpretation:", self.parameters[component].interpretation, file=parameter_file)
                 print("    Relative contribution of the component to the total model flux:", self.parameters[component].rel, file=parameter_file)
                 print("    Total 3.6 micron AB magnitude:", self.parameters[component].mag, file=parameter_file)
+                print("    Total 3.6 micron flux density:", self.parameters[component].fluxdensity, file=parameter_file)
                 print("    Axial ratio:", self.parameters[component].ar, file=parameter_file)
                 print("    Position angle (degrees ccw from North):", self.parameters[component].pa, file=parameter_file)
 
