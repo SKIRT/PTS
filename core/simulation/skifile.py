@@ -19,6 +19,7 @@ from numpy import arctan
 
 # Import the relevant PTS classes and modules
 from .units import SkirtUnits
+from ..basics.filter import Filter
 from ..tools import archive as arch
 
 # -----------------------------------------------------------------
@@ -53,6 +54,9 @@ class SkiFile:
         # load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
         self.tree = etree.parse(arch.opentext(self.path), parser=etree.XMLParser(remove_blank_text=True))
 
+        # Replace path by the full, absolute path
+        self.path = os.path.abspath(self.path)
+
     ## This function saves the (possibly updated) contents of the SkiFile instance into the specified file.
     # The filename \em must end with ".ski". Saving to and thus replacing the ski file from which this
     # SkiFile instance was originally constructed is allowed, but often not the intention.
@@ -67,6 +71,9 @@ class SkiFile:
         outfile = open(os.path.expanduser(filepath), "wb")
         outfile.write(etree.tostring(self.tree, encoding="UTF-8", xml_declaration=True, pretty_print=True))
         outfile.close()
+
+    ## This function saves the ski file to the original path
+    def save(self): self.saveto(self.path)
 
     # ---------- Retrieving information -------------------------------
 
@@ -640,7 +647,123 @@ class SkiFile:
         # Invalid component id
         else: raise ValueError("Invalid component identifier (should be integer or string)")
 
-    def get_dust_component_normalization(self, component_id=None):
+    def get_stellar_component_normalization(self, component_id=None):
+
+        """
+        This function returns the normalization element of the specified stellar component
+        :param component_id:
+        :return:
+        """
+
+        if component_id is None: stellar_component = self.get_stellar_component(0)
+        else: stellar_component = self.get_stellar_component(component_id)
+
+        # Get normalization of this component
+        parents = stellar_component.xpath("normalization")
+
+        # Check if only one 'normalization' element is present
+        if len(parents) == 0: raise ValueError("Invalid ski file: no 'normalization' elements within stellar component")
+        elif len(parents) > 1: raise ValueError("Invalid ski file: multiple 'normalization' elements within stellar component")
+
+        parents = parents[0]
+
+        # Check if only one StellarCompNormalization object is present
+        if len(parents) == 0: raise ValueError("Invalid ski file: no 'normalization' elements within stellar component")
+        elif len(parents) > 1: raise ValueError("Invalid ski file: multiple 'normalization' elements within stellar component")
+
+        # Return the actual StellarCompNormalization object
+        normalization = parents[0]
+        return normalization
+
+    def get_stellar_component_luminosity(self, component_id):
+
+        """
+        This function returns the luminosity for a specified stellar component
+        :param component_id:
+        :return:
+        """
+
+        # Get the stellar component normalization of the component
+        normalization = self.get_stellar_component_normalization(component_id)
+
+        # Check the type of the normalization
+        if normalization.tag == "BolLuminosityStellarCompNormalization":
+
+            # Return the total luminosity and None for the band
+            return get_quantity(normalization, "luminosity", default_unit="Lsun"), None
+
+        elif normalization.tag == "LuminosityStellarCompNormalization":
+
+            # Return the luminosity and the corresponding band
+            return get_quantity(normalization, "luminosity", default_unit="Lsun"), Filter.from_string(normalization.get("band"))
+
+        elif normalization.tag == "SpectralLuminosityStellarCompNormalization":
+
+            # The (spectral) luminosity
+            luminosity = get_quantity(normalization, "luminosity")
+
+            # The wavelength
+            wavelength = get_quantity(normalization, "wavelength")
+
+            # Return the luminosity and the wavelength as quantities
+            return luminosity, wavelength
+
+    def set_stellar_component_luminosity(self, component_id, luminosity, filter_or_wavelength=None):
+
+        """
+        This function sets the luminosity for a specified stellar component
+        :param component_id:
+        :param luminosity:
+        :param filter_or_wavelength:
+        :return:
+        """
+
+        # Get the stellar component normalization of the component
+        normalization = self.get_stellar_component_normalization(component_id)
+
+        # No filter or wavelength is defined, use BolLuminosityStellarCompNormalization
+        if filter_or_wavelength is None:
+
+            # Get element that holds the normalization class
+            parent = normalization.getparent()
+
+            # Remove the old normalization
+            parent.remove(normalization)
+
+            # Make and add the new normalization element
+            attrs = {"luminosity" : str(luminosity)}
+            parent.append(parent.makeelement("BolLuminosityStellarCompNormalization", attrs))
+
+        # Filter is defined, use LuminosityStellarCompNormalization
+        elif isinstance(filter_or_wavelength, Filter):
+
+            # Get element that holds the normalization class
+            parent = normalization.getparent()
+
+            # Remove the old normalization
+            parent.remove(normalization)
+
+            # Make and add the new normalization element
+            attrs = {"luminosity": str(luminosity), "band": filter_or_wavelength.skirt_description}
+            parent.append(parent.makeelement("LuminosityStellarCompNormalization", attrs))
+
+        # Wavelength is defined as an Astropy quantity, use SpectralLuminosityStellarCompNormalization
+        elif filter_or_wavelength.__class__.__name__ == "Quantity":
+
+            # Get element that holds the normalization class
+            parent = normalization.getparent()
+
+            # Remove the old normalization
+            parent.remove(normalization)
+
+            # Make and add the new normalization element
+            attrs = {"luminosity": str(luminosity), "wavelength": str(filter_or_wavelength)}
+            parent.append(parent.makeelement("SpectralLuminosityStellarCompNormalization", attrs))
+
+        # Invalid filter or wavelength argument
+        else: raise ValueError("Invalid filter or wavelength")
+
+    def get_dust_component_normalization(self, component_id):
 
         """
         This function returns the normalization element of the specified dust component
@@ -648,8 +771,8 @@ class SkiFile:
         :return:
         """
 
-        if component_id is None: dust_component = self.get_dust_component(0)
-        else: dust_component = self.get_dust_component(component_id)
+        # Get the dust component
+        dust_component = self.get_dust_component(component_id)
 
         # Get normalization of this component
         parents = dust_component.xpath("normalization")
@@ -657,7 +780,6 @@ class SkiFile:
         # Check if only one 'normalization' element is present
         if len(parents) == 0: raise ValueError("Invalid ski file: no 'normalization' elements within dust component")
         elif len(parents) > 1: raise ValueError("Invalid ski file: multiple 'normalization' elements within dust component")
-
         parents = parents[0]
 
         # Check if only one DustCompNormalization object is present
@@ -668,7 +790,7 @@ class SkiFile:
         normalization = parents[0]
         return normalization
 
-    def get_dust_mass(self, component_id):
+    def get_dust_component_mass(self, component_id):
 
         """
         This function returns the dust mass for a specified dust component
@@ -686,18 +808,14 @@ class SkiFile:
         if not normalization.tag == "DustMassDustCompNormalization": raise ValueError("Dust component normalization is not of type 'DustMassDustCompNormalization")
 
         # Get the dust mass and return it as a quantity
-        splitted = normalization.get("dustMass").split()
-        value = float(splitted[0])
-        unit = splitted[1]
-        quantity = value * Unit(unit)
-        return quantity
+        return get_quantity(normalization, "dustMass")
 
-    def set_dust_mass(self, quantity, component_id):
+    def set_dust_component_mass(self, component_id, mass):
 
         """
         This function sets the dust mass to a specific value, for a specified dust component (is none is given, the first dust component)
-        :param quantity: the dust mass, in Msun
         :param component_id: None, index (integer) or description (string)
+        :param mass: the dust mass as a quantity
         :return:
         """
 
@@ -708,9 +826,9 @@ class SkiFile:
         if not normalization.tag == "DustMassDustCompNormalization": raise ValueError("Dust component normalization is not of type 'DustMassDustCompNormalization")
 
         # Set the new dust mass
-        normalization.set("dustMass", str(quantity.to("Msun")) + " Msun")
+        normalization.set("dustMass", str(mass.to("Msun")) + " Msun")
 
-    def as_dict(self):
+    def to_dict(self):
 
         """
         This function returns the ski file structure as a nested dictionary
@@ -718,6 +836,39 @@ class SkiFile:
         """
 
         return recursive_dict(self.tree.getroot())
+
+    def to_json(self):
+
+        """
+        This function returns the ski file to a json format
+        :return:
+        """
+
+        import json
+        return json.dumps(self.to_dict())
+
+# -----------------------------------------------------------------
+
+def get_quantity(element, name, default_unit=None):
+
+    """
+    This function ...
+    :param element:
+    :param name:
+    :param default_unit:
+    :return:
+    """
+
+    from astropy.units import Unit
+
+    splitted = element.get(name).split()
+    value = float(splitted[0])
+    try: unit = splitted[1]
+    except IndexError: unit = default_unit
+
+    # Create a quantity object
+    if unit is not None: value = value * Unit(unit)
+    return value
 
 # -----------------------------------------------------------------
 

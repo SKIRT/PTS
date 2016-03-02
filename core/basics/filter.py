@@ -189,33 +189,33 @@ class Filter:
         #except ValueError: pass
 
         # Define the different possible names for each of the filters
-        galex_fuv_names = ["GALEX.FUV", "GALEX FUV", "FUV"]
-        galex_nuv_names = ["GALEX.NUV", "GALEX NUV", "NUV"]
-        sdss_u_names = ["SDSS.u", "SDSS u", "u"]
-        sdss_g_names = ["SDSS.g", "SDSS g", "g"]
-        sdss_r_names = ["SDSS.r", "SDSS r", "r"]
-        sdss_i_names = ["SDSS.i", "SDSS i", "i"]
-        sdss_z_names = ["SDSS.z", "SDSS z", "z"]
-        mass_h_names = ["2MASS.H", "2MASS H", "H"]
-        mass_j_names = ["2MASS.J", "2MASS J", "J"]
-        mass_k_names = ["2MASS.K", "2MASS.Ks", "2MASS K", "2MASS Ks", "K", "Ks"]
-        irac_i1_names = ["IRAC.I1", "IRAC I1", "IRAC 3.6", "IRAC 3.6um", "IRAC 3.6mu", "I1"]
-        irac_i2_names = ["IRAC.I2", "IRAC I2", "IRAC 4.5", "IRAC 4.5um", "IRAC 4.5mu", "I2"]
-        irac_i3_names = ["IRAC.I3", "IRAC I3", "IRAC 5.8", "IRAC 5.8um", "IRAC 5.8mu", "I3"]
-        irac_i4_names = ["IRAC.I4", "IRAC I4", "IRAC 8.0", "IRAC 8.0um", "IRAC 8.0mu", "I4"]
-        wise_w1_names = ["WISE.W1", "WISE W1", "W1"]
-        wise_w2_names = ["WISE.W2", "WISE W2", "W2"]
-        wise_w3_names = ["WISE.W3", "wISE W3", "w3"]
-        wise_w4_names = ["WISE.W4", "WISE W4", "w4"]
-        mips_24_names = ["MIPS.24mu", "MIPS.24um", "MIPS.24", "MIPS 24mu", "MIPS 24um", "MIPS 24", "24mu", "24um"]
-        mips_70_names = ["MIPS.70mu", "MIPS.70um", "MIPS.70", "MIPS 70mu", "MIPS 70um", "MIPS 70"]
-        mips_160_names = ["MIPS.160mu", "MIPS.160um", "MIPS.160", "MIPS 160mu", "MIPS 160um", "MIPS 160"]
-        pacs_blue_names = ["Pacs.blue", "PACS.BLUE", "PACS blue", "PACS BLUE", "Pacs 70mu", "Pacs 70um", "PACS 70mu", "PACS 70um"]
-        pacs_green_names = ["Pacs.green", "PACS.GREEN", "PACS green", "PACS GREEN", "Pacs 100mu", "Pacs 100um", "PACS 100mu", "PACS 100um"]
-        pacs_red_names = ["Pacs.red", "PACS.RED", "PACS red", "PACS RED", "Pacs 160mu", "Pacs 160um", "PACS 160mu", "PACS 160um"]
-        spire_psw_names = ["SPIRE.PSW", "SPIRE PSW", "SPIRE 250mu", "SPIRE 250um"]
-        spire_pmw_names = ["SPIRE.PMW", "SPIRE PMW", "SPIRE 350mu", "SPIRE 350um"]
-        spire_plw_names = ["SPIRE.PLW", "SPIRE PLW", "SPIRE 500mu", "SPIRE 500um"]
+        galex_fuv_names = ["GALEX.FUV", "GALEX FUV", "FUV", "the FUV-band"]
+        galex_nuv_names = ["GALEX.NUV", "GALEX NUV", "NUV", "the NUV-band"]
+        sdss_u_names = ["SDSS.u", "SDSS u", "u", "SDSSu", "the u-band"]
+        sdss_g_names = ["SDSS.g", "SDSS g", "g", "SDSSg", "the g-band"]
+        sdss_r_names = ["SDSS.r", "SDSS r", "r", "SDSSr", "the r-band"]
+        sdss_i_names = ["SDSS.i", "SDSS i", "i", "SDSSi", "the i-band"]
+        sdss_z_names = ["SDSS.z", "SDSS z", "z", "SDSSz", "the z-band"]
+        mass_h_names = ["2MASS.H", "2MASS H", "H", "SDSSh", "the H-band"]
+        mass_j_names = ["2MASS.J", "2MASS J", "J", "SDSSj", "the J-band"]
+        mass_k_names = ["2MASS.K", "2MASS.Ks", "2MASS K", "2MASS Ks", "K", "Ks", "the K-band"]
+        irac_i1_names = ["IRAC.I1", "IRAC I1", "IRAC 3.6", "IRAC 3.6um", "IRAC 3.6mu", "I1", "IRAC1", "IRAC-1", "the IRAC-1 band"]
+        irac_i2_names = ["IRAC.I2", "IRAC I2", "IRAC 4.5", "IRAC 4.5um", "IRAC 4.5mu", "I2", "IRAC2", "IRAC-2", "the IRAC-2 band"]
+        irac_i3_names = ["IRAC.I3", "IRAC I3", "IRAC 5.8", "IRAC 5.8um", "IRAC 5.8mu", "I3", "IRAC3", "IRAC-3", "the IRAC-3 band"]
+        irac_i4_names = ["IRAC.I4", "IRAC I4", "IRAC 8.0", "IRAC 8.0um", "IRAC 8.0mu", "I4", "IRAC4", "IRAC-4", "the IRAC-4 band"]
+        wise_w1_names = ["WISE.W1", "WISE W1", "W1", "WISE1", "WISE-1", "the WISE-1 band"]
+        wise_w2_names = ["WISE.W2", "WISE W2", "W2", "WISE2", "WISE-2", "the WISE-2 band"]
+        wise_w3_names = ["WISE.W3", "wISE W3", "w3", "WISE3", "WISE-3", "the WISE-3 band"]
+        wise_w4_names = ["WISE.W4", "WISE W4", "w4", "WISE4", "WISE-4", "the WISE-4 band"]
+        mips_24_names = ["MIPS.24mu", "MIPS.24um", "MIPS.24", "MIPS 24mu", "MIPS 24um", "MIPS 24", "24mu", "24um", "MIPS-24", "the MIPS-24 band"]
+        mips_70_names = ["MIPS.70mu", "MIPS.70um", "MIPS.70", "MIPS 70mu", "MIPS 70um", "MIPS 70", "MIPS-70", "the MIPS-70 band"]
+        mips_160_names = ["MIPS.160mu", "MIPS.160um", "MIPS.160", "MIPS 160mu", "MIPS 160um", "MIPS 160", "MIPS-160", "the MIPS-160 band"]
+        pacs_blue_names = ["Pacs.blue", "PACS.BLUE", "PACS blue", "PACS BLUE", "Pacs 70mu", "Pacs 70um", "PACS 70mu", "PACS 70um", "PACS-70", "the PACS-70 band"]
+        pacs_green_names = ["Pacs.green", "PACS.GREEN", "PACS green", "PACS GREEN", "Pacs 100mu", "Pacs 100um", "PACS 100mu", "PACS 100um", "PACS-100", "the PACS-100 band"]
+        pacs_red_names = ["Pacs.red", "PACS.RED", "PACS red", "PACS RED", "Pacs 160mu", "Pacs 160um", "PACS 160mu", "PACS 160um", "PACS-160", "the PACS-160 band"]
+        spire_psw_names = ["SPIRE.PSW", "SPIRE PSW", "SPIRE 250mu", "SPIRE 250um", "SPIRE-250", "the SPIRE-250 band"]
+        spire_pmw_names = ["SPIRE.PMW", "SPIRE PMW", "SPIRE 350mu", "SPIRE 350um", "SPIRE-350", "the SPIRE-250 band"]
+        spire_plw_names = ["SPIRE.PLW", "SPIRE PLW", "SPIRE 500mu", "SPIRE 500um", "SPIRE-500", "the SPIRE-500 band"]
 
         # Generic filters
         johnson_u_names = ["Johnson U", "U"]
@@ -270,6 +270,28 @@ class Filter:
         else: raise ValueError("No corresponding filter found")
 
     # ---------- Retrieving information -------------------------------
+
+    @property
+    def skirt_description(self): # returns the name as defined in the SKIRT LuminosityStellarCompNormalization class
+
+        if self.name == "Johnson.U": return "U"
+        elif self.name == "Johnson.B": return "B"
+        elif self.name == "Johnson.V": return "V"
+        elif self.name == "Johnson.R": return "R"
+        elif self.name == "Johnson.I": return "I"
+        elif self.name == "2MASS.J": return "J"
+        elif self.name == "2MASS.H": return "H"
+        elif self.name == "2MASS.Ks": return "K"
+        elif self.name == "SDSS.u": return "SDSSu"
+        elif self.name == "SDSS.g": return "SDSSg"
+        elif self.name == "SDSS.r": return "SDSSr"
+        elif self.name == "SDSS.i": return "SDSSi"
+        elif self.name == "SDSS.z": return "SDSSz"
+        elif self.name == "IRAC.I1": return "IRAC1"
+        elif self.name == "IRAC.I2": return "IRAC2"
+        elif self.name == "WISE.W1": return "WISE1"
+        elif self.name == "WISE.W2": return "WISE2"
+        else: raise ValueError("The band " +  self.name + " is not defined in SKIRT")
 
     @property
     def name(self): return self._FilterID.split("/")[1]
