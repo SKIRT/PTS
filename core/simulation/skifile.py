@@ -61,7 +61,7 @@ class SkiFile:
             raise ValueError("Invalid filename extension for ski file")
         # update the producer and time attributes on the root element
         root = self.tree.getroot()
-        root.set("producer","Python Toolkit for SKIRT (SkiFile class)")
+        root.set("producer", "Python Toolkit for SKIRT (SkiFile class)")
         root.set("time", datetime.now().strftime("%Y-%m-%dT%H:%M:%S"))
         # serialize the XML tree
         outfile = open(os.path.expanduser(filepath), "wb")
@@ -566,32 +566,162 @@ class SkiFile:
         if include_comments: return dust_components.getchildren()
         else: return [component for component in dust_components.getchildren() if component.tag is not etree.Comment]
 
-    ## This function returns the stellar component which is preceeded by a comment matching the description
-    def get_stellar_component(self, description):
+    def get_stellar_component(self, component_id):
 
-        # Get the stellar components
-        components = self.get_stellar_components(include_comments=True)
+        """
+        This function returns the stellar component which is preceeded by a comment matching the description
+        :param id: index or description
+        :return:
+        """
 
-        # Loop over the different components
-        for child in components:
+        # The component identifier is an integer number -> index of stellar components
+        if isinstance(component_id, int):
 
-            if child.tag is etree.Comment and child.text.strip() == description:
+            # Get all the stellar components (without comments)
+            components = self.get_stellar_components()
 
-                # Return the child element right after the comment element
-                return child.getnext()
+            # Return the stellar component with the specified index
+            return components[component_id]
 
-    ## This function returns the dust component which is preceeded by a comment matching the description
-    def get_dust_component(self, description):
+        # The component identifier is a string -> get stellar component based on description
+        elif isinstance(component_id, basestring):
 
-        # Get the dust system
-        components = self.get_dust_components(include_comments=True)
+            # Get the stellar components
+            components = self.get_stellar_components(include_comments=True)
 
-        # Loop over the different components
-        for child in components:
+            # Loop over the different components
+            for child in components:
 
-            if child.tag is etree.Comment and child.text.strip() == description:
+                if child.tag is etree.Comment and child.text.strip() == component_id:
 
-                # Return the child element right after the comment element
-                return child.getnext()
+                    # Return the child element right after the comment element
+                    return child.getnext()
+
+            # If no match is found, give an error
+            raise ValueError("No stellar component found with description '" + component_id + "'")
+
+        # Invalid component id
+        else: raise ValueError("Invalid component identifier (should be integer or string)")
+
+    def get_dust_component(self, component_id):
+
+        """
+        This function returns the dust component which is preceeded by a comment matching the description
+        :param component_id: index or description
+        :return:
+        """
+
+        # The component identifier is an integer number -> index of dust components
+        if isinstance(component_id, int):
+
+            # Get all the dust components (without comments)
+            components = self.get_dust_components()
+
+            # Return the dust component with the specified index
+            return components[component_id]
+
+        # The component identifier is a string -> get dust component based on description
+        elif isinstance(component_id, basestring):
+
+            # Get the dust components
+            components = self.get_dust_components(include_comments=True)
+
+            # Loop over the different components
+            for child in components:
+
+                if child.tag is etree.Comment and child.text.strip() == component_id:
+
+                    # Return the child element right after the comment element
+                    return child.getnext()
+
+            # If no match is found, give an error
+            raise ValueError("No dust component found with description '" + component_id + "'")
+
+        # Invalid component id
+        else: raise ValueError("Invalid component identifier (should be integer or string)")
+
+    def get_dust_component_normalization(self, component_id=None):
+
+        """
+        This function returns the normalization element of the specified dust component
+        :param component_id:
+        :return:
+        """
+
+        if component_id is None: dust_component = self.get_dust_component(0)
+        else: dust_component = self.get_dust_component(component_id)
+
+        # Get normalization of this component
+        parents = dust_component.xpath("normalization")
+
+        # Check if only one 'normalization' element is present
+        if len(parents) == 0: raise ValueError("Invalid ski file: no 'normalization' elements within dust component")
+        elif len(parents) > 1: raise ValueError("Invalid ski file: multiple 'normalization' elements within dust component")
+
+        parents = parents[0]
+
+        # Check if only one DustCompNormalization object is present
+        if len(parents) == 0: raise ValueError("Invalid ski file: no 'normalization' elements within dust component")
+        elif len(parents) > 1: raise ValueError("Invalid ski file: multiple 'normalization' elements within dust component")
+
+        # Return the actual DustCompNormalization object
+        normalization = parents[0]
+        return normalization
+
+    def get_dust_mass(self, component_id):
+
+        """
+        This function returns the dust mass for a specified dust component
+        :param component_id:
+        :return:
+        """
+
+        # Import astropy here to avoid import errors with other users
+        from astropy.units import Unit
+
+        # Get the dust component normalization of the component
+        normalization = self.get_dust_component_normalization(component_id)
+
+        # Check if the normalization is of type 'DustMassDustCompNormalization'
+        if not normalization.tag == "DustMassDustCompNormalization": raise ValueError("Dust component normalization is not of type 'DustMassDustCompNormalization")
+
+        # Get the dust mass and return it as a quantity
+        splitted = normalization.get("dustMass").split()
+        value = float(splitted[0])
+        unit = splitted[1]
+        quantity = value * Unit(unit)
+        return quantity
+
+    def set_dust_mass(self, quantity, component_id):
+
+        """
+        This function sets the dust mass to a specific value, for a specified dust component (is none is given, the first dust component)
+        :param quantity: the dust mass, in Msun
+        :param component_id: None, index (integer) or description (string)
+        :return:
+        """
+
+        # Get the dust component normalization of the component
+        normalization = self.get_dust_component_normalization(component_id)
+
+        # Check if the normalization is of type 'DustMassDustCompNormalization'
+        if not normalization.tag == "DustMassDustCompNormalization": raise ValueError("Dust component normalization is not of type 'DustMassDustCompNormalization")
+
+        # Set the new dust mass
+        normalization.set("dustMass", str(quantity.to("Msun")) + " Msun")
+
+    def as_dict(self):
+
+        """
+        This function returns the ski file structure as a nested dictionary
+        :return:
+        """
+
+        return recursive_dict(self.tree.getroot())
+
+# -----------------------------------------------------------------
+
+def recursive_dict(element):
+    return element.tag, dict(map(recursive_dict, element)) or element.text
 
 # -----------------------------------------------------------------
