@@ -31,6 +31,7 @@ from ..basics.quantity import Quantity
 from ..basics.map import Map
 from .timeline import create_timeline_plot
 from ..tools.logging import log
+from ..tools import filesystem
 
 # -----------------------------------------------------------------
 
@@ -268,18 +269,18 @@ class ScalingPlotter(Plotter):
         """
 
         # Plot the total runtimes
-        times_path = os.path.join(self.output_path, "times.pdf")
+        times_path = filesystem.join(self.output_path, "times.pdf")
         self.plot_times("total", times_path)
 
         # Plot the speedups and efficiencies if serial runtimes are available
         if self.has_serial:
 
             # Plot the total speedups
-            speedups_path = os.path.join(self.output_path, "speedups.pdf")
+            speedups_path = filesystem.join(self.output_path, "speedups.pdf")
             self.plot_speedups("total", speedups_path)
 
             # Plot the total efficiencies
-            efficiencies_path = os.path.join(self.output_path, "efficiencies.pdf")
+            efficiencies_path = filesystem.join(self.output_path, "efficiencies.pdf")
             self.plot_efficiencies("total", efficiencies_path)
 
     # -----------------------------------------------------------------
@@ -298,22 +299,22 @@ class ScalingPlotter(Plotter):
             if phase == "total" or phase == "memory": continue
 
             # Make a seperate directory in the output directory to contain the plots for the current phase
-            output_path_phase = os.path.join(self.output_path, phase)
+            output_path_phase = filesystem.join(self.output_path, phase)
             if not os.path.isdir(output_path_phase): os.mkdir(output_path_phase)
 
             # Plot the total runtimes
-            times_path = os.path.join(output_path_phase, "times.pdf")
+            times_path = filesystem.join(output_path_phase, "times.pdf")
             self.plot_times(phase, times_path)
 
             # Plot the speedups and efficiencies if serial runtimes are available
             if self.has_serial:
 
                 # Plot the total speedups
-                speedups_path = os.path.join(output_path_phase, "speedups.pdf")
+                speedups_path = filesystem.join(output_path_phase, "speedups.pdf")
                 self.plot_speedups("total", speedups_path)
 
                 # Plot the total efficiencies
-                efficiencies_path = os.path.join(output_path_phase, "efficiencies.pdf")
+                efficiencies_path = filesystem.join(output_path_phase, "efficiencies.pdf")
                 self.plot_efficiencies("total", efficiencies_path)
 
     # -----------------------------------------------------------------
@@ -465,7 +466,7 @@ class ScalingPlotter(Plotter):
 
         # Create a data file to contain the fitted parameters
         directory = os.path.dirname(file_path)
-        parameter_file_path = os.path.join(directory, "parameters.dat")
+        parameter_file_path = filesystem.join(directory, "parameters.dat")
 
         # Fit parameters for the speedups to Amdahl's law
         #  S_n = 1 / ( 1 - p + p/n + a + b*n + c*n^2 ) \n")
@@ -646,7 +647,7 @@ class ScalingPlotter(Plotter):
         for mode in self.data["total"]:
 
             # Determine the path to the timeline plot file
-            plot_file_path = os.path.join(self.output_path, "timeline_" + mode + ".pdf")
+            plot_file_path = filesystem.join(self.output_path, "timeline_" + mode + ".pdf")
 
             # Initialize a data structure to contain the start times and endtimes of the different simulation phases,
             # for the different processor counts (data is indexed on the simulation phase)
@@ -747,7 +748,7 @@ class ScalingPlotter(Plotter):
         log.info("Plotting the memory scaling...")
 
         # Determine the file path for this plot
-        file_path = os.path.join(self.output_path, "memory.pdf")
+        file_path = filesystem.join(self.output_path, "memory.pdf")
 
         # Initialize figure with the appropriate size
         plt.figure(figsize=figsize)

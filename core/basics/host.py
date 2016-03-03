@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import os
 
 # Import the relevant PTS classes and modules
-from ..tools import configuration, inspection
+from ..tools import configuration, inspection, filesystem
 from ..tools.logging import log
 
 # -----------------------------------------------------------------
@@ -32,11 +32,11 @@ def find_host_ids():
     ids = []
 
     # Search for files that define remote host configurations
-    hosts_directory = os.path.join(inspection.pts_user_dir, "hosts")
+    hosts_directory = filesystem.join(inspection.pts_user_dir, "hosts")
     if not os.path.isdir(hosts_directory): os.makedirs(hosts_directory)
 
     # If the hosts directory is empty, place a template host configuration file there and exit with an error
-    if len([item for item in os.listdir(hosts_directory) if os.path.isfile(os.path.join(hosts_directory, item))]) == 0:
+    if len([item for item in os.listdir(hosts_directory) if os.path.isfile(filesystem.join(hosts_directory, item))]) == 0:
         config = configuration.new()
 
         config.name = "server.institute.com"
@@ -50,7 +50,7 @@ def find_host_ids():
         config.clusters.cluster_a.cores = 16
         config.clusters.cluster_b.cores = 32
 
-        config_file_path = os.path.join(hosts_directory, "template.cfg")
+        config_file_path = filesystem.join(hosts_directory, "template.cfg")
         config_file = open(config_file_path, 'w')
         config.save(config_file)
 
@@ -65,7 +65,7 @@ def find_host_ids():
         if filename == "template.cfg": continue
 
         # Determine the full path to the host file
-        file_path = os.path.join(hosts_directory, filename)
+        file_path = filesystem.join(hosts_directory, filename)
 
         # Ignore directories and hidden files
         if filename.startswith(".") or not os.path.isfile(file_path): continue
@@ -90,7 +90,7 @@ def has_simulations(host_id):
     """
 
     # Check whether there are simulation files corresponding to this host ID
-    host_run_dir = os.path.join(inspection.skirt_run_dir, host_id)
+    host_run_dir = filesystem.join(inspection.skirt_run_dir, host_id)
 
     # If there are no simulation files for this host, skip it
     return len([item for item in os.listdir(host_run_dir) if item.endswith(".sim") and not item.startswith(".")]) > 0
@@ -123,7 +123,7 @@ class Host(object):
         ## Read the host configuration file
 
         # Determine the path to the configuration file for the specified host and check if it is present
-        host_file_path = os.path.join(inspection.pts_user_dir, "hosts", host_id + ".cfg")
+        host_file_path = filesystem.join(inspection.pts_user_dir, "hosts", host_id + ".cfg")
         if not os.path.isfile(host_file_path): raise ValueError("The configuration settings for remote host " + host_id + " could not be found in the PTS/user/hosts directory")
 
         # Open the host configuration file

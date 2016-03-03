@@ -49,6 +49,10 @@ class ResourceEstimator(object):
         # Set the ski file instance to None initially
         self.ski_file = None
 
+        # The number of processes and threads
+        self.processes = None
+        self.threads = None
+
         # Set the log file instance to None initially
         self.log_file = None
 
@@ -67,6 +71,9 @@ class ResourceEstimator(object):
 
         """
         This function ...
+        :param ski_path:
+        :param processes:
+        :param threads:
         :return:
         """
 
@@ -94,6 +101,9 @@ class ResourceEstimator(object):
 
         """
         This function ...
+        :param ski_path:
+        :param processes:
+        :param threads:
         :return:
         """
 
@@ -108,6 +118,7 @@ class ResourceEstimator(object):
 
         """
         This function ...
+        :param ski_path:
         :return:
         """
 
@@ -246,8 +257,6 @@ class ResourceEstimator(object):
         print("selfabs walltime: ", selfabs_walltime)
         print("dustem walltime: ", dustem_walltime)
         print("without stellar and dust: ", self.extractor.duration_without(["stellar", "dust"]))
-
-        #exit()
 
         return stellar_walltime + selfabs_walltime + dustem_walltime, self.extractor.duration_without(["stellar", "dust"])
 

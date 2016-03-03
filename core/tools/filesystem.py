@@ -21,16 +21,15 @@ from . import time
 
 # -----------------------------------------------------------------
 
-def join(path_a, path_b):
+def join(*args):
 
     """
     This function ...
-    :param path_a:
-    :param path_b:
+    :param args:
     :return:
     """
 
-    return os.path.join(path_a, path_b)
+    return os.path.join(*args)
 
 # -----------------------------------------------------------------
 
@@ -135,12 +134,18 @@ def remove_file(path):
 
 # -----------------------------------------------------------------
 
-def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None, names=False, extensions=False):
+def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None, extensions=False, returns="paths"):
 
     """
     This function ...
     :param path:
     :param recursive:
+    :param ignore_hidden:
+    :param extension:
+    :param contains:
+    :param not_contains:
+    :param extensions:
+    :param returns: "paths", "names" or "both"
     :return:
     """
 
@@ -179,22 +184,25 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
         if not os.path.isfile(item_path): continue
 
         # Add the relevant info to the list
-        thing = [item_path]
-        if names: thing.append(item_name)
-        if extensions: thing.append(item_extension)
-        file_paths.append(thing if len(thing) > 1 else thing[0])
+        if returns == "paths": thing = item_path
+        elif returns == "names": thing = item_name
+        elif returns == "both": thing = [item_path, item_name]
+        else: raise ValueError("Invalid option for 'returns': should be 'paths', 'names' or 'both'")
+        file_paths.append(thing)
 
     # Return the list of file paths
     return file_paths
 
 # -----------------------------------------------------------------
 
-def directories_in_path(path=None, recursive=False, ignore_hidden=True, names=False):
+def directories_in_path(path=None, recursive=False, ignore_hidden=True, returns="paths"):
 
     """
     This function ...
     :param path:
     :param recursive:
+    :param ignore_hidden:
+    :param returns: "paths", "names" or "both"
     :return:
     """
 
@@ -220,9 +228,11 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, names=Fa
         if not os.path.isdir(item_path): continue
 
         # Add the directory path to the list
-        thing = [item_path]
-        if names: thing.append(item)
-        directory_paths.append(thing if len(thing) > 1 else thing[0])
+        if returns == "paths": thing = item_path
+        elif returns == "names": thing = item
+        elif returns == "both": thing = [item_path, item]
+        else: raise ValueError("Invalid option for 'returns': should be 'paths', 'names' or 'both'")
+        directory_paths.append(thing)
 
     # Return the list of directory paths
     return directory_paths

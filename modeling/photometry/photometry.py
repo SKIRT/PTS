@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import numpy as np
 
 # Import the relevant AstroMagic classes and modules
@@ -82,8 +81,8 @@ class PhotoMeter(ModelingComponent):
 
         # Set the input and output path
         photometer.config.path = arguments.path
-        photometer.config.input_path = os.path.join(arguments.path, "prep")
-        photometer.config.output_path = os.path.join(arguments.path, "phot")
+        photometer.config.input_path = filesystem.join(arguments.path, "prep")
+        photometer.config.output_path = filesystem.join(arguments.path, "phot")
 
         # A single image can be specified so the photometry is only calculated for that image
         photometer.config.single_image = arguments.image
@@ -152,7 +151,7 @@ class PhotoMeter(ModelingComponent):
         log.info("Loading the images ...")
 
         # Loop over all directories in the preparation directory
-        for directory_path, directory_name in filesystem.directories_in_path(self.prep_path, names=True):
+        for directory_path, directory_name in filesystem.directories_in_path(self.prep_path, returns="both"):
 
             # If only a single image has to be processeds, skip the other images
             if self.config.single_image is not None and directory_name != self.config.single_image: continue
@@ -163,7 +162,7 @@ class PhotoMeter(ModelingComponent):
             filter = headers.get_filter(filter_name)
 
             # Look for a file called 'result.fits'
-            image_path = os.path.join(directory_path, "result.fits")
+            image_path = filesystem.join(directory_path, "result.fits")
             if not filesystem.is_file(image_path):
                 log.warning("Prepared image could not be found for " + directory_name)
                 continue
@@ -351,6 +350,9 @@ class PhotoMeter(ModelingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing ...")
+
         # Write SED table
         self.write_sed()
 
@@ -372,6 +374,9 @@ class PhotoMeter(ModelingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing SED to a data file ...")
+
         # Determine the full path to the output file
         path = self.full_output_path("fluxes.dat")
 
@@ -387,6 +392,9 @@ class PhotoMeter(ModelingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the percentual differences with reference fluxes to a data file ...")
+
         # Determine the full path to the output file
         path = self.full_output_path("differences.dat")
 
@@ -401,6 +409,9 @@ class PhotoMeter(ModelingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Plotting the SED ...")
 
         # Create a new SEDPlotter instance
         plotter = SEDPlotter("M81")
@@ -420,6 +431,9 @@ class PhotoMeter(ModelingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Plotting the SED with reference fluxes ...")
 
         # Create a new SEDPlotter instance
         plotter = SEDPlotter("M81")

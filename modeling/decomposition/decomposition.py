@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import os
-
 # Import astronomical modules
 from astroquery.vizier import Vizier
 from astropy.units import Unit
@@ -28,6 +25,8 @@ from ...core.tools.logging import log
 from ...core.simulation.skifile import SkiFile
 from ..preparation import unitconversion
 from ...core.basics.errorbar import ErrorBar
+from ...core.simulation.arguments import SkirtArguments
+from ...core.simulation.execute import SkirtExec
 
 # Import the relevant AstroMagic classes and modules
 from ...magic.tools import catalogs
@@ -62,11 +61,11 @@ disk.pa = -23.6950
 s4g_decomposition_table_link = "http://www.oulu.fi/astronomy/S4G_PIPELINE4/s4g_p4_table8.dat"
 
 # Local table path
-local_table_path = os.path.join(inspection.pts_dat_dir("modeling"), "s4g", "s4g_p4_table8.dat")
+local_table_path = filesystem.join(inspection.pts_dat_dir("modeling"), "s4g", "s4g_p4_table8.dat")
 
 # -----------------------------------------------------------------
 
-template_path = os.path.join(inspection.pts_dat_dir("modeling"), "ski")
+template_path = filesystem.join(inspection.pts_dat_dir("modeling"), "ski")
 
 # -----------------------------------------------------------------
 
@@ -98,6 +97,9 @@ class GalaxyDecomposer(ModelingComponent):
         # The bulge and disk parameters
         self.parameters = Map()
 
+        # The SKIRT execution context
+        self.skirt = SkirtExec()
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -114,8 +116,8 @@ class GalaxyDecomposer(ModelingComponent):
 
         # Set the input and output path
         decomposer.config.path = arguments.path
-        decomposer.config.input_path = os.path.join(arguments.path, "prep")
-        decomposer.config.output_path = os.path.join(arguments.path, "components")
+        decomposer.config.input_path = filesystem.join(arguments.path, "prep")
+        decomposer.config.output_path = filesystem.join(arguments.path, "components")
 
         # Return the new instance
         return decomposer
@@ -160,6 +162,9 @@ class GalaxyDecomposer(ModelingComponent):
         # Determine the path to the bulge and disk directories
         self.bulge_path = self.full_output_path("bulge")
         self.disk_path = self.full_output_path("disk")
+
+        # Create the bulge and disk directories
+        filesystem.create_directories([self.bulge_path, self.disk_path])
 
     # -----------------------------------------------------------------
 
@@ -355,9 +360,47 @@ class GalaxyDecomposer(ModelingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Creating ski file to simulate the bulge image ...")
+
         # Load the bulge ski file template
         bulge_template_path = filesystem.join(template_path, "bulge.ski")
         ski = SkiFile(bulge_template_path)
+
+        # Change the ski file parameters
+        # ...
+
+        # Determine the path to the ski file
+        ski_path = filesystem.join(self.bulge_path, "bulge.ski")
+
+        # Save the ski file to the new path
+        ski.saveto(ski_path)
+
+        # Determine the path to the simulation output directory
+        out_path = filesystem.join(self.bulge_path, "out")
+
+        # Create the output directory
+        filesystem.create_directory(out_path)
+
+        # Create a SkirtArguments object
+        arguments = SkirtArguments()
+
+        # Adjust the parameters
+        arguments.ski_pattern = ski_path
+        #arguments.parallel.processes = ...
+        #arguments.parallel.threads = ...
+        arguments.output_path = out_path
+        arguments.single = True # we expect a single simulation from the ski pattern
+
+        # Inform the user
+        log.info("Running the bulge simulation ...")
+
+        # Run the simulation
+        simulation = self.skirt.run(arguments, silent=True)
+
+        # Check if the output contains the "bulge_earth_total.fits" file
+        if "bulge_earth_total" not in filesystem.files_in_path(out_path, extension="fits", returns="names"):
+            raise RuntimeError("Something went wrong with the bulge simulation: output FITS file missing")
 
     # -----------------------------------------------------------------
 
@@ -368,9 +411,47 @@ class GalaxyDecomposer(ModelingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Creating ski file to simulate the disk image ...")
+
         # Load the disk ski file template
         disk_template_path = filesystem.join(template_path, "disk.ski")
         ski = SkiFile(disk_template_path)
+
+        # Change the ski file parameters ...
+        # ...
+
+        # Determine the path to the ski file
+        ski_path = filesystem.join(self.disk_path, "disk.ski")
+
+        # Save the ski file to the new path
+        ski.saveto(ski_path)
+
+        # Determine the path to the simulation output directory
+        out_path = filesystem.join(self.disk_path, "out")
+
+        # Create the output directory
+        filesystem.create_directory(out_path)
+
+        # Create a SkirtArguments object
+        arguments = SkirtArguments()
+
+        # Adjust the parameters
+        arguments.ski_pattern = ski_path
+        #arguments.parallel.processes = ...
+        #arguments.parallel.threads = ...
+        arguments.output_path = out_path
+        arguments.single = True # we expect a single simulation from the ski pattern
+
+        # Inform the user
+        log.info("Running the disk simulation ...")
+
+        # Run the simulation
+        simulation = self.skirt.run(arguments, silent=True)
+
+        # Check if the output contains the "disk_earth_total.fits" file
+        if "disk_earth_total" not in filesystem.files_in_path(out_path, extension="fits", returns="names"):
+            raise RuntimeError("Something went wrong with the disk simulation: output FITS file missing")
 
     # -----------------------------------------------------------------
 
@@ -380,6 +461,9 @@ class GalaxyDecomposer(ModelingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing ...")
 
         # Write out the parameters in a data file
         self.write_parameters()
@@ -395,6 +479,9 @@ class GalaxyDecomposer(ModelingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing data file with parameters ...")
 
         # Determine the full path to the parameters file
         path = self.full_output_path("parameters.dat")
@@ -448,6 +535,9 @@ class GalaxyDecomposer(ModelingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing regions file with disk ellipse ...")
+
         minor = (1.0 - self.parameters.ellipticity) * self.parameters.major
 
         # Ellipse radius
@@ -471,39 +561,41 @@ class GalaxyDecomposer(ModelingComponent):
         :return:
         """
 
+        pass
+
         # TODO: do the bulge/disk fitting here
         # Run the decomposition
         #decomposer.run()
 
         # Set path of bulge and disk images
-        bulge_path = os.path.join(self.prep_path, "Bulge", "bulge.fits")
-        disk_path = os.path.join(self.prep_path, "Disk", "disk.fits")
+        #bulge_path = os.path.join(self.prep_path, "Bulge", "bulge.fits")
+        #disk_path = os.path.join(self.prep_path, "Disk", "disk.fits")
 
         # Create list
-        paths = {"Bulge": bulge_path, "Disk": disk_path}
+        #paths = {"Bulge": bulge_path, "Disk": disk_path}
 
         # For bulge and disk ...
-        for name, path in paths.items():
+        #for name, path in paths.items():
 
             # Open the frame
-            frame = Frame.from_file(path)
+            #frame = Frame.from_file(path)
 
             # Convolve the frame to the PACS 160 resolution
-            kernels_dir = os.path.expanduser("~/Kernels")
-            kernel_path = os.path.join(kernels_dir, "Kernel_HiRes_Moffet_00.5_to_PACS_160.fits")
-            kernel = Frame.from_file(kernel_path)
-            frame.convolve(kernel)
+            #kernels_dir = os.path.expanduser("~/Kernels")
+            #kernel_path = os.path.join(kernels_dir, "Kernel_HiRes_Moffet_00.5_to_PACS_160.fits")
+            #kernel = Frame.from_file(kernel_path)
+            #frame.convolve(kernel)
 
             # Rebin the convolved frame to the PACS 160 frame (just as we did with the other images)
-            reference_path = os.path.join(self.data_path, "PACS160.fits")
-            reference = Frame.from_file(reference_path)
-            frame.rebin(reference)
+            #reference_path = os.path.join(self.data_path, "PACS160.fits")
+            #reference = Frame.from_file(reference_path)
+            #frame.rebin(reference)
 
             # Finally, crop the image
-            frame.frames.primary.crop(350, 725, 300, 825)
+            #frame.frames.primary.crop(350, 725, 300, 825)
 
             # Save the convolved, rebinned and cropped bulge or disk frame
-            component_path = os.path.join(self.prep_path, name, 'final.fits')
-            frame.save(component_path)
+            #component_path = os.path.join(self.prep_path, name, 'final.fits')
+            #frame.save(component_path)
 
 # -----------------------------------------------------------------

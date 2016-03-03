@@ -76,9 +76,6 @@ class SkirtRemoteLauncher(Configurable):
 
         ## Adjust the configuration settings according to the command-line arguments
 
-        # Logging
-        if arguments.debug: launcher.config.logging.level = "DEBUG"
-
         # Remote host and cluster (if applicable)
         launcher.config.remote = arguments.remote
         launcher.config.cluster = arguments.cluster

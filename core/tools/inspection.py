@@ -25,6 +25,9 @@ from contextlib import contextmanager
 from distutils.spawn import find_executable
 from importlib import import_module
 
+# Import the relevant PTS classes and modules
+from . import filesystem
+
 # -----------------------------------------------------------------
 
 # The path to the root PTS directory
@@ -58,6 +61,50 @@ skirt_release_dir = os.path.join(skirt_root_dir, "release") if skirt_path is not
 
 # The path to the SKIRT run directory
 skirt_run_dir = os.path.join(skirt_root_dir, "run") if skirt_path is not None else None
+
+# -----------------------------------------------------------------
+
+def remote_host_ids():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Search for files that define remote host configurations
+    hosts_directory = os.path.join(pts_user_dir, "hosts")
+    if not os.path.isdir(hosts_directory): os.makedirs(hosts_directory)
+
+    # Initialize a list to contain the host ids
+    ids = []
+
+    # Loop over the configuration files in the hosts directory
+    for name in filesystem.files_in_path(hosts_directory, extension="cfg", returns="names"):
+
+        # Skip the template configuration file
+        if name == "template": continue
+
+        # Add the host name to the list of host ids
+        ids.append(name)
+
+    # Return the list of host ids
+    return ids
+
+# -----------------------------------------------------------------
+
+def simulations_files_for_host(host_id):
+
+    """
+    This function checks whether there are simulation files corresponding to this host ID
+    :param host_id:
+    :return:
+    """
+
+    # Determine the path to the SKIRT run subdirectory for the specified host
+    host_run_dir = os.path.join(skirt_run_dir, host_id)
+
+    # Return the list of simulation file paths corresponding to the specified host
+    return filesystem.files_in_path(host_run_dir, extension="sim")
 
 # -----------------------------------------------------------------
 

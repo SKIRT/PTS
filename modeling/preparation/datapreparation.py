@@ -238,7 +238,7 @@ class DataPreparer(ModelingComponent):
         info_table = tables.from_file(info_path)
 
         # Loop over all files found in the data directory
-        for image_path, image_name in filesystem.files_in_path(self.data_path, extension="fits", not_contains="error", names=True):
+        for image_path, image_name in filesystem.files_in_path(self.data_path, extension="fits", not_contains="error", returns="both"):
 
             # If only a single image must be prepared, check if this image matches the specified image name
             if self.config.single_image is not None and image_name != self.config.single_image: continue
