@@ -499,6 +499,38 @@ class SkiFile:
         if include_comments: return stellar_components.getchildren()
         else: return [component for component in stellar_components.getchildren() if component.tag is not etree.Comment]
 
+    ## This function returns the list of stellar component names
+    def get_stellar_component_ids(self):
+
+        # Initialize a list to contain the component ids
+        ids = []
+
+        # Get the list of stellar components
+        components = self.get_stellar_components(include_comments=True)
+
+        # keep track of the number of actual components
+        number_of_components = 0
+
+        # Loop over the components (also includes the comments)
+        i = 0
+        while i < len(components):
+
+            if components[i].tag is etree.Comment:
+
+                ids.append(components[i].text.strip())
+                i += 2 # skip the next component -> it is the component corresponding to this comment
+
+            # No name -> add the index of this component as the ID
+            else:
+                ids.append(number_of_components)
+                i += 1
+
+            # Increment the number of components
+            number_of_components += 1
+
+        # Return the list of names
+        return ids
+
     ## This function returns the dust distribution
     def get_dust_distribution(self):
 
@@ -529,11 +561,42 @@ class SkiFile:
         if include_comments: return dust_components.getchildren()
         else: return [component for component in dust_components.getchildren() if component.tag is not etree.Comment]
 
+    def get_dust_component_ids(self):
+
+        # Initialize a list to contain the component ids
+        ids = []
+
+        # Get the list of dust components
+        components = self.get_dust_components(include_comments=True)
+
+        # keep track of the number of actual components
+        number_of_components = 0
+
+        # Loop over the components (also includes the comments)
+        i = 0
+        while i < len(components):
+
+            if components[i].tag is etree.Comment:
+
+                ids.append(components[i].text.strip())
+                i += 2 # skip the next component -> it is the component corresponding to this comment
+
+            # No name -> add the index of this component as the ID
+            else:
+                ids.append(number_of_components)
+                i += 1
+
+            # Increment the number of components
+            number_of_components += 1
+
+        # Return the list of names
+        return ids
+
     def get_stellar_component(self, component_id):
 
         """
         This function returns the stellar component which is preceeded by a comment matching the description
-        :param id: index or description
+        :param component_id: index or description
         :return:
         """
 
@@ -740,7 +803,7 @@ class SkiFile:
 
         """
         This function sets the dust mass to a specific value, for a specified dust component (is none is given, the first dust component)
-        :param component_id: None, index (integer) or description (string)
+        :param component_id: index (integer) or description (string)
         :param mass: the dust mass as a quantity
         :return:
         """
@@ -754,23 +817,14 @@ class SkiFile:
         # Set the new dust mass
         normalization.set("dustMass", str(mass.to("Msun")) + " Msun")
 
+    # This function returns the wavelength grid
     def get_wavelength_grid(self):
-
-        """
-        This function returns the wavelength grid
-        :return:
-        """
 
         # Get the wavelength grid
         return self.get_unique_base_element("wavelengthGrid")
 
+    # This function sets the wavelength grid to a file
     def set_file_wavelength_grid(self, filename):
-
-        """
-        This function sets the wavelength grid to a file
-        :param filename:
-        :return:
-        """
 
         # Get the wavelength grid
         wavelength_grid = self.get_wavelength_grid()
@@ -787,12 +841,6 @@ class SkiFile:
 
     def get_stellar_component_geometry(self, component_id):
 
-        """
-        This function ...
-        :param component_id:
-        :return:
-        """
-
         # Get the stellar component
         stellar_component = self.get_stellar_component(component_id)
 
@@ -800,21 +848,6 @@ class SkiFile:
         return get_unique_element(stellar_component, "geometry")
 
     def set_stellar_component_fits_geometry(self, component_id, filename, pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height):
-
-        """
-        This function ...
-        :param component_id:
-        :param filename:
-        :param pixelscale:
-        :param position_angle:
-        :param inclination:
-        :param x_size:
-        :param y_size:
-        :param x_center:
-        :param y_center:
-        :param scale_height:
-        :return:
-        """
 
         # Get the stellar component geometry
         geometry = self.get_stellar_component_geometry(component_id)
@@ -833,16 +866,6 @@ class SkiFile:
 
     def set_stellar_component_sersic_geometry(self, component_id, index, radius, y_flattening=1, z_flattening=1):
 
-        """
-        This function ...
-        :param component_id:
-        :param index:
-        :param radius:
-        :param y_flattening:
-        :param z_flattening:
-        :return:
-        """
-
         # Get the stellar component geometry
         geometry = self.get_stellar_component_geometry(component_id)
 
@@ -856,25 +879,17 @@ class SkiFile:
         attrs = {"yFlattening": str(y_flattening), "zFlattening": str(z_flattening)}
         new_geometry = parent.makeelement("TriaxialGeometryDecorator", attrs)
 
+        attrs = {"type": "Geometry"}
+        geometry_of_new_geometry = new_geometry.makeelement("geometry", attrs)
+
         # Add sersic profile to the geometry
         attrs = {"index": str(index), "radius": str(radius)}
-        new_geometry.append(new_geometry.makeelement("SersicGeometry", attrs))
+        geometry_of_new_geometry.append(geometry_of_new_geometry.makeelement("SersicGeometry", attrs))
 
         # Add the new geometry
-        parent.append(new_geometry)
+        parent.append(geometry)
 
     def set_stellar_component_expdisk_geometry(self, component_id, radial_scale, axial_scale, radial_truncation=0, axial_truncation=0, inner_radius=0):
-
-        """
-        This function ...
-        :param component_id:
-        :param radial_scale:
-        :param axial_scale:
-        :param radial_truncation:
-        :param axial_truncation:
-        :param inner_radius:
-        :return:
-        """
 
         # Get the stellar component geometry
         geometry = self.get_stellar_component_geometry(component_id)
@@ -891,12 +906,6 @@ class SkiFile:
 
     def get_stellar_component_sed(self, component_id):
 
-        """
-        This function ...
-        :param component_id:
-        :return:
-        """
-
         # Get the stellar component
         component = self.get_stellar_component(component_id)
 
@@ -904,15 +913,6 @@ class SkiFile:
         return get_unique_element(component, "sed")
 
     def set_stellar_component_sed(self, component_id, template, age, metallicity):
-
-        """
-        This function ...
-        :param component_id:
-        :param template:
-        :param age:
-        :param metallicity:
-        :return:
-        """
 
         # The name of the template class in SKIRT
         template_class = template + "SED"
@@ -932,11 +932,6 @@ class SkiFile:
 
     def get_dust_lib(self):
 
-        """
-        This function ...
-        :return:
-        """
-
         # Get the dust system
         dust_system = self.get_dust_system()
 
@@ -944,11 +939,6 @@ class SkiFile:
         return get_unique_element(dust_system, "dustLib")
 
     def set_allcells_dust_lib(self):
-
-        """
-        This function ...
-        :return:
-        """
 
         # Get the dust lib
         lib = self.get_dust_lib()
@@ -963,13 +953,6 @@ class SkiFile:
         parent.append(parent.makeelement("AllCellsDustLib"), {})
 
     def set_2d_dust_lib(self, temperature_points=25, wavelength_points=10):
-
-        """
-        This function ...
-        :param temperature_points:
-        :param wavelength_points:
-        :return:
-        """
 
         # Get the dust lib
         lib = self.get_dust_lib()
@@ -986,12 +969,6 @@ class SkiFile:
 
     def set_1d_dust_lib(self, points):
 
-        """
-        This function ...
-        :param points:
-        :return:
-        """
-
         # Get the dust lib
         lib = self.get_dust_lib()
 
@@ -1004,6 +981,164 @@ class SkiFile:
         # Create and add the new library
         attrs = {"entries": str(points)}
         parent.append(parent.makeelement("Dim1DustLib"), attrs)
+
+    def get_instruments(self):
+
+        # Get the instrument system
+        instrument_system = self.get_unique_base_element("instrumentSystem")
+
+        # Get the 'instruments' element
+        instruments_parents = instrument_system.xpath("instruments")
+
+        # Check if only one 'instruments' element is present
+        if len(instruments_parents) == 0: raise ValueError("No instruments found")
+        elif len(instruments_parents) > 1: raise ValueError("Invalid ski file: multiple 'instruments' objects within instrument system")
+        instruments_element = instruments_parents[0]
+
+        # Return the instruments as a list
+        return instruments_element.getchildren()
+
+    def get_instrument_names(self):
+
+        # Initialize a list to contain the names
+        names = []
+
+        # Get the list of instruments
+        instruments = self.get_instruments()
+
+        # Loop over the instruments
+        for instrument in instruments:
+
+            # Get the instrument name
+            instrument_name = instrument.get("instrumentName")
+
+            # Add the name to the list
+            names.append(instrument_name)
+
+        # Return the list of names
+        return names
+
+    def get_instrument(self, name):
+
+        # Get the list of instruments
+        instruments = self.get_instruments()
+
+        # Loop over the instruments
+        for instrument in instruments:
+
+            # Get the instrument name
+            instrument_name = instrument.get("instrumentName")
+
+            # If the name matches, return
+            if name == instrument_name: return instrument
+
+        raise ValueError("No instrument with the name '" + name + "'")
+
+    def set_instrument_name(self, old_name, new_name):
+
+        # Get the instrument with the specified name
+        instrument = self.get_instrument(old_name)
+
+        # Set the new name
+        instrument.set("instrumentName", new_name)
+
+    def get_instrument_distance(self, name):
+
+        # Get the instrument with this name
+        instrument = self.get_instrument(name)
+
+        # Return the distance
+        return get_quantity(instrument, "distance")
+
+    def set_instrument_distance(self, name, value):
+
+        # Get the instrument with this name
+        instrument = self.get_instrument(name)
+
+        # Set the distance
+        set_quantity(instrument, "distance", value)
+
+    def get_instrument_inclination(self, name):
+
+        # Get the instrument with this name
+        instrument = self.get_instrument(name)
+
+        # Return the inclination
+        return get_quantity(instrument, "inclination")
+
+    def set_instrument_inclination(self, name, value):
+
+        # Get the instrument with this name
+        instrument = self.get_instrument(name)
+
+        # Set the inclination
+        set_quantity(instrument, "inclination", value)
+
+    def get_instrument_azimuth(self, name):
+
+        # Get the instrument with this name
+        instrument = self.get_instrument(name)
+
+        # Return the azimuth
+        return get_quantity(instrument, "azimuth")
+
+    def set_instrument_azimuth(self, name, value):
+
+        # Get the instrument with this name
+        instrument = self.get_instrument(name)
+
+        # Set the azimuth angle
+        set_quantity(instrument, "azimuth", value)
+
+    def get_instrument_pa(self, name):
+
+        # Get the instrument with this name
+        instrument = self.get_instrument(name)
+
+        # Return the position angle
+        return get_quantity(instrument, "positionAngle")
+
+    def set_instrument_pa(self, name, value):
+
+        # Get the instrument with this name
+        instrument = self.get_instrument(name)
+
+        # Set the position angle
+        set_quantity(instrument, "positionAngle", value)
+
+    def get_instrument_size(self, name):
+
+        # Get the instrument with this name
+        instrument = self.get_instrument(name)
+
+        # Return the size
+        return int(instrument.get("pixelsX")), int(instrument.get("pixelsY"))
+
+    def set_instrument_size(self, name, x_size, y_size):
+
+        # Get the instrument with this name
+        instrument = self.get_instrument(name)
+
+        # Set the size
+        instrument.set("pixelsX", str(x_size))
+        instrument.set("pixelsY", str(y_size))
+
+    def get_instrument_field(self, name):
+
+        # Get the instrument with this name
+        instrument = self.get_instrument(name)
+
+        # Get the field of view
+        return get_quantity(instrument, "fieldOfViewX"), get_quantity(instrument, "fieldOfViewY")
+
+    def set_instrument_field(self, name, x_field, y_field):
+
+        # Get the instrument with this name
+        instrument = self.get_instrument(name)
+
+        # Set the field of view
+        set_quantity(instrument, "fieldOfViewX", x_field)
+        set_quantity(instrument, "fieldOfViewY", y_field)
 
     def to_dict(self):
 
@@ -1083,6 +1218,37 @@ def get_quantity(element, name, default_unit=None):
     # Create a quantity object
     if unit is not None: value = value * Unit(unit)
     return value
+
+# -----------------------------------------------------------------
+
+def set_quantity(element, name, value, default_unit=None):
+
+    """
+    This function ...
+    :param element:
+    :param name:
+    :param value:
+    :param default_unit:
+    :return:
+    """
+
+    from astropy.units import Unit
+
+    try:
+
+        # If this works, assume it is a Quantity (or Angle)
+        unit = value.unit
+
+        # Works for Angles as well (str(angle) gives something that is not 'value + unit'
+        to_string = str(value.to(value.unit).value) + " " + str(unit)
+
+    except AttributeError:
+
+        if default_unit is not None: to_string = str(value) + " " + str(Unit(default_unit))
+        else: to_string = str(value)  # dimensionless quantity
+
+    # Set the value in the tree element
+    element.set(name, to_string)
 
 # -----------------------------------------------------------------
 

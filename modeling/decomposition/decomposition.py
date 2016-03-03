@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astroquery.vizier import Vizier
-from astropy.units import Unit
+from astropy.units import Unit, dimensionless_angles
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
@@ -33,27 +33,7 @@ from ...magic.tools import catalogs
 from ...magic.basics import Extent
 from ...magic.basics.skygeometry import SkyEllipse, SkyCoord
 from ...magic.basics import SkyRegion
-
-# -----------------------------------------------------------------
-
-# Bulge properties from S4G
-bulge = Map()
-bulge.type = "Sersic"
-bulge.xc = 1455.27
-bulge.yc = 1905.39
-bulge.mag = 7.0877
-bulge.re = 102.9578
-bulge.n = 3.5566
-bulge.ar = 0.6540
-bulge.pa = -34.9801
-
-# Disk properties from S4G
-disk = Map()
-disk.type = "ExpDisk"
-disk.mag = 6.9121
-disk.rs = 204.2269
-disk.ar = 0.5426
-disk.pa = -23.6950
+from ...magic.core import Frame
 
 # -----------------------------------------------------------------
 
@@ -91,14 +71,18 @@ class GalaxyDecomposer(ModelingComponent):
         self.ngc_id_nospaces = None
 
         # The path to the disk and bulge directories
-        self.bulge_path = None
-        self.disk_path = None
+        self.bulge_directory = None
+        self.disk_directory = None
 
         # The bulge and disk parameters
         self.parameters = Map()
 
         # The SKIRT execution context
         self.skirt = SkirtExec()
+
+        # The bulge and disk image
+        self.bulge = None
+        self.disk = None
 
     # -----------------------------------------------------------------
 
@@ -160,11 +144,11 @@ class GalaxyDecomposer(ModelingComponent):
         self.ngc_id_nospaces = self.ngc_id.replace(" ", "")
 
         # Determine the path to the bulge and disk directories
-        self.bulge_path = self.full_output_path("bulge")
-        self.disk_path = self.full_output_path("disk")
+        self.bulge_directory = self.full_output_path("bulge")
+        self.disk_directory = self.full_output_path("disk")
 
         # Create the bulge and disk directories
-        filesystem.create_directories([self.bulge_path, self.disk_path])
+        filesystem.create_directories([self.bulge_directory, self.disk_directory])
 
     # -----------------------------------------------------------------
 
@@ -245,6 +229,18 @@ class GalaxyDecomposer(ModelingComponent):
         #absolute_magnitude_i2 = table["M4.5"][0]
         #stellar_mass = 10.0**table["logM_"][0] * u.Unit("Msun")
 
+        # Inform the user
+        log.info("Querying the catalog of radial profiles for 161 face-on spirals ...")
+
+        # Radial profiles for 161 face-on spirals (Munoz-Mateos+, 2007)
+        radial_profiles_result = vizier.query_object(self.galaxy_name, catalog="J/ApJ/658/1006")
+
+        distance = float(radial_profiles_result[0][0]["Dist"])
+        inclination = Angle(float(radial_profiles_result[0][0]["i"]), "deg")
+
+        # Set the inclination
+        self.parameters.inclination = inclination
+
     # -----------------------------------------------------------------
 
     def get_component_parameters(self):
@@ -320,7 +316,11 @@ class GalaxyDecomposer(ModelingComponent):
                 self.parameters.bulge.rel = float(splitted[sersic_1_index + 1])
                 self.parameters.bulge.mag = float(splitted[sersic_1_index + 2])
                 self.parameters.bulge.fluxdensity = unitconversion.ab_to_jansky(self.parameters.bulge.mag) * Unit("Jy")
-                self.parameters.bulge.re = float(splitted[sersic_1_index + 3]) # re ??? effective radius?
+
+                # Effective radius in pc
+                re_arcsec = float(splitted[sersic_1_index + 3]) * Unit("arcsec")
+                self.parameters.bulge.re = (self.parameters.distance * re_arcsec).to("pc", equivalencies=dimensionless_angles())
+
                 self.parameters.bulge.ar = float(splitted[sersic_1_index + 4])
                 self.parameters.bulge.pa = float(splitted[sersic_1_index + 5])
                 self.parameters.bulge.n = float(splitted[sersic_1_index + 6])
@@ -331,8 +331,12 @@ class GalaxyDecomposer(ModelingComponent):
                 self.parameters.disk.rel = float(splitted[disk_1_index + 1])
                 self.parameters.disk.mag = float(splitted[disk_1_index + 2])
                 self.parameters.disk.fluxdensity = unitconversion.ab_to_jansky(self.parameters.disk.mag) * Unit("Jy")
-                self.parameters.disk.hr = float(splitted[disk_1_index + 3])
-                self.parameters.disk.ar = float(splitted[disk_1_index + 4])
+
+                # Scale length in pc
+                hr_arcsec = float(splitted[disk_1_index + 3]) * Unit("arcsec")
+                self.parameters.disk.hr = (self.parameters.distance * hr_arcsec).to("pc", equivalencies=dimensionless_angles())
+
+                self.parameters.disk.ar = float(splitted[disk_1_index + 4]) # axial ratio
                 self.parameters.disk.pa = float(splitted[disk_1_index + 5])
                 self.parameters.disk.mu0 = float(splitted[disk_1_index + 6])
 
@@ -368,16 +372,21 @@ class GalaxyDecomposer(ModelingComponent):
         ski = SkiFile(bulge_template_path)
 
         # Change the ski file parameters
-        # ...
+        ski.set_stellar_component_sersic_geometry(0, self.parameters.bulge.n, self.parameters.bulge.re, z_flattening=self.parameters.bulge.ar)
+
+        # Set the distance of the instruments
+        for instrument_name in ski.get_instrument_names():
+            ski.set_instrument_distance(instrument_name, self.parameters.distance)
+            ski.set_instrument_inclination(instrument_name, self.parameters.inclination)
 
         # Determine the path to the ski file
-        ski_path = filesystem.join(self.bulge_path, "bulge.ski")
+        ski_path = filesystem.join(self.bulge_directory, "bulge.ski")
 
         # Save the ski file to the new path
         ski.saveto(ski_path)
 
         # Determine the path to the simulation output directory
-        out_path = filesystem.join(self.bulge_path, "out")
+        out_path = filesystem.join(self.bulge_directory, "out")
 
         # Create the output directory
         filesystem.create_directory(out_path)
@@ -396,11 +405,31 @@ class GalaxyDecomposer(ModelingComponent):
         log.info("Running the bulge simulation ...")
 
         # Run the simulation
-        simulation = self.skirt.run(arguments, silent=True)
+        simulation = self.skirt.run(arguments, silent=False)
+
+        # Determine the path to the output FITS file
+        bulge_image_path = filesystem.join(out_path, "bulge_earth_total.fits")
 
         # Check if the output contains the "bulge_earth_total.fits" file
-        if "bulge_earth_total" not in filesystem.files_in_path(out_path, extension="fits", returns="names"):
+        if not filesystem.is_file(bulge_image_path):
             raise RuntimeError("Something went wrong with the bulge simulation: output FITS file missing")
+
+        # Open the bulge image
+        self.bulge = Frame.from_file(bulge_image_path)
+
+        # Convolve the frame to the PACS 160 resolution
+        #kernels_dir = os.path.expanduser("~/Kernels")
+        #kernel_path = os.path.join(kernels_dir, "Kernel_HiRes_Moffet_00.5_to_PACS_160.fits")
+        #kernel = Frame.from_file(kernel_path)
+        #frame.convolve(kernel)
+
+        # Rebin the convolved frame to the PACS 160 frame (just as we did with the other images)
+        #reference_path = os.path.join(self.data_path, "PACS160.fits")
+        #reference = Frame.from_file(reference_path)
+        #frame.rebin(reference)
+
+        # Finally, crop the image
+        #frame.frames.primary.crop(350, 725, 300, 825)
 
     # -----------------------------------------------------------------
 
@@ -419,16 +448,23 @@ class GalaxyDecomposer(ModelingComponent):
         ski = SkiFile(disk_template_path)
 
         # Change the ski file parameters ...
-        # ...
+        radial_scale = self.parameters.disk.hr
+        axial_scale = self.parameters.disk.ar * radial_scale
+        ski.set_stellar_component_expdisk_geometry(0, radial_scale, axial_scale, radial_truncation=0, axial_truncation=0, inner_radius=0)
+
+        # Set the distance of the instruments
+        for instrument_name in ski.get_instrument_names():
+            ski.set_instrument_distance(instrument_name, self.parameters.distance)
+            ski.set_instrument_inclination(instrument_name, self.parameters.inclination)
 
         # Determine the path to the ski file
-        ski_path = filesystem.join(self.disk_path, "disk.ski")
+        ski_path = filesystem.join(self.disk_directory, "disk.ski")
 
         # Save the ski file to the new path
         ski.saveto(ski_path)
 
         # Determine the path to the simulation output directory
-        out_path = filesystem.join(self.disk_path, "out")
+        out_path = filesystem.join(self.disk_directory, "out")
 
         # Create the output directory
         filesystem.create_directory(out_path)
@@ -447,11 +483,31 @@ class GalaxyDecomposer(ModelingComponent):
         log.info("Running the disk simulation ...")
 
         # Run the simulation
-        simulation = self.skirt.run(arguments, silent=True)
+        simulation = self.skirt.run(arguments, silent=False)
+
+        # Determine the path to the output FITS file
+        disk_image_path = filesystem.join(out_path, "disk_earth_total.fits")
 
         # Check if the output contains the "disk_earth_total.fits" file
-        if "disk_earth_total" not in filesystem.files_in_path(out_path, extension="fits", returns="names"):
+        if not filesystem.is_file(disk_image_path):
             raise RuntimeError("Something went wrong with the disk simulation: output FITS file missing")
+
+        # Open the disk image
+        self.disk = Frame.from_file(disk_image_path)
+
+        # Convolve the frame to the PACS 160 resolution
+        #kernels_dir = os.path.expanduser("~/Kernels")
+        #kernel_path = os.path.join(kernels_dir, "Kernel_HiRes_Moffet_00.5_to_PACS_160.fits")
+        #kernel = Frame.from_file(kernel_path)
+        #frame.convolve(kernel)
+
+        # Rebin the convolved frame to the PACS 160 frame (just as we did with the other images)
+        #reference_path = os.path.join(self.data_path, "PACS160.fits")
+        #reference = Frame.from_file(reference_path)
+        #frame.rebin(reference)
+
+        # Finally, crop the image
+        #frame.frames.primary.crop(350, 725, 300, 825)
 
     # -----------------------------------------------------------------
 
@@ -465,11 +521,31 @@ class GalaxyDecomposer(ModelingComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # Write out the final bulge and disk images
+        self.write_images()
+
         # Write out the parameters in a data file
         self.write_parameters()
 
         # Write out the disk ellipse
         self.write_disk_ellipse()
+
+    # -----------------------------------------------------------------
+
+    def write_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path to the bulge image and save it
+        final_bulge_path = filesystem.join(self.components_path, "bulge.fits")
+        self.bulge.save(final_bulge_path)
+
+        # Determine the path to the disk image and save it
+        final_disk_path = filesystem.join(self.components_path, "disk.fits")
+        self.disk.save(final_disk_path)
 
     # -----------------------------------------------------------------
 
@@ -496,10 +572,11 @@ class GalaxyDecomposer(ModelingComponent):
             print("Ellipticity:", self.parameters.ellipticity, file=parameter_file)
             print("Position angle:", str(self.parameters.position_angle.to("deg").value) + " deg", file=parameter_file)
             print("Distance:", str(self.parameters.distance) + " +/- " + str(self.parameters.distance_error), file=parameter_file)
-            print("I1 magnitude:", self.parameters.i1_mag, "+/-", self.parameters.i1_mag_error, file=parameter_file)
-            print("I1 flux density:", self.parameters.i1_fluxdensity, "+/-", self.parameters.i1_error, file=parameter_file)
-            print("I2 magnitude:", self.parameters.i2_mag, "+/-", self.parameters.i2_mag_error, file=parameter_file)
-            print("I2 flux density:", self.parameters.i2_fluxdensity, "+/-", self.parameters.i2_error, file=parameter_file)
+            print("Inclination:", str(self.parameters.inclination.to("deg").value) + " deg", file=parameter_file)
+            print("IRAC 3.6um magnitude:", self.parameters.i1_mag, "+/-", self.parameters.i1_mag_error, file=parameter_file)
+            print("IRAC 3.6um flux density:", self.parameters.i1_fluxdensity, "+/-", self.parameters.i1_error, file=parameter_file)
+            print("IRAC 4.5um magnitude:", self.parameters.i2_mag, "+/-", self.parameters.i2_mag_error, file=parameter_file)
+            print("IRAC 4.5um flux density:", self.parameters.i2_fluxdensity, "+/-", self.parameters.i2_error, file=parameter_file)
 
             print("Model type:", self.parameters.model_type, file=parameter_file)
             print("Number of components:", self.parameters.number_of_components, file=parameter_file)
@@ -511,20 +588,20 @@ class GalaxyDecomposer(ModelingComponent):
                 print(component.title()+":", file=parameter_file)
                 print("    Interpretation:", self.parameters[component].interpretation, file=parameter_file)
                 print("    Relative contribution of the component to the total model flux:", self.parameters[component].rel, file=parameter_file)
-                print("    Total 3.6 micron AB magnitude:", self.parameters[component].mag, file=parameter_file)
-                print("    Total 3.6 micron flux density:", self.parameters[component].fluxdensity, file=parameter_file)
+                print("    Total IRAC 3.6um AB magnitude:", self.parameters[component].mag, file=parameter_file)
+                print("    Total IRAC 3.6um flux density:", self.parameters[component].fluxdensity, file=parameter_file)
                 print("    Axial ratio:", self.parameters[component].ar, file=parameter_file)
                 print("    Position angle (degrees ccw from North):", self.parameters[component].pa, file=parameter_file)
 
                 if component == "bulge":
 
-                    print("    Effective radius ???:", self.parameters[component].re, file=parameter_file)
+                    print("    Effective radius:", str(self.parameters[component].re), file=parameter_file)
                     print("    Sersic index:", self.parameters[component].n, file=parameter_file)
 
                 elif component == "disk":
 
                     print("    Central surface brightness (mag/arcsec2):", self.parameters[component].mu0, file=parameter_file)
-                    print("    Exponential scale lenght (arcsec):", self.parameters[component].hr, file=parameter_file)
+                    print("    Exponential scale lenght (arcsec):", str(self.parameters[component].hr), file=parameter_file)
 
     # -----------------------------------------------------------------
 
@@ -551,51 +628,5 @@ class GalaxyDecomposer(ModelingComponent):
         region.append(sky_ellipse)
         region_path = self.full_output_path("disk.reg")
         region.save(region_path)
-
-    # -----------------------------------------------------------------
-
-    def decompose(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pass
-
-        # TODO: do the bulge/disk fitting here
-        # Run the decomposition
-        #decomposer.run()
-
-        # Set path of bulge and disk images
-        #bulge_path = os.path.join(self.prep_path, "Bulge", "bulge.fits")
-        #disk_path = os.path.join(self.prep_path, "Disk", "disk.fits")
-
-        # Create list
-        #paths = {"Bulge": bulge_path, "Disk": disk_path}
-
-        # For bulge and disk ...
-        #for name, path in paths.items():
-
-            # Open the frame
-            #frame = Frame.from_file(path)
-
-            # Convolve the frame to the PACS 160 resolution
-            #kernels_dir = os.path.expanduser("~/Kernels")
-            #kernel_path = os.path.join(kernels_dir, "Kernel_HiRes_Moffet_00.5_to_PACS_160.fits")
-            #kernel = Frame.from_file(kernel_path)
-            #frame.convolve(kernel)
-
-            # Rebin the convolved frame to the PACS 160 frame (just as we did with the other images)
-            #reference_path = os.path.join(self.data_path, "PACS160.fits")
-            #reference = Frame.from_file(reference_path)
-            #frame.rebin(reference)
-
-            # Finally, crop the image
-            #frame.frames.primary.crop(350, 725, 300, 825)
-
-            # Save the convolved, rebinned and cropped bulge or disk frame
-            #component_path = os.path.join(self.prep_path, name, 'final.fits')
-            #frame.save(component_path)
 
 # -----------------------------------------------------------------

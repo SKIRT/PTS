@@ -832,6 +832,9 @@ class Frame(np.ndarray):
 
         """
         This function ...
+        :param path:
+        :param header:
+        :param origin:
         """
 
         if header is None: header = self.header
