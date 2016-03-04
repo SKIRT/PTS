@@ -18,43 +18,12 @@ import argparse
 
 # Import the relevant AstroMagic classes and modules
 from pts.magic import ImageImporter, Extractor
-from pts.core.tools import configuration, time
-from pts.core.tools import logging
+from pts.core.tools import configuration
+from pts.core.tools import logging, time, parsing
 
 # -----------------------------------------------------------------
 
-def int_list(string):
-
-    """
-    This function returns a list of integer values, based on a string denoting a certain range (e.g. '3-9') or a
-    set of integer values seperated by commas ('2,14,20')
-    :param string:
-    :return:
-    """
-
-    # Split the string
-    splitted = string.split('-')
-
-    if len(splitted) == 0: raise argparse.ArgumentError("not_stars/remove_stars/not_saturation", "No range given")
-    elif len(splitted) == 1:
-
-        splitted = splitted[0].split(",")
-
-        # Check if the values are valid
-        for value in splitted:
-            if not value.isdigit(): raise argparse.ArgumentError("not_stars/remove_stars/not_saturation", "Argument contains unvalid characters")
-
-        # Only leave unique values
-        return list(set([int(value) for value in splitted]))
-
-    elif len(splitted) == 2:
-
-        if not (splitted[0].isdigit() and splitted[1].isdigit()): raise argparse.ArgumentError("not_stars/remove_stars/not_saturation", "Not a valid integer range")
-        return range(int(splitted[0]), int(splitted[1])+1)
-
-    else: raise argparse.ArgumentError("not_stars/remove_stars/not_saturation", "Values must be seperated by commas or by a '-' in the case of a range")
-
-# -----------------------------------------------------------------
+int_list = lambda argument: parsing.int_list(argument, name="not_stars/remove_stars/not_saturation")
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
@@ -77,8 +46,6 @@ parser.add_argument("-i", "--input", type=str, help="the name of the input direc
 parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
 parser.add_argument("--ignore", type=str, help="the name of the file specifying regions to ignore")
 parser.add_argument("--special", type=str, help="the name of the file specifying regions with objects needing special attention")
-#parser.add_argument("--ignore", type=int_list, help="the indices of stars that should be ignored")
-#parser.add_argument("--special", type=int_list, help="the indices of stars that require special attention")
 parser.add_argument("--bad", type=str, help="the name of the file specifying regions that have to be added to the mask of bad pixels")
 parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
 

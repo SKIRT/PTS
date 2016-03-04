@@ -108,6 +108,8 @@ class Plotter(Configurable):
 
         """
         This function ...
+        :param input:
+        :param output_path:
         :return:
         """
 

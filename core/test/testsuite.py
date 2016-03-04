@@ -27,7 +27,7 @@ import pyfits
 
 # Import the relevant PTS classes and modules
 from ..simulation.execute import SkirtExec
-from ..basics.log import Log
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 #  SkirtTestSuite class
@@ -102,11 +102,8 @@ class SkirtTestSuite(object):
         self._subsuitepath = findsubdirectory(self._suitepath, subsuite)
         self._parallel = parallel
 
-        # Create the logging mechanism
-        self._log = Log()
-
         # Create a SKIRT execution context
-        self._skirt = SkirtExec(skirtpath, self._log)
+        self._skirt = SkirtExec(skirtpath)
 
         # Initialize some data structures for the test run
         self._statistics = dict()
@@ -161,8 +158,8 @@ class SkirtTestSuite(object):
         self._testname = os.path.basename(self._subsuitepath) + "_" + timestamp
 
         # Inform the user of the fact that the test suite has been initiated
-        self._log.info("Starting report for test suite " + self._subsuitepath)
-        self._log.info("Using " + self._skirt.version() + " in " + self._skirt.root_directory)
+        log.info("Starting report for test suite " + self._subsuitepath)
+        log.info("Using " + self._skirt.version() + " in " + self._skirt.root_directory)
 
         # Create a report file to contain a detailed report of the test run
         self._createreportfile()
@@ -182,7 +179,7 @@ class SkirtTestSuite(object):
             numsimulations = len(simulations)
 
             # Inform the user on the number of test cases (in this mode)
-            self._log.info("Number of test cases " + modename + ": " + str(numsimulations))
+            log.info("Number of test cases " + modename + ": " + str(numsimulations))
             self._report.write("Number of test cases " + modename + ": " + str(numsimulations) + "<br>\n")
 
             # Add the new simulations to the list
@@ -260,15 +257,15 @@ class SkirtTestSuite(object):
     ## This function writes statistics about the number of successful test cases
     def _writestatistics(self):
 
-        self._log.info("Summary for total of: "+ str(self._numsimulations))
+        log.info("Summary for total of: "+ str(self._numsimulations))
         self._report.write("Summary for total of: " + str(self._numsimulations) + "<br>\n")
 
         for key,value in self._statistics.iteritems():
 
-            self._log.info("  " + key + ": " + str(value))
+            log.info("  " + key + ": " + str(value))
             self._report.write("  " + key + ": " + str(value) + "<br>\n")
 
-        self._log.info("Finished report for test suite " + self._subsuitepath)
+        log.info("Finished report for test suite " + self._subsuitepath)
 
     ## This function verifies and reports on the test result of the given simulation.
     # It writes a line to the console and it updates the statistics.
@@ -300,7 +297,7 @@ class SkirtTestSuite(object):
             if len(extra) == 0 and len(missing) == 0 and len(differ) == 0:
 
                 status = "Succeeded"
-                self._log.success("Test case " + casename + ": succeeded")
+                log.success("Test case " + casename + ": succeeded")
 
                 # Write to the report file
                 self._report.write("<span style='color:LightGreen'>Test case " + casename + ": succeeded</span><br>\n")
@@ -308,7 +305,7 @@ class SkirtTestSuite(object):
             else:
 
                 status = "Failed"
-                self._log.failure("Test case " + casename + ": failed")
+                log.failure("Test case " + casename + ": failed")
 
                 # Write to the report file
                 self._report.write("<div class='row'>\n")

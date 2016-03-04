@@ -19,7 +19,7 @@ from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import inspection
-from pts.core.basics.log import Log
+from pts.core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -34,9 +34,6 @@ parser.add_argument("-v", "--version", action="store_true", help="show the versi
 arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
-
-# Create a logger
-log = Log()
 
 # If no script name is given, execute the "list_dependencies.py" script to list all dependencies of PTS and the
 # PTS modules that use them
@@ -80,7 +77,7 @@ for dependency in sorted(dependencies, key=str.lower):
         else: log.success(dependency + ": present")
 
     # The package is not present
-    else: log.failure(dependency + ": not found")
+    else: log.error(dependency + ": not found")
 
     # List the PTS modules that have this dependency
     if arguments.modules:

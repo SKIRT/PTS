@@ -18,7 +18,7 @@ import argparse
 
 # Import the relevant PTS classes and modules
 from pts.core.test.resources import ResourceEstimator
-from pts.core.tools import logging
+from pts.core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -34,7 +34,6 @@ arguments = parser.parse_args()
 # -----------------------------------------------------------------
 
 # Initialize the logger
-log = logging.init_log()
 log.info("Starting estimate script ...")
 
 # -----------------------------------------------------------------

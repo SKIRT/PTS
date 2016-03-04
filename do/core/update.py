@@ -17,6 +17,7 @@ import argparse
 
 # Import the relevant PTS classes and modules
 from pts.core.prep.update import SkirtUpdater
+from pts.core.tools import logging, time
 
 # -----------------------------------------------------------------
 

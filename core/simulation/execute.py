@@ -17,9 +17,9 @@ import os
 import subprocess
 
 # Import the relevant PTS classes and modules
-from ..basics.log import Log
 from .arguments import SkirtArguments
 from ..tools import inspection, filesystem
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 #  SkirtExec class
@@ -39,7 +39,7 @@ class SkirtExec:
     #   default), which uses the standard -np switch useful for launching a number of MPI processes on a single
     #   computing node, and 'lsf', which uses the -lsf switch supported by platform MPI under the LSF cluster queueing
     #   system.
-    def __init__(self, path="", log="", mpi_style="generic"):
+    def __init__(self, path="", mpi_style="generic"):
 
         # Set the SKIRT path
         self._path = path if path is not None else ""
@@ -50,9 +50,6 @@ class SkirtExec:
 
         # Indicate no simulations are running yet
         self._process = None
-
-        # Set the log mechanism
-        self._log = log if log else Log()
 
         # Set the MPI style
         self.mpi_style = mpi_style.lower()
@@ -132,7 +129,7 @@ class SkirtExec:
 
         # Check whether MPI is present on this system if multiple processe are requested
         if arguments.parallel.processes > 1 and not inspection.has_mpi():
-            self._log.warning("No mpirun executable: skipping simulations")
+            log.warning("No mpirun executable: skipping simulations")
             return []
 
         # Determine the MPI command
@@ -215,7 +212,7 @@ class SkirtExec:
         subprocess.call("./makeSKIRT.sh", cwd=repo_dir)
 
         # Put SKIRT in the PATH environment variable
-
+        # ...
 
     ## This function updates the SKIRT executable
     def update(self):
