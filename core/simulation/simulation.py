@@ -221,7 +221,7 @@ class SkirtSimulation(object):
             self._parameters = SkiFile(self.ski_path)
         return self._parameters
 
-    #@property
+    @property
     def ski_file(self):
         return self.parameters()
 
