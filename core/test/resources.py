@@ -22,6 +22,7 @@ from ..simulation.execute import SkirtExec
 from ..simulation.arguments import SkirtArguments
 from ..extract.timeline import TimeLineExtractor
 from ..tools import time
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -161,6 +162,9 @@ class ResourceEstimator(object):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Running the simulation in emulation mode to estimate the required resources ...")
 
         # Run SKIRT in emulation mode
         self.simulation = self.skirt.run(self.arguments, silent=True)

@@ -20,7 +20,7 @@ from astropy.table import Table, Column
 
 # -----------------------------------------------------------------
 
-def find_index(table, key):
+def find_index(table, key, column_name=None):
 
     """
     This function ...
@@ -28,12 +28,13 @@ def find_index(table, key):
     :return:
     """
 
-    first_column_name = table.colnames[0]
+    # Get first column name if none is given
+    if column_name is None: column_name = table.colnames[0]
 
     # Loop over all entries in the column
     for i in range(len(table)):
 
-        if table[first_column_name][i] == key: return i
+        if table[column_name][i] == key: return i
 
     return None
 
