@@ -548,6 +548,9 @@ class StarExtractor(Configurable):
             # If this star should be ignored, skip it
             if star.ignore: continue
 
+            # If the 'only_saturation' list is defined, skip this star if its index is not in that list
+            if self.config.manual_indices.only_saturation is not None and star.index not in self.config.manual_indices.only_saturation: continue
+
             # If the index of this star is in the 'not_saturation' list, skip it
             if self.config.manual_indices.not_saturation is not None and star.index in self.config.manual_indices.not_saturation: continue
 

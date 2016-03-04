@@ -118,6 +118,7 @@ class Extractor(Configurable):
         if arguments.not_stars is not None: extractor.config.stars.manual_indices.not_stars = arguments.not_stars
         if arguments.remove_stars is not None: extractor.config.stars.manual_indices.remove_stars = arguments.remove_stars
         if arguments.not_saturation is not None: extractor.config.stars.manual_indices.not_saturation = arguments.not_saturation
+        if arguments.only_saturation is not None: extractor.config.stars.manual_indices.only_saturation = arguments.only_saturation
 
         # Options for using a file as input catalog
         if arguments.filecatalog:
