@@ -401,48 +401,18 @@ class SkirtRemote(Remote):
         # Inform the suer
         log.info("Scheduling simulation on the remote host")
 
-        if scheduling_options is None:
+        # Verify the scheduling options
+        scheduling_options = self._verify_scheduling_options(scheduling_options, arguments, local_ski_path)
 
-            processors = arguments.parallel.processes * arguments.parallel.threads
-            nodes, ppn = self.get_requirements(processors)
-
-            scheduling_options = {}
-            scheduling_options["nodes"] = nodes
-            scheduling_options["ppn"] = ppn
-            #scheduling_options["walltime"] = ...
-            #scheduling_options["jobscript_path"] = ...
-            scheduling_options["mail"] = False
-            scheduling_options["full_node"] = True
-
-        # We want to estimate the walltime here if it is not passed to this function
-        if "walltime" not in scheduling_options:
-
-            factor = 1.2
-
-            # Create and run a ResourceEstimator instance
-            estimator = ResourceEstimator()
-            #estimator.run(local_ski_path, arguments.parallel.processes, arguments.parallel.threads)
-            estimator.run(local_ski_path, 1, 1)
-
-            # Return the estimated walltime
-            #walltime = estimator.walltime * factor
-            walltime = estimator.walltime_for(arguments.parallel.processes, arguments.parallel.threads) * factor
-
-        else: walltime = scheduling_options["walltime"]
-
-        if "nodes" not in scheduling_options: raise ValueError("The number of nodes is not defined in the scheduling options")
-        if "ppn" not in scheduling_options: raise ValueError("The number of processors per node is not defined in the scheduling options")
+        # Now get the options
         nodes = scheduling_options["nodes"]
         ppn = scheduling_options["ppn"]
-
-        mail = scheduling_options["mail"] if "mail" in scheduling_options else False
-        full_node = scheduling_options["full_node"] if "full_node" in scheduling_options else False
+        mail = scheduling_options["mail"]
+        full_node = scheduling_options["full_node"]
+        walltime = scheduling_options["walltime"]
+        local_jobscript_path = scheduling_options["jobscript_path"]
 
         # Create a job script next to the (local) simulation's ski file
-        if "jobscript_path" not in scheduling_options:
-            local_simulation_path = os.path.dirname(local_ski_path)
-            local_jobscript_path = filesystem.join(local_simulation_path, "job.sh")
-        else: local_jobscript_path = scheduling_options["jobscript_path"]
         jobscript_name = os.path.basename(local_jobscript_path)
         jobscript = JobScript(local_jobscript_path, arguments, self.host.clusters[self.host.cluster_name], self.skirt_path, self.host.mpi_command, self.host.modules, walltime, nodes, ppn, name=name, mail=mail, full_node=full_node)
 
@@ -965,5 +935,64 @@ class SkirtRemote(Remote):
         if "self-absorption" in phase: return "running: " + str(phase) + ", cycle " + str(cycle) + "] " + str(progress) + "%"
         elif "stellar emission" in phase or "dust emission" in phase: return "running: " + str(phase) + " " + str(progress) + "%"
         else: return "running: " + str(phase)
+
+    # -----------------------------------------------------------------
+
+    def _verify_scheduling_options(self, options, arguments, local_ski_path):
+
+        """
+        This function ...
+        :param options:
+        :param arguments:
+        :param local_ski_path:
+        :return:
+        """
+
+        # If scheduling options is not defined
+        if options is None: options = {}
+
+        # Test the presence of the 'nodes' and 'ppn' options
+        if "nodes" not in options or "ppn" not in options:
+
+            # Get the requirements in number of nodes and ppn
+            processors = arguments.parallel.processes * arguments.parallel.threads
+            nodes, ppn = self.get_requirements(processors)
+
+            # Set the nodes and pppn
+            options["nodes"] = nodes
+            options["ppn"] = ppn
+
+        # Check if 'mail' option is defined
+        if "mail" not in options: options["mail"] = False
+
+        # Check if 'full_node' option is defined
+        if "full_node" not in options: options["full_node"] = True
+
+        # We want to estimate the walltime here if it is not defined in the options
+        if "walltime" not in options:
+
+            factor = 1.2
+
+            # Create and run a ResourceEstimator instance
+            estimator = ResourceEstimator()
+            #estimator.run(local_ski_path, arguments.parallel.processes, arguments.parallel.threads)
+            estimator.run(local_ski_path, 1, 1)
+
+            # Return the estimated walltime
+            #walltime = estimator.walltime * factor
+            options.walltime = estimator.walltime_for(arguments.parallel.processes, arguments.parallel.threads) * factor
+
+        # Check if job script path is defined
+        if "jobscript_path" not in options:
+
+            # Determine the jobscript path
+            local_simulation_path = os.path.dirname(local_ski_path)
+            local_jobscript_path = filesystem.join(local_simulation_path, "job.sh")
+
+            # Set the jobscript path
+            options["jobscript_path"] = local_jobscript_path
+
+        # Return the dictionary of scheduling options
+        return options
 
 # -----------------------------------------------------------------
