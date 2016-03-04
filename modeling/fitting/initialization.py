@@ -13,18 +13,21 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import numpy as np
+
+# Import astronomical modules
+from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ..core import ModelingComponent
 from ...core.tools import inspection, tables, filesystem
 from ...core.simulation.skifile import SkiFile
 from ...core.basics.filter import Filter
+from ..decomposition.decomposition import load_parameters
 
 # -----------------------------------------------------------------
 
-template_ski_path = os.path.join(inspection.pts_dat_dir("modeling"), "ski", "template.ski")
+template_ski_path = filesystem.join(inspection.pts_dat_dir("modeling"), "ski", "template.ski")
 
 # -----------------------------------------------------------------
 
@@ -51,7 +54,13 @@ class InputInitializer(ModelingComponent):
         self.fit_in_path = None
 
         # The ski file
-        self.ski_file = None
+        self.ski = None
+
+        # The wavelength grid
+        self.wavelength_grid = None
+
+        # The structural parameters
+        self.parameters = None
 
     # -----------------------------------------------------------------
 
@@ -64,7 +73,37 @@ class InputInitializer(ModelingComponent):
         :return:
         """
 
-        pass
+        # Create a new InputInitializer instance
+        initializer = cls(arguments.config)
+
+        # Set the output path
+        initializer.config.path = arguments.path
+        initializer.config.output_path = filesystem.join(arguments.path, "fit")
+
+        # Set minimum and maximum wavelength of the total grid
+        if arguments.lambda_minmax is not None:
+            initializer.config.wavelengths.min = arguments.lambda_minmax[0]
+            initializer.config.wavelengths.max = arguments.lambda_minmax[1]
+
+        # Set minimum and maximum wavelength of the zoomed-in grid
+        if arguments.lambda_minmax_zoom is not None:
+            initializer.config.wavelengths.min_zoom = arguments.lambda_minmax_zoom[0]
+            initializer.config.wavelengths.max_zoom = arguments.lambda_minmax_zoom[1]
+
+        # Set the number of wavelength points
+        if arguments.nlambda is not None:
+            # Based on npoints = 1.1 * npoints_zoom
+            initializer.config.wavelengths.npoints = 1.1 * arguments.nlambda / 2.1
+            initializer.config.wavelengths.npoints_zoom = arguments.nlambda / 2.1
+
+        # Set the number of photon packages per wavelength
+        if arguments.packages is not None: initializer.config.packages = arguments.packages
+
+        # Set selfabsorption
+        initializer.config.selfabsorption = arguments.selfabsorption
+
+        # Return the new instance
+        return initializer
 
     # -----------------------------------------------------------------
 
@@ -81,11 +120,17 @@ class InputInitializer(ModelingComponent):
         # 2. Load the template ski file
         self.load_template()
 
-        # 3. Create the wavelength grid
+        # 3. Load the structural parameters for the galaxy
+        self.load_parameters()
+
+        # 4. Create the wavelength grid
         self.create_wavelength_grid()
 
-        # 4. Copy the input maps
-        self.copy_maps()
+        # 5. Adjust the ski file
+        self.adjust_ski()
+
+        # 4. Place the input
+        self.place_input()
 
         # 5. Place ski file
         self.place_ski_file()
@@ -115,7 +160,22 @@ class InputInitializer(ModelingComponent):
         """
 
         # Open the template ski file
-        self.ski_file = SkiFile(template_ski_path)
+        self.ski = SkiFile(template_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def load_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path to the parameters file
+        path = filesystem.join(self.components_path, "parameters.dat")
+
+        # Load the parameters
+        self.parameters = load_parameters(path)
 
     # -----------------------------------------------------------------
 
@@ -179,20 +239,171 @@ class InputInitializer(ModelingComponent):
             else: total_grid.append(wavelength)
 
         # Create table for the wavelength grid
-        grid_table = tables.new([total_grid], names=["Wavelength"])
-
-        # Save the wavelength grid
-        grid_path = filesystem.join(self.fit_in_path, "wavelengths.txt")
-        tables.write(grid_table, grid_path)
+        self.wavelength_grid = tables.new([total_grid], names=["Wavelength"])
 
     # -----------------------------------------------------------------
 
-    def copy_maps(self):
+    def adjust_ski(self):
 
         """
         This function ...
         :return:
         """
+
+        # -- Instruments --
+
+        # Loop over the different instruments
+        for instrument_name in self.ski.get_instrument_names():
+
+            # Set the distance for all instruments
+            self.ski.set_instrument_distance(instrument_name, self.parameters.distance)
+
+            # Set the instrument orientation
+            if instrument_name == "earth": self.ski.set_instrument_orientation(instrument_name, self.parameters.inclination, self.parameters.position_angle, 0.0)
+            elif instrument_name == "face-on": self.ski.set_instrument_orientation_faceon(instrument_name)
+            elif instrument_name == "edge-on": self.ski.set_instrument_orientation_edgeon(instrument_name)
+            else: raise ValueError("Unknown instrument")
+
+        # -- Photon packages --
+
+        # Set the number of photon packages
+        self.ski.setpackages(self.config.packages)
+
+        # -- The wavelengh grid --
+
+        # Set the name of the wavelength grid file
+        self.ski.set_file_wavelength_grid("wavelengths.txt")
+
+        # -- The evolved stellar bulge --
+
+        bulge_template = "BruzualCharlot"
+        bulge_age = 12
+        bulge_metallicity = 0.02
+
+        # Set the parameters of the bulge
+        self.ski.set_stellar_component_sersic_geometry("Evolved stellar bulge", index, radius, y_flattening, z_flattening) # geometry
+        self.ski.set_stellar_component_sed("Evolved stellar bulge", bulge_template, bulge_age, bulge_metallicity) # SED
+        self.ski.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, filter_or_wavelength) # normalization
+
+        # -- The evolved stellar disk --
+
+        disk_template = "BruzualCharlot"
+        disk_age = 8
+        disk_metallicity = 0.02
+
+        # Set the parameters of the evolved stellar component
+        self.ski.set_stellar_component_fits_geometry("Evolved stellar disk", "old_stars.fits", pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height)
+        self.ski.set_stellar_component_sed("Evolved stellar disk", disk_template, disk_age, disk_metallicity) # SED
+        self.ski.set_stellar_component_luminosity("Evolved stellar disk", luminosity, filter_or_wavelength) # normalization
+
+        # -- The young stellar component --
+
+        young_template = "BruzualCharlot"
+        young_age = 0.1
+        young_metallicity = 0.02
+
+        # Set the parameters of the young stellar component
+        self.ski.set_stellar_component_fits_geometry("Young stars", "young_stars.fits", pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height)
+        self.ski.set_stellar_component_sed("Young stars", young_template, young_age, young_metallicity) # SED
+        self.ski.set_stellar_component_luminosity("Young stars", luminosity, filter_or_wavelength) # normalization
+
+        # -- The ionizing stellar component --
+
+        ionizing_metallicity = 0.02
+        ionizing_compactness = 6
+        ionizing_pressure = 1e12 * Unit("K/m3")
+        ionizing_covering_factor = 0.2
+
+        # Set the parameters of the ionizing stellar component
+        self.ski.set_stellar_component_fits_geometry("Ionizing stars", "ionizing_stars.fits", pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height)
+        self.ski.set_stellar_component_mappingssed("Ionizing stars", ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor) # SED
+        self.ski.set_stellar_component_luminosity("Ionizing stars", luminosity, filter_or_wavelength) # normalization
+
+        # -- The dust component --
+
+        self.ski.set_dust_component_fits_geometry(0, "dust.fits", pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height) # geometry
+        self.ski.set_dust_component_themis_mix(0, hydrocarbon_pops, enstatite_pops, forsterite_pops) # dust mix
+        self.ski.set_dust_component_mass(0, dust_mass) # dust mass
+
+        # -- The dust emissivity --
+
+        # Set transient dust emissivity
+        self.ski.set_transient_dust_emissivity()
+
+        # -- The dust grid --
+
+        min_x = -15. * Unit("kpc")
+        max_x = 15. * Unit("kpc")
+        min_y = -15. * Unit("kpc")
+        max_y = 15. * Unit("kpc")
+        min_z = -3. * Unit("kpc")
+        max_z = 3. * Unit("kpc")
+
+        # Set the bintree
+        self.ski.set_binary_tree_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z)
+
+        # -- The dust cell library --
+
+        # Set all-cells dust library
+        self.ski.set_allcells_dust_lib()
+
+        # -- Other settings --
+
+        # Dust self-absorption
+        if self.config.selfabsorption: self.ski.enable_selfabsorption()
+        else: self.ski.disable_selfabsorption()
+
+        # Disable all writing options
+        self.ski.disable_all_writing_options()
+
+    # -----------------------------------------------------------------
+
+    def place_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # -- The wavelength grid --
+
+        # Determine the path to the wavelength grid file
+        grid_path = filesystem.join(self.fit_in_path, "wavelengths.txt")
+
+        # Write the wavelength grid
+        tables.write(self.wavelength_grid, grid_path)
+
+        # -- The old stars map --
+
+        # Determine the path to the old stars map
+        old_stars_path = filesystem.join(self.maps_path, "old_stars.fits")
+
+        # Copy the map
+        filesystem.copy_file(old_stars_path, self.fit_in_path)
+
+        # -- The young stars map --
+
+        # Determine the path to the young stars map
+        young_stars_path = filesystem.join(self.maps_path, "young_stars.fits")
+
+        # Copy the map
+        filesystem.copy_file(young_stars_path, self.fit_in_path)
+
+        # -- The ionizing stars map --
+
+        # Determine the path to the ionizing stars map
+        ionizing_stars_path = filesystem.join(self.maps_path, "ionizing_stars.fits")
+
+        # Copy the map
+        filesystem.copy_file(ionizing_stars_path, self.fit_in_path)
+
+        # -- The dust map --
+
+        # Determine the path to the dust map
+        dust_path = filesystem.join(self.maps_path, "dust.fits")
+
+        # Copy the map
+        filesystem.copy_file(dust_path, self.fit_in_path)
 
     # -----------------------------------------------------------------
 
@@ -203,6 +414,10 @@ class InputInitializer(ModelingComponent):
         :return:
         """
 
+        # Determine the path to the ski file
+        path = filesystem.join(self.fit_path, self.galaxy_name + ".ski")
 
+        # Save the ski file to the specified location
+        self.ski.saveto(path)
 
 # -----------------------------------------------------------------
