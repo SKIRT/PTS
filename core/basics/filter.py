@@ -230,6 +230,9 @@ class Filter:
         iras_60_names = ["IRAS 60", "IRAS 60", "IRAS.60um", "IRAS 60um", "IRAS.60mu", "IRAS 60mu"]
         iras_100_names = ["IRAS 100", "IRAS 100", "IRAS.100um", "IRAS 100um", "IRAS.100mu", "IRAS 100mu"]
 
+        # Ha
+        ha_names = ["Ha", "H alpha", "H-alpha", "H-a"]
+
         # Select the right filter
         if name in galex_fuv_names: return cls("GALEX.FUV")
         elif name in galex_nuv_names: return cls("GALEX.NUV")
@@ -267,6 +270,7 @@ class Filter:
         elif name in iras_25_names: return cls("IRAS.25mu")
         elif name in iras_60_names: return cls("IRAS.60mu")
         elif name in iras_100_names: return cls("IRAS.100mu")
+        elif name in ha_names: return cls("656_1")
         else: raise ValueError("No corresponding filter found")
 
     # ---------- Retrieving information -------------------------------
