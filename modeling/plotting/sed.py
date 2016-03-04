@@ -279,9 +279,6 @@ class SEDPlotter(object):
         # Loop over the different observed SEDs
         for label in self.observations:
 
-            # Determine color map class
-            colormap = plt.get_cmap(next(color_maps))
-
             # Get the observed SED
             observation = self.observations[label]
 
@@ -293,7 +290,9 @@ class SEDPlotter(object):
             errors = observation.errors(unit="Jy")
 
             # Create color range
-            if number_of_observations <= 3: colors = colormap(np.linspace(0, 1, len(wavelengths)))
+            if number_of_observations <= 3:
+                colormap = plt.get_cmap(next(color_maps))
+                colors = colormap(np.linspace(0, 1, len(wavelengths)))
             else: colors = [color_hex[next(different_colors)]] * len(wavelengths)
 
             # Get labels and descriptions

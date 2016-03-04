@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astroquery.vizier import Vizier
+from astropy.units import Unit, spectral
 
 # Import the relevant PTS classes and modules
 from ..core import ObservedSED
@@ -125,6 +126,9 @@ class SEDFetcher(Configurable):
         # If requested, query the S4G catalog for IRAC fluxes
         if "S4G" in self.config.catalogs: self.get_s4g()
 
+        # If requested, query the Spectroscopy and abundances of SINGS galaxies (Moustakas+, 2010) catalog
+        if "Emission lines" in self.config.catalogs: self.get_emission_lines()
+
         # SPECIFIC for M81: not enabled, no time to figure out the unit conversion now
         #if self.ngc_id == "NGC 3031": self.get_m81()
 
@@ -156,7 +160,7 @@ class SEDFetcher(Configurable):
         self.ngc_id = catalogs.get_ngc_name(self.galaxy_name)
 
         # Create a dictionary of filters
-        keys = ["FUV", "NUV", "U", "B", "V", "R", "J", "H", "K", "IRAS 12", "IRAS 25", "IRAS 60", "IRAS 100", "I1", "I2", "I3", "I4", "MIPS 24", "MIPS 70", "MIPS 160", "SDSS u", "SDSS g", "SDSS r", "SDSS i", "SDSS z"]
+        keys = ["Ha", "FUV", "NUV", "U", "B", "V", "R", "J", "H", "K", "IRAS 12", "IRAS 25", "IRAS 60", "IRAS 100", "I1", "I2", "I3", "I4", "MIPS 24", "MIPS 70", "MIPS 160", "SDSS u", "SDSS g", "SDSS r", "SDSS i", "SDSS z"]
         for key in keys: self.filters[key] = Filter.from_string(key)
 
     # -----------------------------------------------------------------
@@ -1096,6 +1100,54 @@ class SEDFetcher(Configurable):
 
         # Add the SED to the dictionary
         self.seds["S4G"] = sed
+
+    # -----------------------------------------------------------------
+
+    def get_emission_lines(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create an SED
+        sed = ObservedSED()
+
+        # J/ApJS/190/233/Opt
+
+        # Get result
+        result = self.vizier.get_catalogs("J/ApJS/190/233/Opt")
+        table = result[0]
+
+        galaxy_index = tables.find_index(table, self.ngc_id, "Name")
+
+        # FHa: The Hα 6563 Angstrom line flux (aW/m2)
+        # e_FHa: Uncertainty in Ha (aW/m2)
+        # FNII: The [NII] 6584Å line flux (aW/m2)
+        # e_FNII: Uncertainty in NII (aW/m2)
+
+        # H alpha
+        ha_flux = table["FHa"][galaxy_index] * Unit("aW/m2")
+        ha_flux_error = table["e_FHa"][galaxy_index] * Unit("aW/m2")
+
+        # NII
+        n2_flux = table["FNII"][galaxy_index] * Unit("aW/m2")
+        n2_flux_error = table["e_FNII"][galaxy_index] * Unit("aW/m2")
+
+        ha_filter = self.filters["Ha"]
+        ha_wavelength = ha_filter.centerwavelength() * Unit("micron")
+        ha_frequency = ha_wavelength.to("Hz", equivalencies=spectral())
+
+        # Calculate flux density
+        ha_fluxdensity = (ha_flux / ha_frequency).to("Jy")
+        ha_fluxdensity_error = (ha_flux_error / ha_frequency).to("Jy")
+        ha_errorbar = ErrorBar(ha_fluxdensity_error)
+
+        # Add entry
+        sed.add_entry(ha_filter, ha_fluxdensity, ha_errorbar)
+
+        # Add the SED to the dictionary
+        self.seds["Lines"] = sed
 
     # -----------------------------------------------------------------
 
