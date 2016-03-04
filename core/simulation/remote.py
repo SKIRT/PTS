@@ -470,6 +470,7 @@ class SkirtRemote(Remote):
 
         """
         This function ...
+        :param arguments:
         :return:
         """
 

@@ -80,6 +80,9 @@ class SkirtRemoteLauncher(Configurable):
         launcher.config.remote = arguments.remote
         launcher.config.cluster = arguments.cluster
 
+        # Walltime
+        launcher.config.walltime = arguments.walltime
+
         # Ski file
         launcher.config.arguments.ski_pattern = arguments.filepath
         launcher.config.arguments.recursive = False
@@ -91,9 +94,6 @@ class SkirtRemoteLauncher(Configurable):
         launcher.config.arguments.logging.memory = arguments.memory
         launcher.config.arguments.logging.allocation = arguments.allocation
 
-        print(arguments.parallel[0])
-        print(arguments.parallel[1])
-
         # Parallelization
         if arguments.parallel is not None:
             launcher.config.arguments.parallel.processes = arguments.parallel[0]
@@ -101,9 +101,6 @@ class SkirtRemoteLauncher(Configurable):
         else:
             launcher.config.arguments.parallel.processes = None
             launcher.config.arguments.parallel.threads = None
-
-        print(launcher.config.arguments.parallel.processes)
-        print(launcher.config.arguments.parallel.threads)
 
         # Other simulation arguments
         launcher.config.arguments.emulate = arguments.emulate
@@ -270,9 +267,13 @@ class SkirtRemoteLauncher(Configurable):
         # Inform the user
         log.info("Performing the simulation...")
 
+        # Add the walltime to the scheduling options
+        if self.config.walltime is not None: scheduling_options = {"walltime": self.config.walltime}
+        else: scheduling_options = None
+
         # Run the simulation
         arguments = SkirtArguments(self.config.arguments)
-        simulation = self.remote.run(arguments)
+        simulation = self.remote.run(arguments, scheduling_options=scheduling_options)
 
         # Add additional information to the simulation object
         self.add_analysis_info(simulation)

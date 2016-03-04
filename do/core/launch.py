@@ -20,6 +20,7 @@ import argparse
 # Import the relevant PTS classes and modules
 from pts.core.launch.launcher import SkirtLauncher
 from pts.core.launch.remotelauncher import SkirtRemoteLauncher
+from pts.core.tools import logging, time
 
 # -----------------------------------------------------------------
 
@@ -93,7 +94,8 @@ parser.add_argument("--plottimeline", action="store_true", help="make a plot of 
 parser.add_argument("--plotmemory", action="store_true", help="make a plot of the memory consumption as a function of time")
 parser.add_argument("--makergb", action="store_true", help="add this option to make RGB images from the SKIRT output")
 parser.add_argument("--makewave", action="store_true", help="add this option to make a wave movie from the SKIRT output")
-parser.add_argument("--debug", action="store_true", help="add this option to enable debug output for the launch procedure")
+parser.add_argument("--debug", action="store_true", help="add this option to enable debug output")
+parser.add_argument('--report', action='store_true', help='write a report file')
 parser.add_argument("--keep", action="store_true", help="add this option to keep the remote input and output")
 parser.add_argument("--retrieve", type=string_list, help="specify the types of output files that have to be retrieved")
 
@@ -108,6 +110,18 @@ arguments.filepath = os.path.abspath(arguments.file)
 # Determine the full path to the input and output directories
 if arguments.input is not None: arguments.input_path = os.path.abspath(arguments.input)
 if arguments.output is not None: arguments.output_path = os.path.abspath(arguments.output)
+
+# -----------------------------------------------------------------
+
+# Determine the log file path
+logfile_path = os.path.join(os.getcwd(), time.unique_name("launch") + ".txt") if arguments.report else None
+
+# Determine the log level
+level = "DEBUG" if arguments.debug else "INFO"
+
+# Initialize the logger
+logging.setup_log(level=level, path=logfile_path)
+logging.log.info("Starting launch script ...")
 
 # -----------------------------------------------------------------
 
