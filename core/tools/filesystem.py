@@ -21,6 +21,17 @@ from . import time
 
 # -----------------------------------------------------------------
 
+def cwd():
+
+    """
+    This function returns the path to the current working directory
+    :return:
+    """
+
+    return os.getcwd()
+
+# -----------------------------------------------------------------
+
 def join(*args):
 
     """
@@ -243,10 +254,13 @@ def copy_file(file_path, directory_path, new_name=None):
 
     """
     This function ...
+    :param file_path:
+    :param directory_path:
+    :param new_name:
     :return:
     """
 
-    if new_name is not None: destination = os.path.join(directory_path, new_name)
+    if new_name is not None: destination = join(directory_path, new_name)
     else: destination = directory_path
 
     shutil.copy(file_path, destination)

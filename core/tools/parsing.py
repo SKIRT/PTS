@@ -32,6 +32,15 @@ def tuple(argument):
 
 # -----------------------------------------------------------------
 
+def float_tuple(argument):
+
+    try:
+        a, b = map(float, argument.split(","))
+        return a, b
+    except: raise argparse.ArgumentTypeError("Tuple must be of format a,b")
+
+# -----------------------------------------------------------------
+
 def string_list(argument):
 
     """
