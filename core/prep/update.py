@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..simulation.execute import SkirtExec
-from ..simulation.remote import Remote
+from ..simulation.remote import SkirtRemote
 
 # -----------------------------------------------------------------
 
@@ -38,7 +38,7 @@ class SkirtUpdater(Configurable):
         self.skirt = SkirtExec()
 
         # Create the SKIRT remote execution context
-        self.remote = Remote()
+        self.remote = SkirtRemote()
         
     # -----------------------------------------------------------------
 
@@ -54,9 +54,6 @@ class SkirtUpdater(Configurable):
         updater = cls()
 
         ## Adjust the configuration settings according to the command-line arguments
-
-        # Logging
-        if arguments.debug: updater.config.logging.level = "DEBUG"
 
         # Remote host
         updater.config.remote = arguments.remote

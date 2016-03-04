@@ -100,7 +100,7 @@ class Remote(object):
         """
 
         # Inform the user
-        log.info("Logging in to the remote SKIRT environment on host '" + self.host.id + "'")
+        log.info("Logging in to the remote SKIRT environment on host '" + self.host.id + "' ...")
 
         # Connect to the remote host
         self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password)
@@ -118,7 +118,7 @@ class Remote(object):
         """
 
         # Inform the user
-        log.info("Logging out from the remote SKIRT environment")
+        log.info("Logging out from the remote SKIRT environment ...")
 
         # Disconnect
         if self.connected: self.ssh.logout()
@@ -239,6 +239,9 @@ class Remote(object):
         """
         This function ...
         :param command:
+        :param output:
+        :param expect_eof:
+        :param contains_extra_eof:
         :return:
         """
 
@@ -450,6 +453,9 @@ class Remote(object):
 
         """
         This function ...
+        :param origin:
+        :param destination:
+        :param timeout:
         :return:
         """
 
@@ -542,6 +548,8 @@ class Remote(object):
 
         """
         This function ...
+        :param private:
+        :param key_password:
         :return:
         """
 
@@ -567,25 +575,6 @@ class Remote(object):
         self.execute("./makeSKIRT.sh", output=False)
 
         # Put SKIRT in the PATH environment variable
-
-    # -----------------------------------------------------------------
-
-    def update(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Navigate to the SKIRT repository directory
-        skirt_repo_dir = os.path.join(self.skirt_dir, "git")
-        self.execute("cd " + skirt_repo_dir, output=False)
-
-        # Update SKIRT
-        self.execute("git pull origin master", output=False)
-
-        # Compile the SKIRT code
-        self.execute("./makeSKIRT.sh", output=False)
 
     # -----------------------------------------------------------------
 
@@ -792,6 +781,7 @@ class Remote(object):
 
         """
         This function ...
+        :param path:
         :return:
         """
 
@@ -808,6 +798,7 @@ class Remote(object):
 
         """
         This function ...
+        :param path:
         :return:
         """
 
@@ -823,6 +814,7 @@ class Remote(object):
 
         """
         This function ...
+        :param path:
         :return:
         """
 
