@@ -1106,6 +1106,40 @@ class SkiFile:
         # Set the position angle
         set_quantity(instrument, "positionAngle", value)
 
+    def set_instrument_orientation(self, name, inclination, position_angle, azimuth):
+
+        # Get the instrument with this name
+        instrument = self.get_instrument(name)
+
+        # Set the inclination
+        set_quantity(instrument, "inclination", inclination)
+        set_quantity(instrument, "positionAngle", position_angle)
+        set_quantity(instrument, "azimuth", azimuth)
+
+    def set_instrument_orientation_faceon(self, name):
+
+        from astropy.coordinates import Angle
+
+        # XY plane
+        inclination = Angle(0., "deg")
+        position_angle = Angle(90., "deg")
+        azimuth = Angle(0.0, "deg")
+
+        # Set the angles
+        self.set_instrument_orientation(name, inclination, position_angle, azimuth)
+
+    def set_instrument_orientation_edgeon(self, name):
+
+        from astropy.coordinates import Angle
+
+        # XZ plane
+        inclination = Angle(90., "deg")
+        position_angle = Angle(0., "deg")
+        azimuth = Angle(-90., "deg")
+
+        # Set the angles
+        self.set_instrument_orientation(name, inclination, position_angle, azimuth)
+
     def get_instrument_size(self, name):
 
         # Get the instrument with this name
