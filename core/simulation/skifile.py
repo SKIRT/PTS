@@ -238,6 +238,56 @@ class SkiFile:
         except:
             return False
 
+    def enable_selfabsorption(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Check if the dust system is of type 'PanDustSystem'
+        if dust_system.tag != "PanDustSystem": raise ValueError("Not a panchromatic simulation")
+
+        # Enable dust self-absorption
+        dust_system.set("selfAbsorption", "true")
+
+    def disable_selfabsorption(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Check if the dust system is of type 'PanDustSystem'
+        if dust_system.tag != "PanDustSystem": raise ValueError("Not a panchromatic simulation")
+
+        # Disable dust self-absorption
+        dust_system.set("selfAbsorption", "false")
+
+    def enable_all_writing_options(self):
+
+        # Loop over all elements in the tree
+        for element in self.tree.getiterator():
+
+            # Check if any of the settings of this element is a writing option
+            for setting_name, setting_value in element.items():
+
+                # Skip settings that are not writing settings
+                if not setting_name.startswith("write"): continue
+
+                # Set the setting to true
+                element.set(setting_name, "true")
+
+    def disable_all_writing_options(self):
+
+        # Loop over all elements in the tree
+        for element in self.tree.getiterator():
+
+            # Check if any of the settings of this element is a writing option
+            for setting_name, setting_value in element.items():
+
+                # Skip settings that are not writing settings
+                if not setting_name.startswith("write"): continue
+
+                # Set the setting to false
+                element.set(setting_name, "false")
+
     ## This function returns the number of pixels for each of the instruments
     def npixels(self, nwavelengths=None):
         pixels = []
@@ -782,6 +832,42 @@ class SkiFile:
         # Return the normalization
         return get_unique_element(dust_component, "normalization")
 
+    def get_dust_component_mix(self, component_id):
+
+        # Get the dust component
+        dust_component = self.get_dust_component(component_id)
+
+        # Return the dust mix
+        return get_unique_element(dust_component, "mix")
+
+    def set_dust_component_themis_mix(self, component_id, hydrocarbon_pops=25, enstatite_pops=25, forsterite_pops=25, write_mix=True, write_mean_mix=True, write_size=True):
+
+        """
+        This function sets the THEMIS dust mix for the specified dust component
+        :param component_id:
+        :param hydrocarbon_pops:
+        :param enstatite_pops:
+        :param forsterite_pops:
+        :param write_mix:
+        :param write_mean_mix:
+        :param write_size:
+        """
+
+        # Get the dust mix
+        mix = self.get_dust_component_mix(component_id)
+
+        # Get the parent
+        parent = mix.getparent()
+
+        # Remove the old mix
+        parent.remove(mix)
+
+        # Make and add the new mix
+        attrs = {"writeMix": str(write_mix).lower(), "writeMeanMix": str(write_mean_mix).lower(),
+                 "writeSize": str(write_size).lower(), "hydrocarbonPops": str(hydrocarbon_pops),
+                 "enstatitePops": str(enstatite_pops), "forsteritePops": str(forsterite_pops)}
+        parent.append(parent.makeelement("ThemisDustMix", attrs))
+
     def get_dust_component_mass(self, component_id):
 
         """
@@ -860,8 +946,8 @@ class SkiFile:
 
         # Create and add the new geometry
         attrs = {"filename": filename, "pixelScale": str(pixelscale), "positionAngle": str(position_angle.to("deg")) + " deg",
-                 "inclination": str(position_angle.to("deg")) + " deg", "xelements": str(x_size), "yelements": str(y_size),
-                 "xcenter": str(x_center), "ycenter": str(y_center)}
+                 "inclination": str(inclination.to("deg")) + " deg", "xelements": str(x_size), "yelements": str(y_size),
+                 "xcenter": str(x_center), "ycenter": str(y_center), "axialScale": str(scale_height)}
         parent.append(parent.makeelement("ReadFitsGeometry", attrs))
 
     def set_stellar_component_sersic_geometry(self, component_id, index, radius, y_flattening=1, z_flattening=1):
@@ -930,6 +1016,43 @@ class SkiFile:
         attrs = {"age": str(age), "metallicity": str(metallicity)}
         parent.append(parent.makeelement(template_class, attrs))
 
+    def set_stellar_component_mappingssed(self, component_id, metallicity, compactness, pressure, covering_factor):
+
+        # Get the stellar component SED
+        sed = self.get_stellar_component_sed(component_id)
+
+        # Get the parent
+        parent = sed.getparent()
+
+        # Remove the old SED element
+        parent.remove(sed)
+
+        # Create and add the new geometry
+        attrs = {"metallicity": str(metallicity), "compactness": str(compactness), "pressure": str(pressure), "coveringFactor": str(covering_factor)}
+        parent.append(parent.makeelement("MappingsSED", attrs))
+
+    def get_dust_emissivity(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Return the dust emissivity element
+        return get_unique_element(dust_system, "dustEmissivity")
+
+    def set_transient_dust_emissivity(self):
+
+        # Get the dust emissivity
+        emissivity = self.get_dust_emissivity()
+
+        # Get the parent
+        parent = emissivity.getparent()
+
+        # Remove the old emissivity
+        parent.remove(emissivity)
+
+        # Create and add the new emissivity
+        parent.append(parent.makeelement("TransientDustEmissivity", {}))
+
     def get_dust_lib(self):
 
         # Get the dust system
@@ -950,7 +1073,7 @@ class SkiFile:
         parent.remove(lib)
 
         # Create and add the new library
-        parent.append(parent.makeelement("AllCellsDustLib"), {})
+        parent.append(parent.makeelement("AllCellsDustLib", {}))
 
     def set_2d_dust_lib(self, temperature_points=25, wavelength_points=10):
 
@@ -965,7 +1088,7 @@ class SkiFile:
 
         # Create and add the new library
         attrs = {"pointsTemperature": str(temperature_points), "pointsWavelength": str(wavelength_points)}
-        parent.append(parent.makeelement("Dim2DustLib"), attrs)
+        parent.append(parent.makeelement("Dim2DustLib", attrs))
 
     def set_1d_dust_lib(self, points):
 
@@ -980,7 +1103,38 @@ class SkiFile:
 
         # Create and add the new library
         attrs = {"entries": str(points)}
-        parent.append(parent.makeelement("Dim1DustLib"), attrs)
+        parent.append(parent.makeelement("Dim1DustLib", attrs))
+
+    def get_dust_grid(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Return the dust grid
+        return get_unique_element(dust_system, "dustGrid")
+
+    def set_binary_tree_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, write_grid=True, min_level=15,
+                                  max_level=25, search_method="Neighbor", sample_count=100, max_optical_depth=0,
+                                  max_mass_fraction=1e-6, max_dens_disp_fraction=0, direction_method="Alternating", ):
+
+        # Get the dust grid
+        grid = self.get_dust_grid()
+
+        # Get the parent
+        parent = grid.getparent()
+
+        # Remove the old grid element
+        parent.remove(grid)
+
+        # Create and add the new grid
+        attrs = {"minX": str(min_x), "maxX": str(max_x), "minY": str(min_y), "maxY": str(max_y), "minZ": str(min_z),
+                 "maxZ": str(max_z), "writeGrid": str(write_grid).lower(), "minLevel": str(min_level),
+                 "maxLevel": str(max_level), "searchMethod": search_method, "sampleCount": str(sample_count),
+                 "maxOpticalDepth": str(max_optical_depth), "maxMassFraction": str(max_mass_fraction),
+                 "maxDensDispFraction": str(max_dens_disp_fraction), "directionMethod": direction_method}
+        parent.append(parent.makeelement("BinTreeDustGrid", attrs))
+
+    def set_octtree_dust_grid(self): pass
 
     def get_instruments(self):
 
