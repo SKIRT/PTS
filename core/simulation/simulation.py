@@ -571,6 +571,9 @@ class RemoteSimulation(SkirtSimulation):
         self.scaling_data_file = None
         self.scaling_plot_path = None
 
+        # Properties relevant for simulations part of radiative transfer modeling
+        self.modeling_path = None
+
         # Flag indicating whether this simulation has been retrieved or not
         self.retrieved = False
 
@@ -599,6 +602,30 @@ class RemoteSimulation(SkirtSimulation):
 
         # Return the simulation object
         return simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def from_scaling_test(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.scaling_run_name is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def from_modeling(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.modeling_path is not None
 
     # -----------------------------------------------------------------
 

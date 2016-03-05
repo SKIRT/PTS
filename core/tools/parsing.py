@@ -17,7 +17,7 @@ import argparse
 
 # -----------------------------------------------------------------
 
-def tuple(argument):
+def int_tuple(argument):
 
     """
     This function ...

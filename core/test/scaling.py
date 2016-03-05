@@ -24,7 +24,6 @@ from astropy.table import Table
 from ..simulation.simulation import SkirtSimulation
 from ..simulation.arguments import SkirtArguments
 from ..launch.analyser import SimulationAnalyser
-from .scalinganalyser import ScalingAnalyser
 from .resources import ResourceEstimator
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
@@ -56,9 +55,6 @@ class ScalingTest(Configurable):
 
         # Create a SimulationAnalyser instance
         self.analyser = SimulationAnalyser()
-
-        # Create a ScalingAnalyser instance
-        self.scalinganalyser = ScalingAnalyser()
 
         # Initialize a list to contain the retrieved simulations
         self.simulations = []
@@ -264,6 +260,7 @@ class ScalingTest(Configurable):
 
         """
         This function ...
+        :param processors:
         :return:
         """
 
@@ -285,16 +282,13 @@ class ScalingTest(Configurable):
         """
 
         # Inform the user
-        log.info("Clearing for the next scaling test run")
+        log.info("Clearing for the next scaling test run ...")
 
         # Set default values for attributes
         self.simulations = []
 
         # Clear the simulation analyser
         self.analyser.clear()
-
-        # Clear the scaling analyser
-        self.scalinganalyser.clear()
 
     # -----------------------------------------------------------------
 
@@ -342,7 +336,7 @@ class ScalingTest(Configurable):
         """
 
         # Inform the user
-        log.info("Retrieving finished simulations...")
+        log.info("Retrieving finished simulations ...")
 
         # Get a list of the simulations that have been succesfully retrieved
         self.simulations = self.remote.retrieve()
@@ -357,20 +351,13 @@ class ScalingTest(Configurable):
         """
 
         # Inform the user
-        log.info("Analysing retrieved simulations...")
+        log.info("Analysing retrieved simulations ...")
 
         # Loop over the list of simulations and analyse them
         for simulation in self.simulations:
 
             # Run the analyser on the simulation
             self.analyser.run(simulation)
-
-            # If this simulation is part of a scaling test, run the scalinganalyser
-            if simulation.scaling_run_name is not None:
-
-                # Run the scaling analyser and clear it afterwards
-                self.scalinganalyser.run(simulation, self.analyser.timeline_extractor, self.analyser.memory_extractor)
-                self.scalinganalyser.clear()
 
             # Clear the analyser
             self.analyser.clear()

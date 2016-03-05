@@ -101,6 +101,18 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
+    @property
+    def scheduler(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.host.scheduler
+
+    # -----------------------------------------------------------------
+
     def add_to_queue(self, arguments, name=None, scheduling_options=None):
 
         """
@@ -112,7 +124,7 @@ class SkirtRemote(Remote):
         """
 
         # Inform the user
-        log.info("Adding simulation to the queue...")
+        log.info("Adding simulation to the queue ...")
 
         # First create a copy of the arguments
         arguments = arguments.copy()
@@ -128,7 +140,7 @@ class SkirtRemote(Remote):
         local_ski_path, local_input_path, local_output_path = self.prepare(arguments, remote_simulation_path)
 
         # If the remote host uses a scheduling system, submit the simulation right away
-        if self.host.scheduler:
+        if self.scheduler:
 
             # Submit the simulation to the remote scheduling system
             simulation_id = self.schedule(arguments, name, scheduling_options, local_ski_path, remote_simulation_path)
@@ -164,12 +176,12 @@ class SkirtRemote(Remote):
 
         # If a scheduling system is used by the remote host, we don't need to do anything, simulations added to the queue
         # are already waiting to be executed (or are already being executed)
-        if self.host.scheduler:
+        if self.scheduler:
             log.warning("The remote host uses its own scheduling system so calling 'start_queue' will have no effect")
             return
 
         # Inform the user
-        log.info("Starting the queued simulations remotely...")
+        log.info("Starting the queued simulations remotely ...")
 
         # Create a unique screen name indicating we are running SKIRT simulations if none is given
         if screen_name is None: screen_name = time.unique_name("SKIRT")
@@ -259,7 +271,7 @@ class SkirtRemote(Remote):
         simulation = self.add_to_queue(arguments, name, scheduling_options)
 
         # Start the queue if that is not left up to the remote's own scheduling system
-        if not self.host.scheduler:
+        if not self.scheduler:
             screen_name = self.start_queue(name)
             simulation.screen_name = screen_name
 
@@ -449,7 +461,7 @@ class SkirtRemote(Remote):
 
         # Send the command to the remote machine using a screen session so that we can safely detach from the
         # remote shell
-        command = arguments.to_command(self.skirt_path, self.host.mpi_command, self.host.scheduler, to_string=True)
+        command = arguments.to_command(self.skirt_path, self.host.mpi_command, self.scheduler, to_string=True)
         self.execute("screen -d -m " + command, output=False)
 
         # Generate a new simulation ID based on the ID's currently in use
@@ -700,7 +712,7 @@ class SkirtRemote(Remote):
         entries = []
 
         # If the remote host does not use a scheduling system
-        if not self.host.scheduler:
+        if not self.scheduler:
 
             # Search for files in the local SKIRT run/host_id directory
             for item in os.listdir(self.local_skirt_host_run_dir):
