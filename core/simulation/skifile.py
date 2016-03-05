@@ -1115,7 +1115,8 @@ class SkiFile:
 
     def set_binary_tree_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, write_grid=True, min_level=15,
                                   max_level=25, search_method="Neighbor", sample_count=100, max_optical_depth=0,
-                                  max_mass_fraction=1e-6, max_dens_disp_fraction=0, direction_method="Alternating", ):
+                                  max_mass_fraction=1e-6, max_dens_disp_fraction=0, direction_method="Alternating",
+                                  assigner="IdenticalAssigner"):
 
         # Get the dust grid
         grid = self.get_dust_grid()
@@ -1131,12 +1132,34 @@ class SkiFile:
                  "maxZ": str(max_z), "writeGrid": str(write_grid).lower(), "minLevel": str(min_level),
                  "maxLevel": str(max_level), "searchMethod": search_method, "sampleCount": str(sample_count),
                  "maxOpticalDepth": str(max_optical_depth), "maxMassFraction": str(max_mass_fraction),
-                 "maxDensDispFraction": str(max_dens_disp_fraction), "directionMethod": direction_method}
+                 "maxDensDispFraction": str(max_dens_disp_fraction), "directionMethod": direction_method,
+                 "assigner": assigner}
         parent.append(parent.makeelement("BinTreeDustGrid", attrs))
 
-    def set_octtree_dust_grid(self): pass
+    def set_octtree_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, write_grid=True, min_level=2,
+                              max_level=6, search_method="Neighbor", sample_count=100, max_optical_depth=0,
+                              max_mass_fraction=1e-6, max_dens_disp_fraction=0, barycentric=False,
+                              assigner="IdenticalAssigner"):
 
-    def get_instruments(self):
+        # Get the dust grid
+        grid = self.get_dust_grid()
+
+        # Get the parent
+        parent = grid.getparent()
+
+        # Remove the old grid element
+        parent.remove(grid)
+
+        # Create and add the new grid
+        attrs = {"minX": str(min_x), "maxX": str(max_x), "minY": str(min_y), "maxY": str(max_y), "minZ": str(min_z),
+                 "maxZ": str(max_z), "writeGrid": str(write_grid).lower(), "minLevel": str(min_level),
+                 "maxLevel": str(max_level), "searchMethod": search_method, "sampleCount": sample_count,
+                 "maxOpticalDepth": str(max_optical_depth), "maxMassFraction": str(max_mass_fraction),
+                 "maxDensDispFraction": str(max_dens_disp_fraction), "barycentric": str(barycentric).lower(),
+                 "assigner": assigner}
+        parent.append(parent.makeelement("OctTreeDustGrid", attrs))
+
+    def get_instruments(self, as_list=True):
 
         # Get the instrument system
         instrument_system = self.get_unique_base_element("instrumentSystem")
@@ -1150,7 +1173,8 @@ class SkiFile:
         instruments_element = instruments_parents[0]
 
         # Return the instruments as a list
-        return instruments_element.getchildren()
+        if as_list: return instruments_element.getchildren()
+        else: return instruments_element
 
     def get_instrument_names(self):
 
@@ -1171,6 +1195,58 @@ class SkiFile:
 
         # Return the list of names
         return names
+
+    def remove_instrument(self, name):
+
+        # Get the instrument with the specified name
+        instrument = self.get_instrument(name)
+
+        # Get element that holds the instrument class
+        parent = instrument.getparent()
+
+        # Remove the instrument
+        parent.remove(instrument)
+
+    def remove_all_instruments(self):
+
+        for name in self.get_instrument_names():
+            self.remove_instrument(name)
+
+    def add_full_instrument(self, name, distance, inclination, azimuth, position_angle, field_x, field_y,
+                            pixels_x, pixels_y, center_x, center_y, scattering_levels=0):
+
+        # Get the 'instruments' element
+        instruments = self.get_instruments(as_list=False)
+
+        # Make and add the new FullInstrument
+        attrs = {"instrumentName": name, "distance": str(distance), "inclination": str(inclination),
+                 "azimuth": str(azimuth), "positionAngle": str(position_angle), "fieldOfViewX": str(field_x),
+                 "fieldOfViewY": str(field_y), "pixelsX": str(pixels_x), "pixelsY": str(pixels_y),
+                 "centerX": str(center_x), "centerY": str(center_y), "scatteringLevels": str(scattering_levels)}
+        instruments.append(instruments.makeelement("FullInstrument", attrs))
+
+    def add_simple_instrument(self, name, distance, inclination, azimuth, position_angle, field_x, field_y,
+                              pixels_x, pixels_y, center_x, center_y):
+
+        # Get the 'instruments' element
+        instruments = self.get_instruments(as_list=False)
+
+        # Make and add the new SimpleInstrument
+        attrs = {"instrumentName": name, "distance": str(distance), "inclination": str(inclination),
+                 "azimuth": str(azimuth), "positionAngle": str(position_angle), "fieldOfViewX": str(field_x),
+                 "fieldOfViewY": str(field_y), "pixelsX": str(pixels_x), "pixelsY": str(pixels_y),
+                 "centerX": str(center_x), "centerY": str(center_y)}
+        instruments.append(instruments.makeelement("SimpleInstrument", attrs))
+
+    def add_sed_instrument(self, name, distance, inclination, azimuth, position_angle):
+
+        # Get the 'instruments' element
+        instruments = self.get_instruments(as_list=False)
+
+        # Make and add the new SEDInstrument
+        attrs = {"instrumentName": name, "distance": str(distance), "inclination": str(inclination),
+                 "azimuth": str(azimuth), "positionAngle": str(position_angle)}
+        instruments.append(instruments.makeelement("SEDInstrument", attrs))
 
     def get_instrument(self, name):
 
