@@ -252,6 +252,7 @@ class ImagePreparer(Configurable):
             not_stars = []
             remove_stars = []
             not_saturation = []
+            only_saturation = []
 
             with open(self.config.extraction.exceptions_path, 'r') as exceptions_file:
                 for line in exceptions_file:
@@ -259,11 +260,13 @@ class ImagePreparer(Configurable):
                     if "not_stars" in line: not_stars = [int(item) for item in line.split(": ")[1].split(" ")]
                     if "remove_stars" in line: remove_stars = [int(item) for item in line.split(": ")[1].split(" ")]
                     if "not_saturation" in line: not_saturation = [int(item) for item in line.split(": ")[1].split(" ")]
+                    if "only_saturation" in line: only_saturation = [int(item) for item in line.split(": ")[1].split(" ")]
 
             # Set manual indices
             self.extractor.config.stars.manual_indices.not_stars = not_stars
             self.extractor.config.stars.manual_indices.remove_stars = remove_stars
             self.extractor.config.stars.manual_indices.not_saturation = not_saturation
+            self.extractor.config.stars.manual_indices.only_saturation = only_saturation
 
         # Run the extractor
         self.extractor.run(self.image)

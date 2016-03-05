@@ -68,6 +68,7 @@ class SkirtRemoteLauncher(Configurable):
 
         """
         This function ...
+        :param arguments:
         :return:
         """
 

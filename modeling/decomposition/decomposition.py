@@ -192,14 +192,17 @@ class GalaxyDecomposer(ModelingComponent):
         center = SkyCoord(ra=ra_center, dec=dec_center, unit=(Unit("deg"), Unit("deg")), frame='fk5')
         self.parameters.center = center
 
-        # Major axis, ellipticity, position angle
-        self.parameters.major = table["amaj"][0] * Unit("arcsec")
-        self.parameters.ellipticity = table["ell"][0]
-        self.parameters.position_angle = Angle(table["PA"][0] + 90.0, Unit("deg"))
-
         # Distance
         self.parameters.distance = table["Dmean"][0] * Unit("Mpc")
         self.parameters.distance_error = table["e_Dmean"][0] * Unit("Mpc")
+
+        # Major axis, ellipticity, position angle
+        self.parameters.major_arcsec = table["amaj"][0] * Unit("arcsec")
+        self.parameters.major = (self.parameters.distance * self.parameters.major_arcsec).to("pc", equivalencies=dimensionless_angles())
+
+        # Ellipticity
+        self.parameters.ellipticity = table["ell"][0]
+        self.parameters.position_angle = Angle(table["PA"][0] + 90.0, Unit("deg"))
 
         # Magnitudes
         asymptotic_ab_magnitude_i1 = table["__3.6_"][0]
@@ -376,8 +379,15 @@ class GalaxyDecomposer(ModelingComponent):
 
         # Set the distance of the instruments
         for instrument_name in ski.get_instrument_names():
+
+            # Set the distance for all instruments
             ski.set_instrument_distance(instrument_name, self.parameters.distance)
-            ski.set_instrument_inclination(instrument_name, self.parameters.inclination)
+
+            # Set the instrument orientation
+            if instrument_name == "earth": ski.set_instrument_orientation(instrument_name, self.parameters.inclination, self.parameters.position_angle, 0.0)
+            elif instrument_name == "face-on": ski.set_instrument_orientation_faceon(instrument_name)
+            elif instrument_name == "edge-on": ski.set_instrument_orientation_edgeon(instrument_name)
+            else: raise ValueError("Unknown instrument")
 
         # Determine the path to the ski file
         ski_path = filesystem.join(self.bulge_directory, "bulge.ski")
@@ -396,16 +406,14 @@ class GalaxyDecomposer(ModelingComponent):
 
         # Adjust the parameters
         arguments.ski_pattern = ski_path
-        #arguments.parallel.processes = ...
-        #arguments.parallel.threads = ...
         arguments.output_path = out_path
-        arguments.single = True # we expect a single simulation from the ski pattern
+        arguments.single = True   # we expect a single simulation from the ski pattern
 
         # Inform the user
         log.info("Running the bulge simulation ...")
 
         # Run the simulation
-        simulation = self.skirt.run(arguments, silent=False)
+        simulation = self.skirt.run(arguments, silent=True)
 
         # Determine the path to the output FITS file
         bulge_image_path = filesystem.join(out_path, "bulge_earth_total.fits")
@@ -454,8 +462,15 @@ class GalaxyDecomposer(ModelingComponent):
 
         # Set the distance of the instruments
         for instrument_name in ski.get_instrument_names():
+
+            # Set the distance for all instruments
             ski.set_instrument_distance(instrument_name, self.parameters.distance)
-            ski.set_instrument_inclination(instrument_name, self.parameters.inclination)
+
+            # Set the instrument orientation
+            if instrument_name == "earth": ski.set_instrument_orientation(instrument_name, self.parameters.inclination, self.parameters.position_angle, 0.0)
+            elif instrument_name == "face-on": ski.set_instrument_orientation_faceon(instrument_name)
+            elif instrument_name == "edge-on": ski.set_instrument_orientation_edgeon(instrument_name)
+            else: raise ValueError("Unknown instrument")
 
         # Determine the path to the ski file
         ski_path = filesystem.join(self.disk_directory, "disk.ski")
@@ -474,16 +489,14 @@ class GalaxyDecomposer(ModelingComponent):
 
         # Adjust the parameters
         arguments.ski_pattern = ski_path
-        #arguments.parallel.processes = ...
-        #arguments.parallel.threads = ...
         arguments.output_path = out_path
-        arguments.single = True # we expect a single simulation from the ski pattern
+        arguments.single = True   # we expect a single simulation from the ski pattern
 
         # Inform the user
         log.info("Running the disk simulation ...")
 
         # Run the simulation
-        simulation = self.skirt.run(arguments, silent=False)
+        simulation = self.skirt.run(arguments, silent=True)
 
         # Determine the path to the output FITS file
         disk_image_path = filesystem.join(out_path, "disk_earth_total.fits")
@@ -562,46 +575,8 @@ class GalaxyDecomposer(ModelingComponent):
         # Determine the full path to the parameters file
         path = self.full_output_path("parameters.dat")
 
-        # Create the parameters file
-        with open(path, 'w') as parameter_file:
-
-            # Add general info
-            print("Galaxy name:", self.parameters.galaxy_name, file=parameter_file)
-            print("Center: ", self.parameters.center.to_string(style="decimal"), file=parameter_file)
-            print("Major axis length:", str(self.parameters.major), file=parameter_file)
-            print("Ellipticity:", self.parameters.ellipticity, file=parameter_file)
-            print("Position angle:", str(self.parameters.position_angle.to("deg").value) + " deg", file=parameter_file)
-            print("Distance:", str(self.parameters.distance) + " +/- " + str(self.parameters.distance_error), file=parameter_file)
-            print("Inclination:", str(self.parameters.inclination.to("deg").value) + " deg", file=parameter_file)
-            print("IRAC 3.6um magnitude:", self.parameters.i1_mag, "+/-", self.parameters.i1_mag_error, file=parameter_file)
-            print("IRAC 3.6um flux density:", self.parameters.i1_fluxdensity, "+/-", self.parameters.i1_error, file=parameter_file)
-            print("IRAC 4.5um magnitude:", self.parameters.i2_mag, "+/-", self.parameters.i2_mag_error, file=parameter_file)
-            print("IRAC 4.5um flux density:", self.parameters.i2_fluxdensity, "+/-", self.parameters.i2_error, file=parameter_file)
-
-            print("Model type:", self.parameters.model_type, file=parameter_file)
-            print("Number of components:", self.parameters.number_of_components, file=parameter_file)
-            print("Quality:", self.parameters.quality, file=parameter_file)
-
-            # Add components parameters
-            for component in ["bulge", "disk"]:
-
-                print(component.title()+":", file=parameter_file)
-                print("    Interpretation:", self.parameters[component].interpretation, file=parameter_file)
-                print("    Relative contribution of the component to the total model flux:", self.parameters[component].rel, file=parameter_file)
-                print("    Total IRAC 3.6um AB magnitude:", self.parameters[component].mag, file=parameter_file)
-                print("    Total IRAC 3.6um flux density:", self.parameters[component].fluxdensity, file=parameter_file)
-                print("    Axial ratio:", self.parameters[component].ar, file=parameter_file)
-                print("    Position angle (degrees ccw from North):", self.parameters[component].pa, file=parameter_file)
-
-                if component == "bulge":
-
-                    print("    Effective radius:", str(self.parameters[component].re), file=parameter_file)
-                    print("    Sersic index:", self.parameters[component].n, file=parameter_file)
-
-                elif component == "disk":
-
-                    print("    Central surface brightness (mag/arcsec2):", self.parameters[component].mu0, file=parameter_file)
-                    print("    Exponential scale lenght (arcsec):", str(self.parameters[component].hr), file=parameter_file)
+        # Write the parameters to the specified location
+        write_parameters(self.parameters, path)
 
     # -----------------------------------------------------------------
 
@@ -615,10 +590,10 @@ class GalaxyDecomposer(ModelingComponent):
         # Inform the user
         log.info("Writing regions file with disk ellipse ...")
 
-        minor = (1.0 - self.parameters.ellipticity) * self.parameters.major
+        minor = (1.0 - self.parameters.ellipticity) * self.parameters.major_arcsec
 
         # Ellipse radius
-        radius = Extent(self.parameters.major, minor)
+        radius = Extent(self.parameters.major_arcsec, minor)
 
         # Create sky ellipse
         sky_ellipse = SkyEllipse(self.parameters.center, radius, self.parameters.position_angle)
@@ -628,5 +603,102 @@ class GalaxyDecomposer(ModelingComponent):
         region.append(sky_ellipse)
         region_path = self.full_output_path("disk.reg")
         region.save(region_path)
+
+# -----------------------------------------------------------------
+
+def write_parameters(parameters, path):
+
+    """
+    This function ...
+    :param parameters:
+    :param path:
+    :return:
+    """
+
+    # Create the parameters file
+    with open(path, 'w') as parameter_file:
+
+        # Add general info
+        print("Name:", parameters.galaxy_name, file=parameter_file)
+        print("Center RA:", str(parameters.center.ra.to("deg").value) + " deg", file=parameter_file)
+        print("Center DEC:", str(parameters.center.dec.to("deg").value) + " deg", file=parameter_file)
+        print("Major axis length:", str(parameters.major), file=parameter_file)
+        print("Ellipticity:", parameters.ellipticity, file=parameter_file)
+        print("Position angle:", str(parameters.position_angle.to("deg").value) + " deg", file=parameter_file)
+        print("Distance:", str(parameters.distance), file=parameter_file)
+        print("Distance error:", str(parameters.distance_error), file=parameter_file)
+        print("Inclination:", str(parameters.inclination.to("deg").value) + " deg", file=parameter_file)
+        print("IRAC 3.6um flux density:", parameters.i1_fluxdensity, file=parameter_file)
+        print("IRAC 3.6um flux density error:", parameters.i1_error, file=parameter_file)
+        print("IRAC 4.5um flux density:", parameters.i2_fluxdensity, file=parameter_file)
+        print("IRAC 4.5um flux density error:", parameters.i2_error, file=parameter_file)
+
+        #print("Model type:", parameters.model_type, file=parameter_file)
+        #print("Number of components:", parameters.number_of_components, file=parameter_file)
+        #print("Quality:", parameters.quality, file=parameter_file)
+
+        # Add components parameters
+        for component in ["bulge", "disk"]:
+
+            #print(component.title() + ": Interpretation:", parameters[component].interpretation, file=parameter_file)
+            print(component.title() + ": Relative contribution:", parameters[component].rel, file=parameter_file)
+            #print(component.title() + ": Total IRAC 3.6um AB magnitude:", parameters[component].mag, file=parameter_file)
+            print(component.title() + ": IRAC 3.6um flux density:", parameters[component].fluxdensity, file=parameter_file)
+            print(component.title() + ": Axial ratio:", parameters[component].ar, file=parameter_file)
+            print(component.title() + ": Position angle:", parameters[component].pa, file=parameter_file) # (degrees ccw from North)
+
+            if component == "bulge":
+
+                print(component.title() + ": Effective radius:", str(parameters[component].re), file=parameter_file)
+                print(component.title() + ": Sersic index:", parameters[component].n, file=parameter_file)
+
+            elif component == "disk":
+
+                print(component.title() + ": Central surface brightness:", parameters[component].mu0, file=parameter_file) # (mag/arcsec2)
+                print(component.title() + ": Exponential scale length:", str(parameters[component].hr), file=parameter_file)
+
+# -----------------------------------------------------------------
+
+def load_parameters(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Create parameters structure
+    parameters = Map()
+    parameters.bulge = Map()
+    parameters.disk = Map()
+
+    ra = None
+    dec = None
+
+    # Read the parameter file
+    with open(path, 'r') as parameter_file:
+
+        # Loop over all lines in the file
+        for line in parameter_file:
+
+            splitted = line.split(":")
+
+            # Bulge parameters
+            if splitted[0] == "Bulge": pass
+
+            # Disk parameters
+            elif splitted[0] == "Disk": pass
+
+            # Other parameters
+            elif len(splitted) == 2:
+
+                if splitted[0] == "Name": parameters.galaxy_name = splitted[1]
+                elif splitted[0] == "Center RA": ra = float(splitted[1])
+                elif splitted[0] == "Center DEC": dec = float(splitted[1])
+                elif splitted[0] == "Major axis length": parameters.major = float(splitted[1])
+                elif splitted[0] == "Ellipticity": parameters.ellipticity = float(splitted[1])
+
+    # Return the parameters
+    return parameters
 
 # -----------------------------------------------------------------

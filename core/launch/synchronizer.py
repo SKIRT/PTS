@@ -17,7 +17,6 @@ from ..simulation.simulation import RemoteSimulation
 from ..basics.map import Map
 from ..basics.host import find_host_ids, has_simulations
 from .analyser import SimulationAnalyser
-from ..test.scalinganalyser import ScalingAnalyser
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
 from ..tools import filesystem
@@ -53,9 +52,6 @@ class RemoteSynchronizer(Configurable):
 
         # The simulation results analyser
         self.analyser = SimulationAnalyser()
-
-        # The scaling results analyser
-        self.scalinganalyser = ScalingAnalyser()
 
         # Initialize a list to contain the retrieved simulations
         self.simulations = []
@@ -148,8 +144,17 @@ class RemoteSynchronizer(Configurable):
         # Inform the user
         log.info("Clearing the synchronizer...")
 
+        # Log out from the remotes
+        for remote in self.remotes: remote.logout()
+
+        # Clear the list of remotes
+        self.remotes = []
+
         # Set default values for attributes
         self.simulations = []
+
+        # Clear the analyser
+        #self.analyser.clear() # This is already done after each simulation is analysed
 
     # -----------------------------------------------------------------
 
@@ -182,20 +187,13 @@ class RemoteSynchronizer(Configurable):
         """
 
         # Inform the user
-        log.info("Analysing the output of retrieved simulations...")
+        log.info("Analysing the output of retrieved simulations ...")
 
         # Loop over the list of simulations and analyse them
         for simulation in self.simulations:
 
             # Run the analyser on the simulation
             self.analyser.run(simulation)
-
-            # If this simulation is part of a scaling test, run the scalinganalyser
-            if simulation.scaling_run_name is not None:
-
-                # Run the scaling analyser and clear it afterwards
-                self.scalinganalyser.run(simulation, self.analyser.timeline_extractor, self.analyser.memory_extractor)
-                self.scalinganalyser.clear()
 
             # Clear the analyser
             self.analyser.clear()

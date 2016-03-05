@@ -19,7 +19,7 @@ import numpy as np
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from ..core import ModelingComponent
+from .component import FittingComponent
 from ...core.tools import inspection, tables, filesystem
 from ...core.simulation.skifile import SkiFile
 from ...core.basics.filter import Filter
@@ -31,7 +31,7 @@ template_ski_path = filesystem.join(inspection.pts_dat_dir("modeling"), "ski", "
 
 # -----------------------------------------------------------------
 
-class InputInitializer(ModelingComponent):
+class InputInitializer(FittingComponent):
     
     """
     This class...
@@ -49,9 +49,6 @@ class InputInitializer(ModelingComponent):
         super(InputInitializer, self).__init__(config)
 
         # -- Attributes --
-
-        # The path to the fit/in directory
-        self.fit_in_path = None
 
         # The ski file
         self.ski = None
@@ -134,21 +131,6 @@ class InputInitializer(ModelingComponent):
 
         # 5. Place ski file
         self.place_ski_file()
-
-    # -----------------------------------------------------------------
-
-    def setup(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(InputInitializer, self).setup()
-
-        # Set the path to the fit/in path
-        self.fit_in_path = filesystem.join(self.fit_path, "in")
 
     # -----------------------------------------------------------------
 
@@ -252,17 +234,11 @@ class InputInitializer(ModelingComponent):
 
         # -- Instruments --
 
-        # Loop over the different instruments
-        for instrument_name in self.ski.get_instrument_names():
+        # Remove the existing instruments
+        self.ski.remove_all_instruments()
 
-            # Set the distance for all instruments
-            self.ski.set_instrument_distance(instrument_name, self.parameters.distance)
-
-            # Set the instrument orientation
-            if instrument_name == "earth": self.ski.set_instrument_orientation(instrument_name, self.parameters.inclination, self.parameters.position_angle, 0.0)
-            elif instrument_name == "face-on": self.ski.set_instrument_orientation_faceon(instrument_name)
-            elif instrument_name == "edge-on": self.ski.set_instrument_orientation_edgeon(instrument_name)
-            else: raise ValueError("Unknown instrument")
+        # Add a new SEDInstrument
+        self.ski.add_sed_instrument("earth", self.parameters.inclination, 0.0, self.parameters.position_angle, )
 
         # -- Photon packages --
 
@@ -414,10 +390,7 @@ class InputInitializer(ModelingComponent):
         :return:
         """
 
-        # Determine the path to the ski file
-        path = filesystem.join(self.fit_path, self.galaxy_name + ".ski")
-
         # Save the ski file to the specified location
-        self.ski.saveto(path)
+        self.ski.saveto(self.fit_ski_path)
 
 # -----------------------------------------------------------------
