@@ -50,11 +50,13 @@ class Region(list):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, only=None, ignore=None):
 
         """
         This function ...
         :param path:
+        :param only:
+        :param ignore:
         :return:
         """
 
@@ -71,6 +73,8 @@ class Region(list):
             # If the shape is a point -> Position
             if shape.name == "point":
 
+                if only is not None and "point" not in only: continue
+
                 # Get the position
                 x = shape.coord_list[0]
                 y = shape.coord_list[1]
@@ -82,6 +86,8 @@ class Region(list):
 
             # If the shape is a line -> Line
             elif shape.name == "line" or shape.name == "vector":
+
+                if only is not None and "line" not in only and "vector" not in only: continue
 
                 # Get the position of the two points
                 x_1 = shape.coord_list[0]
@@ -101,6 +107,8 @@ class Region(list):
             # If the shape is a circle -> Circle
             elif shape.name == "circle":
 
+                if only is not None and "circle" not in only: continue
+
                 # Get the position of the center
                 x_center = shape.coord_list[0]
                 y_center = shape.coord_list[1]
@@ -116,6 +124,8 @@ class Region(list):
 
             # If the shape is an ellipse -> Ellipse
             elif shape.name == "ellipse":
+
+                if only is not None and "ellipse" not in only: continue
 
                 # Get the position of the center
                 x_center = shape.coord_list[0]
@@ -138,6 +148,8 @@ class Region(list):
             # If the shape is a rectangle -> Rectangle
             elif shape.name == "box":
 
+                if only is not None and "box" not in only: continue
+
                 # Get the position of the center
                 x_center = shape.coord_list[0]
                 y_center = shape.coord_list[1]
@@ -157,6 +169,8 @@ class Region(list):
 
             # If the shape is a polygon -> Polygon
             elif shape.name == "polygon":
+
+                if only is not None and "polygon" not in only: continue
 
                 # Get the number of points in the polygon
                 number_of_points = 0.5 * len(shape.coord_list)

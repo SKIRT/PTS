@@ -85,6 +85,19 @@ class Vector(object):
 
         return '<' + self.__class__.__name__ + ' x={0}, y={1}>'.format(self.x, self.y)
 
+    # -----------------------------------------------------------------
+
+    def to_mask(self, x_size, y_size):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :return:
+        """
+
+        return Mask.empty(x_size, y_size)
+
 # -----------------------------------------------------------------
 
 class Position(Vector):

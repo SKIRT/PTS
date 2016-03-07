@@ -105,7 +105,14 @@ class SEDFetcher(Configurable):
         # 3. If requested, query the 2MASS Extended sources catalog (IPAC/UMass, 2003-2006)
         if "2MASS" in self.config.catalogs: self.get_2mass()
 
+        # SDSS ?
+        # Ilse "Voor de galaxieen in de noordelijke hemisfeer heb je SDSS data beschikbaar, en die kan je dan
+        # beter gebruiken (ipv. SINGS) om je fit te constrainen in het optische gebied. Er zal binnenkort een nieuwe
+        # paper van Daniel Dale uitkomen met gehercalibreerde fluxen in de optische banden, die je dan kan gebruiken.
+
         # 5. If requested, query the Radial distribution in SINGS galaxies (I.) catalogs (Munoz-Mateos+, 2009)
+        # Opm. Ilse: "voor vele SINGS galaxieen is de calibratie van de optische data heel slecht, dus krijg je een
+        # offset en datapunten die een beetje random blijken te zijn."
         if "SINGS" in self.config.catalogs: self.get_sings()
 
         # If requested, query the LVL global optical photometry (Cook+, 2014) catalog
@@ -128,6 +135,9 @@ class SEDFetcher(Configurable):
 
         # If requested, query the Spectroscopy and abundances of SINGS galaxies (Moustakas+, 2010) catalog
         if "Emission lines" in self.config.catalogs: self.get_emission_lines()
+
+        # If requested, query the Atlas of UV-to-MIR galaxy SEDs (Brown+, 2014)
+        if "Brown" in self.config.catalogs: self.get_brown()
 
         # SPECIFIC for M81: not enabled, no time to figure out the unit conversion now
         #if self.ngc_id == "NGC 3031": self.get_m81()
@@ -1100,6 +1110,74 @@ class SEDFetcher(Configurable):
 
         # Add the SED to the dictionary
         self.seds["S4G"] = sed
+
+    # -----------------------------------------------------------------
+
+    def get_brown(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # J/ApJS/212/18/sample
+        # AB magnitudes for the sample with neither foreground nor intrinsic dust extinction corrections, and modeled Milky Way foreground dust extinction
+
+        # Create an SED
+        sed = ObservedSED()
+
+        # FUV: [12.5/22.9] GALEX FUV AB band magnitude
+        # e_FUV:
+        # UVW2:
+        # e_UVW2:
+        # UVM2:
+        # e_UVM2:
+        # NUV:
+        # e_NUV:
+        # UVW1:
+        # e_UVW1:
+        # Umag: [11.9/15.7] Swift/UVOT U AB band magnitude
+        # e_Umag:
+        # umag:
+        # e_umag:
+        # gmag:
+        # e_gmag:
+        # Vmag:
+        # e_Vmag:
+        # rmag:
+        # e_rmag:
+        # imag:
+        # e_imag:
+        # zmag:
+        # e_zmag:
+        # Jmag:
+        # e_Jmag:
+        # Hmag:
+        # e_Hmag:
+        # Ksmag:
+        # e_Ksmag:
+        # W1mag:
+        # e_W1mag:
+        # [3.6]:
+        # e_[3.6]:
+        # [4.5]:
+        # e_[4.5]:
+        # W2mag:
+        # e_W2mag:
+        # [5.8]:
+        # e_[5.8]:
+        # [8.0]:
+        # e_[8.0]:
+        # W3mag:
+        # e_W3mag:
+        # W4mag:
+        # e_W4mag:
+        # W4'mag: Corrected WISE W4 AB band magnitude
+        # e_W4'mag:
+        # [24]:
+        # e_[24]:
+
+        pass
 
     # -----------------------------------------------------------------
 

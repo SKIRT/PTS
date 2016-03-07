@@ -18,11 +18,12 @@ import numpy as np
 # Import astronomical modules
 from astropy import wcs
 from astropy.wcs import utils
-from astropy import units as u
+from astropy.units import Unit
 from astropy.io import fits
+from astropy.coordinates import SkyCoord
 
 # Import the relevant AstroMagic classes and modules
-from .vector import Extent
+from .vector import Extent, Position
 
 # -----------------------------------------------------------------
 
@@ -84,8 +85,8 @@ class CoordinateSystem(wcs.WCS):
         # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
         # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
 
-        x_pixelscale = result[0] * u.Unit("deg/pix")
-        y_pixelscale = result[1] * u.Unit("deg/pix")
+        x_pixelscale = result[0] * Unit("deg/pix")
+        y_pixelscale = result[1] * Unit("deg/pix")
 
         # Return the pixel scale as an extent
         return Extent(x_pixelscale, y_pixelscale)
@@ -116,6 +117,32 @@ class CoordinateSystem(wcs.WCS):
     # -----------------------------------------------------------------
 
     @property
+    def center_pixel(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        x, y = self.wcs.crpix
+        return Position(x, y)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def center_sky(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        center = self.center_pixel
+        return SkyCoord.from_pixel(center.x, center.y, self, mode='wcs')
+
+    # -----------------------------------------------------------------
+
+    @property
     def is_distorted(self):
 
         """
@@ -139,10 +166,66 @@ class CoordinateSystem(wcs.WCS):
 
     # -----------------------------------------------------------------
 
+    def to_pixel(self, position, mode='wcs'):
+
+        """
+        This function ...
+        :param shape:
+        :return:
+        """
+
+        return SkyCoord(position.x, position.y, self, mode=mode)
+
+    # -----------------------------------------------------------------
+
+    def to_sky(self, position, mode='wcs'):
+
+        """
+        This function ...
+        :param position:
+        :param mode:
+        :return:
+        """
+
+        return SkyCoord.from_pixel(position.x, position.y, self, mode=mode)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def orientation(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        # Calculate the number of pixels in the x and y direction that corresponds one arcmin
+        pix_x = (1. / self.pixelscale.x * Unit("arcmin")).to("pix").value
+        pix_y = (1. / self.pixelscale.y * Unit("arcmin")).to("pix").value
+
+        # Get the center pixel of the coordinate system
+        center = self.center_pixel
+        center_coordinate = self.center_sky
+
+        # Calculate the new pixel position
+        new_position = Position(center.x + pix_x, center.y + pix_y)
+
+        # Convert to sky coordinate
+        new_coordinate = self.to_sky(new_position)
+
+        print("center coordinate:", center_coordinate)
+        print("new coordinate:", new_coordinate)
+
+        return None
+
+    # -----------------------------------------------------------------
+
     def to_header(self, relax=None, key=None):
 
         """
         This function ...
+        :param relax:
+        :param key:
         :return:
         """
 
@@ -152,54 +235,6 @@ class CoordinateSystem(wcs.WCS):
         header["NAXIS2"] = self._naxis2
 
         return header
-
-    # -----------------------------------------------------------------
-
-    def to_sky_coordinate(self, coordinate):
-
-        """
-        This function ...
-        :param coordinate:
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    def to_image_coordinate(self, coordinate):
-
-        """
-        This function ...
-        :param coordinate:
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    def to_sky_extent(self, extent):
-
-        """
-        This function ...
-        :param extent:
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    def to_image_extent(self, extent):
-
-        """
-        This function ...
-        :param extent:
-        :return:
-        """
-
-        pass
 
     # -----------------------------------------------------------------
 

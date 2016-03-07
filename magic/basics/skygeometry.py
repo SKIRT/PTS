@@ -27,6 +27,55 @@ from ..tools import coordinates
 
 # -----------------------------------------------------------------
 
+class SkyPosition(SkyCoord):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        # Call the constructor of the base class
+        super(SkyPosition, self).__init__(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def to_position(self, wcs, mode='wcs'):
+
+        """
+        This function ...
+        :param wcs
+        :param mode:
+        :return:
+        """
+
+        x, y = self.to_pixel(wcs, origin=0, mode=mode)
+        return Position(x, y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_position(cls, position, wcs, mode='wcs'):
+
+        """
+        This function ...
+        :param position:
+        :param wcs:
+        :param mode:
+        :return:
+        """
+
+        return cls.from_pixel(position.x, position.y, wcs, origin=0, mode=mode)
+
+# -----------------------------------------------------------------
+
 class SkyLine(object):
 
     """
@@ -75,10 +124,11 @@ class SkyLine(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_line(cls, wcs):
+    def from_line(cls, line, wcs):
 
         """
         This function ...
+        :param line:
         :param wcs:
         :return:
         """

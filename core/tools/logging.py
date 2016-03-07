@@ -103,6 +103,8 @@ def setup_log(level="INFO", path=None, memory=False):
     # Memory logging
     if memory: pass
 
+    return log
+
 # -----------------------------------------------------------------
 
 # Custom formatter

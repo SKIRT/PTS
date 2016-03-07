@@ -88,6 +88,10 @@ class TrainedExtractor(Configurable):
 
         """
         This function ...
+        :param galaxyextractor:
+        :param starextractor:
+        :param special:
+        :param ignore:
         :return:
         """
 
@@ -115,6 +119,11 @@ class TrainedExtractor(Configurable):
 
         """
         This function ...
+        :param image:
+        :param galaxyextractor:
+        :param starextractor:
+        :param special_mask:
+        :param ignore_mask:
         :return:
         """
 
