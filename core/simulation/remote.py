@@ -944,7 +944,8 @@ class SkirtRemote(Remote):
             elif "Launched dust emission photon packages" in line: progress = float(line.split("packages: ")[1].split("%")[0])
             elif "Starting writing results" in line: phase = "writing"
 
-        if "self-absorption" in phase: return "running: " + str(phase) + ", cycle " + str(cycle) + "] " + str(progress) + "%"
+        if phase is None: return "running"
+        elif "self-absorption" in phase: return "running: " + str(phase) + ", cycle " + str(cycle) + "] " + str(progress) + "%"
         elif "stellar emission" in phase or "dust emission" in phase: return "running: " + str(phase) + " " + str(progress) + "%"
         else: return "running: " + str(phase)
 

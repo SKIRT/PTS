@@ -232,7 +232,7 @@ class RemoteSynchronizer(Configurable):
                 # Finished, but not yet retrieved simulation
                 if simulation_status == "finished":
 
-                    if (self.config.ids is not None and simulation.id in self.config.ids[remote.config.host_id])\
+                    if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
                             or (self.config.statuses is not None and "finished" in self.config.statuses):
 
                         log.warning("The simulation with ID " + str(simulation.id) + " has finished, but has not been"
@@ -244,7 +244,7 @@ class RemoteSynchronizer(Configurable):
                 # Finished and retrieved simulation (remote output has already been removed, if requested)
                 elif simulation_status == "retrieved":
 
-                    if (self.config.ids is not None and simulation.id in self.config.ids[remote.config.host_id])\
+                    if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
                             or (self.config.statuses is not None and "retrieved" in self.config.statuses):
 
                         tag = "[ X ]"
@@ -257,7 +257,7 @@ class RemoteSynchronizer(Configurable):
                 # Running simulation
                 elif "running" in simulation_status:
 
-                    if (self.config.ids is not None and simulation.id in self.config.ids[remote.config.host_id])\
+                    if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
                             or (self.config.statuses is not None and "running" in self.config.statuses):
 
                         if remote.host.scheduler:
@@ -284,7 +284,7 @@ class RemoteSynchronizer(Configurable):
                 # Crashed simulation
                 elif simulation_status == "crashed":
 
-                    if (self.config.ids is not None and simulation.id in self.config.ids[remote.config.host_id])\
+                    if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
                             or (self.config.statuses is not None and "crashed" in self.config.statuses):
 
                         tag = "[ X ]"
@@ -302,7 +302,7 @@ class RemoteSynchronizer(Configurable):
                 # Cancelled simulation
                 elif simulation_status == "cancelled":
 
-                    if (self.config.ids is not None and simulation.id in self.config.ids[remote.config.host_id])\
+                    if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
                             or (self.config.statuses is not None and "cancelled" in self.config.statuses):
 
                         tag = "[ X ]"
@@ -320,7 +320,7 @@ class RemoteSynchronizer(Configurable):
                 # Aborted simulation
                 elif simulation_status == "aborted":
 
-                    if (self.config.ids is not None and simulation.id in self.config.ids[remote.config.host_id])\
+                    if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
                             or (self.config.statuses is not None and "aborted" in self.config.statuses):
 
                         tag = "[ X ]"
@@ -338,7 +338,7 @@ class RemoteSynchronizer(Configurable):
                 # Queued simulation
                 elif simulation_status == "queued":
 
-                    if (self.config.ids is not None and simulation.id in self.config.ids[remote.config.host_id])\
+                    if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
                             or (self.config.statuses is not None and "queued" in self.config.statuses):
 
                         if remote.host.scheduler:
