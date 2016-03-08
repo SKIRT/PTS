@@ -21,7 +21,8 @@ class JobScript(object):
     An instance of the JobScript class manages a job script for executing SKIRT in a remote scheduling environment
     """
 
-    def __init__(self, path, arguments, cluster, skirt_path, mpi_command, modules, walltime, nodes, ppn, name=None, mail=False, full_node=False):
+    def __init__(self, path, arguments, cluster, skirt_path, mpi_command, modules, walltime, nodes, ppn, name=None,
+                 mail=False, full_node=False):
 
         """
         The constructor takes the following arguments:

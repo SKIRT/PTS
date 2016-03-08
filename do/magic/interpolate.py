@@ -29,6 +29,7 @@ from pts.core.tools import logging, time, filesystem
 parser = argparse.ArgumentParser()
 parser.add_argument("image", type=str, help="the name of the input image")
 parser.add_argument("region", type=str, help="the name of the region file")
+parser.add_argument("--mask", action="store_true", help="write out the mask")
 parser.add_argument("--color", type=str, help="only interpolate over the shapes with this color")
 parser.add_argument("--ignore_color", type=str, help="ignore shapes with this particular color")
 parser.add_argument('--report', action='store_true', help='write a report file')
@@ -138,5 +139,12 @@ log.info("Saving the result ...")
 # Save the result
 path = filesystem.join(arguments.output_path, arguments.image)
 new_frame.save(path, header=header)
+
+# Write the mask
+if arguments.mask:
+
+    path = filesystem.join(arguments.output_path, "mask")
+    new_frame[mask] = float('nan')
+    new_frame.save(path, header=header)
 
 # -----------------------------------------------------------------

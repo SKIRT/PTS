@@ -92,6 +92,18 @@ def name(path):
 
 # -----------------------------------------------------------------
 
+def strip_extension(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    return os.path.splitext(name)[0]
+
+# -----------------------------------------------------------------
+
 def create_directory(path, recursive=False):
 
     """
@@ -119,7 +131,7 @@ def create_directories(paths, recursive=False):
     """
     
     # Loop over the different paths in the list
-    for path in paths: create_directory(path)
+    for path in paths: create_directory(path, recursive)
 
 # -----------------------------------------------------------------
 
@@ -169,7 +181,8 @@ def remove_file(path):
 
 # -----------------------------------------------------------------
 
-def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None, extensions=False, returns="paths"):
+def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
+                  extensions=False, returns="paths"):
 
     """
     This function ...
@@ -220,8 +233,8 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
 
         # Add the relevant info to the list
         if returns == "paths": thing = item_path
-        elif returns == "names": thing = item_name
-        elif returns == "both": thing = [item_path, item_name]
+        elif returns == "names": thing = item_name + "." + item_extension if extensions else item_name
+        elif returns == "both": thing = [item_path, item_name + "." + item_extension if extensions else item_name]
         else: raise ValueError("Invalid option for 'returns': should be 'paths', 'names' or 'both'")
         file_paths.append(thing)
 

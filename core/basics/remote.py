@@ -125,6 +125,40 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def start_screen(self, name, local_script_path, script_destination, screen_output_path=None):
+
+        """
+        This function ...
+        :param name:
+        :param local_script_path:
+        :param script_destination:
+        :param screen_output_path:
+        :return:
+        """
+
+        # Copy the script to the remote host
+        self.upload(local_script_path, script_destination)
+
+        # Rename the remote script
+        local_script_name = os.path.basename(local_script_path)
+        remote_script_name = name + ".sh"
+        remote_script_path = os.path.join(script_destination, remote_script_name)
+        self.rename_file(script_destination, local_script_name, remote_script_name)
+
+        # Make the shell script executable
+        self.execute("chmod +x " + remote_script_path, output=False)
+
+        # Record the screen output: 'script' command
+        if screen_output_path is not None: self.execute("script " + screen_output_path)
+
+        # Create the screen session and execute the batch script
+        self.execute("screen -S " + name + " -d -m " + remote_script_path, output=False)
+
+        # Remove the remote shell script
+        self.execute("rm " + remote_script_path, output=False)
+
+    # -----------------------------------------------------------------
+
     def kill_screen(self, name):
 
         """
