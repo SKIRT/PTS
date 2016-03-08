@@ -68,6 +68,30 @@ def is_directory(path):
 
 # -----------------------------------------------------------------
 
+def directory_of(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return os.path.dirname(path)
+
+# -----------------------------------------------------------------
+
+def name(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return os.path.basename(path)
+
+# -----------------------------------------------------------------
+
 def create_directory(path, recursive=False):
 
     """

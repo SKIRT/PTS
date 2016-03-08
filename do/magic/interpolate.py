@@ -29,6 +29,8 @@ from pts.core.tools import logging, time, filesystem
 parser = argparse.ArgumentParser()
 parser.add_argument("image", type=str, help="the name of the input image")
 parser.add_argument("region", type=str, help="the name of the region file")
+parser.add_argument("--color", type=str, help="only interpolate over the shapes with this color")
+parser.add_argument("--ignore_color", type=str, help="ignore shapes with this particular color")
 parser.add_argument('--report', action='store_true', help='write a report file')
 parser.add_argument("-i", "--input", type=str, help="the name of the input directory")
 parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
@@ -104,7 +106,7 @@ log.info("Loading the region ...")
 
 # Load in the region
 region_path = filesystem.join(arguments.input_path, arguments.region)
-region = Region.from_file(region_path, only=["circle", "ellipse", "polygon"])
+region = Region.from_file(region_path, only=["circle", "ellipse", "polygon"], color=arguments.color, ignore_color=arguments.ignore_color)
 
 # Inform the user
 log.info("Creating a mask from the region ...")

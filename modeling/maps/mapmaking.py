@@ -25,7 +25,7 @@ from ...magic.basics import Mask
 from ...magic.core import Image, Frame
 
 # Import the relevant PTS classes and modules
-from ..core import ModelingComponent
+from .component import MapsComponent
 from ...core.tools import time
 
 # -----------------------------------------------------------------
@@ -81,7 +81,7 @@ from ...core.tools import time
 #config.ionizing_stars.output_path = os.path.join(self.in_path, "ionizing_stars.fits")
 #config.non_ionizing_stars.output_path = os.path.join(self.in_path, "non_ionizing_stars.fits")
 
-class MapMaker(ModelingComponent):
+class MapMaker(MapsComponent):
 
     """
     This class...

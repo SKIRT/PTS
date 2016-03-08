@@ -18,7 +18,7 @@ from astropy.units import Unit, dimensionless_angles
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
-from ..core import ModelingComponent
+from .component import DecompositionComponent
 from ...core.basics.map import Map
 from ...core.tools import inspection, filesystem
 from ...core.tools.logging import log
@@ -49,7 +49,7 @@ template_path = filesystem.join(inspection.pts_dat_dir("modeling"), "ski")
 
 # -----------------------------------------------------------------
 
-class GalaxyDecomposer(ModelingComponent):
+class GalaxyDecomposer(DecompositionComponent):
     
     """
     This class...

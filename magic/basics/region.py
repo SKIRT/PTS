@@ -12,12 +12,8 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-
 # Import astronomical modules
 import pyregion
-from astropy import units as u
 from astropy.coordinates import Angle
 
 # Import the relevant AstroMagic classes and modules
@@ -50,13 +46,15 @@ class Region(list):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, only=None, ignore=None):
+    def from_file(cls, path, only=None, ignore=None, color=None, ignore_color=None):
 
         """
         This function ...
         :param path:
         :param only:
         :param ignore:
+        :param color:
+        :param ignore_color:
         :return:
         """
 
@@ -70,10 +68,15 @@ class Region(list):
         # Loop over all shapes in the region
         for shape in _region:
 
+            # Check the color of the shape
+            if color is not None and shape.attr[1]["color"] != color: continue
+            if ignore_color is not None and shape.attr[1]["color"] == ignore_color: continue
+
             # If the shape is a point -> Position
             if shape.name == "point":
 
                 if only is not None and "point" not in only: continue
+                if ignore is not None and "point" in ignore: continue
 
                 # Get the position
                 x = shape.coord_list[0]
@@ -81,13 +84,13 @@ class Region(list):
                 position = Position(x, y)
 
                 # Add the position to the region
-                #region.append(position)
                 new_shape = position
 
             # If the shape is a line -> Line
             elif shape.name == "line" or shape.name == "vector":
 
-                if only is not None and "line" not in only and "vector" not in only: continue
+                if only is not None and "line" not in only: continue
+                if ignore is not None and "line" in ignore: continue
 
                 # Get the position of the two points
                 x_1 = shape.coord_list[0]
@@ -99,15 +102,15 @@ class Region(list):
                 position_1 = Position(x_1, y_1)
                 position_2 = Position(x_2, y_2)
 
-                # Create the line and add it to the region
+                # Create the line
                 line = Line(position_1, position_2)
-                #region.append(line)
                 new_shape = line
 
             # If the shape is a circle -> Circle
             elif shape.name == "circle":
 
                 if only is not None and "circle" not in only: continue
+                if ignore is not None and "circle" in ignore: continue
 
                 # Get the position of the center
                 x_center = shape.coord_list[0]
@@ -117,15 +120,15 @@ class Region(list):
                 # Get the radius
                 radius = shape.coord_list[2]
 
-                # Create a circle and add it to the region
+                # Create a circle
                 circle = Circle(center, radius)
-                #region.append(circle)
                 new_shape = circle
 
             # If the shape is an ellipse -> Ellipse
             elif shape.name == "ellipse":
 
                 if only is not None and "ellipse" not in only: continue
+                if ignore is not None and "ellipse" in ignore: continue
 
                 # Get the position of the center
                 x_center = shape.coord_list[0]
@@ -140,15 +143,15 @@ class Region(list):
                 # Get the angle
                 angle = Angle(shape.coord_list[4], "deg")
 
-                # Create an ellipse and add it to the region
+                # Create an ellipse
                 ellipse = Ellipse(center, radius, angle)
-                #region.append(ellipse)
                 new_shape = ellipse
 
             # If the shape is a rectangle -> Rectangle
             elif shape.name == "box":
 
                 if only is not None and "box" not in only: continue
+                if ignore is not None and "box" in ignore: continue
 
                 # Get the position of the center
                 x_center = shape.coord_list[0]
@@ -162,15 +165,18 @@ class Region(list):
                 # Create radius
                 radius = Extent(0.5 * width, 0.5 * height)
 
-                # Create a Rectangle and add it to the region
-                rectangle = Rectangle(center, radius)
-                #region.append(rectangle)
+                # Get the angle
+                angle = Angle(shape.coord_list[4], "deg")
+
+                # Create a Rectangle
+                rectangle = Rectangle(center, radius, angle)
                 new_shape = rectangle
 
             # If the shape is a polygon -> Polygon
             elif shape.name == "polygon":
 
                 if only is not None and "polygon" not in only: continue
+                if ignore is not None and "polygon" in ignore: continue
 
                 # Get the number of points in the polygon
                 number_of_points = 0.5 * len(shape.coord_list)
@@ -196,7 +202,7 @@ class Region(list):
                 new_shape = polygon
 
             # Unrecognized shape
-            else: raise ValueError("Unrecognized shape")
+            else: raise ValueError("Unrecognized shape: " + shape.name)
 
             # If this shape should be excluded
             if shape.exclude:
@@ -228,6 +234,39 @@ class Region(list):
 
         # Otherwise, add the shape
         super(Region, self).append(shape)
+
+    # -----------------------------------------------------------------
+
+    def rectangles(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [shape for shape in self if isinstance(shape, Rectangle)]
+
+    # -----------------------------------------------------------------
+
+    def circles(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [shape for shape in self if isinstance(shape, Circle)]
+
+    # -----------------------------------------------------------------
+
+    def ellipses(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [shape for shape in self if isinstance(shape, Ellipse)]
 
     # -----------------------------------------------------------------
 

@@ -13,11 +13,11 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..core import ModelingComponent
+from .component import AnalysisComponent
 
 # -----------------------------------------------------------------
 
-class ModelAnalyser(ModelingComponent):
+class ModelAnalyser(AnalysisComponent):
     
     """
     This class...

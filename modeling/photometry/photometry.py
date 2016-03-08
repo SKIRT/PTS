@@ -22,7 +22,7 @@ from ...magic.basics import Mask
 from ...magic.basics.skyregion import SkyRegion
 
 # Import the relevant PTS classes and modules
-from ..core import ModelingComponent
+from .component import PhotometryComponent
 from .sedfetching import SEDFetcher
 from ...core.tools import filesystem
 from ...core.tools.logging import log
@@ -33,7 +33,7 @@ from ..plotting import SEDPlotter
 
 # -----------------------------------------------------------------
 
-class PhotoMeter(ModelingComponent):
+class PhotoMeter(PhotometryComponent):
     
     """
     This class...

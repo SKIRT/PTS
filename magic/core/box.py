@@ -17,6 +17,9 @@ import math
 import numpy as np
 from scipy import ndimage
 
+# Import astronomical modules
+from astropy.coordinates import Angle
+
 # Import the relevant AstroMagic classes and modules
 from ..basics import Position, Region, Rectangle, Extent
 from ..tools import cropping, fitting, interpolation, plotting
@@ -102,6 +105,8 @@ class Box(np.ndarray):
         :param rectangle:
         :return:
         """
+
+        # TODO: fix this for rotated rectangles
 
         # Convert into integers
         x_min = int(round(rectangle.x_min))

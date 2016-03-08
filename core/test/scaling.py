@@ -14,7 +14,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 from collections import defaultdict
 
 # Import astronomical modules
@@ -162,10 +161,10 @@ class ScalingTest(Configurable):
         # -- Directory structure --
 
         # Determine the simulation prefix
-        self.prefix = os.path.basename(self.config.ski_path).split(".")[0]
+        self.prefix = filesystem.name(self.config.ski_path).split(".")[0]
 
         # Set the base path (the ski file directory)
-        self.base_path = os.path.dirname(self.config.ski_path) if "/" in self.config.ski_path else os.getcwd()
+        self.base_path = filesystem.directory_of(self.config.ski_path) if "/" in self.config.ski_path else filesystem.cwd()
 
         # Define a name identifying this scaling test run
         self.scaling_run_name = time.unique_name(self.mode_info, separator="__")
@@ -220,14 +219,14 @@ class ScalingTest(Configurable):
         # -- Top - level directories --
 
         # Set the paths to the input, output, result, plot and temp directories
-        self.input_path = os.path.join(self.base_path, "in")
-        self.output_path = os.path.join(self.base_path, "out")
-        self.result_path = os.path.join(self.base_path, "res")
-        self.plot_path = os.path.join(self.base_path, "plot")
-        self.temp_path = os.path.join(self.base_path, "temp")
+        self.input_path = filesystem.join(self.base_path, "in")
+        self.output_path = filesystem.join(self.base_path, "out")
+        self.result_path = filesystem.join(self.base_path, "res")
+        self.plot_path = filesystem.join(self.base_path, "plot")
+        self.temp_path = filesystem.join(self.base_path, "temp")
 
         # Check if an input directory exists
-        if not os.path.isdir(self.input_path): self.input_path = None
+        if not filesystem.is_directory(self.input_path): self.input_path = None
 
         # Create the output, result, plot and temp directories if necessary
         filesystem.create_directories([self.output_path, self.result_path, self.plot_path, self.temp_path])
@@ -235,10 +234,10 @@ class ScalingTest(Configurable):
         # -- System - level directories --
 
         # Set the input, output, result, plot and temp paths for the system we are running this scaling test on
-        self.output_path_system = os.path.join(self.output_path, self.remote.system_name)
-        self.result_path_system = os.path.join(self.result_path, self.remote.system_name)
-        self.plot_path_system = os.path.join(self.plot_path, self.remote.system_name)
-        self.temp_path_system = os.path.join(self.temp_path, self.remote.system_name)
+        self.output_path_system = filesystem.join(self.output_path, self.remote.system_name)
+        self.result_path_system = filesystem.join(self.result_path, self.remote.system_name)
+        self.plot_path_system = filesystem.join(self.plot_path, self.remote.system_name)
+        self.temp_path_system = filesystem.join(self.temp_path, self.remote.system_name)
 
         # Create the output, result, plot and temp directories for the system if necessary
         filesystem.create_directories([self.output_path_system, self.result_path_system, self.plot_path_system, self.temp_path_system])
@@ -246,10 +245,10 @@ class ScalingTest(Configurable):
         # -- Scaling run - level directories --
 
         # Determine the paths to the directories that will contain the output, results, plots and temporary files of this particular scaling test run
-        self.output_path_run = os.path.join(self.output_path_system, self.scaling_run_name)
-        self.result_path_run = os.path.join(self.result_path_system, self.scaling_run_name)
-        self.plot_path_run = os.path.join(self.plot_path_system, self.scaling_run_name)
-        self.temp_path_run = os.path.join(self.temp_path_system, self.scaling_run_name)
+        self.output_path_run = filesystem.join(self.output_path_system, self.scaling_run_name)
+        self.result_path_run = filesystem.join(self.result_path_system, self.scaling_run_name)
+        self.plot_path_run = filesystem.join(self.plot_path_system, self.scaling_run_name)
+        self.temp_path_run = filesystem.join(self.temp_path_system, self.scaling_run_name)
 
         # Create the output, result, plot and temp directories for this run if necessary
         filesystem.create_directories([self.output_path_run, self.result_path_run, self.plot_path_run, self.temp_path_run])
@@ -265,9 +264,9 @@ class ScalingTest(Configurable):
         """
 
         # Determine the paths to the simulation's output, result and plot directories
-        self.output_path_simulation = os.path.join(self.output_path_run, str(processors))
-        self.result_path_simulation = os.path.join(self.result_path_run, str(processors))
-        self.plot_path_simulation = os.path.join(self.plot_path_run, str(processors))
+        self.output_path_simulation = filesystem.join(self.output_path_run, str(processors))
+        self.result_path_simulation = filesystem.join(self.result_path_run, str(processors))
+        self.plot_path_simulation = filesystem.join(self.plot_path_run, str(processors))
 
         # Create the output, result and plot directories for this simulation if necessary
         filesystem.create_directories([self.output_path_simulation, self.result_path_simulation, self.plot_path_simulation])
@@ -319,7 +318,7 @@ class ScalingTest(Configurable):
         if not self.scheduler:
 
             # Determine a local path for the batch script for manual inspection
-            shell_script_path = os.path.join(self.temp_path_run, "simulations.sh")
+            shell_script_path = filesystem.join(self.temp_path_run, "simulations.sh")
             self.remote.start_queue(self.long_scaling_run_name, shell_script_path)
 
         # End with some log messages
@@ -459,7 +458,7 @@ class ScalingTest(Configurable):
             # processes to end up on different nodes or the SKIRT processes sensing interference from other programs,
             # we set the 'fullnode' flag to True, which makes sure we always request at least one full node, even when
             # the current number of processors is less than the number of cores per node
-            jobscript_path = os.path.join(self.temp_path_run, "job_" + str(processors) + ".sh")
+            jobscript_path = filesystem.join(self.temp_path_run, "job_" + str(processors) + ".sh")
 
             # Adjust the scheduling options
             scheduling_options = {}
@@ -514,7 +513,7 @@ class ScalingTest(Configurable):
         """
 
         # Create the file and set the path
-        self.info_file_path = os.path.join(self.result_path_run, "info.txt")
+        self.info_file_path = filesystem.join(self.result_path_run, "info.txt")
         infofile = open(self.info_file_path, "w")
 
         # Write some useful information to the file
@@ -539,10 +538,10 @@ class ScalingTest(Configurable):
         """
 
         # Set the path to the scaling file for the current system (remote host - cluster)
-        self.scaling_file_path = os.path.join(self.result_path_system, "scaling.dat")
+        self.scaling_file_path = filesystem.join(self.result_path_system, "scaling.dat")
 
         # If the file has already been created, skip the rest of the function
-        if os.path.isfile(self.scaling_file_path): return
+        if filesystem.is_file(self.scaling_file_path): return
 
         names = []
         names.append("Parallelization mode")        # Parallelization mode
@@ -634,7 +633,8 @@ class ScalingTest(Configurable):
         """
         This function estimates the total runtime (walltime) for the current simulation, number of processors,
         system and parallelization mode. This function takes the following arguments:
-        :param processors: the number of processors (or total threads) used for this run of the simulation
+        :param processes: the number of processes used for this run of the simulation
+        :param threads: the number of threads used for this run of the simulation
         :param factor: this optional argument determines how much the upper limit on the walltime should deviate from
             a previous run of the same simulation.
         :return:
@@ -647,23 +647,21 @@ class ScalingTest(Configurable):
         timeline_paths = defaultdict(list)
 
         # Recursively search for files contained in the result directory
-        for (dirpath, dirnames, filenames) in os.walk(self.result_path):
+        for file_path, file_name in filesystem.files_in_path(self.result_path, contains="timeline", extension="dat", returns="both", recursive=True):
 
-            # Loop over all files found in the current (sub)directory
-            for filename in filenames:
+            # Get the path to the directory where this timeline.dat file is in
+            dir_path = filesystem.directory_of(file_path)
+            dir_of_dir_path = filesystem.directory_of(dir_path)
+            dir_of_dir_of_dir_path = filesystem.directory_of(dir_path)
 
-                # Skip files that do not contain timeline data
-                if filename != "timeline.dat": continue
+            # Get properties of scaling test run
+            processors = int(filesystem.name(dir_path))
+            scaling_run_name = filesystem.name(dir_of_dir_path)
+            system_name = filesystem.name(dir_of_dir_of_dir_path)
+            mode = scaling_run_name.split("_")[0]
 
-                filepath = os.path.join(dirpath, filename)
-
-                processors = int(os.path.basename(dirpath))
-                scaling_run_name = os.path.basename(os.path.dirname(dirpath))
-                system_name = os.path.basename(os.path.dirname(os.path.dirname(dirpath)))
-                mode = scaling_run_name.split("_")[0]
-
-                # Add the timeline file path to the dictionary
-                timeline_paths[(system_name, mode, processors)].append(filepath)
+            # Add the timeline file path to the dictionary
+            timeline_paths[(system_name, mode, processors)].append(file_path)
 
         # 1. Try to find an extracted timeline for the system and parallelization mode of this run and the current
         #    number of processors
@@ -702,8 +700,8 @@ class ScalingTest(Configurable):
                 return extractor.total * factor
 
         # 4. Try to find a log file placed next to the ski file used for the scaling test
-        log_file_path = os.path.join(self.base_path, self.prefix + "_log.txt")
-        if os.path.isfile(log_file_path):
+        log_file_path = filesystem.join(self.base_path, self.prefix + "_log.txt")
+        if filesystem.is_file(log_file_path):
 
             # Create a SkirtSimulation object
             simulation = SkirtSimulation(self.prefix, self.input_path, self.base_path)

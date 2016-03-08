@@ -16,6 +16,9 @@ from __future__ import absolute_import, division, print_function
 import os
 import numpy as np
 
+# Import astronomical modules
+from astropy.coordinates import Angle
+
 # Import the relevant AstroMagic classes and modules
 from ..basics import Rectangle, Position, Extent
 
@@ -101,7 +104,7 @@ class CatalogCoverage(object):
 
         """
         This function ...
-        :param frame:
+        :param box:
         :return:
         """
 

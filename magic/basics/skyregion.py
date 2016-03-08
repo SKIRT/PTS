@@ -147,8 +147,11 @@ class SkyRegion(list):
                 # Create radius
                 radius = Extent(0.5 * width, 0.5*height)
 
+                # Get the angle
+                angle = Angle(shape.coord_list[4], "deg")
+
                 # Create a SkyRectangle and add it to the region
-                rectangle = SkyRectangle(center, radius)
+                rectangle = SkyRectangle(center, radius, angle)
                 region.append(rectangle)
 
             # The shape is a polygon -> SkyPolygon

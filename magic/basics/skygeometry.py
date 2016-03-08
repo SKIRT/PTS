@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import math
 
 # Import astronomical modules
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, Angle
 from astropy.wcs import utils
 import astropy.units as u
 
@@ -398,17 +398,21 @@ class SkyRectangle(object):
     This class
     """
 
-    def __init__(self, center, radius):
+    def __init__(self, center, radius, angle=0.0):
 
         """
         This function ...
         :param center:
         :param radius:
+        :param angle:
         :return:
         """
 
+        if isinstance(angle, float) or isinstance(angle, int): angle = Angle(0.0, "deg")
+
         self.center = center
         self.radius = radius
+        self.angle = angle
 
     # -----------------------------------------------------------------
 
@@ -428,7 +432,7 @@ class SkyRectangle(object):
         radius = rectangle.radius * u.Unit("pix") * wcs.xy_average_pixelscale
 
         # Create a new SkyRectangle
-        return cls(center, radius)
+        return cls(center, radius, rectangle.angle)
 
     # -----------------------------------------------------------------
 
@@ -440,7 +444,7 @@ class SkyRectangle(object):
         :return:
         """
 
-        return SkyRectangle(self.center, self.radius * value)
+        return SkyRectangle(self.center, self.radius * value, self.angle)
 
     # -----------------------------------------------------------------
 
@@ -464,7 +468,7 @@ class SkyRectangle(object):
         :return:
         """
 
-        return SkyRectangle(self.center, self.radius / value)
+        return SkyRectangle(self.center, self.radius / value, self.angle)
 
     # -----------------------------------------------------------------
 
@@ -483,7 +487,7 @@ class SkyRectangle(object):
         radius = (self.radius / pixelscale).to("pix").value
 
         # Return a new rectangle
-        return Rectangle(center, radius)
+        return Rectangle(center, radius, self.angle)
 
 # -----------------------------------------------------------------
 

@@ -26,7 +26,7 @@ from astroquery.irsa_dust import IrsaDust
 from ...magic import ImageImporter
 
 # Import the relevant PTS classes and modules
-from ..core import ModelingComponent
+from .component import PreparationComponent
 from .imagepreparation import ImagePreparer
 from ...core.tools import filesystem, tables
 from ...core.tools.logging import log
@@ -110,7 +110,7 @@ aniano_link = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012_May/Kern
 
 # -----------------------------------------------------------------
 
-class DataPreparer(ModelingComponent):
+class DataPreparer(PreparationComponent):
 
     """
     This class ...
@@ -430,7 +430,7 @@ def download_kernel(kernel_basename, kernels_path):
 
     """
     This function ...
-    :param kernel_name:
+    :param kernel_basename:
     :param kernels_path:
     :return:
     """

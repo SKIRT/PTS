@@ -16,6 +16,9 @@ from __future__ import absolute_import, division, print_function
 import math
 import numpy as np
 
+# Import astronomical modules
+from astropy.coordinates import Angle
+
 # Function to create mask from ellipse
 from photutils.geometry import elliptical_overlap_grid, circular_overlap_grid, rectangular_overlap_grid
 from PIL import Image, ImageDraw
@@ -397,18 +400,33 @@ class Rectangle(object):
     This class ...
     """
     
-    def __init__(self, center, radius, angle=None):
+    def __init__(self, center, radius, angle=0.0):
         
         """
         The constructor ...
         :param center:
         :param radius:
+        :param angle:
         :return:
         """
+
+        if isinstance(angle, float) or isinstance(angle, int): angle = Angle(angle, "deg")
 
         self.center = center
         self.radius = radius
         self.angle = angle
+
+    # -----------------------------------------------------------------
+
+    @property
+    def rotated(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not bool(self.angle == Angle(0.0,"deg"))
 
     # -----------------------------------------------------------------
 
@@ -420,8 +438,10 @@ class Rectangle(object):
         :return:
         """
 
-        if self.angle is None: return self.x_min <= position.x <= self.x_max and self.y_min <= position.y <= self.y_max
+        if not self.rotated: return self.x_min <= position.x <= self.x_max and self.y_min <= position.y <= self.y_max
         else:
+
+            # NOTE: does not work properly yet!
 
             # Source: http://math.stackexchange.com/questions/190111/how-to-check-if-a-point-is-inside-a-rectangle
             # AM = position - self.upper_left
@@ -527,7 +547,7 @@ class Rectangle(object):
         :return:
         """
 
-        return np.arctan2(self.y_min, self.x_min)
+        return np.arctan2(self.radius.y, self.radius.x)
 
     # -----------------------------------------------------------------
 
@@ -539,7 +559,7 @@ class Rectangle(object):
         :return:
         """
 
-        if self.angle is None: return Position(self.x_max, self.y_min)
+        if not self.rotated: return Position(self.x_max, self.y_min)
         else:
 
             angle_to_corner = 2.0 * np.pi - self._diagonal_angle + self.angle.to("radian").value
@@ -555,7 +575,7 @@ class Rectangle(object):
         :return:
         """
 
-        if self.angle is None: return Position(self.x_max, self.y_max)
+        if not self.rotated: return Position(self.x_max, self.y_max)
         else:
 
             angle_to_corner = self._diagonal_angle + self.angle.to("radian").value
@@ -571,7 +591,7 @@ class Rectangle(object):
         :return:
         """
 
-        if self.angle is None: return Position(self.x_min, self.y_max)
+        if not self.rotated: return Position(self.x_min, self.y_max)
         else:
 
             angle_to_corner = np.pi - self._diagonal_angle + self.angle.to("radian").value
@@ -587,7 +607,7 @@ class Rectangle(object):
         :return:
         """
 
-        if self.angle is None: return Position(self.x_min, self.y_min)
+        if not self.rotated: return Position(self.x_min, self.y_min)
         else:
 
             angle_to_corner = np.pi + self._diagonal_angle + self.angle.to("radian").value
@@ -616,57 +636,35 @@ class Rectangle(object):
         :return:
         """
 
-        if self.angle is None:
+        ## SIMPLE WAY
 
-            ## SIMPLE WAY
+        #data = np.zeros((y_size, x_size))
 
-            #data = np.zeros((y_size, x_size))
+        # Convert into integers
+        #x_min = int(round(self.x_min))
+        #x_max = int(round(self.x_max))
+        #y_min = int(round(self.y_min))
+        #y_max = int(round(self.y_max))
 
-            # Convert into integers
-            #x_min = int(round(self.x_min))
-            #x_max = int(round(self.x_max))
-            #y_min = int(round(self.y_min))
-            #y_max = int(round(self.y_max))
+        #data[y_min:y_max, x_min:x_max] = 1
 
-            #data[y_min:y_max, x_min:x_max] = 1
+        # Return a new Mask object
+        #return Mask(data)
 
-            # Return a new Mask object
-            #return Mask(data)
+        ## OTHER WAY
 
-            ## OTHER WAY
+        rel_center = self.center
 
-            rel_center = self.center
+        x_min = - rel_center.x
+        x_max = x_size - rel_center.x
+        y_min = - rel_center.y
+        y_max = y_size - rel_center.y
 
-            x_min = - rel_center.x
-            x_max = x_size - rel_center.x
-            y_min = - rel_center.y
-            y_max = y_size - rel_center.y
+        width = 2. * self.radius.x
+        height = 2. * self.radius.y
 
-            width = 2. * self.radius.x
-            height = 2. * self.radius.y
-
-            fraction = rectangular_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, width, height, use_exact=0, subpixels=1)
-            return Mask(fraction)
-
-        else: # create a polygon
-
-            width = x_size
-            height = y_size
-
-            #points = [(x1,y1),(x2,y2),...] or [x1,y1,x2,y2,...]
-            points = []
-            for point in self.corners:
-                #points.append((point.x, point.y))
-                points.append(point.x)
-                points.append(point.y)
-
-            img = Image.new('L', (width, height), 0)
-            ImageDraw.Draw(img).polygon(points, outline=1, fill=1)
-
-            #from ..tools import plotting
-            #plotting.plot_box(np.array(img))
-
-            return Mask(np.array(img))
+        fraction = rectangular_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, width, height, self.angle.to("radian").value, 0, 1)
+        return Mask(fraction)
 
 # -----------------------------------------------------------------
 
