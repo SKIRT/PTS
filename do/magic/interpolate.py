@@ -20,7 +20,7 @@ import argparse
 from pts.magic import ImageImporter
 from pts.magic.tools import plotting, interpolation
 from pts.magic.core import Frame
-from pts.magic.basics.region import Region
+from pts.magic.basics import Mask, Region
 from pts.core.tools import logging, time, filesystem
 
 # -----------------------------------------------------------------
@@ -104,7 +104,7 @@ log.info("Loading the region ...")
 
 # Load in the region
 region_path = filesystem.join(arguments.input_path, arguments.region)
-region = Region.from_file(region_path, only=["circle", "ellipse"])
+region = Region.from_file(region_path, only=["circle", "ellipse", "polygon"])
 
 # Inform the user
 log.info("Creating a mask from the region ...")
@@ -117,9 +117,18 @@ mask = region.to_mask(frame.xsize, frame.ysize)
 # Inform the user
 log.info("Interpolating the frame within the masked pixels ...")
 
+# Create a mask of the pixels that are NaNs
+nans = Mask.is_nan(frame)
+
+# Set the NaN pixels to zero in the frame
+frame[nans] = 0.0
+
 # Interpolate the frame in the masked pixels
 data = interpolation.in_paint(frame, mask)
 new_frame = Frame(data)
+
+# Set the original NaN pixels back to NaN
+new_frame[nans] = float("nan")
 
 # Inform the user
 log.info("Saving the result ...")

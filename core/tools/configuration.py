@@ -73,7 +73,8 @@ def set(subpackage_name, class_name, config=None):
 
     """
     This function ...
-    :param classname:
+    :param subpackage_name:
+    :param class_name:
     :param config:
     :return:
     """
@@ -96,8 +97,8 @@ def open(config, default_config=None):
 
     """
     This function ...
-    :param filepath:
-    :param default:
+    :param config:
+    :param default_config:
     :return:
     """
 

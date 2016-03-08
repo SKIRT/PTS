@@ -91,11 +91,18 @@ class Configurable(object):
         """
         This function ...
         :param name:
-        :param instance:
+        :param type:
+        :param config:
         :return:
         """
 
         if name in self.children: raise ValueError("Child with this name already exists")
+
+        # new ...
+        if config is None: config = {}
+        config["output_path"] = self.config.output_path
+        config["input_path"] = self.config.input_path
+
         self.children[name] = type(config)
 
     # -----------------------------------------------------------------

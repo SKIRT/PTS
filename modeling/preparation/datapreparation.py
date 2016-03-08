@@ -152,6 +152,7 @@ class DataPreparer(ModelingComponent):
         # Create a new Modeler instance
         preparer = cls(arguments.config)
 
+        # Whether to write the results of intermediate steps
         preparer.config.preparation.write_steps = arguments.steps
 
         # Set the reference image
@@ -159,8 +160,8 @@ class DataPreparer(ModelingComponent):
 
         # Set the input and output path
         preparer.config.path = arguments.path
-        preparer.config.input_path = os.path.join(arguments.path, "data")
-        preparer.config.output_path = os.path.join(arguments.path, "prep")
+        preparer.config.input_path = filesystem.join(arguments.path, "data")
+        preparer.config.output_path = filesystem.join(arguments.path, "prep")
 
         # A single image can be specified so the preparation is only run with that image
         preparer.config.single_image = arguments.image
