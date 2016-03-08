@@ -695,6 +695,9 @@ def get_galaxy_info(name, position):
                     entry = row
                     break
 
+    # Note: another temporary fix
+    if entry is None: return name, position, None, None, [], None, None, None, None, None, None
+
     # Get the right ascension and the declination
     position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
 

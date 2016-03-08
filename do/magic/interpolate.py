@@ -143,7 +143,7 @@ new_frame.save(path, header=header)
 # Write the mask
 if arguments.mask:
 
-    path = filesystem.join(arguments.output_path, "mask")
+    path = filesystem.join(arguments.output_path, "mask.fits")
     new_frame[mask] = float('nan')
     new_frame.save(path, header=header)
 
