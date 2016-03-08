@@ -184,8 +184,8 @@ class Region(list):
                 for i in range(number_of_points):
 
                     # Create a new Position
-                    x = shape.coord_list[0]
-                    y = shape.coord_list[1]
+                    x = shape.coord_list[2*i]
+                    y = shape.coord_list[2*i + 1]
                     position = Position(x, y)
 
                     # Add the point to the polygon

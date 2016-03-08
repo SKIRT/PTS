@@ -96,7 +96,20 @@ class Vector(object):
         :return:
         """
 
+        from .mask import Mask
         return Mask.empty(x_size, y_size)
+
+    # -----------------------------------------------------------------
+
+    def dot(self, vector):
+
+        """
+        This function calculates the dot product with another vector
+        :param vector:
+        :return:
+        """
+
+        return self.x * vector.x + self.y * vector.y
 
 # -----------------------------------------------------------------
 
