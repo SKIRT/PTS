@@ -611,6 +611,8 @@ class SkiFile:
         if include_comments: return dust_components.getchildren()
         else: return [component for component in dust_components.getchildren() if component.tag is not etree.Comment]
 
+    ## This functions returns a list with the ids of the different dust components (the id is a name if this is defined
+    #  for the component, otherwise it is the index of the component)
     def get_dust_component_ids(self):
 
         # Initialize a list to contain the component ids
@@ -642,13 +644,8 @@ class SkiFile:
         # Return the list of names
         return ids
 
+    ## This function returns the stellar component that is recognized by the specified id (index or name)
     def get_stellar_component(self, component_id):
-
-        """
-        This function returns the stellar component which is preceeded by a comment matching the description
-        :param component_id: index or description
-        :return:
-        """
 
         # The component identifier is an integer number -> index of stellar components
         if isinstance(component_id, int):
@@ -679,13 +676,8 @@ class SkiFile:
         # Invalid component id
         else: raise ValueError("Invalid component identifier (should be integer or string)")
 
+    ## This function returns the dust component that is recognized by the specified id (index or name)
     def get_dust_component(self, component_id):
-
-        """
-        This function returns the dust component which is preceeded by a comment matching the description
-        :param component_id: index or description
-        :return:
-        """
 
         # The component identifier is an integer number -> index of dust components
         if isinstance(component_id, int):
@@ -716,13 +708,8 @@ class SkiFile:
         # Invalid component id
         else: raise ValueError("Invalid component identifier (should be integer or string)")
 
+    ## This functions returns the normalization of the stellar component with the specified id
     def get_stellar_component_normalization(self, component_id):
-
-        """
-        This function returns the normalization element of the specified stellar component
-        :param component_id:
-        :return:
-        """
 
         # Get the stellar component
         stellar_component = self.get_stellar_component(component_id)
@@ -730,13 +717,11 @@ class SkiFile:
         # Get normalization of this component
         return get_unique_element(stellar_component, "normalization")
 
+    ## This function returns the luminosity of the stellar component with the specified id,
+    #   - if the normalization is by bolometric luminosity, returns (luminosity [as Astropy quantity], None)
+    #   - if the normalization is by luminosity in a specific band, returns (luminosity [as Astropy quantity], Filter object)
+    #   - if the normalization is by spectral luminosity at a specific wavelength, returns (spectral luminosity [as Astropy quantity], wavelength [as Astropy quantity])
     def get_stellar_component_luminosity(self, component_id):
-
-        """
-        This function returns the luminosity for a specified stellar component
-        :param component_id:
-        :return:
-        """
 
         # Get the stellar component normalization of the component
         normalization = self.get_stellar_component_normalization(component_id)
@@ -763,15 +748,11 @@ class SkiFile:
             # Return the luminosity and the wavelength as quantities
             return luminosity, wavelength
 
+    ## This function sets the luminosity of the stellar component with the specified id,
+    #  - if filter_or_wavelength is None, the specified luminosity [as Astropy quantity] is interpreted as a bolometric luminosity
+    #  - if filter_or_wavelength is a Filter instance, the luminosity [as Astropy quantity] is interpreted as the luminosity in the corresponding band
+    #  - if filter_or_wavelength is a wavelength [as an Astropy quantity], the luminosity should be the spectral luminosity [as Astropy quantity] at that wavelength
     def set_stellar_component_luminosity(self, component_id, luminosity, filter_or_wavelength=None):
-
-        """
-        This function sets the luminosity for a specified stellar component
-        :param component_id:
-        :param luminosity:
-        :param filter_or_wavelength:
-        :return:
-        """
 
         # Get the stellar component normalization of the component
         normalization = self.get_stellar_component_normalization(component_id)
@@ -818,13 +799,8 @@ class SkiFile:
         # Invalid filter or wavelength argument
         else: raise ValueError("Invalid filter or wavelength")
 
+    ## This function returns the normalization of the dust component with the specified id
     def get_dust_component_normalization(self, component_id):
-
-        """
-        This function returns the normalization element of the specified dust component
-        :param component_id:
-        :return:
-        """
 
         # Get the dust component
         dust_component = self.get_dust_component(component_id)
@@ -832,6 +808,7 @@ class SkiFile:
         # Return the normalization
         return get_unique_element(dust_component, "normalization")
 
+    ## This function returns the dust mix for the dust component with the specified id
     def get_dust_component_mix(self, component_id):
 
         # Get the dust component
@@ -840,18 +817,8 @@ class SkiFile:
         # Return the dust mix
         return get_unique_element(dust_component, "mix")
 
+    ## This functions sets a THEMIS dust mix model for the dust component with the specified id
     def set_dust_component_themis_mix(self, component_id, hydrocarbon_pops=25, enstatite_pops=25, forsterite_pops=25, write_mix=True, write_mean_mix=True, write_size=True):
-
-        """
-        This function sets the THEMIS dust mix for the specified dust component
-        :param component_id:
-        :param hydrocarbon_pops:
-        :param enstatite_pops:
-        :param forsterite_pops:
-        :param write_mix:
-        :param write_mean_mix:
-        :param write_size:
-        """
 
         # Get the dust mix
         mix = self.get_dust_component_mix(component_id)
@@ -868,13 +835,8 @@ class SkiFile:
                  "enstatitePops": str(enstatite_pops), "forsteritePops": str(forsterite_pops)}
         parent.append(parent.makeelement("ThemisDustMix", attrs))
 
+    ## This function returns the mass of the dust component with the specified id, as an Astropy quantity
     def get_dust_component_mass(self, component_id):
-
-        """
-        This function returns the dust mass for a specified dust component
-        :param component_id:
-        :return:
-        """
 
         # Get the dust component normalization of the component
         normalization = self.get_dust_component_normalization(component_id)
@@ -885,14 +847,8 @@ class SkiFile:
         # Get the dust mass and return it as a quantity
         return get_quantity(normalization, "dustMass")
 
+    ## This function sets the mass of the dust component with the specified id. The mass should be an Astropy quantity.
     def set_dust_component_mass(self, component_id, mass):
-
-        """
-        This function sets the dust mass to a specific value, for a specified dust component (is none is given, the first dust component)
-        :param component_id: index (integer) or description (string)
-        :param mass: the dust mass as a quantity
-        :return:
-        """
 
         # Get the dust component normalization of the component
         normalization = self.get_dust_component_normalization(component_id)
@@ -903,13 +859,13 @@ class SkiFile:
         # Set the new dust mass
         normalization.set("dustMass", str(mass.to("Msun")) + " Msun")
 
-    # This function returns the wavelength grid
+    ## This function returns the wavelength grid
     def get_wavelength_grid(self):
 
         # Get the wavelength grid
         return self.get_unique_base_element("wavelengthGrid")
 
-    # This function sets the wavelength grid to a file
+    ## This function sets the wavelength grid to a file
     def set_file_wavelength_grid(self, filename):
 
         # Get the wavelength grid
@@ -925,6 +881,7 @@ class SkiFile:
         attrs = {"filename": filename}
         parent.append(parent.makeelement("FileWavelengthGrid", attrs))
 
+    ## This function returns the geometry of the stellar component with the specified id
     def get_stellar_component_geometry(self, component_id):
 
         # Get the stellar component
@@ -933,6 +890,7 @@ class SkiFile:
         # Return the geometry element of the stellar component
         return get_unique_element(stellar_component, "geometry")
 
+    ## This function sets the geometry of the specified stellar component to a FITS file
     def set_stellar_component_fits_geometry(self, component_id, filename, pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height):
 
         # Get the stellar component geometry
@@ -950,6 +908,7 @@ class SkiFile:
                  "xcenter": str(x_center), "ycenter": str(y_center), "axialScale": str(scale_height)}
         parent.append(parent.makeelement("ReadFitsGeometry", attrs))
 
+    ## This function sets the geometry of the specified stellar component to a Sersic profile with an specific y and z flattening
     def set_stellar_component_sersic_geometry(self, component_id, index, radius, y_flattening=1, z_flattening=1):
 
         # Get the stellar component geometry
@@ -975,6 +934,7 @@ class SkiFile:
         # Add the new geometry
         parent.append(geometry)
 
+    ## This function sets the geometry of the specified stellar component to an exponential disk profile
     def set_stellar_component_expdisk_geometry(self, component_id, radial_scale, axial_scale, radial_truncation=0, axial_truncation=0, inner_radius=0):
 
         # Get the stellar component geometry
@@ -990,6 +950,7 @@ class SkiFile:
         attrs = {"radialScale": str(radial_scale), "axialScale": str(axial_scale), "radialTrunc": str(radial_truncation), "axialTrunc": str(axial_truncation), "innerRadius": str(inner_radius)}
         parent.append(parent.makeelement("ExpDiskGeometry", attrs))
 
+    ## This function returns the SED template of the specified stellar component
     def get_stellar_component_sed(self, component_id):
 
         # Get the stellar component
@@ -998,6 +959,8 @@ class SkiFile:
         # Get the SED element
         return get_unique_element(component, "sed")
 
+    ## This function sets the SED template of the specified stellar component to a certain model with a specific age
+    #  and metallicity (but not MAPPINGS SED)
     def set_stellar_component_sed(self, component_id, template, age, metallicity):
 
         # The name of the template class in SKIRT
@@ -1016,6 +979,7 @@ class SkiFile:
         attrs = {"age": str(age), "metallicity": str(metallicity)}
         parent.append(parent.makeelement(template_class, attrs))
 
+    ## This function sets a MAPPINGS SED template for the stellar component with the specified id
     def set_stellar_component_mappingssed(self, component_id, metallicity, compactness, pressure, covering_factor):
 
         # Get the stellar component SED
@@ -1031,6 +995,7 @@ class SkiFile:
         attrs = {"metallicity": str(metallicity), "compactness": str(compactness), "pressure": str(pressure), "coveringFactor": str(covering_factor)}
         parent.append(parent.makeelement("MappingsSED", attrs))
 
+    ## This function returns the dust emissivity
     def get_dust_emissivity(self):
 
         # Get the dust system
@@ -1039,6 +1004,7 @@ class SkiFile:
         # Return the dust emissivity element
         return get_unique_element(dust_system, "dustEmissivity")
 
+    ## This function sets a transient dust emissivity for the simulation
     def set_transient_dust_emissivity(self):
 
         # Get the dust emissivity
@@ -1053,6 +1019,7 @@ class SkiFile:
         # Create and add the new emissivity
         parent.append(parent.makeelement("TransientDustEmissivity", {}))
 
+    ## This function returns the dust library
     def get_dust_lib(self):
 
         # Get the dust system
@@ -1061,6 +1028,7 @@ class SkiFile:
         # Return the dust lib element
         return get_unique_element(dust_system, "dustLib")
 
+    ## This function sets the dust library to an AllCellsDustLib
     def set_allcells_dust_lib(self):
 
         # Get the dust lib
@@ -1075,6 +1043,7 @@ class SkiFile:
         # Create and add the new library
         parent.append(parent.makeelement("AllCellsDustLib", {}))
 
+    ## This function sets the dust library to a 2D dust library
     def set_2d_dust_lib(self, temperature_points=25, wavelength_points=10):
 
         # Get the dust lib
@@ -1090,6 +1059,7 @@ class SkiFile:
         attrs = {"pointsTemperature": str(temperature_points), "pointsWavelength": str(wavelength_points)}
         parent.append(parent.makeelement("Dim2DustLib", attrs))
 
+    ## This function sets the dust library to a 1D dust library
     def set_1d_dust_lib(self, points):
 
         # Get the dust lib
@@ -1105,6 +1075,7 @@ class SkiFile:
         attrs = {"entries": str(points)}
         parent.append(parent.makeelement("Dim1DustLib", attrs))
 
+    ## This function returns the dust grid
     def get_dust_grid(self):
 
         # Get the dust system
@@ -1113,6 +1084,7 @@ class SkiFile:
         # Return the dust grid
         return get_unique_element(dust_system, "dustGrid")
 
+    ## This function sets a binary tree dust grid for the dust system
     def set_binary_tree_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, write_grid=True, min_level=15,
                                   max_level=25, search_method="Neighbor", sample_count=100, max_optical_depth=0,
                                   max_mass_fraction=1e-6, max_dens_disp_fraction=0, direction_method="Alternating",
@@ -1136,6 +1108,7 @@ class SkiFile:
                  "assigner": assigner}
         parent.append(parent.makeelement("BinTreeDustGrid", attrs))
 
+    ## This function sets an octtree dust grid for the dust system
     def set_octtree_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, write_grid=True, min_level=2,
                               max_level=6, search_method="Neighbor", sample_count=100, max_optical_depth=0,
                               max_mass_fraction=1e-6, max_dens_disp_fraction=0, barycentric=False,
@@ -1159,6 +1132,7 @@ class SkiFile:
                  "assigner": assigner}
         parent.append(parent.makeelement("OctTreeDustGrid", attrs))
 
+    ## This function returns a list of the instruments in the ski file, or the 'instruments' element if as_list is False
     def get_instruments(self, as_list=True):
 
         # Get the instrument system
@@ -1176,6 +1150,7 @@ class SkiFile:
         if as_list: return instruments_element.getchildren()
         else: return instruments_element
 
+    ## This function returns the names of all the instruments in the ski file as a list
     def get_instrument_names(self):
 
         # Initialize a list to contain the names
@@ -1196,6 +1171,7 @@ class SkiFile:
         # Return the list of names
         return names
 
+    ## This function removes the instrument with the specified name
     def remove_instrument(self, name):
 
         # Get the instrument with the specified name
@@ -1207,11 +1183,13 @@ class SkiFile:
         # Remove the instrument
         parent.remove(instrument)
 
+    ## This function removes all instruments
     def remove_all_instruments(self):
 
         for name in self.get_instrument_names():
             self.remove_instrument(name)
 
+    ## This function adds a FullInstrument to the instrument system
     def add_full_instrument(self, name, distance, inclination, azimuth, position_angle, field_x, field_y,
                             pixels_x, pixels_y, center_x, center_y, scattering_levels=0):
 
@@ -1225,6 +1203,7 @@ class SkiFile:
                  "centerX": str(center_x), "centerY": str(center_y), "scatteringLevels": str(scattering_levels)}
         instruments.append(instruments.makeelement("FullInstrument", attrs))
 
+    ## This function adds a SimpleInstrument to the instrument system
     def add_simple_instrument(self, name, distance, inclination, azimuth, position_angle, field_x, field_y,
                               pixels_x, pixels_y, center_x, center_y):
 
@@ -1238,6 +1217,7 @@ class SkiFile:
                  "centerX": str(center_x), "centerY": str(center_y)}
         instruments.append(instruments.makeelement("SimpleInstrument", attrs))
 
+    ## This function adds an SEDInstrument to the instrument system
     def add_sed_instrument(self, name, distance, inclination, azimuth, position_angle):
 
         # Get the 'instruments' element
@@ -1248,6 +1228,7 @@ class SkiFile:
                  "azimuth": str(azimuth), "positionAngle": str(position_angle)}
         instruments.append(instruments.makeelement("SEDInstrument", attrs))
 
+    ## This function returns the instrument with the specified name
     def get_instrument(self, name):
 
         # Get the list of instruments
@@ -1264,6 +1245,7 @@ class SkiFile:
 
         raise ValueError("No instrument with the name '" + name + "'")
 
+    ## This function changes the name of the specified instrument
     def set_instrument_name(self, old_name, new_name):
 
         # Get the instrument with the specified name
@@ -1272,6 +1254,7 @@ class SkiFile:
         # Set the new name
         instrument.set("instrumentName", new_name)
 
+    ## This function returns the distance of the specified instrument as an Astropy quantity
     def get_instrument_distance(self, name):
 
         # Get the instrument with this name
@@ -1280,6 +1263,7 @@ class SkiFile:
         # Return the distance
         return get_quantity(instrument, "distance")
 
+    ## This function sets the distance of the specified instruments. The distance should be an Astropy quantity.
     def set_instrument_distance(self, name, value):
 
         # Get the instrument with this name
@@ -1288,6 +1272,7 @@ class SkiFile:
         # Set the distance
         set_quantity(instrument, "distance", value)
 
+    ## This function returns the inclination of the specified instrument as an Astropy Angle.
     def get_instrument_inclination(self, name):
 
         # Get the instrument with this name
@@ -1296,6 +1281,7 @@ class SkiFile:
         # Return the inclination
         return get_quantity(instrument, "inclination")
 
+    ## This function sets the inclination of the specified instrument. The inclination should be an Astropy Angle or quantity.
     def set_instrument_inclination(self, name, value):
 
         # Get the instrument with this name
@@ -1304,6 +1290,7 @@ class SkiFile:
         # Set the inclination
         set_quantity(instrument, "inclination", value)
 
+    ## This function returns the azimuth angle of the specified instrument as an Astropy Angle.
     def get_instrument_azimuth(self, name):
 
         # Get the instrument with this name
@@ -1312,6 +1299,7 @@ class SkiFile:
         # Return the azimuth
         return get_quantity(instrument, "azimuth")
 
+    ## This function sets the azimuth angle of the specified instrument. The angle should be an Astropy Angle or quantity.
     def set_instrument_azimuth(self, name, value):
 
         # Get the instrument with this name
@@ -1320,6 +1308,7 @@ class SkiFile:
         # Set the azimuth angle
         set_quantity(instrument, "azimuth", value)
 
+    ## This function returns the position angle of the specified instrument as an Astropy Angle.
     def get_instrument_pa(self, name):
 
         # Get the instrument with this name
@@ -1328,6 +1317,7 @@ class SkiFile:
         # Return the position angle
         return get_quantity(instrument, "positionAngle")
 
+    ## This function sets the position angle of the specified instrument. The angle should be an Astropy Angle or quantity.
     def set_instrument_pa(self, name, value):
 
         # Get the instrument with this name
@@ -1336,6 +1326,7 @@ class SkiFile:
         # Set the position angle
         set_quantity(instrument, "positionAngle", value)
 
+    ## This function sets the orientation of the specified instrument. The angles should be Astropy Angle or Quantity instances.
     def set_instrument_orientation(self, name, inclination, position_angle, azimuth):
 
         # Get the instrument with this name
@@ -1346,6 +1337,7 @@ class SkiFile:
         set_quantity(instrument, "positionAngle", position_angle)
         set_quantity(instrument, "azimuth", azimuth)
 
+    ## This function sets the orientation of the specified instrument to a face-on orientation.
     def set_instrument_orientation_faceon(self, name):
 
         from astropy.coordinates import Angle
@@ -1358,6 +1350,7 @@ class SkiFile:
         # Set the angles
         self.set_instrument_orientation(name, inclination, position_angle, azimuth)
 
+    ## This function sets the orientation of the specified instrument to an edge-on orientation
     def set_instrument_orientation_edgeon(self, name):
 
         from astropy.coordinates import Angle
@@ -1370,6 +1363,7 @@ class SkiFile:
         # Set the angles
         self.set_instrument_orientation(name, inclination, position_angle, azimuth)
 
+    ## This function returns the size of the specified instrument as a tuple (size_x, size_y)
     def get_instrument_size(self, name):
 
         # Get the instrument with this name
@@ -1378,6 +1372,7 @@ class SkiFile:
         # Return the size
         return int(instrument.get("pixelsX")), int(instrument.get("pixelsY"))
 
+    ## This function sets the size of the specified instrument
     def set_instrument_size(self, name, x_size, y_size):
 
         # Get the instrument with this name
@@ -1387,6 +1382,7 @@ class SkiFile:
         instrument.set("pixelsX", str(x_size))
         instrument.set("pixelsY", str(y_size))
 
+    ## This function returns the field of view of the specified instrument as a tuple (field_x, field_y)
     def get_instrument_field(self, name):
 
         # Get the instrument with this name
@@ -1395,6 +1391,7 @@ class SkiFile:
         # Get the field of view
         return get_quantity(instrument, "fieldOfViewX"), get_quantity(instrument, "fieldOfViewY")
 
+    ## This function sets the field of view of the specified instrument
     def set_instrument_field(self, name, x_field, y_field):
 
         # Get the instrument with this name
@@ -1404,15 +1401,12 @@ class SkiFile:
         set_quantity(instrument, "fieldOfViewX", x_field)
         set_quantity(instrument, "fieldOfViewY", y_field)
 
+    ## This (experimental) function converts the ski file structure into a (nested) python dictionary
     def to_dict(self):
-
-        """
-        This function returns the ski file structure as a nested dictionary
-        :return:
-        """
 
         return recursive_dict(self.tree.getroot())
 
+    ## This (experimental) function converts the ski file structure into json format
     def to_json(self):
 
         """
@@ -1423,26 +1417,15 @@ class SkiFile:
         import json
         return json.dumps(self.to_dict())
 
+    ## This function returns the xml tree element with the specified name that is at the base level of the simulation hierarchy
     def get_unique_base_element(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
 
         return get_unique_element(self.tree.getroot(), "//"+name)
 
 # -----------------------------------------------------------------
 
+## This function returns the xml tree element with the specified name that is a child of the specified element
 def get_unique_element(element, name):
-
-    """
-    This function ...
-    :param element:
-    :param name:
-    :return:
-    """
 
     # Get child element of the given element
     parents = element.xpath(name)
@@ -1462,16 +1445,11 @@ def get_unique_element(element, name):
 
 # -----------------------------------------------------------------
 
+## This function returns the value of a certain parameter of the specified tree element as an Astropy quantity. The
+#  default unit can be specified which is used when the unit is not described in the ski file.
 def get_quantity(element, name, default_unit=None):
 
-    """
-    This function ...
-    :param element:
-    :param name:
-    :param default_unit:
-    :return:
-    """
-
+    # Import Astropy here to avoid import errors for this module for users without an Astropy installation
     from astropy.units import Unit
 
     splitted = element.get(name).split()
@@ -1485,17 +1463,10 @@ def get_quantity(element, name, default_unit=None):
 
 # -----------------------------------------------------------------
 
+## This function sets the value of a certain parameter of the specified tree element from an Astropy quantity.
 def set_quantity(element, name, value, default_unit=None):
 
-    """
-    This function ...
-    :param element:
-    :param name:
-    :param value:
-    :param default_unit:
-    :return:
-    """
-
+    # Import Astropy here to avoid import errors for this module for users without an Astropy installation
     from astropy.units import Unit
 
     try:
