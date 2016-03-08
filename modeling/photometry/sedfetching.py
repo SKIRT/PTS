@@ -17,7 +17,7 @@ from astroquery.vizier import Vizier
 from astropy.units import Unit, spectral
 
 # Import the relevant PTS classes and modules
-from ..core import ObservedSED
+from ..core.sed import ObservedSED
 from ...core.tools import tables, filesystem
 from ...core.basics.filter import Filter
 from ...core.tools.logging import log

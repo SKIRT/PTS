@@ -17,4 +17,3 @@
 # -----------------------------------------------------------------
 
 # Import classes to make them available at the level of this subpackage
-from .sed import SEDPlotter

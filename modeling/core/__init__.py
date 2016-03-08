@@ -17,5 +17,3 @@
 # -----------------------------------------------------------------
 
 # Import classes to make them available at the level of this subpackage
-from .component import ModelingComponent
-from .sed import SED, ObservedSED

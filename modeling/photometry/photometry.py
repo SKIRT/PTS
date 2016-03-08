@@ -26,10 +26,10 @@ from .component import PhotometryComponent
 from .sedfetching import SEDFetcher
 from ...core.tools import filesystem
 from ...core.tools.logging import log
-from ..core import ObservedSED
+from ..core.sed import ObservedSED
 from ...core.basics.errorbar import ErrorBar
 from ...core.tools import tables
-from ..plotting import SEDPlotter
+from ..plotting.sed import SEDPlotter
 
 # -----------------------------------------------------------------
 
