@@ -675,7 +675,7 @@ def get_galaxy_info(name, position):
             if row["ANames"]: rows_with_names.append(row)
 
         # If only one row remains, take that one for the galaxy we are looking for
-        if len(rows_with_names) == 1: entry = row
+        if len(rows_with_names) == 1: entry = rows_with_names[0]
 
         # Else, loop over the rows where names are defined and look for a match
         else:
@@ -689,9 +689,9 @@ def get_galaxy_info(name, position):
                     break
 
         # If no matches are found, look for the table entry for which the coordinate matches the given position (if any)
-        if position is not None:
+        if entry is None and position is not None:
             for row in table:
-                if row["_RAJ2000"] == position.ra.value and row["_DEJ2000"] == position.dec.value:
+                if np.isclose(row["_RAJ2000"], position.ra.value) and np.isclose(row["_DEJ2000"], position.dec.value):
                     entry = row
                     break
 
