@@ -97,10 +97,7 @@ class Extractor(Configurable):
             extractor.config.writing.stellar_catalog_path = "stars.cat"
 
         # Writing segmentation map
-        if arguments.segments:
-
-            extractor.config.other_sources.write_segments = True
-            extractor.config.other_sources.writing.segments_path = "other_segments.fits"
+        if arguments.segments: extractor.config.write_segments = True
 
         # Synchronize catalog
         if arguments.synchronize: extractor.config.synchronize_catalogs = True
@@ -237,6 +234,18 @@ class Extractor(Configurable):
             self.star_extractor.config.write_masked_frame = True
             self.star_extractor.config.writing.masked_frame_path = "masked_stars.fits"
 
+        # Write segmentation maps
+        if self.config.write_segments:
+
+            self.star_extractor.config.write_star_segments = True
+            self.star_extractor.config.writing.star_segments_path = "star_segments.fits"
+
+            self.star_extractor.config.write_saturation_segments = True
+            self.star_extractor.config.writing.saturation_segments_path = "saturation_segments.fits"
+
+            self.trained_extractor.config.write_segments = True
+            self.trained_extractor.config.writing.segments_path = "other_segments.fits"
+
         # Set the interpolation method wherever it is appropriate
         self.galaxy_extractor.config.removal.interpolation_method = self.config.interpolation_method
         self.galaxy_extractor.config.manual.interpolation_method = self.config.interpolation_method
@@ -339,7 +348,7 @@ class Extractor(Configurable):
         log.info("Looking for sources in the frame not in the catalog ...")
 
         # If the wavelength of this image is greater than 25 micron, don't classify the sources that are found
-        if self.image.wavelength is not None and self.image.wavelength < wavelengths.ranges.ir.mir.max: self.trained_extractor.config.classify = False
+        if self.image.wavelength is not None and self.image.wavelength > wavelengths.ranges.ir.mir.max: self.trained_extractor.config.classify = False
         else: self.trained_extractor.config.classify = True
 
         # Run the trained extractor just to find sources

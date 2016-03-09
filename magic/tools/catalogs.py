@@ -743,6 +743,9 @@ def galaxies_in_box(center, ra_span, dec_span):
 
     """
     This function ...
+    :param center:
+    :param ra_span:
+    :param dec_span:
     :return:
     """
 

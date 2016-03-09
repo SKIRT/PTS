@@ -160,6 +160,78 @@ class Source(object):
     # -----------------------------------------------------------------
 
     @property
+    def x_slice(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.cutout.x_slice
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_slice(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.cutout.y_slice
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_min(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.cutout.x_min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cutout.x_max
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_min(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cutout.y_min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cutout.y_max
+
+    # -----------------------------------------------------------------
+
+    @property
     def background_mask(self):
 
         """
@@ -241,6 +313,24 @@ class Source(object):
         #plotting.plot_box(np.ma.masked_array(np.asarray(self.subtracted), mask=self.cutout_mask.inverse()))
 
         value = np.ma.sum(np.ma.masked_array(np.asarray(self.subtracted), mask=self.background_mask))
+
+        if np.isnan(value): return 0.0
+        else: return value
+
+    # -----------------------------------------------------------------
+
+    def get_flux(self, without_background=False):
+
+        """
+        This function ...
+        :param without_background:
+        :return:
+        """
+
+        if without_background: data = self.cutout
+        else: data = self.subtracted
+
+        value = np.ma.sum(np.ma.masked_array(np.asarray(data), mask=self.background_mask))
 
         if np.isnan(value): return 0.0
         else: return value

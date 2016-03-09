@@ -18,6 +18,7 @@ import argparse
 
 # Import the relevant AstroMagic classes and modules
 from pts.magic import ImageImporter, Extractor
+from pts.magic.extract.simpleextraction import SimpleExtractor
 from pts.core.tools import configuration
 from pts.core.tools import logging, time, parsing
 
@@ -34,7 +35,7 @@ parser.add_argument("--settings", type=configuration.from_string, help="settings
 parser.add_argument("--regions", action="store_true", help="write regions")
 parser.add_argument("--catalogs", action="store_true", help="write catalogs")
 parser.add_argument("--masks", action="store_true", help="write masks")
-parser.add_argument("--segments", action="store_true", help="write segmentation map of other sources")
+parser.add_argument("--segments", action="store_true", help="write segmentation maps")
 parser.add_argument("--synchronize", action="store_true", help="synchronize with DustPedia catalog")
 parser.add_argument("--not_stars", type=int_list, help="the indices of stars which should not be removed")
 parser.add_argument("--remove_stars", type=int_list, help="the indices of stars that should be removed")
@@ -48,6 +49,7 @@ parser.add_argument("--ignore", type=str, help="the name of the file specifying 
 parser.add_argument("--special", type=str, help="the name of the file specifying regions with objects needing special attention")
 parser.add_argument("--bad", type=str, help="the name of the file specifying regions that have to be added to the mask of bad pixels")
 parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
+parser.add_argument("--interactive", action="store_true", help="enable interactive mode")
 
 # Parse the command line arguments
 arguments = parser.parse_args()
@@ -91,10 +93,16 @@ logfile_path = os.path.join(arguments.output_path, time.unique_name("extraction"
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
-logging.setup_log(level=level, path=logfile_path)
+log = logging.setup_log(level=level, path=logfile_path)
 logging.log.info("Starting extract script ...")
 
 # -----------------------------------------------------------------
+
+# If interactive mode is enabled, always write out the regions, masks and segmentation maps
+if arguments.interactive:
+    arguments.regions = True
+    arguments.masks = True
+    arguments.segments = True
 
 # Determine the full path to the image
 image_path = os.path.abspath(arguments.image)
@@ -116,5 +124,16 @@ extractor.run(importer.image)
 
 # Save the result
 extractor.write_result(importer.image.original_header)
+
+# -----------------------------------------------------------------
+
+if arguments.interactive:
+
+    # Wait for keystroke
+    name = raw_input("Press enter to continue ...")
+
+    simple_extractor = SimpleExtractor()
+
+    simple_extractor.run()
 
 # -----------------------------------------------------------------

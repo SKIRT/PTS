@@ -23,7 +23,7 @@ from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
 from ..basics import Extent, Mask, Region, SkyRegion, Ellipse, SkyEllipse
-from ..core import Source
+from ..core import Source, Frame
 from ..sky import Star
 from ..tools import statistics, fitting
 
@@ -523,6 +523,17 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_star_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+
+
+    # -----------------------------------------------------------------
+
     def find_saturation(self):
 
         """
@@ -542,11 +553,53 @@ class StarExtractor(Configurable):
         # Set the number of stars where saturation was removed to zero initially
         success = 0
 
+        if self.config.saturation.only_brightest:
+
+            fluxes = sorted(self.get_fluxes(without_background=True))
+
+            # Percentage method
+            if self.config.saturation.brightest_method == "percentage":
+
+                # Get the number of fluxes lower than the percentage of highest fluxes
+                percentage = self.config.saturation.brightest_level
+                fraction = 0.01 * percentage
+                count_before = int((1.0-fraction)*len(fluxes))
+
+                # Determine the flux threshold
+                flux_threshold = fluxes[count_before-1]
+
+            # Sigma clipping method
+            elif self.config.saturation.brightest_method == "sigma clipping":
+
+                # Determine the sigma level
+                sigma_level = self.config.saturation.brightest_level
+
+                # Determine the flux threshold
+                flux_threshold = statistics.cutoff(fluxes, "sigma_clip", sigma_level)
+
+            # Invalid option
+            else: raise ValueError("Brightest method should be 'percentage' or 'sigma clipping'")
+
+        else: flux_threshold = None
+
         # Loop over all stars
         for star in self.stars:
 
             # If this star should be ignored, skip it
             if star.ignore: continue
+
+            # If a flux threshold is defined
+            if flux_threshold is not None:
+
+                # No source, skip right away
+                if not star.has_source: continue
+
+                # Determine the flux of this star
+                if not star.source.has_background: star.source.estimate_background()
+                flux = star.get_flux(without_background=True)
+
+                # Skip this star if its flux is lower than the threshold
+                if flux < flux_threshold: continue
 
             # If the 'only_saturation' list is defined, skip this star if its index is not in that list
             if self.config.manual_indices.only_saturation is not None and star.index not in self.config.manual_indices.only_saturation: continue
@@ -598,8 +651,6 @@ class StarExtractor(Configurable):
 
         """
         This function ...
-        :param frame:
-        :param factor:
         :return:
         """
 
@@ -739,7 +790,6 @@ class StarExtractor(Configurable):
 
         """
         This function ...
-        :param frame:
         :return:
         """
 
@@ -844,6 +894,60 @@ class StarExtractor(Configurable):
 
         # Close the file
         f.close()
+
+    # -----------------------------------------------------------------
+
+    def write_star_segments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the segmentation map
+        path = self.full_output_path(self.config.writing.star_segments_path)
+
+        # Create an empty frame for the segments
+        segments = Frame.zeros_like(self.image.frames.primary)
+
+        # Loop over all stars
+        for star in self.stars:
+
+            # Skip stars without a source
+            if not star.has_source: continue
+
+            # Add the star segment to the segmentation map
+            segments[star.source.y_slice, star.source.x_slice][star.source.mask] = star.index
+
+        # Save the segmentation map
+        segments.save(path, origin=self.name)
+
+    # -----------------------------------------------------------------
+
+    def write_saturation_segments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the segmentation map
+        path = self.full_output_path(self.config.writing.saturation_segments_path)
+
+        # Create an empty frame for the segments
+        segments = Frame.zeros_like(self.image.frames.primary)
+
+        # Loop over all stars
+        for star in self.stars:
+
+            # Skip stars without a saturation source
+            if not star.has_saturation: continue
+
+            # Add the saturation segment to the segmentation map
+            segments[star.saturation.y_slice, star.saturation.x_slice][star.saturation.mask] = star.index
+
+        # Save the segmentation map
+        segments.save(path, origin=self.name)
 
     # -----------------------------------------------------------------
 
@@ -1135,6 +1239,31 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_fluxes(self, without_background=False):
+
+        """
+        This function ...
+        :param without_background:
+        :return:
+        """
+
+        # Initialize a list to contain the fluxes of the stars
+        fluxes = []
+
+        # Loop over all stars
+        for star in self.stars:
+
+            # If the star contains a source and the background of this source has been subtracted, calculate the flux
+            if star.has_source and star.source.has_background:
+
+                # Add the flux to the list
+                fluxes.append(star.get_flux(without_background))
+
+        # Return the list
+        return fluxes
+
+    # -----------------------------------------------------------------
+
     @property
     def amplitude_differences(self):
 
@@ -1332,6 +1461,12 @@ class StarExtractor(Configurable):
 
         # If requested, write out the saturation region
         if self.config.write_saturation_region: self.write_saturation_region()
+
+        # If requested, write out a segmentation map of the stars
+        if self.config.write_star_segments: self.write_star_segments()
+
+        # If requested, write out a segmentation map of the saturation
+        if self.config.write_saturation_segments: self.write_saturation_segments()
 
         # If requested, write out the frame where the stars are masked
         if self.config.write_masked_frame: self.write_masked_frame()

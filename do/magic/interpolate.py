@@ -30,7 +30,6 @@ from pts.core.tools import logging, time, filesystem
 parser = argparse.ArgumentParser()
 parser.add_argument("image", type=str, help="the name of the input image")
 parser.add_argument("region", type=str, help="the name of the region file over which to interpolate")
-parser.add_argument("--galaxy", type=str, help="the name of the region file covering the galaxy in the image")
 parser.add_argument("--mask", action="store_true", help="write out the mask")
 parser.add_argument("--color", type=str, help="only interpolate over the shapes with this color")
 parser.add_argument("--ignore_color", type=str, help="ignore shapes with this particular color")
@@ -116,52 +115,6 @@ log.info("Creating a mask from the region ...")
 
 # Create a mask from the region
 mask = region.to_mask(frame.xsize, frame.ysize)
-
-if arguments.galaxy is not None:
-
-    # Inform the user
-    log.info("Loading the galaxy region ...")
-    galaxy_region_path = filesystem.join(arguments.input_path, arguments.galaxy)
-    galaxy_region = Region.from_file(galaxy_region_path)
-
-    # Inform the user
-    log.info("Creating a mask from the galaxy region ...")
-
-    # Create a mask from the region
-    galaxy_mask = galaxy_region.to_mask(frame.xsize, frame.ysize)
-
-    # Check where the galaxy mask overlaps with the segmentation map
-    from pts.magic.tools import masks
-    overlapping, not_overlapping, overlapping_segments, not_overlapping_segments = masks.split_overlap(mask, galaxy_mask, return_segments=True)
-
-    #print(type(overlapping))
-    #print(type(not_overlapping))
-
-    #plotting.plot_box(overlapping)
-    #plotting.plot_box(not_overlapping)
-
-    mask = overlapping
-
-    # Inform the user
-    log.info("Interpolating over the galaxy ...")
-
-    # Find contours
-    sigma_level = 4.0
-    from pts.magic.analysis import sources
-    contours = sources.find_contours(overlapping_segments, overlapping_segments, sigma_level)
-
-    from pts.magic.core import Source
-
-    # Construct sources
-    for contour in contours:
-
-        # Create a source from the aperture
-        source = Source.from_ellipse(frame, contour, 1.3)
-
-        source.estimate_background("polynomial", True)
-
-        # Replace the frame with the estimated background
-        source.background.replace(frame, where=source.mask)
 
 #plotting.plot_box(mask)
 

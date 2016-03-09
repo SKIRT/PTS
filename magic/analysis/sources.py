@@ -151,12 +151,11 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
 
     """
     This function searches for sources ...
-    :param box:
-    :param x_peak:
-    :param y_peak:
-    :param x_min:
-    :param y_min:
-    :param plot:
+    :param source:
+    :param config:
+    :param track_record:
+    :param level:
+    :param special:
     :return:
     """
 
@@ -178,9 +177,9 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
     try:
         model = source.subtracted.fit_model(position, model_name, amplitude=source.cutout.value(source.peak))
     except IndexError:
-        log.debug("PEAK= (", source.peak.x, source.peak.y, ")")
-        log.debug("source.cutout.x_min,y_min = ", source.cutout.x_min, source.cutout.y_min)
-        log.debug("rel_peak = ", source.peak.x - source.cutout.x_min, source.peak.y - source.cutout.y_min)
+        log.debug("PEAK= (" + str(source.peak.x) + "," + str(source.peak.y) + ")")
+        log.debug("source.cutout.x_min,y_min = " + str(source.cutout.x_min) + "," + str(source.cutout.y_min))
+        log.debug("rel_peak = " + str(source.peak.x - source.cutout.x_min) + "," + str(source.peak.y - source.cutout.y_min))
 
         # TODO: NO SOLUTION YET AS TO WHY SOMETIMES THE PEAK POSITIONS ARE OUTSIDE OF THE SOURCE.CUTOUT
         return None, None
@@ -188,7 +187,7 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
     # If the amplitude is negative, the model is invalid
     if model.amplitude < 0:
 
-        log.warning("Source profile has negative amplitude")
+        log.warning("Model fitted to source has negative amplitude")
         return None, None
 
     # Calculate the difference between the mean position of the model and the position of the center / peak
@@ -237,6 +236,8 @@ def estimate_background(data, mask, interpolate=True, sigma_clip=True):
     This function ...
     :param data:
     :param mask:
+    :param interpolate:
+    :param sigma_clip:
     :return:
     """
 

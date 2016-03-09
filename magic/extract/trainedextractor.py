@@ -73,14 +73,8 @@ class TrainedExtractor(Configurable):
         # List of stars
         self.stars = []
 
-        # Stellar catalog
-        self.catalog = []
-
         # Mask
         self.mask = None
-
-        # Set the catalog to None initially
-        self.catalog = None
 
     # -----------------------------------------------------------------
 
@@ -88,6 +82,7 @@ class TrainedExtractor(Configurable):
 
         """
         This function ...
+        :pram image:
         :param galaxyextractor:
         :param starextractor:
         :param special:

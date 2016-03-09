@@ -125,12 +125,16 @@ def sigma_clipped_statistics(data, sigma=3.0, mask=None):
 
 # -----------------------------------------------------------------
 
-def sigma_clip_split(input_list, criterium, sigma=3.0, only_high=False, only_low=False, nans="low"):
+def sigma_clip_split(input_list, criterion, sigma=3.0, only_high=False, only_low=False, nans="low"):
 
     """
     This function ...
     :param input_list:
-    :param criterium:
+    :param criterion:
+    :param sigma:
+    :param only_high:
+    :param only_low:
+    :param nans:
     :return:
     """
 
@@ -138,7 +142,7 @@ def sigma_clip_split(input_list, criterium, sigma=3.0, only_high=False, only_low
     determinants = []
 
     # Loop over all the star candidates and calculate their width
-    for item in input_list: determinants.append(criterium(item))
+    for item in input_list: determinants.append(criterion(item))
 
     # Use sigma clipping to seperate stars and unidentified objects
     mask = sigma_clip_mask_list(determinants, sigma=sigma)
@@ -153,7 +157,7 @@ def sigma_clip_split(input_list, criterium, sigma=3.0, only_high=False, only_low
     # Loop over all items in the input list, putting them in either the valid or invalid list
     for index, item in enumerate(input_list):
 
-        value = criterium(item)
+        value = criterion(item)
 
         if only_high:
 
@@ -179,6 +183,9 @@ def cutoff(values, method, limit):
 
     """
     This function ...
+    :param values:
+    :param method:
+    :param limit:
     """
 
     # Percentage method

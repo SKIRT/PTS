@@ -22,6 +22,7 @@ from ..core import Source
 from ..tools import statistics, fitting, masks, plotting
 from ..analysis import sources
 from ..basics import Ellipse
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -111,6 +112,18 @@ class Star(SkyObject):
 
     # -----------------------------------------------------------------
 
+    def get_flux(self, without_background=False):
+
+        """
+        This function ...
+        :param without_background:
+        :return:
+        """
+
+        return self.source.get_flux(without_background)
+
+    # -----------------------------------------------------------------
+
     def ellipse(self, wcs, default_radius):
 
         """
@@ -196,7 +209,7 @@ class Star(SkyObject):
             elif self.source.has_peak: center = self.source.peak
             else:
 
-                print("WARNING: star source does not have peak")
+                log.warning("Star source does not have peak")
                 center = self.pixel_position(frame.wcs)
 
         else:
@@ -205,7 +218,7 @@ class Star(SkyObject):
             center = self.pixel_position(frame.wcs)
 
         # Create the new source
-        ellipse = Ellipse(center, radius, Angle(0.0, u.deg))
+        ellipse = Ellipse(center, radius, Angle(0.0, "deg"))
         source = Source.from_ellipse(frame, ellipse, outer_factor, shape=shape)
 
         # Set peak to that of the previous source
@@ -334,6 +347,7 @@ class Star(SkyObject):
         :param config:
         :param default_fwhm:
         :param galaxy_mask:
+        :param star_mask:
         :return:
         """
 
@@ -355,7 +369,7 @@ class Star(SkyObject):
         # If a 'saturation' source was found
         if saturation_source is not None:
 
-            if self.special: print("DEBUG: initial saturation source found")
+            if self.special: log.debug("Initial saturation source found")
 
             # Calculate the elliptical contour
             contour = sources.find_contour(saturation_source.cutout, saturation_source.mask, config.apertures.sigma_level)
@@ -363,7 +377,7 @@ class Star(SkyObject):
             # Check whether the source centroid matches the star position
             if config.check_centroid:
 
-                if self.special: print("DEBUG: checking contour parameters")
+                if self.special: log.debug("Checking contour parameters ...")
 
                 # Calculate the offset
                 difference = contour.center - self.pixel_position(frame.wcs)
@@ -387,12 +401,12 @@ class Star(SkyObject):
 
                 # Discard this saturation source if the centroid offset or the ellipticity is too large
                 if not masks.overlap(saturation_source.mask, star_mask_cutout):
-                    if self.special: print("DEBUG: checking offset and ellipticity")
+                    if self.special: log.debug("Checking offset and ellipticity")
                     if difference.norm > config.max_centroid_offset or contour.ellipticity > config.max_centroid_ellipticity:
-                        if self.special: print("DEBUG: found to large offset or ellipticity: not a saturation source")
+                        if self.special: log.debug("Found to large offset or ellipticity: not a saturation source")
                         return
                 else:
-                    if self.special: print("DEBUG: saturation mask overlaps other stars, so contour parameters will not be checked")
+                    if self.special: log.debug("Saturation mask overlaps other stars, so contour parameters will not be checked")
 
             if config.second_segmentation:
 

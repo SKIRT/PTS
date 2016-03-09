@@ -53,6 +53,10 @@ class CatalogBuilder(Configurable):
 
         """
         This function ...
+        :param frame:
+        :param galaxy_extractor:
+        :param star_extractor:
+        :param trained_extractor:
         :return:
         """
 

@@ -35,7 +35,7 @@ class Composite(object):
     This function ...
     """
 
-    def __init__(self, base, exclude):
+    def __init__(self, base, exclude, meta=None):
 
         """
         This function ...
@@ -44,6 +44,8 @@ class Composite(object):
 
         self.base = base
         self.exclude = exclude
+
+        self.meta = meta
 
     # -----------------------------------------------------------------
 
@@ -70,7 +72,7 @@ class Line(object):
     This class ...
     """
 
-    def __init__(self, start, end):
+    def __init__(self, start, end, meta=None):
 
         """
         This function ...
@@ -81,6 +83,8 @@ class Line(object):
 
         self.start = start
         self.end = end
+
+        self.meta = meta
 
     # -----------------------------------------------------------------
 
@@ -115,7 +119,7 @@ class Circle(object):
     This class ...
     """
 
-    def __init__(self, center, radius):
+    def __init__(self, center, radius, meta=None):
 
         """
         This function ...
@@ -126,6 +130,8 @@ class Circle(object):
 
         self.center = center
         self.radius = radius
+
+        self.meta = meta
 
     # -----------------------------------------------------------------
 
@@ -182,7 +188,7 @@ class Ellipse(object):
     This class ...
     """
     
-    def __init__(self, center, radius, angle):
+    def __init__(self, center, radius, angle, meta=None):
 
         """
         The constructor ...
@@ -195,6 +201,8 @@ class Ellipse(object):
         self.center = center
         self.radius = radius
         self.angle = angle
+
+        self.meta = meta
 
     # -----------------------------------------------------------------
 
@@ -400,7 +408,7 @@ class Rectangle(object):
     This class ...
     """
     
-    def __init__(self, center, radius, angle=0.0):
+    def __init__(self, center, radius, angle=0.0, meta=None):
         
         """
         The constructor ...
@@ -415,6 +423,8 @@ class Rectangle(object):
         self.center = center
         self.radius = radius
         self.angle = angle
+
+        self.meta = meta
 
     # -----------------------------------------------------------------
 
@@ -674,7 +684,7 @@ class Polygon(object):
     This function ...
     """
 
-    def __init__(self):
+    def __init__(self, meta=None):
 
         """
         The constructor ...
@@ -682,6 +692,8 @@ class Polygon(object):
         """
 
         self.points = []
+
+        self.meta = meta
 
     # -----------------------------------------------------------------
 

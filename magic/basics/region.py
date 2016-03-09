@@ -68,6 +68,11 @@ class Region(list):
         # Loop over all shapes in the region
         for shape in _region:
 
+            # Meta information
+            meta = {}
+            if "text" in shape.attr[1]: meta["text"] = shape.attr[1]["text"]
+            if "color" in shape.attr[1]: meta["color"] = shape.attr[1]["color"]
+
             # Check the color of the shape
             if color is not None and shape.attr[1]["color"] != color: continue
             if ignore_color is not None and shape.attr[1]["color"] == ignore_color: continue
@@ -81,7 +86,7 @@ class Region(list):
                 # Get the position
                 x = shape.coord_list[0]
                 y = shape.coord_list[1]
-                position = Position(x, y)
+                position = Position(x, y, meta=meta)
 
                 # Add the position to the region
                 new_shape = position
@@ -103,7 +108,7 @@ class Region(list):
                 position_2 = Position(x_2, y_2)
 
                 # Create the line
-                line = Line(position_1, position_2)
+                line = Line(position_1, position_2, meta=meta)
                 new_shape = line
 
             # If the shape is a circle -> Circle
@@ -121,7 +126,7 @@ class Region(list):
                 radius = shape.coord_list[2]
 
                 # Create a circle
-                circle = Circle(center, radius)
+                circle = Circle(center, radius, meta=meta)
                 new_shape = circle
 
             # If the shape is an ellipse -> Ellipse
@@ -144,7 +149,7 @@ class Region(list):
                 angle = Angle(shape.coord_list[4], "deg")
 
                 # Create an ellipse
-                ellipse = Ellipse(center, radius, angle)
+                ellipse = Ellipse(center, radius, angle, meta=meta)
                 new_shape = ellipse
 
             # If the shape is a rectangle -> Rectangle
@@ -169,7 +174,7 @@ class Region(list):
                 angle = Angle(shape.coord_list[4], "deg")
 
                 # Create a Rectangle
-                rectangle = Rectangle(center, radius, angle)
+                rectangle = Rectangle(center, radius, angle, meta=meta)
                 new_shape = rectangle
 
             # If the shape is a polygon -> Polygon
@@ -184,7 +189,7 @@ class Region(list):
                 number_of_points = int(number_of_points)
 
                 # Create a new Polygon
-                polygon = Polygon()
+                polygon = Polygon(meta=meta)
 
                 # Get the position of the different points
                 for i in range(number_of_points):
@@ -208,7 +213,7 @@ class Region(list):
             if shape.exclude:
 
                 previous_shape = region[len(region)-1]
-                region[len(region)-1] = Composite(previous_shape, new_shape)
+                region[len(region)-1] = Composite(previous_shape, new_shape, meta=previous_shape.meta)
 
             # Add the shape to the region
             else: region.append(new_shape)
