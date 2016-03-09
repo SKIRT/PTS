@@ -222,6 +222,9 @@ class Star(SkyObject):
         This function removes the star from a given frame
         :param frame:
         :param mask:
+        :param config:
+        :param default_fwhm:
+        :param force:
         :return:
         """
 

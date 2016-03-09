@@ -251,6 +251,9 @@ class Source(object):
 
         """
         This function ...
+        :param method:
+        :param sigma_clip:
+        :param sigma_level:
         :return:
         """
 

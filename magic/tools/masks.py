@@ -131,3 +131,43 @@ def overlap(mask_a, mask_b):
     return np.any(intersection(mask_a, mask_b))
 
 # -----------------------------------------------------------------
+
+def split_overlap(base_mask, test_mask, return_segments=False):
+
+    """
+    This function takes all blobs in the base_mask and checks whether they overlap with the test_mask.
+    The function returns two new masks, one mask with all the blobs that overlapped, and another with the blobs
+    that did not overlap.
+    :param base_mask:
+    :param test_mask:
+    :return:
+    """
+
+    overlapping = np.zeros_like(base_mask, dtype=bool)
+    not_overlapping = np.copy(base_mask)
+
+    from photutils import detect_sources
+    segments = detect_sources(base_mask.astype('float'), 0.5, 1).data
+    overlap = intersection(segments, test_mask)
+
+    # Check which indices are present in the overlap map
+    possible = np.array(range(1, np.max(overlap) + 1))
+    present = np.in1d(possible, overlap)
+    indices = possible[present]
+
+    overlapping_segments = np.zeros_like(base_mask, dtype=int)
+    not_overlapping_segments = np.copy(segments)
+
+    # Remove the galaxies from the segmentation map
+    for index in indices:
+        blob = segments == index
+        overlapping[blob] = True
+        not_overlapping[blob] = False
+
+        overlapping_segments[blob] = index
+        not_overlapping_segments[blob] = 0
+
+    if return_segments: return overlapping, not_overlapping, overlapping_segments, not_overlapping_segments
+    else: return overlapping, not_overlapping
+
+# -----------------------------------------------------------------

@@ -308,8 +308,6 @@ class GalaxyExtractor(Configurable):
         # Inform the user
         log.info("Loading the galaxies from the catalog ...")
 
-        print(self.catalog)
-
         # Create the list of galaxies
         for i in range(len(self.catalog)):
 

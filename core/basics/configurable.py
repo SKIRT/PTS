@@ -137,6 +137,8 @@ class Configurable(object):
         :return:
         """
 
+        if name is None: return None
+
         if os.path.isabs(name): return name
         elif "input_path" in self.config and self.config.input_path is not None: return os.path.join(self.config.input_path, name)
         else: return os.path.join(os.getcwd(), name)
@@ -150,6 +152,8 @@ class Configurable(object):
         :param name:
         :return:
         """
+
+        if name is None: return None
 
         if os.path.isabs(name): return name
         elif "output_path" in self.config and self.config.output_path is not None: return os.path.join(self.config.output_path, name)

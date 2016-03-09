@@ -28,6 +28,7 @@ from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from ...core.tools import tables
+from ...core.tools.logging import log
 
 # Import the relevant AstroMagic classes and modules
 from . import regions
@@ -280,7 +281,7 @@ def create_star_catalog(frame, catalogs=None):
     try: center, ra_span, dec_span = frame.coordinate_range()
     except AssertionError as error:
 
-        print("WARNING: The coordinate system and pixelscale do not match")
+        log.warning("The coordinate system and pixelscale do not match")
         center, ra_span, dec_span = frame.coordinate_range(silent=True)
 
     # Create a new Vizier object and set the row limit to -1 (unlimited)
@@ -295,7 +296,7 @@ def create_star_catalog(frame, catalogs=None):
         encountered = [False] * len(catalog_column)
 
         # Inform the user
-        print("DEBUG: Querying the " + catalog + " catalog")
+        log.debug("DEBUG: Querying the " + catalog + " catalog")
 
         # Query Vizier and obtain the resulting table
         result = viz.query_region(center, width=ra_span, height=dec_span, catalog=catalog)
@@ -419,7 +420,7 @@ def create_star_catalog(frame, catalogs=None):
                 if difference.norm < 3.0:
 
                     # Inform the user
-                    #print("DEBUG: Star " + star_id + " could be identified with star " + id_column[index] + " from the " + catalog_column[index] + " catalog")
+                    log.debug("Star " + star_id + " could be identified with star " + id_column[index] + " from the " + catalog_column[index] + " catalog")
 
                     # Increment the confidence level for the 'saved' star
                     confidence_level_column[index] += 1
@@ -449,9 +450,9 @@ def create_star_catalog(frame, catalogs=None):
                 confidence_level_column.append(1)
 
         # Debug messages
-        print("DEBUG: Number of stars that were in the catalog: " + str(number_of_stars))
-        print("DEBUG: Number of stars that fell within the frame: " + str(number_of_stars_in_frame))
-        print("DEBUG: Number of stars that were only present in this catalog: " + str(number_of_new_stars))
+        log.debug("Number of stars that were in the catalog: " + str(number_of_stars))
+        log.debug("Number of stars that fell within the frame: " + str(number_of_stars_in_frame))
+        log.debug("Number of stars that were only present in this catalog: " + str(number_of_new_stars))
 
     # Create and return the table
     data = [catalog_column, id_column, ra_column, dec_column, ra_error_column, dec_error_column, confidence_level_column]
@@ -521,7 +522,7 @@ def create_galaxy_catalog(frame):
     try: center, ra_span, dec_span = frame.coordinate_range()
     except AssertionError as error:
 
-        print("WARNING: The coordinate system and pixelscale do not match")
+        log.debug("The coordinate system and pixelscale do not match")
         #print(error)
         center, ra_span, dec_span = frame.coordinate_range(silent=True)
 

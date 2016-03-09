@@ -86,7 +86,6 @@ class Extractor(Configurable):
         # Set options for writing out regions or masks
         if arguments.regions: extractor.config.write_regions = True
         if arguments.masks: extractor.config.write_masked_frames = True
-        if arguments.catalogs: extractor.config.write_catalogs = True
 
         # Writing output catalogs
         if arguments.catalogs:
@@ -469,6 +468,9 @@ class Extractor(Configurable):
 
         # Determine the full path to the catalog file
         path = self.full_output_path(self.config.writing.galactic_catalog_path)
+        if path is None:
+            log.error("Galactic catalog path is not defined, skipping writing galactic catalog ...")
+            return
 
         # Inform the user
         log.info("Writing galactic catalog to " + path + " ...")
@@ -487,6 +489,9 @@ class Extractor(Configurable):
 
         # Determine the full path to the catalog file
         path = self.full_output_path(self.config.writing.stellar_catalog_path)
+        if path is None:
+            log.error("Stellar catalog path is not defined, skipping writing stellar catalog ...")
+            return
 
         # Inform the user
         log.info("Writing stellar catalog to " + path + " ...")
@@ -500,11 +505,15 @@ class Extractor(Configurable):
 
         """
         This function ...
+        :param header:
         :return:
         """
 
         # Determine the full path to the result file
         path = self.full_output_path(self.config.writing.result_path)
+        if path is None:
+            log.error("Result path is not defined, skipping writing result ...")
+            return
 
         # Inform the user
         log.info("Writing resulting frame to " + path + " ...")
@@ -523,6 +532,9 @@ class Extractor(Configurable):
 
         # Determine the full path to the mask file
         path = self.full_output_path(self.config.writing.mask_path)
+        if path is None:
+            log.error("Mask path is not defined, skipping writing mask ...")
+            return
 
         # Inform the user
         log.info("Writing the total mask to " + path + " ...")
