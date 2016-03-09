@@ -12,152 +12,15 @@
 
 # -----------------------------------------------------------------
 
-import pickle
 import os.path
 import numpy as np
-from scipy.optimize import curve_fit
 
 import matplotlib.pyplot as plt
 
-from ..core.basics.filter import Filter
-from ..core.basics.greybody import Bnu, GreyBody, kappa350_Cortese
+from .collections import CollectionData, log_if_positive, divide_if_positive, log_divide_if_positive
 from ..core.simulation.units import SkirtUnits
+from ..core.basics.filter import Filter
 from . import config
-from .database import Database
-
-# -----------------------------------------------------------------
-
-## This dictionary contains plot axis type definitions for use in combination with EAGLE SKIRT-run result collections.
-# The dictionary keys function as axis type identifiers. Each value specifies a plot axis as a tuple containing
-# a human-readable label and a callable that returns the axis value for a given SKIRT-run result. The callable is
-# executed in a context that has a global variable corresponding to each item in a SKIRT-run info file.
-# If an instrument is specified on a higher level in the plotting function, the instrument name is removed from the
-# global variable names.
-axistypes = {
-
-    # dust grid properties
-    'Ngasparts': ( r"$N_{\mathrm{particles},\mathrm{gas}}/10^3$", lambda: setup_particles_cold_gas/1e3 ),
-    'Ncells': ( r"$N_\mathrm{cells}/10^6$", lambda: setup_cells_dust_grid/1e6 ),
-    'taumax': ( r"$\tau_\mathrm{V,max}$", lambda: setup_optical_depth_maximum ),
-    'tau90': ( r"$\tau_\mathrm{V,90}$", lambda: setup_optical_depth_percentile90 ),
-    'dusterror': ( r"$\mathrm{|1-(M_\mathrm{grid}/M_\mathrm{dust})|\,[\%]}$",
-        lambda: 100*divide_if_positive(np.abs(setup_mass_dust-setup_mass_dust_grid),setup_mass_dust) ),
-
-    # intrinsic properties
-    'logMstar': ( r"$\log_{10}(M_*)\,[M_\odot]$", lambda: log_if_positive(original_mass_stars) ),
-    'logMdust': ( r"$\log_{10}(M_\mathrm{dust})\,[M_\odot]$", lambda: log_if_positive(exported_mass_dust) ),
-    'logMdust/Mstar': ( r"$\log_{10}(M_\mathrm{dust}/M_*)$", lambda: log_divide_if_positive(exported_mass_dust,original_mass_stars) ),
-    'logMhii': ( r"$\log_{10}(M_\mathrm{HII})\,[M_\odot]$", lambda: log_if_positive(exported_mass_hii_regions) ),
-    'fracMhii.fromgas': ( r"$M_{\mathrm{HII},\mathrm{from gas}}/M_{\mathrm{HII},\mathrm{total}}$",
-        lambda: divide_if_positive(exported_mass_hii_regions_from_gas,exported_mass_hii_regions) ),
-
-    'logLtot': ( r"$\log_{10}(L_\mathrm{tot})\,[L_\odot]$", lambda: log_if_positive(setup_luminosity_stars+setup_luminosity_hii_regions) ),
-    'logLhii': ( r"$\log_{10}(L_\mathrm{HII})\,[L_\odot]$", lambda: log_if_positive(setup_luminosity_hii_regions) ),
-    'Zgas': ( r"$Z_\mathrm{gas}$", lambda: divide_if_positive(exported_mass_metallic_gas,exported_mass_cold_gas) ),
-    'fdust': ( r"$f_\mathrm{dust}$", lambda: divide_if_positive(exported_mass_dust,exported_mass_metallic_gas) ),
-    'Mgas/Mdust': ( r"$M_\mathrm{gas}/M_\mathrm{dust}$", lambda: divide_if_positive(exported_mass_cold_gas,exported_mass_dust) ),
-    'fracMgas': ( r"$M_\mathrm{gas}/(M_*+M_\mathrm{gas})$",
-        lambda: divide_if_positive(exported_mass_cold_gas,original_mass_stars+exported_mass_cold_gas) ),
-    'logM/L': ( r"$\log_{10}(M_*/L_\mathrm{tot})\,[M_\odot/L_\odot]$",
-        lambda: log_divide_if_positive(original_mass_stars,setup_luminosity_stars+setup_luminosity_hii_regions) ),
-    'Mgas/Mhii': ( r"$M_\mathrm{gas}/M_\mathrm{HII}$", lambda: divide_if_positive(exported_mass_cold_gas,exported_mass_hii_regions) ),
-
-    # magnitudes and colors
-    'g': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g ),
-    'r': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_r ),
-    'i': ( r"$M_\mathrm{i}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_i ),
-    'g-r': ( r"$\mathrm{g}-\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g - instr_magnitude_sdss_r ),
-    'g-i': ( r"$\mathrm{g}-\mathrm{i}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_g - instr_magnitude_sdss_i ),
-    'i-H': ( r"$\mathrm{i}-\mathrm{H}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_i - instr_magnitude_2mass_h ),
-    'i-H.zib': ( r"$\mathrm{i}-\mathrm{H}\,[\mathrm{mag}]$", lambda: instr_magnitude_sdss_i - instr_magnitude_2mass_h + 1.39 ),
-    'NUV-r': ( r"$\mathrm{NUV}-\mathrm{r}\,[\mathrm{mag}]$", lambda: instr_magnitude_galex_nuv - instr_magnitude_sdss_r ),
-    'K': ( r"$M_\mathrm{K}\,[\mathrm{mag}]$", lambda: instr_magnitude_2mass_k ),
-
-    # flux densities (Jy)
-    'fmax': ( r"$f_{\nu,\mathrm{max}}\,[\mathrm{kJy}]$",
-        lambda: np.maximum(instr_xy_fluxdensity_maximum,instr_xz_fluxdensity_maximum,instr_yz_fluxdensity_maximum)/1e3 ),
-
-    # ratios of flux densities (Jy/Jy)
-    'logf250/f500': ( r"$\log_{10}(f_{250}/f_{500})$",
-        lambda: log_divide_if_positive(instr_fluxdensity_spire_psw_limited,instr_fluxdensity_spire_plw_limited) ),
-    'logf250/fNUV': ( r"$f_{250}/f_\mathrm{NUV}$",
-        lambda: log_divide_if_positive(instr_fluxdensity_spire_psw_limited,instr_fluxdensity_galex_nuv) ),
-    'f250/f350': ( r"$f_{250}/f_{350}$",
-        lambda: divide_if_positive(instr_fluxdensity_spire_psw_limited,instr_fluxdensity_spire_pmw_limited) ),
-    'f250/f500': ( r"$f_{250}/f_{500}$",
-        lambda: divide_if_positive(instr_fluxdensity_spire_psw_limited,instr_fluxdensity_spire_plw_limited) ),
-    'f350/f500': ( r"$f_{350}/f_{500}$",
-        lambda: divide_if_positive(instr_fluxdensity_spire_pmw_limited,instr_fluxdensity_spire_plw_limited) ),
-
-    # luminosities in specific bands
-    'logLk': ( r"$\log_{10}(L_\mathrm{K})\,[L_{\odot,\mathrm{K}}]$",
-        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_2mass_k,setup_distance_instrument,'W/Hz')/LsunK) ),
-    'logL24': ( r"$\log_{10}(L_{24})\,[\mathrm{W}/\mathrm{Hz}]$",
-        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_mips_24,setup_distance_instrument,'W/Hz')) ),
-    'logL250': ( r"$\log_{10}(L_{250})\,[\mathrm{W}/\mathrm{Hz}]$",
-        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_spire_psw_limited,setup_distance_instrument,'W/Hz')) ),
-    'logLdust': ( r"$\log_{10}(L_{dust})\,[L_\odot]$",
-        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_uniform_8_1000,setup_distance_instrument,'W/micron',
-                                                        wavelength=np.sqrt(8*1000))*(1000-8)/Lsun) ),
-    'logM/Lh': ( r"$\log_{10}(M_*/L_\mathrm{H})\,[M_\odot/L_{\odot,\mathrm{H}}]$",
-        lambda: log_divide_if_positive(original_mass_stars,units.luminosityforflux(instr_fluxdensity_2mass_h,setup_distance_instrument,'W/Hz')*LsunH) ),
-
-    # other ratios
-    'logMdust/f350/D2' : ( r"$\log_{10}(M_\mathrm{dust}/(f_{350}D^2))\,[\mathrm{kg}\,\mathrm{W}^{-1}\,\mathrm{Hz}]$",
-        lambda: log_divide_if_positive(exported_mass_dust*Msun,instr_fluxdensity_spire_pmw_limited*1e-26*(setup_distance_instrument*pc)**2) ),
-
-    # observationally derived mass properties
-    'logMstar.zib': ( r"$\log_{10}(M_{*,\mathrm{zib}})\,[M_\odot]$", lambda: log_stellar_mass_as_zibetti() ),
-    'logMdust.fit.unlim': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit},\mathrm{unlim}})\,[M_\odot]$",
-        lambda: log_if_positive(dust_temperature_and_mass_from_grey_body_fit("continuum")[1]) ),
-    'logMdust.fit': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit}})\,[M_\odot]$",
-        lambda: log_if_positive(dust_temperature_and_mass_from_grey_body_fit("limited")[1]) ),
-    'logMdust.hii.fit': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{HII},\mathrm{fit}})\,[M_\odot]$",
-        lambda: log_if_positive(dust_temperature_and_mass_from_grey_body_fit("limited")[1] * dust_fraction_in_hii_regions()) ),
-    'logMdust.other.fit': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{other},\mathrm{fit}})\,[M_\odot]$",
-        lambda: log_if_positive(dust_temperature_and_mass_from_grey_body_fit("limited")[1] * (1 - dust_fraction_in_hii_regions())) ),
-    'Mdust.hii.fit/Mdust.fit': ( r"$M_{\mathrm{dust},\mathrm{hii},\mathrm{fit}}/M_{\mathrm{dust},\mathrm{fit}}$",
-        lambda: dust_fraction_in_hii_regions() ),
-    'Mdust.hii.fit/Mhii': ( r"$M_{\mathrm{dust},\mathrm{hii},\mathrm{fit}}/M_{\mathrm{HII}}$",
-            lambda: divide_if_positive(dust_temperature_and_mass_from_grey_body_fit("limited")[1] * dust_fraction_in_hii_regions(), exported_mass_hii_regions) ),
-    'logMdust.cort': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{cort}})\,[M_\odot]$", lambda: log_dust_mass_as_cortese() ),
-    'logMdust.grid': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{grid}})\,[M_\odot]$", lambda: log_dust_mass_from_grid_temperature() ),
-    'logMdust.fit/Mstar.zib': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit}}/M_{*,\mathrm{zib}})$",
-        lambda: log_if_positive(dust_temperature_and_mass_from_grey_body_fit("limited")[1]) - log_stellar_mass_as_zibetti() ),
-    'logMdust.cort/Mstar.zib': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{cort}}/M_{*,\mathrm{zib}})$",
-        lambda: log_dust_mass_as_cortese() - log_stellar_mass_as_zibetti() ),
-
-    # dust temperature
-    'Tdust.fit.unlim': ( r"$T_{\mathrm{dust},\mathrm{fit},\mathrm{unlim}}\,[\mathrm{K}]$",
-        lambda: dust_temperature_and_mass_from_grey_body_fit("continuum")[0] ),
-    'Tdust.fit': ( r"$T_{\mathrm{dust},\mathrm{fit}}\,[\mathrm{K}]$",
-        lambda: dust_temperature_and_mass_from_grey_body_fit("limited")[0] ),
-    'Tdust.grid': ( r"$T_{\mathrm{dust},\mathrm{grid}}\,[\mathrm{K}]$", lambda: probe_average_temperature_dust ),
-
-    # public EAGLE database fields (provided through addfields() function)
-    'K.db': ( r"$M_\mathrm{K,db}\,[\mathrm{mag}]$", lambda: public_database_magnitude_ukidss_k ),
-    'logLk.db': ( r"$\log_{10}(L_\mathrm{K,db})\,[L_{\odot,\mathrm{K}}]$", lambda: public_database_logluminosity_ukidss_k ),
-    'logMstar.db': ( r"$\log_{10}(M_{*,\mathrm{db}})\,[M_\odot]$", lambda: log_if_positive(public_database_mass_stars) ),
-    'logSFR.db': ( r"$\log_{10}(\mathrm{SFR}_\mathrm{db})\,[M_\odot\,\mathrm{year}^{-1}]$",
-        lambda: log_if_positive(public_database_mass_stars*public_database_specific_star_formation_rate) ),
-    'logSSFR.db': ( r"$\log_{10}(\mathrm{SFR}_\mathrm{db}/M_{*,\mathrm{db}})\,[\mathrm{year}^{-1}]$",
-        lambda: log_if_positive(public_database_specific_star_formation_rate) ),
-
-    # Star-formation-rate predictions from observations (see Kennicutt-Evans 2012 table 1)
-    'logSFR.NUV': ( r"$\log_{10}(\mathrm{SFR}_\mathrm{NUV})\,[M_\odot\,\mathrm{year}^{-1}]$",
-        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_galex_nuv,setup_distance_instrument,'erg/s/Hz') \
-                  * c / (1e-6*Filter("GALEX.NUV").pivotwavelength())) - 43.17 ),
-    'logSFR.24': ( r"$\log_{10}(\mathrm{SFR}_{24\mu\mathrm{m}})\,[M_\odot\,\mathrm{year}^{-1}]$",
-        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_mips_24,setup_distance_instrument,'erg/s/Hz') \
-                * c / (1e-6*Filter("MIPS.24").pivotwavelength())) - 42.69 ),
-    'logSFR.TIR': ( r"$\log_{10}(\mathrm{SFR}_\mathrm{TIR})\,[M_\odot\,\mathrm{year}^{-1}]$",
-        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_uniform_3_1100,setup_distance_instrument,'W/micron',
-                    wavelength=np.sqrt(3*1100))*(1100-3)*1e7) - 43.41 ),
-    'logSFR.Halpha': ( r"$\log_{10}(\mathrm{SFR}_{\mathrm{H}\alpha})\,[M_\odot\,\mathrm{year}^{-1}]$",
-        lambda: log_if_positive(units.luminosityforflux(instr_fluxdensity_halpha,setup_distance_instrument,'erg/s/Hz') \
-                * c / 0.6565e-6) - 41.27 ),
-
-}
 
 # -----------------------------------------------------------------
 
@@ -168,159 +31,145 @@ Msun = units.convert(1., from_unit='Msun', to_unit='kg')
 Lsun = units.convert(1., from_unit='Lsun', to_unit='W')
 LsunK = 10**((34.1-5.19)/2.5)  # solar luminosity in K band expressed in W/Hz  (AB magnitude is 5.19)
 LsunH = 10**((34.1-4.71)/2.5)  # solar luminosity in H band expressed in W/Hz  (AB magnitude is 4.71)
-c = 2.99792458e8    # speed of light in m/s
+c = 2.99792458e8               # speed of light in m/s
+
+# global to hold instance of CollectionData, assigned in plotresults() and used in axis type definitions
+cd = None
 
 # -----------------------------------------------------------------
 
-# some generic functions used in the axis type definitions
+## This dictionary contains plot axis type definitions for use in combination with EAGLE SKIRT-run result collections.
+# The dictionary keys function as axis type identifiers. Each value specifies a plot axis as a tuple containing
+# a human-readable label and a callable that returns the axis value for a given SKIRT-run result. The callable is
+# executed in a context that has a global variable "cd" holding the relevant CollectionData instance.
+# If an instrument is specified on a higher level in the plotting function, the instrument name is stripped from the
+# property names in the CollectionData instance.
+axistypes = {
 
-# return log10(x), or NaN for x<=0
-def log_if_positive(x):
-    positive = x>0
-    result = np.empty_like(x)
-    result[positive] = np.log10(x[positive])
-    result[~positive] = np.nan
-    return result
+    # dust grid properties
+    'Ngasparts': ( r"$N_{\mathrm{particles},\mathrm{gas}}/10^3$", lambda: cd.setup_particles_cold_gas/1e3 ),
+    'Ncells': ( r"$N_\mathrm{cells}/10^6$", lambda: cd.setup_cells_dust_grid/1e6 ),
+    'taumax': ( r"$\tau_\mathrm{V,max}$", lambda: cd.setup_optical_depth_maximum ),
+    'tau90': ( r"$\tau_\mathrm{V,90}$", lambda: cd.setup_optical_depth_percentile90 ),
+    'dusterror': ( r"$\mathrm{|1-(M_\mathrm{grid}/M_\mathrm{dust})|\,[\%]}$",
+        lambda: 100*divide_if_positive(np.abs(cd.setup_mass_dust-cd.setup_mass_dust_grid),cd.setup_mass_dust) ),
 
-# return x/y, or NaN for y<=0
-def divide_if_positive(x,y):
-    positive = y>0
-    result = np.empty_like(x)
-    result[positive] = x[positive] / y[positive]
-    result[~positive] = np.nan
-    return result
+    # intrinsic properties
+    'logMstar': ( r"$\log_{10}(M_*)\,[M_\odot]$", lambda: log_if_positive(cd.original_mass_stars) ),
+    'logMdust': ( r"$\log_{10}(M_\mathrm{dust})\,[M_\odot]$", lambda: log_if_positive(cd.exported_mass_dust) ),
+    'logMdust/Mstar': ( r"$\log_{10}(M_\mathrm{dust}/M_*)$", lambda: log_divide_if_positive(cd.exported_mass_dust,cd.original_mass_stars) ),
+    'logMhii': ( r"$\log_{10}(M_\mathrm{HII})\,[M_\odot]$", lambda: log_if_positive(cd.exported_mass_hii_regions) ),
+    'fracMhii.fromgas': ( r"$M_{\mathrm{HII},\mathrm{from gas}}/M_{\mathrm{HII},\mathrm{total}}$",
+        lambda: divide_if_positive(cd.exported_mass_hii_regions_from_gas,cd.exported_mass_hii_regions) ),
+    'logLtot': ( r"$\log_{10}(L_\mathrm{tot})\,[L_\odot]$", lambda: log_if_positive(cd.setup_luminosity_stars+cd.setup_luminosity_hii_regions) ),
+    'logLhii': ( r"$\log_{10}(L_\mathrm{HII})\,[L_\odot]$", lambda: log_if_positive(cd.setup_luminosity_hii_regions) ),
+    'Zgas': ( r"$Z_\mathrm{gas}$", lambda: divide_if_positive(cd.exported_mass_metallic_gas-cd.exported_mass_negative_metallic_gas,
+                                                              cd.exported_mass_cold_gas-cd.exported_mass_negative_cold_gas) ),
+    'fdust': ( r"$f_\mathrm{dust}$", lambda: divide_if_positive(cd.exported_mass_dust,cd.exported_mass_metallic_gas) ),
+    'Mgas/Mdust': ( r"$M_\mathrm{gas}/M_\mathrm{dust}$", lambda: divide_if_positive(cd.exported_mass_cold_gas,cd.exported_mass_dust) ),
+    'fracMgas': ( r"$M_\mathrm{gas}/(M_*+M_\mathrm{gas})$",
+        lambda: divide_if_positive(cd.exported_mass_cold_gas,cd.original_mass_stars+cd.exported_mass_cold_gas) ),
+    'logM/L': ( r"$\log_{10}(M_*/L_\mathrm{tot})\,[M_\odot/L_\odot]$",
+        lambda: log_divide_if_positive(cd.original_mass_stars,cd.setup_luminosity_stars+cd.setup_luminosity_hii_regions) ),
+    'Mgas/Mhii': ( r"$M_\mathrm{gas}/M_\mathrm{HII}$", lambda: divide_if_positive(cd.exported_mass_cold_gas,cd.exported_mass_hii_regions) ),
 
-# return log10(x/y), or NaN for x<=0 or y<=0
-def log_divide_if_positive(x,y):
-    result = np.zeros_like(x)
-    positive = y>0
-    result[positive] = x[positive] / y[positive]
-    positive = result>0
-    result[positive] = np.log10(result[positive])
-    result[~positive] = np.nan
-    return result
+    # magnitudes and colors
+    'g': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: cd.instr_magnitude_sdss_g ),
+    'r': ( r"$M_\mathrm{r}\,[\mathrm{mag}]$", lambda: cd.instr_magnitude_sdss_r ),
+    'i': ( r"$M_\mathrm{i}\,[\mathrm{mag}]$", lambda: cd.instr_magnitude_sdss_i ),
+    'g-r': ( r"$\mathrm{g}-\mathrm{r}\,[\mathrm{mag}]$", lambda: cd.instr_magnitude_sdss_g - cd.instr_magnitude_sdss_r ),
+    'g-i': ( r"$\mathrm{g}-\mathrm{i}\,[\mathrm{mag}]$", lambda: cd.instr_magnitude_sdss_g - cd.instr_magnitude_sdss_i ),
+    'i-H': ( r"$\mathrm{i}-\mathrm{H}\,[\mathrm{mag}]$", lambda: cd.instr_magnitude_sdss_i - cd.instr_magnitude_2mass_h ),
+    'i-H.zib': ( r"$\mathrm{i}-\mathrm{H}\,[\mathrm{mag}]$", lambda: cd.instr_magnitude_sdss_i - cd.instr_magnitude_2mass_h + 1.39 ),
+    'NUV-r': ( r"$\mathrm{NUV}-\mathrm{r}\,[\mathrm{mag}]$", lambda: cd.instr_magnitude_galex_nuv - cd.instr_magnitude_sdss_r ),
+    'K': ( r"$M_\mathrm{K}\,[\mathrm{mag}]$", lambda: cd.instr_magnitude_2mass_k ),
 
-# -----------------------------------------------------------------
+    # flux densities (Jy)
+    'fmax': ( r"$f_{\nu,\mathrm{max}}\,[\mathrm{kJy}]$",
+        lambda: np.maximum(cd.instr_xy_fluxdensity_maximum,cd.instr_xz_fluxdensity_maximum,cd.instr_yz_fluxdensity_maximum)/1e3 ),
 
-# functions used in the axis type definitions to derive mass properties from observations
+    # ratios of flux densities (Jy/Jy)
+    'logf250/f500': ( r"$\log_{10}(f_{250}/f_{500})$",
+        lambda: log_divide_if_positive(cd.instr_fluxdensity_spire_psw_limited,cd.instr_fluxdensity_spire_plw_limited) ),
+    'logf250/fNUV': ( r"$f_{250}/f_\mathrm{NUV}$",
+        lambda: log_divide_if_positive(cd.instr_fluxdensity_spire_psw_limited,cd.instr_fluxdensity_galex_nuv) ),
+    'f250/f350': ( r"$f_{250}/f_{350}$",
+        lambda: divide_if_positive(cd.instr_fluxdensity_spire_psw_limited,cd.instr_fluxdensity_spire_pmw_limited) ),
+    'f250/f500': ( r"$f_{250}/f_{500}$",
+        lambda: divide_if_positive(cd.instr_fluxdensity_spire_psw_limited,cd.instr_fluxdensity_spire_plw_limited) ),
+    'f350/f500': ( r"$f_{350}/f_{500}$",
+        lambda: divide_if_positive(cd.instr_fluxdensity_spire_pmw_limited,cd.instr_fluxdensity_spire_plw_limited) ),
 
-# stellar mass according to Zibetti et al 2009, table B1, using color g-i and i-band luminosity
-# returns log10 of stellar mass in solar units
-def log_stellar_mass_as_zibetti():
-    color = instr_magnitude_sdss_g - instr_magnitude_sdss_i   # AB color g - i
-    logUpsi = -0.963 + 1.032*color    # Upsilon in solar units (coefficients a_i and b_i for color g-i in table B1)
-    logLi = (4.54 - instr_magnitude_sdss_i) / 2.5   # solar AB magnitude in i band is 4.54
-    return logUpsi + logLi
+    # luminosities in specific bands
+    'logLk': ( r"$\log_{10}(L_\mathrm{K})\,[L_{\odot,\mathrm{K}}]$",
+        lambda: log_if_positive(units.luminosityforflux(cd.instr_fluxdensity_2mass_k,cd.setup_distance_instrument,'W/Hz')/LsunK) ),
+    'logL24': ( r"$\log_{10}(L_{24})\,[\mathrm{W}/\mathrm{Hz}]$",
+        lambda: log_if_positive(units.luminosityforflux(cd.instr_fluxdensity_mips_24,cd.setup_distance_instrument,'W/Hz')) ),
+    'logL250': ( r"$\log_{10}(L_{250})\,[\mathrm{W}/\mathrm{Hz}]$",
+        lambda: log_if_positive(units.luminosityforflux(cd.instr_fluxdensity_spire_psw_limited,cd.setup_distance_instrument,'W/Hz')) ),
+    'logLdust': ( r"$\log_{10}(L_{dust})\,[L_\odot]$",
+        lambda: log_if_positive(units.luminosityforflux(cd.instr_fluxdensity_uniform_8_1000,cd.setup_distance_instrument,'W/micron',
+                                                        wavelength=np.sqrt(8*1000))*(1000-8)/Lsun) ),
+    'logM/Lh': ( r"$\log_{10}(M_*/L_\mathrm{H})\,[M_\odot/L_{\odot,\mathrm{H}}]$",
+        lambda: log_divide_if_positive(cd.original_mass_stars,units.luminosityforflux(cd.instr_fluxdensity_2mass_h,cd.setup_distance_instrument,'W/Hz')*LsunH) ),
 
-# returns dust temperature (in K) and mass (in Msun) for best fit with Herschel 160, 250, 350, 500 data points
-# of the specified flux type, using beta and kappa as set by the greybody() function above
-def dust_temperature_and_mass_from_grey_body_fit(fluxtype):
-    # get the Herschel 160, 250, 350, 500 data points
-    waves = np.array( [ Filter(fs).pivotwavelength() for fs in ("Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW")] )
-    sigmas = np.array(( 3,1,1,3 ))      # pacs is less sensitive; longer wavelength fluxes are harder to measure
-    fluxstring = '''( instr_fluxdensity_pacs_red_{0}, instr_fluxdensity_spire_psw_{0},
-                      instr_fluxdensity_spire_pmw_{0}, instr_fluxdensity_spire_plw_{0} )'''.format(fluxtype)
-    fluxes = np.array(eval(fluxstring))
-    N = fluxes.shape[1]
+    # other ratios
+    'logMdust/f350/D2' : ( r"$\log_{10}(M_\mathrm{dust}/(f_{350}D^2))\,[\mathrm{kg}\,\mathrm{W}^{-1}\,\mathrm{Hz}]$",
+        lambda: log_divide_if_positive(cd.exported_mass_dust*Msun,cd.instr_fluxdensity_spire_pmw_limited*1e-26*(cd.setup_distance_instrument*pc)**2) ),
 
-    # do the fit
-    T = np.zeros(N)
-    M = np.zeros(N)
-    for i in range(N):
-        greybody = GreyBody(setup_distance_instrument[i], 2, kappa350_Cortese)
-        T[i],M[i] = greybody.fit(waves, fluxes[:,i], sigmas)
-    return T,M
+    # observationally derived mass properties
+    'logMstar.zib': ( r"$\log_{10}(M_{*,\mathrm{zib}})\,[M_\odot]$", lambda: cd.log_stellar_mass_as_zibetti() ),
+    'logMdust.fit.unlim': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit},\mathrm{unlim}})\,[M_\odot]$",
+        lambda: cd.log_dust_mass_from_grey_body_fit("continuum") ),
+    'logMdust.fit': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit}})\,[M_\odot]$",
+        lambda: cd.log_dust_mass_from_grey_body_fit("limited") ),
+    'logMdust.hii.fit': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{HII},\mathrm{fit}})\,[M_\odot]$",
+        lambda: log_if_positive(cd.dust_temperature_and_mass_from_grey_body_fit("limited")[1] * cd.dust_fraction_in_hii_regions()) ),
+    'logMdust.other.fit': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{other},\mathrm{fit}})\,[M_\odot]$",
+        lambda: log_if_positive(cd.dust_temperature_and_mass_from_grey_body_fit("limited")[1] * (1 - cd.dust_fraction_in_hii_regions())) ),
+    'Mdust.hii.fit/Mdust.fit': ( r"$M_{\mathrm{dust},\mathrm{hii},\mathrm{fit}}/M_{\mathrm{dust},\mathrm{fit}}$",
+        lambda: cd.dust_fraction_in_hii_regions() ),
+    'Mdust.hii.fit/Mhii': ( r"$M_{\mathrm{dust},\mathrm{hii},\mathrm{fit}}/M_{\mathrm{HII}}$",
+            lambda: divide_if_positive(cd.dust_temperature_and_mass_from_grey_body_fit("limited")[1] * cd.dust_fraction_in_hii_regions(), cd.exported_mass_hii_regions) ),
+    'logMdust.cort': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{cort}})\,[M_\odot]$", lambda: cd.log_dust_mass_as_cortese() ),
+    'logMdust.grid': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{grid}})\,[M_\odot]$", lambda: cd.log_dust_mass_from_grid_temperature() ),
+    'logMdust.fit/Mstar.zib': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{fit}}/M_{*,\mathrm{zib}})$",
+        lambda: cd.log_dust_mass_from_grey_body_fit("limited") - cd.log_stellar_mass_as_zibetti() ),
+    'logMdust.cort/Mstar.zib': ( r"$\log_{10}(M_{\mathrm{dust},\mathrm{cort}}/M_{*,\mathrm{zib}})$",
+        lambda: cd.log_dust_mass_as_cortese() - cd.log_stellar_mass_as_zibetti() ),
 
-# returns fraction of total observed dust mass contributed by HII regions (in range 0..1),
-# calculated from the continuum fluxes through a best fit with Herschel 160, 250, 350, 500 data points
-# using beta and kappa as set by the greybody() function above
-def dust_fraction_in_hii_regions():
-    T,Mhii = dust_temperature_and_mass_from_grey_body_fit("hii_continuum")
-    T,Mother = dust_temperature_and_mass_from_grey_body_fit("other_continuum")
-    return divide_if_positive(Mhii, Mhii+Mother)
+    # dust temperature
+    'Tdust.fit.unlim': ( r"$T_{\mathrm{dust},\mathrm{fit},\mathrm{unlim}}\,[\mathrm{K}]$",
+        lambda: cd.dust_temperature_from_grey_body_fit("continuum") ),
+    'Tdust.fit': ( r"$T_{\mathrm{dust},\mathrm{fit}}\,[\mathrm{K}]$",
+        lambda: cd.dust_temperature_from_grey_body_fit("limited") ),
+    'Tdust.grid': ( r"$T_{\mathrm{dust},\mathrm{grid}}\,[\mathrm{K}]$", lambda: cd.probe_average_temperature_dust ),
 
-# dust mass according to Cortese et al 2012, appendix B, using beta=2 for extended sources
-# returns log10 of dust mass in solar units
-def log_dust_mass_as_cortese():
-    x = log_divide_if_positive(instr_fluxdensity_spire_psw_limited,instr_fluxdensity_spire_plw_limited)
-    logMFD = 16.880 - 1.559*x + 0.160*x**2 - 0.079*x**3 - 0.363*x**4
-    logD = np.log10(setup_distance_instrument/1e6)
-    logF = log_if_positive(instr_fluxdensity_spire_pmw_limited)
-    logDust = logMFD + 2*logD + logF - 11.32
-    #logDust += np.log10( kappa350_Cortese / kappa350_Zubko )    # compensate for kappa assumed in Cortese vs Zubko
-    return logDust
+    # public EAGLE database fields (to be provided from column text files)
+    'K.db': ( r"$M_\mathrm{K,db}\,[\mathrm{mag}]$", lambda: cd.public_database_magnitude_ukidss_k ),
+    'logLk.db': ( r"$\log_{10}(L_\mathrm{K,db})\,[L_{\odot,\mathrm{K}}]$", lambda: cd.public_database_logluminosity_ukidss_k ),
+    'logMstar.db': ( r"$\log_{10}(M_{*,\mathrm{db}})\,[M_\odot]$", lambda: log_if_positive(cd.public_database_mass_stars) ),
+    'logSFR.db': ( r"$\log_{10}(\mathrm{SFR}_\mathrm{db})\,[M_\odot\,\mathrm{year}^{-1}]$",
+        lambda: log_if_positive(cd.public_database_mass_stars*cd.public_database_specific_star_formation_rate) ),
+    'logSSFR.db': ( r"$\log_{10}(\mathrm{SFR}_\mathrm{db}/M_{*,\mathrm{db}})\,[\mathrm{year}^{-1}]$",
+        lambda: log_if_positive(cd.public_database_specific_star_formation_rate) ),
+    'Zgas.db': ( r"$Z_\mathrm{sfgas,db}$", lambda: cd.public_database_star_forming_gas_metallicity ),
 
-# dust mass based on the dust temperature probed in the dust grid and the 350 micron flux
-# returns log10 of dust mass in solar units
-def log_dust_mass_from_grid_temperature():
-    f350 = instr_fluxdensity_spire_pmw_limited * 1e-26      # W/m2
-    D = setup_distance_instrument * pc                      # m
-    T = probe_average_temperature_dust                      # K
-    T[T<1] = 1
-    return log_divide_if_positive(f350*D*D, kappa350_Cortese * Bnu(350,T) * Msun)
+    # Star-formation-rate predictions from observations (see Kennicutt-Evans 2012 table 1)
+    'logSFR.NUV': ( r"$\log_{10}(\mathrm{SFR}_\mathrm{NUV})\,[M_\odot\,\mathrm{year}^{-1}]$",
+        lambda: log_if_positive(units.luminosityforflux(cd.instr_fluxdensity_galex_nuv,cd.setup_distance_instrument,'erg/s/Hz') \
+                  * c / (1e-6*Filter("GALEX.NUV").pivotwavelength())) - 43.17 ),
+    'logSFR.24': ( r"$\log_{10}(\mathrm{SFR}_{24\mu\mathrm{m}})\,[M_\odot\,\mathrm{year}^{-1}]$",
+        lambda: log_if_positive(units.luminosityforflux(cd.instr_fluxdensity_mips_24,cd.setup_distance_instrument,'erg/s/Hz') \
+                * c / (1e-6*Filter("MIPS.24").pivotwavelength())) - 42.69 ),
+    'logSFR.TIR': ( r"$\log_{10}(\mathrm{SFR}_\mathrm{TIR})\,[M_\odot\,\mathrm{year}^{-1}]$",
+        lambda: log_if_positive(units.luminosityforflux(cd.instr_fluxdensity_uniform_3_1100,cd.setup_distance_instrument,'W/micron',
+                    wavelength=np.sqrt(3*1100))*(1100-3)*1e7) - 43.41 ),
+    'logSFR.Halpha': ( r"$\log_{10}(\mathrm{SFR}_{\mathrm{H}\alpha})\,[M_\odot\,\mathrm{year}^{-1}]$",
+        lambda: log_if_positive(units.luminosityforflux(cd.instr_fluxdensity_halpha,cd.setup_distance_instrument,'erg/s/Hz') \
+                * c / 0.6565e-6) - 41.27 ),
 
-# -----------------------------------------------------------------
-
-## An instance of the Collection class represents the contents of a particular collection of EAGLE SKIRT-run results,
-# so that the data is ready for plotting. A Collection object has two public properties:
-# - \em name: a name identifying the collection
-# - \em info: a dictionary of info dictionaries, keyed on instrument name
-class Collection:
-
-    ## The constructor loads the contents of the specified collection so that it is ready for plotting.
-    # The collection name should \em not include the directory (which is taken from eagle.conf) nor the
-    # postfix "_info_collection.dat".
-    def __init__(self, collectionname, collectionlabel):
-        self.name = collectionlabel
-        self.info = {}
-
-        # load the collection
-        infilepath = os.path.join(config.collections_path, collectionname+"_info_collection.dat")
-        infile = open(infilepath, "r")
-        self.info['any'] = pickle.load(infile)
-        infile.close()
-
-        # replace infinities (signifiying a non-detection) by NaNs
-        for value in self.info['any'].values():
-            value[np.isinf(value)] = np.nan
-
-        # construct filtered dicts for each instrument name
-        names = set([ key.split("_")[1] for key in filter(lambda key: key.startswith("instr_"), self.info['any'].keys()) ])
-        for name in names:
-            self.info[name] = {}
-            for key,value in self.info['any'].iteritems():
-                if key.startswith("instr_"):
-                    segments = key.split("_")
-                    if segments[1]==name:
-                        segments.pop(1)
-                        cleankey = "_".join(segments)
-                        self.info[name][cleankey] = value
-                else:
-                    self.info[name][key] = value
-
-    ## This function adds information from the specified data files to the "any" portion of the collection.
-    # The first column in each file contains a public EAGLE database galaxy id, and subsequent columns contain
-    # the extra information about that galaxy in the order specified by the fieldnames. The files are concatenated.
-    def addfields(self, filenames, fieldnames):
-        # read the extra fields from the input files, and store them keyed on galaxy id
-        galaxies = {}
-        for filename in filenames:
-            for row in np.loadtxt(filename):
-                galaxies[ int(row[0]) ] = row[1:]
-
-        # create appropriate collection entries for the new fields
-        info = self.info['any']
-        for field in fieldnames:
-            info[field] = np.zeros_like(info["skirt_run_id"])
-
-        # copy the field values for each galaxy in the collection
-        db = Database()
-        for runindex in range(len(info["skirt_run_id"])):
-            runid = int(info["skirt_run_id"][runindex])
-            galaxyid = int(db.select("runid=?", (runid,))[0]["galaxyid"])
-            for field, value in zip(fieldnames, galaxies[galaxyid]):
-                info[field][runindex] = value
-        db.close()
+}
 
 # -----------------------------------------------------------------
 
@@ -340,7 +189,7 @@ class Collection:
 #|-----|----------|---------------------
 #| x   | required | one of the axis type identifiers in the \em axistypes dictionary
 #| y   | required | one of the axis type identifiers in the \em axistypes dictionary, or 'hist' for a histogram
-#| instr | optional | the name of the instrument for which to plot data for both x and y axes; defaults to 'any'
+#| instr | optional | the name of the instrument for which to plot data for both x and y axes; defaults to None
 #| xinstr | optional | the name of the instrument for the x axis; defaults to the value of \em instr
 #| yinstr | optional, used only if y!='hist' | the name of the instrument for the y axis; defaults to the value of \em instr
 #| bins | optional, used only if y=='hist' | the number of bins in a histogram; defaults to 10
@@ -352,6 +201,7 @@ class Collection:
 #| diag | optional | if present and True, a dashed diagonal is drawn from (xmin,ymin) to (xmax,ymax)
 #
 def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,11.693), title=None):
+    global cd       # allow assigning to the global variable that holds the current CollectionData instance
     np.seterr(invalid='ignore')
 
     # setup the figure
@@ -374,7 +224,7 @@ def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,1
         # extract the main specifications from the plot definition
         xaxis = plotdef['x']
         yaxis = plotdef['y']
-        instr = plotdef.get('instr','any')
+        instr = plotdef.get('instr',None)
         xinstr = plotdef.get('xinstr',instr)
         yinstr = plotdef.get('yinstr',instr)
 
@@ -389,9 +239,9 @@ def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,1
                 # setup the x and y values for each axes,
                 # after loading the statistics for the appropriate instrument as global variables
                 # that can be used in the callables that setup the x and y values for each axis
-                globals().update(collection.info[xinstr])
+                cd = CollectionData(collection, instrument=xinstr)
                 x = xvalue()
-                globals().update(collection.info[yinstr])
+                cd = CollectionData(collection, instrument=yinstr)
                 y = yvalue()
 
                 # create a mask that excludes invalid data (i.e. NaN for one of the axes)
@@ -414,7 +264,7 @@ def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,1
                     x2 = xmax
                     y1 = y0 + rico*x1
                     y2 = y0 + rico*x2
-                    plt.plot([x1,x2], [y1,y2], color=color, label=collection.name)
+                    plt.plot([x1,x2], [y1,y2], color=color, label=collection.label())
 
             # if requested, plot a dashed diagonal
             if plotdef.get('diag', False):
@@ -429,14 +279,14 @@ def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,1
             # get the specifications from the x-axis type definition
             xlabel,xvalue = axistypes[xaxis]
 
-            # setup the y-axis label (force the x-axis instrument to 'any' to avoid changes to the label)
+            # setup the y-axis label (force the x-axis instrument to None to avoid changes to the label)
             ylabel = r"$\log_{10}(N_\mathrm{galaxies})$" if log else r"$N_\mathrm{galaxies}$"
-            yinstr = 'any'
+            yinstr = None
 
             # loop over the collections
             for collection,color in zip(collections,colors):
                 # setup the x values in the same way as for a regular plot
-                globals().update(collection.info[xinstr])
+                cd = CollectionData(collection, instrument=xinstr)
                 x = xvalue()
 
                 # create a mask that excludes invalid data (i.e. NaN)
@@ -458,7 +308,7 @@ def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,1
                 xpoints[1::2] = binedges
                 ypoints[1:-1:2] = counts
                 ypoints[2::2] = counts
-                plt.plot(xpoints, ypoints, ls='solid', color=color, label=collection.name)
+                plt.plot(xpoints, ypoints, ls='solid', color=color, label=collection.label())
 
         # set the data limits, if requested
         plt.xlim( xmin=plotdef.get('xmin'), xmax=plotdef.get('xmax') )
@@ -468,8 +318,8 @@ def plotresults(collections, plotname, plotdefs, layout=(2,3), pagesize=(8.268,1
         ax.set_aspect(1./ax.get_data_ratio())
 
         # include instrument names in axis labels if relevant
-        if xinstr != 'any': xlabel += r"$\;\triangleright\mathrm{"+xinstr+"}$"
-        if yinstr != 'any': ylabel += r"$\;\triangleright\mathrm{"+yinstr+"}$"
+        if xinstr is not None: xlabel += r"$\;\triangleright\mathrm{"+xinstr+"}$"
+        if yinstr is not None: ylabel += r"$\;\triangleright\mathrm{"+yinstr+"}$"
 
         # add axis labels
         plt.xlabel(xlabel, fontsize='medium')
