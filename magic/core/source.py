@@ -360,6 +360,9 @@ class Source(object):
 
         """
         This function ...
+        :param sigma_level:
+        :param kernel:
+        :param min_pixels:
         :return:
         """
 

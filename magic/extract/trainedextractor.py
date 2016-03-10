@@ -478,7 +478,7 @@ class TrainedExtractor(Configurable):
                 #indices = possible[present]
 
                 # Loop with a spiral from the center and check which is the first non-zero index that is encountered
-                for spiral_x,spiral_y in general.spiral(segments_cutout.xsize, segments_cutout.ysize):
+                for spiral_x,spiral_y in general.spiral(segments_cutout.shape[1], segments_cutout.shape[0]):
 
                     current_label = segments_cutout[spiral_y, spiral_x]
                     if current_label != 0.0:

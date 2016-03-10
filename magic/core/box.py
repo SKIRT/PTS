@@ -19,7 +19,7 @@ from scipy import ndimage
 from skimage.restoration.inpaint import inpaint_biharmonic
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Position, Region, Rectangle, Extent
+from ..basics import Position, Rectangle, Extent
 from ..tools import cropping, fitting, interpolation, plotting
 
 # -----------------------------------------------------------------
@@ -82,6 +82,11 @@ class Box(np.ndarray):
 
         """
         This function ...
+        :param frame:
+        :param x_min:
+        :param x_max:
+        :param y_min:
+        :param y_max:
         :return:
         """
 
@@ -101,6 +106,7 @@ class Box(np.ndarray):
         This function ...
         :param frame:
         :param rectangle:
+        :param absolute:
         :return:
         """
 
@@ -315,6 +321,11 @@ class Box(np.ndarray):
 
         """
         This function ...
+        :param center:
+        :param model_name:
+        :param sigma:
+        :param max_center_offset:
+        :param amplitude:
         :return:
         """
 
@@ -441,6 +452,19 @@ class Box(np.ndarray):
             maximum = np.max(self)
             normalized = self / maximum
             data = inpaint_biharmonic(normalized, mask, multichannel=False)
+
+            # Check whether the data is NaN-free, because this method will sometimes fail to interpolate and
+            # just put NaNs for the pixels that are covered by the mask. (I still have to check under which
+            # conditions but it has something to do with being close to the boundary)
+            if np.any(np.isnan(data)):
+
+                from ..tools import plotting
+                plotting.plot_box(normalized)
+                plotting.plot_box(mask)
+
+                # Interpolate by local_mean, this does not leave nans
+                data = interpolation.in_paint(data, mask)
+
             return Box(data * maximum, self.x_min, self.x_max, self.y_min, self.y_max)
 
         # Invalid option

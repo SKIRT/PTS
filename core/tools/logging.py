@@ -25,8 +25,12 @@ import logging
 
 # -----------------------------------------------------------------
 
+
+
+# -----------------------------------------------------------------
+
 # Suppress Astropy warnings
-warnings.simplefilter('ignore', category=AstropyWarning)
+#warnings.simplefilter('ignore', category=AstropyWarning)
 
 # -----------------------------------------------------------------
 
@@ -324,5 +328,14 @@ def new_memory_log():
 
 # Initialize a global logger
 init_log()
+
+# -----------------------------------------------------------------
+
+def customwarn(message, category, filename, lineno, file=None, line=None):
+    #sys.stdout.write(warnings.formatwarning(message, category, filename, lineno))
+    log.warning(str(category.__name__) + ": " + str(message) + " [file:" + str(filename) + ", line:" + str(lineno) + "]")
+warnings.showwarning = customwarn
+
+warnings.warn("test")
 
 # -----------------------------------------------------------------

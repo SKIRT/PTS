@@ -99,13 +99,6 @@ logging.log.info("Starting extract script ...")
 
 # -----------------------------------------------------------------
 
-def customwarn(message, category, filename, lineno, file=None, line=None):
-    #sys.stdout.write(warnings.formatwarning(message, category, filename, lineno))
-    log.warning(str(category) + ": " + message + "[file:" + str(filename) + ", line:" + str(lineno) + "]")
-warnings.showwarning = customwarn
-
-# -----------------------------------------------------------------
-
 # If interactive mode is enabled, always write out the regions, masks and segmentation maps
 if arguments.interactive:
     arguments.regions = True
