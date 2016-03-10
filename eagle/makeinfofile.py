@@ -188,7 +188,7 @@ def makeinfofile(skirtrun):
     infofile.write('# magnitude : mag\n')
     maxkeylen = max(map(len,info.keys()))
     for key in sorted(info.keys()):
-        valueformat = ".0f" if "_particles_" in key or "_cells_" in key or "run_id" in key else ".9e"
+        valueformat = ".0f" if "_particles_" in key or "_cells_" in key or "_id" in key else ".9e"
         infofile.write( ("{0:"+str(maxkeylen)+"} = {1:16"+valueformat+"}\n").format(key, info[key]) )
     infofile.close()
 

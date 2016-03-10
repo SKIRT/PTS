@@ -692,7 +692,7 @@ class Galaxy:
         infofile.write('# Masses are expressed in solar mass units\n')
         maxkeylen = max(map(len,info.keys()))
         for key in sorted(info.keys()):
-            valueformat = "d" if "_particles_" in key else ".9e"
+            valueformat = "d" if "_particles_" in key or "_id" in key else ".9e"
             infofile.write( ("{0:"+str(maxkeylen)+"} = {1:15"+valueformat+"}\n").format(key, info[key]) )
         infofile.close()
 
