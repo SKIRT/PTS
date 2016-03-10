@@ -47,3 +47,24 @@ def split_xyz(data, mask=None, arrays=False):
     else: return x_values, y_values, z_values
 
 # -----------------------------------------------------------------
+
+# From http://stackoverflow.com/questions/398299/looping-in-a-spiral
+# Testing with:
+# for a,b in spiral(3,3): print (a,b), you get (0, 0) (1, 0) (1, 1) (0, 1) (-1, 1) (-1, 0) (-1, -1) (0, -1) (1, -1)
+# for a,b in spiral(5,3): print (a,b), you get (0, 0) (1, 0) (1, 1) (0, 1) (-1, 1) (-1, 0) (-1, -1) (0, -1) (1, -1) (2, -1) (2, 0) (2, 1) (-2, 1) (-2, 0) (-2, -1)
+def spiral(N, M):
+    x,y = 0,0
+    dx, dy = 0, -1
+
+    for dumb in xrange(N*M):
+        if abs(x) == abs(y) and [dx,dy] != [1,0] or x>0 and y == 1-x:
+            dx, dy = -dy, dx            # corner, change direction
+
+        if abs(x)>N/2 or abs(y)>M/2:    # non-square
+            dx, dy = -dy, dx            # change direction
+            x, y = -y+dx, x+dy          # jump
+
+        yield x, y
+        x, y = x+dx, y+dy
+
+# -----------------------------------------------------------------

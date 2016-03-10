@@ -24,7 +24,7 @@ from astropy.convolution import Gaussian2DKernel
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame, Source
 from ..basics import Mask, Ellipse
-from ..tools import statistics, masks, plotting
+from ..tools import statistics, masks, plotting, general
 from ..analysis import SExtractor, sources
 from ..train import Classifier
 from ..sky import Star
@@ -76,13 +76,17 @@ class TrainedExtractor(Configurable):
         # Mask
         self.mask = None
 
+        # Local references to the galaxy and star extractor
+        self.galaxy_extractor = None
+        self.star_extractor = None
+
     # -----------------------------------------------------------------
 
     def run(self, image, galaxyextractor=None, starextractor=None, special=None, ignore=None):
 
         """
         This function ...
-        :pram image:
+        :param image:
         :param galaxyextractor:
         :param starextractor:
         :param special:
@@ -387,18 +391,19 @@ class TrainedExtractor(Configurable):
             self.segments = detect_sources(self.image.frames.primary, threshold, npixels=5, filter_kernel=kernel).data
         except RuntimeError:
 
-            print("kernel=", kernel)
+            log.debug("Runtime error during detect_sources ...")
+            log.debug("kernel = " + str(kernel))
 
             conv_mode = 'constant'
             conv_val = 0.0
             image = ndimage.convolve(self.image.frames.primary, kernel.array, mode=conv_mode, cval=conv_val)
 
-            print("median=", median)
-            print("stddev=", stddev)
+            log.debug("median = " + str(median))
+            log.debug("stddev = " + str(stddev))
 
             #print("image=", image)
-            print("image.ndim=", image.ndim)
-            print("type image=", type(image))
+            log.debug("image.ndim = " + str(image.ndim))
+            log.debug("type image = " + type(image))
             print("image.shape=", image.shape)
             print("threshold=", threshold)
             image = image > threshold
@@ -463,21 +468,41 @@ class TrainedExtractor(Configurable):
 
             label = segments_cutout[int(round(0.5*segments_cutout.shape[0])), int(round(0.5*segments_cutout.shape[1]))]
 
-            mask = Mask(segments_cutout == label)
+            # If the center pixel is identified as being part of the background (the center does not
+            # correspond to a segment), find the different indices that are within the segments_cutout
+            if label == 0:
 
-            if special: plotting.plot_box(mask, title="Mask created from segment")
+                # Check which indices are present in the overlap map
+                #possible = np.array(range(1, np.max(segments_cutout) + 1))
+                #present = np.in1d(possible, segments_cutout)
+                #indices = possible[present]
 
-            mask = mask.fill_holes()
+                # Loop with a spiral from the center and check which is the first non-zero index that is encountered
+                for spiral_x,spiral_y in general.spiral(segments_cutout.xsize, segments_cutout.ysize):
 
-            if special: plotting.plot_box(mask, title="Filled holes in mask created from segment")
+                    current_label = segments_cutout[spiral_y, spiral_x]
+                    if current_label != 0.0:
+                        label = current_label
+                        break
 
-            # Set the source mask
-            source.mask = mask
+            # If the label is still zero, don't create a source for this contour (skip the code below)
+            if label != 0:
 
-            if special: source.plot(title="Source after mask has been replaced with segment mask")
+                mask = Mask(segments_cutout == label)
 
-            # Add the source
-            self.sources.append(source)
+                if special: plotting.plot_box(mask, title="Mask created from segment")
+
+                mask = mask.fill_holes()
+
+                if special: plotting.plot_box(mask, title="Filled holes in mask created from segment")
+
+                # Set the source mask
+                source.mask = mask
+
+                if special: source.plot(title="Source after mask has been replaced with segment mask")
+
+                # Add the source
+                self.sources.append(source)
 
     # -----------------------------------------------------------------
 
