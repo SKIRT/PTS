@@ -342,6 +342,7 @@ class Mask(np.ndarray):
 
         """
         This function ...
+        :param structure:
         :param connectivity:
         :param iterations:
         :return:
@@ -356,6 +357,7 @@ class Mask(np.ndarray):
         except:
             print(self)
             print(structure)
+            data = np.zeros((self.ysize,self.xsize), dtype=bool)
 
         # Reassign this object
         #data, name=None, description=None
@@ -367,6 +369,8 @@ class Mask(np.ndarray):
 
         """
         This function ...
+        :param structure:
+        :param iterations:
         :return:
         """
 

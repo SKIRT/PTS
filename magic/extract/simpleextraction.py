@@ -12,13 +12,10 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-from skimage.restoration.inpaint import inpaint_biharmonic
-
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame, Source, Image
 from ..basics import Mask, Region
+from ..tools import interpolation
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem
@@ -276,18 +273,14 @@ class SimpleExtractor(object):
         log.info("Removing the galaxies from the frame ...")
 
         # Remove the companion galaxies
-        #data = interpolation.in_paint(self.image.frames.primary, self.companion_mask)
-        maximum = np.max(self.image.frames.primary)
-        normalized = self.image.frames.primary / maximum
-        data = inpaint_biharmonic(self.image.frames.primary, self.companion_mask, multichannel=True)
+        data = interpolation.inpaint_biharmonic(self.image.frames.primary, self.companion_mask)
         self.image.frames.primary = Frame(data)
 
         # Add the mask to the total mask of removed sources
         self.total_mask += self.other_galaxies_mask
 
         # Remove the other galaxies
-        #data = interpolation.in_paint(self.image.frames.primary, self.other_galaxies_mask)
-        data = inpaint_biharmonic(self.image.frames.primary, self.companion_mask, multichannel=True)
+        data = interpolation.inpaint_biharmonic(self.image.frames.primary, self.companion_mask)
         self.image.frames.primary = Frame(data)
 
         # Add the mask to the total mask of removed sources
@@ -315,10 +308,8 @@ class SimpleExtractor(object):
             self.total_mask[source.y_slice, source.x_slice] += source.mask
 
         # Remove the other stars including saturation
-        maximum = np.max(self.image.frames.primary)
-        normalized = self.image.frames.primary / maximum
-        data = inpaint_biharmonic(normalized, self.other_stars_mask, multichannel=False)
-        self.image.frames.primary = Frame(data * maximum)
+        data = interpolation.inpaint_biharmonic(self.image.frames.primary, self.other_stars_mask)
+        self.image.frames.primary = Frame(data)
 
         # Add the mask to the total mask of removed sources
         self.total_mask += self.other_stars_mask

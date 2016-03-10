@@ -16,11 +16,11 @@ from __future__ import absolute_import, division, print_function
 import math
 import numpy as np
 from scipy import ndimage
-from skimage.restoration.inpaint import inpaint_biharmonic
 
 # Import the relevant AstroMagic classes and modules
 from ..basics import Position, Rectangle, Extent
 from ..tools import cropping, fitting, interpolation, plotting
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -35,8 +35,11 @@ class Box(np.ndarray):
         """
         This function ...
         :param cls:
-        :param input_array:
-        :param info:
+        :param data:
+        :param x_min:
+        :param x_max:
+        :param y_min:
+        :param y_max:
         :return:
         """
 
@@ -87,6 +90,7 @@ class Box(np.ndarray):
         :param x_max:
         :param y_min:
         :param y_max:
+        :param absolute:
         :return:
         """
 
@@ -179,6 +183,7 @@ class Box(np.ndarray):
 
         """
         This function ...
+        :param center:
         :param factor:
         :return:
         """
@@ -233,12 +238,22 @@ class Box(np.ndarray):
     @property
     def xsize(self):
 
+        """
+        This property ...
+        :return:
+        """
+
         return self.shape[1]
 
     # -----------------------------------------------------------------
 
     @property
     def ysize(self):
+
+        """
+        This property ...
+        :return:
+        """
 
         return self.shape[0]
 
@@ -247,12 +262,22 @@ class Box(np.ndarray):
     @property
     def x_slice(self):
 
+        """
+        This property ...
+        :return:
+        """
+
         return slice(self.x_min, self.x_max)
 
     # -----------------------------------------------------------------
 
     @property
     def y_slice(self):
+
+        """
+        This property ...
+        :return:
+        """
 
         return slice(self.y_min, self.y_max)
 
@@ -288,6 +313,8 @@ class Box(np.ndarray):
 
         """
         This function ...
+        :param order:
+        :param mask:
         :return:
         """
 
@@ -306,6 +333,7 @@ class Box(np.ndarray):
 
         """
         This function ...
+        :param sigma:
         :return:
         """
 
@@ -403,8 +431,9 @@ class Box(np.ndarray):
                 return self.fit_polynomial(3, mask=mask)
             except TypeError:
                 from ..tools import plotting
-                print("cutout=", type(self), mask.shape)
-                print("mask=", type(mask), mask.shape)
+                log.debug("Error while fitting polynomial to the box ...")
+                log.debug("cutout = " + str(type(self)) + " " + str(mask.shape))
+                log.debug("mask = " + str(type(mask)) + " " + str(mask.shape))
                 #plotting.plot_box(self)
                 #plotting.plot_box(mask)
                 #plotting.plot_box(np.ma.masked_array(self, mask=mask))
@@ -419,8 +448,8 @@ class Box(np.ndarray):
                 # Calculate the interpolated data
                 data = interpolation.in_paint(self, mask)
             except IndexError:
-                print(self)
-                print(mask)
+                log.debug("Error while inpainting using the local_mean method ...")
+                data = np.zeros((self.ysize, self.xsize))
 
             # Create and return a new box
             return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
@@ -449,23 +478,21 @@ class Box(np.ndarray):
         # Use the biharmonic method of the Scikit-image package
         elif method == "biharmonic":
 
-            maximum = np.max(self)
-            normalized = self / maximum
-            data = inpaint_biharmonic(normalized, mask, multichannel=False)
+            data = interpolation.inpaint_biharmonic(self, mask)
 
             # Check whether the data is NaN-free, because this method will sometimes fail to interpolate and
             # just put NaNs for the pixels that are covered by the mask. (I still have to check under which
             # conditions but it has something to do with being close to the boundary)
             if np.any(np.isnan(data)):
 
-                from ..tools import plotting
-                plotting.plot_box(normalized)
-                plotting.plot_box(mask)
+                #from ..tools import plotting
+                #plotting.plot_box(normalized)
+                #plotting.plot_box(mask)
 
                 # Interpolate by local_mean, this does not leave nans
                 data = interpolation.in_paint(data, mask)
 
-            return Box(data * maximum, self.x_min, self.x_max, self.y_min, self.y_max)
+            return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
         # Invalid option
         else: raise ValueError("Unknown interpolation method")
@@ -477,7 +504,6 @@ class Box(np.ndarray):
         """
         This function ...
         :param position:
-        :param interpolate:
         :return:
         """
 
@@ -516,6 +542,7 @@ class Box(np.ndarray):
         """
         This function ...
         :param frame:
+        :param where:
         :return:
         """
 

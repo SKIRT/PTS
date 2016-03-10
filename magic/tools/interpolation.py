@@ -18,9 +18,27 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from skimage.restoration import inpaint
 
 # Import astronomical modules
 from photutils.background import Background
+
+# -----------------------------------------------------------------
+
+def inpaint_biharmonic(frame, mask):
+
+    """
+    This function ...
+    :param frame:
+    :param mask:
+    :return:
+    """
+
+    maximum = np.nanmax(frame)
+    normalized = frame / maximum
+    data = inpaint.inpaint_biharmonic(normalized, mask, multichannel=False)
+
+    return data * maximum
 
 # -----------------------------------------------------------------
 
@@ -31,6 +49,7 @@ from photutils.background import Background
 #    We may want to keep it in cython so that it runs faster. However, this original does not have the inverse distance
 #    weighing as in the code below, but we can maybe add this ourselves in the cython code
 #  - Write our own code.
+# SOLUTION: SEE FUNCTION ABOVE, GENERALLY, IT IS MUCH BETTER
 
 def in_paint(data, mask, method="localmean"):
 

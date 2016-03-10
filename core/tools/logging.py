@@ -25,10 +25,6 @@ import logging
 
 # -----------------------------------------------------------------
 
-
-
-# -----------------------------------------------------------------
-
 # Suppress Astropy warnings
 #warnings.simplefilter('ignore', category=AstropyWarning)
 
@@ -335,7 +331,5 @@ def customwarn(message, category, filename, lineno, file=None, line=None):
     #sys.stdout.write(warnings.formatwarning(message, category, filename, lineno))
     log.warning(str(category.__name__) + ": " + str(message) + " [file:" + str(filename) + ", line:" + str(lineno) + "]")
 warnings.showwarning = customwarn
-
-warnings.warn("test")
 
 # -----------------------------------------------------------------
