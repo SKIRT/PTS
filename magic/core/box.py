@@ -18,9 +18,6 @@ import numpy as np
 from scipy import ndimage
 from skimage.restoration.inpaint import inpaint_biharmonic
 
-# Import astronomical modules
-from astropy.coordinates import Angle
-
 # Import the relevant AstroMagic classes and modules
 from ..basics import Position, Region, Rectangle, Extent
 from ..tools import cropping, fitting, interpolation, plotting
@@ -438,10 +435,13 @@ class Box(np.ndarray):
             median = np.ma.median(np.ma.masked_array(self, mask=mask))
             return self.full(median)
 
+        # Use the biharmonic method of the Scikit-image package
         elif method == "biharmonic":
 
-            data = inpaint_biharmonic(self, mask, multichannel=False)
-            return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
+            maximum = np.max(self)
+            normalized = self / maximum
+            data = inpaint_biharmonic(normalized, mask, multichannel=False)
+            return Box(data * maximum, self.x_min, self.x_max, self.y_min, self.y_max)
 
         # Invalid option
         else: raise ValueError("Unknown interpolation method")

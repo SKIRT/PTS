@@ -177,6 +177,7 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
     try:
         model = source.subtracted.fit_model(position, model_name, amplitude=source.cutout.value(source.peak))
     except IndexError:
+        log.debug("Index error occurred while fitting ...")
         log.debug("PEAK= (" + str(source.peak.x) + "," + str(source.peak.y) + ")")
         log.debug("source.cutout.x_min,y_min = " + str(source.cutout.x_min) + "," + str(source.cutout.y_min))
         log.debug("rel_peak = " + str(source.peak.x - source.cutout.x_min) + "," + str(source.peak.y - source.cutout.y_min))

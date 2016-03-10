@@ -415,8 +415,12 @@ class GalaxyExtractor(Configurable):
             if not galaxy.principal and not galaxy.companion: galaxy.remove(self.image.frames.primary, self.mask, self.config.removal)
 
         # Add the principal and companion galaxies to the mask
-        self.mask += self.principal_mask
-        self.mask += self.companion_mask
+        #self.mask += self.principal_mask
+        #self.mask += self.companion_mask
+
+        # Add the masks for the principal and companion galaxies to the image
+        self.image.add_mask(self.principal_mask, "principal galaxy")
+        self.image.add_mask(self.companion_mask, "companion galaxies")
 
     # -----------------------------------------------------------------
 

@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 import argparse
+import warnings
 
 # Import the relevant AstroMagic classes and modules
 from pts.magic import ImageImporter, Extractor
@@ -95,6 +96,13 @@ level = "DEBUG" if arguments.debug else "INFO"
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
 logging.log.info("Starting extract script ...")
+
+# -----------------------------------------------------------------
+
+def customwarn(message, category, filename, lineno, file=None, line=None):
+    #sys.stdout.write(warnings.formatwarning(message, category, filename, lineno))
+    log.warning(str(category) + ": " + message + "[file:" + str(filename) + ", line:" + str(lineno) + "]")
+warnings.showwarning = customwarn
 
 # -----------------------------------------------------------------
 
