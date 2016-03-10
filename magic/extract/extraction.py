@@ -237,6 +237,9 @@ class Extractor(Configurable):
         # Write segmentation maps
         if self.config.write_segments:
 
+            self.galaxy_extractor.config.write_segments = True
+            self.galaxy_extractor.config.writing.segments_path = "galaxy_segments.fits"
+
             self.star_extractor.config.write_star_segments = True
             self.star_extractor.config.writing.star_segments_path = "star_segments.fits"
 

@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import math
 import numpy as np
 from scipy import ndimage
+from skimage.restoration.inpaint import inpaint_biharmonic
 
 # Import astronomical modules
 from astropy.coordinates import Angle
@@ -383,8 +384,8 @@ class Box(np.ndarray):
 
         """
         This function ...
-        :param mask
-        :param method
+        :param mask:
+        :param method:
         :return:
         """
 
@@ -436,6 +437,11 @@ class Box(np.ndarray):
 
             median = np.ma.median(np.ma.masked_array(self, mask=mask))
             return self.full(median)
+
+        elif method == "biharmonic":
+
+            data = inpaint_biharmonic(self, mask, multichannel=False)
+            return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
         # Invalid option
         else: raise ValueError("Unknown interpolation method")

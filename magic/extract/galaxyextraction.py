@@ -23,9 +23,10 @@ from astropy.coordinates import Angle
 
 # Import the relevant AstroMagic classes and modules
 from ..basics import Mask, Region, Extent, Ellipse
-from ..core import Source
+from ..core import Source, Frame
 from ..sky import Galaxy
 from ..tools import regions
+from ..basics.skygeometry import SkyEllipse
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -83,6 +84,10 @@ class GalaxyExtractor(Configurable):
 
         """
         This function ...
+        :param image:
+        :param catalog:
+        :param special:
+        :param ignore:
         """
 
         # 1. Call the setup function
@@ -109,6 +114,10 @@ class GalaxyExtractor(Configurable):
 
         """
         This function ...
+        :param image:
+        :param catalog
+        :param special_mask:
+        :param ignore_mask:
         """
 
         # Call the setup function of the base class
@@ -369,7 +378,6 @@ class GalaxyExtractor(Configurable):
 
         """
         This function ...
-        :param frame:
         :return:
         """
 
@@ -391,9 +399,6 @@ class GalaxyExtractor(Configurable):
 
         """
         This function ...
-        :param image:
-        :param galaxies:
-        :param config:
         :return:
         """
 
@@ -491,8 +496,6 @@ class GalaxyExtractor(Configurable):
         This function ...
         :return:
         """
-
-        from ..basics.skygeometry import SkyEllipse
 
         # Get the ellipse in image coordinates
         ellipse = self.principal_ellipse
@@ -709,6 +712,38 @@ class GalaxyExtractor(Configurable):
 
         # Close the file
         f.close()
+
+    # -----------------------------------------------------------------
+
+    def write_segments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the segmentation map
+        path = self.full_output_path(self.config.writing.segments_path)
+
+        # Create an empty frame for the segments
+        segments = Frame.zeros_like(self.image.frames.primary)
+
+        # Loop over all galaxies
+        for galaxy in self.galaxies:
+
+            # Skip galaxies without source
+            if not galaxy.has_source: continue
+
+            # Determine the label for the galaxy
+            if galaxy.principal: label = 1
+            elif galaxy.companion: label = 2
+            else: label = 3
+
+            # Add the galaxy mask to the segmentation map
+            segments[galaxy.source.y_slice, galaxy.source.x_slice][galaxy.source.mask] = label
+
+        # Save the segmentation map
+        segments.save(path, origin=self.name)
 
     # -----------------------------------------------------------------
 
@@ -941,6 +976,9 @@ class GalaxyExtractor(Configurable):
 
         # If requested, write out the galaxy region
         if self.config.write_region: self.write_region()
+
+        # If requested, write out the segmentation map
+        if self.config.write_segments: self.write_segments()
 
         # If requested, write out the frame where the galaxies are masked
         if self.config.write_masked_frame: self.write_masked_frame()

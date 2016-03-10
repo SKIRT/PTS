@@ -12,13 +12,16 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from skimage.restoration import inpaint
+
 # Import the relevant AstroMagic classes and modules
 from ..core import Frame, Source, Image
 from ..basics import Mask, Region
 from ..tools import masks
 
 # Import the relevant PTS classes and modules
-from ...core.tools import filesystem, tables
+from ...core.tools import filesystem
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
@@ -33,7 +36,6 @@ class SimpleExtractor(object):
 
         """
         The constructor ...
-        :param config:
         :return:
         """
 
@@ -45,10 +47,18 @@ class SimpleExtractor(object):
         # The output path
         self.output_path = None
 
-        # The regions
-        self.galaxy_region = None
-        self.star_region = None
-        self.saturation_region = None
+        # The mask of nans
+        self.nan_mask = None
+
+        # The masks
+        self.principal_mask = None
+        self.companion_mask = None
+        self.other_galaxies_mask = None
+        self.foreground_stars_sources = dict()
+        self.other_stars_mask = None
+
+        # The total mask of removed sources
+        self.total_mask = None
 
     # -----------------------------------------------------------------
 
@@ -64,17 +74,14 @@ class SimpleExtractor(object):
         # 1. Call the setup function
         self.setup(image_path, output_path)
 
-        # 2. Load the regions
-        self.load_regions()
+        # 2. Create the masks
+        self.create_masks()
 
         # 3. Remove the galaxies
         self.remove_galaxies()
 
         # 4. Remove the stars
-        self.remove_stars()
-
-        # 5. Remove the saturation
-        self.remove_saturation()
+        self.remove_stars_including_saturation()
 
     # -----------------------------------------------------------------
 
@@ -93,24 +100,33 @@ class SimpleExtractor(object):
         # Set the output path
         self.output_path = output_path
 
+        # Create a mask of the pixels that are NaNs
+        self.nan_mask = Mask.is_nan(self.image.frames.primary)
+
+        # Set the NaN pixels to zero in the frame
+        self.image.frames.primary[self.nan_mask] = 0.0
+
+        # The total mask of removed sources
+        self.total_mask = Mask.empty_like(self.image.frames.primary)
+
     # -----------------------------------------------------------------
 
-    def load_regions(self):
+    def create_masks(self):
 
         """
         This function ...
         :return:
         """
 
-        self.load_galaxy_region()
+        # Create galaxy masks
+        self.create_galaxy_masks()
 
-        self.load_star_region()
-
-        self.load_saturation_region()
+        # Create star masks
+        self.create_star_masks()
 
     # -----------------------------------------------------------------
 
-    def load_galaxy_region(self):
+    def create_galaxy_masks(self):
 
         """
         This function ...
@@ -118,18 +134,24 @@ class SimpleExtractor(object):
         """
 
         # Inform the user
-        log.info("Loading the galaxy region ...")
+        #log.info("Loading the galaxy region ...")
+        #galaxy_region_path = filesystem.join(self.output_path, "galaxies.reg")
+        #self.galaxy_region = Region.from_file(galaxy_region_path)
 
-        galaxy_region_path = filesystem.join(self.output_path, "galaxies.reg")
-        self.galaxy_region = Region.from_file(galaxy_region_path)
+        # Inform the user
+        log.info("Loading the galaxy segmentation map ...")
 
-        #log.info("Loading the galaxy mask ...")
+        segments_path = filesystem.join(self.output_path, "galaxy_segments.fits")
+        segments = Frame.from_file(segments_path)
 
-        #galaxy_mask_path = filesystem.join(self.output_path, "galaxies.")
+        # Create the galaxy masks
+        self.principal_mask = segments == 1
+        self.companion_mask = segments == 2
+        self.other_galaxies_mask = segments == 3
 
     # -----------------------------------------------------------------
 
-    def load_star_region(self):
+    def create_star_masks(self):
 
         """
         This function ...
@@ -141,31 +163,105 @@ class SimpleExtractor(object):
 
         # Star region
         star_region_path = filesystem.join(self.output_path, "stars.reg")
-        self.star_region = Region.from_file(star_region_path)
+        star_region = Region.from_file(star_region_path)
+
+        # Inform the user
+        log.info("Loading the segmentation map of stars ...")
 
         # Star segmentation map
         star_segments_path = filesystem.join(self.output_path, "star_segments.fits")
-        self.star_segments = Frame.from_file(star_segments_path)
-
-    # -----------------------------------------------------------------
-
-    def load_saturation_region(self):
-
-        """
-        This function ...
-        :return:
-        """
+        star_segments = Frame.from_file(star_segments_path)
 
         # Inform the user
-        log.info("Loading the saturation region")
+        log.info("Loading the saturation region ...")
 
         # Saturation region
         saturation_region_path = filesystem.join(self.output_path, "saturation.reg")
-        self.saturation_region = Region.from_file(saturation_region_path)
+        saturation_region = Region.from_file(saturation_region_path)
+
+        # Inform the user
+        log.info("Loading the saturation segmentation map ...")
 
         # Saturation segmentation map
         saturation_segments_path = filesystem.join(self.output_path, "saturation_segments.fits")
-        self.saturation_segments = Frame.from_file(saturation_region_path)
+        saturation_segments = Frame.from_file(saturation_region_path)
+
+        # Initialize a list for the star indices that are present in the star region
+        star_indices = set()
+
+        # Initialize the foreground and other stars masks
+        self.foreground_stars_mask = Mask.empty_like(self.image.frames.primary)
+        self.other_stars_mask = Mask.empty_like(self.image.frames.primary)
+
+        # Loop over all stars in the region
+        for shape in star_region:
+
+            # Ignore shapes without text, these should be just the positions of the peaks
+            if "text" not in shape.meta: continue
+
+            # Ignore shapes with color red (stars without source)
+            if shape.meta["color"] == "red": continue
+
+            # Get the star index
+            index = int(shape.meta["text"])
+            star_indices.add(index)
+
+            # Get the star position
+            position = shape.center
+
+            # Check whether the star is a foreground star
+            if self.principal_mask.masks(position):
+
+                # FOREGROUND STARS: create sources, because the background is estimated by fitting a polynomial to
+                # pixels in annulus around shape
+
+                #source_mask = star_segments == index # not necessary, the source is created from the ellipse so
+                # the star mask is created again
+
+                # Create a source from the shape
+                source = Source.from_ellipse(self.image.frames.primary, shape, 1.3)
+                source.estimate_background("polynomial", sigma_clip=True)
+
+                # Add the source to the dictionary, with a key that is the star index (so that the source for this star
+                # can be replaced by the saturation source, if any
+                self.foreground_stars_sources[index] = source
+
+            # Not a foreground star
+            else: self.other_stars_mask += star_segments == index
+
+        # Add the saturation sources
+        # Loop over the shapes in the saturation region
+        for shape in saturation_region:
+
+            # Ignore shapes without text (there should be none, but..)
+            if "text" not in shape.meta: continue
+
+            # Get the star index
+            index = int(shape.meta["text"])
+
+            # If this star index is not in the star_indices list (the star is removed from the star region by the user), ignore it (don't add the saturation mask for it)
+            if index not in star_indices: continue
+
+            # Get the star position
+            position = shape.center
+
+            # Check whether the star is a foreground star
+            if self.principal_mask.masks(position):
+
+                # Create a source from the shape
+                source = Source.from_ellipse(self.image.frames.primary, shape, 1.3)
+
+                # Set the source mask
+                source.mask = saturation_segments == index
+
+                # Estimate the background
+                source.estimate_background("polynomial", True)
+
+                # Replace the star source by the saturation source
+                self.foreground_stars_sources[index] = source
+
+            # Not a foreground star
+            else: self.other_stars_mask += saturation_segments == index
 
     # -----------------------------------------------------------------
 
@@ -177,68 +273,97 @@ class SimpleExtractor(object):
         """
 
         # Inform the user
-        log.info("Creating a mask from the galaxy region ...")
+        log.info("Removing the galaxies from the frame ...")
 
-        # Create a mask from the region
-        galaxy_mask = self.galaxy_region.to_mask(frame.xsize, frame.ysize)
+        # Remove the companion galaxies
+        #data = interpolation.in_paint(self.image.frames.primary, self.companion_mask)
+        data = inpaint.inpaint_biharmonic(self.image.frames.primary, self.companion_mask, multichannel=True)
+        self.image.frames.primary = Frame(data)
+
+        # Add the mask to the total mask of removed sources
+        self.total_mask += self.other_galaxies_mask
+
+        # Remove the other galaxies
+        #data = interpolation.in_paint(self.image.frames.primary, self.other_galaxies_mask)
+        data = inpaint.inpaint_biharmonic(self.image.frames.primary, self.companion_mask, multichannel=True)
+        self.image.frames.primary = Frame(data)
+
+        # Add the mask to the total mask of removed sources
+        self.total_mask += self.other_galaxies_mask
 
     # -----------------------------------------------------------------
 
-    def remove_stars(self):
+    def remove_stars_including_saturation(self):
 
         """
         This function ...
         :return:
         """
-
-    # -----------------------------------------------------------------
-
-    def remove_saturation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Check where the galaxy mask overlaps with the segmentation map
-        overlapping, not_overlapping, overlapping_segments, not_overlapping_segments = masks.split_overlap(mask, galaxy_mask, return_segments=True)
-
-        # Set mask for sources outside of the galaxy contour
-        mask = not_overlapping
 
         # Inform the user
-        log.info("Interpolating over the galaxy ...")
+        log.info("Removing the stars from the frame ...")
 
-        # Find contours
-        sigma_level = 4.0
-        from pts.magic.analysis import sources
-        contours = sources.find_contours(overlapping_segments, overlapping_segments, sigma_level)
+        # Remove the foreground stars including saturation
+        for source in self.foreground_stars_sources:
 
-        # Construct sources
-        for contour in contours:
+            # Replace the frame by the estimated polynomial background
+            source.background.replace(self.image.frames.primary, where=source.mask)
 
-            # Create a source from the aperture
-            source = Source.from_ellipse(frame, contour, 1.3)
+            # Add the source mask to the total mask
+            self.total_mask[source.y_slice, source.x_slice] += source.mask
 
-            y_min = source.cutout.y_min
-            y_max = source.cutout.y_max
-            x_min = source.cutout.x_min
-            x_max = source.cutout.x_max
+        # Remove the other stars including saturation
+        data = inpaint.inpaint_biharmonic(self.image.frames.primary, self.other_stars_mask, multichannel=False)
+        self.image.frames.primary = Frame(data)
 
-            # Set the source mask
-            overlapping_segments_box = overlapping_segments[y_min:y_max, x_min:x_max]
-            center_label = overlapping_segments_box[int(round(0.5*overlapping_segments_box.shape[0])), int(round(0.5*overlapping_segments_box.shape[1]))]
-            source_mask = Mask(overlapping_segments_box == center_label)
-            #source.mask = overlapping[y_min:y_max, x_min:x_max] simple way, but: may contain the masks of nearby sources (nearby shapes in the region)
-            source.mask = source_mask
-
-            source.estimate_background("polynomial", True)
-
-            # Replace the frame with the estimated background
-            source.background.replace(frame, where=source.mask)
+        # Add the mask to the total mask of removed sources
+        self.total_mask += self.other_stars_mask
 
     # -----------------------------------------------------------------
 
-    
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write the result
+        self.write_result()
+
+        # Write the total mask of removed sources
+        self.write_mask()
+
+    # -----------------------------------------------------------------
+
+    def write_result(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the result ...")
+
+        # Determine the path to the resulting FITS file
+        path = filesystem.join(self.output_path, "final_result.fits")
+        self.image.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the total mask of removed sources ...")
+
+        # Determine the path to the mask FITS file
+        path = filesystem.join(self.output_path, "final_mask.fits")
+        Frame(self.total_mask).save(path)
 
 # -----------------------------------------------------------------

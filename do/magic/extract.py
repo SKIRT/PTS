@@ -130,10 +130,10 @@ extractor.write_result(importer.image.original_header)
 if arguments.interactive:
 
     # Wait for keystroke
-    name = raw_input("Press enter to continue ...")
+    name = raw_input("Press enter to continue with the final extraction step ...")
 
+    # Run the second extraction step
     simple_extractor = SimpleExtractor()
-
-    simple_extractor.run()
+    simple_extractor.run(image_path, arguments.output_path)
 
 # -----------------------------------------------------------------
