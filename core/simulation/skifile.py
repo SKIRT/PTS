@@ -404,6 +404,24 @@ class SkiFile:
         # Set the increased number of dust cells in the z direction
         if dimension > 2: self.setzdustcells(int(round(self.nzcells() * factor**(1 / float(dimension)))))
 
+    ## This function sets the maximum mass fraction of the tree dust grid in the ski file
+    # to the specified value
+    def setmaxmassfraction(self, number):
+        # get the tree dust grid element
+        elems = self.tree.xpath("//BinTreeDustGrid | //OctTreeDustGrid")
+        if len(elems) != 1: raise ValueError("No tree dust grid in ski file")
+        # set the attribute value
+        elems[0].set("maxMassFraction", str(number))
+
+    ## This function sets the dust fraction of the SPH dust distribution in the ski file
+    # to the specified value
+    def setdustfraction(self, number):
+        # get the tree dust grid element
+        elems = self.tree.xpath("//SPHDustDistribution")
+        if len(elems) != 1: raise ValueError("No SPHDustDistribution in ski file")
+        # set the attribute value
+        elems[0].set("dustFraction", str(number))
+
     ## This function replaces any instruments in the ski file by a new list of perspective instruments
     # corresponding to the movie frames defined in the specified list. The instruments are named "0",
     # "1", "2"... corresponding to the zero-based frame index in the list. Each frame is given as a tuple

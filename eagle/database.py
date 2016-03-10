@@ -223,14 +223,18 @@ class Database:
     ## This function inserts a new record into the database with the specified field values. The function
     # automatically determines values for runid (unique serial nr), username (from config), runstatus ('inserted')
     # and statusdate (now). The change is \em not committed.
-    def insert(self, label, eaglesim, redshift, galaxyid, skitemplate):
+    def insert(self, label, eaglesim, redshift, galaxyid, skitemplate,
+                     align=1, seed=1, numpp=5e5, deltamax=3e-6, fdust=0.3, fpdr=0.15):
         username = config.username
         runstatus = runstatus_enum[0]
         statusdate = config.timestamp()
         self._con.execute('''insert into skirtruns (username, runstatus, statusdate,
-                                    label, eaglesim, redshift, galaxyid, skitemplate)
-                             values (?,?,?,?,?,?,?,?)''',
-                           (username, runstatus, statusdate, label, eaglesim, redshift, galaxyid, skitemplate)
+                                                    label, eaglesim, redshift, galaxyid, skitemplate,
+                                                    align, seed, numpp, deltamax, fdust, fpdr)
+                             values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
+                           (username, runstatus, statusdate,
+                            label, eaglesim, redshift, galaxyid, skitemplate,
+                            align, seed, numpp, deltamax, fdust, fpdr)
                           )
 
     ## This function updates the value of a field in the records specified through a list of run-id's.

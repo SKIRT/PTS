@@ -78,7 +78,8 @@ def run(runid):
         # extract the particle data for the galaxy from the EAGLE snapshot
         galaxies = Snapshot(record['eaglesim'], redshift=record['redshift']).galaxies()
         galaxy = galaxies.galaxy(record['galaxyid'])
-        galaxy.export(skirtrun.inpath())
+        galaxy.export(skirtrun.inpath(), f_PDR=record['fpdr'] if record['fpdr'] is not None else 0.15,
+                                         align=record['align']!=0, seed=record['seed']!=0)
 
         # create an adjusted copy of the ski file for this run
         ski = SkiFile(os.path.join(config.templates_path, record['skitemplate']+".ski"))
@@ -86,6 +87,9 @@ def run(runid):
         ski.setstarfile(prefix + "_stars.dat")
         ski.setgasfile(prefix + "_gas.dat")
         ski.sethiifile(prefix + "_hii.dat")
+        if record['numpp'] is not None: ski.setpackages(record['numpp'])
+        if record['deltamax'] is not None: ski.setmaxmassfraction(record['deltamax'])
+        if record['fdust'] is not None: ski.setdustfraction(record['fdust'])
         ski.saveto(os.path.join(skirtrun.runpath(), prefix+"_"+record['skitemplate']+".ski"))
 
         # copy the wavelength grid
