@@ -74,7 +74,7 @@ class SourceExtractor(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, image, star_region, saturation_region, galaxy_segments, saturation_segments, other_segments):
+    def run(self, image, star_region, saturation_region, galaxy_segments, star_segments, other_segments):
 
         """
         This function ...
@@ -82,13 +82,13 @@ class SourceExtractor(object):
         :param star_region:
         :param saturation_region:
         :param galaxy_segments:
-        :param saturation_segments:
+        :param star_segments:
         :param other_segments:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(image, star_region, saturation_region, galaxy_segments, saturation_segments, other_segments)
+        self.setup(image, star_region, saturation_region, galaxy_segments, star_segments, other_segments)
 
         # 2. Create the masks
         self.create_masks()
@@ -101,7 +101,7 @@ class SourceExtractor(object):
 
     # -----------------------------------------------------------------
 
-    def setup(self, image, star_region, saturation_region, galaxy_segments, saturation_segments, other_segments):
+    def setup(self, image, star_region, saturation_region, galaxy_segments, star_segments, other_segments):
 
         """
         This function ...
@@ -109,7 +109,7 @@ class SourceExtractor(object):
         :param star_region:
         :param saturation_region:
         :param galaxy_segments:
-        :param saturation_segments:
+        :param star_segments:
         :param other_segments:
         :return:
         """
@@ -117,14 +117,13 @@ class SourceExtractor(object):
         # Set the image
         self.image = image
 
+        # Regions
         self.star_region = star_region
-
         self.saturation_region = saturation_region
 
+        # Segmentation maps
         self.galaxy_segments = galaxy_segments
-
-        self.saturation_segments = saturation_segments
-
+        self.star_segments = star_segments
         self.other_segments = other_segments
 
         # The total mask of removed sources

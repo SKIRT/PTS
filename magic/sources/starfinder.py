@@ -98,7 +98,7 @@ class StarFinder(Configurable):
         self.find_stars()
 
         # 3. If requested, find and remove saturated stars
-        if self.config.find_saturation: self.find_and_remove_saturation()
+        if self.config.find_saturation: self.find_saturation()
 
         # 4. Set the statistics
         self.set_statistics()

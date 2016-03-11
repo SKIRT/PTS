@@ -45,7 +45,7 @@ class SourceFinder(Configurable):
 
         # -- Attributes --
 
-        # The image on which to perform the extraction
+        # The image
         self.image = None
 
         # The galactic and stellar catalog
@@ -218,7 +218,7 @@ class SourceFinder(Configurable):
         super(SourceFinder, self).setup()
 
         # Inform the user
-        log.info("Setting up the extractor ...")
+        log.info("Setting up the source finder ...")
 
         # Make a local reference to the image (mask inside image)
         self.image = image
@@ -246,7 +246,7 @@ class SourceFinder(Configurable):
         self.galaxy_finder.run(self.image, self.galactic_catalog, special=self.special_mask, ignore=self.ignore_mask)
 
         # Set the name of the principal galaxy
-        self.galaxy_name = self.galaxy_extractor.principal.name
+        self.galaxy_name = self.galaxy_finder.principal.name
 
         # Inform the user
         log.success("Finished finding the galaxies")
@@ -266,7 +266,7 @@ class SourceFinder(Configurable):
             log.info("Finding the stars ...")
 
             # Run the star finder
-            self.star_finder.run(self.image, self.galaxy_extractor, self.stellar_catalog, special=self.special_mask, ignore=self.ignore_mask)
+            self.star_finder.run(self.image, self.galaxy_finder, self.stellar_catalog, special=self.special_mask, ignore=self.ignore_mask)
 
             # Inform the user
             log.success("Finished finding the stars")
@@ -290,8 +290,8 @@ class SourceFinder(Configurable):
         if self.image.wavelength is not None and self.image.wavelength > wavelengths.ranges.ir.mir.max: self.trained_finder.config.classify = False
         else: self.trained_finder.config.classify = True
 
-        # Run the trained extractor just to find sources
-        self.trained_finder.run(self.image, self.galaxy_extractor, self.star_extractor, special=self.special_mask, ignore=self.ignore_mask)
+        # Run the trained finder just to find sources
+        self.trained_finder.run(self.image, self.galaxy_finder, self.star_finder, special=self.special_mask, ignore=self.ignore_mask)
 
         # Inform the user
         log.success("Finished finding other sources")
@@ -327,7 +327,7 @@ class SourceFinder(Configurable):
             log.info("Building the stellar catalog ...")
 
             # Run the catalog builder
-            self.catalog_builder.run(self.image.frames.primary, self.galaxy_extractor, self.star_extractor, self.trained_extractor)
+            self.catalog_builder.run(self.image.frames.primary, self.galaxy_finder, self.star_finder, self.traind_finder)
 
             # Inform the user
             log.success("Stellar catalog built")

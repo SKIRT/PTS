@@ -566,7 +566,7 @@ class GalaxyFinder(Configurable):
         log.info("Creating the segmentation map of galaxies ...")
 
         # Loop over all galaxies
-        for galaxy in self.galaxy_finder.galaxies:
+        for galaxy in self.galaxies:
 
             # Skip galaxies without source
             if not galaxy.has_source: continue
