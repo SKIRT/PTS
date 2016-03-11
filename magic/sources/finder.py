@@ -228,8 +228,8 @@ class SourceFinder(Configurable):
         self.stellar_catalog = stellar_catalog
 
         # Set the special and ignore mask
-        self.special_mask = Mask.from_region(special_region, self.image.xsize, self.image.ysize)
-        self.ignore_mask = Mask.from_region(ignore_region, self.image.xsize, self.image.ysize)
+        self.special_mask = Mask.from_region(special_region, self.image.xsize, self.image.ysize) if special_region is not None else None
+        self.ignore_mask = Mask.from_region(ignore_region, self.image.xsize, self.image.ysize) if ignore_region is not None else None
 
     # -----------------------------------------------------------------
 

@@ -257,7 +257,7 @@ class DataPreparer(PreparationComponent):
         # Download the extinction table
         #table = IrsaDust.get_extinction_table(self.galaxy_name) ## STOPPED WORKING (WHY?)
         center, ra_span, dec_span = self.images[0].frames.primary.coordinate_range()
-        table = IrsaDust.get_extinction_table(center)
+        table = IrsaDust.get_extinction_table(center.to_astropy())
 
         # Loop over all images
         for image in self.images:

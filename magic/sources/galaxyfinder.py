@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.galaxyfinder Contains the GalaxyFinder class.
+## \package pts.magic.sources.galaxyfinder Contains the GalaxyFinder class.
 
 # -----------------------------------------------------------------
 
@@ -13,14 +13,15 @@
 from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
-import astropy.units as u
-import astropy.coordinates as coord
+from astropy.units import Unit
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from ..basics.mask import Mask
+from ..basics.region import Region
 from ..basics.vector import Extent
 from ..basics.geometry import Coordinate, Ellipse
+from ..basics.skygeometry import SkyCoordinate
 from ..core.frame import Frame
 from ..object.galaxy import Galaxy
 from ..basics.skygeometry import SkyEllipse
@@ -64,6 +65,9 @@ class GalaxyFinder(Configurable):
 
         # The galactic statistics
         self.statistics = None
+
+        # The galaxy region
+        self.region = None
 
         # The segmentation map
         self.segments = None
@@ -287,12 +291,12 @@ class GalaxyFinder(Configurable):
             name = self.catalog["Name"][i]
             redshift = self.catalog["Redshift"][i] if not self.catalog["Redshift"].mask[i] else None
             galaxy_type = self.catalog["Type"][i] if not self.catalog["Type"].mask[i] else None
-            distance = self.catalog["Distance"][i] * u.Unit("Mpc") if not self.catalog["Distance"].mask[i] else None
-            inclination = Angle(self.catalog["Inclination"][i], u.Unit("deg")) if not self.catalog["Inclination"].mask[i] else None
-            d25 = self.catalog["D25"][i] * u.Unit("arcmin") if not self.catalog["D25"].mask[i] else None
-            major = self.catalog["Major axis length"][i] * u.Unit("arcmin") if not self.catalog["Major axis length"].mask[i] else None
-            minor = self.catalog["Minor axis length"][i] * u.Unit("arcmin") if not self.catalog["Minor axis length"].mask[i] else None
-            position_angle = Angle(self.catalog["Position angle"][i], u.Unit("deg")) if not self.catalog["Position angle"].mask[i] else None
+            distance = self.catalog["Distance"][i] * Unit("Mpc") if not self.catalog["Distance"].mask[i] else None
+            inclination = Angle(self.catalog["Inclination"][i], Unit("deg")) if not self.catalog["Inclination"].mask[i] else None
+            d25 = self.catalog["D25"][i] * Unit("arcmin") if not self.catalog["D25"].mask[i] else None
+            major = self.catalog["Major axis length"][i] * Unit("arcmin") if not self.catalog["Major axis length"].mask[i] else None
+            minor = self.catalog["Minor axis length"][i] * Unit("arcmin") if not self.catalog["Minor axis length"].mask[i] else None
+            position_angle = Angle(self.catalog["Position angle"][i], Unit("deg")) if not self.catalog["Position angle"].mask[i] else None
             ra = self.catalog["Right ascension"][i]
             dec = self.catalog["Declination"][i]
             names = self.catalog["Alternative names"][i].split(", ") if not self.catalog["Alternative names"].mask[i] else []
@@ -300,17 +304,17 @@ class GalaxyFinder(Configurable):
             companions = self.catalog["Companion galaxies"][i].split(", ") if not self.catalog["Companion galaxies"].mask[i] else []
             parent = self.catalog["Parent galaxy"][i] if not self.catalog["Parent galaxy"].mask[i] else None
 
-            # Create a SkyCoord instance for the galaxy center position
-            position = coord.SkyCoord(ra=ra, dec=dec, unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
+            # Create a SkyCoordinate for the galaxy center position
+            position = SkyCoordinate(ra=ra, dec=dec, unit="deg", frame="fk5")
 
             # If the galaxy falls outside of the frame, skip it
-            if not self.image.frames.primary.contains(position, self.config.transformation_method): continue
+            if not self.image.frames.primary.contains(position): continue
 
             # Create a new Galaxy instance
             galaxy = Galaxy(i, name, position, redshift, galaxy_type, names, distance, inclination, d25, major, minor, position_angle)
 
             # Calculate the pixel position of the galaxy in the frame
-            pixel_position = galaxy.pixel_position(self.image.wcs, self.config.transformation_method)
+            pixel_position = galaxy.pixel_position(self.image.wcs)
 
             # Set other attributes
             galaxy.principal = principal
@@ -488,6 +492,9 @@ class GalaxyFinder(Configurable):
 
         # Inform the user
         log.info("Creating galaxy region ...")
+
+        # Initialize the region
+        self.region = Region()
 
         # Loop over all galaxies
         for galaxy in self.galaxies:

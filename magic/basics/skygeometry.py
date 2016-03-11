@@ -21,7 +21,7 @@ from astropy.wcs import utils
 import astropy.units as u
 
 # Import the relevant PTS classes and modules
-from .vector import Position, Extent
+from .vector import Extent
 from .geometry import Coordinate, Line, Circle, Ellipse, Rectangle, Polygon
 from ..tools import coordinates
 
@@ -73,6 +73,17 @@ class SkyCoordinate(SkyCoord):
         """
 
         return super(SkyCoordinate).from_pixel(coordinate.x, coordinate.y, wcs, origin=0, mode=mode)
+
+    # -----------------------------------------------------------------
+
+    def to_astropy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkyCoord(ra=self.ra.to("deg").value, dec=self.dec.to("deg").value, unit="deg", frame="fk5")
 
 # -----------------------------------------------------------------
 
@@ -145,11 +156,11 @@ class SkyLine(object):
         :return:
         """
 
-        start_x, start_y = self.start.to_pixel(wcs, mode="wcs", origin=0)
-        end_x, end_y = self.end.to_pixel(wcs, mode="wcs", origin=0)
+        start = self.start.to_pixel(wcs)
+        end = self.end.to_pixel(wcs)
 
         # Return a new Line
-        return Line(Position(start_x, start_y), Position(end_x, end_y))
+        return Line(start, end)
 
 # -----------------------------------------------------------------
 
@@ -185,7 +196,7 @@ class SkyEllipse(object):
         :return:
         """
 
-        center = SkyCoord.from_pixel(ellipse.center.x, ellipse.center.y, wcs, mode="wcs")
+        center = SkyCoordinate.from_pixel(ellipse.center, wcs)
 
         ## GET THE PIXELSCALE
         result = utils.proj_plane_pixel_scales(wcs)
@@ -274,8 +285,7 @@ class SkyEllipse(object):
         :return:
         """
 
-        pixel_center_x, pixel_center_y = self.center.to_pixel(wcs, origin=0, mode='wcs')
-        center = Position(pixel_center_x, pixel_center_y)
+        center = self.center.to_pixel(wcs)
 
         ## GET THE PIXELSCALE
         result = utils.proj_plane_pixel_scales(wcs)
@@ -326,7 +336,7 @@ class SkyCircle(object):
         :return:
         """
 
-        center = SkyCoord.from_pixel(circle.center.x, circle.center.y, wcs, mode="wcs")
+        center = SkyCoordinate.from_pixel(circle.center, wcs)
 
         # Get the pixelscale
         radius = circle.radius * u.Unit("pix") * wcs.xy_average_pixelscale
@@ -380,8 +390,7 @@ class SkyCircle(object):
         :return:
         """
 
-        pixel_center_x, pixel_center_y = self.center.to_pixel(wcs, origin=0, mode='wcs')
-        center = Position(pixel_center_x, pixel_center_y)
+        center = self.center.to_pixel(wcs)
 
         ## GET THE PIXELSCALE
         pixelscale = wcs.xy_average_pixelscale
@@ -426,7 +435,7 @@ class SkyRectangle(object):
         :return:
         """
 
-        center = SkyCoord.from_pixel(rectangle.center.x, rectangle.center.y, wcs, mode="wcs")
+        center = SkyCoordinate.from_pixel(rectangle.center, wcs)
 
         # Get the pixelscale
         radius = rectangle.radius * u.Unit("pix") * wcs.xy_average_pixelscale
@@ -480,8 +489,7 @@ class SkyRectangle(object):
         :return:
         """
 
-        pixel_center_x, pixel_center_y = self.center.to_pixel(wcs, origin=0, mode='wcs')
-        center = Position(pixel_center_x, pixel_center_y)
+        center = self.center.to_pixel(wcs)
 
         pixelscale = wcs.xy_average_pixelscale
         radius = (self.radius / pixelscale).to("pix").value
@@ -549,8 +557,7 @@ class SkyPolygon(object):
         for point in self.points:
 
             # Convert the coordinate to a pixel position
-            pixel_center_x, pixel_center_y = point.to_pixel(wcs, origin=0, mode='wcs')
-            position = Position(pixel_center_x, pixel_center_y)
+            position = point.to_pixel(wcs)
 
             # Add the pixel position to the points
             polygon.add_point(position)

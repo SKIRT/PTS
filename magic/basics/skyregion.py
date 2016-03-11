@@ -248,7 +248,7 @@ class SkyRegion(list):
 
     # -----------------------------------------------------------------
 
-    def to_image_coordinates(self, wcs):
+    def to_pixel(self, wcs):
 
         """
         This function ...
@@ -259,24 +259,14 @@ class SkyRegion(list):
         # Avoid circular import at module level
         from .region import Region
 
-        # Initialize a new list contain the ellipses in image coordinates
-        new_region = Region()
+        # Create a new region
+        region = Region()
 
         # Fill the new list
-        for shape in self:
+        for shape in self: region.append(shape.to_pixel(wcs))
 
-            if shape.__class__.__name__ == "SkyCoord":
-                x, y = shape.to_pixel(wcs, origin=0, mode='wcs')
-                new_region.append(Position(x, y))
-            elif shape.__class__.__name__ == "SkyLine": new_region.append(shape.to_line(wcs))
-            elif shape.__class__.__name__ == "SkyCircle": new_region.append(shape.to_circle(wcs))
-            elif shape.__class__.__name__ == "SkyEllipse": new_region.append(shape.to_ellipse(wcs))
-            elif shape.__class__.__name__ == "SkyRectangle": new_region.append(shape.to_rectangle(wcs))
-            elif shape.__class__.__name__ == "SkyPolygon": new_region.append(shape.to_polygon(wcs))
-            else: raise ValueError("Uncrecognized shape")
-
-        # Return the list of ellipses in image coordinates
-        return new_region
+        # Return region in pixel coordinates
+        return region
 
     # -----------------------------------------------------------------
 

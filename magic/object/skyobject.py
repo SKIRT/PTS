@@ -135,20 +135,16 @@ class SkyObject(object):
 
     # -----------------------------------------------------------------
 
-    def pixel_position(self, wcs, transformation="wcs"):
+    def pixel_position(self, wcs):
 
         """
         This function ...
         :param wcs:
-        :param transformation:
         :return:
         """
 
         # Get the x and y coordinate of the object's position
-        x, y = self.position.to_pixel(wcs, origin=0, mode=transformation)
-
-        # Return the position in pixel coordinates
-        return Position(x, y)
+        return self.position.to_pixel(wcs)
 
     # -----------------------------------------------------------------
 

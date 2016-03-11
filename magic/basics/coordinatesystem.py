@@ -166,7 +166,7 @@ class CoordinateSystem(wcs.WCS):
 
     # -----------------------------------------------------------------
 
-    def to_pixel(self, position, mode='wcs'):
+    def to_pixel(self, shape):
 
         """
         This function ...
@@ -174,20 +174,19 @@ class CoordinateSystem(wcs.WCS):
         :return:
         """
 
-        return SkyCoord(position.x, position.y, self, mode=mode)
+        return shape.to_pixel(self)
 
     # -----------------------------------------------------------------
 
-    def to_sky(self, position, mode='wcs'):
+    def to_sky(self, shape):
 
         """
         This function ...
-        :param position:
-        :param mode:
+        :param shape:
         :return:
         """
 
-        return SkyCoord.from_pixel(position.x, position.y, self, mode=mode)
+        return shape.to_sky(self)
 
     # -----------------------------------------------------------------
 

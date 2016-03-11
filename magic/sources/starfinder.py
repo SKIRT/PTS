@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.starfinder Contains the StarFinder class.
+## \package pts.magic.sources.starfinder Contains the StarFinder class.
 
 # -----------------------------------------------------------------
 
@@ -13,24 +13,21 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import numpy as np
 
 # Import astronomical modules
-import astropy.units as u
-import astropy.coordinates as coord
+from astropy.units import Unit
 from astropy.convolution import Gaussian2DKernel
 
-# Import the relevant AstroMagic classes and modules
+# Import the relevant PTS classes and modules
 from ..basics.vector import Extent
 from ..basics.region import Region
 from ..basics.geometry import Coordinate, Circle, Ellipse
+from ..basics.skygeometry import SkyCoordinate
 from ..core.frame import Frame
 from ..core.source import Source
 from ..object.star import Star
 from ..tools import statistics, fitting
-
-# Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.tools import tables
 from ...core.tools.logging import log
@@ -208,7 +205,7 @@ class StarFinder(Configurable):
         galaxy_type_list = []
         for galaxy in self.galaxy_extractor.galaxies:
 
-            galaxy_pixel_position_list.append(galaxy.pixel_position(self.image.wcs, self.config.transformation_method))
+            galaxy_pixel_position_list.append(galaxy.pixel_position(self.image.wcs))
             if galaxy.principal: galaxy_type_list.append("principal")
             elif galaxy.companion: galaxy_type_list.append("companion")
             else: galaxy_type_list.append("other")
@@ -226,8 +223,8 @@ class StarFinder(Configurable):
             star_id = self.catalog["Id"][i]
             ra = self.catalog["Right ascension"][i]
             dec = self.catalog["Declination"][i]
-            ra_error = self.catalog["Right ascension error"][i] * u.Unit("mas")
-            dec_error = self.catalog["Declination error"][i] * u.Unit("mas")
+            ra_error = self.catalog["Right ascension error"][i] * Unit("mas")
+            dec_error = self.catalog["Declination error"][i] * Unit("mas")
             confidence_level = self.catalog["Confidence level"][i]
 
             # Check for which bands magnitudes are defined
@@ -236,21 +233,21 @@ class StarFinder(Configurable):
             for name in self.catalog.colnames:
                 if "magnitude" in name:
                     band = name.split(" magnitude")[0]
-                    magnitudes[band] = self.catalog[name][i] * u.mag
-                    magnitude_errors[band] = self.catalog[name + " error"][i] * u.mag
+                    magnitudes[band] = self.catalog[name][i] * Unit("mag")
+                    magnitude_errors[band] = self.catalog[name + " error"][i] * Unit("mag")
 
             # Create a sky coordinate for the star position
-            position = coord.SkyCoord(ra=ra, dec=dec, unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
+            position = SkyCoordinate(ra=ra, dec=dec, unit="deg", frame="fk5")
 
             # If the stars falls outside of the frame, skip it
-            if not self.image.frames.primary.contains(position, self.config.transformation_method): continue
+            if not self.image.frames.primary.contains(position): continue
 
             # Create a star object
             star = Star(i, catalog=catalog, id=star_id, position=position, ra_error=ra_error,
                         dec_error=dec_error, magnitudes=magnitudes, magnitude_errors=magnitude_errors)
 
             # Get the position of the star in pixel coordinates
-            pixel_position = star.pixel_position(self.image.wcs, self.config.transformation_method)
+            pixel_position = star.pixel_position(self.image.wcs)
 
             # -- Checking for foreground or surroudings of galaxy --
 
@@ -547,7 +544,7 @@ class StarFinder(Configurable):
         for star in self.stars:
 
             # Get the center in pixel coordinates
-            center = star.pixel_position(self.image.wcs, self.config.transformation_method)
+            center = star.pixel_position(self.image.wcs)
 
             # Determine the color, based on the detection level
             if star.has_model: color = "blue"
@@ -727,7 +724,7 @@ class StarFinder(Configurable):
             if star.has_saturation:
 
                 # Determine the path
-                path = os.path.join(directory_path, "saturation_" + str(star.index) + ".fits")
+                path = filesystem.join(directory_path, "saturation_" + str(star.index) + ".fits")
 
                 # Save the saturation source as a FITS file
                 star.saturation.save(path, origin=self.name)
@@ -738,7 +735,7 @@ class StarFinder(Configurable):
             if star.has_model:
 
                 # Determine the path
-                path = os.path.join(directory_path, "star-fitted_" + str(star.index) + ".fits")
+                path = filesystem.join(directory_path, "star-fitted_" + str(star.index) + ".fits")
 
                 # Create source
                 source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=shape)
@@ -754,7 +751,7 @@ class StarFinder(Configurable):
             elif star.has_source:
 
                 # Determine the path
-                path = os.path.join(directory_path, "star-detected_" + str(star.index) + ".fits")
+                path = filesystem.join(directory_path, "star-detected_" + str(star.index) + ".fits")
 
                 # Create source
                 source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=shape)
@@ -770,7 +767,7 @@ class StarFinder(Configurable):
             else:
 
                 # Determine the path
-                path = os.path.join(directory_path, "star-undetected_" + str(star.index) + ".fits")
+                path = filesystem.join(directory_path, "star-undetected_" + str(star.index) + ".fits")
 
                 # Create a source for the desired sigma level and outer factor
                 source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=shape)
@@ -781,24 +778,6 @@ class StarFinder(Configurable):
 
                 # Save the cutout as a FITS file
                 source.save(path, origin=self.name)
-
-    # -----------------------------------------------------------------
-
-    def write_result(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the full path to the resulting FITS file
-        path = self.full_output_path(self.config.writing.result_path)
-
-        # Inform the user
-        log.info("Writing resulting frame to " + path + " ...")
-
-        # Write out the resulting frame
-        self.image.frames.primary.save(path, origin=self.name)
 
     # -----------------------------------------------------------------
 
@@ -1118,53 +1097,6 @@ class StarFinder(Configurable):
         # Create the statistics table
         self.statistics = tables.new(data, names)
 
-    # -----------------------------------------------------------------
-
-    def update_mask(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        self.image.masks.sources += self.mask
-
-    # -----------------------------------------------------------------
-
-    def write(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # If requested, write out the stellar catalog
-        if self.config.write_catalog: self.write_catalog()
-
-        # If requested, write out statistics
-        if self.config.write_statistics: self.write_statistics()
-
-        # If requested, write out the star region
-        if self.config.write_star_region: self.write_star_region()
-
-        # If requested, write out the saturation region
-        if self.config.write_saturation_region: self.write_saturation_region()
-
-        # If requested, write out a segmentation map of the stars
-        if self.config.write_star_segments: self.write_star_segments()
-
-        # If requested, write out a segmentation map of the saturation
-        if self.config.write_saturation_segments: self.write_saturation_segments()
-
-        # If requested, write out the frame where the stars are masked
-        if self.config.write_masked_frame: self.write_masked_frame()
-
-        # If requested, write out the star cutout boxes
-        if self.config.write_cutouts: self.write_cutouts()
-
-        # If requested, write out the result
-        if self.config.write_result: self.write_result()
-
 # -----------------------------------------------------------------
 
 def matches_galaxy_position(position, position_list, type_list, encountered, min_distances, distances=None):
@@ -1172,8 +1104,11 @@ def matches_galaxy_position(position, position_list, type_list, encountered, min
     """
     This function ...
     :param position:
-    :param galaxy_extractor:
-    :param encountered_galaxies:
+    :param position_list:
+    :param type_list:
+    :param encountered:
+    :param min_distances:
+    :param distances:
     :return:
     """
 

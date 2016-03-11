@@ -13,24 +13,22 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import numpy as np
 from scipy import ndimage
-import matplotlib.pyplot as plt
 
 # Import astronomical modules
-import aplpy
 from astropy.io import fits
-import astropy.units as u
-import astropy.coordinates as coord
+from astropy.units import Unit
 from astropy.convolution import convolve_fft
 
-# Import the relevant AstroMagic classes and modules
+# Import the relevant PTS classes and modules
 from .box import Box
 from ..basics.vector import Position, Extent
 from ..basics.geometry import Rectangle
+from ..basics.skygeometry import SkyCoordinate
 from ..basics.coordinatesystem import CoordinateSystem
 from ..tools import coordinates, cropping, transformations, interpolation, headers, fitting
+from ...core.tools import filesystem
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
@@ -81,8 +79,11 @@ class Frame(np.ndarray):
         This function ...
         :param path:
         :param index:
+        :param name:
         :param description:
         :param plane:
+        :param hdulist_index:
+        :param fwhm:
         :return:
         """
 
@@ -124,7 +125,7 @@ class Frame(np.ndarray):
                 print("           - actual pixelscale: (", pixelscale.x.to("arcsec/pix"), pixelscale.y.to("arcsec/pix"), ")")
 
         # Obtain the filter for this image
-        filter = headers.get_filter(os.path.basename(path[:-5]), header)
+        filter = headers.get_filter(filesystem.name(path[:-5]), header)
 
         # Obtain the units of this image
         unit = headers.get_unit(header)
@@ -146,7 +147,7 @@ class Frame(np.ndarray):
                 index = headers.get_frame_index(header, plane)
 
             # Get the name from the file path
-            if name is None: name = os.path.basename(path[:-5])
+            if name is None: name = filesystem.name(path[:-5])
 
             # Return the frame
             # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
@@ -166,7 +167,7 @@ class Frame(np.ndarray):
             if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
 
             # Get the name from the file path
-            if name is None: name = os.path.basename(path[:-5])
+            if name is None: name = filesystem.name(path[:-5])
 
             # Return the frame
             # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
@@ -295,7 +296,7 @@ class Frame(np.ndarray):
 
         # Return the pivot wavelength of the frame's filter, if defined
         if self.filter is None: return None
-        else: return self.filter.effectivewavelength() * u.Unit("micron")
+        else: return self.filter.effectivewavelength() * Unit("micron")
 
     # -----------------------------------------------------------------
 
@@ -316,34 +317,6 @@ class Frame(np.ndarray):
 
         # Return the converted frame
         return frame
-
-    # -----------------------------------------------------------------
-
-    def to_magnitude(self, m_0):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # TODO: adapt the unit
-
-        # Do the conversion
-        return m_0 - 2.5 * np.log10(self)
-
-    # -----------------------------------------------------------------
-
-    def to_flux(self, f_0):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # TODO: adapt the unit
-
-        # Do the conversion
-        return f_0 * np.power(10.0, - self / 2.5)
 
     # -----------------------------------------------------------------
 
@@ -602,7 +575,7 @@ class Frame(np.ndarray):
         for ra_deg, dec_deg in coordinate_values:
 
             # Create sky coordinate
-            coordinate = coord.SkyCoord(ra=ra_deg, dec=dec_deg, unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
+            coordinate = SkyCoordinate(ra=ra_deg, dec=dec_deg, unit="deg", frame="fk5")
 
             # Add the coordinate of this corner to the list
             corners.append(coordinate)
@@ -616,6 +589,7 @@ class Frame(np.ndarray):
 
         """
         This function ...
+        :param silent:
         :return:
         """
 
@@ -630,8 +604,8 @@ class Frame(np.ndarray):
         #world = self.wcs.all_pix2world(pixels, 0)  # Convert pixel coordinates to world coordinates (RA and DEC in degrees)
         #print(world)
 
-        co1 = coord.SkyCoord(ra=float(coor1[0]), dec=float(coor1[1]), unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
-        co2 = coord.SkyCoord(ra=float(coor2[0]), dec=float(coor2[1]), unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
+        co1 = SkyCoordinate(ra=float(coor1[0]), dec=float(coor1[1]), unit="deg", frame='fk5')
+        co2 = SkyCoordinate(ra=float(coor2[0]), dec=float(coor2[1]), unit="deg", frame='fk5')
 
         #print("co1=", co1.to_string('hmsdms'))
         #print("co2=", co2.to_string('hmsdms'))
@@ -681,28 +655,27 @@ class Frame(np.ndarray):
             if not np.isclose(dec_distance, size_dec_deg, rtol=0.05):
                 print("ERROR: the coordinate system and pixel scale do not match: dec_distance = " + str(dec_distance) + ",size_dec_deg = " + str(size_dec_deg))
 
-        center = coord.SkyCoord(ra=ra_center, dec=dec_center, unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
+        center = SkyCoordinate(ra=ra_center, dec=dec_center, unit="deg", frame="fk5")
 
         # Create RA and DEC span as quantities
-        ra_span = ra_distance * u.Unit("deg")
-        dec_span = dec_distance * u.Unit("deg")
+        ra_span = ra_distance * Unit("deg")
+        dec_span = dec_distance * Unit("deg")
 
         # Return the center coordinate and the RA and DEC span
         return center, ra_span, dec_span
 
     # -----------------------------------------------------------------
 
-    def contains(self, coordinate, transformation="wcs"):
+    def contains(self, coordinate):
 
         """
         This function ...
         :param coordinate:
-        :param transformation:
         :return:
         """
 
-        x, y = coordinate.to_pixel(self.wcs, origin=0, mode=transformation)
-        return 0.0 <= x < self.xsize and 0.0 <= y < self.ysize
+        pixel = coordinate.to_pixel(self.wcs)
+        return 0.0 <= pixel.x < self.xsize and 0.0 <= pixel.y < self.ysize
 
     # -----------------------------------------------------------------
 
@@ -723,6 +696,8 @@ class Frame(np.ndarray):
 
         """
         This function ...
+        :param order:
+        :param mask:
         :return:
         """
 
@@ -751,6 +726,7 @@ class Frame(np.ndarray):
         """
         This function ...
         :param mask:
+        :param method:
         :return:
         """
 
@@ -850,44 +826,5 @@ class Frame(np.ndarray):
 
         # Write the HDU to a FITS file
         hdu.writeto(path, clobber=True)
-
-    # -----------------------------------------------------------------
-
-    def plot(self, mask=None, color=True, nan_color='black', grid=False):
-
-        """
-        This function ...
-        :param mask:
-        :return:
-        """
-
-        # Mask the frame with nans
-        maskedimage = np.ma.array(self, mask=mask)
-        frame_with_nans = maskedimage.filled(np.NaN)
-
-        # Create a HDU from this frame with the image header
-        hdu = fits.PrimaryHDU(frame_with_nans, self.wcs.to_header())
-
-        # Create a figure canvas
-        figure = plt.figure(figsize=(12, 12))
-
-        # Create a figure from this frame
-        plot = aplpy.FITSFigure(hdu, figure=figure)
-
-        # Set color scale
-        if color: plot.show_colorscale()
-        else: plot.show_grayscale()
-
-        # Add a color bar
-        plot.add_colorbar()
-
-        # Set color for NaN values
-        plot.set_nan_color(nan_color)
-
-        # Set grid
-        if grid: plot.add_grid()
-
-        # Show the plot on screen
-        plt.show()
 
 # -----------------------------------------------------------------

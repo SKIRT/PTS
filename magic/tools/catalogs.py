@@ -18,8 +18,7 @@ import copy
 import numpy as np
 
 # Import astronomical modules
-import astropy.units as u
-import astropy.coordinates as coord
+from astropy.units import Unit, Magnitude
 from astroquery.vizier import Vizier
 from astroquery.simbad import Simbad
 from astroquery.ned import Ned
@@ -29,8 +28,7 @@ from astropy.coordinates import Angle
 # Import the relevant PTS classes and modules
 from ...core.tools import tables
 from ...core.tools.logging import log
-
-# Import the relevant AstroMagic classes and modules
+from ..basics.skygeometry import SkyCoordinate
 from . import regions
 from ..basics.vector import Position
 
@@ -299,7 +297,7 @@ def create_star_catalog(frame, catalogs=None):
         log.debug("DEBUG: Querying the " + catalog + " catalog")
 
         # Query Vizier and obtain the resulting table
-        result = viz.query_region(center, width=ra_span, height=dec_span, catalog=catalog)
+        result = viz.query_region(center.to_astropy(), width=ra_span, height=dec_span, catalog=catalog)
         table = result[0]
 
         number_of_stars = 0
@@ -339,9 +337,8 @@ def create_star_catalog(frame, catalogs=None):
             # -- Positional information --
 
             # Get the position of the star as a SkyCoord object and as pixel coordinate
-            position = coord.SkyCoord(ra=table["_RAJ2000"][i], dec=table["_DEJ2000"][i], unit=(u.deg, u.deg), frame='fk5')
-            pixel_position_x, pixel_position_y = position.to_pixel(frame.wcs, origin=0, mode='wcs')
-            pixel_position = Position(pixel_position_x, pixel_position_y)
+            position = SkyCoordinate(ra=table["_RAJ2000"][i], dec=table["_DEJ2000"][i], unit="deg", frame="fk5")
+            pixel_position = position.to_pixel(frame.wcs)
 
             # Get the right ascension and declination for the current star
             star_ra = table["_RAJ2000"][i]
@@ -357,14 +354,14 @@ def create_star_catalog(frame, catalogs=None):
             # Get the mean error on the right ascension and declination
             if catalog == "UCAC4" or catalog == "NOMAD":
 
-                ra_error = table["e_RAJ2000"][i] * u.mas
-                dec_error = table["e_DEJ2000"][i] * u.mas
+                ra_error = table["e_RAJ2000"][i] * Unit("mas")
+                dec_error = table["e_DEJ2000"][i] * Unit("mas")
 
             elif catalog == "II/246":
 
-                error_maj = table["errMaj"][i] * u.arcsec
-                error_min = table["errMin"][i] * u.arcsec
-                error_theta = Angle(table["errPA"][i], u.deg)
+                error_maj = table["errMaj"][i] * Unit("arcsec")
+                error_min = table["errMin"][i] * Unit("arcsec")
+                error_theta = Angle(table["errPA"][i], "deg")
 
                 # Temporary: use only the major axis error (convert the error ellipse into a circle)
                 ra_error = error_maj.to("mas")
@@ -390,14 +387,14 @@ def create_star_catalog(frame, catalogs=None):
                 else:
 
                     # Add the magnitude value
-                    magnitudes[band].append(u.Magnitude(value))
+                    magnitudes[band].append(Magnitude(value))
 
                     # Check for presence of error on magnitude
                     error_column_name = "e_" + column_name
                     if error_column_name in table.colnames:
                         error = table[error_column_name][i]
                         if isinstance(error, np.ma.core.MaskedConstant): magnitude_errors[band].append(None)
-                        else: magnitude_errors[band].append(u.Magnitude(error))
+                        else: magnitude_errors[band].append(Magnitude(error))
                     else: magnitude_errors[band].append(None)
 
             # -- Cross-referencing with previous catalogs --
@@ -409,9 +406,8 @@ def create_star_catalog(frame, catalogs=None):
                 # be one match of a star of one catalog with the star of another catalog, within the radius of 3 pixels)
                 if encountered[index]: continue
 
-                saved_star_position = coord.SkyCoord(ra=ra_column[index], dec=dec_column[index], unit=(u.deg, u.deg), frame='fk5')
-                saved_star_pixel_position_x, saved_star_pixel_position_y = saved_star_position.to_pixel(frame.wcs, origin=0, mode="wcs")
-                saved_star_pixel_position = Position(saved_star_pixel_position_x, saved_star_pixel_position_y)
+                saved_star_position = SkyCoordinate(ra=ra_column[index], dec=dec_column[index], unit="deg", frame="fk5")
+                saved_star_pixel_position = saved_star_position.to_pixel(frame.wcs)
 
                 # Calculate the distance between the star already in the list and the new star
                 difference = saved_star_pixel_position - pixel_position
@@ -533,8 +529,7 @@ def create_galaxy_catalog(frame):
         gal_name, position, gal_redshift, gal_type, gal_names, gal_distance, gal_inclination, gal_d25, gal_major, gal_minor, gal_pa = get_galaxy_info(name, position)
 
         # Calculate pixel position in the frame
-        pixel_position_x, pixel_position_y = position.to_pixel(frame.wcs, origin=0, mode='wcs')
-        pixel_position = Position(pixel_position_x, pixel_position_y)
+        pixel_position = position.to_pixel(frame.wcs)
 
         # Check whether the pixel position falls within the frame
         if pixel_position.x < 0.0 or pixel_position.x >= frame.xsize: continue
@@ -700,14 +695,14 @@ def get_galaxy_info(name, position):
     if entry is None: return name, position, None, None, [], None, None, None, None, None, None
 
     # Get the right ascension and the declination
-    position = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
+    position = SkyCoordinate(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit="deg", frame="fk5")
 
     # Get the names given to this galaxy
     gal_names = entry["ANames"].split() if entry["ANames"] else []
 
     # Get the size of the galaxy
     ratio = np.power(10.0, entry["logR25"]) if entry["logR25"] else None
-    diameter = np.power(10.0, entry["logD25"]) * 0.1 * u.arcmin if entry["logD25"] else None
+    diameter = np.power(10.0, entry["logD25"]) * 0.1 * Unit("arcmin") if entry["logD25"] else None
 
     #print("  D25_diameter = ", diameter)
 
@@ -717,9 +712,9 @@ def get_galaxy_info(name, position):
 
         radial_profiles_entry = radial_profiles_result[0][0]
 
-        gal_distance = radial_profiles_entry["Dist"] * u.Unit("Mpc")
-        gal_inclination = Angle(radial_profiles_entry["i"], u.deg)
-        gal_d25 = radial_profiles_entry["D25"] * u.arcmin
+        gal_distance = radial_profiles_entry["Dist"] * Unit("Mpc")
+        gal_inclination = Angle(radial_profiles_entry["i"], "deg")
+        gal_d25 = radial_profiles_entry["D25"] * Unit("arcmin")
 
     else:
 
@@ -732,7 +727,7 @@ def get_galaxy_info(name, position):
     gal_minor = diameter / ratio if diameter is not None and ratio is not None else None
 
     # Get the position angle of the galaxy
-    gal_pa = Angle(entry["PA"] - 90.0, u.deg) if entry["PA"] else None
+    gal_pa = Angle(entry["PA"] - 90.0, "deg") if entry["PA"] else None
 
     # Create and return a new Galaxy instance
     return gal_name, position, gal_redshift, gal_type, gal_names, gal_distance, gal_inclination, gal_d25, gal_major, gal_minor, gal_pa
@@ -763,7 +758,7 @@ def galaxies_in_box(center, ra_span, dec_span):
     viz.ROW_LIMIT = -1
 
     # Query Vizier and obtain the resulting table
-    result = viz.query_region(center, width=ra_span, height=dec_span, catalog=["VII/237"])
+    result = viz.query_region(center.to_astropy(), width=ra_span, height=dec_span, catalog=["VII/237"])
 
     # I noticed something strange happening once; where there were no entries in the result,
     # with the following parameters:
@@ -778,14 +773,14 @@ def galaxies_in_box(center, ra_span, dec_span):
     if len(result) == 0:
 
         ra_span *= 1.0 + 1e-5
-        result = viz.query_region(center, width=ra_span, height=dec_span, catalog=["VII/237"])
+        result = viz.query_region(center.to_astropy(), width=ra_span, height=dec_span, catalog=["VII/237"])
 
     table = result[0]
 
     # Loop over the rows in the table
     for entry in table:
         name = "PGC " + str(entry["PGC"])
-        coordinate = coord.SkyCoord(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit=(u.deg, u.deg), frame='fk5')
+        coordinate = SkyCoordinate(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit="deg", frame="fk5")
         namepluscoordinate = (name, coordinate)
         names.append(namepluscoordinate)
 
@@ -808,7 +803,7 @@ def fetch_objects_in_box(box, catalog, keywords, radius, limit=None, column_filt
     """
 
     # Define the center coordinate for the box
-    coordinate = coord.SkyCoord(ra=box[0], dec=box[1], unit=(u.deg, u.deg), frame='fk5') # frame: icrs, fk5... ?
+    coordinate = SkyCoordinate(ra=box[0], dec=box[1], unit="deg", frame="fk5") # frame: icrs, fk5... ?
 
     # Make a Vizier object
     if column_filters is None:
@@ -820,7 +815,7 @@ def fetch_objects_in_box(box, catalog, keywords, radius, limit=None, column_filt
     viz.ROW_LIMIT = limit if limit is not None else -1
 
     # Query the box of our image frame
-    result = viz.query_region(coordinate, width=box[3] * u.Unit("deg"), height=box[2] * u.Unit("deg"), catalog=catalog)
+    result = viz.query_region(coordinate.to_astropy(), width=box[3] * Unit("deg"), height=box[2] * Unit("deg"), catalog=catalog)
 
     region_string = "# Region file format: DS9 version 3.0\n"
     region_string += "global color=green\n"

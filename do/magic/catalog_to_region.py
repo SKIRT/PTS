@@ -16,16 +16,10 @@ from __future__ import absolute_import, division, print_function
 import os
 import argparse
 
-# Import astronomical modules
-import astropy.coordinates as coord
-import astropy.units as u
-
 # Import the relevant PTS classes and modules
 from pts.core.tools import tables
-
-# Import the relevant AstroMagic classes and modules
-from pts.magic.basics import Position
-from pts.magic.core import Frame
+from pts.magic.basics.skygeometry import SkyCoordinate
+from pts.magic.core.frame import Frame
 from pts.magic.tools import statistics
 
 # -----------------------------------------------------------------
@@ -74,10 +68,10 @@ for i in range(len(catalog)):
     #confidence_level = catalog["Confidence level"][i]
 
     # Create a sky coordinate for the star position
-    position = coord.SkyCoord(ra=ra, dec=dec, unit=(u.Unit("deg"), u.Unit("deg")), frame='fk5')
+    position = SkyCoordinate(ra=ra, dec=dec, unit="deg", frame="fk5")
 
-    x, y = position.to_pixel(frame.wcs, origin=0, mode="wcs")
-    center = Position(x, y)
+    # To pixel position
+    center = position.to_pixel(frame.wcs)
 
     # Determine the radius
     radius = arguments.fwhm * statistics.fwhm_to_sigma * arguments.sigma_level
