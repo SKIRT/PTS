@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.subtract.skysubtraction Contains the SkySubtractor class.
+## \package pts.magic.sky.skysubtractor Contains the SkySubtractor class.
 
 # -----------------------------------------------------------------
 
@@ -20,8 +20,8 @@ import matplotlib.pyplot as plt
 from photutils.background import Background
 
 # Import the relevant AstroMagic classes and modules
-from ..core import Frame
-from ..basics import Mask
+from ..core.frame import Frame
+from ..basics.mask import Mask
 from ..tools import interpolation, plotting, statistics, fitting
 
 # Import the relevant PTS classes and modules

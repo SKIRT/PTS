@@ -20,7 +20,9 @@ import numpy as np
 import astropy.units as u
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Position, Extent, Rectangle, CatalogCoverage
+from ..basics.vector import Position, Extent
+from ..basics.geometry import Rectangle
+from ..basics.catalogcoverage import CatalogCoverage
 from ..tools import catalogs
 
 # Import the relevant PTS classes and modules

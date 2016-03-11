@@ -26,9 +26,12 @@ from astropy import units as u
 from astropy.convolution import convolve, convolve_fft
 
 # Import the relevant AstroMagic classes and modules
-from . import Image, Frame
+from .image import Image
+from .frame import Frame
 from .box import Box
-from ..basics import Position, Extent, Mask, Ellipse
+from ..basics.vector import Position, Extent
+from ..basics.mask import Mask
+from ..basics.geometry import Ellipse
 from ..tools import plotting, statistics
 
 # -----------------------------------------------------------------

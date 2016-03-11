@@ -18,7 +18,8 @@ import numpy as np
 from scipy import ndimage
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Position, Rectangle, Extent
+from ..basics.vector import Position, Extent
+from ..basics.geometry import Rectangle
 from ..tools import cropping, fitting, interpolation, plotting
 from ...core.tools.logging import log
 
@@ -437,7 +438,7 @@ class Box(np.ndarray):
                 #plotting.plot_box(self)
                 #plotting.plot_box(mask)
                 #plotting.plot_box(np.ma.masked_array(self, mask=mask))
-                mask = mask.eroded(2, 1)
+                mask = mask.eroded(connectivity=2, iterations=1)
                 plotting.plot_box(np.ma.masked_array(self, mask=mask))
                 return self.fit_polynomial(3, mask=mask)
 

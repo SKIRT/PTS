@@ -119,7 +119,7 @@ class Position(Vector):
     This class ...
     """
 
-    def __init__(self, x, y, meta=None):
+    def __init__(self, x, y):
 
         """
         The constructor ...
@@ -127,8 +127,6 @@ class Position(Vector):
 
         # Call the constructor of the Vector base class
         super(Position, self).__init__(x, y)
-
-        self.meta = meta
 
     # -----------------------------------------------------------------
 

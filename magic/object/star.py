@@ -18,10 +18,10 @@ from astropy.coordinates import Angle
 
 # Import the relevant AstroMagic classes and modules
 from .skyobject import SkyObject
-from ..core import Source
+from ..core.source import Source
 from ..tools import statistics, fitting, masks, plotting
 from ..analysis import sources
-from ..basics import Ellipse
+from ..basics.geometry import Ellipse
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------

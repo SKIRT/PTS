@@ -18,8 +18,7 @@ from astropy.coordinates import Angle
 
 # Import the relevant AstroMagic classes and modules
 from .vector import Position, Extent
-from .geometry import Line, Circle, Ellipse, Rectangle, Polygon, Composite
-from .skygeometry import SkyCoord, SkyLine, SkyCircle, SkyEllipse, SkyRectangle, SkyPolygon
+from .geometry import Coordinate, Line, Circle, Ellipse, Rectangle, Polygon, Composite
 from .mask import Mask
 
 # -----------------------------------------------------------------
@@ -72,6 +71,7 @@ class Region(list):
             meta = {}
             if "text" in shape.attr[1]: meta["text"] = shape.attr[1]["text"]
             if "color" in shape.attr[1]: meta["color"] = shape.attr[1]["color"]
+            if "point" in shape.attr[1]: meta["point"] = shape.attr[1]["point"]
 
             # Check the color of the shape
             if color is not None and shape.attr[1]["color"] != color: continue
@@ -86,10 +86,10 @@ class Region(list):
                 # Get the position
                 x = shape.coord_list[0]
                 y = shape.coord_list[1]
-                position = Position(x, y, meta=meta)
+                coordinate = Coordinate(x, y, meta=meta)
 
                 # Add the position to the region
-                new_shape = position
+                new_shape = coordinate
 
             # If the shape is a line -> Line
             elif shape.name == "line" or shape.name == "vector":
@@ -232,10 +232,10 @@ class Region(list):
         """
 
         # Check whether the shape is in sky coordinates
-        if not (shape.__class__.__name__ == "Position" or shape.__class__.__name__ == "Line"
+        if not (shape.__class__.__name__ == "Coordinate" or shape.__class__.__name__ == "Line"
                 or shape.__class__.__name__ == "Circle" or shape.__class__.__name__ == "Ellipse"
                 or shape.__class__.__name__ == "Rectangle" or shape.__class__.__name__ == "Polygon"):
-            raise ValueError("Shape must of of type Position, Line, Circle, Ellipse, Rectangle or Polygon")
+            raise ValueError("Shape must of of type Coordinate, Line, Circle, Ellipse, Rectangle or Polygon")
 
         # Otherwise, add the shape
         super(Region, self).append(shape)
@@ -319,7 +319,7 @@ class Region(list):
 
     # -----------------------------------------------------------------
 
-    def to_sky_coordinates(self, wcs):
+    def to_sky(self, wcs):
 
         """
         This function ...
@@ -330,22 +330,14 @@ class Region(list):
         # Avoid circular import at module scope
         from .skyregion import SkyRegion
 
-        # Initialize a new list contain the shapes in sky coordinates
-        new_region = SkyRegion()
+        # Create a new SkyRegion
+        region = SkyRegion()
 
-        # Fill the new list
-        for shape in self:
+        # Add the shapes to the sky region
+        for shape in self: region.append(shape.to_sky(wcs))
 
-            if shape.__class__.__name__ == "Position": new_region.append(SkyCoord.from_pixel(shape.x, shape.y, wcs, mode="wcs"))
-            elif shape.__class__.__name__ == "Line": new_region.append(SkyLine.from_line(shape, wcs))
-            elif shape.__class__.__name__ == "Circle": new_region.append(SkyCircle.from_circle(shape, wcs))
-            elif shape.__class__.__name__ == "Ellipse": new_region.append(SkyEllipse.from_ellipse(shape, wcs))
-            elif shape.__class__.__name__ == "Rectangle": new_region.append(SkyRectangle.from_rectangle(shape, wcs))
-            elif shape.__class__.__name__ == "Polygon": new_region.append(SkyPolygon.from_polygon(shape, wcs))
-            else: raise ValueError("Unrecognized shape")
-
-        # Return the list of ellipses in image coordinates
-        return new_region
+        # Return the region
+        return region
 
     # -----------------------------------------------------------------
 
@@ -383,17 +375,8 @@ class Region(list):
         # Initialize the region string
         print("# Region file format: DS9 version 4.1", file=f)
 
-        # Loop over all ellipses
-        for ellipse in self:
-
-            # Get aperture properties
-            center = ellipse.center
-            major = ellipse.major
-            minor = ellipse.minor
-            angle = ellipse.angle.degree
-
-            # Write to region file
-            print("image;ellipse({},{},{},{},{})".format(center.x+1, center.y+1, major, minor, angle), file=f)
+        # Loop over all shapes, get string and print it to the region file
+        for shape in self: print(shape.to_region_string(), file=f)
 
         # Close the file
         f.close()

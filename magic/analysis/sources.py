@@ -29,8 +29,10 @@ from photutils import source_properties, properties_table
 
 # Import the relevant AstroMagic classes and modules
 from ..tools import fitting, plotting, statistics, coordinates, cropping, interpolation, masks, regions
-from ..core import Source
-from ..basics import Position, Extent, Ellipse, Mask
+from ..core.source import Source
+from ..basics.vector import Position, Extent
+from ..basics.geometry import Ellipse
+from ..basics.mask import Mask
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
@@ -39,6 +41,9 @@ def find_contours(frame, segments, sigma_level):
 
     """
     This function ...
+    :param frame:
+    :param segments:
+    :param sigma_level:
     :return:
     """
 

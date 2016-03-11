@@ -16,11 +16,9 @@ from __future__ import absolute_import, division, print_function
 import os
 import numpy as np
 
-# Import astronomical modules
-from astropy.coordinates import Angle
-
 # Import the relevant AstroMagic classes and modules
-from ..basics import Rectangle, Position, Extent
+from ..basics.vector import Position, Extent
+from ..basics.geometry import Rectangle
 
 # Import the relevant PTS classes and modules
 from ...core.tools import tables, inspection, filesystem

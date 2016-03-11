@@ -26,8 +26,10 @@ import astropy.coordinates as coord
 from astropy.convolution import convolve_fft
 
 # Import the relevant AstroMagic classes and modules
-from . import Box
-from ..basics import Position, Extent, Rectangle, CoordinateSystem
+from .box import Box
+from ..basics.vector import Position, Extent
+from ..basics.geometry import Rectangle
+from ..basics.coordinatesystem import CoordinateSystem
 from ..tools import coordinates, cropping, transformations, interpolation, headers, fitting
 from ...core.tools.logging import log
 
@@ -757,7 +759,7 @@ class Frame(np.ndarray):
             try:
                 return self.fit_polynomial(3, mask=mask)
             except TypeError:
-                mask = mask.eroded(2, 1)
+                mask = mask.eroded(connectivity=2, iterations=1)
                 return self.fit_polynomial(3, mask=mask)
 
         # Interpolate using the local mean method

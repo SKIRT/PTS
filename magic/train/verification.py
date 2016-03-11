@@ -20,7 +20,8 @@ from .classification import Classifier
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
-from ..core import Image, Source
+from ..core.image import Image
+from ..core.source import Source
 from ...core.tools import filesystem, inspection
 
 # -----------------------------------------------------------------

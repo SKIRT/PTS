@@ -32,7 +32,7 @@ from ...core.tools.logging import log
 
 # Import the relevant AstroMagic classes and modules
 from . import regions
-from ..basics import Position
+from ..basics.vector import Position
 
 # -----------------------------------------------------------------
 

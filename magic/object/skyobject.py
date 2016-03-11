@@ -17,7 +17,8 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Position, TrackRecord
+from ..basics.vector import Position
+from ..basics.trackrecord import TrackRecord
 from ..analysis import sources
 
 # -----------------------------------------------------------------
@@ -139,6 +140,7 @@ class SkyObject(object):
         """
         This function ...
         :param wcs:
+        :param transformation:
         :return:
         """
 

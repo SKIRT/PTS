@@ -21,11 +21,11 @@ from astropy import coordinates
 from astropy import units as u
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Extent
+from ..basics.vector import Extent
 
 # Import the relevant PTS classes and modules
 from ...core.basics.filter import Filter
-from ..basics import CoordinateSystem
+from ..basics.coordinatesystem import CoordinateSystem
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------

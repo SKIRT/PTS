@@ -22,12 +22,14 @@ from astropy.coordinates import SkyCoord
 from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
-from ..core import Frame, Source
-from ..basics import Mask, Ellipse
+from ..core.frame import Frame
+from ..core.source import Source
+from ..basics.mask import Mask
+from ..basics.geometry import Ellipse
 from ..tools import statistics, masks, plotting, general
-from ..analysis import SExtractor, sources
+from ..analysis import sources
 from ..train import Classifier
-from ..sky import Star
+from ..object.star import Star
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -35,7 +37,7 @@ from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-class TrainedExtractor(Configurable):
+class TrainedFinder(Configurable):
 
     """
     This class ...
@@ -50,7 +52,7 @@ class TrainedExtractor(Configurable):
         """
 
         # Call the constructor of the base class
-        super(TrainedExtractor, self).__init__(config, "magic")
+        super(TrainedFinder, self).__init__(config, "magic")
 
         # -- Attributes --
 
@@ -73,29 +75,26 @@ class TrainedExtractor(Configurable):
         # List of stars
         self.stars = []
 
-        # Mask
-        self.mask = None
-
-        # Local references to the galaxy and star extractor
-        self.galaxy_extractor = None
-        self.star_extractor = None
+        # Local references to the galaxy and star finder
+        self.galaxy_finder = None
+        self.star_finder = None
 
     # -----------------------------------------------------------------
 
-    def run(self, image, galaxyextractor=None, starextractor=None, special=None, ignore=None):
+    def run(self, image, galaxy_finder=None, star_finder=None, special=None, ignore=None):
 
         """
         This function ...
         :param image:
-        :param galaxyextractor:
-        :param starextractor:
+        :param galaxy_finder:
+        :param star_finder:
         :param special:
         :param ignore:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(image, galaxyextractor, starextractor, special, ignore)
+        self.setup(image, galaxy_finder, star_finder, special, ignore)
 
         # 2. Find sources
         self.find_sources()
@@ -106,40 +105,31 @@ class TrainedExtractor(Configurable):
         # 4. Classify sources
         if self.config.classify: self.classify_sources()
 
-        # 5. Update the image mask
-        self.update_mask()
-
-        # 6. Writing
-        self.write()
-
     # -----------------------------------------------------------------
 
-    def setup(self, image, galaxyextractor=None, starextractor=None, special_mask=None, ignore_mask=None):
+    def setup(self, image, galaxy_finder=None, star_finder=None, special_mask=None, ignore_mask=None):
 
         """
         This function ...
         :param image:
-        :param galaxyextractor:
-        :param starextractor:
+        :param galaxy_finder:
+        :param star_finder:
         :param special_mask:
         :param ignore_mask:
         :return:
         """
 
         # Call the setup function of the base class
-        super(TrainedExtractor, self).setup()
+        super(TrainedFinder, self).setup()
 
         # Make a local reference to the image
         self.image = image
         self.special_mask = special_mask
         self.ignore_mask = ignore_mask
 
-        # Create a mask with shape equal to the shape of the frame
-        self.mask = Mask.empty_like(self.image.frames.primary)
-
         # Make local references to the galaxy and star extractors
-        self.galaxy_extractor = galaxyextractor
-        self.star_extractor = starextractor
+        self.galaxy_finder = galaxy_finder
+        self.star_finder = star_finder
 
     # -----------------------------------------------------------------
 
@@ -221,14 +211,14 @@ class TrainedExtractor(Configurable):
         :return:
         """
 
-        fwhms = self.star_extractor.fwhms
+        fwhms = self.star_finder.fwhms
         if len(fwhms) > 0:
             min_fwhm = min(fwhms)
             max_fwhm = max(fwhms)
         else:
-            if self.star_extractor.config.use_frame_fwhm and self.image.fwhm is not None:
+            if self.star_finder.config.use_frame_fwhm and self.image.fwhm is not None:
                 fwhm = self.image.fwhm.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
-            else: fwhm = self.star_extractor.fwhm
+            else: fwhm = self.star_finder.fwhm
             min_fwhm = fwhm * 0.5
             max_fwhm = fwhm * 1.5
 
@@ -285,17 +275,6 @@ class TrainedExtractor(Configurable):
 
             # Not a star or a galaxy
             #else: log.debug("The source does not correspond to a star or galaxy")
-
-    # -----------------------------------------------------------------
-
-    def update_mask(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        self.image.masks.sources += self.mask
 
     # -----------------------------------------------------------------
 
@@ -377,18 +356,18 @@ class TrainedExtractor(Configurable):
         # Calculate the detection threshold
         threshold = median + (3.0 * stddev)
 
-        #kernel = self.star_extractor.kernel # doesn't work when there was no star extraction on the image, self.star_extractor does not have attribute image thus cannot give image.fwhm
-        if self.star_extractor.config.use_frame_fwhm and self.image.fwhm is not None:
+        #kernel = self.star_finder.kernel # doesn't work when there was no star extraction on the image, self.star_finder does not have attribute image thus cannot give image.fwhm
+        if self.star_finder.config.use_frame_fwhm and self.image.fwhm is not None:
 
             fwhm = self.image.fwhm.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
             sigma = fwhm * statistics.fwhm_to_sigma
             kernel = Gaussian2DKernel(sigma)
 
-        else: kernel = self.star_extractor.kernel
+        else: kernel = self.star_finder.kernel
 
         try:
             # Create a segmentation map from the frame
-            self.segments = detect_sources(self.image.frames.primary, threshold, npixels=5, filter_kernel=kernel).data
+            self.segments = Frame(detect_sources(self.image.frames.primary, threshold, npixels=5, filter_kernel=kernel).data)
         except RuntimeError:
 
             log.debug("Runtime error during detect_sources ...")
@@ -404,18 +383,18 @@ class TrainedExtractor(Configurable):
             #print("image=", image)
             log.debug("image.ndim = " + str(image.ndim))
             log.debug("type image = " + type(image))
-            print("image.shape=", image.shape)
-            print("threshold=", threshold)
+            log.debug("image.shape = "+ str(image.shape))
+            log.debug("threshold = " + str(threshold))
             image = image > threshold
-            print("image.ndim=", image.ndim)
-            print("type image=", type(image))
-            print("image.shape=", image.shape)
+            log.debug("image.ndim = " + str(image.ndim))
+            log.debug("type image = " + str(type(image)))
+            log.debug("image.shape = " + str(image.shape))
 
         # Eliminate the principal galaxy and companion galaxies from the segments
-        if self.galaxy_extractor is not None:
+        if self.galaxy_finder is not None:
 
             # Determine the mask that covers the principal and companion galaxies
-            eliminate_mask = self.galaxy_extractor.principal_mask + self.galaxy_extractor.companion_mask
+            eliminate_mask = self.galaxy_finder.principal_mask + self.galaxy_finder.companion_mask
 
             # NEW: PLUS: Eliminate the segments covered by the 'ignore mask'
             if self.ignore_mask is not None: eliminate_mask += self.ignore_mask
@@ -521,28 +500,6 @@ class TrainedExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def write_masked_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the full path to the masked frame file path
-        path = self.full_output_path(self.config.writing.masked_frame_path)
-
-        # Inform the user
-        log.info("Writing masked frame to " + path + " ...")
-
-        # Create a frame where the objects are masked
-        frame = self.image.frames.primary.copy()
-        frame[self.mask] = float(self.config.writing.mask_value)
-
-        # Write out the masked frame
-        frame.save(path, origin=self.name)
-
-    # -----------------------------------------------------------------
-
     def write_star_region(self):
 
         """
@@ -595,23 +552,5 @@ class TrainedExtractor(Configurable):
 
         # Close the file
         f.close()
-
-    # -----------------------------------------------------------------
-
-    def write_segments(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the path to the segmentation file
-        path = self.full_output_path(self.config.writing.segments_path)
-
-        # Inform the user
-        log.info("Writing the segmentation map to " + path + " ...")
-
-        # Save the segmentation map
-        Frame(self.segments).save(path, origin=self.name)
 
 # -----------------------------------------------------------------

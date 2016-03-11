@@ -22,12 +22,12 @@ import astropy.units as u
 
 # Import the relevant PTS classes and modules
 from .vector import Position, Extent
-from .geometry import Line, Circle, Ellipse, Rectangle, Polygon
+from .geometry import Coordinate, Line, Circle, Ellipse, Rectangle, Polygon
 from ..tools import coordinates
 
 # -----------------------------------------------------------------
 
-class SkyPosition(SkyCoord):
+class SkyCoordinate(SkyCoord):
 
     """
     This class ...
@@ -43,11 +43,11 @@ class SkyPosition(SkyCoord):
         """
 
         # Call the constructor of the base class
-        super(SkyPosition, self).__init__(*args, **kwargs)
+        super(SkyCoordinate, self).__init__(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
-    def to_position(self, wcs, mode='wcs'):
+    def to_pixel(self, wcs, mode='wcs'):
 
         """
         This function ...
@@ -56,23 +56,23 @@ class SkyPosition(SkyCoord):
         :return:
         """
 
-        x, y = self.to_pixel(wcs, origin=0, mode=mode)
-        return Position(x, y)
+        x, y = super(SkyCoordinate, self).to_pixel(wcs, origin=0, mode=mode)
+        return Coordinate(x, y)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_position(cls, position, wcs, mode='wcs'):
+    def from_pixel(cls, coordinate, wcs, mode='wcs'):
 
         """
         This function ...
-        :param position:
+        :param coordinate:
         :param wcs:
         :param mode:
         :return:
         """
 
-        return cls.from_pixel(position.x, position.y, wcs, origin=0, mode=mode)
+        return super(SkyCoordinate).from_pixel(coordinate.x, coordinate.y, wcs, origin=0, mode=mode)
 
 # -----------------------------------------------------------------
 
@@ -124,7 +124,7 @@ class SkyLine(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_line(cls, line, wcs):
+    def from_pixel(cls, line, wcs):
 
         """
         This function ...
@@ -137,7 +137,7 @@ class SkyLine(object):
 
     # -----------------------------------------------------------------
 
-    def to_line(self, wcs):
+    def to_pixel(self, wcs):
 
         """
         This function ...
@@ -176,7 +176,7 @@ class SkyEllipse(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_ellipse(cls, ellipse, wcs):
+    def from_pixel(cls, ellipse, wcs):
 
         """
         This function ...
@@ -266,7 +266,7 @@ class SkyEllipse(object):
 
     # -----------------------------------------------------------------
 
-    def to_ellipse(self, wcs):
+    def to_pixel(self, wcs):
 
         """
         This function ...
@@ -317,7 +317,7 @@ class SkyCircle(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_circle(cls, circle, wcs):
+    def from_pixel(cls, circle, wcs):
 
         """
         This function ...
@@ -372,7 +372,7 @@ class SkyCircle(object):
 
     # -----------------------------------------------------------------
 
-    def to_circle(self, wcs):
+    def to_pixel(self, wcs):
 
         """
         This function ...
@@ -417,7 +417,7 @@ class SkyRectangle(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_rectangle(cls, rectangle, wcs):
+    def from_pixel(cls, rectangle, wcs):
 
         """
         This function ...
@@ -472,7 +472,7 @@ class SkyRectangle(object):
 
     # -----------------------------------------------------------------
 
-    def to_rectangle(self, wcs):
+    def to_pixel(self, wcs):
 
         """
         This function ...
@@ -521,7 +521,7 @@ class SkyPolygon(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_polygon(cls, polygon, wcs):
+    def from_pixel(cls, polygon, wcs):
 
         """
         This function ...
@@ -534,7 +534,7 @@ class SkyPolygon(object):
 
     # -----------------------------------------------------------------
 
-    def to_polygon(self, wcs):
+    def to_pixel(self, wcs):
 
         """
         This function ...

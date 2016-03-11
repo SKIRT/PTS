@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.starextraction Contains the StarExtractor class.
+## \package pts.magic.starfinder Contains the StarFinder class.
 
 # -----------------------------------------------------------------
 
@@ -22,9 +22,12 @@ import astropy.coordinates as coord
 from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Extent, Mask, Region, SkyRegion, Ellipse, SkyEllipse
-from ..core import Source, Frame
-from ..sky import Star
+from ..basics.vector import Extent
+from ..basics.region import Region
+from ..basics.geometry import Coordinate, Circle, Ellipse
+from ..core.frame import Frame
+from ..core.source import Source
+from ..object.star import Star
 from ..tools import statistics, fitting
 
 # Import the relevant PTS classes and modules
@@ -34,7 +37,7 @@ from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-class StarExtractor(Configurable):
+class StarFinder(Configurable):
 
     """
     This class ...
@@ -47,15 +50,12 @@ class StarExtractor(Configurable):
         """
 
         # Call the constructor of the base class
-        super(StarExtractor, self).__init__(config, "magic")
+        super(StarFinder, self).__init__(config, "magic")
 
         # -- Attributes --
 
         # Initialize an empty list for the stars
         self.stars = []
-
-        # Initialize an empty list to contain the manual sources
-        self.manual_sources = []
 
         # The image and a copy of the original primary image frame
         self.image = None
@@ -71,45 +71,46 @@ class StarExtractor(Configurable):
         # The statistics table
         self.statistics = None
 
-        # Set the mask to None
-        self.mask = None
-
         # Reference to the galaxy extractor
         self.galaxy_extractor = None
 
+        # The segmentation map of stars
+        self.segments = None
+
+        # The regions of stars and saturation sources
+        self.star_region = None
+        self.saturation_region = None
+
     # -----------------------------------------------------------------
 
-    def run(self, image, galaxyextractor, catalog, special=None, ignore=None):
+    def run(self, image, galaxy_finder, catalog, special=None, ignore=None):
 
         """
         This function ...
         :param image:
-        :param galaxyextractor:
+        :param galaxy_finder:
         :param catalog:
         :param special:
         :param ignore:
         """
 
         # 1. Call the setup function
-        self.setup(image, galaxyextractor, catalog, special, ignore)
+        self.setup(image, galaxy_finder, catalog, special, ignore)
 
-        # 2. Find and remove the stars
-        self.find_fit_and_remove_stars()
+        # 2. Find the stars
+        self.find_stars()
 
         # 3. If requested, find and remove saturated stars
         if self.config.find_saturation: self.find_and_remove_saturation()
 
-        # 4. If specified, remove manually selected stars
-        if self.config.manual_region is not None: self.set_and_remove_manual()
+        # 4. Set the statistics
+        self.set_statistics()
 
-        # 5. Set the statistics
-        if not self.config.fetching.use_statistics_file: self.set_statistics()
+        # 5. Create the regions
+        self.create_regions()
 
-        # 6. Update the image mask
-        self.update_mask()
-
-        # 7. Writing phase
-        self.write()
+        # 5. Create the segmentation map
+        self.create_segments()
 
     # -----------------------------------------------------------------
 
@@ -125,7 +126,7 @@ class StarExtractor(Configurable):
         """
 
         # Call the setup function of the base class
-        super(StarExtractor, self).setup()
+        super(StarFinder, self).setup()
 
         # Make a local reference to the frame and 'bad' mask
         self.image = image
@@ -137,8 +138,8 @@ class StarExtractor(Configurable):
         # Make a local reference to the galaxy extractor (if any)
         self.galaxy_extractor = galaxyextractor
 
-        # Create a mask with shape equal to the shape of the frame
-        self.mask = Mask.empty_like(self.image.frames.primary)
+        # Create an empty frame for the segments
+        self.segments = Frame.zeros_like(self.image.frames.primary)
 
     # -----------------------------------------------------------------
 
@@ -155,16 +156,12 @@ class StarExtractor(Configurable):
         # Clear the list of stars
         self.stars = []
 
-        # Clear the list of manual sources
-        self.manual_sources = []
-
         # Clear the image and the mask
         self.image = None
-        self.mask = None
 
     # -----------------------------------------------------------------
 
-    def find_fit_and_remove_stars(self):
+    def find_stars(self):
 
         """
         This function ...
@@ -190,42 +187,6 @@ class StarExtractor(Configurable):
 
             # Fit analytical models to the stars
             if not self.config.use_frame_fwhm or self.image.fwhm is None: self.fit_stars()
-
-            # If requested, remove the stars
-            if self.config.remove: self.remove_stars()
-
-    # -----------------------------------------------------------------
-
-    def find_and_remove_saturation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Find saturated stars in the frame
-        self.find_saturation()
-
-        # If requested, remove saturation in the frame
-        if self.config.remove_saturation: self.remove_saturation()
-
-        # If requested, remove apertures that encompass the saturation sources
-        if self.config.saturation.remove_apertures: self.remove_contours()
-
-    # -----------------------------------------------------------------
-
-    def set_and_remove_manual(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Set manual stars
-        self.set_manual()
-
-        # If requested, remove the manually specified stars
-        if self.config.remove_manual: self.remove_manual()
 
     # -----------------------------------------------------------------
 
@@ -337,63 +298,6 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def import_statistics(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the full path to the statistics file
-        path = self.full_input_path(self.config.fetching.statistics_path)
-
-        # Inform the user
-        log.info("Importing stellar statistics from file: " + path)
-
-        # Load the catalog
-        self.statistics = tables.from_file(path)
-
-        encountered = [False] * len(self.stars)
-
-        # Loop over all entries in the statistics table
-        for i in range(len(self.statistics)):
-
-            index = self.statistics["Star index"][i]
-
-            # Loop over all stars
-            for j in range(len(self.stars)):
-
-                # Skip this star if it has been encountered
-                if encountered[j]: continue
-
-                if self.stars[j].index == index:
-
-                    encountered[j] = True
-
-                    # TODO: work in progress
-
-                    #self.stars[j].source =
-
-                    break
-
-            # If break is not encountered
-            else: raise RuntimeError("The statistics file does not correspond to the catalog (star index does not exist)")
-
-            #"Star index", "Detected", "Fitted", "Saturated", "FWHM", "Ignore"
-
-    # -----------------------------------------------------------------
-
-    def remove_from_statistics(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
     def find_sources(self):
 
         """
@@ -497,16 +401,6 @@ class StarExtractor(Configurable):
         # Inform the user
         log.debug("Default FWHM used when star could not be fitted: {0:.2f} pixels".format(default_fwhm))
 
-        if self.config.removal.method == "model":
-
-            # Calculate the relative differences between the amplitudes of the fitted models and the corresponding sources
-            differences = np.array(self.amplitude_differences) * 100.0
-
-            print(np.mean(differences))
-            print(np.median(differences))
-            print(np.std(differences))
-            print(differences)
-
         # Loop over all stars in the list
         for star in self.stars:
 
@@ -520,17 +414,6 @@ class StarExtractor(Configurable):
             # Remove the star in the frame
             force = self.config.manual_indices.remove_stars is not None and star.index in self.config.manual_indices.remove_stars
             star.remove(self.image.frames.primary, self.mask, self.config.removal, default_fwhm, force=force)
-
-    # -----------------------------------------------------------------
-
-    def get_star_fluxes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-
 
     # -----------------------------------------------------------------
 
@@ -629,25 +512,22 @@ class StarExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def remove_saturation(self):
+    def create_regions(self):
 
         """
         This function ...
         :return:
         """
 
-        # Loop over all stars
-        for star in self.stars:
+        # Create the star region
+        self.create_star_region()
 
-            # Skip stars for which saturation was not detected
-            if not star.has_saturation: continue
-
-            # Remove the saturation of this star in the frame
-            star.remove_saturation(self.image.frames.primary, self.mask, self.config.saturation)
+        # Create the saturation region
+        self.create_saturation_region()
 
     # -----------------------------------------------------------------
 
-    def remove_contours(self):
+    def create_star_region(self):
 
         """
         This function ...
@@ -655,155 +535,10 @@ class StarExtractor(Configurable):
         """
 
         # Inform the user
-        log.info("Replacing regions within elliptical contours with the estimated background ...")
+        log.info("Creating star region ...")
 
-        # Loop over all stars
-        for star in self.stars:
-
-            # If the object does not have an contour, skip it
-            if not star.has_contour: continue
-
-            # Determine whether we want the background to be sigma-clipped when interpolating over the (saturation) source
-            if star.on_galaxy and self.config.saturation.aperture_removal.no_sigma_clip_on_galaxy: sigma_clip = False
-            else: sigma_clip = self.config.saturation.aperture_removal.sigma_clip
-
-            # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
-            # NEW: only enable this for optical and IR (galaxy has smooth emission there but not in UV)
-            if self.image.wavelength is None or self.image.wavelength > 0.39 * u.Unit("micron"):
-                if star.on_galaxy and self.config.saturation.aperture_removal.polynomial_on_galaxy: interpolation_method = "polynomial"
-                else: interpolation_method = self.config.saturation.aperture_removal.interpolation_method
-            else: interpolation_method = self.config.saturation.aperture_removal.interpolation_method
-
-            # Expansion factor
-            expansion_factor = self.config.saturation.aperture_removal.expansion_factor
-
-            # Create a source
-            ellipse = Ellipse(star.contour.center, star.contour.radius * expansion_factor, star.contour.angle)
-            source = Source.from_ellipse(self.image.frames.primary, ellipse, self.config.saturation.aperture_removal.background_outer_factor)
-
-            # Estimate the background for the source
-            source.estimate_background(interpolation_method, sigma_clip)
-
-            # Replace the frame in the appropriate area with the estimated background
-            source.background.replace(self.image.frames.primary, where=source.mask)
-
-            # Update the mask
-            self.mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
-
-    # -----------------------------------------------------------------
-
-    def set_manual(self):
-
-        """
-        This function ...
-        """
-
-        # Determine the full path to the manual region file
-        path = self.full_input_path(self.config.manual_region)
-
-        # Inform the user
-        log.info("Setting region for manual star extraction from " + path + " ...")
-
-        # Load the region and create a mask from it
-        region = Region.from_file(path)
-
-        # Loop over the shapes in the region
-        for shape in region:
-
-            # Create a source
-            source = Source.from_shape(self.image.frames.primary, shape, self.config.manual.background_outer_factor)
-
-            # Add the source to the list of manual sources
-            self.manual_sources.append(source)
-
-    # -----------------------------------------------------------------
-
-    def remove_manual(self):
-
-        """
-        This function ...
-        """
-
-        # Inform the user
-        log.info("Removing manually specified stars from the frame ...")
-
-        # Loop over each item in the list of manual sources
-        for source in self.manual_sources:
-
-            # Estimate the background for the source
-            source.estimate_background(self.config.manual.interpolation_method, self.config.manual.sigma_clip)
-
-            # Replace the frame in the appropriate area with the estimated background
-            source.background.replace(self.image.frames.primary, where=source.mask)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def saturation_contours(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        contours = []
-
-        # Loop over all stars
-        for star in self.stars:
-
-            # Skip stars without saturation
-            if not star.has_saturation: continue
-
-            # Add the contour
-            contours.append(star.contour)
-
-        # Return the list of contours
-        return contours
-
-    # -----------------------------------------------------------------
-
-    @property
-    def saturation_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        ellipses = self.saturation_contours
-
-        # Create a new SkyRegion instance
-        region = SkyRegion()
-
-        # Loop over the ellipses (in image coordinates)
-        for ellipse in ellipses:
-
-            # Create a sky ellipse and add it to the sky region
-            region.append(SkyEllipse.from_ellipse(ellipse, self.original_frame.wcs))
-
-        # Return the region
-        return region
-
-    # -----------------------------------------------------------------
-
-    def write_star_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the full path to the star region file
-        path = self.full_output_path(self.config.writing.star_region_path)
-
-        # Inform the user
-        log.info("Writing star region to " + path + " ...")
-
-        # Create a file
-        f = open(path, 'w')
-
-        # Initialize the region string
-        print("# Region file format: DS9 version 4.1", file=f)
+        # Initialize the region
+        self.star_region = Region()
 
         # Calculate the default FWHM (calculated based on fitted stars)
         default_fwhm = self.fwhm
@@ -819,9 +554,6 @@ class StarExtractor(Configurable):
             elif star.has_source: color = "green"
             else: color = "red"
 
-            #if star.has_source: region.append(star.source.contour, color)
-            #else: region.append(star.ellipse())
-
             # Determine the FWHM
             fwhm = default_fwhm if not star.has_model else star.fwhm
 
@@ -831,44 +563,37 @@ class StarExtractor(Configurable):
             # Convert the star index to a string
             text = str(star.index)
 
-            # Show a circle for the star
-            suffix = " # "
-            color_suffix = "color = " + color
-            text_suffix = "text = {" + text + "}"
-            suffix += color_suffix + " " + text_suffix
-            print("image;circle({},{},{})".format(center.x+1, center.y+1, radius) + suffix, file=f)
+            # Create meta information
+            meta = {"color": color, "text": text}
 
-            # Draw a cross for the peak position
+            # Create the shape and add it to the region
+            shape = Circle(center, radius, meta=meta)
+            self.star_region.append(shape)
+
+            # Add a position for the peak position
             if star.has_source and star.source.has_peak:
 
-                suffix = " # "
-                point_suffix = "point = x"
-                suffix += point_suffix
-                print("image;point({},{})".format(star.source.peak.x+1, star.source.peak.y+1) + suffix, file=f)
+                # Create meta information for the position
+                meta = {"point": "x"}
 
-        # Close the file
-        f.close()
+                # Create the position and add it to the region
+                position = Coordinate(star.source.peak.x, star.source.peak.y, meta=meta)
+                self.star_region.append(position)
 
     # -----------------------------------------------------------------
 
-    def write_saturation_region(self):
+    def create_saturation_region(self):
 
         """
         This function ...
         :return:
         """
 
-        # Determine the full path to the saturation region file
-        path = self.full_output_path(self.config.writing.saturation_region_path)
-
         # Inform the user
-        log.info("Writing saturation region to " + path + " ...")
+        log.info("Creating saturation region ...")
 
-        # Create a file
-        f = open(path, 'w')
-
-        # Initialize the region string
-        print("# Region file format: DS9 version 4.1", file=f)
+        # Initialize the region
+        self.saturation_region = Region()
 
         # Loop over all stars
         for star in self.stars:
@@ -885,87 +610,50 @@ class StarExtractor(Configurable):
             minor = star.contour.minor
             angle = star.contour.angle.degree
 
+            radius = Extent(major, minor)
+
             # Write to region file
-            suffix = " # "
-            color_suffix = "color = white"
-            text_suffix = "text = {" + text + "}"
-            suffix += color_suffix + " " + text_suffix
-            print("image;ellipse({},{},{},{},{})".format(center.x+1, center.y+1, major, minor, angle) + suffix, file=f)
+            #suffix = " # "
+            #color_suffix = "color = white"
+            #text_suffix = "text = {" + text + "}"
+            #suffix += color_suffix + " " + text_suffix
 
-        # Close the file
-        f.close()
+            # Create meta information
+            meta = {"color": "white", "text": text}
+
+            # Create the ellipse and add it to the region
+            ellipse = Ellipse(center, radius, angle, meta=meta)
+            self.saturation_region.append(ellipse)
 
     # -----------------------------------------------------------------
 
-    def write_star_segments(self):
+    def create_segments(self):
 
         """
         This function ...
         :return:
         """
-
-        # Determine the full path to the segmentation map
-        path = self.full_output_path(self.config.writing.star_segments_path)
-
-        # Create an empty frame for the segments
-        segments = Frame.zeros_like(self.image.frames.primary)
-
-        # Loop over all stars
-        for star in self.stars:
-
-            # Skip stars without a source
-            if not star.has_source: continue
-
-            # Add the star segment to the segmentation map
-            segments[star.source.y_slice, star.source.x_slice][star.source.mask] = star.index
-
-        # Save the segmentation map
-        segments.save(path, origin=self.name)
-
-    # -----------------------------------------------------------------
-
-    def write_saturation_segments(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the full path to the segmentation map
-        path = self.full_output_path(self.config.writing.saturation_segments_path)
-
-        # Create an empty frame for the segments
-        segments = Frame.zeros_like(self.image.frames.primary)
-
-        # Loop over all stars
-        for star in self.stars:
-
-            # Skip stars without a saturation source
-            if not star.has_saturation: continue
-
-            # Add the saturation segment to the segmentation map
-            segments[star.saturation.y_slice, star.saturation.x_slice][star.saturation.mask] = star.index
-
-        # Save the segmentation map
-        segments.save(path, origin=self.name)
-
-    # -----------------------------------------------------------------
-
-    def write_catalog(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the full path to the catalog file
-        path = self.full_output_path(self.config.writing.catalog_path)
 
         # Inform the user
-        log.info("Writing stellar catalog to " + path + " ...")
+        log.info("Creating the segmentation map for the stars ...")
 
-        # Write the catalog to file
-        tables.write(self.catalog, path)
+        # Loop over all stars
+        for star in self.stars:
+
+            # Stars with saturation
+            if star.has_saturation:
+
+                # Add the saturation segment to the segmentation map
+                self.segments[star.saturation.y_slice, star.saturation.x_slice][star.saturation.mask] = star.index
+
+            # Stars without saturation
+            else:
+
+                # Skip stars without a source
+                if not star.has_source: continue
+
+                # Add the star segment to the segmentation map
+                self.segments[star.source.y_slice, star.source.x_slice][star.source.mask] = star.index
 
     # -----------------------------------------------------------------
 

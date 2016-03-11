@@ -32,6 +32,18 @@ def cwd():
 
 # -----------------------------------------------------------------
 
+def absolute(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return os.path.abspath(path)
+
+# -----------------------------------------------------------------
+
 def join(*args):
 
     """

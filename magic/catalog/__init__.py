@@ -17,6 +17,3 @@
 # -----------------------------------------------------------------
 
 # Import classes to make them available at the level of this subpackage
-from .builder import CatalogBuilder
-from .synchronizer import CatalogSynchronizer
-from .importer import CatalogImporter

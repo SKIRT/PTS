@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -23,7 +22,10 @@ from astropy.io import fits
 from astropy import units as u
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Layers, Region, Mask, CoordinateSystem
+from ..basics.layers import Layers
+from ..basics.region import Region
+from ..basics.mask import Mask
+from ..basics.coordinatesystem import CoordinateSystem
 from .frame import Frame
 from ..tools import headers, transformations
 from ...core.tools import filesystem
@@ -78,7 +80,7 @@ class Image(object):
         """
 
         # If no name is given, determine the name from the file path
-        if name is None: name = os.path.splitext(os.path.basename(path))[0]
+        if name is None: name = filesystem.strip_extension(filesystem.name(path))
 
         # Create a new image
         image = cls(name)
@@ -1032,6 +1034,7 @@ class Image(object):
         This function ...
         :param mask:
         :param name:
+        :param overwrite:
         :return:
         """
 

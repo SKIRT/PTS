@@ -16,10 +16,13 @@ from __future__ import absolute_import, division, print_function
 import os
 import argparse
 
-# Import the relevant AstroMagic classes and modules
+# Import the relevant PTS classes and modules
 from pts.magic.misc.imageimporter import ImageImporter
+from pts.magic.sources.finder import SourceFinder
 from pts.magic.sources.extractor import SourceExtractor
-from pts.core.tools import configuration, logging, time, filesystem
+from pts.core.tools import configuration
+from pts.core.tools import logging, time, filesystem
+from pts.magic.basics.region import Region
 
 # -----------------------------------------------------------------
 
@@ -27,21 +30,27 @@ from pts.core.tools import configuration, logging, time, filesystem
 parser = argparse.ArgumentParser()
 parser.add_argument("image", type=str, help="the name of the input image")
 parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
-parser.add_argument('--report', action='store_true', help='write a report file')
+parser.add_argument("--report", action='store_true', help='write a report file')
+
 parser.add_argument('--config', type=str, help='the name of a configuration file', default=None)
 parser.add_argument("--settings", type=configuration.from_string, help="settings")
 
+#parser.add_argument("--regions", action="store_true", help="write regions")
+#parser.add_argument("--catalogs", action="store_true", help="write catalogs")
+#parser.add_argument("--masks", action="store_true", help="write masks")
+#parser.add_argument("--segments", action="store_true", help="write segmentation maps")
 
-#parser.add_argument("--synchronize", action="store_true", help="synchronize with DustPedia catalog")
+parser.add_argument("--synchronize", action="store_true", help="synchronize with DustPedia catalog")
 
-#parser.add_argument("--filecatalog", action="store_true", help="use file catalogs")
+parser.add_argument("--filecatalog", action="store_true", help="use file catalogs")
 
 #parser.add_argument("-i", "--input", type=str, help="the name of the input directory")
 #parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
 
 parser.add_argument("--special", type=str, help="the name of the file specifying regions with objects needing special attention")
-
 parser.add_argument("--bad", type=str, help="the name of the file specifying regions that have to be added to the mask of bad pixels")
+
+parser.add_argument("--interactive", action="store_true", help="enable interactive mode")
 
 # Parse the command line arguments
 arguments = parser.parse_args()
@@ -77,14 +86,14 @@ else: arguments.output_path = os.getcwd()
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = filesystem.join(arguments.output_path, time.unique_name("sourceextractor") + ".txt") if arguments.report else None
+logfile_path = filesystem.join(arguments.output_path, time.unique_name("log") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-logging.log.info("Starting extract script ...")
+logging.log.info("Starting find_and_extract ...")
 
 # -----------------------------------------------------------------
 
@@ -92,7 +101,7 @@ logging.log.info("Starting extract script ...")
 image_path = filesystem.absolute(arguments.image)
 
 # Determine the full path to the bad region file
-bad_region_path = os.path.join(arguments.input_path, arguments.bad) if arguments.bad is not None else None
+bad_region_path = filesystem.join(arguments.input_path, arguments.bad) if arguments.bad is not None else None
 
 # Import the image
 importer = ImageImporter()
@@ -100,23 +109,56 @@ importer.run(image_path, bad_region_path=bad_region_path)
 
 # -----------------------------------------------------------------
 
-# Create a mask of the pixels that are NaNs
-#self.nan_mask = Mask.is_nan(self.image.frames.primary)
+# Inform the user
+log.info("Importing the galactic and stellar catalogs ...")
 
-# Set the NaN pixels to zero in the frame
-#self.image.frames.primary[self.nan_mask] = 0.0
+# Create a CatalogImporter instance
+catalog_importer = CatalogImporter()
 
-# Create an Extractor instance and configure it according to the command-line arguments
-extractor = SourceExtractor.from_arguments(arguments)
-
-# Run the extractor
-extractor.run(importer.image)
-
-# Save the result
-#extractor.write_result(importer.image.original_header)
+# Run the catalog importer
+catalog_importer.run(importer.image.frames.primary)
 
 # -----------------------------------------------------------------
 
+# Inform the user
+log.info("Running the source finder ...")
 
+# Create a SourceFinder instance
+finder = SourceFinder.from_arguments(arguments)
+
+# Run the extractor
+finder.run(importer.image)
+
+# -----------------------------------------------------------------
+
+# Get the segmentation maps
+galaxy_segments = finder.galaxy_segments
+saturation_segments = finder.saturation_segments
+other_segments = finder.other_segments
+
+# Get the regions
+if arguments.interactive:
+
+    # Wait for a key stroke to continue with the actual extraction
+    name = raw_input("Press enter to continue with the extraction step ...")
+
+    # Import the star and saturation regions which have been adjusted by the user
+    star_region = Region.from_file()
+    saturation_region = Region.from_file()
+
+else:
+    star_region = finder.star_region
+    saturation_region = finder.saturation_region
+
+# -----------------------------------------------------------------
+
+# Inform the user
+log.info("Running the source extraction ...")
+
+# Create a SourceExtractor instance
+finalizer = SourceExtractor.from_arguments()
+
+# Run the source extractor
+finalizer.run(image, star_region, saturation_region, galaxy_segments, saturation_segments, other_segments)
 
 # -----------------------------------------------------------------

@@ -9,7 +9,7 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.magic.subtract TO DO
+## \package pts.magic.sky TO DO
 #
 # This package ...
 #
@@ -17,4 +17,3 @@
 # -----------------------------------------------------------------
 
 # Import classes to make them available at the level of this subpackage
-from .skysubtraction import SkySubtractor

@@ -18,7 +18,8 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 
 # Import the relevant PTS classes and modules
-from pts.magic.core import Image, Source
+from ..core.image import Image
+from ..core.source import Source
 from ...core.basics.configurable import Configurable
 from ...core.tools import filesystem, inspection
 

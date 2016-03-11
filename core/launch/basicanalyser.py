@@ -170,6 +170,9 @@ class BasicAnalyser(Configurable):
         # If requested, make wave movies from the ouput FITS files
         if self.simulation.make_wave: self.make_wave()
 
+        # If requested, calculate observed fluxes and create observed images from the output SEDs and FITS files
+        if self.simulation.make_observations: self.make_observations()
+
     # -----------------------------------------------------------------
 
     def extract_progress(self):
@@ -331,5 +334,20 @@ class BasicAnalyser(Configurable):
 
         # Make wave movies from the output images
         makewavemovie(self.simulation, output_path=self.simulation.plotting_path)
+
+    # -----------------------------------------------------------------
+
+    def make_observations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the observed SEDs and images ...")
+
+        # Make observed SEDs and images
+        pass
 
 # -----------------------------------------------------------------

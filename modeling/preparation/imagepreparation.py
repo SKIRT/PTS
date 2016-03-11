@@ -16,9 +16,9 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant AstroMagic classes and modules
-from ...magic.core import Frame, Source
+from ...magic.core import Frame
 from ...magic.basics import CoordinateSystem, Mask, SkyRegion
-from ...magic.extract import Extractor
+from ...magic.extract.finalization import ExtractionFinalizer
 from ...magic.subtract import SkySubtractor
 
 # Import the relevant PTS classes and modules
@@ -79,7 +79,7 @@ class ImagePreparer(Configurable):
         if self.config.convert_unit: self.convert_unit()
 
         # 6. If requested, convolve
-        #if self.config.convolve: self.convolve()
+        if self.config.convolve: self.convolve()
 
         # 7. If requested, rebin
         if self.config.rebin: self.rebin()
@@ -109,7 +109,7 @@ class ImagePreparer(Configurable):
         # -- Children --
 
         # Add extractor and sky subtractor
-        self.add_child("extractor", Extractor, self.config.extraction)
+        self.add_child("extractor", SourceExtractor, self.config.extraction)
         self.add_child("sky_subtractor", SkySubtractor, self.config.sky_subtraction)
         self.add_child("unit_converter", UnitConverter, self.config.unit_conversion)
 

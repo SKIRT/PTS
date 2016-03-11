@@ -20,8 +20,11 @@ import numpy as np
 from astropy import units as u
 
 # Import the relevant AstroMagic classes and modules
-from ..core import Image, Frame, Box
-from ..basics import Mask, Region
+from ..core.image import Image
+from ..core.frame import Frame
+from ..core.box import Box
+from ..basics.mask import Mask
+from ..basics.region import Region
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable

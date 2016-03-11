@@ -64,6 +64,95 @@ class Composite(object):
         # Return the mask
         return base + np.logical_not(exclude)
 
+    # -----------------------------------------------------------------
+
+    def to_region_string(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the suffix
+        if len(self.meta) > 0:
+            suffix = " #"
+            for key in self.meta: suffix += " " + key + " = " + str(self.meta[key])
+        else: suffix = ""
+
+        pass
+
+# -----------------------------------------------------------------
+
+class Coordinate(Position):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, x, y, meta=None):
+
+        """
+        The constructor ...
+        :param x:
+        :param y:
+        :param meta:
+        :return:
+        """
+
+        # Call the constructor of the base class
+        super(Coordinate, self).__init__(x, y)
+
+        # Set the meta information
+        self.meta = meta
+
+    # -----------------------------------------------------------------
+
+    def to_mask(self, x_size, y_size):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :return:
+        """
+
+        return Mask.empty(x_size, y_size)
+
+    # -----------------------------------------------------------------
+
+    def to_sky(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Avoid circular import at module scope
+        from .skygeometry import SkyCoordinate
+
+        # Return a new SkyCoordinate
+        return SkyCoordinate.from_pixel(self, wcs)
+
+    # -----------------------------------------------------------------
+
+    def to_region_string(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the suffix
+        if len(self.meta) > 0:
+            suffix = " #"
+            for key in self.meta: suffix += " " + key + " = " + str(self.meta[key])
+        else: suffix = ""
+
+        # Create and return the line
+        line = "image;point({},{})".format(self.x+1, self.y+1) + suffix
+        return line
+
 # -----------------------------------------------------------------
 
 class Line(object):
@@ -111,6 +200,45 @@ class Line(object):
 
         return Mask.empty(x_size, y_size)
 
+    # -----------------------------------------------------------------
+
+    def to_sky(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Avoid circular import at module scope
+        from .skygeometry import SkyLine
+
+        # Return a new SkyLine
+        return SkyLine.from_pixel(self, wcs)
+
+    # -----------------------------------------------------------------
+
+    def to_region_string(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the suffix
+        if len(self.meta) > 0:
+            suffix = " #"
+            for key in self.meta: suffix += " " + key + " = " + str(self.meta[key])
+        else: suffix = ""
+
+        # Get the line properties
+        start = self.start
+        end = self.end
+
+        # Create and return the line
+        line = "image;line({},{},{},{})".format(start.x+1, start.y+1, end.x+1, end.y+1) + suffix
+        return line
+
 # -----------------------------------------------------------------
 
 class Circle(object):
@@ -128,9 +256,11 @@ class Circle(object):
         :return:
         """
 
+        # Set basic properties
         self.center = center
         self.radius = radius
 
+        # Set the meta information
         self.meta = meta
 
     # -----------------------------------------------------------------
@@ -180,6 +310,43 @@ class Circle(object):
         # Return a new mask
         return Mask(fraction)
 
+    # -----------------------------------------------------------------
+
+    def to_sky(self, wcs):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Avoid circular import at module level
+        from .skygeometry import SkyCircle
+
+        # Return a new SkyCircle
+        return SkyCircle.from_pixel(self, wcs)
+
+    # -----------------------------------------------------------------
+
+    def to_region_string(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the suffix
+        if len(self.meta) > 0:
+            suffix = " #"
+            for key in self.meta: suffix += " " + key + " = " + str(self.meta[key])
+        else: suffix = ""
+
+        # Get circle properties
+        center = self.center
+        radius = self.radius
+
+        # Add a line to the region file
+        print("image;circle({},{},{})".format(center.x+1, center.y+1, radius) + suffix, file=f)
+
 # -----------------------------------------------------------------
 
 class Ellipse(object):
@@ -214,7 +381,7 @@ class Ellipse(object):
         :return:
         """
 
-        return self.radius.x if isinstance(self.radius, Extent) else self.radius
+        return self.radius.x
 
     # -----------------------------------------------------------------
 
@@ -226,7 +393,7 @@ class Ellipse(object):
         :return:
         """
 
-        return self.radius.y if isinstance(self.radius, Extent) else self.radius
+        return self.radius.y
 
     # -----------------------------------------------------------------
 
@@ -399,6 +566,47 @@ class Ellipse(object):
         #    subpixels.
 
         return Mask(fraction)
+
+    # -----------------------------------------------------------------
+
+    def to_sky(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Avoid circular import at module level
+        from .skygeometry import SkyEllipse
+
+        # Return a new SkyEllipse
+        return SkyEllipse.from_pixel(self, wcs)
+
+    # -----------------------------------------------------------------
+
+    def to_region_string(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the suffix
+        if len(self.meta) > 0:
+            suffix = " #"
+            for key in self.meta: suffix += " " + key + " = " + str(self.meta[key])
+        else: suffix = ""
+
+        # Get ellipse properties
+        center = self.center
+        major = self.major
+        minor = self.minor
+        angle = self.angle.degree
+
+        # Create and return the line
+        line = "image;ellipse({},{},{},{},{})".format(center.x+1, center.y+1, major, minor, angle) + suffix
+        return line
 
 # -----------------------------------------------------------------
 
@@ -676,6 +884,47 @@ class Rectangle(object):
         fraction = rectangular_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, width, height, self.angle.to("radian").value, 0, 1)
         return Mask(fraction)
 
+    # -----------------------------------------------------------------
+
+    def to_sky(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Avoid circular import at module level
+        from .skygeometry import SkyRectangle
+
+        # Return a new SkyRectangle
+        return SkyRectangle.from_pixel(self, wcs)
+
+    # -----------------------------------------------------------------
+
+    def to_region_string(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the suffix
+        if len(self.meta) > 0:
+            suffix = " #"
+            for key in self.meta: suffix += " " + key + " = " + str(self.meta[key])
+        else: suffix = ""
+
+        # Get rectangle properties
+        center = self.center
+        radius = self.radius
+        width = 2.0 * radius.x
+        height = 2.0 * radius.y
+
+        # Create and return the line
+        line = "image;box({},{},{},{},{})".format(center.x+1, center.y+1, width, height) + suffix
+        return line
+
 # -----------------------------------------------------------------
 
 class Polygon(object):
@@ -691,8 +940,10 @@ class Polygon(object):
         :return:
         """
 
+        # Initilize a list to contain the corner points
         self.points = []
 
+        # Set the meta information
         self.meta = meta
 
     # -----------------------------------------------------------------
@@ -754,5 +1005,48 @@ class Polygon(object):
         #plotting.plot_box(np.array(img))
 
         return Mask(np.array(img))
+
+    # -----------------------------------------------------------------
+
+    def to_sky(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Avoid circular import at module level
+        from .skygeometry import SkyPolygon
+
+        # Return a new SkyPolygon
+        return SkyPolygon.from_pixel(self, wcs)
+
+    # -----------------------------------------------------------------
+
+    def to_region_string(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the suffix
+        if len(self.meta) > 0:
+            suffix = " #"
+            for key in self.meta: suffix += " " + key + " = " + str(self.meta[key])
+        else: suffix = ""
+
+        # Initialize line
+        line = "image;polygon("
+
+        # Add the points to the line
+        for point in self.points: line += "{},{}".format(point.x+1, point.y+1)
+
+        # Finish line
+        line += ")" + suffix
+
+        # Return the line
+        return line
 
 # -----------------------------------------------------------------

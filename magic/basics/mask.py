@@ -355,8 +355,8 @@ class Mask(np.ndarray):
             # Make the new mask, made from 100 iterations with the structure array
             data = ndimage.binary_erosion(self, structure, iterations)
         except:
-            print(self)
-            print(structure)
+            #print(self)
+            #print(structure)
             data = np.zeros((self.ysize,self.xsize), dtype=bool)
 
         # Reassign this object

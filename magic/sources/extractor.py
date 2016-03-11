@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.extraction.simpleextraction Contains the SimpleExtractor class.
+## \package pts.magic.sources.extractor Contains the SourceExtractor class.
 
 # -----------------------------------------------------------------
 
@@ -13,8 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant AstroMagic classes and modules
-from ..core import Frame, Source, Image
-from ..basics import Mask, Region
+from ..core.frame import Frame
+from ..core.source import Source
+from ..basics.mask import Mask
+from ..basics.region import Region
 from ..tools import interpolation
 
 # Import the relevant PTS classes and modules
@@ -23,7 +25,7 @@ from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-class SimpleExtractor(object):
+class SourceExtractor(object):
 
     """
     This class ...
@@ -59,17 +61,34 @@ class SimpleExtractor(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, image_path, output_path):
+    @classmethod
+    def from_arguments(cls, arguments):
 
         """
         This function ...
-        :param image_path:
-        :param output_path:
+        :param arguments:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def run(self, image, star_region, saturation_region, galaxy_segments, saturation_segments, other_segments):
+
+        """
+        This function ...
+        :param image:
+        :param star_region:
+        :param saturation_region:
+        :param galaxy_segments:
+        :param saturation_segments:
+        :param other_segments:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(image_path, output_path)
+        self.setup(image, star_region, saturation_region, galaxy_segments, saturation_segments, other_segments)
 
         # 2. Create the masks
         self.create_masks()
@@ -82,29 +101,34 @@ class SimpleExtractor(object):
 
     # -----------------------------------------------------------------
 
-    def setup(self, image_path, output_path):
+    def setup(self, image, star_region, saturation_region, galaxy_segments, saturation_segments, other_segments):
 
         """
         This function ...
-        :param image_path:
-        :param output_path:
+        :param image:
+        :param star_region:
+        :param saturation_region:
+        :param galaxy_segments:
+        :param saturation_segments:
+        :param other_segments:
         :return:
         """
 
         # Set the image
-        self.image = Image.from_file(image_path)
+        self.image = image
 
-        # Set the output path
-        self.output_path = output_path
+        self.star_region = star_region
 
-        # Create a mask of the pixels that are NaNs
-        self.nan_mask = Mask.is_nan(self.image.frames.primary)
+        self.saturation_region = saturation_region
 
-        # Set the NaN pixels to zero in the frame
-        self.image.frames.primary[self.nan_mask] = 0.0
+        self.galaxy_segments = galaxy_segments
+
+        self.saturation_segments = saturation_segments
+
+        self.other_segments = other_segments
 
         # The total mask of removed sources
-        self.total_mask = Mask.empty_like(self.image.frames.primary)
+        #self.total_mask = Mask.empty_like(self.image.frames.primary)
 
     # -----------------------------------------------------------------
 

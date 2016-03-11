@@ -22,7 +22,8 @@ import astropy.units as u
 from astropy.coordinates import Angle
 
 # Import the relevant AstroMagic classes and modules
-from ..basics import Ellipse, Position, Extent
+from ..basics.geometry import Ellipse
+from ..basics.vector import Position, Extent
 
 # -----------------------------------------------------------------
 

@@ -23,7 +23,7 @@ from astropy.modeling import models, fitting
 
 # Import the relevant AstroMagic classes and modules
 from . import general, statistics
-from ..basics import Position, Extent
+from ..basics.vector import Position, Extent
 
 # -----------------------------------------------------------------
 

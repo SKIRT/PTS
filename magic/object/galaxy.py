@@ -17,10 +17,11 @@ from astropy import units as u
 from astropy.coordinates import Angle
 
 # Import the relevant AstroMagic classes and modules
-from ..core import Source
+from ..core.source import Source
 from .skyobject import SkyObject
-from ..basics import Extent, Ellipse
-from ..tools import catalogs, coordinates
+from ..basics.vector import Extent
+from ..basics.geometry import Ellipse
+from ..tools import catalogs
 
 # -----------------------------------------------------------------
 
@@ -36,6 +37,16 @@ class Galaxy(SkyObject):
         The constructor ...
         :param position:
         :param name:
+        :param position:
+        :param redshift:
+        :param galaxy_type:
+        :param names:
+        :param distance:
+        :param inclination:
+        :param d25:
+        :param major:
+        :param minor:
+        :param position_angle:
         :return:
         """
 
@@ -71,6 +82,8 @@ class Galaxy(SkyObject):
 
         """
         This function ...
+        :param name:
+        :param position:
         :return:
         """
 
@@ -86,7 +99,7 @@ class Galaxy(SkyObject):
 
         """
         This function ...
-        :param star:
+        :param position:
         :return:
         """
 
@@ -163,6 +176,9 @@ class Galaxy(SkyObject):
 
         """
         This function ...
+        :param frame:
+        :param outer_factor:
+        :param expansion_factor:
         :return:
         """
 
