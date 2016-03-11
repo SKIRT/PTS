@@ -131,4 +131,9 @@ def run(runid):
         db.close()
         raise
 
+    # if requested, remove intermediate output files
+    if record['keep']==0:
+        for filename in os.listdir(skirtrun.outpath()):
+            os.remove(os.path.join(skirtrun.outpath(), filename))
+
 # -----------------------------------------------------------------
