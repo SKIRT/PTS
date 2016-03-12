@@ -28,13 +28,19 @@ from pts.core.tools import logging, time, filesystem
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
-parser.add_argument("image", type=str, help="the name of the input image")
-parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
-parser.add_argument('--report', action='store_true', help='write a report file')
 
+# Configuration
 parser.add_argument('--config', type=str, help='the name of a configuration file', default=None)
 parser.add_argument("--settings", type=configuration.from_string, help="settings")
 
+# Basic
+parser.add_argument("image", type=str, help="the name of the input image")
+
+# Options for logging
+parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
+parser.add_argument('--report', action='store_true', help='write a report file')
+
+# Input and output
 parser.add_argument("-i", "--input", type=str, help="the name of the input directory")
 parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
 
@@ -42,6 +48,7 @@ parser.add_argument("--synchronize", action="store_true", help="synchronize with
 parser.add_argument("--filecatalog", action="store_true", help="use file catalogs")
 parser.add_argument("--interpolation_method", type=str, help="the interpolation method to use")
 
+# Input regions
 parser.add_argument("--ignore", type=str, help="the name of the file specifying regions to ignore")
 parser.add_argument("--special", type=str, help="the name of the file specifying regions with objects needing special attention")
 parser.add_argument("--bad", type=str, help="the name of the file specifying regions that have to be added to the mask of bad pixels")
@@ -81,7 +88,7 @@ else: output_path = filesystem.cwd()
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = filesystem.join(output_path, time.unique_name("sourcefinder") + ".txt") if arguments.report else None
+logfile_path = filesystem.join(output_path, time.unique_name("log") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"
@@ -169,6 +176,11 @@ saturation_region = finder.saturation_region
 path = filesystem.join(output_path, "saturation.reg")
 saturation_region.save(path)
 
+# Save the region of other sources
+other_region = finder.other_region
+path = filesystem.join(output_path, "other_sources.reg")
+other_region.save(path)
+
 # -----------------------------------------------------------------
 
 # Create an image with the segmentation maps
@@ -178,7 +190,7 @@ segments = Image("segments")
 segments.add_frame(finder.galaxy_segments, "galaxies")
 
 # Add the segmentation map of the saturated stars
-segments.add_frame(finder.star_segments, "saturation")
+segments.add_frame(finder.star_segments, "stars")
 
 # Add the segmentation map of the other sources
 segments.add_frame(finder.other_segments, "other_sources")

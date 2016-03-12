@@ -190,6 +190,12 @@ class Star(SkyObject):
 
         """
         This function ...
+        :param frame:
+        :param default_fwhm:
+        :param sigma_level:
+        :param outer_factor:
+        :param use_default_fwhm:
+        :param shape:
         :return:
         """
 
@@ -338,15 +344,13 @@ class Star(SkyObject):
 
     # -----------------------------------------------------------------
 
-    def find_saturation(self, frame, original_frame, config, default_fwhm, galaxy_mask=None, star_mask=None):
+    def find_saturation(self, frame, config, default_fwhm, star_mask=None):
 
         """
         This function ...
         :param frame:
-        :param original_frame:
         :param config:
         :param default_fwhm:
-        :param galaxy_mask:
         :param star_mask:
         :return:
         """
@@ -362,9 +366,8 @@ class Star(SkyObject):
         if self.has_track_record: self.track_record.set_stage("saturation")
 
         # Look for a center segment corresponding to a 'saturation' source
-        ellipse = Ellipse(self.pixel_position(frame.wcs), radius, Angle(0.0, u.Unit("deg")))
-        saturation_source = sources.find_source_segmentation(original_frame, ellipse, config, track_record=self.track_record, special=self.special)
-        #saturation_source = sources.find_source_segmentation(frame, ellipse, config, track_record=self.track_record, special=self.special)
+        ellipse = Ellipse(self.pixel_position(frame.wcs), radius, Angle(0.0, "deg"))
+        saturation_source = sources.find_source_segmentation(frame, ellipse, config, track_record=self.track_record, special=self.special)
 
         # If a 'saturation' source was found
         if saturation_source is not None:
@@ -395,9 +398,32 @@ class Star(SkyObject):
                 y_min_source = self.source.cutout.y_min
                 y_max_source = self.source.cutout.y_max
 
-                #plotting.plot_box(star_mask_cutout, title="before removing central source")
-                star_mask_cutout[y_min_source-y_min_cutout:y_max_source-y_min_cutout, x_min_source-x_min_cutout:x_max_source-x_min_cutout][self.source.mask] = False
-                #plotting.plot_box(star_mask_cutout, title="after removing central source")
+                try:
+                    #plotting.plot_box(star_mask_cutout, title="before removing central source")
+                    star_mask_cutout[y_min_source-y_min_cutout:y_max_source-y_min_cutout, x_min_source-x_min_cutout:x_max_source-x_min_cutout][self.source.mask] = False
+                    #plotting.plot_box(star_mask_cutout, title="after removing central source")
+                except IndexError: pass
+                    #plotting.plot_box(frame[saturation_source.y_slice, saturation_source.x_slice])
+                    #plotting.plot_box(saturation_source.mask)
+                    #plotting.plot_box(star_mask_cutout)
+                    #print(star_mask_cutout.shape)
+                    #plotting.plot_box(saturation_source.cutout)
+                    #print(saturation_source.cutout.shape)
+                    #plotting.plot_box(self.source.mask)
+                    #print(self.source.mask.shape)
+                    #print(y_min_source, y_min_cutout, y_max_source, y_min_cutout, x_min_source, x_min_cutout, x_max_source, x_min_cutout)
+                    #print(y_min_source-y_min_cutout) # becomes negative!
+                    #print(y_max_source-y_min_cutout)
+                    #print(x_min_source-x_min_cutout) # becomes negative !
+                    #print(x_max_source-x_min_cutout)
+                    #print(star_mask_cutout[y_min_source-y_min_cutout:y_max_source-y_min_cutout, x_min_source-x_min_cutout:x_max_source-x_min_cutout].shape)
+
+                    #source_mask_smaller = self.source.mask[y_min_cutout-y_min_source:,x_min_cutout-x_min_source]
+
+                    #star_mask_cutout[0:y_max_source-y_min_cutout][0:x_max_source-x_min_cutout][source_mask_smaller] = False
+
+                    # TODO: fix this problem ! (how can it be that the source box is not inside the saturation box??)
+                    # saturation sources are created by expanding the initial source box ??
 
                 # Discard this saturation source if the centroid offset or the ellipticity is too large
                 if not masks.overlap(saturation_source.mask, star_mask_cutout):
@@ -442,7 +468,7 @@ class Star(SkyObject):
                         if difference.norm > config.max_centroid_offset or contour.ellipticity > config.max_centroid_ellipticity: return
 
             # Replace the pixels of the cutout box by the pixels of the original frame (because the star itself is already removed)
-            saturation_source.cutout = original_frame.box_like(saturation_source.cutout)
+            #saturation_source.cutout = frame.box_like(saturation_source.cutout)
 
             # TODO: check with classifier to verify this is actually a saturation source!
 

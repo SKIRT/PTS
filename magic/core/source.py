@@ -25,13 +25,13 @@ from astropy.coordinates import Angle
 from astropy import units as u
 from astropy.convolution import convolve, convolve_fft
 
-# Import the relevant AstroMagic classes and modules
+# Import the relevant PTS classes and modules
 from .image import Image
 from .frame import Frame
 from .box import Box
 from ..basics.vector import Position, Extent
 from ..basics.mask import Mask
-from ..basics.geometry import Ellipse
+from ..basics.geometry import Ellipse, Rectangle
 from ..tools import plotting, statistics
 
 # -----------------------------------------------------------------
@@ -75,11 +75,59 @@ class Source(object):
         :return:
         """
 
-        if shape.type == "ellipse": return cls.from_ellipse(frame, shape, factor)
-        elif shape.type == "circle":
-            ellipse = Ellipse(shape.center, Extent(shape.radius, shape.radius), Angle(0.0, u.Unit("deg")))
-            return cls.from_ellipse(frame, ellipse, factor)
-        else: raise ValueError("Shape should be ellipse or circle (for now)")
+        # Create a source from the bounding box of the shape
+        source = cls.from_rectangle(frame, shape.bounding_box, factor)
+
+        # Calculate the shift for the shape to be in the source cutout
+        shift = Extent(source.x_min, source.y_min)
+
+        # Create a mask based on the shape, shifted into the source cutout
+        mask = (shape - shift).to_mask(source.cutout.xsize, source.cutout.ysize)
+
+        # Set the source mask
+        source.mask = mask
+
+        # Return the source
+        return source
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_rectangle(cls, frame, rectangle, factor):
+
+        """
+        This function ...
+        :param frame:
+        :param rectangle:
+        :param factor:
+        :return:
+        """
+
+        # Get original rectangle properties
+        center = rectangle.center
+        radius = rectangle.radius
+        angle = rectangle.angle
+
+        # Create cutout box
+        rectangle = Rectangle(center, radius * factor, angle) # new expanded rectangle
+        cutout = Box.from_rectangle(frame, rectangle)
+
+        # Calculate the relative coordinate of the center for the cutout box
+        rel_center = cutout.rel_position(center)
+
+        # Create source mask
+        rectangle = Rectangle(rel_center, radius, angle)
+        mask = Mask.from_shape(rectangle, cutout.xsize, cutout.ysize)
+
+        # Set (estimated) background and removed to None
+        background = None
+        removed = None
+
+        # Set peak position to None initially
+        peak = None
+
+        # Create and return a new Source instance
+        return cls(center, radius, angle, factor, cutout, mask, background, removed, peak)
 
     # -----------------------------------------------------------------
 
@@ -91,6 +139,7 @@ class Source(object):
         :param frame:
         :param ellipse:
         :param factor:
+        :param shape:
         :return:
         """
 

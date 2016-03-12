@@ -45,7 +45,7 @@ class Composite(object):
         self.base = base
         self.exclude = exclude
 
-        self.meta = meta
+        self.meta = meta if meta is not None else dict()
 
     # -----------------------------------------------------------------
 
@@ -103,7 +103,7 @@ class Coordinate(Position):
         super(Coordinate, self).__init__(x, y)
 
         # Set the meta information
-        self.meta = meta
+        self.meta = meta if meta is not None else dict()
 
     # -----------------------------------------------------------------
 
@@ -146,12 +146,50 @@ class Coordinate(Position):
         # Create the suffix
         if len(self.meta) > 0:
             suffix = " #"
-            for key in self.meta: suffix += " " + key + " = " + str(self.meta[key])
+            for key in self.meta:
+                if key == "text": suffix += " " + key + " = {" + str(self.meta[key]) + "}"
+                else: suffix += " " + key + " = " + str(self.meta[key])
         else: suffix = ""
 
         # Create and return the line
         line = "image;point({},{})".format(self.x+1, self.y+1) + suffix
         return line
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bounding_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Rectangle(Position(self.x, self.y), Extent(1.0,1.0))
+
+    # -----------------------------------------------------------------
+
+    def __add__(self, extent):
+
+        """
+        This function ...
+        :param extent:
+        :return:
+        """
+
+        return Coordinate(self.x + extent.x, self.y + extent.y, self.meta)
+
+    # -----------------------------------------------------------------
+
+    def __sub__(self, extent):
+
+        """
+        This function ...
+        :param extent:
+        :return:
+        """
+
+        return Coordinate(self.x - extent.x, self.y - extent.y, self.meta)
 
 # -----------------------------------------------------------------
 
@@ -173,7 +211,8 @@ class Line(object):
         self.start = start
         self.end = end
 
-        self.meta = meta
+        # Set meta information
+        self.meta = meta if meta is not None else dict()
 
     # -----------------------------------------------------------------
 
@@ -186,6 +225,54 @@ class Line(object):
         """
 
         return Extent(self.end.x - self.start.x, self.end.y - self.start.y).norm
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_min(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return min(self.start.x, self.end.x)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_max(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return max(self.start.x, self.end.x)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_min(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return min(self.start.y, self.end.y)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_max(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return max(self.start.x, self.start.y)
 
     # -----------------------------------------------------------------
 
@@ -228,7 +315,9 @@ class Line(object):
         # Create the suffix
         if len(self.meta) > 0:
             suffix = " #"
-            for key in self.meta: suffix += " " + key + " = " + str(self.meta[key])
+            for key in self.meta:
+                if key == "text": suffix += " " + key + " = {" + str(self.meta[key]) + "}"
+                else: suffix += " " + key + " = " + str(self.meta[key])
         else: suffix = ""
 
         # Get the line properties
@@ -238,6 +327,49 @@ class Line(object):
         # Create and return the line
         line = "image;line({},{},{},{})".format(start.x+1, start.y+1, end.x+1, end.y+1) + suffix
         return line
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bounding_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        x_min = self.x_min
+        x_max = self.x_max
+        y_min = self.y_min
+        y_max = self.y_max
+
+        center = Position(0.5*(x_min+x_max), 0.5*(y_min+y_max))
+        radius = Extent(0.5*(x_max-x_min), 0.5*(y_max-y_min))
+
+        return Rectangle(center, radius)
+
+    # -----------------------------------------------------------------
+
+    def __add__(self, extent):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Line(self.start + extent, self.end + extent, self.meta)
+
+    # -----------------------------------------------------------------
+
+    def __sub__(self, extent):
+
+        """
+        This function ...
+        :param extent:
+        :return:
+        """
+
+        return Line(self.start - extent, self.end - extent, self.meta)
 
 # -----------------------------------------------------------------
 
@@ -261,7 +393,7 @@ class Circle(object):
         self.radius = radius
 
         # Set the meta information
-        self.meta = meta
+        self.meta = meta if meta is not None else dict()
 
     # -----------------------------------------------------------------
 
@@ -316,6 +448,7 @@ class Circle(object):
 
         """
         This function ...
+        :param wcs:
         :return:
         """
 
@@ -337,15 +470,55 @@ class Circle(object):
         # Create the suffix
         if len(self.meta) > 0:
             suffix = " #"
-            for key in self.meta: suffix += " " + key + " = " + str(self.meta[key])
+            for key in self.meta:
+                if key == "text": suffix += " " + key + " = {" + str(self.meta[key]) + "}"
+                else: suffix += " " + key + " = " + str(self.meta[key])
         else: suffix = ""
 
         # Get circle properties
         center = self.center
         radius = self.radius
 
-        # Add a line to the region file
-        print("image;circle({},{},{})".format(center.x+1, center.y+1, radius) + suffix, file=f)
+        # Create and return the line
+        line = "image;circle({},{},{})".format(center.x+1, center.y+1, radius) + suffix
+        return line
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bounding_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the bounding box
+        return Rectangle(self.center, Extent(self.radius, self.radius))
+
+    # -----------------------------------------------------------------
+
+    def __add__(self, extent):
+
+        """
+        This function ...
+        :param extent:
+        :return:
+        """
+
+        return Circle(self.center + extent, self.radius, self.meta)
+
+    # -----------------------------------------------------------------
+
+    def __sub__(self, extent):
+
+        """
+        This function ...
+        :param extent:
+        :return:
+        """
+
+        return Circle(self.center - extent, self.radius, self.meta)
 
 # -----------------------------------------------------------------
 
@@ -355,7 +528,7 @@ class Ellipse(object):
     This class ...
     """
     
-    def __init__(self, center, radius, angle, meta=None):
+    def __init__(self, center, radius, angle=0.0, meta=None):
 
         """
         The constructor ...
@@ -365,11 +538,14 @@ class Ellipse(object):
         :return:
         """
 
+        if isinstance(angle, float) or isinstance(angle, int): angle = Angle(0.0, "deg")
+
         self.center = center
         self.radius = radius
         self.angle = angle
 
-        self.meta = meta
+        # Set meta information
+        self.meta = meta if meta is not None else dict()
 
     # -----------------------------------------------------------------
 
@@ -472,19 +648,19 @@ class Ellipse(object):
 
     # -----------------------------------------------------------------
 
-    def __add__(self, value):
+    def __add__(self, extent):
 
         """
         This function ...
-        :param value:
+        :param extent:
         :return:
         """
 
-        return Ellipse(self.center + value, self.radius, self.angle)
+        return Ellipse(self.center + extent, self.radius, self.angle, self.meta)
 
     # -----------------------------------------------------------------
 
-    def __sub__(self, value):
+    def __sub__(self, extent):
 
         """
         This function ...
@@ -492,7 +668,7 @@ class Ellipse(object):
         :return:
         """
 
-        return Ellipse(self.center - value, self.radius, self.angle)
+        return Ellipse(self.center - extent, self.radius, self.angle, self.meta)
 
     # -----------------------------------------------------------------
 
@@ -595,7 +771,9 @@ class Ellipse(object):
         # Create the suffix
         if len(self.meta) > 0:
             suffix = " #"
-            for key in self.meta: suffix += " " + key + " = " + str(self.meta[key])
+            for key in self.meta:
+                if key == "text": suffix += " " + key + " = {" + str(self.meta[key]) + "}"
+                else: suffix += " " + key + " = " + str(self.meta[key])
         else: suffix = ""
 
         # Get ellipse properties
@@ -632,7 +810,7 @@ class Rectangle(object):
         self.radius = radius
         self.angle = angle
 
-        self.meta = meta
+        self.meta = meta if meta is not None else dict()
 
     # -----------------------------------------------------------------
 
@@ -705,7 +883,7 @@ class Rectangle(object):
         :return:
         """
 
-        return self.center.x - self.radius.x
+        return min([corner.x for corner in self.corners])
 
     # -----------------------------------------------------------------
 
@@ -717,7 +895,7 @@ class Rectangle(object):
         :return:
         """
 
-        return self.center.x + self.radius.x
+        return max([corner.x for corner in self.corners])
 
     # -----------------------------------------------------------------
 
@@ -729,7 +907,7 @@ class Rectangle(object):
         :return:
         """
 
-        return self.center.y - self.radius.y
+        return min([corner.y for corner in self.corners])
 
     # -----------------------------------------------------------------
 
@@ -741,7 +919,7 @@ class Rectangle(object):
         :return:
         """
 
-        return self.center.y + self.radius.y
+        return max([corner.y for corner in self.corners])
 
     # -----------------------------------------------------------------
 
@@ -777,7 +955,7 @@ class Rectangle(object):
         :return:
         """
 
-        if not self.rotated: return Position(self.x_max, self.y_min)
+        if not self.rotated: return Position(self.center.x + self.radius.x, self.center.y - self.radius.y)
         else:
 
             angle_to_corner = 2.0 * np.pi - self._diagonal_angle + self.angle.to("radian").value
@@ -793,7 +971,7 @@ class Rectangle(object):
         :return:
         """
 
-        if not self.rotated: return Position(self.x_max, self.y_max)
+        if not self.rotated: return Position(self.center.x + self.radius.x, self.center.y + self.radius.y)
         else:
 
             angle_to_corner = self._diagonal_angle + self.angle.to("radian").value
@@ -809,7 +987,7 @@ class Rectangle(object):
         :return:
         """
 
-        if not self.rotated: return Position(self.x_min, self.y_max)
+        if not self.rotated: return Position(self.center.x - self.radius.x, self.center.y + self.radius.y)
         else:
 
             angle_to_corner = np.pi - self._diagonal_angle + self.angle.to("radian").value
@@ -825,7 +1003,7 @@ class Rectangle(object):
         :return:
         """
 
-        if not self.rotated: return Position(self.x_min, self.y_min)
+        if not self.rotated: return Position(self.center.x - self.radius.x, self.center.y - self.radius.y)
         else:
 
             angle_to_corner = np.pi + self._diagonal_angle + self.angle.to("radian").value
@@ -912,7 +1090,9 @@ class Rectangle(object):
         # Create the suffix
         if len(self.meta) > 0:
             suffix = " #"
-            for key in self.meta: suffix += " " + key + " = " + str(self.meta[key])
+            for key in self.meta:
+                if key == "text": suffix += " " + key + " = {" + str(self.meta[key]) + "}"
+                else: suffix += " " + key + " = " + str(self.meta[key])
         else: suffix = ""
 
         # Get rectangle properties
@@ -924,6 +1104,42 @@ class Rectangle(object):
         # Create and return the line
         line = "image;box({},{},{},{},{})".format(center.x+1, center.y+1, width, height) + suffix
         return line
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bounding_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Rectangle(self.center, self.radius)
+
+    # -----------------------------------------------------------------
+
+    def __add__(self, extent):
+
+        """
+        This function ...
+        :param extent:
+        :return:
+        """
+
+        return Rectangle(self.center + extent, self.radius, self.angle, self.meta)
+
+    # -----------------------------------------------------------------
+
+    def __sub__(self, extent):
+
+        """
+        This function ...
+        :param extent:
+        :return:
+        """
+
+        return Rectangle(self.center - extent, self.radius, self.angle, self.meta)
 
 # -----------------------------------------------------------------
 
@@ -944,7 +1160,7 @@ class Polygon(object):
         self.points = []
 
         # Set the meta information
-        self.meta = meta
+        self.meta = meta if meta is not None else dict()
 
     # -----------------------------------------------------------------
 
@@ -976,6 +1192,54 @@ class Polygon(object):
 
         # Return the result
         return total
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_min(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return min([point.x for point in self.points])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_max(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return max([point.x for point in self.points])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_min(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return min([point.y for point in self.points])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return max([point.y for point in self.points])
 
     # -----------------------------------------------------------------
 
@@ -1034,7 +1298,9 @@ class Polygon(object):
         # Create the suffix
         if len(self.meta) > 0:
             suffix = " #"
-            for key in self.meta: suffix += " " + key + " = " + str(self.meta[key])
+            for key in self.meta:
+                if key == "text": suffix += " " + key + " = {" + str(self.meta[key]) + "}"
+                else: suffix += " " + key + " = " + str(self.meta[key])
         else: suffix = ""
 
         # Initialize line
@@ -1048,5 +1314,59 @@ class Polygon(object):
 
         # Return the line
         return line
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bounding_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        x_min = self.x_min
+        x_max = self.x_max
+        y_min = self.y_min
+        y_max = self.y_max
+
+        center = Position(0.5*(x_min+x_max), 0.5*(y_min+y_max))
+        radius = Extent(0.5*(x_max - x_min), 0.5*(y_max - y_min))
+
+        return Rectangle(center, radius)
+
+    # -----------------------------------------------------------------
+
+    def __add__(self, extent):
+
+        """
+        This function ...
+        :param extent
+        :return:
+        """
+
+        # Create a new polygon
+        polygon = Polygon(self.meta)
+
+        for point in self.points: polygon.add_point(point + extent)
+
+        return polygon
+
+    # -----------------------------------------------------------------
+
+    def __sub__(self, extent):
+
+        """
+        This function ...
+        :param extent:
+        :return:
+        """
+
+        # Create a new polygon
+        polygon = Polygon(self.meta)
+
+        for point in self.points: polygon.add_point(point - extent)
+
+        return polygon
 
 # -----------------------------------------------------------------

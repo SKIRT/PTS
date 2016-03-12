@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       AstroMagic -- the image editor for astronomers        **
+# **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
@@ -29,7 +29,7 @@ from ..core.source import Source
 from ..object.star import Star
 from ..tools import statistics, fitting
 from ...core.basics.configurable import Configurable
-from ...core.tools import tables
+from ...core.tools import tables, filesystem
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
@@ -56,10 +56,11 @@ class StarFinder(Configurable):
 
         # The image and a copy of the original primary image frame
         self.image = None
-        self.original_frame = None
 
-        # The mask covering pixels that should be ignored throughout the entire extraction procedure
+        # The mask covering objects that require special attention
         self.special_mask = None
+
+        # The mask of of pixels that should be ignored
         self.ignore_mask = None
 
         # The stellar catalog
@@ -68,8 +69,8 @@ class StarFinder(Configurable):
         # The statistics table
         self.statistics = None
 
-        # Reference to the galaxy extractor
-        self.galaxy_extractor = None
+        # Reference to the galaxy finder
+        self.galaxy_finder = None
 
         # The segmentation map of stars
         self.segments = None
@@ -97,26 +98,29 @@ class StarFinder(Configurable):
         # 2. Find the stars
         self.find_stars()
 
+        # 3. Create the star region
+        self.create_star_region()
+
         # 3. If requested, find and remove saturated stars
-        if self.config.find_saturation: self.find_saturation()
+        if self.config.find_saturation:
+
+            self.find_saturation()
+            self.create_saturation_region()
 
         # 4. Set the statistics
         self.set_statistics()
-
-        # 5. Create the regions
-        self.create_regions()
 
         # 5. Create the segmentation map
         self.create_segments()
 
     # -----------------------------------------------------------------
 
-    def setup(self, image, galaxyextractor, catalog, special_mask=None, ignore_mask=None):
+    def setup(self, image, galaxy_finder, catalog, special_mask=None, ignore_mask=None):
 
         """
         This function ...
         :param image:
-        :param galaxyextractor:
+        :param galaxy_finder:
         :param catalog:
         :param special_mask:
         :param ignore_mask:
@@ -127,13 +131,15 @@ class StarFinder(Configurable):
 
         # Make a local reference to the frame and 'bad' mask
         self.image = image
-        self.original_frame = self.image.frames.primary.copy()
+
         self.catalog = catalog
+
+        # Special and ignore masks
         self.special_mask = special_mask
         self.ignore_mask = ignore_mask
 
-        # Make a local reference to the galaxy extractor (if any)
-        self.galaxy_extractor = galaxyextractor
+        # Make a local reference to the galaxy finder
+        self.galaxy_finder = galaxy_finder
 
         # Create an empty frame for the segments
         self.segments = Frame.zeros_like(self.image.frames.primary)
@@ -148,7 +154,7 @@ class StarFinder(Configurable):
         """
 
         # Inform the user
-        log.info("Clearing the star extractor ...")
+        log.info("Clearing the star finder ...")
 
         # Clear the list of stars
         self.stars = []
@@ -199,11 +205,11 @@ class StarFinder(Configurable):
 
         # Copy the list of galaxies, so that we can removed already encounted galaxies (TODO: change this to use
         # an 'encountered' list as well
-        encountered_galaxies = [False] * len(self.galaxy_extractor.galaxies)
+        encountered_galaxies = [False] * len(self.galaxy_finder.galaxies)
 
         galaxy_pixel_position_list = []
         galaxy_type_list = []
-        for galaxy in self.galaxy_extractor.galaxies:
+        for galaxy in self.galaxy_finder.galaxies:
 
             galaxy_pixel_position_list.append(galaxy.pixel_position(self.image.wcs))
             if galaxy.principal: galaxy_type_list.append("principal")
@@ -255,7 +261,7 @@ class StarFinder(Configurable):
             else:
 
                 # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
-                if self.galaxy_extractor is not None: star_on_galaxy = self.galaxy_extractor.principal.contains(pixel_position)
+                if self.galaxy_finder is not None: star_on_galaxy = self.galaxy_finder.principal.contains(pixel_position)
                 else: star_on_galaxy = False
                 on_galaxy_column.append(star_on_galaxy)
 
@@ -406,7 +412,7 @@ class StarFinder(Configurable):
 
             # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
             # Note: I forgot why we would ever want to do this ...
-            if not self.config.removal.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.image.wcs)): continue
+            if not self.config.removal.remove_foreground and self.galaxy_finder.mask.masks(star.pixel_position(self.image.wcs)): continue
 
             # Remove the star in the frame
             force = self.config.manual_indices.remove_stars is not None and star.index in self.config.manual_indices.remove_stars
@@ -432,6 +438,8 @@ class StarFinder(Configurable):
 
         # Set the number of stars where saturation was removed to zero initially
         success = 0
+
+        star_mask = self.star_region.to_mask(self.image.xsize, self.image.ysize)
 
         if self.config.saturation.only_brightest:
 
@@ -481,15 +489,9 @@ class StarFinder(Configurable):
                 # Skip this star if its flux is lower than the threshold
                 if flux < flux_threshold: continue
 
-            # If the 'only_saturation' list is defined, skip this star if its index is not in that list
-            if self.config.manual_indices.only_saturation is not None and star.index not in self.config.manual_indices.only_saturation: continue
-
-            # If the index of this star is in the 'not_saturation' list, skip it
-            if self.config.manual_indices.not_saturation is not None and star.index in self.config.manual_indices.not_saturation: continue
-
             # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
             # Note: I forgot why we would ever want to do this ...
-            if not self.config.saturation.remove_foreground and self.galaxy_extractor.mask.masks(star.pixel_position(self.image.wcs)): continue
+            #if not self.config.saturation.remove_foreground and self.galaxy_finder.mask.masks(star.pixel_position(self.image.wcs)): continue
 
             # If a model was not found for this star, skip it unless the remove_if_not_fitted flag is enabled
             if not star.has_model and not self.config.saturation.remove_if_not_fitted: continue
@@ -501,26 +503,11 @@ class StarFinder(Configurable):
             if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
             # Find a saturation source and remove it from the frame
-            star.find_saturation(self.image.frames.primary, self.original_frame, self.config.saturation, default_fwhm, self.galaxy_extractor.mask, self.mask)
+            star.find_saturation(self.image.frames.primary, self.config.saturation, default_fwhm, star_mask)
             success += star.has_saturation
 
         # Inform the user
         log.debug("Found saturation in " + str(success) + " out of " + str(self.have_source) + " stars with source ({0:.2f}%)".format(success / self.have_source * 100.0))
-
-    # -----------------------------------------------------------------
-
-    def create_regions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create the star region
-        self.create_star_region()
-
-        # Create the saturation region
-        self.create_saturation_region()
 
     # -----------------------------------------------------------------
 
@@ -608,12 +595,6 @@ class StarFinder(Configurable):
             angle = star.contour.angle.degree
 
             radius = Extent(major, minor)
-
-            # Write to region file
-            #suffix = " # "
-            #color_suffix = "color = white"
-            #text_suffix = "text = {" + text + "}"
-            #suffix += color_suffix + " " + text_suffix
 
             # Create meta information
             meta = {"color": "white", "text": text}

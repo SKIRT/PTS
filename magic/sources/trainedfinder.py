@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       AstroMagic -- the image editor for astronomers        **
+# **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
@@ -21,17 +21,16 @@ from photutils import detect_sources
 from astropy.coordinates import SkyCoord
 from astropy.convolution import Gaussian2DKernel
 
-# Import the relevant AstroMagic classes and modules
+# Import the relevant PTS classes and modules
 from ..core.frame import Frame
 from ..core.source import Source
 from ..basics.mask import Mask
+from ..basics.region import Region
 from ..basics.geometry import Ellipse
 from ..tools import statistics, masks, plotting, general
 from ..analysis import sources
 from ..train import Classifier
 from ..object.star import Star
-
-# Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 
@@ -79,6 +78,8 @@ class TrainedFinder(Configurable):
         self.galaxy_finder = None
         self.star_finder = None
 
+        self.region = Region()
+
     # -----------------------------------------------------------------
 
     def run(self, image, galaxy_finder=None, star_finder=None, special=None, ignore=None):
@@ -99,11 +100,13 @@ class TrainedFinder(Configurable):
         # 2. Find sources
         self.find_sources()
 
+        self.create_region()
+
         # 3. Remove sources
-        if self.config.remove: self.remove_sources()
+        #if self.config.remove: self.remove_sources()
 
         # 4. Classify sources
-        if self.config.classify: self.classify_sources()
+        #if self.config.classify: self.classify_sources()
 
     # -----------------------------------------------------------------
 
@@ -184,12 +187,9 @@ class TrainedFinder(Configurable):
 
             if special: plotting.plot_box(self.image.frames.primary[source.cutout.y_slice, source.cutout.x_slice], title="Replaced frame inside this box")
 
-            # Update the mask
-            self.mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
-
     # -----------------------------------------------------------------
 
-    def find_contours(self):
+    def create_region(self):
 
         """
         This function ...
@@ -200,7 +200,10 @@ class TrainedFinder(Configurable):
         log.info("Constructing elliptical contours to encompass sources ...")
 
         # Return the list of apertures
-        return sources.find_contours(self.segments, self.segments, self.config.detection.apertures.sigma_level)
+        contours = sources.find_contours(self.segments, self.segments, self.config.detection.apertures.sigma_level)
+
+        # Add shapes to region
+        for contour in contours: self.region.append(contour)
 
     # -----------------------------------------------------------------
 
@@ -303,27 +306,6 @@ class TrainedFinder(Configurable):
             # Replace the frame in the appropriate area with the estimated background
             source.background.replace(self.image.frames.primary, where=source.mask)
 
-            # Update the mask
-            self.mask[source.cutout.y_slice, source.cutout.x_slice] += source.mask
-
-    # -----------------------------------------------------------------
-
-    def write(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # If requested, write out the frame where the sources are masked
-        if self.config.write_masked_frame: self.write_masked_frame()
-
-        # If requested, ...
-        if self.config.write_star_region: self.write_star_region()
-
-        # If requested, write out the segmentation map
-        if self.config.write_segments: self.write_segments()
-
     # -----------------------------------------------------------------
 
     def find_sources_peaks(self):
@@ -344,14 +326,19 @@ class TrainedFinder(Configurable):
         :return:
         """
 
+        mask = Mask(self.galaxy_finder.segments) + Mask(self.star_finder.segments)
+
+        frame = self.image.frames.primary.copy()
+
+        frame[mask] = 0.0
+
         # Create the sigma-clipped mask
-        if "bad" in self.image.masks: mask = self.image.masks.bad + self.image.masks.sources
-        else: mask = self.image.masks.sources
-        clipped_mask = statistics.sigma_clip_mask(self.image.frames.primary, 3.0, mask)
+        if "bad" in self.image.masks: mask += self.image.masks.bad
+        clipped_mask = statistics.sigma_clip_mask(frame, 3.0, mask)
 
         # Calculate the median sky value and the standard deviation
-        median = np.median(np.ma.masked_array(self.image.frames.primary, mask=clipped_mask).compressed())
-        stddev = np.ma.masked_array(self.image.frames.primary, mask=clipped_mask).std()
+        median = np.median(np.ma.masked_array(frame, mask=clipped_mask).compressed())
+        stddev = np.ma.masked_array(frame, mask=clipped_mask).std()
 
         # Calculate the detection threshold
         threshold = median + (3.0 * stddev)
@@ -367,7 +354,7 @@ class TrainedFinder(Configurable):
 
         try:
             # Create a segmentation map from the frame
-            self.segments = Frame(detect_sources(self.image.frames.primary, threshold, npixels=5, filter_kernel=kernel).data)
+            self.segments = Frame(detect_sources(frame, threshold, npixels=5, filter_kernel=kernel).data)
         except RuntimeError:
 
             log.debug("Runtime error during detect_sources ...")
@@ -412,7 +399,19 @@ class TrainedFinder(Configurable):
                 for index in indices: self.segments[self.segments == index] = 0
 
         # Find apertures
-        contours = self.find_contours()
+        #contours = self.find_contours()
+
+        #self._create_sources_list(contours)
+
+    # -----------------------------------------------------------------
+
+    def _create_sources_list(self, contours):
+
+        """
+        This function ...
+        :param contours:
+        :return:
+        """
 
         # Construct sources
         for contour in contours:

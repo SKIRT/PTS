@@ -59,7 +59,7 @@ def sigma_clip_mask(data, sigma_level=3.0, mask=None):
     """
     This function ...
     :param data:
-    :param sigma:
+    :param sigma_level:
     :param mask:
     :return:
     """
@@ -80,6 +80,8 @@ def sigma_clip_mask(data, sigma_level=3.0, mask=None):
             x = x_values[i]
             y = y_values[i]
             new_mask[y,x] = True
+
+    #if not isinstance(new_mask, Mask): print(new_mask, mask)
 
     # Assert the mask is of type 'Mask'
     assert isinstance(new_mask, Mask)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       AstroMagic -- the image editor for astronomers        **
+# **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
@@ -170,7 +170,7 @@ class SkyEllipse(object):
     This class ...
     """
 
-    def __init__(self, center, radius, angle):
+    def __init__(self, center, radius, angle=0.0):
 
         """
         This function ...
@@ -179,6 +179,8 @@ class SkyEllipse(object):
         :param angle:
         :return:
         """
+
+        if isinstance(angle, float) or isinstance(angle, int): angle = Angle(0.0, "deg")
 
         self.center = center
         self.radius = radius

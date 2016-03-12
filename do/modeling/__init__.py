@@ -9,4 +9,4 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.do.modeling Python scripts exposing AstroMagic modeling functionality to the command line.
+## \package pts.do.modeling Python scripts exposing radiative transfer modeling functionality to the command line.

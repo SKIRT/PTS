@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       AstroMagic -- the image editor for astronomers        **
+# **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
@@ -27,7 +27,7 @@ import astropy.units as u
 from astropy.coordinates import Angle
 from photutils import source_properties, properties_table
 
-# Import the relevant AstroMagic classes and modules
+# Import the relevant PTS classes and modules
 from ..tools import fitting, plotting, statistics, coordinates, cropping, interpolation, masks, regions
 from ..core.source import Source
 from ..basics.vector import Position, Extent
@@ -66,8 +66,10 @@ def find_contours(frame, segments, sigma_level):
 
         radius = Extent(a, b)
 
+        meta = {"text": str(properties.label)}
+
         # Create the contour
-        contours.append(Ellipse(position, radius, angle))
+        contours.append(Ellipse(position, radius, angle, meta=meta))
 
     # Return the contours
     return contours

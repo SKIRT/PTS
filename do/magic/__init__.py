@@ -9,4 +9,5 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.do.magic Python scripts exposing AstroMagic functionality to the command line.
+## \package pts.do.magic Python scripts exposing magic functionality (e.g. source extraction, sky subtraction)
+#  to the command line.

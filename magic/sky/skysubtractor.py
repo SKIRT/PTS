@@ -19,12 +19,10 @@ import matplotlib.pyplot as plt
 # Import astronomical modules
 from photutils.background import Background
 
-# Import the relevant AstroMagic classes and modules
+# Import the relevant PTS classes and modules
 from ..core.frame import Frame
 from ..basics.mask import Mask
 from ..tools import interpolation, plotting, statistics, fitting
-
-# Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 

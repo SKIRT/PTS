@@ -21,7 +21,7 @@ from skimage import morphology
 from astropy.io import fits
 from photutils import detect_sources
 
-# Import the relevant AstroMagic classes and modules
+# Import the relevant PTS classes and modules
 from .vector import Position
 from ...core.tools.logging import log
 
@@ -58,7 +58,8 @@ class Mask(np.ndarray):
 
         """
         This function ...
-        :param file_path:
+        :param path:
+        :param index:
         :return:
         """
 
@@ -482,8 +483,7 @@ class Mask(np.ndarray):
 
         """
         This function ...
-        :param mask_a:
-        :param mask_b:
+        :param mask:
         :return:
         """
 

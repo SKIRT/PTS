@@ -29,23 +29,31 @@ from pts.magic.basics.region import Region
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
-parser.add_argument("image", type=str, help="the name of the input image")
-parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
-parser.add_argument("--report", action='store_true', help='write a report file')
 
+# Configuration
 parser.add_argument('--config', type=str, help='the name of a configuration file', default=None)
 parser.add_argument("--settings", type=configuration.from_string, help="settings")
+
+# Basic
+parser.add_argument("image", type=str, help="the name of the input image")
+
+# Logging options
+parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
+parser.add_argument("--report", action='store_true', help='write a report file')
 
 parser.add_argument("--synchronize", action="store_true", help="synchronize with DustPedia catalog")
 
 parser.add_argument("--filecatalog", action="store_true", help="use file catalogs")
 
+# Input and output
 parser.add_argument("-i", "--input", type=str, help="the name of the input directory")
 parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
 
+# Regions
 parser.add_argument("--special", type=str, help="the name of the file specifying regions with objects needing special attention")
 parser.add_argument("--bad", type=str, help="the name of the file specifying regions that have to be added to the mask of bad pixels")
 
+# Interactive
 parser.add_argument("--interactive", action="store_true", help="enable interactive mode")
 
 # Parse the command line arguments
@@ -103,6 +111,9 @@ bad_region_path = filesystem.join(input_path, arguments.bad) if arguments.bad is
 importer = ImageImporter()
 importer.run(image_path, bad_region_path=bad_region_path)
 
+# Get the imported image
+image = importer.image
+
 # -----------------------------------------------------------------
 
 # Inform the user
@@ -112,7 +123,7 @@ log.info("Importing the galactic and stellar catalogs ...")
 catalog_importer = CatalogImporter()
 
 # Run the catalog importer
-catalog_importer.run(importer.image.frames.primary)
+catalog_importer.run(image.frames.primary)
 
 # -----------------------------------------------------------------
 
@@ -157,7 +168,7 @@ log.info("Running the source finder ...")
 finder = SourceFinder.from_arguments(arguments)
 
 # Run the extractor
-finder.run(importer.image, catalog_importer.galactic_catalog, catalog_importer.stellar_catalog, special_region, ignore_region)
+finder.run(image, catalog_importer.galactic_catalog, catalog_importer.stellar_catalog, special_region, ignore_region)
 
 # -----------------------------------------------------------------
 
@@ -219,12 +230,20 @@ else:
 # -----------------------------------------------------------------
 
 # Inform the user
-log.info("Running the source extraction ...")
+log.info("Running the source extractor ...")
 
 # Create a SourceExtractor instance
 extractor = SourceExtractor.from_arguments(arguments)
 
 # Run the source extractor
-extractor.run(importer.image, star_region, saturation_region, galaxy_segments, star_segments, other_segments)
+extractor.run(image.frames.primary, star_region, saturation_region, galaxy_segments, star_segments, other_segments)
+
+# -----------------------------------------------------------------
+
+# Determine the path to the result
+result_path = filesystem.join(output_path, image.name + ".fits")
+
+# Save the resulting image as a FITS file
+image.save(result_path)
 
 # -----------------------------------------------------------------

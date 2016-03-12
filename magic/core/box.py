@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       AstroMagic -- the image editor for astronomers        **
+# **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
@@ -17,7 +17,7 @@ import math
 import numpy as np
 from scipy import ndimage
 
-# Import the relevant AstroMagic classes and modules
+# Import the relevant PTS classes and modules
 from ..basics.vector import Position, Extent
 from ..basics.geometry import Rectangle
 from ..tools import cropping, fitting, interpolation, plotting
@@ -431,7 +431,7 @@ class Box(np.ndarray):
             try:
                 return self.fit_polynomial(3, mask=mask)
             except TypeError:
-                from ..tools import plotting
+                #from ..tools import plotting
                 log.debug("Error while fitting polynomial to the box ...")
                 log.debug("cutout = " + str(type(self)) + " " + str(mask.shape))
                 log.debug("mask = " + str(type(mask)) + " " + str(mask.shape))
@@ -439,7 +439,7 @@ class Box(np.ndarray):
                 #plotting.plot_box(mask)
                 #plotting.plot_box(np.ma.masked_array(self, mask=mask))
                 mask = mask.eroded(connectivity=2, iterations=1)
-                plotting.plot_box(np.ma.masked_array(self, mask=mask))
+                #plotting.plot_box(np.ma.masked_array(self, mask=mask))
                 return self.fit_polynomial(3, mask=mask)
 
         # Interpolate using the local mean method

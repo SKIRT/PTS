@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.magic.subtract Run sky subtraction on an image
+## \package pts.do.magic.subtract Run sky subtraction on an astronmical image.
 
 # -----------------------------------------------------------------
 
@@ -16,9 +16,10 @@ from __future__ import absolute_import, division, print_function
 import os
 import argparse
 
-# Import the relevant AstroMagic classes and modules
-from pts.magic import ImageImporter, SkySubtractor
-from pts.magic.basics import Mask
+# Import the relevant PTS classes and modules
+from pts.magic.misc.imageimporter import ImageImporter
+from pts.magic.sky.skysubtractor import SkySubtractor
+from pts.magic.basics.mask import Mask
 from pts.core.tools import configuration
 
 # -----------------------------------------------------------------
@@ -93,16 +94,6 @@ mask = Mask.from_file(mask_path)
 # Determine the full path to the galaxy region file and the saturation region file
 galaxy_region_path = os.path.join(arguments.input_path, arguments.galaxies)
 saturation_region_path = os.path.join(arguments.input_path, arguments.saturation) if arguments.saturation is not None else None
-
-# Get the ellipse describing the principal galaxy
-#principal_ellipse = None
-#for shape in self.galaxy_regin:
-
-    #if not shape.name == "ellipse" and not shape.name == "circle": continue
-
-    # Get the center and radius of the shape (can be a circle or an ellipse)
-    #ellipse = regions.ellipse(shape)
-    #if principal_ellipse is None or ellipse.major > principal_ellipse.major: principal_ellipse = ellipse
 
 # Create a SkySubtractor instance and configure it according to the command-line arguments
 subtractor = SkySubtractor.from_arguments(arguments)

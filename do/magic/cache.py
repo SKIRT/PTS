@@ -18,8 +18,6 @@ import argparse
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import tables, inspection, filesystem
-
-# Import the relevant AstroMagic classes and modules
 from pts.magic.tools import catalogs
 
 # -----------------------------------------------------------------

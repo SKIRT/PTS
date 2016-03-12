@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       AstroMagic -- the image editor for astronomers        **
+# **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
@@ -124,6 +124,18 @@ class SourceFinder(Configurable):
         """
 
         return self.star_finder.saturation_region
+
+    # -----------------------------------------------------------------
+
+    @property
+    def other_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.trained_finder.region
 
     # -----------------------------------------------------------------
 
@@ -327,7 +339,7 @@ class SourceFinder(Configurable):
             log.info("Building the stellar catalog ...")
 
             # Run the catalog builder
-            self.catalog_builder.run(self.image.frames.primary, self.galaxy_finder, self.star_finder, self.traind_finder)
+            self.catalog_builder.run(self.image.frames.primary, self.galaxy_finder, self.star_finder, self.trained_finder)
 
             # Inform the user
             log.success("Stellar catalog built")

@@ -20,13 +20,12 @@ import copy
 # Import astronomical modules
 from photutils import detect_sources
 
-# Import the relevant AstroMagic classes and modules
-from ...magic.basics import Mask
-from ...magic.core import Image, Frame
-
 # Import the relevant PTS classes and modules
+from ...magic.basics.mask import Mask
+from ...magic.core.image import Image
+from ...magic.core.frame import Frame
 from .component import MapsComponent
-from ...core.tools import time
+from ...core.tools import time, filesystem
 
 # -----------------------------------------------------------------
 
@@ -144,14 +143,14 @@ class MapMaker(MapsComponent):
 
         # Set the input and output path
         maker.config.path = arguments.path
-        maker.config.input_path = os.path.join(arguments.path, "prep")
-        maker.config.output_path = os.path.join(arguments.path, "maps")
+        maker.config.input_path = filesystem.join(arguments.path, "prep")
+        maker.config.output_path = filesystem.join(arguments.path, "maps")
 
         # A single map name can be specified so the procedure is only run for that map
         maker.config.single_map = arguments.map
 
         # Set logging path
-        if arguments.report: maker.config.logging.path = os.path.join(maker.config.output_path, time.unique_name("log") + ".txt")
+        if arguments.report: maker.config.logging.path = filesystem.join(maker.config.output_path, time.unique_name("log") + ".txt")
 
         # Return the new instance
         return maker
