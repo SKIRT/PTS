@@ -408,13 +408,14 @@ class Source(object):
 
     # -----------------------------------------------------------------
 
-    def find_center_segment(self, sigma_level, kernel=None, min_pixels=5):
+    def find_center_segment(self, sigma_level, kernel=None, min_pixels=5, mask=None):
 
         """
         This function ...
         :param sigma_level:
         :param kernel:
         :param min_pixels:
+        :param mask:
         :return:
         """
 
@@ -466,6 +467,8 @@ class Source(object):
 
         """
         This function ...
+        :param sigma_level:
+        :param kernel:
         :return:
         """
 

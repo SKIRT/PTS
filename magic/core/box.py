@@ -25,6 +25,122 @@ from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
+class CutoutMask(np.ndarray):
+
+    """
+    This class ...
+    """
+
+    def __new__(cls, data, x_min, x_max, y_min, y_max):
+
+        """
+        This function ...
+        :param cls:
+        :param data:
+        :param x_min:
+        :param x_max:
+        :param y_min:
+        :param y_max:
+        :return:
+        """
+
+        obj = np.asarray(data, dtype=bool).view(cls)
+        obj.x_min = x_min
+        obj.x_max = x_max
+        obj.y_min = y_min
+        obj.y_max = y_max
+
+        return obj
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xsize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.shape[1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ysize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.shape[0]
+
+    # -----------------------------------------------------------------
+
+    def as_cutout(self, cutout, padding_value=0.0):
+
+        """
+        This function ...
+        :param cutout:
+        :param padding_value:
+        :return:
+        """
+
+        rel_x_min = cutout.x_min - self.x_min
+        rel_x_max = cutout.x_max - self.x_min
+
+        rel_y_min = cutout.y_min - self.y_min
+        rel_y_max = cutout.y_max - self.y_min
+
+        if rel_x_min < 0 or rel_y_min < 0 or rel_x_max > self.xsize or rel_y_max > self.ysize:
+
+            # Create box
+            new = np.zeros((self.ysize, self.xsize))
+            if padding_value != 0: new[:,:] = padding_value
+
+            # Normal:
+            a = 0
+            b = cutout.ysize
+            c = 0
+            d = cutout.xsize
+            aa = rel_y_min
+            bb = rel_y_max
+            cc = rel_x_min
+            dd = rel_x_max
+
+            # Cross-over on the lower x border
+            if rel_x_min < 0:
+                c = 0 - rel_x_min
+                cc = 0
+
+            # Cross-over on the lower y border
+            if rel_y_min < 0:
+                a = 0 - rel_y_min
+                aa = 0
+
+            # Cross-over on the upper x border
+            if rel_x_max > self.xsize:
+
+                d = self.xsize - rel_x_min
+                dd = self.xsize
+
+            # Cross-over on the upper y border
+            if rel_y_max > self.ysize:
+
+                b = self.ysize - rel_y_min
+                bb = self.ysize
+
+            new[a:b, c:d] = self[aa::bb, cc::dd]
+
+            # Return the new CutoutMask
+            return CutoutMask(new, cutout.x_min, cutout.x_max, cutout.y_min, cutout.y_max)
+
+        # Return a new CutoutMask
+        else: return CutoutMask(self[rel_y_min:rel_y_max, rel_x_min:rel_x_max], cutout.x_min, cutout.x_max, cutout.y_min, cutout.y_max)
+
+# -----------------------------------------------------------------
+
 class Box(np.ndarray):
 
     """

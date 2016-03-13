@@ -13,15 +13,14 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import argparse
-import numpy as np
 
 # Import the relevant AstroMagic classes and modules
-from pts.magic import ImageImporter
-from pts.magic.tools import plotting, interpolation
-from pts.magic.core import Frame
-from pts.magic.basics import Mask, Region
+from pts.magic.misc.imageimporter import ImageImporter
+from pts.magic.tools import interpolation
+from pts.magic.core.frame import Frame
+from pts.magic.basics.mask import Mask
+from pts.magic.basics.region import Region
 from pts.core.tools import logging, time, filesystem
 
 # -----------------------------------------------------------------
@@ -43,45 +42,43 @@ arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
-# -- Input --
-
 # If an input directory is given
 if arguments.input is not None:
 
     # Determine the full path to the input directory
-    arguments.input_path = os.path.abspath(arguments.input)
+    input_path = filesystem.absolute(arguments.input)
 
     # Give an error if the input directory does not exist
-    if not os.path.isdir(arguments.input_path): raise argparse.ArgumentError(arguments.input_path, "The input directory does not exist")
+    if not filesystem.is_directory(input_path): raise argparse.ArgumentError(input_path, "The input directory does not exist")
 
 # If no input directory is given, assume the input is placed in the current working directory
-else: arguments.input_path = os.getcwd()
+else: input_path = filesystem.cwd()
 
-# -- Output --
+# -----------------------------------------------------------------
 
 # If an output directory is given
 if arguments.output is not None:
     
     # Determine the full path to the output directory
-    arguments.output_path = os.path.abspath(arguments.output)
+    output_path = filesystem.absolute(arguments.output)
     
     # Create the directory if it does not yet exist
-    if not os.path.isdir(arguments.output_path): os.makedirs(arguments.output_path)
+    if not filesystem.is_directory(output_path): filesystem.create_directory(output_path)
 
 # If no output directory is given, place the output in the current working directory
-else: arguments.output_path = os.getcwd()
+else: output_path = filesystem.cwd()
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = os.path.join(arguments.output_path, time.unique_name("interpolation") + ".txt") if arguments.report else None
+logfile_path = filesystem.join(output_path, time.unique_name("log") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-log.info("Starting interpolation script ...")
+log.info("Starting interpolate ...")
 
 # -----------------------------------------------------------------
 
@@ -89,7 +86,7 @@ log.info("Starting interpolation script ...")
 log.info("Loading the image ...")
 
 # Determine the full path to the image
-image_path = os.path.abspath(arguments.image)
+image_path = filesystem.absolute(arguments.image)
 
 # Import the image
 importer = ImageImporter()
@@ -107,7 +104,7 @@ header = importer.image.original_header
 log.info("Loading the region ...")
 
 # Load in the region
-region_path = filesystem.join(arguments.input_path, arguments.region)
+region_path = filesystem.join(input_path, arguments.region)
 region = Region.from_file(region_path, only=["circle", "ellipse", "polygon"], color=arguments.color, ignore_color=arguments.ignore_color)
 
 # Inform the user
@@ -128,7 +125,7 @@ nans = Mask.is_nan(frame)
 frame[nans] = 0.0
 
 # Interpolate the frame in the masked pixels
-data = interpolation.in_paint(frame, mask)
+data = interpolation.inpaint_biharmonic(frame, mask)
 new_frame = Frame(data)
 
 # Set the original NaN pixels back to NaN
@@ -138,13 +135,13 @@ new_frame[nans] = float("nan")
 log.info("Saving the result ...")
 
 # Save the result
-path = filesystem.join(arguments.output_path, arguments.image)
+path = filesystem.join(output_path, arguments.image)
 new_frame.save(path, header=header)
 
 # Write the mask
 if arguments.mask:
 
-    path = filesystem.join(arguments.output_path, "mask.fits")
+    path = filesystem.join(output_path, "mask.fits")
     new_frame[mask] = float('nan')
     new_frame.save(path, header=header)
 

@@ -62,6 +62,7 @@ class SourceExtractor(Configurable):
         # The total mask of removed sources
         self.mask = None
 
+        # The list of sources
         self.sources = []
 
     # -----------------------------------------------------------------
@@ -100,9 +101,6 @@ class SourceExtractor(Configurable):
 
         # 1. Call the setup function
         self.setup(frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments)
-
-        # 2. Create the mask
-        #self.create_mask()
 
         # 2. Load the sources
         self.load_sources()
@@ -337,7 +335,8 @@ class SourceExtractor(Configurable):
 
                     # Replace the saturation mask
                     segments_cutout = self.star_segments[saturation_source.y_slice, saturation_source.x_slice]
-                    saturation_source.mask = Mask(segments_cutout == index)
+                    saturation_mask = Mask(segments_cutout == index)
+                    saturation_source.mask = saturation_mask.fill_holes()
 
                     # Break the loop
                     break
@@ -412,10 +411,25 @@ class SourceExtractor(Configurable):
             log.debug("Estimating background and replacing the frame pixels of source " + str(count) + " of " + str(nsources) + " ...")
 
             # Estimate the background
-            source.estimate_background("biharmonic", True)
+            try:
+                source.estimate_background("biharmonic", True)
+            except ValueError: # ValueError: zero-size array to reduction operation minimum which has no identity
+                # in: limits = (np.min(known_points), np.max(known_points)) [inpaint_biharmonic]
+                count += 1
+                continue
+
+            # If these pixels are already replaced by an overlapping source (e.g. saturation), skip this source,
+            # otherwise the area will be messed up
+            current_mask_cutout = self.mask[source.y_slice, source.x_slice]
+            if current_mask_cutout.covers(source.mask):
+                count += 1
+                continue
 
             # Replace the pixels by the background
             source.background.replace(self.frame, where=source.mask)
+
+            # Adapt the mask
+            self.mask[source.y_slice, source.x_slice] += source.mask
 
             count += 1
 

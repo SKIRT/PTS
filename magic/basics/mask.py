@@ -467,8 +467,7 @@ class Mask(np.ndarray):
 
         """
         This function ...
-        :param mask_a:
-        :param mask_b:
+        :param mask:
         :return:
         """
 
@@ -556,5 +555,18 @@ class Mask(np.ndarray):
 
             # Return the value of the mask in this pixel
             return self[y_pixel, x_pixel]
+
+    # -----------------------------------------------------------------
+
+    def covers(self, mask):
+
+        """
+        This function ...
+        :param mask:
+        :return:
+        """
+
+        not_covered = mask & self.inverse()
+        return not np.any(not_covered)
 
 # -----------------------------------------------------------------

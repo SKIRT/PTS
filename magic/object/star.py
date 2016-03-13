@@ -18,6 +18,7 @@ from astropy.coordinates import Angle
 
 # Import the relevant AstroMagic classes and modules
 from .skyobject import SkyObject
+from ..core.box import CutoutMask
 from ..core.source import Source
 from ..tools import statistics, fitting, masks, plotting
 from ..analysis import sources
@@ -367,7 +368,22 @@ class Star(SkyObject):
 
         # Look for a center segment corresponding to a 'saturation' source
         ellipse = Ellipse(self.pixel_position(frame.wcs), radius, Angle(0.0, "deg"))
+
+        #frame_star_erased = frame.copy()
+        #frame_star_erased[self.source.y_slice, self.source.x_slice][self.source.mask] = 0.0
+
+        #saturation_source = sources.find_source_segmentation(frame, ellipse, config, track_record=self.track_record, special=self.special)
+        #saturation_source = sources.find_source_segmentation(frame_star_erased, ellipse, config, track_record=self.track_record, special=self.special)
+
+        mask_cutout = CutoutMask(self.source.mask, self.source.x_min, self.source.x_max, self.source.y_min, self.source.y_max)
         saturation_source = sources.find_source_segmentation(frame, ellipse, config, track_record=self.track_record, special=self.special)
+
+        # Check if the found source segment is larger than the PSF source
+        if saturation_source is not None:
+
+            mask_saturation = CutoutMask(saturation_source.mask, saturation_source.x_min, saturation_source.x_max, saturation_source.y_min, saturation_source.y_max)
+            mask_saturation_as_cutout = mask_saturation.as_cutout(mask_cutout)
+            if self.source.mask.covers(mask_saturation_as_cutout): saturation_source = None
 
         # If a 'saturation' source was found
         if saturation_source is not None:

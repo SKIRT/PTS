@@ -137,13 +137,19 @@ extractor.run(image.frames.primary, galaxy_region, star_region, saturation_regio
 
 # -----------------------------------------------------------------
 
+# Inform the user
+log.info("Writing the result ...")
+
 # Determine the path to the result
 result_path = filesystem.join(output_path, image.name + ".fits")
 
 # Save the resulting image as a FITS file
-image.save(result_path)
+image.frames.primary.save(result_path, header=image.original_header)
 
 # -----------------------------------------------------------------
+
+# Inform the user
+log.info("Writing the mask ...")
 
 # Determine the path to the mask
 mask_path = filesystem.join(output_path, "mask.fits")
