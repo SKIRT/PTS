@@ -54,14 +54,17 @@ class StarFinder(Configurable):
         # Initialize an empty list for the stars
         self.stars = []
 
-        # The image and a copy of the original primary image frame
-        self.image = None
+        # The image frame
+        self.frame = None
 
         # The mask covering objects that require special attention
         self.special_mask = None
 
         # The mask of of pixels that should be ignored
         self.ignore_mask = None
+
+        # The mask of bad pixels
+        self.bad_mask = None
 
         # The stellar catalog
         self.catalog = None
@@ -81,19 +84,20 @@ class StarFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, image, galaxy_finder, catalog, special=None, ignore=None):
+    def run(self, frame, galaxy_finder, catalog, special=None, ignore=None, bad=None):
 
         """
         This function ...
-        :param image:
+        :param frame:
         :param galaxy_finder:
         :param catalog:
         :param special:
         :param ignore:
+        :param bad:
         """
 
         # 1. Call the setup function
-        self.setup(image, galaxy_finder, catalog, special, ignore)
+        self.setup(frame, galaxy_finder, catalog, special, ignore, bad)
 
         # 2. Find the stars
         self.find_stars()
@@ -115,34 +119,36 @@ class StarFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, image, galaxy_finder, catalog, special_mask=None, ignore_mask=None):
+    def setup(self, frame, galaxy_finder, catalog, special_mask=None, ignore_mask=None, bad_mask=None):
 
         """
         This function ...
-        :param image:
+        :param frame:
         :param galaxy_finder:
         :param catalog:
         :param special_mask:
         :param ignore_mask:
+        :param bad_mask:
         """
 
         # Call the setup function of the base class
         super(StarFinder, self).setup()
 
-        # Make a local reference to the frame and 'bad' mask
-        self.image = image
+        # Make a local reference to the frame
+        self.frame = frame
 
         self.catalog = catalog
 
         # Special and ignore masks
         self.special_mask = special_mask
         self.ignore_mask = ignore_mask
+        self.bad_mask = bad_mask
 
         # Make a local reference to the galaxy finder
         self.galaxy_finder = galaxy_finder
 
         # Create an empty frame for the segments
-        self.segments = Frame.zeros_like(self.image.frames.primary)
+        self.segments = Frame.zeros_like(self.frame)
 
     # -----------------------------------------------------------------
 
@@ -159,8 +165,8 @@ class StarFinder(Configurable):
         # Clear the list of stars
         self.stars = []
 
-        # Clear the image and the mask
-        self.image = None
+        # Clear the image frame
+        self.frame = None
 
     # -----------------------------------------------------------------
 
@@ -174,22 +180,14 @@ class StarFinder(Configurable):
         # Load the stars from the stellar catalog
         self.load_stars()
 
-        # Import statistics if statistics file is specified
-        if self.config.fetching.use_statistics_file:
+        # For each star, find a corresponding source in the image
+        self.find_sources()
 
-            # Import the statistics
-            self.import_statistics()
+        # Fit analytical models to the stars
+        if not self.config.use_frame_fwhm or self.frame.fwhm is None: self.fit_stars()
 
-            # If requested, remove the stars
-            if self.config.remove: self.remove_from_statistics()
-
-        else:
-
-            # For each star, find a corresponding source in the image
-            self.find_sources()
-
-            # Fit analytical models to the stars
-            if not self.config.use_frame_fwhm or self.image.fwhm is None: self.fit_stars()
+        # Set the final soruces
+        self.adjust_sources()
 
     # -----------------------------------------------------------------
 
@@ -211,7 +209,7 @@ class StarFinder(Configurable):
         galaxy_type_list = []
         for galaxy in self.galaxy_finder.galaxies:
 
-            galaxy_pixel_position_list.append(galaxy.pixel_position(self.image.wcs))
+            galaxy_pixel_position_list.append(galaxy.pixel_position(self.frame.wcs))
             if galaxy.principal: galaxy_type_list.append("principal")
             elif galaxy.companion: galaxy_type_list.append("companion")
             else: galaxy_type_list.append("other")
@@ -246,14 +244,14 @@ class StarFinder(Configurable):
             position = SkyCoordinate(ra=ra, dec=dec, unit="deg", frame="fk5")
 
             # If the stars falls outside of the frame, skip it
-            if not self.image.frames.primary.contains(position): continue
+            if not self.frame.frames.primary.contains(position): continue
 
             # Create a star object
             star = Star(i, catalog=catalog, id=star_id, position=position, ra_error=ra_error,
                         dec_error=dec_error, magnitudes=magnitudes, magnitude_errors=magnitude_errors)
 
             # Get the position of the star in pixel coordinates
-            pixel_position = star.pixel_position(self.image.wcs)
+            pixel_position = star.pixel_position(self.frame.wcs)
 
             # -- Checking for foreground or surroudings of galaxy --
 
@@ -285,7 +283,8 @@ class StarFinder(Configurable):
             if self.ignore_mask is not None: star.ignore = self.ignore_mask.masks(pixel_position)
 
             # If the input mask masks this star's position, skip it (don't add it to the list of stars)
-            if "bad" in self.image.masks and self.image.masks.bad.masks(pixel_position): continue
+            #if "bad" in self.image.masks and self.image.masks.bad.masks(pixel_position): continue
+            if self.bad_mask is not None and self.bad_mask.masks(pixel_position): continue
 
             # Don't add stars which are indicated as 'not stars'
             if self.config.manual_indices.not_stars is not None and i in self.config.manual_indices.not_stars: continue
@@ -318,7 +317,7 @@ class StarFinder(Configurable):
             if star.ignore: continue
 
             # Find a source
-            try: star.find_source(self.image.frames.primary, self.config.detection)
+            try: star.find_source(self.frame, self.config.detection)
             except Exception as e:
 
                 import traceback
@@ -332,7 +331,7 @@ class StarFinder(Configurable):
                     if star.has_track_record: star.track_record.plot()
                     else: log.warning("Track record is not enabled")
 
-                log.error("Continuing with next source")
+                log.error("Continuing with next source ...")
 
         # Inform the user
         log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.stars), self.have_source / len(self.stars) * 100.0))
@@ -358,10 +357,10 @@ class StarFinder(Configurable):
             if not star.has_source and self.config.fitting.fit_if_undetected:
 
                 # Get the parameters of the circle
-                ellipse = star.ellipse(self.image.wcs, self.image.frames.primary.xy_average_pixelscale, self.config.fitting.initial_radius)
+                ellipse = star.ellipse(self.frame.wcs, self.frame.xy_average_pixelscale, self.config.fitting.initial_radius)
 
                 # Create a source object
-                source = Source.from_ellipse(self.image.frames.primary, ellipse, self.config.fitting.background_outer_factor)
+                source = Source.from_ellipse(self.frame, ellipse, self.config.fitting.background_outer_factor)
 
             else: source = None
 
@@ -410,13 +409,35 @@ class StarFinder(Configurable):
             # If this star should be ignored, skip it
             if star.ignore: continue
 
-            # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
-            # Note: I forgot why we would ever want to do this ...
-            if not self.config.removal.remove_foreground and self.galaxy_finder.mask.masks(star.pixel_position(self.image.wcs)): continue
-
             # Remove the star in the frame
-            force = self.config.manual_indices.remove_stars is not None and star.index in self.config.manual_indices.remove_stars
-            star.remove(self.image.frames.primary, self.mask, self.config.removal, default_fwhm, force=force)
+            star.remove(self.frame, self.mask, self.config.removal, default_fwhm)
+
+    # -----------------------------------------------------------------
+
+    def adjust_sources(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adjusting the star sources to the same sigma level ...")
+
+        # Calculate the default FWHM, for the stars for which a model was not found
+        default_fwhm = self.fwhm
+
+        # Loop over all stars
+        for star in self.stars:
+
+            # If this star should be ignored, skip it
+            if star.ignore: continue
+
+            # If this star does not have a source, skip it
+            if not star.has_source: continue
+
+            # Create a source for the desired sigma level and outer factor
+            star.source = star.source_at_sigma_level(self.frame, default_fwhm, self.config.source_psf_sigma_level, self.config.source_outer_factor)
 
     # -----------------------------------------------------------------
 
@@ -439,7 +460,7 @@ class StarFinder(Configurable):
         # Set the number of stars where saturation was removed to zero initially
         success = 0
 
-        star_mask = self.star_region.to_mask(self.image.xsize, self.image.ysize)
+        star_mask = self.star_region.to_mask(self.frame.xsize, self.frame.ysize)
 
         if self.config.saturation.only_brightest:
 
@@ -489,10 +510,6 @@ class StarFinder(Configurable):
                 # Skip this star if its flux is lower than the threshold
                 if flux < flux_threshold: continue
 
-            # If remove_foreground is disabled and the star's position falls within the galaxy mask, we skip it
-            # Note: I forgot why we would ever want to do this ...
-            #if not self.config.saturation.remove_foreground and self.galaxy_finder.mask.masks(star.pixel_position(self.image.wcs)): continue
-
             # If a model was not found for this star, skip it unless the remove_if_not_fitted flag is enabled
             if not star.has_model and not self.config.saturation.remove_if_not_fitted: continue
             if star.has_model: assert star.has_source
@@ -503,7 +520,7 @@ class StarFinder(Configurable):
             if not star.has_source and not self.config.saturation.remove_if_undetected: continue
 
             # Find a saturation source and remove it from the frame
-            star.find_saturation(self.image.frames.primary, self.config.saturation, default_fwhm, star_mask)
+            star.find_saturation(self.frame, self.config.saturation, default_fwhm, star_mask)
             success += star.has_saturation
 
         # Inform the user
@@ -531,7 +548,7 @@ class StarFinder(Configurable):
         for star in self.stars:
 
             # Get the center in pixel coordinates
-            center = star.pixel_position(self.image.wcs)
+            center = star.pixel_position(self.frame.wcs)
 
             # Determine the color, based on the detection level
             if star.has_model: color = "blue"
@@ -542,7 +559,7 @@ class StarFinder(Configurable):
             fwhm = default_fwhm if not star.has_model else star.fwhm
 
             # Calculate the radius in pixels
-            radius = fwhm * statistics.fwhm_to_sigma * self.config.removal.sigma_level
+            radius = fwhm * statistics.fwhm_to_sigma * self.config.source_psf_sigma_level
 
             # Convert the star index to a string
             text = str(star.index)
@@ -632,45 +649,6 @@ class StarFinder(Configurable):
 
                 # Add the star segment to the segmentation map
                 self.segments[star.source.y_slice, star.source.x_slice][star.source.mask] = star.index
-
-    # -----------------------------------------------------------------
-
-    def write_statistics(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the full path to the statistics file
-        path = self.full_output_path(self.config.writing.statistics_path)
-
-        # Inform the user
-        log.info("Writing stellar statistics to " + path + " ...")
-
-        # Write the catalog to file
-        tables.write(self.statistics, path)
-
-    # -----------------------------------------------------------------
-
-    def write_masked_frame(self):
-
-        """
-        This function ...
-        """
-
-        # Determine the full path to the masked frame file
-        path = self.full_output_path(self.config.writing.masked_frame_path)
-
-        # Inform the user
-        log.info("Writing masked frame to " + path + " ...")
-
-        # Create a frame where the objects are masked
-        frame = self.image.frames.primary.copy()
-        frame[self.mask] = float(self.config.writing.mask_value)
-
-        # Write out the masked frame
-        frame.save(path, origin=self.name)
 
     # -----------------------------------------------------------------
 
@@ -777,7 +755,7 @@ class StarFinder(Configurable):
         for skyobject in self.stars:
 
             # Calculate the pixel coordinate in the frame and add it to the list
-            positions.append(skyobject.pixel_position(self.image.wcs))
+            positions.append(skyobject.pixel_position(self.frame.wcs))
 
         # Return the list
         return positions
@@ -961,10 +939,10 @@ class StarFinder(Configurable):
         """
 
         # If requested, always use the FWHM defined by the frame object
-        if self.config.use_frame_fwhm and self.image.fwhm is not None:
+        if self.config.use_frame_fwhm and self.frame.fwhm is not None:
 
             # Return the FWHM in 'number of pixels'
-            return self.image.fwhm.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
+            return self.frame.fwhm.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
 
         # If the list of FWHM values is empty (the stars were not fitted yet), return None
         if len(self.fwhms) == 0: return None

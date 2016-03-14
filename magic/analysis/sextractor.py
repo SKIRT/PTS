@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       AstroMagic -- the image editor for astronomers        **
+# **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
@@ -19,10 +19,8 @@ import subprocess
 # Import astronomical modules
 from astropy.table import Table
 
-# Import the relevant AstroMagic classes and modules
-from ..core import Frame
-
 # Import the relevant PTS classes and modules
+from ..core.frame import Frame
 from ...core.tools import inspection, filesystem
 from ...core.tools.logging import log
 

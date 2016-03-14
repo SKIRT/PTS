@@ -27,7 +27,7 @@ from ..core.source import Source
 from ..basics.mask import Mask
 from ..basics.region import Region
 from ..basics.geometry import Ellipse
-from ..tools import statistics, masks, plotting, general
+from ..tools import statistics, masks, plotting, general, interpolation
 from ..analysis import sources
 from ..train import Classifier
 from ..object.star import Star
@@ -55,12 +55,13 @@ class TrainedFinder(Configurable):
 
         # -- Attributes --
 
-        # The image (with bad and sources masks)
-        self.image = None
+        # The image frame
+        self.frame = None
 
         # Masks ...
         self.special_mask = None
         self.ignore_mask = None
+        self.bad_mask = None
 
         # Set the segmentation map to None initially
         self.segments = None
@@ -82,24 +83,26 @@ class TrainedFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, image, galaxy_finder=None, star_finder=None, special=None, ignore=None):
+    def run(self, frame, galaxy_finder=None, star_finder=None, special=None, ignore=None, bad=None):
 
         """
         This function ...
-        :param image:
+        :param frame:
         :param galaxy_finder:
         :param star_finder:
         :param special:
         :param ignore:
+        :param bad:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(image, galaxy_finder, star_finder, special, ignore)
+        self.setup(frame, galaxy_finder, star_finder, special, ignore, bad)
 
         # 2. Find sources
         self.find_sources()
 
+        # 3. Create the region
         self.create_region()
 
         # 3. Remove sources
@@ -110,25 +113,29 @@ class TrainedFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, image, galaxy_finder=None, star_finder=None, special_mask=None, ignore_mask=None):
+    def setup(self, frame, galaxy_finder=None, star_finder=None, special_mask=None, ignore_mask=None, bad_mask=None):
 
         """
         This function ...
-        :param image:
+        :param frame:
         :param galaxy_finder:
         :param star_finder:
         :param special_mask:
         :param ignore_mask:
+        :param bad_mask:
         :return:
         """
 
         # Call the setup function of the base class
         super(TrainedFinder, self).setup()
 
-        # Make a local reference to the image
-        self.image = image
+        # Make a local reference to the image frame
+        self.frame = frame
+
+        # Masks
         self.special_mask = special_mask
         self.ignore_mask = ignore_mask
+        self.bad_mask = bad_mask
 
         # Make local references to the galaxy and star extractors
         self.galaxy_finder = galaxy_finder
@@ -183,9 +190,9 @@ class TrainedFinder(Configurable):
             if special: source.plot(title="Estimated background for source")
 
             # Replace the frame with the estimated background
-            source.background.replace(self.image.frames.primary, where=source.mask)
+            source.background.replace(self.frame, where=source.mask)
 
-            if special: plotting.plot_box(self.image.frames.primary[source.cutout.y_slice, source.cutout.x_slice], title="Replaced frame inside this box")
+            if special: plotting.plot_box(self.frame[source.cutout.y_slice, source.cutout.x_slice], title="Replaced frame inside this box")
 
     # -----------------------------------------------------------------
 
@@ -219,8 +226,8 @@ class TrainedFinder(Configurable):
             min_fwhm = min(fwhms)
             max_fwhm = max(fwhms)
         else:
-            if self.star_finder.config.use_frame_fwhm and self.image.fwhm is not None:
-                fwhm = self.image.fwhm.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
+            if self.star_finder.config.use_frame_fwhm and self.frame.fwhm is not None:
+                fwhm = self.frame.fwhm.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
             else: fwhm = self.star_finder.fwhm
             min_fwhm = fwhm * 0.5
             max_fwhm = fwhm * 1.5
@@ -236,7 +243,7 @@ class TrainedFinder(Configurable):
             if source.has_peak or self.config.classification.fitting.fit_if_undetected:
 
                 # Create sky coordinate from the peak position
-                position = SkyCoord.from_pixel(source.peak.x, source.peak.y, self.image.wcs, mode="wcs")
+                position = SkyCoord.from_pixel(source.peak.x, source.peak.y, self.frame.wcs, mode="wcs")
 
                 # Create star object
                 index = None
@@ -298,13 +305,13 @@ class TrainedFinder(Configurable):
 
             # Create a source
             ellipse = Ellipse(contour.center, contour.radius * expansion_factor, contour.angle)
-            source = Source.from_ellipse(self.image.frames.primary, ellipse, self.config.aperture_removal.background_outer_factor)
+            source = Source.from_ellipse(self.frame, ellipse, self.config.aperture_removal.background_outer_factor)
 
             # Estimate the background for the source
             source.estimate_background("local_mean", True)
 
             # Replace the frame in the appropriate area with the estimated background
-            source.background.replace(self.image.frames.primary, where=source.mask)
+            source.background.replace(self.frame, where=source.mask)
 
     # -----------------------------------------------------------------
 
@@ -327,26 +334,31 @@ class TrainedFinder(Configurable):
         """
 
         mask = Mask(self.galaxy_finder.segments) + Mask(self.star_finder.segments)
+        data = self.frame.copy()
+        data[mask] = 0.0
 
-        frame = self.image.frames.primary.copy()
+        #mask = Mask(self.galaxy_finder.segments)
+        #star_mask = Mask(self.star_finder.segments)
 
-        frame[mask] = 0.0
+        #data = interpolation.in_paint(self.image.frames.primary, star_mask) # Interpolate over stars
+        #data[mask] = 0.0 # set galaxies to zero
 
         # Create the sigma-clipped mask
-        if "bad" in self.image.masks: mask += self.image.masks.bad
-        clipped_mask = statistics.sigma_clip_mask(frame, 3.0, mask)
+        if self.bad_mask is not None: mask += self.bad_mask
+
+        clipped_mask = statistics.sigma_clip_mask(data, 3.0, mask)
 
         # Calculate the median sky value and the standard deviation
-        median = np.median(np.ma.masked_array(frame, mask=clipped_mask).compressed())
-        stddev = np.ma.masked_array(frame, mask=clipped_mask).std()
+        median = np.median(np.ma.masked_array(data, mask=clipped_mask).compressed())
+        stddev = np.ma.masked_array(data, mask=clipped_mask).std()
 
         # Calculate the detection threshold
         threshold = median + (3.0 * stddev)
 
         #kernel = self.star_finder.kernel # doesn't work when there was no star extraction on the image, self.star_finder does not have attribute image thus cannot give image.fwhm
-        if self.star_finder.config.use_frame_fwhm and self.image.fwhm is not None:
+        if self.star_finder.config.use_frame_fwhm and self.frame.fwhm is not None:
 
-            fwhm = self.image.fwhm.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
+            fwhm = self.frame.fwhm.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
             sigma = fwhm * statistics.fwhm_to_sigma
             kernel = Gaussian2DKernel(sigma)
 
@@ -354,28 +366,28 @@ class TrainedFinder(Configurable):
 
         try:
             # Create a segmentation map from the frame
-            self.segments = Frame(detect_sources(frame, threshold, npixels=5, filter_kernel=kernel).data)
+            self.segments = Frame(detect_sources(data, threshold, npixels=5, filter_kernel=kernel).data)
         except RuntimeError:
 
             log.debug("Runtime error during detect_sources ...")
-            log.debug("kernel = " + str(kernel))
+            #log.debug("kernel = " + str(kernel))
 
-            conv_mode = 'constant'
-            conv_val = 0.0
-            image = ndimage.convolve(self.image.frames.primary, kernel.array, mode=conv_mode, cval=conv_val)
+            #conv_mode = 'constant'
+            #conv_val = 0.0
+            #image = ndimage.convolve(data, kernel.array, mode=conv_mode, cval=conv_val)
 
-            log.debug("median = " + str(median))
-            log.debug("stddev = " + str(stddev))
+            #log.debug("median = " + str(median))
+            #log.debug("stddev = " + str(stddev))
 
             #print("image=", image)
-            log.debug("image.ndim = " + str(image.ndim))
-            log.debug("type image = " + type(image))
-            log.debug("image.shape = "+ str(image.shape))
-            log.debug("threshold = " + str(threshold))
-            image = image > threshold
-            log.debug("image.ndim = " + str(image.ndim))
-            log.debug("type image = " + str(type(image)))
-            log.debug("image.shape = " + str(image.shape))
+            #log.debug("image.ndim = " + str(image.ndim))
+            #log.debug("type image = " + type(image))
+            #log.debug("image.shape = "+ str(image.shape))
+            #log.debug("threshold = " + str(threshold))
+            #image = image > threshold
+            #log.debug("image.ndim = " + str(image.ndim))
+            #log.debug("type image = " + str(type(image)))
+            #log.debug("image.shape = " + str(image.shape))
 
         # Eliminate the principal galaxy and companion galaxies from the segments
         if self.galaxy_finder is not None:
@@ -428,7 +440,7 @@ class TrainedFinder(Configurable):
             # No: use the FWHM ! Hmm.. or not: saturation ?
 
             # Create a source from the aperture
-            source = Source.from_ellipse(self.image.frames.primary, contour, background_factor)
+            source = Source.from_ellipse(self.frame, contour, background_factor)
 
             if special: source.plot(title="Source created from contour around segment")
 
@@ -495,7 +507,7 @@ class TrainedFinder(Configurable):
         sextractor = SExtractor()
 
         # Run SExtractor on the image frame
-        sextractor.run(self.image.frames.primary)
+        sextractor.run(self.frame)
 
     # -----------------------------------------------------------------
 
@@ -522,7 +534,7 @@ class TrainedFinder(Configurable):
         for star in self.stars:
 
             # Get the center in pixel coordinates
-            center = star.pixel_position(self.image.wcs, "wcs")
+            center = star.pixel_position(self.frame.wcs, "wcs")
 
             # Determine the color, based on the detection level
             color = "blue"

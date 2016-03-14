@@ -15,13 +15,13 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# Import the relevant AstroMagic classes and modules
-from ...magic.core import Frame
-from ...magic.basics import CoordinateSystem, Mask, SkyRegion
-from ...magic.extract.finalization import ExtractionFinalizer
-from ...magic.subtract import SkySubtractor
-
 # Import the relevant PTS classes and modules
+from ...magic.core.frame import Frame
+from ...magic.basics.coordinatesystem import CoordinateSystem
+from ...magic.basics.mask import Mask
+from ...magic.basics.skyregion import SkyRegion
+from ...magic.sources.extractor import SourceExtractor
+from ...magic.sky.skysubtractor import SkySubtractor
 from ...core.basics.configurable import Configurable
 from .unitconversion import UnitConverter
 from ...core.tools.logging import log

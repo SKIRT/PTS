@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       AstroMagic -- the image editor for astronomers        **
+# **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import pyregion
 from astropy.coordinates import Angle
 
-# Import the relevant AstroMagic classes and modules
+# Import the relevant PTS classes and modules
 from .vector import Position, Extent
 from .geometry import Coordinate, Line, Circle, Ellipse, Rectangle, Polygon, Composite
 from .mask import Mask

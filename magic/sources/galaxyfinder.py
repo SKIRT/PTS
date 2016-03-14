@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       AstroMagic -- the image editor for astronomers        **
+# **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
@@ -51,14 +51,17 @@ class GalaxyFinder(Configurable):
         # Initialize an empty list for the galaxies
         self.galaxies = []
 
-        # The image
-        self.image = None
+        # The image frame
+        self.frame = None
 
         # The mask covering objects that require special attentation (visual feedback)
         self.special_mask = None
 
         # The mask covering pixels that should be ignored
         self.ignore_mask = None
+
+        # The mask of bad pixels
+        self.bad_mask = None
 
         # The galactic catalog
         self.catalog = None
@@ -74,18 +77,19 @@ class GalaxyFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, image, catalog, special=None, ignore=None):
+    def run(self, frame, catalog, special=None, ignore=None, bad=None):
 
         """
         This function ...
-        :param image:
+        :param frame:
         :param catalog:
         :param special:
         :param ignore:
+        :param bad:
         """
 
         # 1. Call the setup function
-        self.setup(image, catalog, special, ignore)
+        self.setup(frame, catalog, special, ignore, bad)
 
         # 2. Find the galaxies
         self.find_galaxies()
@@ -101,14 +105,15 @@ class GalaxyFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, image, catalog, special_mask=None, ignore_mask=None):
+    def setup(self, frame, catalog, special_mask=None, ignore_mask=None, bad_mask=None):
 
         """
         This function ...
-        :param image:
+        :param frame:
         :param catalog
         :param special_mask:
         :param ignore_mask:
+        :param bad_mask:
         """
 
         # Call the setup function of the base class
@@ -117,14 +122,18 @@ class GalaxyFinder(Configurable):
         # Inform the user
         log.info("Setting up the galaxy extractor ...")
 
-        # Make a local reference to the image
-        self.image = image
+        # Make a local reference to the image frame
+        self.frame = frame
+
         self.catalog = catalog
+
+        # Masks
         self.special_mask = special_mask
         self.ignore_mask = ignore_mask
+        self.bad_mask = bad_mask
 
         # Create an empty frame for the segments
-        self.segments = Frame.zeros_like(self.image.frames.primary)
+        self.segments = Frame.zeros_like(self.frame)
 
     # -----------------------------------------------------------------
 
@@ -141,8 +150,8 @@ class GalaxyFinder(Configurable):
         # Clear the list of galaxies
         self.galaxies = []
 
-        # Clear the image
-        self.image = None
+        # Clear the frame
+        self.frame = None
 
     # -----------------------------------------------------------------
 
@@ -179,7 +188,7 @@ class GalaxyFinder(Configurable):
         for galaxy in self.galaxies:
 
             # Calculate the pixel coordinate in the frame and add it to the list
-            positions.append(galaxy.pixel_position(self.image.wcs))
+            positions.append(galaxy.pixel_position(self.frame.wcs))
 
         # Return the list
         return positions
@@ -248,12 +257,12 @@ class GalaxyFinder(Configurable):
 
                 outer_factor = self.config.detection.background_outer_factor
                 expansion_factor = self.config.detection.d25_expansion_factor
-                galaxy.source_from_parameters(self.image.frames.primary, outer_factor, expansion_factor)
+                galaxy.source_from_parameters(self.frame, outer_factor, expansion_factor)
 
             else:
 
                 # Find a source
-                try: galaxy.find_source(self.image.frames.primary, self.config.detection)
+                try: galaxy.find_source(self.frame, self.config.detection)
                 except Exception as e:
                     #import traceback
                     log.error("Error when finding source")
@@ -266,8 +275,8 @@ class GalaxyFinder(Configurable):
 
             # If a source was not found for the principal or companion galaxies, force it
             outer_factor = self.config.detection.background_outer_factor
-            if galaxy.principal and not galaxy.has_source: galaxy.source_from_parameters(self.image.frames.primary, outer_factor)
-            elif galaxy.companion and not galaxy.has_source and galaxy.has_extent: galaxy.source_from_parameters(self.image.frames.primary, outer_factor)
+            if galaxy.principal and not galaxy.has_source: galaxy.source_from_parameters(self.frame, outer_factor)
+            elif galaxy.companion and not galaxy.has_source and galaxy.has_extent: galaxy.source_from_parameters(self.frame, outer_factor)
 
         # Inform the user
         log.info("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.galaxies), self.have_source/len(self.galaxies)*100.0))
@@ -308,13 +317,13 @@ class GalaxyFinder(Configurable):
             position = SkyCoordinate(ra=ra, dec=dec, unit="deg", frame="fk5")
 
             # If the galaxy falls outside of the frame, skip it
-            if not self.image.frames.primary.contains(position): continue
+            if not self.frame.contains(position): continue
 
             # Create a new Galaxy instance
             galaxy = Galaxy(i, name, position, redshift, galaxy_type, names, distance, inclination, d25, major, minor, position_angle)
 
             # Calculate the pixel position of the galaxy in the frame
-            pixel_position = galaxy.pixel_position(self.image.wcs)
+            pixel_position = galaxy.pixel_position(self.frame.wcs)
 
             # Set other attributes
             galaxy.principal = principal
@@ -330,7 +339,7 @@ class GalaxyFinder(Configurable):
             if self.ignore_mask is not None: galaxy.ignore = self.ignore_mask.masks(pixel_position)
 
             # If the input mask masks this star's position, skip it (don't add it to the list of stars)
-            if "bad" in self.image.masks and self.image.masks.bad.masks(pixel_position): continue
+            if self.bad_mask is not None and self.bad_mask.masks(pixel_position): continue
 
             # Add the new galaxy to the list
             self.galaxies.append(galaxy)
@@ -358,20 +367,7 @@ class GalaxyFinder(Configurable):
             if galaxy.ignore: continue
 
             # If the galaxy does not have a source, continue
-            if galaxy.has_source: galaxy.find_contour(self.image.frames.primary, self.config.apertures)
-
-    # -----------------------------------------------------------------
-
-    def add_masks(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Add the masks for the principal and companion galaxies to the image
-        self.image.add_mask(self.principal_mask, "principal galaxy")
-        self.image.add_mask(self.companion_mask, "companion galaxies")
+            if galaxy.has_source: galaxy.find_contour(self.frame, self.config.apertures)
 
     # -----------------------------------------------------------------
 
@@ -384,13 +380,13 @@ class GalaxyFinder(Configurable):
         """
 
         # Get the center in pixel coordinates
-        center = self.principal.pixel_position(self.image.wcs)
+        center = self.principal.pixel_position(self.frame.wcs)
 
         # Get the angle
         angle = self.principal.pa
 
-        x_radius = 0.5 * self.principal.major.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
-        y_radius = 0.5 * self.principal.minor.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
+        x_radius = 0.5 * self.principal.major.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
+        y_radius = 0.5 * self.principal.minor.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
         radius = Extent(x_radius, y_radius)
 
         # Create and return an ellipse
@@ -410,7 +406,7 @@ class GalaxyFinder(Configurable):
         ellipse = self.principal_ellipse
 
         # Create a SkyEllipse
-        sky_ellipse = SkyEllipse.from_pixel(ellipse, self.image.wcs)
+        sky_ellipse = SkyEllipse.from_pixel(ellipse, self.frame.wcs)
 
         # Return the sky ellipse
         return sky_ellipse
@@ -426,7 +422,7 @@ class GalaxyFinder(Configurable):
         """
 
         # Create a new mask with the dimensions of the frame
-        mask = Mask.empty_like(self.image.frames.primary)
+        mask = Mask.empty_like(self.frame)
 
         # Add the principal galaxy's mask to the total mask
         mask[self.principal.source.cutout.y_slice, self.principal.source.cutout.x_slice] = self.principal.source.mask
@@ -445,7 +441,7 @@ class GalaxyFinder(Configurable):
         """
 
         # Create a new mask with the dimension of the frame
-        mask = Mask.empty_like(self.image.frames.primary)
+        mask = Mask.empty_like(self.frame)
 
         # Loop over all companion galaxies
         for galaxy in self.companions:
@@ -500,7 +496,9 @@ class GalaxyFinder(Configurable):
         for galaxy in self.galaxies:
 
             # Get the center in pixel coordinates
-            center = galaxy.pixel_position(self.image.wcs)
+            center = galaxy.pixel_position(self.frame.wcs)
+
+            print(galaxy.pa)
 
             # Set the angle
             angle = galaxy.pa.degree if galaxy.pa is not None else 0.0
@@ -516,15 +514,15 @@ class GalaxyFinder(Configurable):
 
                 color = "green"
 
-                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
+                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
                 y_radius = x_radius
 
             else:
 
                 color = "green"
 
-                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
-                y_radius = 0.5 * galaxy.minor.to("arcsec").value / self.image.frames.primary.xy_average_pixelscale.to("arcsec/pix").value
+                x_radius = 0.5 * galaxy.major.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
+                y_radius = 0.5 * galaxy.minor.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
 
             radius = Extent(x_radius, y_radius)
 

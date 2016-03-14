@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import argparse
 
-# Import the relevant AstroMagic classes and modules
+# Import the relevant PTS classes and modules
 from pts.magic.misc.imageimporter import ImageImporter
 from pts.magic.tools import interpolation
 from pts.magic.core.frame import Frame

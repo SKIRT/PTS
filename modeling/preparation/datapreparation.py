@@ -21,11 +21,9 @@ import urllib
 # Import astronomical modules
 from astroquery.irsa_dust import IrsaDust
 
-# Import the relevant AstroMagic classes and modules
-from ...magic import ImageImporter
-from ...magic.core import Image
-
 # Import the relevant PTS classes and modules
+from ...magic.misc.imageimporter import ImageImporter
+from ...magic.core.image import Image
 from .component import PreparationComponent
 from .imagepreparation import ImagePreparer
 from ...core.tools import filesystem, tables

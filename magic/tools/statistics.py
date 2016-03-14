@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       AstroMagic -- the image editor for astronomers        **
+# **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
@@ -19,7 +19,7 @@ import numpy as np
 # Import astronomical modules
 from astropy.stats import sigma_clip, sigma_clipped_stats
 
-# Import the relevant AstroMagic classes and modules
+# Import the relevant PTS classes and modules
 from . import general
 from ..basics.mask import Mask
 

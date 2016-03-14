@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       AstroMagic -- the image editor for astronomers        **
+# **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
@@ -57,6 +57,7 @@ def in_paint(data, mask, method="localmean"):
     This function ...
     :param data:
     :param mask:
+    :param method:
     :return:
     """
 

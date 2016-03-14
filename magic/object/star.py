@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       AstroMagic -- the image editor for astronomers        **
+# **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from astropy import units as u
 from astropy.coordinates import Angle
 
-# Import the relevant AstroMagic classes and modules
+# Import the relevant PTS classes and modules
 from .skyobject import SkyObject
 from ..core.box import CutoutMask
 from ..core.source import Source
@@ -225,11 +225,23 @@ class Star(SkyObject):
             center = self.pixel_position(frame.wcs)
 
         # Create the new source
-        ellipse = Ellipse(center, radius, Angle(0.0, "deg"))
+        ellipse = Ellipse(center, radius)
         source = Source.from_ellipse(frame, ellipse, outer_factor, shape=shape)
 
         # Set peak to that of the previous source
         source.peak = self.source.peak if self.source is not None else None
+
+        # Set the model to that of the previous source
+        if self.model is not None:
+
+            x_min = self.source.x_min
+            y_min = self.source.y_min
+            x_shift = x_min - source.x_min
+            y_shift = y_min - source.y_min
+            shifted_model = fitting.shifted_model(self.model, x_shift, y_shift)
+
+            # Set the new model
+            source.model = shifted_model
 
         # Return the new source
         return source
@@ -391,7 +403,7 @@ class Star(SkyObject):
             if self.special: log.debug("Initial saturation source found")
 
             # Calculate the elliptical contour
-            contour = sources.find_contour(saturation_source.cutout, saturation_source.mask, config.apertures.sigma_level)
+            contour = sources.find_contour(saturation_source.mask.astype(int), saturation_source.mask, config.apertures.sigma_level)
 
             # Check whether the source centroid matches the star position
             if config.check_centroid:
@@ -454,7 +466,8 @@ class Star(SkyObject):
 
                 # Find all of the saturation light in a second segmentation step
                 saturation_source = sources.find_source_segmentation(frame, ellipse, config, track_record=self.track_record, special=self.special, sigma_level=config.second_sigma_level)
-                contour = sources.find_contour(saturation_source.cutout, saturation_source.mask, config.apertures.sigma_level)
+                #contour = sources.find_contour(saturation_source.cutout, saturation_source.mask, config.apertures.sigma_level)
+                contour = sources.find_contour(saturation_source.mask.astype(int), saturation_source.mask, config.apertures.sigma_level) # determine the segment properties of the actual mask segment
 
                 # Check whether the source centroid matches the star position
                 if config.check_centroid:

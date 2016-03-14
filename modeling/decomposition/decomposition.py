@@ -27,13 +27,11 @@ from ..preparation import unitconversion
 from ...core.basics.errorbar import ErrorBar
 from ...core.simulation.arguments import SkirtArguments
 from ...core.simulation.execute import SkirtExec
-
-# Import the relevant AstroMagic classes and modules
 from ...magic.tools import catalogs
-from ...magic.basics import Extent
+from ...magic.basics.vector import Extent
 from ...magic.basics.skygeometry import SkyEllipse, SkyCoord
-from ...magic.basics import SkyRegion
-from ...magic.core import Frame
+from ...magic.basics.skyregion import SkyRegion
+from ...magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 

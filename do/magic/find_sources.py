@@ -109,13 +109,19 @@ bad_region_path = filesystem.join(input_path, arguments.bad) if arguments.bad is
 importer = ImageImporter()
 importer.run(image_path, bad_region_path=bad_region_path)
 
+# Get the image
+image = importer.image
+
+# Get the mask of bad pixels
+bad_mask = image.masks.bad if "bad" in image.masks else None
+
 # -----------------------------------------------------------------
 
 # Create a CatalogImporter instance
 catalog_importer = CatalogImporter()
 
 # Run the catalog importer
-catalog_importer.run(importer.image.frames.primary) # work with coordinate box instead ? image.coordinate_box ?
+catalog_importer.run(image.frames.primary) # work with coordinate box instead ? image.coordinate_box ?
 
 # -----------------------------------------------------------------
 
@@ -157,7 +163,7 @@ else: ignore_region = None
 finder = SourceFinder.from_arguments(arguments)
 
 # Run the source finder
-finder.run(importer.image, catalog_importer.galactic_catalog, catalog_importer.stellar_catalog, special_region, ignore_region)
+finder.run(image.frames.primary, catalog_importer.galactic_catalog, catalog_importer.stellar_catalog, special_region, ignore_region, bad_mask)
 
 # -----------------------------------------------------------------
 

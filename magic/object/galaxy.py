@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       AstroMagic -- the image editor for astronomers        **
+# **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from astropy import units as u
 from astropy.coordinates import Angle
 
-# Import the relevant AstroMagic classes and modules
+# Import the relevant PTS classes and modules
 from ..core.source import Source
 from .skyobject import SkyObject
 from ..basics.vector import Extent
@@ -147,7 +147,7 @@ class Galaxy(SkyObject):
         :return:
         """
 
-        if self.pa is None: angle = Angle(0.0, u.Unit("deg"))
+        if self.pa is None: angle = Angle(0.0, "deg")
         else: angle = self.pa
 
         if self.major is None:

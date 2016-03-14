@@ -16,9 +16,10 @@ from __future__ import absolute_import, division, print_function
 import os
 import argparse
 
-# Import the relevant AstroMagic classes and modules
-from pts.magic.core import Frame
-from pts.magic.basics import Region, Mask
+# Import the relevant PTS classes and modules
+from pts.magic.core.frame import Frame
+from pts.magic.basics.region import Region
+from pts.magic.basics.mask import Mask
 
 # -----------------------------------------------------------------
 

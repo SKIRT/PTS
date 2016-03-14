@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
-# **       AstroMagic -- the image editor for astronomers        **
+# **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
@@ -21,7 +21,7 @@ from scipy import ndimage
 # Import astronomical modules
 from astropy.modeling import models, fitting
 
-# Import the relevant AstroMagic classes and modules
+# Import the relevant PTS classes and modules
 from . import general, statistics
 from ..basics.vector import Position, Extent
 

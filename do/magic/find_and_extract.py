@@ -114,6 +114,9 @@ importer.run(image_path, bad_region_path=bad_region_path)
 # Get the imported image
 image = importer.image
 
+# Get the mask of bad pixels
+bad_mask = image.masks.bad if "bad" in image.masks else None
+
 # -----------------------------------------------------------------
 
 # Inform the user
@@ -168,7 +171,7 @@ log.info("Running the source finder ...")
 finder = SourceFinder.from_arguments(arguments)
 
 # Run the extractor
-finder.run(image, catalog_importer.galactic_catalog, catalog_importer.stellar_catalog, special_region, ignore_region)
+finder.run(image.frames.primary, catalog_importer.galactic_catalog, catalog_importer.stellar_catalog, special_region, ignore_region, bad_mask)
 
 # -----------------------------------------------------------------
 

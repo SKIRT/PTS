@@ -280,6 +280,7 @@ def make_star_model(shape, data, annuli_mask, fit_mask, background_outer_sigmas,
     :param background_inner_sigmas:
     :param background_outer_sigmas:
     :param fit_sigmas:
+    :param model_name:
     :param upsample_factor:
     :param interpolate_background:
     :param sigma_clip_background:
@@ -362,6 +363,10 @@ def find_source(frame, ellipse, config, track_record=None, special=False):
 
     """
     This function ...
+    :param frame:
+    :param ellipse:
+    :param track_record:
+    :param special:
     :return:
     """
 

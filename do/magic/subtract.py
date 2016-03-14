@@ -26,17 +26,27 @@ from pts.core.tools import configuration
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
+
+# Basic
 parser.add_argument("image", type=str, help="the name of the input image")
+
+# Logging
+parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
+parser.add_argument('--report', action='store_true', help='write a report file')
+
+
 parser.add_argument("mask", type=str, help="the name of the mask image resulting from the extraction procedure")
 parser.add_argument("galaxies", type=str, help="the name of the file specifying the galaxy regions")
-parser.add_argument("saturation", type=str, nargs='?', help="the name of the file specifying the saturation regions", default=None)
+
+#parser.add_argument("saturation", type=str, nargs='?', help="the name of the file specifying the saturation regions", default=None)
+
 parser.add_argument('--config', type=str, help='the name of a configuration file')
 parser.add_argument("--settings", type=configuration.from_string, help="settings")
 parser.add_argument("-i", "--input", type=str, help="the name of the input directory")
 parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
+
 parser.add_argument("--bad", type=str, help="the name of the file specifying regions that have to be added to the mask of bad pixels")
-parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
-parser.add_argument('--report', action='store_true', help='write a report file')
+
 
 # Parse the command line arguments
 arguments = parser.parse_args()

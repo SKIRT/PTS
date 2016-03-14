@@ -15,13 +15,11 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# Import the relevant AstroMagic classes and modules
-from ...magic.core import Image
-from ...magic.tools import headers
-from ...magic.basics import Mask
-from ...magic.basics.skyregion import SkyRegion
-
 # Import the relevant PTS classes and modules
+from ...magic.core.image import Image
+from ...magic.tools import headers
+from ...magic.basics.mask import Mask
+from ...magic.basics.skyregion import SkyRegion
 from .component import PhotometryComponent
 from .sedfetching import SEDFetcher
 from ...core.tools import filesystem

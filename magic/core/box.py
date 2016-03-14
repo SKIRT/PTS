@@ -96,7 +96,7 @@ class CutoutMask(np.ndarray):
         if rel_x_min < 0 or rel_y_min < 0 or rel_x_max > self.xsize or rel_y_max > self.ysize:
 
             # Create box
-            new = np.zeros((self.ysize, self.xsize))
+            new = np.zeros((cutout.ysize, cutout.xsize))
             if padding_value != 0: new[:,:] = padding_value
 
             # Normal:

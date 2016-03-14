@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ..basics.mask import Mask
 from ..core.source import Source
-from ..tools import interpolation
 from ...core.tools.logging import log
 from ...core.basics.configurable import Configurable
 
@@ -150,104 +149,6 @@ class SourceExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_mask(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the mask of sources to extract ...")
-
-        # Debugging info
-        log.debug("Adding galaxies to the mask ...")
-
-        # Add the galaxies to the mask
-        self.mask += self.galaxy_segments == 3
-        if self.config.remove_companions: self.mask += self.galaxy_segments == 2
-
-        # Debugging info
-        log.debug("Adding stars (including saturation) to the mask ...")
-
-        # Initialize a list for the star indices that are present in the star region
-        star_indices = set()
-
-        # Loop over all stars in the region
-        for shape in self.star_region:
-
-            # Ignore shapes without text, these should be just the positions of the peaks
-            if "text" not in shape.meta: continue
-
-            # Ignore shapes with color red (stars without source)
-            if shape.meta["color"] == "red": continue
-
-            # Get the star index
-            index = int(shape.meta["text"])
-            star_indices.add(index)
-
-            # Get the star position
-            #position = shape.center
-            # Check whether the star is a foreground star
-            #if self.principal_mask.masks(position):
-                # FOREGROUND STARS: create sources, because the background is estimated by fitting a polynomial to
-                # pixels in annulus around shape
-                #source_mask = star_segments == index # not necessary, the source is created from the ellipse so
-                # the star mask is created again
-                # Create a source from the shape
-                #source = Source.from_ellipse(self.image.frames.primary, shape, 1.3)
-                #source.estimate_background("polynomial", sigma_clip=True)
-                # Add the source to the dictionary, with a key that is the star index (so that the source for this star
-                # can be replaced by the saturation source, if any
-                #self.foreground_stars_sources[index] = source
-            # Not a foreground star
-            #else: self.other_stars_mask += star_segments == index
-
-            # Create a mask from the shape and add it to the total mask
-            self.mask += shape.to_mask(self.frame.xsize, self.frame.ysize)
-
-        # Add the saturation sources
-        # Loop over the shapes in the saturation region
-        for shape in self.saturation_region:
-
-            # Shapes without text are drawn by the user, always add them to the mask
-            if "text" not in shape.meta: self.mask += shape.to_mask(self.frame.xsize, self.frame.ysize)
-
-            else:
-
-                # Get the star index
-                index = int(shape.meta["text"])
-
-                # If this star index is not in the star_indices list (the star is removed from the star region by the user),
-                # ignore it (don't add the saturation mask for it)
-                if index not in star_indices: continue
-
-                # Get the star position
-                #position = shape.center
-                # Check whether the star is a foreground star
-                #if self.principal_mask.masks(position):
-                    # Create a source from the shape
-                    #source = Source.from_ellipse(self.image.frames.primary, shape, 1.3)
-                    # Set the source mask
-                    #source.mask = saturation_segments == index
-                    # Estimate the background
-                    #source.estimate_background("polynomial", True)
-                    # Replace the star source by the saturation source
-                    #self.foreground_stars_sources[index] = source
-                # Not a foreground star
-                #else: self.other_stars_mask += saturation_segments == index
-
-                # Add the segment to the mask
-                self.mask += self.star_segments == index
-
-        # Debugging info
-        log.debug("Adding other sources to the mask ...")
-
-        # Add all segments to the mask
-        self.mask += Mask(self.other_segments)
-
-    # -----------------------------------------------------------------
-
     def load_sources(self):
 
         """
@@ -288,7 +189,7 @@ class SourceExtractor(Configurable):
             if label == 3 or (label == 2 and self.config.remove_companions):
 
                 # Create a source and add it to the list
-                source = Source.from_shape(self.frame, shape, 1.3)
+                source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
                 self.sources.append(source)
 
     # -----------------------------------------------------------------
@@ -315,6 +216,9 @@ class SourceExtractor(Configurable):
             # Look whether a saturation source is present
             saturation_source = None
 
+            # Check whether the star is a foreground star
+            #if self.principal_mask.masks(shape.center): foreground = True
+
             # Add the saturation sources
             # Loop over the shapes in the saturation region
             for j in range(len(self.saturation_region)):
@@ -331,7 +235,7 @@ class SourceExtractor(Configurable):
                     saturation_shape = self.saturation_region.pop(j)
 
                     # Create saturation source
-                    saturation_source = Source.from_shape(self.frame, saturation_shape, 1.3)
+                    saturation_source = Source.from_shape(self.frame, saturation_shape, self.config.source_outer_factor)
 
                     # Replace the saturation mask
                     segments_cutout = self.star_segments[saturation_source.y_slice, saturation_source.x_slice]
@@ -343,25 +247,14 @@ class SourceExtractor(Configurable):
 
             if saturation_source is not None:
 
+                # Add the saturation source
                 self.sources.append(saturation_source)
 
             else:
 
-                source = Source.from_shape(self.frame, shape, 1.3)
-
+                # Create a new source from the shape and add it
+                source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
                 self.sources.append(source)
-
-        # Remove remaining shapes: drawn by the user, always remove them
-        #for shape in self.saturation_region:
-
-            # Shapes without text are drawn by the user, always add them to the mask
-            #self.mask += shape.to_mask(self.frame.xsize, self.frame.ysize)
-
-            # Create source
-            #source = Source.from_shape(self.frame, shape, 1.3)
-
-            # Add the source to the list
-            #self.sources.append(source)
 
     # -----------------------------------------------------------------
 
@@ -378,7 +271,7 @@ class SourceExtractor(Configurable):
             label = int(shape.meta["text"])
 
             # Create a source
-            source = Source.from_shape(self.frame, shape, 1.3)
+            source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
 
             # Replace the source mask
             segments_cutout = self.other_segments[source.y_slice, source.x_slice]
@@ -412,7 +305,7 @@ class SourceExtractor(Configurable):
 
             # Estimate the background
             try:
-                source.estimate_background("biharmonic", True)
+                source.estimate_background(self.config.interpolation_method, True)
             except ValueError: # ValueError: zero-size array to reduction operation minimum which has no identity
                 # in: limits = (np.min(known_points), np.max(known_points)) [inpaint_biharmonic]
                 count += 1
