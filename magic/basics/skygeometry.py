@@ -180,7 +180,7 @@ class SkyEllipse(object):
         :return:
         """
 
-        if isinstance(angle, float) or isinstance(angle, int): angle = Angle(0.0, "deg")
+        if isinstance(angle, float) or isinstance(angle, int): angle = Angle(angle, "deg")
 
         self.center = center
         self.radius = radius
@@ -419,7 +419,7 @@ class SkyRectangle(object):
         :return:
         """
 
-        if isinstance(angle, float) or isinstance(angle, int): angle = Angle(0.0, "deg")
+        if isinstance(angle, float) or isinstance(angle, int): angle = Angle(angle, "deg")
 
         self.center = center
         self.radius = radius

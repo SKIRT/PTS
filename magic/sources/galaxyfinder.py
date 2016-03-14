@@ -498,10 +498,8 @@ class GalaxyFinder(Configurable):
             # Get the center in pixel coordinates
             center = galaxy.pixel_position(self.frame.wcs)
 
-            print(galaxy.pa)
-
             # Set the angle
-            angle = galaxy.pa.degree if galaxy.pa is not None else 0.0
+            angle = galaxy.pa.to("deg") if galaxy.pa is not None else 0.0
 
             if galaxy.major is None:
 

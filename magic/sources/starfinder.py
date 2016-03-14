@@ -244,7 +244,7 @@ class StarFinder(Configurable):
             position = SkyCoordinate(ra=ra, dec=dec, unit="deg", frame="fk5")
 
             # If the stars falls outside of the frame, skip it
-            if not self.frame.frames.primary.contains(position): continue
+            if not self.frame.contains(position): continue
 
             # Create a star object
             star = Star(i, catalog=catalog, id=star_id, position=position, ra_error=ra_error,
