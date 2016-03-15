@@ -149,7 +149,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Loading the images ...")
 
         # Loop over all directories in the preparation directory
-        for directory_path, directory_name in filesystem.directories_in_path(self.prep_path, returns="both"):
+        for directory_path, directory_name in filesystem.directories_in_path(self.prep_path, returns=["path", "name"]):
 
             # If only a single image has to be processed, skip the other images
             if self.config.single_image is not None and directory_name != self.config.single_image: continue

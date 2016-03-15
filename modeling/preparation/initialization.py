@@ -18,10 +18,46 @@ from astropy.units import Unit
 # Import the relevant PTS classes and modules
 from .component import PreparationComponent
 from ...magic.sources.finder import SourceFinder
-from ...core.tools import filesystem, tables
+from ...core.tools import filesystem
 from ...core.tools.logging import log
 from ...magic.misc.imageimporter import ImageImporter
 from ...magic.catalog.importer import CatalogImporter
+from ...magic.core.image import Image
+from ...magic.core.frame import Frame
+
+# -----------------------------------------------------------------
+
+# Reference: Common-Resolution Convolution Kernels for Space- and Ground-Based Telescopes (G. Aniano et. al)
+fwhms = {"GALEX FUV": 4.48 * Unit("arcsec"),
+         "GALEX NUV": 5.05 * Unit("arcsec"),
+         "Mosaic Halpha": 2.0 * Unit("arcsec"),
+         "IRAC I1": 1.90 * Unit("arcsec"),
+         "IRAC I2": 1.81 * Unit("arcsec"),
+         "IRAC I3": 2.11 * Unit("arcsec"),
+         "IRAC I4": 2.82 * Unit("arcsec"),
+         "WISE W1": 5.79 * Unit("arcsec"),
+         "WISE W2": 6.37 * Unit("arcsec"),
+         "WISE W3": 6.60 * Unit("arcsec"),
+         "WISE W4": 11.89 * Unit("arcsec"),
+         "MIPS 24mu": 6.43 * Unit("arcsec"),
+         "MIPS 70mu": 18.74 * Unit("arcsec"),
+         "MIPS 160mu": 38.78 * Unit("arcsec"),
+         "Pacs blue": 5.67 * Unit("arcsec"),
+         "Pacs green": 7.04 * Unit("arcsec"),
+         "Pacs red": 11.18 * Unit("arcsec"),
+         "SPIRE PSW_ext": 18.15 * Unit("arcsec"),
+         "SPIRE PMW_ext": 24.88 * Unit("arcsec"),
+         "SPIRE PLW_ext": 36.09 * Unit("arcsec")}
+
+# -----------------------------------------------------------------
+
+# The total H-alpha flux (reference: FAR-ULTRAVIOLET AND Ha IMAGING OF NEARBY SPIRAL GALAXIES: THE OB STELLAR,
+# POPULATION IN THE DIFFUSE IONIZED GAS (Hoopes et. al 2001)
+halpha_flux = 7.8e40 * Unit("erg/s")
+
+# -----------------------------------------------------------------
+
+reference_image = "Pacs red"
 
 # -----------------------------------------------------------------
 
@@ -44,8 +80,11 @@ class DataInitializer(PreparationComponent):
 
         # -- Attributes --
 
-        # The list of images
-        self.images = []
+        # The paths of the images to be processed
+        self.paths = []
+
+        # The reference image frame
+        self.reference = None
 
     # -----------------------------------------------------------------
 
@@ -58,7 +97,11 @@ class DataInitializer(PreparationComponent):
         :return:
         """
 
-        pass
+        # Create a new DataInitializer instance
+        initializer = cls()
+
+        # Return the data initializer
+        return initializer
 
     # -----------------------------------------------------------------
 
@@ -73,13 +116,16 @@ class DataInitializer(PreparationComponent):
         self.setup()
 
         # 2. Load the images
-        self.load_images()
+        self.load_reference_image()
 
-        # 3. Identify the sources in the images
-        self.find_sources()
+        # 3. Get the galactic and stellar catalogs
+        self.get_catalogs()
 
-        # 4. Write
-        self.write()
+        # 4. Check which images should be processed
+        self.check_images()
+
+        # 4. Process the images (identify sources, create error frames)
+        self.process_images()
 
     # -----------------------------------------------------------------
 
@@ -102,64 +148,16 @@ class DataInitializer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def load_images(self):
+    def load_reference_image(self):
 
         """
         This function ...
         :return:
         """
 
-        # Load image information
-        info_path = filesystem.join(self.data_path, "info.dat")
-        info_table = tables.from_file(info_path)
-
-        # Loop over all files found in the data directory
-        for image_path, image_name in filesystem.files_in_path(self.data_path, extension="fits", not_contains="error", returns="both"):
-
-            # If only a single image must be prepared, check if this image matches the specified image name
-            if self.config.single_image is not None and image_name != self.config.single_image: continue
-
-            # Determine the output path for this image
-            image_output_path = filesystem.join(self.prep_path, image_name)
-
-            # Check whether this image already has an initialized image
-            final_path = filesystem.join(image_output_path, "initialized.fits")
-            if filesystem.is_file(final_path): continue
-
-            # Get the corresponding index in the information table
-            info_index = tables.find_index(info_table, image_name)
-            if info_index is None:
-                # TEMP: skip image if not defined in table !!
-                log.warning("No information about " + image_name + ": skipping")
-                continue
-
-            # Get image properties such as the unit and the FWHM of the PSF
-            unit = Unit(info_table["Unit"][info_index]) if not info_table["Unit"].mask[info_index] else None
-            fwhm = info_table["FWHM"][info_index] * Unit(info_table["FWHM unit"][info_index]) if not info_table["FWHM"].mask[info_index] else None
-
-            # Set the FWHM of the reference image so that we can set it for the convolution kernel
-            #if image_name == self.config.reference_image: self.reference_fwhm = fwhm
-
-            # Set the path to the region of bad pixels
-            bad_region_path = filesystem.join(self.data_path, "bad", image_name + ".reg")
-            if not filesystem.is_file(bad_region_path): bad_region_path = None
-
-            # Import the image
-            importer = ImageImporter()
-            importer.run(image_path, bad_region_path, unit=unit, fwhm=fwhm)
-
-            # Add the image that has to be processed to the list
-            self.images.append(importer.image)
-
-            # Clear the image importer
-            self.importer.clear()
-
-        #if self.reference_fwhm is None:
-
-            #reference_index = tables.find_index(info_table, self.config.reference_image)
-            #self.reference_fwhm = info_table["FWHM"][reference_index] * Unit(info_table["FWHM unit"][reference_index])
-
-        #assert self.reference_fwhm is not None
+        # Get the path to the reference image
+        reference_path = self.original_paths[reference_image]
+        self.reference = Frame.from_file(reference_path)
 
     # -----------------------------------------------------------------
 
@@ -173,37 +171,152 @@ class DataInitializer(PreparationComponent):
         # Inform the user
         log.info("Importing the galactic and stellar catalogs ...")
 
-        # Find the coordinate box of the largest image
-
         # Run the catalog importer
-        self.catalog_importer.run(self.image.frames.primary)
+        self.catalog_importer.run(self.reference)
 
     # -----------------------------------------------------------------
 
-    def find_sources(self):
+    def check_images(self):
 
         """
         This function ...
         :return:
         """
 
-        # Run the source finder on each image
+        # Loop over all subdirectories of the data directory
+        for path in filesystem.directories_in_path(self.data_path, not_contains="bad", returns="path"):
 
-        # Loop over the different images
-        for image in self.images:
+            # Debugging
+            log.debug("Opening " + path + " ...")
+
+            # Loop over all FITS files found in the current subdirectory
+            for image_path in filesystem.files_in_path(path, extension="fits", not_contains="_Error", returns="path"):
+
+                # Ignore the Planck data (for now)
+                if "Planck" in image_path: continue
+
+                # Name
+                image_name = filesystem.strip_extension(filesystem.name(image_path))
+
+                # Debugging
+                log.debug("Checking " + image_path + " ...")
+
+                # Determine the name used to identify this image for the preparation routines
+                prep_name = self.prep_names[image_name]
+
+                # Determine the output path for this image
+                output_path = self.prep_paths[image_name]
+
+                # Check whether this image already has an initialized image
+                final_path = filesystem.join(output_path, "initialized.fits")
+                if filesystem.is_file(final_path): continue
+
+                # Add the image path to the list
+                self.paths.append(image_path)
+
+    # -----------------------------------------------------------------
+
+    def process_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all image paths
+        for image_path in self.paths:
+
+            # Name
+            image_name = filesystem.strip_extension(filesystem.name(image_path))
+
+            # Determine the name used to identify this image for the preparation routines
+            prep_name = self.prep_names[image_name]
+
+            # Determine the output path for this image
+            output_path = self.prep_paths[image_name]
+
+            # Set the path to the region of bad pixels
+            bad_region_path = filesystem.join(self.data_path, "bad", prep_name + ".reg")
+            if not filesystem.is_file(bad_region_path): bad_region_path = None
+
+            # Set the FWHM if the instrument has a fixed PSF
+            if prep_name in fwhms: fwhm = fwhms[prep_name]
+            else: fwhm = None
+
+            # Debugging
+            log.debug("Loading image " + image_path + " as " + prep_name + " ...")
+
+            # Import the image
+            importer = ImageImporter()
+            importer.run(image_path, bad_region_path, fwhm=fwhm)
+
+            # Add the image that has to be processed to the list
+            #self.images.append(importer.image)
+
+            image = importer.image
+
+            # -----------------------------------------------------------------
 
             # Run the source finder on this image
-            self.source_finder.run(image, self.catalog_importer.galactic_catalog, self.catalog_importer.stellar_catalog)
+            self.source_finder.run(image.frames.primary, self.catalog_importer.galactic_catalog, self.catalog_importer.stellar_catalog)
 
-    # -----------------------------------------------------------------
+            # Save the galaxy region
+            galaxy_region = self.source_finder.galaxy_region
+            path = filesystem.join(output_path, "galaxies.reg")
+            galaxy_region.save(path)
 
-    def save_images(self):
+            # Save the star region
+            star_region = self.source_finder.star_region
+            path = filesystem.join(output_path, "stars.reg")
+            if star_region is not None: star_region.save(path)
 
-        """
-        This function ...
-        :return:
-        """
+            # Save the saturation region
+            saturation_region = self.source_finder.saturation_region
+            path = filesystem.join(output_path, "saturation.reg")
+            if saturation_region is not None: saturation_region.save(path)
 
-        pass
+            # Save the region of other sources
+            other_region = self.source_finder.other_region
+            path = filesystem.join(output_path, "other_sources.reg")
+            other_region.save(path)
+
+            # -----------------------------------------------------------------
+
+            # Create an image with the segmentation maps
+            segments = Image("segments")
+
+            # Add the segmentation map of the galaxies
+            segments.add_frame(self.source_finder.galaxy_segments, "galaxies")
+
+            # Add the segmentation map of the saturated stars
+            if self.source_finder.star_segments is not None: segments.add_frame(self.source_finder.star_segments, "stars")
+
+            # Add the segmentation map of the other sources
+            segments.add_frame(self.source_finder.other_segments, "other_sources")
+
+            # Save the FITS file with the segmentation maps
+            path = filesystem.join(output_path, "segments.fits")
+            segments.save(path)
+
+            # -----------------------------------------------------------------
+
+            # Set the FWHM of the image
+            if image.fwhm is None: image.fwhm = self.source_finder.fwhm
+
+            # -----------------------------------------------------------------
+
+            # Determine the path to the initialized image
+            path = filesystem.join(self.prep_paths[image.name], "initialized.fits")
+
+            # Save the image
+            image.save(path)
+
+            # -----------------------------------------------------------------
+
+            # Clear the source finder
+            self.source_finder.clear()
+
+            # Clear the image importer
+            self.importer.clear()
 
 # -----------------------------------------------------------------

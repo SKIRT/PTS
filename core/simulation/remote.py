@@ -462,7 +462,7 @@ class SkirtRemote(Remote):
 
         # Check the contents of the local run directory to see which simulation id's are currently in use
         current_ids = []
-        for name in filesystem.files_in_path(self.local_skirt_host_run_dir, extension="sim", returns="names"):
+        for name in filesystem.files_in_path(self.local_skirt_host_run_dir, extension="sim", returns="name"):
             # Get the simulation ID and add it to the list
             current_ids.append(int(name))
 
@@ -737,7 +737,7 @@ class SkirtRemote(Remote):
                     queue_status[jobid] = jobstatus
 
             # Search for files in the SKIRT run directory
-            for path, name in filesystem.files_in_path(self.local_skirt_host_run_dir, extension="sim", returns="both"):
+            for path, name in filesystem.files_in_path(self.local_skirt_host_run_dir, extension="sim", returns=["path", "name"]):
 
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)

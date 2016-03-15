@@ -268,14 +268,23 @@ class SourceExtractor(Configurable):
         # Loop over the shapes in the other sources region
         for shape in self.other_region:
 
-            label = int(shape.meta["text"])
+            # This is a source found by SourceFinder
+            if "text" in shape.meta:
 
-            # Create a source
-            source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
+                label = int(shape.meta["text"])
 
-            # Replace the source mask
-            segments_cutout = self.other_segments[source.y_slice, source.x_slice]
-            source.mask = Mask(segments_cutout == label)
+                # Create a source
+                source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
+
+                # Replace the source mask
+                segments_cutout = self.other_segments[source.y_slice, source.x_slice]
+                source.mask = Mask(segments_cutout == label)
+
+            # This is a shape drawn by the user and added to the other sources region
+            else:
+
+                # Create a source
+                source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
 
             # Add the source to the list
             self.sources.append(source)

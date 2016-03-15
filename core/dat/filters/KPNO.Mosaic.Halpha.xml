@@ -1,0 +1,189 @@
+<?xml version="1.0"?>
+<VOTABLE version="1.1" xsi:schemaLocation="http://www.ivoa.net/xml/VOTable/v1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <INFO name="QUERY_STATUS" value="OK"/>
+  <RESOURCE type="results">
+    <PARAM name="FilterProfileService" value="ivo://svo/fps" ucd="meta.ref.ivorn" utype="PhotometryFilter.fpsIdentifier" datatype="char" arraysize="*"/>
+    <PARAM name="filterID" value="KPNO/Mosaic.Halpha" ucd="meta.id" utype="photdm:PhotometryFilter.identifier" datatype="char" arraysize="*"/>
+    <PARAM name="WavelengthUnit" value="Angstrom" ucd="meta.unit" utype="PhotometryFilter.SpectralAxis.unit" datatype="char" arraysize="*"/>
+    <PARAM name="WavelengthUCD" value="em.wl" ucd="meta.ucd" utype="PhotometryFilter.SpectralAxis.UCD" datatype="char" arraysize="*"/>
+    <PARAM name="Description" value="H-alpha k1009" ucd="meta.note" utype="photdm:PhotometryFilter.description" datatype="char" arraysize="*"/>
+    <PARAM name="PhotSystem" value="Mosaic" utype="photdm:PhotometricSystem.description" datatype="char" arraysize="*">
+       <DESCRIPTION>Photometric system</DESCRIPTION>
+    </PARAM>
+    <PARAM name="Instrument" value="Mosaic" ucd="instr" datatype="char" arraysize="*">
+       <DESCRIPTION>Instrument</DESCRIPTION>
+    </PARAM>
+    <PARAM name="Facility" value="KPNO" ucd="instr.obsty" datatype="char" arraysize="*">
+       <DESCRIPTION>Observational facility</DESCRIPTION>
+    </PARAM>
+    <PARAM name="ProfileReference" value="http://www.noao.edu/kpno/mosaic/filters/filters.html" datatype="char" arraysize="*"/>
+    <PARAM name="Description" value="H-alpha k1009" ucd="meta.note" utype="photdm:PhotometryFilter.description" datatype="char" arraysize="*"/>
+    <PARAM name="WavelengthMean" value="6574.81588074" unit="Angstrom" ucd="em.wl" utype="photdm:PhotometryFilter.SpectralAxis.Coverage.Location.Value" datatype="float" >
+       <DESCRIPTION>Mean wavelength. Defined as integ[x*filter(x) dx]/integ[filter(x) dx]</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WavelengthEff" value="6575.78245622" unit="Angstrom" ucd="em.wl.effective" datatype="float" >
+       <DESCRIPTION>Effective wavelength. Defined as integ[x*filter(x)*vega(x) dx]/integ[filter(x)*vega(x) dx]</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WavelengthMin" value="6494.71605839" unit="Angstrom" ucd="em.wl;stat.min" utype="photdm:PhotometryFilter.SpectralAxis.Coverage.Bounds.Start" datatype="float" >
+       <DESCRIPTION>Minimum filter wavelength. Defined as the first lambda value with a transmission at least 1% of maximum transmission</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WavelengthMax" value="6657.59939394" unit="Angstrom" ucd="em.wl;stat.max" utype="photdm:PhotometryFilter.SpectralAxis.Coverage.Bounds.Stop" datatype="float" >
+       <DESCRIPTION>Maximum filter wavelength. Defined as the last lambda value with a transmission at least 1% of maximum transmission</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WidthEff" value="83.0844069774" unit="Angstrom" ucd="instr.bandwidth" utype="photdm:PhotometryFilter.SpectralAxis.Coverage.Bounds.Extent" datatype="float" >
+       <DESCRIPTION>Effective width. Defined as integ[x*filter(x) dx].\nEquivalent to the horizontal size of a rectangle with height equal to maximum transmission and with the same area that the one covered by the filter transmission curve.</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WavelengthCen" value="6574.74207081" unit="Angstrom" ucd="em.wl" datatype="float" >
+       <DESCRIPTION>Central wavelength. Defined as the central wavelength between the two points defining FWMH</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WavelengthPivot" value="6574.75966493" unit="Angstrom" ucd="em.wl" datatype="float" >
+       <DESCRIPTION>Peak wavelength. Defined as sqrt{integ[x*filter(x) dx]/integ[filter(x) dx/x]}</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WavelengthPeak" value="6590" unit="Angstrom" ucd="em.wl" datatype="float" >
+       <DESCRIPTION>Peak wavelength. Defined as the lambda value with larger transmission</DESCRIPTION>
+    </PARAM>
+    <PARAM name="WavelengthPhot" value="6575.90848728" unit="Angstrom" ucd="em.wl" datatype="float" >
+       <DESCRIPTION>Photon distribution based effective wavelength. Defined as integ[x^2*filter(x)*vega(x) dx]/integ[x*filter(x)*vega(x) dx]</DESCRIPTION>
+    </PARAM>
+    <PARAM name="FWHM" value="80.6163741782" unit="Angstrom" ucd="instr.bandwidth" datatype="float" >
+       <DESCRIPTION>Full width at half maximum. Defined as the difference between the two wavelengths for which filter transmission is half maximum</DESCRIPTION>
+    </PARAM>
+    <PARAM name="PhotCalID" value="KPNO/Mosaic.Halpha/Vega" ucd="meta.id" utype="photdm:PhotCal.identifier" datatype="char" arraysize="*"/>
+    <PARAM name="MagSys" value="Vega" ucd="meta.code" utype="photdm:PhotCal.MagnitudeSystem.type" datatype="char" arraysize="*"/>
+    <PARAM name="ZeroPoint" value="2571.30299756" unit="Jy" ucd="phot.flux.density" utype="photdm:PhotCal.ZeroPoint.Flux.value" datatype="float" />
+    <PARAM name="ZeroPointUnit" value="Jy" ucd="meta.unit" utype="photdm:PhotCal.ZeroPoint.Flux.unit" datatype="char" arraysize="*"/>
+    <PARAM name="ZeroPointType" value="Pogson" ucd="meta.code" utype="photdm:PhotCal.ZeroPoint.type" datatype="char" arraysize="*"/>
+    <TABLE utype="photdm:PhotometryFilter.transmissionCurve.spectrum">
+      <FIELD name="Wavelength" utype="spec:Data.SpectralAxis.Value" ucd="em.wl" unit="Angstrom" datatype="float"/>
+      <FIELD name="Transmission" utype="spec:Data.FluxAxis.Value" ucd="phys.transmission" unit="" datatype="float"/>
+      <DATA>
+        <TABLEDATA>
+          <TR>
+            <TD>6400.0</TD>
+            <TD>0.0000500000</TD>
+          </TR>
+          <TR>
+            <TD>6410.0</TD>
+            <TD>0.0000500000</TD>
+          </TR>
+          <TR>
+            <TD>6420.0</TD>
+            <TD>0.0001000000</TD>
+          </TR>
+          <TR>
+            <TD>6430.0</TD>
+            <TD>0.0002500000</TD>
+          </TR>
+          <TR>
+            <TD>6440.0</TD>
+            <TD>0.0003500000</TD>
+          </TR>
+          <TR>
+            <TD>6450.0</TD>
+            <TD>0.0005000000</TD>
+          </TR>
+          <TR>
+            <TD>6460.0</TD>
+            <TD>0.0008500000</TD>
+          </TR>
+          <TR>
+            <TD>6470.0</TD>
+            <TD>0.0016500000</TD>
+          </TR>
+          <TR>
+            <TD>6480.0</TD>
+            <TD>0.0032500000</TD>
+          </TR>
+          <TR>
+            <TD>6490.0</TD>
+            <TD>0.0062000000</TD>
+          </TR>
+          <TR>
+            <TD>6500.0</TD>
+            <TD>0.0130500000</TD>
+          </TR>
+          <TR>
+            <TD>6510.0</TD>
+            <TD>0.0341500000</TD>
+          </TR>
+          <TR>
+            <TD>6520.0</TD>
+            <TD>0.1073500000</TD>
+          </TR>
+          <TR>
+            <TD>6530.0</TD>
+            <TD>0.3117500000</TD>
+          </TR>
+          <TR>
+            <TD>6540.0</TD>
+            <TD>0.6721000000</TD>
+          </TR>
+          <TR>
+            <TD>6550.0</TD>
+            <TD>0.9156000000</TD>
+          </TR>
+          <TR>
+            <TD>6560.0</TD>
+            <TD>0.9244000000</TD>
+          </TR>
+          <TR>
+            <TD>6570.0</TD>
+            <TD>0.9371000000</TD>
+          </TR>
+          <TR>
+            <TD>6580.0</TD>
+            <TD>0.9416500000</TD>
+          </TR>
+          <TR>
+            <TD>6590.0</TD>
+            <TD>0.9430500000</TD>
+          </TR>
+          <TR>
+            <TD>6600.0</TD>
+            <TD>0.9091000000</TD>
+          </TR>
+          <TR>
+            <TD>6610.0</TD>
+            <TD>0.6624500000</TD>
+          </TR>
+          <TR>
+            <TD>6620.0</TD>
+            <TD>0.2844000000</TD>
+          </TR>
+          <TR>
+            <TD>6630.0</TD>
+            <TD>0.0992000000</TD>
+          </TR>
+          <TR>
+            <TD>6640.0</TD>
+            <TD>0.0363500000</TD>
+          </TR>
+          <TR>
+            <TD>6650.0</TD>
+            <TD>0.0157000000</TD>
+          </TR>
+          <TR>
+            <TD>6660.0</TD>
+            <TD>0.0074500000</TD>
+          </TR>
+          <TR>
+            <TD>6670.0</TD>
+            <TD>0.0036500000</TD>
+          </TR>
+          <TR>
+            <TD>6680.0</TD>
+            <TD>0.0019500000</TD>
+          </TR>
+          <TR>
+            <TD>6690.0</TD>
+            <TD>0.0011500000</TD>
+          </TR>
+          <TR>
+            <TD>6700.0</TD>
+            <TD>0.0009000000</TD>
+          </TR>
+        </TABLEDATA>
+      </DATA>
+    </TABLE>
+  </RESOURCE>
+</VOTABLE>

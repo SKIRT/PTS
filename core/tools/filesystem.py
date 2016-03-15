@@ -194,7 +194,7 @@ def remove_file(path):
 # -----------------------------------------------------------------
 
 def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
-                  extensions=False, returns="paths"):
+                  extensions=False, returns="path"):
 
     """
     This function ...
@@ -205,24 +205,31 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
     :param contains:
     :param not_contains:
     :param extensions:
-    :param returns: "paths", "names" or "both"
+    :param returns: a string ("path", "name", or "directory") OR a list [], with elements equal to "path", "name" or "directory" (e.g. [path, name] or [name, directory])
     :return:
     """
 
+    # If no path is given, use the current working directory
     if path is None: path = os.getcwd()
+
+    # Determine absolute path
+    path = absolute(path)
 
     # Initialize a list to contain the paths of the files that are found in the given directory
     file_paths = []
 
     # Get the list of items
-    if recursive: items = [os.path.join(dp, f) for dp, dn, fn in os.walk(path) for f in fn]
-    else: items = os.listdir(path)
+    if recursive: items = [join(dp, f) for dp, dn, fn in os.walk(path) for f in fn]
+    else: items = [join(path, item) for item in os.listdir(path)]
 
     # Loop over all items; get files that match the specified conditions
-    for item in items:
+    for item_path in items:
 
-        # Determine the full path
-        item_path = os.path.join(path, item)
+        # Determine the name of the item
+        item = name(item_path)
+
+        # Get the path to the containing directory
+        directory = directory_of(item_path)
 
         # Get the file name and extension
         item_name = os.path.splitext(item)[0]
@@ -243,11 +250,25 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
         # Check if the current item is a file; if not skip it
         if not os.path.isfile(item_path): continue
 
-        # Add the relevant info to the list
-        if returns == "paths": thing = item_path
-        elif returns == "names": thing = item_name + "." + item_extension if extensions else item_name
-        elif returns == "both": thing = [item_path, item_name + "." + item_extension if extensions else item_name]
-        else: raise ValueError("Invalid option for 'returns': should be 'paths', 'names' or 'both'")
+        # Create the return value
+        if isinstance(returns, basestring):
+
+            if returns == "path": thing = item_path
+            elif returns == "name": thing = item_name + "." + item_extension if extensions else item_name
+            elif returns == "directory": thing = directory
+            else: raise ValueError("Invalid option for 'returns': should be (a list of) 'path', 'name' or 'directory'")
+
+        else: # Assume 'returns' is a list
+
+            thing = []
+
+            for return_value in returns:
+
+                if return_value == "path": thing.append(item_path)
+                elif return_value == "name": thing.append(item_name + "." + item_extension if extensions else item_name)
+                elif return_value == "directory": thing.append(directory)
+                else: raise ValueError("Invalid option for 'returns': should be (a list of) 'path', 'name' or 'directory'")
+
         file_paths.append(thing)
 
     # Return the list of file paths
@@ -255,43 +276,72 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
 
 # -----------------------------------------------------------------
 
-def directories_in_path(path=None, recursive=False, ignore_hidden=True, returns="paths"):
+def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains=None, not_contains=None, returns="path"):
 
     """
     This function ...
     :param path:
     :param recursive:
     :param ignore_hidden:
-    :param returns: "paths", "names" or "both"
+    :param contains:
+    :param not_contains:
+    :param returns: a string ("path", "name", or "directory") OR a list [], with elements equal to "path", "name" or "directory" (e.g. [path, name] or [name, directory])
     :return:
     """
 
+    # If no path is given, use the current working directory
     if path is None: path = os.getcwd()
+
+    # Determine absolute path
+    path = absolute(path)
 
     # Initialize a list to contain the paths of the directories that are found in the given directory
     directory_paths = []
 
     # Get the list of items
-    if recursive: items = [os.path.join(dp, f) for dp, dn, fn in os.walk(path) for f in fn]
-    else: items = os.listdir(path)
+    if recursive: items = [join(dp, d) for dp, dn, fn in os.walk(path) for d in dn]
+    else: items = [join(path, item) for item in os.listdir(path)]
 
     # List all items in the specified directory
-    for item in items:
+    for item_path in items:
 
-        # Determine the full path
-        item_path = os.path.join(path, item)
+        # Get the name of the directory
+        item = name(item_path)
+
+        # Get the path to the containing directory
+        directory = directory_of(item_path)
 
         # Ignore hidden directories if requested
         if ignore_hidden and item.startswith("."): continue
 
+        # Ignore names that do not contain a certain string, if specified
+        if contains is not None and contains not in item: continue
+
+        # Ignore names that do contain a certain string that it should not contain, if specified
+        if not_contains is not None and not_contains in item: continue
+
         # Check if the current item is a directory; if not skip it
         if not os.path.isdir(item_path): continue
 
-        # Add the directory path to the list
-        if returns == "paths": thing = item_path
-        elif returns == "names": thing = item
-        elif returns == "both": thing = [item_path, item]
-        else: raise ValueError("Invalid option for 'returns': should be 'paths', 'names' or 'both'")
+        # Create the return value
+        if isinstance(returns, basestring):
+
+            if returns == "path": thing = item_path
+            elif returns == "name": thing = item
+            elif returns == "directory": thing = directory
+            else: raise ValueError("Invalid option for 'returns': should be (a list of) 'path', 'name' or 'directory'")
+
+        else: # Assume 'returns' is a list
+
+            thing = []
+
+            for return_value in returns:
+
+                if return_value == "path": thing.append(item_path)
+                elif return_value == "name": thing.append(item)
+                elif return_value == "directory": thing.append(directory)
+                else: raise ValueError("Invalid option for 'returns': should be (a list of) 'path', 'name' or 'directory'")
+
         directory_paths.append(thing)
 
     # Return the list of directory paths

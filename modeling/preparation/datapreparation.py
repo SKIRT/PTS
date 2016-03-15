@@ -229,7 +229,7 @@ class DataPreparer(PreparationComponent):
         """
 
         # Loop over all directories in the preparation directory
-        for directory_path, directory_name in filesystem.directories_in_path(self.prep_path, returns="both"):
+        for directory_path, directory_name in filesystem.directories_in_path(self.prep_path, returns=["path", "name"]):
 
             # Look for the initialized image file
             image_path = filesystem.join(directory_path, "initialized.fits")

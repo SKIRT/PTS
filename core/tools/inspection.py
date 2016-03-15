@@ -79,7 +79,7 @@ def remote_host_ids():
     ids = []
 
     # Loop over the configuration files in the hosts directory
-    for name in filesystem.files_in_path(hosts_directory, extension="cfg", returns="names"):
+    for name in filesystem.files_in_path(hosts_directory, extension="cfg", returns="name"):
 
         # Skip the template configuration file
         if name == "template": continue

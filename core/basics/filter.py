@@ -270,7 +270,7 @@ class Filter:
         elif name in iras_25_names: return cls("IRAS.25mu")
         elif name in iras_60_names: return cls("IRAS.60mu")
         elif name in iras_100_names: return cls("IRAS.100mu")
-        elif name in ha_names: return cls("656_1")
+        elif name in ha_names: return cls("Halpha")
         else: raise ValueError("No corresponding filter found")
 
     # ---------- Retrieving information -------------------------------

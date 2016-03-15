@@ -647,7 +647,7 @@ class ScalingTest(Configurable):
         timeline_paths = defaultdict(list)
 
         # Recursively search for files contained in the result directory
-        for file_path, file_name in filesystem.files_in_path(self.result_path, contains="timeline", extension="dat", returns="both", recursive=True):
+        for file_path, file_name in filesystem.files_in_path(self.result_path, contains="timeline", extension="dat", returns=["path", "name"], recursive=True):
 
             # Get the path to the directory where this timeline.dat file is in
             dir_path = filesystem.directory_of(file_path)

@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import re
 import copy
 import numpy as np
 
@@ -152,21 +153,33 @@ def get_filter(name, header=None):
     if header is not None:
 
         # Get information regarding the telescope and instrument
-        if "TELESCOP" in header: filterid += " " + header["TELESCOP"].lower()
-        if "INSTRUME" in header: filterid += " " + header['INSTRUME'].lower()
-        if "ORIGIN" in header: filterid += " " + header['ORIGIN'].lower()
+        if "TELESCOP" in header: filterid += " " + get_string(header["TELESCOP"]).lower()
+        if "INSTRUME" in header: filterid += " " + get_string(header["INSTRUME"]).lower()
+        if "ORIGIN" in header: filterid += " " + get_string(header["ORIGIN"]).lower()
+        if "OBSERVAT" in header: filterid += " " + get_string(header["OBSERVAT"]).lower()
 
         # Get a name describing the filter
-        if "FILTER" in header: filterid += " " + header['FILTER'].lower()
-        if "FLTRNM" in header: filterid += " " + header['FLTRNM'].lower()
+        if "FILTER" in header:
+            try:
+                filter = Filter.from_string(header["FILTER"])
+                return filter
+            except ValueError: pass
+            filterid += " " + get_string(header['FILTER']).lower()
+        if "FLTRNM" in header:
+            try:
+                filter = Filter.from_string(header["FLTRNM"])
+                return filter
+            except ValueError: pass
+            filterid += " " + get_string(header['FLTRNM']).lower()
 
         # Get information about the channel number
-        if "CHNLNUM" in header: channel = int(header["CHNLNUM"])
-        elif "BAND" in header: channel = int(header["BAND"])
+        if "CHNLNUM" in header: channel = get_int(header["CHNLNUM"])
+        elif "BAND" in header: channel = get_int(header["BAND"])
         else: channel = None
 
         # Get the wavelength
-        if "WAVELEN" in header: wavelength = float(header["WAVELEN"])
+        if "WAVELEN" in header: wavelength = get_quantity(header["WAVELEN"], "micron")
+        elif "WVLNGTH" in header: wavelength = get_quantity(header["WVLNGTH"], "micron")
         else: wavelength = None
 
     # Debug information
@@ -225,15 +238,25 @@ def get_filter(name, header=None):
         elif "4.5" in filterid or "i2" in filterid: final_filter_name = "IRAC.I2"
         elif "5.8" in filterid or "i3" in filterid: final_filter_name = "IRAC.I3"
         elif "8.0" in filterid or "i4" in filterid: final_filter_name = "IRAC.I4"
-        elif channel is not None:  # Look at the channel number
+        else:  # Look at the channel number
 
-            if channel == 1: final_filter_name = "IRAC.I1"
-            elif channel == 2: final_filter_name = "IRAC.I2"
-            elif channel == 3: final_filter_name = "IRAC.I3"
-            elif channel == 4: final_filter_name = "IRAC.I4"
+            if channel is not None:
+
+                if channel == 1: final_filter_name = "IRAC.I1"
+                elif channel == 2: final_filter_name = "IRAC.I2"
+                elif channel == 3: final_filter_name = "IRAC.I3"
+                elif channel == 4: final_filter_name = "IRAC.I4"
+                else: log.warning("Could not determine which IRAC filter was used for this image")
+
+            elif wavelength is not None:
+
+                if np.isclose(wavelength.to("micron").value, 3.6, rtol=0.05): final_filter_name = "IRAC.I1"
+                elif np.isclose(wavelength.to("micron").value, 4.5, rtol=0.05): final_filter_name = "IRAC.I2"
+                elif np.isclose(wavelength.to("micron").value, 5.8, rtol=0.05): final_filter_name = "IRAC.I3"
+                elif np.isclose(wavelength.to("micron").value, 8.0, rtol=0.05): final_filter_name = "IRAC.I4"
+                else: log.warning("Could not determine which IRAC filter was used for this image")
+
             else: log.warning("Could not determine which IRAC filter was used for this image")
-
-        else: log.warning("Could not determine which IRAC filter was used for this image")
 
     # WISE filters
     elif "wise" in filterid:
@@ -244,10 +267,21 @@ def get_filter(name, header=None):
         elif "w4" in filterid: final_filter_name = "WISE.W4"
         else:
 
-            if channel == 1: final_filter_name = "WISE.W1"
-            elif channel == 2: final_filter_name = "WISE.W2"
-            elif channel == 3: final_filter_name = "WISE.W3"
-            elif channel == 4: final_filter_name = "WISE.W4"
+            if channel is not None:
+
+                if channel == 1: final_filter_name = "WISE.W1"
+                elif channel == 2: final_filter_name = "WISE.W2"
+                elif channel == 3: final_filter_name = "WISE.W3"
+                elif channel == 4: final_filter_name = "WISE.W4"
+                else: log.warning("Could not determine which WISE filter was used for this image")
+
+            elif wavelength is not None:
+
+                if np.isclose(wavelength.to("micron").value, 3.4, rtol=0.05): final_filter_name = "WISE.W1"
+                elif np.isclose(wavelength.to("micron").value, 4.6, rtol=0.05): final_filter_name = "WISE.W2"
+                elif np.isclose(wavelength.to("micron").value, 12., rtol=0.05): final_filter_name = "WISE.W3"
+                elif np.isclose(wavelength.to("micron").value, 22., rtol=0.05): final_filter_name = "WISE.W4"
+
             else: log.warning("Could not determine which WISE filter was used for this image")
 
     # MIPS filters
@@ -256,7 +290,32 @@ def get_filter(name, header=None):
         if "24" in filterid: final_filter_name = "MIPS.24"
         elif "70" in filterid: final_filter_name = "MIPS.70"
         elif "160" in filterid: final_filter_name = "MIPS.160"
-        else: log.warning("Could not determine which MIPS filter was used for this image")
+        else:
+
+            if wavelength is not None:
+
+                if np.isclose(wavelength.to("micron").value, 24., rtol=0.05): final_filter_name = "MIPS.24"
+                elif np.isclose(wavelength.to("micron").value, 70., rtol=0.05): final_filter_name = "MIPS.70"
+                elif np.isclose(wavelength.to("micron").value, 160., rtol=0.05): final_filter_name = "MIPS.160"
+                else: log.warning("Could not determine which MIPS filter was used for this image")
+
+            else: log.warning("Could not determine which MIPS filter was used for this image")
+
+    # Spitzer bands (IRAC and MIPS but "irac" and "mips" are not in filterid)
+    elif "spitzer" in filterid:
+
+        if wavelength is not None:
+
+            if np.isclose(wavelength.to("micron").value, 3.6, rtol=0.05): final_filter_name = "IRAC.I1"
+            elif np.isclose(wavelength.to("micron").value, 4.5, rtol=0.05): final_filter_name = "IRAC.I2"
+            elif np.isclose(wavelength.to("micron").value, 5.8, rtol=0.05): final_filter_name = "IRAC.I3"
+            elif np.isclose(wavelength.to("micron").value, 8.0, rtol=0.05): final_filter_name = "IRAC.I4"
+            elif np.isclose(wavelength.to("micron").value, 24., rtol=0.05): final_filter_name = "MIPS.24"
+            elif np.isclose(wavelength.to("micron").value, 70., rtol=0.05): final_filter_name = "MIPS.70"
+            elif np.isclose(wavelength.to("micron").value, 160., rtol=0.05): final_filter_name = "MIPS.160"
+            else: log.warning("Could not determine which Spitzer filter was used for this image")
+
+        else: log.warning("Could not determine which Spitzer filter was used for this image")
 
     # PACS filters
     elif "pacs" in filterid:
@@ -274,10 +333,14 @@ def get_filter(name, header=None):
         elif "plw" in filterid or "500" in filterid: final_filter_name = "SPIRE.PLW_ext"
         else:
 
-            if channel == 1: final_filter_name = "SPIRE.PSW_ext"
-            elif channel == 2: final_filter_name = "SPIRE.PMW_ext"
-            elif channel == 3: final_filter_name = "SPIRE.PLW_ext"
-            else:
+            if channel is not None:
+
+                if channel == 1: final_filter_name = "SPIRE.PSW_ext"
+                elif channel == 2: final_filter_name = "SPIRE.PMW_ext"
+                elif channel == 3: final_filter_name = "SPIRE.PLW_ext"
+                else: log.warning("Could not determine which SPIRE filter was used for this image")
+
+            elif wavelength is not None:
 
                 if wavelength == 250: final_filter_name = "SPIRE.PSW_ext"
                 elif wavelength == 350: final_filter_name = "SPIRE.PMW_ext"
@@ -286,12 +349,31 @@ def get_filter(name, header=None):
 
     # -- H alpha --
     elif "alpha" in filterid or "6561" in filterid: final_filter_name = "656_1"
+    elif "ha" in filterid and "kpno" in filterid: final_filter_name = "Halpha"
 
-    # Inform the user
-    if final_filter_name is not None: log.debug("Filter was identified as " + final_filter_name)
+    if final_filter_name is None:
+
+        if wavelength is not None:
+
+            value = wavelength.to("micron").value
+            ten_percent = 0.1 * value
+            lower = value - ten_percent
+            upper = value + ten_percent
+
+            # Create a custom filter around the wavelength
+            filter = Filter((lower, upper))
+
+        else: filter = None
+
+    else:
+
+        # Inform the user
+        log.debug("Filter was identified as " + final_filter_name)
+
+        filter = Filter(final_filter_name)
 
     # Create and return a Filter object
-    return Filter(final_filter_name) if final_filter_name is not None else None
+    return filter
 
 # -----------------------------------------------------------------
 
@@ -585,5 +667,86 @@ def ctype_to_csys(wcs):
             raise NotImplementedError("Non-fk4/fk5 equinoxes are not allowed")
     elif 'GLON' in ctype or 'GLAT' in ctype:
         return 'galactic'
+
+# -----------------------------------------------------------------
+
+def get_float(entry):
+
+    """
+    This function ...
+    :param entry:
+    :return:
+    """
+
+    try: return float(entry)
+    except ValueError:
+        value = entry.split("   / ")[0].rstrip()
+        return float(value)
+
+# -----------------------------------------------------------------
+
+def get_quantity(entry, default_unit=None):
+
+    """
+    This function ...
+    :param entry:
+    :param default_unit:
+    :return:
+    """
+
+    value = entry.split("   / ")[0].rstrip()
+
+    try:
+
+        num_value = float(value)
+        if default_unit is None: raise RuntimeError("Default unit is not provided")
+        unit = u.Unit(default_unit)
+
+    except ValueError:
+
+        #floats = re.findall("[-+]?\d*\.\d+|\d+", value)
+        #assert len(floats) == 1
+        #num_value = floats[0]
+
+        #unit_description = value.split(str(floats[0])[-1:])[1].rstrip()
+
+        #print("unit:::", unit_description)
+
+        #unit = u.Unit(unit_description)
+
+        composite_unit = u.Unit(value)
+
+        num_value = composite_unit.to("micron")
+        unit = u.Unit("micron")
+
+    return num_value * unit
+
+# -----------------------------------------------------------------
+
+def get_string(entry):
+
+    """
+    This function ...
+    :param entry:
+    :return:
+    """
+
+    value = entry.split("   / ")[0].rstrip()
+    return value
+
+# -----------------------------------------------------------------
+
+def get_int(entry):
+
+    """
+    This function ...
+    :param entry:
+    :return:
+    """
+
+    try: return int(entry)
+    except ValueError:
+        value = entry.split("   / ")[0].rstrip()
+        return int(value)
 
 # -----------------------------------------------------------------

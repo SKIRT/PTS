@@ -176,6 +176,18 @@ class SourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.star_finder.fwhm
+
+    # -----------------------------------------------------------------
+
     def run(self, frame, galactic_catalog, stellar_catalog, special_region=None, ignore_region=None, bad_mask=None):
 
         """
@@ -203,6 +215,36 @@ class SourceFinder(Configurable):
 
         # 5. Build and update catalog
         self.build_and_synchronize_catalog()
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Base class implementation removes the children
+        super(SourceFinder, self).clear()
+
+        # The image frame
+        self.frame = None
+
+        # The galactic and stellar catalog
+        self.galactic_catalog = None
+        self.stellar_catalog = None
+
+        # The mask covering pixels that should be ignored throughout the entire extraction procedure
+        self.special_mask = None
+        self.ignore_mask = None
+        self.bad_mask = None
+
+        # The output mask
+        self.mask = None
+
+        # The name of the principal galaxy
+        self.galaxy_name = None
 
     # -----------------------------------------------------------------
 

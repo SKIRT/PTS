@@ -139,6 +139,9 @@ class SEDFetcher(Configurable):
         # If requested, query the Atlas of UV-to-MIR galaxy SEDs (Brown+, 2014)
         if "Brown" in self.config.catalogs: self.get_brown()
 
+        # If requested, query the Planck Catalog of Compact Sources Release 1 (Planck, 2013)
+        if "Planck" in self.config.catalogs: self.get_planck()
+
         # SPECIFIC for M81: not enabled, no time to figure out the unit conversion now
         #if self.ngc_id == "NGC 3031": self.get_m81()
 
@@ -1178,6 +1181,20 @@ class SEDFetcher(Configurable):
         # e_[24]:
 
         pass
+
+    # -----------------------------------------------------------------
+
+    def get_planck(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create an SED
+        sed = ObservedSED()
+
+        # The second release is not yet available ... ??
 
     # -----------------------------------------------------------------
 

@@ -13,11 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import numpy as np
 
 # Import astronomical modules
-from astropy import units as u
+from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ..core.image import Image
@@ -27,6 +26,7 @@ from ..basics.mask import Mask
 from ..basics.region import Region
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
+from ...core.tools import filesystem
 
 # -----------------------------------------------------------------
 
@@ -118,9 +118,9 @@ class ImageImporter(Configurable):
         super(ImageImporter, self).setup()
 
         # Set the image path and name
-        self.directory_path = os.path.dirname(path)
+        self.directory_path = filesystem.directory_of(path)
         self.image_path = path
-        self.image_name = os.path.splitext(os.path.basename(self.image_path))[0]
+        self.image_name = filesystem.strip_extension(filesystem.name(self.image_path))
 
         # Set the bad region
         if bad_region_path is not None: self.bad_region = Region.from_file(bad_region_path)
@@ -167,11 +167,11 @@ class ImageImporter(Configurable):
         if "errors" not in self.image.frames:
 
             # self.directory_path is the same directory as where the image is located
-            error_path = os.path.join(self.directory_path, self.image_name + " error.fits")
+            error_path = filesystem.join(self.directory_path, self.image_name + "_Error.fits")
             #if os.path.isfile(error_path): self.image.load_frames(error_path, 0, "errors", "the error map") # is now possible, i added the "rebin_to_wcs flag" ...
 
             # Check if the errors frame exists
-            if os.path.isfile(error_path):
+            if filesystem.is_file(error_path):
 
                 # Open the errors frame
                 error_frame = Frame.from_file(error_path, name="errors", description="the error map")
@@ -183,7 +183,7 @@ class ImageImporter(Configurable):
                     log.warning("The error frame does not have the same shape as the image, errors frame will be rebinned")
 
                     # Check if the unit is a surface brightness unit
-                    if error_frame.unit != u.Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(error_frame.unit) + " is not recognized as a surface brightness unit")
+                    if error_frame.unit != Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(error_frame.unit) + " is not recognized as a surface brightness unit")
 
                     # Do the rebinning
                     error_frame = error_frame.rebinned(self.image.frames.primary.wcs)

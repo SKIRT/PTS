@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..core.component import ModelingComponent
-from ...core.tools import filesystem
+from ...core.tools import filesystem, tables
 
 # -----------------------------------------------------------------
 
@@ -37,14 +37,20 @@ class PreparationComponent(ModelingComponent):
 
         # -- Attributes --
 
-        # The path to the fit/in directory
-        #self.fit_in_path = None
+        # The path to the info file
+        self.info_path = None
 
-        # The path to the fit/out directory
-        #self.fit_out_path = None
+        # The names of the different images for the preparation components
+        self.prep_names = {}
 
-        # The path to the ski file
-        #self.fit_ski_path = None
+        # The original names of the different images, based on the preparation names
+        self.original_names = {}
+
+        # The paths to the preparation subdirectories for each image
+        self.prep_paths = {}
+
+        # The original paths of the different images
+        self.original_paths = {}
 
     # -----------------------------------------------------------------
 
@@ -58,16 +64,25 @@ class PreparationComponent(ModelingComponent):
         # Call the setup function of the base class
         super(PreparationComponent, self).setup()
 
-        # Set the path to the fit/in path
-        #self.fit_in_path = filesystem.join(self.fit_path, "in")
+        # Set the info path
+        self.info_path = filesystem.join(self.data_path, "info.dat")
 
-        # Set the path to the fit/out path
-        #self.fit_out_path = filesystem.join(self.fit_path, "out")
+        # Load the info file
+        info = tables.from_file(self.info_path)
 
-        # Create the fit/in and fit/out directories
-        #filesystem.create_directories([self.fit_in_path, self.fit_out_path])
+        # Set the image names
+        for i in range(len(info)):
 
-        # Determine the path to the ski file
-        #self.fit_ski_path = filesystem.join(self.fit_path, self.galaxy_name + ".ski")
+            original_name = info["Image name"][i]
+            original_path = info["Image path"][i]
+            prep_name = info["Preparation name"][i]
+
+            self.prep_names[original_name] = prep_name
+            self.original_names[prep_name] = original_name
+            self.prep_paths[original_name] = filesystem.join(self.prep_path, prep_name)
+            self.original_paths[prep_name] = original_path
+
+        # Create the preparation subdirectories for each image
+        filesystem.create_directories(self.prep_paths.values())
 
 # -----------------------------------------------------------------

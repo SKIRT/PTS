@@ -370,7 +370,7 @@ class StarFinder(Configurable):
         # If requested, perform sigma-clipping to the list of FWHM's to filter out outliers
         if self.config.fitting.sigma_clip_fwhms:
 
-            mean, median, stddev = statistics.sigma_clipped_statistics(self.fwhms, self.config.fitting.fwhm_sigma_level)
+            mean, median, stddev = statistics.sigma_clipped_statistics(self.fwhms_pix, self.config.fitting.fwhm_sigma_level)
             lower = median - self.config.fitting.fwhm_sigma_level * stddev
             upper = median + self.config.fitting.fwhm_sigma_level * stddev
 
@@ -398,7 +398,7 @@ class StarFinder(Configurable):
         log.info("Removing the stars from the frame ...")
 
         # Calculate the default FWHM, for the stars for which a model was not found
-        default_fwhm = self.fwhm
+        default_fwhm = self.fwhm_pix
 
         # Inform the user
         log.debug("Default FWHM used when star could not be fitted: {0:.2f} pixels".format(default_fwhm))
@@ -425,7 +425,7 @@ class StarFinder(Configurable):
         log.info("Adjusting the star sources to the same sigma level ...")
 
         # Calculate the default FWHM, for the stars for which a model was not found
-        default_fwhm = self.fwhm
+        default_fwhm = self.fwhm_pix
 
         # Loop over all stars
         for star in self.stars:
@@ -455,7 +455,7 @@ class StarFinder(Configurable):
         log.debug("Number of stars with source = " + str(self.have_source))
 
         # Calculate the default FWHM, for the stars for which a model was not found
-        default_fwhm = self.fwhm
+        default_fwhm = self.fwhm_pix
 
         # Set the number of stars where saturation was removed to zero initially
         success = 0
@@ -542,7 +542,7 @@ class StarFinder(Configurable):
         self.star_region = Region()
 
         # Calculate the default FWHM (calculated based on fitted stars)
-        default_fwhm = self.fwhm
+        default_fwhm = self.fwhm_pix
 
         # Loop over all galaxies
         for star in self.stars:
@@ -672,7 +672,7 @@ class StarFinder(Configurable):
         log.info("Writing cutout boxes to " + directory_path + " ...")
 
         # Calculate the default FWHM based on the stars that could be fitted
-        default_fwhm = self.fwhm
+        default_fwhm = self.fwhm_pix
 
         # Loop over all stars
         for star in self.stars:
@@ -833,10 +833,25 @@ class StarFinder(Configurable):
         for star in self.stars:
 
             # If the star contains a model, add the fwhm of that model to the list
-            if star.has_model: fwhms.append(star.fwhm)
+            if star.has_model:
+                fwhm_pix = star.fwhm * Unit("pix")
+                fwhm_arcsec = fwhm_pix * self.frame.xy_average_pixelscale.to("arcsec/pix")
+                fwhms.append(fwhm_arcsec)
 
         # Return the list
         return fwhms
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fwhms_pix(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [(fwhm / self.frame.xy_average_pixelscale.to("arcsec/pix")).to("pix").value for fwhm in self.fwhms]
 
     # -----------------------------------------------------------------
 
@@ -939,19 +954,34 @@ class StarFinder(Configurable):
         """
 
         # If requested, always use the FWHM defined by the frame object
-        if self.config.use_frame_fwhm and self.frame.fwhm is not None:
-
-            # Return the FWHM in 'number of pixels'
-            return self.frame.fwhm.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
+        if self.config.use_frame_fwhm and self.frame.fwhm is not None: return self.frame.fwhm.to("arcsec")
 
         # If the list of FWHM values is empty (the stars were not fitted yet), return None
-        if len(self.fwhms) == 0: return None
+        fwhms = self.fwhms
+        if len(fwhms) == 0: return None
+
+        fwhm_values = [fwhm.to("arcsec").value for fwhm in fwhms]
 
         # Determine the default FWHM and return it
-        if self.config.fwhm.measure == "max": return max(self.fwhms)
-        elif self.config.fwhm.measure == "mean": return np.mean(self.fwhms)
-        elif self.config.fwhm.measure == "median": return np.median(self.fwhms)
+        if self.config.fwhm.measure == "max":
+            return max(fwhm_values) * Unit("arcsec")
+        elif self.config.fwhm.measure == "mean":
+            return np.mean(fwhm_values) * Unit("arcsec")
+        elif self.config.fwhm.measure == "median":
+            return np.median(fwhm_values) * Unit("arcsec")
         else: raise ValueError("Unkown measure for determining the default FWHM")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fwhm_pix(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.fwhm / self.frame.xy_average_pixelscale.to("arcsec/pix")).value
 
     # -----------------------------------------------------------------
 
@@ -964,7 +994,7 @@ class StarFinder(Configurable):
         """
 
         # Create a Gaussian convolution kernel and return it
-        sigma = self.fwhm * statistics.fwhm_to_sigma
+        sigma = self.fwhm_pix * statistics.fwhm_to_sigma
         return Gaussian2DKernel(sigma)
 
     # -----------------------------------------------------------------

@@ -24,6 +24,7 @@ from astropy.coordinates import SkyCoord
 
 # Import the relevant PTS classes and modules
 from .vector import Extent, Position
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -107,9 +108,9 @@ class CoordinateSystem(wcs.WCS):
         y_pixelscale = abs(pixelscale.y.to("arcsec/pix"))
 
         if not np.isclose(x_pixelscale.value, y_pixelscale.value, rtol=0.0005):
-            print("WARNING: averaging the pixelscale over the x and y direction may not be a good approximation:")
-            print("          x pixelscale (absolute value) =", x_pixelscale)
-            print("          y pixelscale (absolute value) =", y_pixelscale)
+            log.warning("Averaging the pixelscale over the x and y direction may not be a good approximation:")
+            log.warning("  * x pixelscale (absolute value) =", x_pixelscale)
+            log.warning("  * y pixelscale (absolute value) =", y_pixelscale)
 
         # Return a single value for the pixelscale in arcseconds
         return 0.5 * (x_pixelscale + y_pixelscale)

@@ -196,6 +196,21 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def xy_average_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if "primary" not in self.frames: return None
+
+        # Return the averaged pixelscale of the primary frame
+        return self.frames.primary.xy_average_pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
     def fwhm(self):
 
         """
@@ -243,6 +258,9 @@ class Image(object):
         """
         This function exports the image (frames and masks) as a datacube into FITS file.
         :param path:
+        :param add_metadata:
+        :param origin:
+        :param add_masks:
         :return:
         """
 
@@ -304,8 +322,10 @@ class Image(object):
             header["NAXIS"] = 3
             header["NAXIS3"] = plane_index
 
-        # Set the unit
-        header["BUNIT"] = str(self.unit)
+        # Set unit, FWHM and filter description
+        if self.unit is not None: header.set("SIGUNIT", str(self.unit), "Unit of the map")
+        if self.fwhm is not None: header.set("FWHM", self.fwhm.to("arcsec").value, "[arcsec] FWHM of the PSF")
+        if self.filter is not None: header.set("FILTER", self.filter.description(), "Filter used for this observation")
 
         # Add origin description
         if origin is not None: header["ORIGIN"] = origin
@@ -336,7 +356,7 @@ class Image(object):
         """
 
         # Check if the region file exists
-        if not filesystem.is_file(path): raise IOError("")
+        if not filesystem.is_file(path): raise IOError("The region file does not exist")
 
         # Create an Region object from the regions file
         region = Region.from_file(path)
@@ -373,9 +393,6 @@ class Image(object):
         :param state:
         :return:
         """
-
-        # Deselect all frames, regions and masks of this image
-        self.deselect_all()
 
         # Loop over the entries in the state dictionary
         for identifier, selected in state.items():
