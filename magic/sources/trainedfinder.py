@@ -70,7 +70,7 @@ class TrainedFinder(Configurable):
         self.sources = []
 
         # The classifier
-        self.classifier = Classifier()
+        #self.classifier = Classifier()
 
         # List of stars
         self.stars = []

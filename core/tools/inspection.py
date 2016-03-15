@@ -64,6 +64,18 @@ skirt_run_dir = os.path.join(skirt_root_dir, "run") if skirt_path is not None el
 
 # -----------------------------------------------------------------
 
+def pts_installation_is_conform():
+
+    """
+    This function ...
+    :return:
+    """
+
+    pts_root_dir_name = filesystem.name(pts_root_dir)
+    return pts_root_dir_name == "PTS"
+
+# -----------------------------------------------------------------
+
 def remote_host_ids():
 
     """
@@ -121,6 +133,22 @@ def has_mpi():
         subprocess.Popen("mpirun", stdout=devnull, stderr=devnull).communicate()
         return True
     except: return False
+
+# -----------------------------------------------------------------
+
+def mpi_version():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Execute 'mpirun --version' and get the output
+    process = subprocess.Popen(["mpirun", "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    output = process.communicate()[0]
+
+    # Return the relevant portion of the output
+    return "OpenMPI " + output.splitlines()[0].split(") ")[1]
 
 # -----------------------------------------------------------------
 
