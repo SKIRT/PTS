@@ -211,7 +211,7 @@ class SourceFinder(Configurable):
         self.find_stars()
 
         # 4. Look for other sources
-        self.find_other_sources()
+        if self.config.find_other_sources: self.find_other_sources()
 
         # 5. Build and update catalog
         self.build_and_synchronize_catalog()
