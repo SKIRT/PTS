@@ -305,7 +305,7 @@ class SkirtTestSuite(object):
             else:
 
                 status = "Failed"
-                log.failure("Test case " + casename + ": failed")
+                log.error("Test case " + casename + ": failed")
 
                 # Write to the report file
                 self._report.write("<div class='row'>\n")
@@ -422,7 +422,6 @@ def findsubdirectory(parent, name):
             if (os.path.join(os.path.basename(dirpath), dirname).lower() == name.lower()): return os.path.join(dirpath, dirname)
 
     # If no match is found, show an error message and quit
-    log = Log()
     log.error(name + " not found in " + parent)
     sys.exit()
 
