@@ -596,24 +596,11 @@ class Frame(np.ndarray):
         coor1 = self.wcs.wcs_pix2world(0.0, 0.0, 0)
         coor2 = self.wcs.wcs_pix2world(self.xsize - 1.0, self.ysize - 1.0, 0)
 
-        #print(float(coor1[0]), float(coor1[1]))
-        #print(float(coor2[0]), float(coor2[1]))
-
-        # Some pixel coordinates of interest.
-        #pixels = np.array([[0.0, 0.0], [self.xsize - 1.0, self.ysize - 1.0]])
-        #world = self.wcs.all_pix2world(pixels, 0)  # Convert pixel coordinates to world coordinates (RA and DEC in degrees)
-        #print(world)
-
         co1 = SkyCoordinate(ra=float(coor1[0]), dec=float(coor1[1]), unit="deg", frame='fk5')
         co2 = SkyCoordinate(ra=float(coor2[0]), dec=float(coor2[1]), unit="deg", frame='fk5')
 
         #print("co1=", co1.to_string('hmsdms'))
         #print("co2=", co2.to_string('hmsdms'))
-
-        #coordinate1 = world[0]
-        #coordinate2 = world[1]
-        #ra_range = [coordinate2[0], coordinate1[0]]
-        #dec_range = [coordinate2[1], coordinate1[1]]
 
         ra_range = [co1.ra.value, co2.ra.value]
         dec_range = [co1.dec.value, co2.dec.value]
@@ -640,9 +627,20 @@ class Frame(np.ndarray):
         ref_pix = self.wcs.wcs.crpix
         ref_world = self.wcs.wcs.crval
 
-        # Get the number of pixels
-        size_dec_deg = self.ysize * x_pixelscale_deg
-        size_ra_deg = self.xsize * y_pixelscale_deg
+        # Get the orientation of the coordinate system
+        orientation = self.wcs.orientation
+
+        if "x" in orientation[0] and "y" in orientation[1]: # RA axis = x axis and DEC axis = y axis
+
+            size_ra_deg = self.xsize * x_pixelscale_deg
+            size_dec_deg = self.ysize * y_pixelscale_deg
+
+        elif "y" in orientation[0] and "x" in orientation[1]: # RA axis = y axis and DEC axis = x axis
+
+            size_ra_deg = self.ysize * y_pixelscale_deg
+            size_dec_deg = self.xsize * x_pixelscale_deg
+
+        else: raise ValueError("Invalid coordinate system orientation:" + str(orientation))
 
         if not silent:
 
@@ -653,7 +651,7 @@ class Frame(np.ndarray):
             if not np.isclose(ra_distance, size_ra_deg, rtol=0.05):
                 print("ERROR: the coordinate system and pixel scale do not match: ra_distance = " + str(ra_distance) + ", size_ra_deg = " + str(size_ra_deg))
             if not np.isclose(dec_distance, size_dec_deg, rtol=0.05):
-                print("ERROR: the coordinate system and pixel scale do not match: dec_distance = " + str(dec_distance) + ",size_dec_deg = " + str(size_dec_deg))
+                print("ERROR: the coordinate system and pixel scale do not match: dec_distance = " + str(dec_distance) + ", size_dec_deg = " + str(size_dec_deg))
 
         center = SkyCoordinate(ra=ra_center, dec=dec_center, unit="deg", frame="fk5")
 

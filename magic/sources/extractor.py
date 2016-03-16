@@ -315,7 +315,7 @@ class SourceExtractor(Configurable):
 
             # Estimate the background
             try:
-                source.estimate_background(self.config.interpolation_method, True)
+                source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
             except ValueError: # ValueError: zero-size array to reduction operation minimum which has no identity
                 # in: limits = (np.min(known_points), np.max(known_points)) [inpaint_biharmonic]
                 count += 1

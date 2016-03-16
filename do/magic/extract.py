@@ -49,6 +49,7 @@ parser.add_argument("--bad", type=str, help="the name of the file specifying reg
 
 # The interpolation method to use (default is 'biharmonic')
 parser.add_argument("--interpolation", type=str, help="the interpolation method to use")
+parser.add_argument("--disable_sigma_clipping", action="store_true", help="add this option to disable sigma-clipping during the interpolation")
 
 # Parse the command line arguments
 arguments = parser.parse_args()
@@ -142,6 +143,9 @@ extractor = SourceExtractor.from_arguments(arguments)
 
 # Set the interpolation method (if specified)
 if arguments.interpolation is not None: extractor.config.interpolation_method = arguments.interpolation
+
+# Set sigma-clipping
+if arguments.disable_sigma_clipping: extractor.config.sigma_clip = False
 
 # Run the extractor
 extractor.run(image.frames.primary, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments)

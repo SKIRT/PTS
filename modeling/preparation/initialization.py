@@ -266,6 +266,10 @@ class DataInitializer(PreparationComponent):
 
             # -----------------------------------------------------------------
 
+            # Don't look for stars in the Halpha image
+            if "Halpha" in prep_name: self.source_finder.config.find_stars = False
+            else: self.source_finder.config.find_stars = True # still up to the SourceFinder to decide whether stars should be found (based on the filter)
+
             # Run the source finder on this image
             self.source_finder.run(image.frames.primary, self.galactic_catalog, self.stellar_catalog, bad_mask=bad_mask)
 

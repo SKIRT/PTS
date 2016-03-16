@@ -207,7 +207,7 @@ class DataPreparer(PreparationComponent):
         # -- Fixed properties for the image preparer (valid for all target images)
 
         # Set the path to the reference image for the rebinning
-        reference_path = filesystem.join(self.data_path, self.config.reference_image, "initialized.fits")
+        reference_path = filesystem.join(self.prep_paths[self.config.reference_image], "initialized.fits")
 
         # Set the path of the rebinning reference path and the kernel image
         self.image_preparer.config.rebinning.rebin_to = reference_path
