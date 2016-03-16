@@ -383,7 +383,7 @@ class GalaxyFinder(Configurable):
         center = self.principal.pixel_position(self.frame.wcs)
 
         # Get the angle
-        angle = self.principal.pa
+        angle = self.principal.pa_for_wcs(self.frame.wcs)
 
         x_radius = 0.5 * self.principal.major.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
         y_radius = 0.5 * self.principal.minor.to("arcsec").value / self.frame.xy_average_pixelscale.to("arcsec/pix").value
@@ -499,7 +499,7 @@ class GalaxyFinder(Configurable):
             center = galaxy.pixel_position(self.frame.wcs)
 
             # Set the angle
-            angle = galaxy.pa.to("deg") if galaxy.pa is not None else 0.0
+            angle = galaxy.pa_for_wcs(self.frame.wcs).to("deg") if galaxy.pa is not None else 0.0
 
             if galaxy.major is None:
 

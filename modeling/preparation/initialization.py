@@ -260,24 +260,27 @@ class DataInitializer(PreparationComponent):
             # Run the source finder on this image
             self.source_finder.run(image.frames.primary, self.catalog_importer.galactic_catalog, self.catalog_importer.stellar_catalog)
 
+            sources_output_path = filesystem.join(output_path, "sources")
+            filesystem.create_directory(sources_output_path)
+
             # Save the galaxy region
             galaxy_region = self.source_finder.galaxy_region
-            path = filesystem.join(output_path, "galaxies.reg")
+            path = filesystem.join(sources_output_path, "galaxies.reg")
             galaxy_region.save(path)
 
             # Save the star region
             star_region = self.source_finder.star_region
-            path = filesystem.join(output_path, "stars.reg")
+            path = filesystem.join(sources_output_path, "stars.reg")
             if star_region is not None: star_region.save(path)
 
             # Save the saturation region
             saturation_region = self.source_finder.saturation_region
-            path = filesystem.join(output_path, "saturation.reg")
+            path = filesystem.join(sources_output_path, "saturation.reg")
             if saturation_region is not None: saturation_region.save(path)
 
             # Save the region of other sources
             other_region = self.source_finder.other_region
-            path = filesystem.join(output_path, "other_sources.reg")
+            path = filesystem.join(sources_output_path, "other_sources.reg")
             other_region.save(path)
 
             # -----------------------------------------------------------------
@@ -295,7 +298,7 @@ class DataInitializer(PreparationComponent):
             segments.add_frame(self.source_finder.other_segments, "other_sources")
 
             # Save the FITS file with the segmentation maps
-            path = filesystem.join(output_path, "segments.fits")
+            path = filesystem.join(sources_output_path, "segments.fits")
             segments.save(path)
 
             # -----------------------------------------------------------------

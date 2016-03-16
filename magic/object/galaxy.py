@@ -95,6 +95,22 @@ class Galaxy(SkyObject):
 
     # -----------------------------------------------------------------
 
+    def pa_for_wcs(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        orientation = wcs.orientation_angle
+
+        # Add the orientation angle (w.r.t. standard E-W and S-N projection on the x and y axes) to the position angle
+        # that is expressed in the standard way
+        return self.pa + orientation
+
+    # -----------------------------------------------------------------
+
     def contains(self, position):
 
         """
@@ -148,7 +164,7 @@ class Galaxy(SkyObject):
         """
 
         if self.pa is None: angle = Angle(0.0, "deg")
-        else: angle = self.pa
+        else: angle = self.pa_for_wcs(wcs)
 
         if self.major is None:
 

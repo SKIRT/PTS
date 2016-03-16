@@ -72,7 +72,7 @@ class SkyCoordinate(SkyCoord):
         :return:
         """
 
-        return super(SkyCoordinate).from_pixel(coordinate.x, coordinate.y, wcs, origin=0, mode=mode)
+        return super(SkyCoordinate, cls).from_pixel(coordinate.x, coordinate.y, wcs, origin=0, mode=mode)
 
     # -----------------------------------------------------------------
 

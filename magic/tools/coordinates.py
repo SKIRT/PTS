@@ -188,9 +188,9 @@ def ra_distance(declination, ra_a, ra_b):
 
     """
     This function ...
-    :param declination:
-    :param ra_a:
-    :param ra_b:
+    :param declination: dec in degrees
+    :param ra_a: ra in degrees
+    :param ra_b: ra in degrees
     :return:
     """
 

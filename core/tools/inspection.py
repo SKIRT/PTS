@@ -76,6 +76,17 @@ def pts_installation_is_conform():
 
 # -----------------------------------------------------------------
 
+def skirt_installation_is_conform():
+
+    """
+    This function ...
+    """
+
+    skirt_root_dir_name = filesystem.name(skirt_root_dir)
+    return skirt_root_dir_name == "SKIRT"
+
+# -----------------------------------------------------------------
+
 def remote_host_ids():
 
     """
