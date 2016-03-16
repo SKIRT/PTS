@@ -53,6 +53,9 @@ class ModelingComponent(Configurable):
         # PTS directories
         self.kernels_path = None
 
+        # The output path
+        self.output_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):

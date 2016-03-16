@@ -307,6 +307,7 @@ class SourceExtractor(Configurable):
         nsources = len(self.sources)
         count = 0
 
+        # Loop over all sources and remove them from the frame
         for source in self.sources:
 
             # Debugging
@@ -346,5 +347,27 @@ class SourceExtractor(Configurable):
 
         # Set the NaN pixels to zero in the frame
         self.frame[self.nan_mask] = float("nan")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def principal_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        largest_shape = None
+
+        # Loop over all the shapes in the galaxy region
+        for shape in self.galaxy_region:
+
+            major_axis_length = shape.major
+
+            if largest_shape is None or major_axis_length > largest_shape.major: largest_shape = shape
+
+        # Return the largest shape in the galaxy region
+        return largest_shape
 
 # -----------------------------------------------------------------

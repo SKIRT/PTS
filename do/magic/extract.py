@@ -43,9 +43,12 @@ parser.add_argument('--report', action='store_true', help='write a report file')
 parser.add_argument("-i", "--input", type=str, help="the name of the input directory")
 parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
 
+# Input regions
 parser.add_argument("--special", type=str, help="the name of the file specifying regions with objects needing special attention")
-
 parser.add_argument("--bad", type=str, help="the name of the file specifying regions that have to be added to the mask of bad pixels")
+
+# The interpolation method to use (default is 'biharmonic')
+parser.add_argument("--interpolation", type=str, help="the interpolation method to use")
 
 # Parse the command line arguments
 arguments = parser.parse_args()
@@ -127,13 +130,21 @@ other_region = Region.from_file(other_region_path)
 segments_path = filesystem.join(input_path, "segments.fits")
 segments = Image.from_file(segments_path)
 
+# Get the segmentation maps
+galaxy_segments = segments.frames.galaxies
+star_segments = segments.frames.stars
+other_segments = segments.frames.other_sources
+
 # -----------------------------------------------------------------
 
 # Create an Extractor instance and configure it according to the command-line arguments
 extractor = SourceExtractor.from_arguments(arguments)
 
+# Set the interpolation method (if specified)
+if arguments.interpolation is not None: extractor.config.interpolation_method = arguments.interpolation
+
 # Run the extractor
-extractor.run(image.frames.primary, galaxy_region, star_region, saturation_region, other_region, segments.frames.galaxies, segments.frames.stars, segments.frames.other_sources)
+extractor.run(image.frames.primary, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments)
 
 # -----------------------------------------------------------------
 

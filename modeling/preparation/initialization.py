@@ -86,6 +86,10 @@ class DataInitializer(PreparationComponent):
         # The reference image frame
         self.reference = None
 
+        # The galactic and stellar catalogs
+        self.galactic_catalog = None
+        self.stellar_catalog = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -174,6 +178,10 @@ class DataInitializer(PreparationComponent):
         # Run the catalog importer
         self.catalog_importer.run(self.reference)
 
+        # Get the galactic and stellar catalogs
+        self.galactic_catalog = self.catalog_importer.galactic_catalog
+        self.stellar_catalog = self.catalog_importer.stellar_catalog
+
     # -----------------------------------------------------------------
 
     def check_images(self):
@@ -182,6 +190,9 @@ class DataInitializer(PreparationComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Checking the input images ...")
 
         # Loop over all subdirectories of the data directory
         for path in filesystem.directories_in_path(self.data_path, not_contains="bad", returns="path"):
@@ -200,9 +211,6 @@ class DataInitializer(PreparationComponent):
 
                 # Debugging
                 log.debug("Checking " + image_path + " ...")
-
-                # Determine the name used to identify this image for the preparation routines
-                prep_name = self.prep_names[image_name]
 
                 # Determine the output path for this image
                 output_path = self.prep_paths[image_name]
@@ -250,16 +258,18 @@ class DataInitializer(PreparationComponent):
             importer = ImageImporter()
             importer.run(image_path, bad_region_path, fwhm=fwhm)
 
-            # Add the image that has to be processed to the list
-            #self.images.append(importer.image)
-
+            # Get the imported image
             image = importer.image
+
+            # Get the mask of bad pixels
+            bad_mask = image.masks.bad if "bad" in image.masks else None
 
             # -----------------------------------------------------------------
 
             # Run the source finder on this image
-            self.source_finder.run(image.frames.primary, self.catalog_importer.galactic_catalog, self.catalog_importer.stellar_catalog)
+            self.source_finder.run(image.frames.primary, self.galactic_catalog, self.stellar_catalog, bad_mask=bad_mask)
 
+            # Determine the path to the "sources" directory within the output path for this image
             sources_output_path = filesystem.join(output_path, "sources")
             filesystem.create_directory(sources_output_path)
 
