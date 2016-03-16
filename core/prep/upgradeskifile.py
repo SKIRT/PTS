@@ -33,7 +33,7 @@ from ..simulation.skifile import SkiFile
 # The name of the backup copy (if one is made) includes a time stamp and has the ".xml" filename extension.
 # The function returns true if the ski file was upgraded (and a backup copy was made), false otherwise.
 #
-# Of two arguments are given, the source file remains untouched and a new, possibly upgraded ski file
+# If two arguments are given, the source file remains untouched and a new, possibly upgraded ski file
 # is placed at the target filepath, overwriting any existing file. No extra backup is made.
 # The function returns true if the target ski file was upgraded, false otherwise.
 #
@@ -1287,6 +1287,52 @@ def _get_upgrade_definitions():
                 <xsl:value-of select="@extentZ"/>
             </xsl:attribute>
             <xsl:apply-templates select="node()"/>
+        </xsl:element>
+    </xsl:template>
+    '''),
+
+    # git 652-88a35b7 (Mar 16, 2016): replace Crop/CavityGeometryDecorator classes by ClipGeometryDecorator subclasses
+    ('''//CropGeometryDecorator''',
+    '''
+    <xsl:template match="CropGeometryDecorator">
+        <xsl:element name="BoxClipGeometryDecorator">
+            <xsl:attribute name="remove">
+                <xsl:value-of select="'Outside'"/>
+            </xsl:attribute>
+            <xsl:apply-templates select="@*|node()"/>
+        </xsl:element>
+    </xsl:template>
+    '''),
+    ('''//SpheCropGeometryDecorator''',
+    '''
+    <xsl:template match="SpheCropGeometryDecorator">
+        <xsl:element name="SphericalClipGeometryDecorator">
+            <xsl:attribute name="remove">
+                <xsl:value-of select="'Outside'"/>
+            </xsl:attribute>
+            <xsl:apply-templates select="@*|node()"/>
+        </xsl:element>
+    </xsl:template>
+    '''),
+    ('''//SphericalCavityGeometryDecorator''',
+    '''
+    <xsl:template match="SphericalCavityGeometryDecorator">
+        <xsl:element name="SphericalClipGeometryDecorator">
+            <xsl:attribute name="remove">
+                <xsl:value-of select="'Inside'"/>
+            </xsl:attribute>
+            <xsl:apply-templates select="@*|node()"/>
+        </xsl:element>
+    </xsl:template>
+    '''),
+    ('''//CylindricalCavityGeometryDecorator''',
+    '''
+    <xsl:template match="CylindricalCavityGeometryDecorator">
+        <xsl:element name="CylindricalClipGeometryDecorator">
+            <xsl:attribute name="remove">
+                <xsl:value-of select="'Inside'"/>
+            </xsl:attribute>
+            <xsl:apply-templates select="@*|node()"/>
         </xsl:element>
     </xsl:template>
     '''),
