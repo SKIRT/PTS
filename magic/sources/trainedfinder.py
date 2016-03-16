@@ -79,6 +79,7 @@ class TrainedFinder(Configurable):
         self.galaxy_finder = None
         self.star_finder = None
 
+        # The region
         self.region = Region()
 
     # -----------------------------------------------------------------
