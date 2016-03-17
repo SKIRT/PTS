@@ -58,6 +58,33 @@ class ScalingTest(Configurable):
         # Initialize a list to contain the retrieved simulations
         self.simulations = []
 
+        # The number of cores on the remote system
+        self.cores = None
+
+        # The number of (hyper)threads to be used per core
+        self.threads_per_core = None
+
+        # The minimum and maximum number of processors to use for the scaling test
+        self.min_processors = None
+        self.max_processors = None
+
+        # Information about the parallelization mode used for the scaling test
+        self.mode_info = None
+        self.mode_info_long = None
+
+        # The simulation prefix
+        self.prefix = None
+
+        # The base path
+        self.base_path = None
+
+        # The name of the scaling run
+        self.scaling_run_name = None
+        self.long_scaling_run_name = None
+
+        # The SKIRT arguments object
+        self.arguments = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -132,11 +159,22 @@ class ScalingTest(Configurable):
         # Setup the remote SKIRT execution context
         self.remote.setup(self.config.remote, self.config.cluster)
 
-        # Determine whether we are dealing with a scheduling system or we can launch simulations right away
-        self.scheduler = self.remote.host.scheduler
-
-        # Get the number of cores (per node) on this system from a pre-defined dictionary
+        # Get the number of cores (per node) on the remote system
+        # (cache it because it requires a external call each time)
         self.cores = self.remote.cores
+
+        # Determine how many threads that we want to use per core, depending on the number of hyperthreads per core
+        # on the remote system and whether hyperthreading is enabled in the remote host configuration file
+        if self.remote.host.use_hyperthreading:
+
+            # Inform the user
+            log.info("Hybrid and pure-threading scaling tests will be performed with hyperthreading enabled")
+
+            # Set the number of threads per core equal to the number of hyperthreads on the system
+            self.threads_per_core = self.remote.threads_per_core
+
+        # If hyperthreading is not enabled for the remote host, set the number of threads per core to one
+        else: self.threads_per_core = 1
 
         # -- The minimum and maximum number of processors --
 
@@ -151,7 +189,7 @@ class ScalingTest(Configurable):
 
         # In hybrid mode, the minimum number of processors also represents the number of threads per process
         self.threads_per_process = 1
-        if self.config.mode == "hybrid": self.threads_per_process = self.min_processors
+        if self.config.mode == "hybrid": self.threads_per_process = self.min_processors * self.threads_per_core
 
         # Create a string that identifies the parallelization mode, where the number of threads per process has been
         # appended for hybrid mode
@@ -315,7 +353,7 @@ class ScalingTest(Configurable):
             processors *= 2
 
         # If the remote host does not use a scheduling system, manually start the queued simulations
-        if not self.scheduler:
+        if not self.remote.scheduler:
 
             # Determine a local path for the batch script for manual inspection
             shell_script_path = filesystem.join(self.temp_path_run, "simulations.sh")
@@ -386,6 +424,7 @@ class ScalingTest(Configurable):
         infofile.write(" - output directory: " + self.output_path_simulation + "\n")
         infofile.write(" - number of processes: " + str(processes) + "\n")
         infofile.write(" - number of threads per processes: " + str(threads) + "\n")
+        infofile.write(" - number of (hyper)threads per core: " + str(self.threads_per_core) + "\n")
 
         # Schedule or launch the simulation
         self.run_simulation(processors, processes, threads, infofile)
@@ -431,7 +470,7 @@ class ScalingTest(Configurable):
         infofile.write(" - number of requested processors per node: " + str(ppn) + "\n")
 
         # Calculate the expected walltime for this number of processors if a scheduling system is used
-        if self.scheduler:
+        if self.remote.scheduler:
             walltime = self.estimate_walltime(processes, threads)
             log.info(" - expected walltime: " + str(walltime) + " seconds")
         else: walltime = None
@@ -450,7 +489,7 @@ class ScalingTest(Configurable):
 
         # Run the simulation
         scheduling_options = None
-        if self.scheduler:
+        if self.remote.scheduler:
 
             # Create the job script. The name of the script indicates the mode in which we run this scaling test and
             # the current number of processors used. We enable the SKIRT verbose logging mode to be able to compare
@@ -488,7 +527,7 @@ class ScalingTest(Configurable):
         simulation.scaling_run_name = self.long_scaling_run_name
         simulation.scaling_data_file = self.scaling_file_path
         simulation.scaling_plot_path = self.plot_path_system
-        if not self.scheduler: simulation.screen_name = self.long_scaling_run_name
+        if not self.remote.scheduler: simulation.screen_name = self.long_scaling_run_name
 
         # Save the simulation file
         simulation.save()
@@ -594,14 +633,15 @@ class ScalingTest(Configurable):
         if self.config.mode == "mpi": processes = processors
 
         # In threads mode, each processor runs a seperate thread within the same process
-        if self.config.mode == "threads": threads = processors
+        if self.config.mode == "threads": threads = processors * self.threads_per_core
 
         # In hybrid mode, the number of processes depends on how many threads are requested per process
         # and the current number of processors
         if self.config.mode == "hybrid":
 
             threads = self.threads_per_process
-            processes = processors // self.threads_per_process
+            cores_per_process = self.self.threads_per_process / self.threads_per_core
+            processes = processors // cores_per_process
 
         # Return the number of processes and the number of threads
         return processes, threads
