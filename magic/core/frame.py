@@ -320,6 +320,25 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
+    def normalize(self, to=1.0):
+
+        """
+        This function ...
+        :param to:
+        :return:
+        """
+
+        # Calculate the sum of all the pixels
+        sum = np.nansum(self)
+
+        # Calculate the conversion factor
+        factor = to / sum
+
+        # Multiply the frame with the conversion factor
+        self.__imul__(factor)
+
+    # -----------------------------------------------------------------
+
     def convolved(self, kernel):
 
         """

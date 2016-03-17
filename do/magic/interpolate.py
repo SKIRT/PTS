@@ -21,21 +21,35 @@ from pts.magic.tools import interpolation
 from pts.magic.core.frame import Frame
 from pts.magic.basics.mask import Mask
 from pts.magic.basics.region import Region
-from pts.core.tools import logging, time, filesystem
+from pts.core.tools import logging, time, filesystem, parsing
 
 # -----------------------------------------------------------------
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
+
+# Basic
 parser.add_argument("image", type=str, help="the name of the input image")
 parser.add_argument("region", type=str, help="the name of the region file over which to interpolate")
+
+# Output options
 parser.add_argument("--mask", action="store_true", help="write out the mask")
+
+# Options for the input region
 parser.add_argument("--color", type=str, help="only interpolate over the shapes with this color")
 parser.add_argument("--ignore_color", type=str, help="ignore shapes with this particular color")
+parser.add_argument("--shapes", type=parsing.string_list, help="only interpolate over these kinds of shapes")
+
+# Logging options
 parser.add_argument('--report', action='store_true', help='write a report file')
+parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
+
+# Input and output
 parser.add_argument("-i", "--input", type=str, help="the name of the input directory")
 parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
-parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
+
+# Interpolation method
+parser.add_argument("--method", type=str, help="the interpolation method to use", default="biharmonic")
 
 # Parse the command line arguments
 arguments = parser.parse_args()
@@ -105,15 +119,13 @@ log.info("Loading the region ...")
 
 # Load in the region
 region_path = filesystem.join(input_path, arguments.region)
-region = Region.from_file(region_path, only=["circle", "ellipse", "polygon"], color=arguments.color, ignore_color=arguments.ignore_color)
+region = Region.from_file(region_path, only=arguments.shapes, color=arguments.color, ignore_color=arguments.ignore_color)
 
 # Inform the user
 log.info("Creating a mask from the region ...")
 
 # Create a mask from the region
 mask = region.to_mask(frame.xsize, frame.ysize)
-
-#plotting.plot_box(mask)
 
 # Inform the user
 log.info("Interpolating the frame within the masked pixels ...")
@@ -125,7 +137,9 @@ nans = Mask.is_nan(frame)
 frame[nans] = 0.0
 
 # Interpolate the frame in the masked pixels
-data = interpolation.inpaint_biharmonic(frame, mask)
+if arguments.method == "biharmonic": data = interpolation.inpaint_biharmonic(frame, mask)
+elif arguments.method == "local_mean": data = interpolation.in_paint(frame, mask, method="localmean")
+else: raise ValueError("Invalid interpolation method (should be 'biharmonic' or 'local_mean')")
 new_frame = Frame(data)
 
 # Set the original NaN pixels back to NaN

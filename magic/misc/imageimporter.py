@@ -192,22 +192,22 @@ class ImageImporter(Configurable):
                 self.image.add_frame(error_frame, "errors")
 
         # Still no errors frame
-        if "errors" not in self.image.frames:
+        #if "errors" not in self.image.frames:
 
-            log.warning("No error data found for " + self.image_name + ".fits, adding errors frame that is zero everywhere")
+            #log.warning("No error data found for " + self.image_name + ".fits, adding errors frame that is zero everywhere")
 
             # Create a new errors frame (all zeros) and add it to the image
             # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-            new_error_frame = Frame(np.zeros(self.image.shape),
-                                    wcs=self.image.wcs,
-                                    name="errors",
-                                    description="the error map",
-                                    unit=self.image.unit,
-                                    zero_point=self.image.frames.primary.zero_point,
-                                    filter=self.image.filter,
-                                    sky_subtracted=False,
-                                    fwhm=self.image.fwhm)
-            self.image.add_frame(new_error_frame, "errors")
+            #new_error_frame = Frame(np.zeros(self.image.shape),
+            #                        wcs=self.image.wcs,
+            #                        name="errors",
+            #                        description="the error map",
+            #                        unit=self.image.unit,
+            #                        zero_point=self.image.frames.primary.zero_point,
+            #                        filter=self.image.filter,
+            #                        sky_subtracted=False,
+            #                        fwhm=self.image.fwhm)
+            #self.image.add_frame(new_error_frame, "errors")
 
     # -----------------------------------------------------------------
 

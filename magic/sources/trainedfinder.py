@@ -80,7 +80,7 @@ class TrainedFinder(Configurable):
         self.star_finder = None
 
         # The region
-        self.region = Region()
+        self.region = None
 
     # -----------------------------------------------------------------
 
@@ -206,6 +206,9 @@ class TrainedFinder(Configurable):
 
         # Inform the user
         log.info("Constructing elliptical contours to encompass sources ...")
+
+        # Initialize the region
+        self.region = Region()
 
         # Return the list of apertures
         contours = sources.find_contours(self.segments, self.segments, self.config.detection.apertures.sigma_level)

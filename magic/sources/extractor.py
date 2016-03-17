@@ -160,10 +160,10 @@ class SourceExtractor(Configurable):
         self.load_galaxy_sources()
 
         # Load the star sources
-        self.load_star_sources()
+        if self.star_region is not None: self.load_star_sources()
 
         # Load the other sources
-        self.load_other_sources()
+        if self.other_region is not None: self.load_other_sources()
 
     # -----------------------------------------------------------------
 

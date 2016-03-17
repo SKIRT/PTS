@@ -12,9 +12,13 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # -----------------------------------------------------------------
 
 class Layers(dict):
+#class Layers(OrderedDict):
 
     """
     This class is a wrapper around the dict class, with the additional benefit of being able to access its values
@@ -28,6 +32,17 @@ class Layers(dict):
     def __getattr__(self, attr): return self.get(attr, None)
     __setattr__= dict.__setitem__   # Set an item of the dictionary
     __delattr__= dict.__delitem__   # Delete an item from the dictionary
+
+    # -----------------------------------------------------------------
+
+    def get_first(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self[self.keys()[0]]
 
     # -----------------------------------------------------------------
 

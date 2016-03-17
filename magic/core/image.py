@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 # Import astronomical modules
 import aplpy
 from astropy.io import fits
-from astropy import units as u
+from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ..basics.layers import Layers
@@ -271,7 +271,19 @@ class Image(object):
 
         plane_index = 0
 
-        header = None
+        #header = None
+
+        # Create a header from the wcs
+        if self.wcs is not None: header = self.wcs.to_header() # Create a header from the coordinate system
+        else: header = fits.Header() # Construct a new header
+
+        # Get the names of the frames
+        frame_names = self.frames.keys()
+
+        # Sort the frame names so that 'primary' is always first
+        if "primary" in frame_names:
+            frame_names.remove("primary")
+            frame_names.insert(0, "primary")
 
         # Export all frames to the specified file
         for frame_name in self.frames:
@@ -279,10 +291,7 @@ class Image(object):
             # Inform the user that this frame will be saved to the image file
             log.info("Exporting the " + frame_name + " frame to " + path)
 
-            if header is None: header = self.frames[frame_name].header
-
-            # Check if the coordinate system of this frame matches that of the other frames
-            #if header != self.frames[frame_name].header: raise ValueError("The WCS of the different frames does not match")
+            # Check if the coordinate system of this frame matches that of the other frames ?
 
             # Add this frame to the data cube, if its coordinates match those of the primary frame
             datacube.append(self.frames[frame_name])
@@ -416,6 +425,9 @@ class Image(object):
         :param unit:
         :return:
         """
+
+        # Convert string units to Astropy unit objects
+        if isinstance(unit, basestring): unit = Unit(unit)
 
         # Loop over all frames
         for frame_name in self.frames:
@@ -906,7 +918,7 @@ class Image(object):
                             log.warning("Rebinning the " + name + " frame (plane " + str(i) + ") of " + filename + " to match the shape of this image")
 
                             # Check if the unit is a surface brightness unit
-                            if unit != u.Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(unit) + " is not recognized as a surface brightness unit")
+                            if unit != Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(unit) + " is not recognized as a surface brightness unit")
 
                             # Change the data and the WCS
                             hdu.data[i] = transformations.align_and_rebin(hdu.data[i], flattened_header, self.wcs.to_header())
@@ -957,7 +969,7 @@ class Image(object):
                         log.warning("Rebinning the " + name + " frame (plane 0) of " + filename + " to match the shape of this image")
 
                         # Check if the unit is a surface brightness unit
-                        if unit != u.Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(unit) + " is not recognized as a surface brightness unit")
+                        if unit != Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(unit) + " is not recognized as a surface brightness unit")
 
                         # Change the data and the WCS
                         hdu.data = transformations.align_and_rebin(hdu.data, flattened_header, self.wcs.to_header())

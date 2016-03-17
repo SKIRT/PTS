@@ -49,6 +49,15 @@ fwhms = {"GALEX FUV": 4.48 * Unit("arcsec"),
          "SPIRE PMW_ext": 24.88 * Unit("arcsec"),
          "SPIRE PLW_ext": 36.09 * Unit("arcsec")}
 
+fwhms_from_finding = {"2MASS H": 4.640929858306589 * Unit("arcsec"),
+                      "2MASS J": 4.580828087551186 * Unit("arcsec"),
+                      "2MASS Ks": 4.662813601376219 * Unit("arcsec"),
+                      "SDSS g": 2.015917936060279 * Unit("arcsec"),
+                      "SDSS i": 1.85631074608032 * Unit("arcsec"),
+                      "SDSS r": 2.026862297071852 * Unit("arcsec"),
+                      "SDSS u": 2.327165667182196 * Unit("arcsec"),
+                      "SDSS z": 1.841443699129355 * Unit("arcsec")}
+
 # -----------------------------------------------------------------
 
 # The total H-alpha flux (reference: FAR-ULTRAVIOLET AND Ha IMAGING OF NEARBY SPIRAL GALAXIES: THE OB STELLAR,
@@ -266,74 +275,113 @@ class DataInitializer(PreparationComponent):
 
             # -----------------------------------------------------------------
 
-            # Don't look for stars in the Halpha image
-            if "Halpha" in prep_name: self.source_finder.config.find_stars = False
-            else: self.source_finder.config.find_stars = True # still up to the SourceFinder to decide whether stars should be found (based on the filter)
-
-            # Run the source finder on this image
-            self.source_finder.run(image.frames.primary, self.galactic_catalog, self.stellar_catalog, bad_mask=bad_mask)
-
-            # Determine the path to the "sources" directory within the output path for this image
             sources_output_path = filesystem.join(output_path, "sources")
-            filesystem.create_directory(sources_output_path)
 
-            # Save the galaxy region
-            galaxy_region = self.source_finder.galaxy_region
-            path = filesystem.join(sources_output_path, "galaxies.reg")
-            galaxy_region.save(path)
+            # Already done ...
+            if filesystem.is_directory(sources_output_path):
 
-            # Save the star region
-            star_region = self.source_finder.star_region
-            path = filesystem.join(sources_output_path, "stars.reg")
-            if star_region is not None: star_region.save(path)
+                if prep_name in fwhms: fwhm = fwhms[prep_name]
+                else: fwhm = fwhms_from_finding[prep_name]
 
-            # Save the saturation region
-            saturation_region = self.source_finder.saturation_region
-            path = filesystem.join(sources_output_path, "saturation.reg")
-            if saturation_region is not None: saturation_region.save(path)
+                # Normalize the Halpah image to the published flux
+                if "Halpha" in prep_name:
 
-            # Save the region of other sources
-            other_region = self.source_finder.other_region
-            path = filesystem.join(sources_output_path, "other_sources.reg")
-            other_region.save(path)
+                    image.frames.primary.normalize(halpha_flux.to("erg/s").value)
+                    image.unit = "erg/s"
 
-            # -----------------------------------------------------------------
+                # Set the FWHM
+                image.fwhm = fwhm
 
-            # Create an image with the segmentation maps
-            segments = Image("segments")
+                # Determine the path to the initialized image
+                path = filesystem.join(self.prep_paths[image.name], "initialized.fits")
 
-            # Add the segmentation map of the galaxies
-            segments.add_frame(self.source_finder.galaxy_segments, "galaxies")
+                # Save the image
+                image.save(path)
 
-            # Add the segmentation map of the saturated stars
-            if self.source_finder.star_segments is not None: segments.add_frame(self.source_finder.star_segments, "stars")
+                # Clear the importer
+                importer.clear()
 
-            # Add the segmentation map of the other sources
-            segments.add_frame(self.source_finder.other_segments, "other_sources")
+            # Still to be done
+            else:
 
-            # Save the FITS file with the segmentation maps
-            path = filesystem.join(sources_output_path, "segments.fits")
-            segments.save(path)
+                # Normalize the Halpah image to the published flux
+                if "Halpha" in prep_name:
 
-            # -----------------------------------------------------------------
+                    image.frames.primary.normalize(halpha_flux.to("erg/s").value)
+                    image.unit = "erg/s"
 
-            # Set the FWHM of the image
-            if image.fwhm is None: image.fwhm = self.source_finder.fwhm
+                # Don't look for stars in the Halpha image
+                if "Halpha" in prep_name: self.source_finder.config.find_stars = False
+                else: self.source_finder.config.find_stars = True  # still up to the SourceFinder to decide whether stars should be found (based on the filter)
 
-            # -----------------------------------------------------------------
+                # Fix: don't look for other sources in the IRAC images
+                if "IRAC" in prep_name: self.source_finder.config.find_other_sources = False
+                else: self.source_finder.config.find_other_sources = True
 
-            # Determine the path to the initialized image
-            path = filesystem.join(self.prep_paths[image.name], "initialized.fits")
+                # Run the source finder on this image
+                self.source_finder.run(image.frames.primary, self.galactic_catalog, self.stellar_catalog, bad_mask=bad_mask)
 
-            # Save the image
-            image.save(path)
+                # Determine the path to the "sources" directory within the output path for this image
+                sources_output_path = filesystem.join(output_path, "sources")
+                filesystem.create_directory(sources_output_path)
 
-            # -----------------------------------------------------------------
+                # Save the galaxy region
+                galaxy_region = self.source_finder.galaxy_region
+                galaxy_region_path = filesystem.join(sources_output_path, "galaxies.reg")
+                galaxy_region.save(galaxy_region_path)
 
-            # Clear the source finder
-            self.source_finder.clear()
+                # Save the star region
+                star_region = self.source_finder.star_region
+                star_region_path = filesystem.join(sources_output_path, "stars.reg")
+                if star_region is not None: star_region.save(star_region_path)
 
-            # Clear the image importer
-            self.importer.clear()
+                # Save the saturation region
+                saturation_region = self.source_finder.saturation_region
+                saturation_region_path = filesystem.join(sources_output_path, "saturation.reg")
+                if saturation_region is not None: saturation_region.save(saturation_region_path)
+
+                # Save the region of other sources
+                other_region = self.source_finder.other_region
+                path = filesystem.join(sources_output_path, "other_sources.reg")
+                if other_region is not None: other_region.save(path)
+
+                # -----------------------------------------------------------------
+
+                # Create an image with the segmentation maps
+                segments = Image("segments")
+
+                # Add the segmentation map of the galaxies
+                segments.add_frame(self.source_finder.galaxy_segments, "galaxies")
+
+                # Add the segmentation map of the saturated stars
+                if self.source_finder.star_segments is not None: segments.add_frame(self.source_finder.star_segments, "stars")
+
+                # Add the segmentation map of the other sources
+                if self.source_finder.other_segments is not None: segments.add_frame(self.source_finder.other_segments, "other_sources")
+
+                # Save the FITS file with the segmentation maps
+                path = filesystem.join(sources_output_path, "segments.fits")
+                segments.save(path)
+
+                # -----------------------------------------------------------------
+
+                # Set the FWHM of the image
+                if image.fwhm is None: image.fwhm = self.source_finder.fwhm
+
+                # -----------------------------------------------------------------
+
+                # Determine the path to the initialized image
+                path = filesystem.join(self.prep_paths[image.name], "initialized.fits")
+
+                # Save the image
+                image.save(path)
+
+                # -----------------------------------------------------------------
+
+                # Clear the source finder
+                self.source_finder.clear()
+
+                # Clear the image importer
+                self.importer.clear()
 
 # -----------------------------------------------------------------
