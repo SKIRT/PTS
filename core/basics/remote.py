@@ -757,16 +757,35 @@ class Remote(object):
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:
 
-            # Use the 'lscpu' command to obtain the number of CPU's (hardware threads)
+            # Use the 'lscpu' command to obtain the total number of CPU's (=hardware threads!)
             output = self.execute("lscpu | grep '^CPU(s)'")
             cpus = int(float(output[0].split(":")[1]))
+
+            # Return the number of physical cores
+            return cpus / self.threads_per_core
+
+    # -----------------------------------------------------------------
+
+    @property
+    def threads_per_core(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If the remote host uses a scheduling system, the number of threads per core is defined in the configuration
+        if self.host.scheduler: return self.host.clusters[self.host.cluster_name].threads_per_core
+
+        # If no scheduler is used, the computing node is the actual node we are logged in to
+        else:
 
             # Use the 'lscpu' command to get the number of hardware threads per core
             output = self.execute("lscpu | grep '^Thread(s) per core'")
             threads_per_core = int(float(output[0].split(":")[1]))
 
-            # Return the number of physical cores
-            return cpus / threads_per_core
+            # Return the amount of hyperthreads or 'hardware' threads per physical core
+            return threads_per_core
 
     # -----------------------------------------------------------------
 

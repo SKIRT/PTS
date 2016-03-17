@@ -63,11 +63,11 @@ class SkirtArguments(object):
 
             # Options for logging
             self.logging = Map()
-            self.logging.brief = False      # Brief console logging
-            self.logging.verbose = False    # Verbose logging
-            self.logging.memory = False     # State the amount of used memory with each log message
-            self.logging.allocation = False # Write log messages with the amount of (de)allocated memory
-            self.logging.allocation_limit = 1e-5    # The lower limit for the amount of (de)allocated memory to be logged
+            self.logging.brief = False            # Brief console logging
+            self.logging.verbose = False          # Verbose logging
+            self.logging.memory = False           # State the amount of used memory with each log message
+            self.logging.allocation = False       # Write log messages with the amount of (de)allocated memory
+            self.logging.allocation_limit = 1e-5  # The lower limit for the amount of (de)allocated memory to be logged
 
             # Options for parallelization
             self.parallel = Map()
@@ -121,39 +121,40 @@ class SkirtArguments(object):
 
     # -----------------------------------------------------------------
 
-    def to_command(self, skirt_path, mpi_command, scheduler, to_string=False):
+    def to_command(self, skirt_path, mpi_command, scheduler, bind_to_cores=False, threads_per_core=1, to_string=False):
 
         """
         This function ...
+        :param skirt_path:
+        :param mpi_command:
+        :param scheduler:
+        :param bind_to_cores:
+        :param threads_per_core:
+        :param to_string:
         :return:
         """
 
         # Create the argument list
-        arguments = skirt_command(skirt_path, mpi_command, self.parallel.processes, scheduler)
+        arguments = skirt_command(skirt_path, mpi_command, bind_to_cores, self.parallel.processes, self.parallel.threads, threads_per_core, scheduler)
 
-        ## Parallelization
-
+        # Parallelization options
         if self.parallel.threads > 0: arguments += ["-t", str(self.parallel.threads)]
         if self.parallel.simulations > 1 and self.parallel.processes <= 1: arguments += ["-s", str(self.parallel.simulations)]
 
-        ## Logging
-
+        # Logging options
         if self.logging.brief: arguments += ["-b"]
         if self.logging.verbose: arguments += ["-v"]
         if self.logging.memory: arguments += ["-m"]
         if self.logging.allocation: arguments += ["-l", str(self.logging.allocation_limit)]
 
-        ## Input and output
-
+        # Options for input and output
         if self.input_path is not None: arguments += ["-i", self.input_path]
         if self.output_path is not None: arguments += ["-o", self.output_path]
 
-        ## Other options
-
+        # Other options
         if self.emulate: arguments += ["-e"]
 
-        ## Ski file pattern
-
+        # Ski file pattern
         if self.relative: arguments += ["-k"]
         if self.recursive: arguments += ["-r"]
         if isinstance(self.ski_pattern, basestring): arguments += [self.ski_pattern]
@@ -216,11 +217,17 @@ class SkirtArguments(object):
 
 # -----------------------------------------------------------------
 
-def skirt_command(skirt_path, mpi_command, processes, scheduler):
+def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, threads_per_core, scheduler):
 
     """
     This function ...
+    :param skirt_path:
+    :param mpi_command:
+    :param bind_to_cores:
     :param processes:
+    :param threads:
+    :param threads_per_core:
+    :param scheduler:
     :return:
     """
 
@@ -228,10 +235,23 @@ def skirt_command(skirt_path, mpi_command, processes, scheduler):
     if processes > 1:
 
         # Determine the command based on whether or not a scheduling system is used
-        if scheduler: return mpi_command.split() + [skirt_path]
-        else: return mpi_command.split() + ["-np", str(processes), skirt_path]
+        if scheduler: command = mpi_command.split()
+        else: command = mpi_command.split() + ["-np", str(processes)]
 
-    # Singleprocessing mode
+        # If 'process to core' binding must be enabled, add the 'cpus-per-proc' option
+        # (see https://www.open-mpi.org/faq/?category=tuning)
+        if bind_to_cores:
+            # Hyperthreading: threads_per_core will be > 1
+            # No hyperthreading: threads_per_core will be 1
+            # cores / process = (cores / thread) * (threads / process)
+            cores_per_process = threads / threads_per_core
+            command += ["--cpus-per-proc", str(cores_per_process)] # "CPU'S per process" means "core per process" in our definitions
+
+        # Add the SKIRT path and return the final command list
+        command += [skirt_path]
+        return command
+
+    # Singleprocessing mode, no MPI command or options
     else: return [skirt_path]
 
 # -----------------------------------------------------------------

@@ -45,6 +45,8 @@ def find_host_ids():
         config.output_path = "~/DATA/SKIRT"
         config.scheduler = True
         config.mpi_command = "mpirun"
+        config.force_process_binding = False
+        config.use_hyperthreading = False
         config.modules = ["examplemodule/2016/version2", "examplemodule2/2016/version0.1.3"]
         config.clusters.default = "cluster_a"
         config.clusters.cluster_a.cores = 16
@@ -145,6 +147,8 @@ class Host(object):
         self.output_path = config.output_path
         self.scheduler = config.scheduler
         self.mpi_command = config.mpi_command
+        self.force_process_binding = config.force_process_binding
+        self.use_hyperthreading = config.use_hyperthreading
         self.modules = config.modules
         self.clusters = config.clusters
 

@@ -484,6 +484,8 @@ def find_matches(scripts, name):
 
     """
     This function ...
+    :param scripts:
+    :param name:
     :return:
     """
 
@@ -510,6 +512,7 @@ def find_matching_script(script_name):
 
     """
     This function ...
+    :param script_name:
     :return:
     """
 

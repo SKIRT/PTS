@@ -246,6 +246,9 @@ class SkirtRemoteLauncher(Configurable):
         # Calculate the maximum number of threads per process based on the current cpu load of the system
         threads = int(self.remote.free_cores / processes)
 
+        # If hyperthreading should be used for the remote host, we can even use more threads
+        if self.remote.host.use_hyperthreading: threads *= self.remote.threads_per_core
+
         # If there are too little free cpus for the amount of processes, the number of threads will be smaller than one
         if threads < 1:
 
