@@ -286,7 +286,7 @@ class Image(object):
             frame_names.insert(0, "primary")
 
         # Export all frames to the specified file
-        for frame_name in self.frames:
+        for frame_name in frame_names:
 
             # Inform the user that this frame will be saved to the image file
             log.info("Exporting the " + frame_name + " frame to " + path)
@@ -885,6 +885,9 @@ class Image(object):
         # Obtain the units of this image
         unit = headers.get_unit(self.original_header)
 
+        # Obtain the FWHM of this image
+        fwhm = headers.get_fwhm(self.original_header)
+
         # Get the magnitude zero-point
         zero_point = headers.get_zero_point(self.original_header)
 
@@ -937,7 +940,8 @@ class Image(object):
                                   unit=unit,
                                   zero_point=zero_point,
                                   filter=filter,
-                                  sky_subtracted=subtracted)
+                                  sky_subtracted=subtracted,
+                                  fwhm=fwhm)
                     self.add_frame(frame, name)
 
                 elif plane_type == "mask":
@@ -987,7 +991,8 @@ class Image(object):
                               unit=unit,
                               zero_point=zero_point,
                               filter=filter,
-                              sky_subtracted=sky_subtracted)
+                              sky_subtracted=sky_subtracted,
+                              fwhm=fwhm)
                 # Add the primary image frame
                 self.add_frame(frame, name)
 

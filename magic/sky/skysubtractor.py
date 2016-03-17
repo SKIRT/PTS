@@ -118,7 +118,7 @@ class SkySubtractor(Configurable):
         self.estimate()
 
         # 4. If requested, subtract the sky
-        if self.config.subtract: self.subtract()
+        self.subtract()
 
         # Set zero outside
         #self.set_zero_outside()

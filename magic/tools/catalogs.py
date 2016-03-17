@@ -276,11 +276,7 @@ def create_star_catalog(frame, catalogs=None):
     confidence_level_column = []
 
     # Get the range of right ascension and declination of this image
-    try: center, ra_span, dec_span = frame.coordinate_range()
-    except AssertionError as error:
-
-        log.warning("The coordinate system and pixelscale do not match")
-        center, ra_span, dec_span = frame.coordinate_range(silent=True)
+    center, ra_span, dec_span = frame.coordinate_range
 
     # Create a new Vizier object and set the row limit to -1 (unlimited)
     viz = Vizier(keywords=["stars", "optical"])
@@ -515,12 +511,7 @@ def create_galaxy_catalog(frame):
     pa_column = []
 
     # Get the range of right ascension and declination of the image
-    try: center, ra_span, dec_span = frame.coordinate_range()
-    except AssertionError as error:
-
-        log.debug("The coordinate system and pixelscale do not match")
-        #print(error)
-        center, ra_span, dec_span = frame.coordinate_range(silent=True)
+    center, ra_span, dec_span = frame.coordinate_range
 
     # Find galaxies in the box defined by the center and RA/DEC ranges
     for name, position in galaxies_in_box(center, ra_span, dec_span):

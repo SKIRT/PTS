@@ -604,82 +604,15 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def coordinate_range(self, silent=False):
+    @property
+    def coordinate_range(self):
 
         """
-        This function ...
-        :param silent:
+        This property ...
         :return:
         """
 
-        coor1 = self.wcs.wcs_pix2world(0.0, 0.0, 0)
-        coor2 = self.wcs.wcs_pix2world(self.xsize - 1.0, self.ysize - 1.0, 0)
-
-        co1 = SkyCoordinate(ra=float(coor1[0]), dec=float(coor1[1]), unit="deg", frame='fk5')
-        co2 = SkyCoordinate(ra=float(coor2[0]), dec=float(coor2[1]), unit="deg", frame='fk5')
-
-        #print("co1=", co1.to_string('hmsdms'))
-        #print("co2=", co2.to_string('hmsdms'))
-
-        ra_range = [co1.ra.value, co2.ra.value]
-        dec_range = [co1.dec.value, co2.dec.value]
-
-        # Determine the center in RA and DEC (in degrees)
-        ra_center = 0.5 * (ra_range[0] + ra_range[1])
-        dec_center = 0.5 * (dec_range[0] + dec_range[1])
-
-        # New
-        dec_begin = dec_range[0]
-        dec_end = dec_range[1]
-        ra_begin = ra_range[0]
-        ra_end = ra_range[1]
-
-        # Calculate the actual RA and DEC distance in degrees
-        ra_distance = abs(coordinates.ra_distance(dec_center, ra_begin, ra_end))
-        dec_distance = abs(dec_end - dec_begin)
-
-        # Calculate the pixel scale of this image in degrees
-        x_pixelscale_deg = self.pixelscale.x.to("deg/pix").value
-        y_pixelscale_deg = self.pixelscale.y.to("deg/pix").value
-
-        # Get the center pixel
-        ref_pix = self.wcs.wcs.crpix
-        ref_world = self.wcs.wcs.crval
-
-        # Get the orientation of the coordinate system
-        orientation = self.wcs.orientation
-
-        if "x" in orientation[0] and "y" in orientation[1]: # RA axis = x axis and DEC axis = y axis
-
-            size_ra_deg = self.xsize * x_pixelscale_deg
-            size_dec_deg = self.ysize * y_pixelscale_deg
-
-        elif "y" in orientation[0] and "x" in orientation[1]: # RA axis = y axis and DEC axis = x axis
-
-            size_ra_deg = self.ysize * y_pixelscale_deg
-            size_dec_deg = self.xsize * x_pixelscale_deg
-
-        else: raise ValueError("Invalid coordinate system orientation:" + str(orientation))
-
-        if not silent:
-
-            # Check whether the two different ways of calculating the RA width result in approximately the same value
-            #assert np.isclose(ra_distance, size_ra_deg, rtol=0.05), "The coordinate system and pixel scale do not match: ra_distance=" + str(ra_distance) + ",size_ra_deg=" + str(size_ra_deg)
-            #assert np.isclose(dec_distance, size_dec_deg, rtol=0.05), "The coordinate system and pixel scale do not match: dec_distance=" + str(dec_distance) + ",size_dec_deg=" + str(size_dec_deg)
-
-            if not np.isclose(ra_distance, size_ra_deg, rtol=0.05):
-                print("ERROR: the coordinate system and pixel scale do not match: ra_distance = " + str(ra_distance) + ", size_ra_deg = " + str(size_ra_deg))
-            if not np.isclose(dec_distance, size_dec_deg, rtol=0.05):
-                print("ERROR: the coordinate system and pixel scale do not match: dec_distance = " + str(dec_distance) + ", size_dec_deg = " + str(size_dec_deg))
-
-        center = SkyCoordinate(ra=ra_center, dec=dec_center, unit="deg", frame="fk5")
-
-        # Create RA and DEC span as quantities
-        ra_span = ra_distance * Unit("deg")
-        dec_span = dec_distance * Unit("deg")
-
-        # Return the center coordinate and the RA and DEC span
-        return center, ra_span, dec_span
+        return self.wcs.coordinate_range
 
     # -----------------------------------------------------------------
 

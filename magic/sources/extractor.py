@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..basics.mask import Mask
+from ..basics.geometry import Ellipse
 from ..core.source import Source
 from ...core.tools.logging import log
 from ...core.basics.configurable import Configurable
@@ -362,6 +363,9 @@ class SourceExtractor(Configurable):
 
         # Loop over all the shapes in the galaxy region
         for shape in self.galaxy_region:
+
+            # Skip shapes that are not ellipses
+            if not isinstance(shape, Ellipse): continue
 
             major_axis_length = shape.major
 

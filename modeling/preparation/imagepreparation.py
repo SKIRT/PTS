@@ -22,7 +22,6 @@ from astropy.units import Unit
 from ...magic.core.frame import Frame
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.basics.mask import Mask
-from ...magic.basics.skyregion import SkyRegion
 from ...magic.sources.extractor import SourceExtractor
 from ...magic.sky.skysubtractor import SkySubtractor
 from ...core.basics.configurable import Configurable
@@ -253,10 +252,12 @@ class ImagePreparer(Configurable):
             b = unitconversion.ab_mag_zero_point.to("Jy").value * np.power(10.0, -2./5.*b)
 
             # c = a[Jy] - image[Jy]
-            c = a - jansky_frame
+            #c = a - jansky_frame
+            c = a - self.image.frames.primary
 
             # d = image[Jy] - b[Jy]
-            d = jansky_frame - b
+            #d = jansky_frame - b
+            d = self.image.frames.primary - b
 
             # ----------------------------------------------------------------- BELOW: if frame was not already in Jy
 
@@ -309,8 +310,8 @@ class ImagePreparer(Configurable):
         self.extractor.run(self.image.frames.primary, self.galaxy_region, self.star_region, self.saturation_region,
                            self.other_region, self.galaxy_segments, self.star_segments, self.other_segments)
 
-        # Get the final mask of sources
-        self.sources_mask = self.extractor.mask
+        # Add the sources mask to the image
+        self.image.add_mask(self.extractor.mask, "sources")
 
         # Get the principal ellipse in sky coordinates
         self.principal_ellipse_sky = self.extractor.principal_ellipse.to_sky(self.image.wcs)
@@ -320,10 +321,6 @@ class ImagePreparer(Configurable):
 
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("extracted.fits")
-
-        # Write the mask of sources
-        mask_path = self.full_output_path("mask.fits")
-        Frame(self.sources_mask.astype(float)).save(mask_path)
 
     # -----------------------------------------------------------------
 
@@ -338,7 +335,7 @@ class ImagePreparer(Configurable):
         log.info("Correcting image for galactic extinction ...")
 
         # Correct the primary frame for galactic extinction
-        self.image.frames[self.config.primary] *= 10**(0.4 * self.config.attenuation)
+        self.image.frames.primary *= 10**(0.4 * self.config.attenuation)
 
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("corrected_for_extinction.fits")
@@ -358,9 +355,9 @@ class ImagePreparer(Configurable):
         # Run the unit conversion
         #self.unit_converter.run(self.image)
 
-        print(self.image.frames) # Check which frames are being converted
+        print(self.image.frames.keys()) # Check which frames are being converted
 
-        assert self.image.unit == Unit("Jy")
+        assert self.image.unit == Unit("Jy/pix")
 
         # Get pixelscale
         pixelscale = self.image.xy_average_pixelscale
@@ -499,8 +496,15 @@ class ImagePreparer(Configurable):
         pixel_to_pixel_noise = np.ma.mean(photutils_rms) # Mean pixel-by-pixel variations
 
         # Add all the errors quadratically: existing error map + large scale variations + pixel to pixel noise + calibration error
-        self.image.frames.errors = np.sqrt(self.image.frames.errors**2 + large_scale_variations_error**2 + \
-                                           + pixel_to_pixel_noise**2 + self.image.frames.calibration_errors**2)
+        if "errors" in self.image.frames:
+
+            self.image.frames.errors = np.sqrt(self.image.frames.errors**2 + large_scale_variations_error**2 + \
+                                               + pixel_to_pixel_noise**2 + self.image.frames.calibration_errors**2)
+
+        else:
+
+            errors = np.sqrt(large_scale_variations_error**2 + pixel_to_pixel_noise**2 + self.image.frames.calibration_errors**2)
+            self.image.add_frame(errors, "errors")
 
     # -----------------------------------------------------------------
 

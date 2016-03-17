@@ -22,6 +22,7 @@ from astroquery.irsa_dust import IrsaDust
 
 # Import the relevant PTS classes and modules
 from ...magic.core.image import Image
+from ...magic.core.frame import Frame
 from ...magic.basics.region import Region
 from .component import PreparationComponent
 from .imagepreparation import ImagePreparer
@@ -135,6 +136,9 @@ class DataPreparer(PreparationComponent):
         # The FWHM of the reference image
         self.reference_fwhm = None
 
+        # The coordinate of the center of the galaxy
+        self.center_coordinate = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -212,6 +216,13 @@ class DataPreparer(PreparationComponent):
         # Set the path of the rebinning reference path and the kernel image
         self.image_preparer.config.rebinning.rebin_to = reference_path
 
+        # Get the FWHM of the reference image
+        reference_frame = Frame.from_file(reference_path)
+        self.reference_fwhm = reference_frame.fwhm
+
+        # Get the center coordinate of the galaxy
+        self.center_coordinate = reference_frame.coordinate_range[0]
+
     # -----------------------------------------------------------------
 
     def check_images(self):
@@ -258,8 +269,7 @@ class DataPreparer(PreparationComponent):
 
         # Download the extinction table
         #table = IrsaDust.get_extinction_table(self.galaxy_name) ## STOPPED WORKING (WHY?)
-        center, ra_span, dec_span = self.images[0].frames.primary.coordinate_range()
-        table = IrsaDust.get_extinction_table(center.to_astropy())
+        table = IrsaDust.get_extinction_table(self.center_coordinate.to_astropy())
 
         # Loop over all image paths
         for image_path in self.paths:
@@ -319,7 +329,7 @@ class DataPreparer(PreparationComponent):
         log.info("Preparing the images ...")
 
         # Loop over the image paths
-        for image_path in self.path:
+        for image_path in self.paths:
 
             # Get the directory containing this image = the output path for that image
             output_path = filesystem.directory_of(image_path)
@@ -359,7 +369,7 @@ class DataPreparer(PreparationComponent):
 
                 # Download the kernel if it is not present
                 if not filesystem.is_file(kernel_file_path): download_kernel(kernel_file_basename, self.kernels_path)
-                self.image_preparer.config.convolution.kernel_path = kernel_file_path # set kernel path
+                self.image_preparer.config.convolution.kernel_path = kernel_file_path    # set kernel path
                 self.image_preparer.config.convolution.kernel_fwhm = self.reference_fwhm # set kernel FWHM (is a quantity here)
 
                 # Set flags to True
@@ -395,21 +405,27 @@ class DataPreparer(PreparationComponent):
             # Get the different segmentation frames
             galaxy_segments = segments.frames.galaxies
             star_segments = segments.frames.stars if "stars" in segments.frames else None
-            other_segments = segments.frames.other_sources
+            other_segments = segments.frames.other_sources if "other_sources" in segments.frames else None
 
             # -----------------------------------------------------------------
 
             # Check whether the image has to be sky subtracted
             if image.frames.primary.sky_subtracted:
                 log.debug("The " + name + " image has already been sky subtracted")
-                self.image_preparer.config.sky_subtraction.subtract = False
-            else: self.image_preparer.config.sky_subtraction.subtract = True # Has yet to be sky subtracted
+                self.image_preparer.config.subtract_sky = False
+            else: self.image_preparer.config.subtract_sky = True # Has yet to be sky subtracted
 
             # Set the calibration error
             self.image_preparer.config.uncertainties.calibration_error = calibration_errors[name]
 
             # Set the output directory
             self.image_preparer.config.output_path = output_path
+
+            # -----------------------------------------------------------------
+
+            # The units of the Halpha image don't have to be converted
+            if "Halpha" in name: self.image_preparer.config.convert_unit = False
+            else: self.image_preparer.config.convert_unit = True
 
             # -----------------------------------------------------------------
 

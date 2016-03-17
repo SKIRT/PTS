@@ -408,6 +408,27 @@ def get_unit(header):
 
 # -----------------------------------------------------------------
 
+def get_fwhm(header):
+
+    """
+    This function ...
+    :param header:
+    :return:
+    """
+
+    fwhm = None
+
+    for keyword in ["FWHM"]:
+
+        if keyword in header:
+
+            fwhm = get_quantity(header["FWHM"], default_unit="arcsec")
+
+    # Return the FWHM
+    return fwhm
+
+# -----------------------------------------------------------------
+
 def get_zero_point(header):
 
     """
@@ -694,7 +715,8 @@ def get_quantity(entry, default_unit=None):
     :return:
     """
 
-    value = entry.split("   / ")[0].rstrip()
+    if isinstance(entry, basestring): value = entry.split("   / ")[0].rstrip()
+    else: value = entry
 
     try:
 

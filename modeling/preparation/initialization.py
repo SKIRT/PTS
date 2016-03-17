@@ -222,7 +222,8 @@ class DataInitializer(PreparationComponent):
                 log.debug("Checking " + image_path + " ...")
 
                 # Determine the output path for this image
-                output_path = self.prep_paths[image_name]
+                prep_name = self.prep_names[image_name]
+                output_path = self.prep_paths[prep_name]
 
                 # Check whether this image already has an initialized image
                 final_path = filesystem.join(output_path, "initialized.fits")
@@ -250,7 +251,7 @@ class DataInitializer(PreparationComponent):
             prep_name = self.prep_names[image_name]
 
             # Determine the output path for this image
-            output_path = self.prep_paths[image_name]
+            output_path = self.prep_paths[prep_name]
 
             # Set the path to the region of bad pixels
             bad_region_path = filesystem.join(self.data_path, "bad", prep_name + ".reg")
@@ -293,7 +294,7 @@ class DataInitializer(PreparationComponent):
                 image.fwhm = fwhm
 
                 # Determine the path to the initialized image
-                path = filesystem.join(self.prep_paths[image.name], "initialized.fits")
+                path = filesystem.join(output_path, "initialized.fits")
 
                 # Save the image
                 image.save(path)
@@ -371,7 +372,7 @@ class DataInitializer(PreparationComponent):
                 # -----------------------------------------------------------------
 
                 # Determine the path to the initialized image
-                path = filesystem.join(self.prep_paths[image.name], "initialized.fits")
+                path = filesystem.join(output_path, "initialized.fits")
 
                 # Save the image
                 image.save(path)
