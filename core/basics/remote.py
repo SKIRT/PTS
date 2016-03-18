@@ -744,6 +744,89 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
+    def scheduler(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.host.scheduler
+
+    # -----------------------------------------------------------------
+
+    @property
+    def use_hyperthreading(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.host.use_hyperthreading
+
+    # -----------------------------------------------------------------
+
+    @property
+    def multi_node_communication(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If the remote host uses a scheduling system, check whether multi node communication is possible based on
+        # the configuration of the current cluster
+        if self.scheduler: return self.host.clusters[self.host.cluster_name].multi_node_communication
+
+        # If no scheduler is used, raise an error (this function should not get called)
+        else: raise RuntimeError("This function should only be called when using a remote with a scheduling system")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def virtual_memory_per_node(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If the remote host uses a scheduling system, the amount of virtual memory memory per node is defined
+        # in the configuration (this is in GB)
+        if self.scheduler: return self.host.clusters[self.host.cluster_name].memory
+
+        # If no scheduler is used, assume the number of nodes is 1 and get the total virtual memory (total swap)
+        else:
+
+            output = self.execute("free -t | grep Swap")
+            splitted = output[0].split(":")[1].split()
+
+            # Calculate the free amount of memory in gigabytes
+            total_swap = float(splitted[0]) / 1e6
+
+            # Return the free amount of virtual memory in gigabytes
+            return total_swap
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nodes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If the remote host uses a scheduling system, the number of nodes is defined in the host configuration
+        if self.scheduler: return self.host.clusters[self.host.cluster_name].nodes
+
+        # If no scheduling system is used, assume the system is only concised of one node
+        else: return 1
+
+    # -----------------------------------------------------------------
+
+    @property
     def cores(self):
 
         """
@@ -752,7 +835,7 @@ class Remote(object):
         """
 
         # If the remote host uses a scheduling system, the number of cores on the computing nodes is defined in the configuration
-        if self.host.scheduler: return self.host.clusters[self.host.cluster_name].cores
+        if self.scheduler: return self.host.clusters[self.host.cluster_name].cores
 
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:
@@ -775,7 +858,7 @@ class Remote(object):
         """
 
         # If the remote host uses a scheduling system, the number of threads per core is defined in the configuration
-        if self.host.scheduler: return self.host.clusters[self.host.cluster_name].threads_per_core
+        if self.scheduler: return self.host.clusters[self.host.cluster_name].threads_per_core
 
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:

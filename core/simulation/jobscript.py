@@ -10,6 +10,9 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
 # Import standard modules
 import os
 
@@ -71,8 +74,8 @@ class JobScript(object):
         hybrid_processes = 1
         if arguments.parallel.threads > 1:
 
-            # The number of processes per node = [processors per node] / [threads (processors) per process]
-            hybrid_processes = ppn / arguments.parallel.threads
+            # The number of processes per node = [processors per node] //(integer division) [threads (processors) per process]
+            hybrid_processes = ppn // arguments.parallel.threads
 
             # For hybrid (or threads) mode we always request the full node.
             # Therefore, we determine the number of cores on the node.

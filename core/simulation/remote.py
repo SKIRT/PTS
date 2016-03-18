@@ -100,18 +100,6 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    @property
-    def scheduler(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-        return self.host.scheduler
-
-    # -----------------------------------------------------------------
-
     def add_to_queue(self, arguments, name=None, scheduling_options=None):
 
         """
@@ -202,7 +190,7 @@ class SkirtRemote(Remote):
         for arguments in self.queue:
 
             # Write the command string to the job script
-            threads_per_core = self.threads_per_core if self.host.use_hyperthreading else 1
+            threads_per_core = self.threads_per_core if self.use_hyperthreading else 1
             command = arguments.to_command(self.skirt_path, self.host.mpi_command, scheduler=False, bind_to_cores=self.host.force_process_binding, threads_per_core=threads_per_core, to_string=True)
             script_file.write(command + "\n")
 
@@ -446,7 +434,7 @@ class SkirtRemote(Remote):
 
         # Send the command to the remote machine using a screen session so that we can safely detach from the
         # remote shell
-        threads_per_core = self.threads_per_core if self.host.use_hyperthreading else 1
+        threads_per_core = self.threads_per_core if self.use_hyperthreading else 1
         command = arguments.to_command(self.skirt_path, self.host.mpi_command, self.scheduler, self.host.force_process_binding, threads_per_core=threads_per_core, to_string=True)
         self.execute("screen -d -m " + command, output=False)
 
