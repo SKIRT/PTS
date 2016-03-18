@@ -267,7 +267,7 @@ class SkirtRemote(Remote):
         remote_simulation_path = filesystem.join(self.skirt_run_dir, remote_simulation_name)
 
         # Create the remote simulation directory
-        self.execute("mkdir " + remote_simulation_path, output=False)
+        self.create_directory(remote_simulation_path)
 
         # Return the path to the remote simulation directory
         return remote_simulation_path
@@ -318,7 +318,7 @@ class SkirtRemote(Remote):
         if remote_input_path is not None: self.execute("mkdir " + remote_output_path, output=False)
 
         # Create the remote output directory
-        self.execute("mkdir " + remote_output_path, output=False)
+        self.create_directory(remote_output_path)
 
         local_ski_path = arguments.ski_pattern
         ski_name = filesystem.name(local_ski_path)

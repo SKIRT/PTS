@@ -1041,6 +1041,25 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def remove_frame(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Removing the '" + name + "' frame ...")
+
+        # Check whether a frame with this name exists
+        if name not in self.frames: raise RuntimeError("A frame with this name does not exist")
+
+        # Delete the frame
+        del self.frames[name]
+
+    # -----------------------------------------------------------------
+
     def add_region(self, region, name, overwrite=False):
 
         """

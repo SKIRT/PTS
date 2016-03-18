@@ -184,8 +184,8 @@ class SkySubtractor(Configurable):
         # Create a mask from the ellipse
         annulus_outer_factor = 3.0
         annulus_inner_factor = 1.0
-        annulus_mask = Mask.from_shape(self.principal_ellipse * annulus_outer_factor, self.image.xsize, self.image.ysize).inverse() + \
-                       Mask.from_shape(self.principal_ellipse * annulus_inner_factor, self.image.xsize, self.image.ysize)
+        annulus_mask = Mask.from_shape(self.principal_ellipse * annulus_outer_factor, self.frame.xsize, self.frame.ysize).inverse() + \
+                       Mask.from_shape(self.principal_ellipse * annulus_inner_factor, self.frame.xsize, self.frame.ysize)
 
         # Set the mask, make a copy of the input mask initially
         self.mask = self.sources_mask + annulus_mask
@@ -200,7 +200,7 @@ class SkySubtractor(Configurable):
             expanded_region = self.saturation_region * 1.5
 
             # Create the saturation mask
-            saturation_mask = expanded_region.to_mask(self.image.xsize, self.image.ysize)
+            saturation_mask = expanded_region.to_mask(self.frame.xsize, self.frame.ysize)
             self.mask += saturation_mask
 
     # -----------------------------------------------------------------
@@ -218,7 +218,7 @@ class SkySubtractor(Configurable):
         ### TEMPORARY: WRITE OUT MASK BEFORE CLIPPING
 
         # Create a frame where the objects are masked
-        #frame = copy.deepcopy(self.image.frames.primary)
+        #frame = copy.deepcopy(self.frame)
         #frame[self.mask] = float(self.config.writing.mask_value)
 
         # Save the masked frame
@@ -245,7 +245,6 @@ class SkySubtractor(Configurable):
         if self.config.estimation.method == "mean":
 
             # Create a frame filled with the mean value
-            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
             self.sky = Frame(np.full(self.frame.shape, self.mean),
                              wcs=self.frame.wcs,
                              name="sky",
@@ -260,7 +259,6 @@ class SkySubtractor(Configurable):
         elif self.config.estimation.method == "median":
 
             # Create a frame filled with the median value
-            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
             self.sky = Frame(np.full(self.frame.shape, self.median),
                              wcs=self.frame.wcs,
                              name="sky",
@@ -278,7 +276,6 @@ class SkySubtractor(Configurable):
             data = interpolation.low_res_interpolation(self.frame, self.config.estimation.downsample_factor, self.mask)
 
             # Create sky map
-            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
             self.sky = Frame(data,
                              wcs=self.frame.wcs,
                              name="sky",
@@ -330,7 +327,6 @@ class SkySubtractor(Configurable):
             print("background rms median = ", bkg.background_rms_median)
 
             # Create sky map
-            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
             self.sky = Frame(bkg.background,
                              wcs=self.frame.wcs,
                              name="sky",
@@ -363,7 +359,6 @@ class SkySubtractor(Configurable):
                                    filter=self.frame.filter,
                                    sky_subtracted=False,
                                    fwhm=self.frame.fwhm)
-            #self.image.add_frame(phot_sky_frame, "phot_sky")
 
             # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
             self.phot_rms = Frame(bkg.background_rms,
@@ -375,7 +370,6 @@ class SkySubtractor(Configurable):
                                    filter=self.frame.filter,
                                    sky_subtracted=False,
                                    fwhm=self.frame.fwhm)
-            #self.image.add_frame(phot_rms_frame, "phot_rms")
 
             # Create sky map of median sky level
             # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
@@ -390,7 +384,7 @@ class SkySubtractor(Configurable):
                              fwhm=self.frame.fwhm)
 
         # Unkown estimation method
-        else: raise ValueError("Unkown sky estimation method")
+        else: raise ValueError("Unknown sky estimation method")
 
     # -----------------------------------------------------------------
 
@@ -418,35 +412,10 @@ class SkySubtractor(Configurable):
 
         # Create a mask from the principal galaxy region
         annulus_outer_factor = 1.2
-        mask = Mask.from_shape(self.principal_ellipse * annulus_outer_factor, self.image.xsize, self.image.ysize).inverse()
+        mask = Mask.from_shape(self.principal_ellipse * annulus_outer_factor, self.frame.xsize, self.frame.ysize).inverse()
 
         # Set the primary frame zero outside the principal ellipse
-        self.image.frames.primary[mask] = 0.0
-
-        # Add mask
-        self.image.add_mask(mask, "outside")
-
-    # -----------------------------------------------------------------
-
-    def write_masked_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the full path to the masked frame file
-        path = self.full_output_path(self.config.writing.masked_frame_path)
-
-        # Inform the user
-        log.info("Writing masked frame to " + path + " ...")
-
-        # Create a frame where the objects are masked
-        frame = self.image.frames.primary.copy()
-        frame[self.mask] = float(self.config.writing.mask_value)
-
-        # Write out the masked frame
-        frame.save(path)
+        self.frame[mask] = 0.0
 
     # -----------------------------------------------------------------
 

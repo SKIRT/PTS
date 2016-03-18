@@ -61,8 +61,11 @@ class Region(list):
         region = cls()
 
         # Open the region file with pyregion and check if its in image coordinates
-        _region = pyregion.open(path)
-        if not _region.check_imagecoord(): raise ValueError("Region is not in image coordinates")
+        try:
+            _region = pyregion.open(path)
+            if not _region.check_imagecoord(): raise ValueError("Region is not in image coordinates")
+        except ValueError: # If a ValueError comes out, assume the region file is empty (no shapes)
+            _region = []
 
         # Loop over all shapes in the region
         for shape in _region:

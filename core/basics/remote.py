@@ -404,10 +404,49 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def to_home_directory(self):
+
+        """
+        This function ...
+        """
+
+        # Navigate to the home directory
+        self.execute("cd ~", output=False)
+
+    # -----------------------------------------------------------------
+
+    def create_directory(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Create the remote directory
+        self.execute("mkdir " + path, output=False)
+
+    # -----------------------------------------------------------------
+
+    def create_directories(self, paths):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the remote directories
+        self.execute("mkdir " + " ".join(paths), output=False)
+
+    # -----------------------------------------------------------------
+
     def download(self, origin, destination, timeout=30):
 
         """
         This function ...
+        :param origin:
+        :param destination:
+        :param timeout:
         :return:
         """
 
@@ -591,11 +630,11 @@ class Remote(object):
         self.execute("cd ~", output=False)
 
         # Create the SKIRT directory
-        self.execute("mkdir SKIRT", output=False)
+        self.create_directory("SKIRT")
 
         # In the SKIRT directory, create the necessary subdirectories
         self.execute("cd SKIRT", output=False)
-        self.execute("mkdir git run release", output=False)
+        self.create_directories(["git", "run", "release"])
 
         # Clone the SKIRT repository
         if private:
