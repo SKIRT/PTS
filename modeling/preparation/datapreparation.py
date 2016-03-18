@@ -28,6 +28,7 @@ from .component import PreparationComponent
 from .imagepreparation import ImagePreparer
 from ...core.tools import filesystem, tables
 from ...core.tools.logging import log
+from ...magic.tools import regions
 
 # -----------------------------------------------------------------
 
@@ -367,7 +368,6 @@ class DataPreparer(PreparationComponent):
 
             # Check if the intermediate results have already been produced for this image and saved to the
             # corresponding preparation subdirectory
-
             extracted_path = filesystem.join(output_path, "extracted.fits")
             corrected_path = filesystem.join(output_path, "corrected_for_extinction.fits")
             converted_path = filesystem.join(output_path, "converted_unit.fits")
@@ -387,8 +387,8 @@ class DataPreparer(PreparationComponent):
                 self.image_preparer.config.subtract_sky = False
 
                 # Set the principal ellipse and saturation region in sky coordinates
-                self.image_preparer.
-                self.image_preparer.
+                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(self.image.wcs)
+                self.image_preparer.saturation_region_sky = saturation_region.to_sky(self.image.wcs) if saturation_region is not None else None
 
                 # Load the sky-subtracted image
                 image = Image.from_file(subtracted_path)
@@ -404,9 +404,9 @@ class DataPreparer(PreparationComponent):
                 self.image_preparer.config.convolve = False
                 self.image_preparer.config.rebin = False
 
-                # Set the
-                #self.image_preparer.principal_ellipse_sky = self.extractor.principal_ellipse.to_sky(self.image.wcs)
-                #self.image_preparer.saturation_region_sky = self.saturation_region.to_sky(self.image.wcs) if self.saturation_region is not None else None
+                # Set the principal ellipse and saturation region in sky coordinates
+                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(self.image.wcs)
+                self.image_preparer.saturation_region_sky = saturation_region.to_sky(self.image.wcs) if saturation_region is not None else None
 
                 # Load the rebinned image
                 image = Image.from_file(rebinned_path)
@@ -421,7 +421,9 @@ class DataPreparer(PreparationComponent):
                 self.image_preparer.config.convert_unit = False
                 self.image_preparer.config.convolve = False
 
-                # Set the
+                # Set the principal ellipse and saturation region in sky coordinates
+                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(self.image.wcs)
+                self.image_preparer.saturation_region_sky = saturation_region.to_sky(self.image.wcs) if saturation_region is not None else None
 
                 # Load the convolved image
                 image = Image.from_file(convolved_path)
@@ -435,7 +437,9 @@ class DataPreparer(PreparationComponent):
                 self.image_preparer.config.correct_for_extinction = False
                 self.image_preparer.config.convert_unit = False
 
-                # Set the
+                # Set the principal ellipse and saturation region in sky coordinates
+                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(self.image.wcs)
+                self.image_preparer.saturation_region_sky = saturation_region.to_sky(self.image.wcs) if saturation_region is not None else None
 
                 # Load the converted image
                 image = Image.from_file(converted_path)
@@ -448,6 +452,10 @@ class DataPreparer(PreparationComponent):
                 self.image_preparer.config.extract_sources = False
                 self.image_preparer.config.correct_for_extinction = False
 
+                # Set the principal ellipse and saturation region in sky coordinates
+                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(self.image.wcs)
+                self.image_preparer.saturation_region_sky = saturation_region.to_sky(self.image.wcs) if saturation_region is not None else None
+
                 # Load the extinction-corrected image
                 image = Image.from_file(corrected_path)
                 image.name = name
@@ -457,6 +465,10 @@ class DataPreparer(PreparationComponent):
 
                 # Disable all steps preceeding and including the source extraction
                 self.image_preparer.config.extract_sources = False
+
+                # Set the principal ellipse and saturation region in sky coordinates
+                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(self.image.wcs)
+                self.image_preparer.saturation_region_sky = saturation_region.to_sky(self.image.wcs) if saturation_region is not None else None
 
                 # Load the extracted image
                 image = Image.from_file(extracted_path)
