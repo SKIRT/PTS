@@ -100,7 +100,7 @@ class Remote(object):
         """
 
         # Inform the user
-        log.info("Logging in to the remote SKIRT environment on host '" + self.host.id + "' ...")
+        log.info("Logging in to the remote environment on host '" + self.host.id + "' ...")
 
         # Connect to the remote host
         self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password)
@@ -118,7 +118,7 @@ class Remote(object):
         """
 
         # Inform the user
-        log.info("Logging out from the remote SKIRT environment ...")
+        log.info("Logging out from the remote environment ...")
 
         # Disconnect
         if self.connected: self.ssh.logout()
@@ -216,6 +216,7 @@ class Remote(object):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
@@ -440,18 +441,20 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def download(self, origin, destination, timeout=30):
+    def download(self, origin, destination, timeout=30, new_name=None, compress=False):
 
         """
         This function ...
         :param origin:
         :param destination:
         :param timeout:
+        :param new_name:
         :return:
         """
 
         # Construct the command string
         copy_command = "scp "
+        if compress: copy_command += " -C"
 
         # Add the host address
         copy_command += self.host.user + "@" + self.host.name + ":"
@@ -491,6 +494,7 @@ class Remote(object):
 
         # Add the destination path to the command
         copy_command += destination.replace(" ", "\ ") + "/"
+        if new_name is not None: copy_command += new_name
 
         log.debug("Copy command: " + copy_command)
 
@@ -518,22 +522,26 @@ class Remote(object):
         # Raise an error if something went wrong
         if child.exitstatus != 0: raise RuntimeError(stdout)
 
-        log.debug("Copy stdout: " + str(stdout))
+        # Debugging: show the output of the scp command
+        log.debug("Copy stdout: " + str(stdout).replace("\n", " "))
 
     # -----------------------------------------------------------------
 
-    def upload(self, origin, destination, timeout=30):
+    def upload(self, origin, destination, timeout=30, new_name=None, compress=False):
 
         """
         This function ...
         :param origin:
         :param destination:
         :param timeout:
+        :param new_name:
+        :param compress:
         :return:
         """
 
         # Construct the command string
         copy_command = "scp "
+        if compress: copy_command += "-C "
 
         # If the origin is a string, we assume it represents a single file path or directory path
         if isinstance(origin, basestring):
@@ -565,6 +573,7 @@ class Remote(object):
 
         # Add the host address and the destination directory
         copy_command += self.host.user + "@" + self.host.name + ":" + destination.replace(" ", "\ ") + "/"
+        if new_name is not None: copy_command += new_name
         log.debug("Copy command: " + copy_command)
 
         # Temporary file for output of the scp command
@@ -594,7 +603,8 @@ class Remote(object):
         # Raise an error if something went wrong
         if child.exitstatus != 0: raise RuntimeError(stdout)
 
-        log.debug("Copy stdout: " + str(stdout))
+        # Debugging: show the output of the scp command
+        log.debug("Copy stdout: " + str(stdout).replace("\n", " "))
 
     # -----------------------------------------------------------------
 

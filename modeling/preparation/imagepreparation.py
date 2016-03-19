@@ -21,6 +21,7 @@ from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ...magic.core.frame import Frame
+from ...magic.core.image import Image
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.basics.mask import Mask
 from ...magic.sources.extractor import SourceExtractor
@@ -91,7 +92,7 @@ class ImagePreparer(Configurable):
         self.setup(image, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments)
 
         # 2. Calculate the calibration uncertainties
-        self.calculate_calibration_uncertainties()
+        if self.config.calculate_calibration_uncertainties: self.calculate_calibration_uncertainties()
 
         # 3. Extract stars and galaxies from the image
         if self.config.extract_sources: self.extract_sources()
@@ -377,7 +378,7 @@ class ImagePreparer(Configurable):
             remote.setup("nancy")
 
             # If intermediate results are not saved, explicitly save the image as it is now
-            if not self.config.write_steps: self.write_intermediate_result("converted_unit.fits")
+            #if not self.config.write_steps: self.write_intermediate_result("converted_unit.fits")
 
             # Debugging
             log.debug("Creating temporary directory remotely ...")
@@ -392,15 +393,41 @@ class ImagePreparer(Configurable):
 
             # Upload the kernel FITS file to the remote directory
             remote_kernel_path = filesystem.join(remote_temp_path, "kernel.fits")
-            remote.upload(self.config.convolution.kernel_path, remote_kernel_path)
+            remote.upload(self.config.convolution.kernel_path, remote_temp_path, new_name="kernel.fits", compress=True)
 
             # Debugging
-            log.debug("Uploading the image to the remote directory ...")
+            log.debug("Uploading the image frames to the remote directory ...")
 
             # Upload the image to the remote directory
-            local_image_path = self.full_output_path("converted_unit.fits")
-            remote_image_path = filesystem.join(remote_image_path, "image.fits")
-            remote.upload(local_image_path, remote_image_path)
+            #local_image_path = self.full_output_path("converted_unit.fits")
+            #remote_image_path = filesystem.join(remote_temp_path, "image.fits")
+            #remote.upload(local_image_path, remote_temp_path, new_name="image.fits", compress=True)
+
+            # Create a temporary directory locally to contain the frames
+            local_temp_path = filesystem.join(filesystem.cwd(), time.unique_name("convolution"))
+            filesystem.create_directory(local_temp_path)
+
+            # Save the frames
+            local_frame_paths = []
+            for frame_name in self.image.frames:
+                frame_path = filesystem.join(local_temp_path, frame_name + ".fits")
+                self.image.frames[frame_name].save(frame_path)
+                local_frame_paths.append(frame_path)
+
+            # Upload the frames
+            remote_frame_paths = []
+            for local_frame_path in local_frame_paths:
+
+                # Determine the name of the local frame file
+                frame_file_name = filesystem.name(local_frame_path)
+
+                # Debugging
+                log.debug("Uploading the " + filesystem.strip_extension(frame_file_name) + " frame ...")
+
+                # Upload the frame file
+                remote_frame_path = filesystem.join(remote_temp_path, frame_file_name)
+                remote.upload(local_frame_path, remote_temp_path, new_name=frame_file_name, compress=True)
+                remote_frame_paths.append(remote_frame_path)
 
             # Debugging
             log.debug("Creating a python script to perform the convolution remotely ...")
@@ -427,21 +454,31 @@ class ImagePreparer(Configurable):
                 script_file.write("fwmh = " + str(self.config.convolution.kernel_fwhm.to("arcsec")) + " * Unit('arcsec')\n")
                 script_file.write("kernel.fwhm = fwhm\n")
                 script_file.write("\n")
-                script_file.write("# Open the image\n")
-                script_file.write("image = Image.from_file(" + remote_image_path + ")\n")
-                script_file.write("\n")
-                script_file.write("# Do the convolution")
-                script_file.write("image.convolve(kernel)\n")
-                script_file.write("\n")
-                script_file.write("# Save the image\n")
-                script_file.write("image.save(" + remote_image_path + ")\n")
+                #script_file.write("# Open the image\n")
+                #script_file.write("image = Image.from_file(" + remote_image_path + ")\n")
+                #script_file.write("\n")
+                #script_file.write("# Do the convolution")
+                #script_file.write("image.convolve(kernel)\n")
+                #script_file.write("\n")
+                script_file.write("# Open the frames and do the convolutions\n")
+                for remote_frame_path in remote_frame_paths:
+                    script_file.write("frame = Frame.from_file(" + remote_frame_path + ")\n")
+                    script_file.write("convolved = frame.convolved(kernel)\n")
+                    script_file.write("convolved.save(" + remote_frame_path + ")\n") # overwrite the frame
+                    script_file.write("\n")
+
+                #script_file.write("# Save the image\n")
+                #script_file.write("image.save(" + remote_image_path + ")\n")
 
             # Debugging
             log.debug("Uploading the python script ...")
 
             # Upload the script file
             remote_script_path = filesystem.join(remote_temp_path, "convolve.py")
-            remote.upload(local_script_path, remote_script_path)
+            remote.upload(local_script_path, remote_temp_path, new_name="convolve.py")
+
+            # Close the local script (it is automatically removed)
+            script_file.close()
 
             # Debugging
             log.debug("Executing the script remotely ...")
@@ -450,17 +487,38 @@ class ImagePreparer(Configurable):
             remote.execute("python " + remote_script_path, output=False)
 
             # Debugging
-            log.debug("Downloading the result ...")
+            log.debug("Downloading the results ...")
 
             # Download the resulting FITS file (the convolved image)
-            local_result_path = self.full_output_path("convolved.fits")
-            remote.download(remote_image_path, local_result_path)
+            #local_result_path = self.full_output_path("convolved.fits")
+            #remote.download(remote_image_path, filesystem.directory_of(local_result_path), new_name="convolved.fits", compress=True)
+
+            for remote_frame_path in remote_frame_paths:
+
+                # Determine the name of the local frame file
+                frame_file_name = filesystem.name(remote_frame_path)
+
+                # Debugging
+                log.debug("Downloading the " + filesystem.strip_extension(frame_file_name) + " frame ...")
+
+                # Download
+                remote.download(remote_frame_path, local_temp_path, new_name=frame_file_name, compress=True)
+
+            # Remove the temporary directory on the remote's filesystem
+            remote.remove_directory(remote_temp_path)
 
             # Load the result
-            self.image = Image.from_file(local_result_path)
+            #self.image = Image.from_file(local_result_path)
+
+            for frame_name in self.image.frames.keys():
+                local_frame_path = filesystem.join(local_temp_path, frame_name + ".fits")
+                self.image[frame_name] = Frame.from_file(local_frame_path)
+
+            # Remove the local temporary directory
+            filesystem.remove_directory(local_temp_path)
 
             # If the results of intermediate steps should not be kept, remove the (downloaded) convolved image file
-            if not self.config.write_steps: filesystem.remove_file(local_result_path)
+            #if not self.config.write_steps: filesystem.remove_file(local_result_path)
 
         else:
 
@@ -473,8 +531,8 @@ class ImagePreparer(Configurable):
             # Convolve the image (the primary and errors frame)
             self.image.convolve(kernel)
 
-            # Save convolved frame
-            if self.config.write_steps: self.write_intermediate_result("convolved.fits")
+        # Save convolved frame
+        if self.config.write_steps: self.write_intermediate_result("convolved.fits")
 
         # Inform the user
         log.success("Convolution finished")

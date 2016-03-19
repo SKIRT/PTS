@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.makemaps Do the map making step of the SKIRT radiative transfer modeling procedure.
+## \package pts.do.modeling.makemaps Make the maps of dust and stars for the SKIRT radiative transfer modeling procedure.
 
 # -----------------------------------------------------------------
 
@@ -13,20 +13,26 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import argparse
 
 # Import the relevant PTS classes and modules
 from pts.modeling.maps.mapmaking import MapMaker
+from pts.core.tools import logging, time, filesystem
 
 # -----------------------------------------------------------------
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
-parser.add_argument("map", type=str, help="the map to be made (dust, old, NIY, IY)")
+
+# Basic options
 parser.add_argument("path", type=str, nargs='?', help="the modeling path")
+parser.add_argument("--map", type=str, help="the map to be made (dust, old, NIY, IY)")
+
+# Logging options
 parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
 parser.add_argument("--report", action='store_true', help='write a report file')
+
+# Configuration
 parser.add_argument("--config", type=str, help="the name of a configuration file")
 
 # Parse the command line arguments
@@ -35,14 +41,26 @@ arguments = parser.parse_args()
 # -----------------------------------------------------------------
 
 # Set the modeling path
-if arguments.path is None: arguments.path = os.getcwd()
+if arguments.path is None: arguments.path = filesystem.cwd()
+
+# -----------------------------------------------------------------
+
+# Determine the log file path
+logfile_path = filesystem.join(arguments.path, time.unique_name("log") + ".txt") if arguments.report else None
+
+# Determine the log level
+level = "DEBUG" if arguments.debug else "INFO"
+
+# Initialize the logger
+logging.setup_log(level=level, path=logfile_path)
+logging.log.info("Starting make_maps ...")
 
 # -----------------------------------------------------------------
 
 # Create a MapMaker object
 maker = MapMaker.from_arguments(arguments)
 
-# Run the map making
+# Run the map maker
 maker.run()
 
 # -----------------------------------------------------------------
