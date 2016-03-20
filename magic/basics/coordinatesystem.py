@@ -416,6 +416,29 @@ class CoordinateSystem(wcs.WCS):
 
     # -----------------------------------------------------------------
 
+    def orientation_angle_flipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # TODO: actually solve the problem of flipped coordinate systems
+
+        orientation = self.orientation
+
+        # There are only four allowed options:
+        # (-y, -x), (+x, -y), (+y, +x) and (-x,+y)
+
+        # here I just switched y and x as compared to above
+        if orientation == ("-y", "+x"): return Angle(0.0, "deg") # This is the common orientation (standard East-West projection and South-North projection)
+        elif orientation == ("-x", "-y"): return Angle(-90., "deg")
+        elif orientation == ("+y", "-x"): return Angle(180., "deg")
+        elif orientation == ("+x", "+y"): return Angle(90, "deg")
+        else: raise ValueError("Unknown orientation angle")
+
+    # -----------------------------------------------------------------
+
     def to_header(self, relax=None, key=None):
 
         """

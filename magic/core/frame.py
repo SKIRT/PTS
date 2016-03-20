@@ -559,7 +559,7 @@ class Frame(np.ndarray):
         """
 
         # Get coordinate range
-        center, ra_span, dec_span = self.coordinate_range()
+        center, ra_span, dec_span = self.coordinate_range
 
         ra = center.ra.to(unit).value
         dec = center.dec.to(unit).value

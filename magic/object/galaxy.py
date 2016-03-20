@@ -103,7 +103,8 @@ class Galaxy(SkyObject):
         :return:
         """
 
-        orientation = wcs.orientation_angle
+        try: orientation = wcs.orientation_angle
+        except ValueError: orientation = wcs.orientation_angle_flipped()
 
         # Add the orientation angle (w.r.t. standard E-W and S-N projection on the x and y axes) to the position angle
         # that is expressed in the standard way
