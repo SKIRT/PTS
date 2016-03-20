@@ -54,6 +54,7 @@ logging.log.info("Starting make_report ...")
 
 # -----------------------------------------------------------------
 
+# Data initialization
 if arguments.step == "initialization":
 
     # Determine the path to the preparation directory
@@ -121,6 +122,75 @@ if arguments.step == "initialization":
     table_path = filesystem.join(prep_path, "initialization.dat")
     tables.write(table, table_path)
 
+# Data preparation
+elif arguments.step == "preparation":
+
+    # Determine the path to the preparation directory
+    modeling_path = arguments.path
+    prep_path = filesystem.join(modeling_path, "prep")
+
+    # Initialize the columns of the table
+    names_column = []
+    extracted_column = []
+    corrected_column = []
+    converted_column = []
+    convolved_column = []
+    rebinned_column = []
+    subtracted_column = []
+    result_column = []
+
+    names = ["Image name", "Sources extracted", "Corrected for extinction", "Unit converted", "Convolved", "Rebinned", "Sky subtracted", "Result"]
+
+    # Loop over all subdirectories of the preparation directory
+    for path, name in filesystem.directories_in_path(prep_path, returns=["path", "name"]):
+
+        # Determine the path to the extracted image
+        extracted_path = filesystem.join(path, "extracted.fits")
+        has_extracted = filesystem.is_file(extracted_path)
+
+        # Determine the path to the extinction-corrected image
+        corrected_path = filesystem.join(path, "corrected_for_extinction.fits")
+        has_corrected = filesystem.is_file(corrected_path)
+
+        # Determine the path to the unit-converted image
+        converted_path = filesystem.join(path, "converted_unit.fits")
+        has_converted = filesystem.is_file(converted_path)
+
+        # Determine the path to the convolved image
+        convolved_path = filesystem.join(path, "convolved.fits")
+        has_convolved = filesystem.is_file(convolved_path)
+
+        # Determine the path to the rebinned image
+        rebinned_path = filesystem.join(path, "rebinned.fits")
+        has_rebinned = filesystem.is_file(rebinned_path)
+
+        # Determine the path to the sky-subtracted image
+        subtracted_path = filesystem.join(path, "subtracted.fits")
+        has_subtracted = filesystem.is_file(subtracted_path)
+
+        # Determine the path to the prepared image
+        result_path = filesystem.join(path, "result.fits")
+        has_result = filesystem.is_file(result_path)
+
+        # Fill in the columns
+        names_column.append(name)
+        extracted_column.append(has_extracted)
+        corrected_column.append(has_corrected)
+        converted_column.append(has_converted)
+        convolved_column.append(has_convolved)
+        rebinned_column.append(has_rebinned)
+        subtracted_column.append(has_subtracted)
+        result_column.append(has_result)
+
+    # Create the table
+    data = [names_column, extracted_column, corrected_column, converted_column, convolved_column, rebinned_column, subtracted_column, result_column]
+    table = tables.new(data, names)
+
+    # Save the table
+    table_path = filesystem.join(prep_path, "preparation.dat")
+    tables.write(table, table_path)
+
+# Other
 else: raise ValueError("Other modeling steps not enabled yet")
 
 # -----------------------------------------------------------------
