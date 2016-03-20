@@ -224,6 +224,17 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
+    def is_constant(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        np.nanmax(self) == np.nanmin(self)
+
+    # -----------------------------------------------------------------
+
     def __array_finalize__(self, obj):
 
         """
@@ -351,6 +362,12 @@ class Frame(np.ndarray):
         """
 
         kernel_fwhm = kernel.fwhm
+
+        # Skip the calculation for a constant frame
+        if self.is_constant():
+            copy = self.copy()
+            copy.fwhm = kernel_fwhm
+            return copy
 
         # Calculate the zooming factor
         factor = (self.xy_average_pixelscale.to("arcsec/pix").value / kernel.xy_average_pixelscale.to("arcsec/pix").value)
