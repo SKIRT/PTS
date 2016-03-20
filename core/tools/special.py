@@ -108,12 +108,16 @@ def remote_convolution(image, kernel_path, kernel_fwhm, host_id):
     script_file.write("# Import the relevant PTS classes and modules\n")
     script_file.write("from pts.magic.core.frame import Frame\n")
     script_file.write("from pts.magic.core.image import Image\n")
+    script_file.write("from pts.core.tools.logging import log\n")
+    script_file.write("\n")
+    script_file.write("# Inform the user\n")
+    script_file.write("log.info('Opening the kernel frame ...')\n")
     script_file.write("\n")
     script_file.write("# Open the kernel frame\n")
     script_file.write("kernel = Frame.from_file('" + remote_kernel_path + "')\n")
     script_file.write("\n")
     script_file.write("# Set the FWHM of the kernel\n")
-    script_file.write("fwmh = " + str(kernel_fwhm.to("arcsec").value) + " * Unit('arcsec')\n")
+    script_file.write("fwhm = " + str(kernel_fwhm.to("arcsec").value) + " * Unit('arcsec')\n")
     script_file.write("kernel.fwhm = fwhm\n")
     script_file.write("\n")
     #script_file.write("# Open the image\n")
@@ -122,9 +126,20 @@ def remote_convolution(image, kernel_path, kernel_fwhm, host_id):
     #script_file.write("# Do the convolution")
     #script_file.write("image.convolve(kernel)\n")
     #script_file.write("\n")
-    script_file.write("# Open the frames and do the convolutions\n")
     for remote_frame_path in remote_frame_paths:
+
+        frame_name = filesystem.strip_extension(filesystem.name(remote_frame_path))
+
+        script_file.write("# Inform the user\n")
+        script_file.write("log.info('Opening the " + frame_name + " frame ...')\n")
+        script_file.write("\n")
+        script_file.write("# Open the frame\n")
         script_file.write("frame = Frame.from_file('" + remote_frame_path + "')\n")
+        script_file.write("\n")
+        script_file.write("# Inform the user\n")
+        script_file.write("log.info('Convolving the " + frame_name + " frame ...')\n")
+        script_file.write("\n")
+        script_file.write("# Do the convolution and save the result\n")
         script_file.write("convolved = frame.convolved(kernel)\n")
         script_file.write("convolved.save('" + remote_frame_path + "')\n") # overwrite the frame
         script_file.write("\n")
@@ -178,7 +193,7 @@ def remote_convolution(image, kernel_path, kernel_fwhm, host_id):
 
     for frame_name in image.frames.keys():
         local_frame_path = filesystem.join(local_temp_path, frame_name + ".fits")
-        image[frame_name] = Frame.from_file(local_frame_path)
+        image.frames[frame_name] = Frame.from_file(local_frame_path)
 
     # Remove the local temporary directory
     filesystem.remove_directory(local_temp_path)

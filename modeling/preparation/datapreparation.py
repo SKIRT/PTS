@@ -369,6 +369,9 @@ class DataPreparer(PreparationComponent):
 
             # -----------------------------------------------------------------
 
+            # Reset all flags to True
+            self.enable_all_preparation_steps()
+
             # Set options for the ImagePreparation class
             self.set_preparation_options(image, output_path)
 
@@ -498,6 +501,24 @@ class DataPreparer(PreparationComponent):
 
             # Clear the image preparer
             self.image_preparer.clear()
+
+    # -----------------------------------------------------------------
+
+    def enable_all_preparation_steps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.image_preparer.config.calculate_calibration_uncertainties = True
+        self.image_preparer.config.extract_sources = True
+        self.image_preparer.config.correct_for_extinction = True
+        self.image_preparer.config.convert_unit = True
+        self.image_preparer.config.convolve = True
+        self.image_preparer.config.rebin = True
+        self.image_preparer.config.subtract_sky = True
+        self.image_preparer.config.set_uncertainties = True
 
     # -----------------------------------------------------------------
 

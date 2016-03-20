@@ -270,7 +270,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def execute(self, command, output=True, expect_eof=True, contains_extra_eof=False, show_output=False):
+    def execute(self, command, output=True, expect_eof=True, contains_extra_eof=False, show_output=False, timeout=None):
 
         """
         This function ...
@@ -279,6 +279,7 @@ class Remote(object):
         :param expect_eof:
         :param contains_extra_eof:
         :param show_output:
+        :param timeout:
         :return:
         """
 
@@ -291,7 +292,7 @@ class Remote(object):
         else: self.ssh.logfile = None
 
         # Retrieve the output if requested
-        eof = self.ssh.prompt()
+        eof = self.ssh.prompt(timeout=timeout)
 
         # If an extra EOF is used before the actual output line (don't ask me why but I encounter this on the HPC UGent infrastructure), do prompt() again
         if contains_extra_eof: eof = self.ssh.prompt()
@@ -299,11 +300,47 @@ class Remote(object):
         # If the command could not be sent, raise an error
         if not eof and expect_eof and not contains_extra_eof: raise RuntimeError("The command could not be sent")
 
+        # Set the log file back to 'None'
+        self.ssh.logfile = None
+
         # Ignore the first and the last line (the first is the command itself, the last is always empty)
         if output:
             # Trial and error to get it right for HPC UGent login nodes; don't know what is happening
             if contains_extra_eof: return self.ssh.before.replace('\x1b[K', '').split("\r\n")[1:-1]
             else: return self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
+
+    # -----------------------------------------------------------------
+
+    def execute_python_interactive(self, lines, show_output=False):
+
+        """
+        This function ...
+        :param lines:
+        :param show_output:
+        :return:
+        """
+
+        # Initiate a remote interactive python session
+        self.execute("python", expect_eof=False, show_output=show_output)
+
+        # Inject each line into the remote python prompt
+        for line in lines: self.execute(line, expect_eof=False, show_output=show_output)
+
+        # Close the remote python session
+        self.execute("exit()")
+
+    # -----------------------------------------------------------------
+
+    def execute_python_script(self, script_path, show_output=False):
+
+        """
+        This function ...
+        :param script_path:
+        :param show_output:
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -724,6 +761,7 @@ class Remote(object):
 
         """
         This function ...
+        :param path:
         :return:
         """
 
