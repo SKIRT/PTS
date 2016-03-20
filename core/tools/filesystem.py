@@ -32,6 +32,17 @@ def cwd():
 
 # -----------------------------------------------------------------
 
+def home():
+
+    """
+    This function returns the full path to the home directory
+    :return:
+    """
+
+    return os.path.expanduser('~')
+
+# -----------------------------------------------------------------
+
 def absolute(path):
 
     """

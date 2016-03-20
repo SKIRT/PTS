@@ -165,7 +165,7 @@ class ScalingTest(Configurable):
 
         # Determine how many threads that we want to use per core, depending on the number of hyperthreads per core
         # on the remote system and whether hyperthreading is enabled in the remote host configuration file
-        if self.remote.host.use_hyperthreading:
+        if self.remote.use_hyperthreading:
 
             # Inform the user
             log.info("Hybrid and pure-threading scaling tests will be performed with hyperthreading enabled")

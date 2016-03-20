@@ -27,6 +27,31 @@ from ..basics.vector import Position, Extent
 
 # -----------------------------------------------------------------
 
+def largest_ellipse(region):
+
+    """
+    This function ...
+    :param region:
+    :return:
+    """
+
+    largest_shape = None
+
+    # Loop over all the shapes in the galaxy region
+    for shape in region:
+
+        # Skip shapes that are not ellipses
+        if not isinstance(shape, Ellipse): continue
+
+        major_axis_length = shape.major
+
+        if largest_shape is None or major_axis_length > largest_shape.major: largest_shape = shape
+
+    # Return the largest shape in the galaxy region
+    return largest_shape
+
+# -----------------------------------------------------------------
+
 def ellipse(shape):
 
     """

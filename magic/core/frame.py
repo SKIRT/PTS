@@ -130,6 +130,9 @@ class Frame(np.ndarray):
         # Obtain the units of this image
         unit = headers.get_unit(header)
 
+        # Obtain the FWHM of this image
+        fwhm = headers.get_fwhm(header)
+
         # Get the magnitude zero-point
         zero_point = headers.get_zero_point(header)
 
@@ -766,6 +769,11 @@ class Frame(np.ndarray):
         """
 
         if header is None: header = self.header
+
+        # Set unit, FWHM and filter description
+        if self.unit is not None: header.set("SIGUNIT", str(self.unit), "Unit of the map")
+        if self.fwhm is not None: header.set("FWHM", self.fwhm.to("arcsec").value, "[arcsec] FWHM of the PSF")
+        if self.filter is not None: header.set("FILTER", self.filter.description(), "Filter used for this observation")
 
         # Add origin description
         if origin is not None: header["ORIGIN"] = origin

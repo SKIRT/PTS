@@ -13,9 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os.path
-import numpy as np
 import copy
+import numpy as np
 
 # Import astronomical modules
 from photutils import detect_sources
@@ -135,22 +134,11 @@ class MapMaker(MapsComponent):
         # Create a new MapMaker instance
         maker = cls(arguments.config)
 
-        # Logging
-        if arguments.debug:
-
-            maker.config.logging.level = "DEBUG"
-            maker.config.logging.cascade = True
-
         # Set the input and output path
         maker.config.path = arguments.path
-        maker.config.input_path = filesystem.join(arguments.path, "prep")
-        maker.config.output_path = filesystem.join(arguments.path, "maps")
 
         # A single map name can be specified so the procedure is only run for that map
         maker.config.single_map = arguments.map
-
-        # Set logging path
-        if arguments.report: maker.config.logging.path = filesystem.join(maker.config.output_path, time.unique_name("log") + ".txt")
 
         # Return the new instance
         return maker
@@ -161,23 +149,22 @@ class MapMaker(MapsComponent):
 
         """
         This function ...
-        :param image:
         :return:
         """
 
         # 1. Call the setup function
         self.setup()
 
-        # Load the input images
+        # 2. Load the input images
         self.load_images()
 
-        # Cut-off the low signal-to-noise pixels
+        # 3. Cut-off the low signal-to-noise pixels
         self.cutoff_low_snr()
 
-        # If requested, save the maps with masked
+        # 4. If requested, save the maps with masked
         if self.config.save_cutoff_maps: self.save_cutoff_maps()
 
-        # Convert maps to solar luminosity units
+        # 5. Convert maps to solar luminosity units
         self.convert_to_solar()
 
         # Make the dust map
@@ -204,17 +191,15 @@ class MapMaker(MapsComponent):
         ### H - BAND IMAGE
 
         # Check whether the H-band image is present
-        if os.path.isfile(self.config.h_path):
+        if not filesystem.is_file(self.config.h_path): raise IOError("Could not find the H-band image")
 
-            # Open the H-band image
-            self.h = Frame.from_file(self.config.h_path)
-
-        else: raise IOError("Could not find the H-band image")
+        # Open the H-band image
+        self.h = Frame.from_file(self.config.h_path)
 
         ### FUV IMAGE
 
         # Check whether the FUV image is present
-        if os.path.isfile(self.config.fuv_path):
+        if filesystem.is_file(self.config.fuv_path):
 
             # Open the FUV image
             self.fuv = Frame.from_file(self.config.fuv_path)

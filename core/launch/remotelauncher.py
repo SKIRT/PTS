@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import math
 
 # Import the relevant PTS classes and modules
 from .analyser import SimulationAnalyser
@@ -146,6 +147,7 @@ class SkirtRemoteLauncher(Configurable):
 
         # 2. Set the parallelization scheme
         if not self.has_parallelization: self.set_parallelization()
+        else: self.check_parallelization()
 
         # 3. Run the simulation
         self.simulate()
@@ -247,7 +249,7 @@ class SkirtRemoteLauncher(Configurable):
         threads = int(self.remote.free_cores / processes)
 
         # If hyperthreading should be used for the remote host, we can even use more threads
-        if self.remote.host.use_hyperthreading: threads *= self.remote.threads_per_core
+        if self.remote.use_hyperthreading: threads *= self.remote.threads_per_core
 
         # If there are too little free cpus for the amount of processes, the number of threads will be smaller than one
         if threads < 1:
@@ -258,6 +260,56 @@ class SkirtRemoteLauncher(Configurable):
         # Set the parallelization options
         self.config.arguments.parallel.processes = processes
         self.config.arguments.parallel.threads = threads
+
+    # -----------------------------------------------------------------
+
+    def check_parallelization(self):
+
+        """
+        This function checks whether the parallelization scheme that is asked by the user is possible given the
+        number of cores and hyperthreads per core on the remote host.
+        Returns:
+        """
+
+        # If the remote host uses a scheduling system, check whether the parallelization options are possible
+        # based on the cluster properties defined in the configuration
+        if self.remote.scheduler:
+
+            # Determine the total number of hardware threads that can be used on the remote cluster
+            hardware_threads_per_node = self.remote.cores
+            if self.remote.use_hyperthreading: hardware_threads_per_node *= self.remote.threads_per_core
+
+            # Raise an error if the number of requested threads per process exceeds the number of hardware threads
+            # per node
+            if self.config.arguments.parallel.threads > hardware_threads_per_node:
+                raise RuntimeError("The number of requested threads per process exceeds the number of allowed threads per node")
+
+            # Determine the number of processes per node (this same calculation is also done in JobScript)
+            # self.remote.cores = cores per node
+            processes_per_node = self.remote.cores // self.config.arguments.parallel.threads
+
+            # Determine the amount of requested nodes based on the total number of processes and the number of processes per node
+            requested_nodes = math.ceil(self.config.arguments.parallel.processes / processes_per_node)
+
+            # Raise an error if the number of requested nodes exceeds the number of nodes of the system
+            if requested_nodes > self.remote.nodes: raise RuntimeError("The required number of computing nodes for"
+                                                                       "the requested number of processes and threads "
+                                                                       "exceeds the existing number of nodes")
+
+        # No scheduling system
+        else:
+
+            # Determine the total number of requested threads
+            requested_threads = self.config.arguments.parallel.processes * self.config.arguments.parallel.threads
+
+            # Determine the total number of hardware threads that can be used on the remote host
+            hardware_threads = self.remote.cores
+            if self.remote.use_hyperthreading: hardware_threads *= self.remote.threads_per_core
+
+            # If the number of requested threads is greater than the allowed number of hardware threads, raise
+            # an error
+            if requested_threads > hardware_threads: raise RuntimeError("The requested number of processes and threads "
+                                                                        "exceeds the total number of hardware threads")
 
     # -----------------------------------------------------------------
 

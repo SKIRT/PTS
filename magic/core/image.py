@@ -1041,6 +1041,25 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def remove_frame(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Removing the '" + name + "' frame ...")
+
+        # Check whether a frame with this name exists
+        if name not in self.frames: raise RuntimeError("A frame with this name does not exist")
+
+        # Delete the frame
+        del self.frames[name]
+
+    # -----------------------------------------------------------------
+
     def add_region(self, region, name, overwrite=False):
 
         """
@@ -1059,6 +1078,25 @@ class Image(object):
 
         # Add the region to the set of regions
         self.regions[name] = region
+
+    # -----------------------------------------------------------------
+
+    def remove_region(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Removing the '" + name + "' region ...")
+
+        # Check whether a region with this name exists
+        if name not in self.regions: raise RuntimeError("A region with this name does not exist")
+
+        # Delete the region
+        del self.regions[name]
 
     # -----------------------------------------------------------------
 
@@ -1083,5 +1121,24 @@ class Image(object):
 
         # Add the mask to the set of masks
         self.masks[name] = mask
+
+    # -----------------------------------------------------------------
+
+    def remove_mask(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Removing the '" + name + "' mask ...")
+
+        # Check whether a mask with this name exists
+        if name not in self.masks: raise RuntimeError("A mask with this name does not exist")
+
+        # Delete the mask
+        del self.masks[name]
 
 # -----------------------------------------------------------------

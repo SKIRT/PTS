@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import tempfile
 import numpy as np
 
 # Import astronomical modules
@@ -26,6 +27,8 @@ from ...magic.sources.extractor import SourceExtractor
 from ...magic.sky.skysubtractor import SkySubtractor
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
+from . import unitconversion
+from ...core.tools import special
 
 # -----------------------------------------------------------------
 
@@ -66,9 +69,6 @@ class ImagePreparer(Configurable):
         self.principal_ellipse_sky = None
         self.saturation_region_sky = None
 
-        # The final mask of sources
-        self.sources_mask = None
-
     # -----------------------------------------------------------------
 
     def run(self, image, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments):
@@ -90,7 +90,7 @@ class ImagePreparer(Configurable):
         self.setup(image, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments)
 
         # 2. Calculate the calibration uncertainties
-        self.calculate_calibration_uncertainties()
+        if self.config.calculate_calibration_uncertainties: self.calculate_calibration_uncertainties()
 
         # 3. Extract stars and galaxies from the image
         if self.config.extract_sources: self.extract_sources()
@@ -141,7 +141,6 @@ class ImagePreparer(Configurable):
         # Add extractor and sky subtractor
         self.add_child("extractor", SourceExtractor, self.config.extraction)
         self.add_child("sky_subtractor", SkySubtractor, self.config.sky_subtraction)
-        #self.add_child("unit_converter", UnitConverter, self.config.unit_conversion)
 
         if self.config.write_steps:
 
@@ -180,50 +179,8 @@ class ImagePreparer(Configurable):
         :return:
         """
 
-        from . import unitconversion
-
-        #jansky_frame = None
-        #invalid = None
-        #ab_frame = None
-
-        # GALEX images
-        #if "GALEX" in self.image.filter.name:
-
-            #FUV: mAB = -2.5 x log10(CPS) + 18.82
-            #NUV: mAB = -2.5 x log10(CPS) + 20.08
-            #invalid = Mask.is_zero_or_less(self.image.frames.primary)
-            #magnitude_term = {"GALEX FUV": 18.82, "GALEX NUV": 20.08}
-            #ab_frame = -2.5 * np.log10(self.image.frames.primary) + magnitude_term[self.image.name]
-
-            # Set infinites to zero
-            #ab_frame[invalid] = 0.0
-
-            # Calculate data in Jansky
-            #jansky_frame = unitconversion.ab_to_jansky(ab_frame)
-
-            # Add the frame with AB magnitudes and the mask with zeros
-            ##self.image.add_mask(zeros, "zeros")
-            ##self.image.add_frame(ab_frame, "abmag")
-
-        # 2MASS images
-        #elif "2MASS" in self.image.filter.name:
-
-            #m_0 = self.image.frames.primary.zero_point
-            #f_0 = unitconversion.f_0_2mass[self.image.filter.name]
-            #to_jy_conversion_factor = f_0 * np.power(10.0, -m_0/2.5)
-
-            #jansky_frame = self.image.frames.primary * to_jy_conversion_factor
-
-            # Pixels that are zero or less cannot be converted into magnitude scale
-            #invalid = Mask.is_zero_or_less(jansky_frame)
-            #ab_frame = unitconversion.jansky_to_ab(jansky_frame)
-
-            # Set infinites to zero
-            #ab_frame[invalid] = 0.0
-
-            # Add the frame with AB magnitudes and the mask with zeros
-            #self.image.add_mask(zeros, "zeros")
-            #self.image.add_frame(ab_frame, "abmag")
+        # Inform the user
+        log.info("Calculating the calibration uncertainties ...")
 
         # Add the calibration uncertainty defined in (AB) magnitude
         if "mag" in self.config.uncertainties.calibration_error:
@@ -279,6 +236,9 @@ class ImagePreparer(Configurable):
             calibration_frame = np.maximum(c, d) # element-wise maxima
             calibration_frame[invalid] = 0.0 # set zero where AB magnitude could not be calculated
 
+            new_invalid = Mask.is_nan(calibration_frame) + Mask.is_inf(calibration_frame)
+            calibration_frame[new_invalid] = 0.0
+
             # Check that there are no infinities or nans in the result
             assert not np.any(np.isinf(calibration_frame)) and not np.any(np.isnan(calibration_frame))
 
@@ -297,6 +257,9 @@ class ImagePreparer(Configurable):
         # Add the calibration frame
         self.image.add_frame(calibration_frame, "calibration_errors")
 
+        # Inform the user
+        log.success("Calibration uncertainties calculated")
+
     # -----------------------------------------------------------------
 
     def extract_sources(self):
@@ -305,6 +268,9 @@ class ImagePreparer(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Extracting the sources ...")
 
         # Run the extractor
         self.extractor.run(self.image.frames.primary, self.galaxy_region, self.star_region, self.saturation_region,
@@ -317,10 +283,13 @@ class ImagePreparer(Configurable):
         self.principal_ellipse_sky = self.extractor.principal_ellipse.to_sky(self.image.wcs)
 
         # Get the saturation region in sky coordinates
-        self.saturation_region_sky = self.saturation_region.to_sky(self.image.wcs)
+        self.saturation_region_sky = self.saturation_region.to_sky(self.image.wcs) if self.saturation_region is not None else None
 
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("extracted.fits")
+
+        # Inform the user
+        log.success("Sources extracted")
 
     # -----------------------------------------------------------------
 
@@ -332,13 +301,16 @@ class ImagePreparer(Configurable):
         """
 
         # Inform the user
-        log.info("Correcting image for galactic extinction ...")
+        log.info("Correcting for galactic extinction ...")
 
         # Correct the primary frame for galactic extinction
         self.image.frames.primary *= 10**(0.4 * self.config.attenuation)
 
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("corrected_for_extinction.fits")
+
+        # Inform the user
+        log.success("Galactic extinction correction finished")
 
     # -----------------------------------------------------------------
 
@@ -350,12 +322,10 @@ class ImagePreparer(Configurable):
         """
 
         # Inform the user
-        log.info("Converting image to surface brightness units ...")
+        log.info("Converting to surface brightness units ...")
 
         # Run the unit conversion
         #self.unit_converter.run(self.image)
-
-        print(self.image.frames.keys()) # Check which frames are being converted
 
         assert self.image.unit == Unit("Jy/pix")
 
@@ -377,6 +347,9 @@ class ImagePreparer(Configurable):
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("converted_unit.fits")
 
+        # Inform the user
+        log.success("Units converted")
+
     # -----------------------------------------------------------------
 
     def convolve(self):
@@ -389,17 +362,32 @@ class ImagePreparer(Configurable):
         # Inform the user
         log.info("Convolving the image with kernel " + self.config.convolution.kernel_path + " ...")
 
-        # Open the kernel frame
-        kernel = Frame.from_file(self.config.convolution.kernel_path)
+        # Check whether the convolution has to be performed remotely
+        if self.config.convolution.remote:
 
-        # Set the kernel FWHM
-        kernel.fwhm = self.config.convolution.kernel_fwhm
+            # Inform the user
+            log.info("Convolution will be performed remotely on host nancy")
 
-        # Convolve the image (the primary and errors frame)
-        self.image.convolve(kernel)
+            # Perform the remote convolution
+            special.remote_convolution(self.image, self.config.convolution.kernel_path, self.config.convolution.kernel_fwhm, "nancy")
+
+        # The convolution is performed locally
+        else:
+
+            # Open the kernel frame
+            kernel = Frame.from_file(self.config.convolution.kernel_path)
+
+            # Set the kernel FWHM
+            kernel.fwhm = self.config.convolution.kernel_fwhm
+
+            # Convolve the image (the primary and errors frame)
+            self.image.convolve(kernel)
 
         # Save convolved frame
         if self.config.write_steps: self.write_intermediate_result("convolved.fits")
+
+        # Inform the user
+        log.success("Convolution finished")
 
     # -----------------------------------------------------------------
 
@@ -428,6 +416,9 @@ class ImagePreparer(Configurable):
         # Save rebinned frame
         if self.config.write_steps: self.write_intermediate_result("rebinned.fits")
 
+        # Inform the user
+        log.success("Rebinning finished")
+
     # -----------------------------------------------------------------
 
     def subtract_sky(self):
@@ -436,6 +427,9 @@ class ImagePreparer(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Subtracting the sky ...")
 
         # Write out the principal_sky_ellipse and saturation_region in sky coordinates
         #principal_sky_region = SkyRegion()
@@ -463,7 +457,7 @@ class ImagePreparer(Configurable):
         elif "padded" in self.image.masks: extra_mask = self.image.masks.padded # just use padded mask
 
         # Run the sky subtractor
-        self.sky_subtractor.run(self.image.frames.primary, principal_ellipse, self.sources_mask, extra_mask, saturation_region)
+        self.sky_subtractor.run(self.image.frames.primary, principal_ellipse, self.image.masks.sources, extra_mask, saturation_region)
 
         # Add the sky map to the image
         self.image.add_frame(self.sky_subtractor.sky, "sky")
@@ -473,6 +467,9 @@ class ImagePreparer(Configurable):
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("sky_subtracted.fits")
 
+        # Inform the user
+        log.success("Sky subtracted")
+
     # -----------------------------------------------------------------
 
     def set_uncertainties(self):
@@ -481,6 +478,9 @@ class ImagePreparer(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Calculating the uncertainties ...")
 
         sky_mask = self.image.masks.sky
 
@@ -505,6 +505,9 @@ class ImagePreparer(Configurable):
 
             errors = np.sqrt(large_scale_variations_error**2 + pixel_to_pixel_noise**2 + self.image.frames.calibration_errors**2)
             self.image.add_frame(errors, "errors")
+
+        # Inform the user
+        log.success("Uncertainties calculated")
 
     # -----------------------------------------------------------------
 

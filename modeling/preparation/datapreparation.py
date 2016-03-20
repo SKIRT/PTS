@@ -28,6 +28,7 @@ from .component import PreparationComponent
 from .imagepreparation import ImagePreparer
 from ...core.tools import filesystem, tables
 from ...core.tools.logging import log
+from ...magic.tools import regions
 
 # -----------------------------------------------------------------
 
@@ -67,7 +68,9 @@ aniano_names = {"GALEX FUV": "GALEX_FUV",
                 "IRAC I4": "IRAC_8.0",
                 "WISE W3": "WISE_FRAME_11.6",
                 "WISE W4": "WISE_FRAME_22.1",
-                "MIPS 24": "MIPS_24",
+                "MIPS 24mu": "MIPS_24",
+                "MIPS 70mu": None,
+                "MIPS 160mu": None,
                 "Pacs blue": "PACS_70",
                 "Pacs red": "PACS_160",
                 "SPIRE PSW_ext": None,
@@ -96,6 +99,8 @@ calibration_errors = {"GALEX FUV": "0.05 mag",
                       "WISE W3": "4.5%",
                       "WISE W4": "5.7%",
                       "MIPS 24mu": "4%",
+                      "MIPS 70mu": "5%", # ref: Absolute_Calibration_and_Characterization_of_the_Multiband_Imaging_Photometer_for_Spitzer._II._70_micron_Imaging
+                      "MIPS 160mu": "5%", #
                       "Pacs blue": "5%",
                       "Pacs red": "5%",
                       "SPIRE PSW_ext": "4%",
@@ -255,6 +260,10 @@ class DataPreparer(PreparationComponent):
                 log.warning("Sources directory could not be found for " + path)
                 continue
 
+            # Check if a prepared image is already present
+            result_path = filesystem.join(path, "result.fits")
+            if filesystem.is_file(result_path): continue
+
             # Add the path to the initialized image to the list
             self.paths.append(image_path)
 
@@ -267,6 +276,9 @@ class DataPreparer(PreparationComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting the galactic extinction values for the different images ...")
+
         # Download the extinction table
         #table = IrsaDust.get_extinction_table(self.galaxy_name) ## STOPPED WORKING (WHY?)
         table = IrsaDust.get_extinction_table(self.center_coordinate.to_astropy())
@@ -276,6 +288,9 @@ class DataPreparer(PreparationComponent):
 
             # Get the image name
             name = filesystem.name(filesystem.directory_of(image_path))
+
+            # Debugging
+            log.debug("Getting galactic extinction for " + name + " ...")
 
             # GALEX bands
             if "GALEX" in name:
@@ -345,87 +360,134 @@ class DataPreparer(PreparationComponent):
 
             # -----------------------------------------------------------------
 
-            # Set the attenuation value
-            self.image_preparer.config.attenuation = self.attenuations[name]
+            # Load the initialized image
+            image = Image.from_file(image_path)
+            image.name = name
 
-            # If this image is not the reference image, set the appropriate options for rebinning and convolution
-            # or this image does not need to be convolved (e.g. SPIRE images)
-            if name == self.config.reference_image or aniano_names[name] is None:
+            # Load the output of the source finder
+            galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments = load_sources(sources_path)
 
+            # -----------------------------------------------------------------
+
+            # Reset all flags to True
+            self.enable_all_preparation_steps()
+
+            # Set options for the ImagePreparation class
+            self.set_preparation_options(image, output_path)
+
+            # Check if the intermediate results have already been produced for this image and saved to the
+            # corresponding preparation subdirectory
+            extracted_path = filesystem.join(output_path, "extracted.fits")
+            corrected_path = filesystem.join(output_path, "corrected_for_extinction.fits")
+            converted_path = filesystem.join(output_path, "converted_unit.fits")
+            convolved_path = filesystem.join(output_path, "convolved.fits")
+            rebinned_path = filesystem.join(output_path, "rebinned.fits")
+            subtracted_path = filesystem.join(output_path, "sky_subtracted.fits")
+
+            # Check if the sky-subtracted image is present
+            if filesystem.is_file(subtracted_path):
+
+                # Disable all steps preceeding and including the sky subtraction
+                self.image_preparer.config.calculate_calibration_uncertainties = False
+                self.image_preparer.config.extract_sources = False
+                self.image_preparer.config.correct_for_extinction = False
+                self.image_preparer.config.convert_unit = False
+                self.image_preparer.config.convolve = False
                 self.image_preparer.config.rebin = False
+                self.image_preparer.config.subtract_sky = False
+
+                # Set the principal ellipse and saturation region in sky coordinates
+                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(self.image.wcs)
+                self.image_preparer.saturation_region_sky = saturation_region.to_sky(self.image.wcs) if saturation_region is not None else None
+
+                # Load the sky-subtracted image
+                image = Image.from_file(subtracted_path)
+                image.name = name
+
+            # Check if the rebinned image is present
+            elif filesystem.is_file(rebinned_path):
+
+                # Disable all steps preceeding and including the rebinning
+                self.image_preparer.config.calculate_calibration_uncertainties = False
+                self.image_preparer.config.extract_sources = False
+                self.image_preparer.config.correct_for_extinction = False
+                self.image_preparer.config.convert_unit = False
+                self.image_preparer.config.convolve = False
+                self.image_preparer.config.rebin = False
+
+                # Set the principal ellipse and saturation region in sky coordinates
+                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(image.wcs)
+                self.image_preparer.saturation_region_sky = saturation_region.to_sky(image.wcs) if saturation_region is not None else None
+
+                # Load the rebinned image
+                image = Image.from_file(rebinned_path)
+                image.name = name
+
+            # Check if the convolved image is present
+            elif filesystem.is_file(convolved_path):
+
+                # Disable all steps preceeding and including the convolution
+                self.image_preparer.config.calculate_calibration_uncertainties = False
+                self.image_preparer.config.extract_sources = False
+                self.image_preparer.config.correct_for_extinction = False
+                self.image_preparer.config.convert_unit = False
                 self.image_preparer.config.convolve = False
 
-            # Images that do need to be convolved
-            else:
+                # Set the principal ellipse and saturation region in sky coordinates
+                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(image.wcs)
+                self.image_preparer.saturation_region_sky = saturation_region.to_sky(image.wcs) if saturation_region is not None else None
 
-                # Debugging information
-                log.debug("Setting path to the convolution kernel ...")
+                # Load the convolved image
+                image = Image.from_file(convolved_path)
+                image.name = name
 
-                # Set the path to the convolution kernel
-                this_aniano_name = aniano_names[name]
-                reference_aniano_name = aniano_names[self.config.reference_image]
-                kernel_file_basename = "Kernel_HiRes_" + this_aniano_name + "_to_" + reference_aniano_name
-                kernel_file_path = filesystem.join(self.kernels_path, kernel_file_basename + ".fits")
+            # Check if the converted image is present
+            elif filesystem.is_file(converted_path):
 
-                # Download the kernel if it is not present
-                if not filesystem.is_file(kernel_file_path): download_kernel(kernel_file_basename, self.kernels_path)
-                self.image_preparer.config.convolution.kernel_path = kernel_file_path    # set kernel path
-                self.image_preparer.config.convolution.kernel_fwhm = self.reference_fwhm # set kernel FWHM (is a quantity here)
+                # Disable all steps preceeding and including the unit conversion
+                self.image_preparer.config.calculate_calibration_uncertainties = False
+                self.image_preparer.config.extract_sources = False
+                self.image_preparer.config.correct_for_extinction = False
+                self.image_preparer.config.convert_unit = False
 
-                # Set flags to True
-                self.image_preparer.config.rebin = True
-                self.image_preparer.config.convolve = True
+                # Set the principal ellipse and saturation region in sky coordinates
+                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(image.wcs)
+                self.image_preparer.saturation_region_sky = saturation_region.to_sky(image.wcs) if saturation_region is not None else None
 
-            # -----------------------------------------------------------------
+                # Load the converted image
+                image = Image.from_file(converted_path)
+                image.name = name
 
-            # Open the image
-            image = Image.from_file(image_path)
-            image.name = name # set image name
+            # Check if the extinction-corrected image is present
+            elif filesystem.is_file(corrected_path):
 
-            # Load the galaxy region
-            galaxy_region_path = filesystem.join(sources_path, "galaxies.reg")
-            galaxy_region = Region.from_file(galaxy_region_path)
+                # Disable all steps preceeding and including the correction for extinction
+                self.image_preparer.config.calculate_calibration_uncertainties = False
+                self.image_preparer.config.extract_sources = False
+                self.image_preparer.config.correct_for_extinction = False
 
-            # Load the star region (if present)
-            star_region_path = filesystem.join(sources_path, "stars.reg")
-            star_region = Region.from_file(star_region_path) if filesystem.is_file(star_region_path) else None
+                # Set the principal ellipse and saturation region in sky coordinates
+                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(image.wcs)
+                self.image_preparer.saturation_region_sky = saturation_region.to_sky(image.wcs) if saturation_region is not None else None
 
-            # load the saturation region (if present)
-            saturation_region_path = filesystem.join(sources_path, "saturation.reg")
-            saturation_region = Region.from_file(saturation_region_path) if filesystem.is_file(saturation_region_path) else None
+                # Load the extinction-corrected image
+                image = Image.from_file(corrected_path)
+                image.name = name
 
-            # Load the region of other sources
-            other_region_path = filesystem.join(sources_path, "other_sources.reg")
-            other_region = Region.from_file(other_region_path) if filesystem.is_file(other_region_path) else None
+            # Check if the source-extracted image is present
+            elif filesystem.is_file(extracted_path):
 
-            # Load the image with segmentation maps
-            segments_path = filesystem.join(sources_path, "segments.fits")
-            segments = Image.from_file(segments_path)
+                # Disable all steps preceeding and including the source extraction
+                self.image_preparer.config.calculate_calibration_uncertainties = False
+                self.image_preparer.config.extract_sources = False
 
-            # Get the different segmentation frames
-            galaxy_segments = segments.frames.galaxies
-            star_segments = segments.frames.stars if "stars" in segments.frames else None
-            other_segments = segments.frames.other_sources if "other_sources" in segments.frames else None
+                # Set the principal ellipse and saturation region in sky coordinates
+                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(image.wcs)
+                self.image_preparer.saturation_region_sky = saturation_region.to_sky(image.wcs) if saturation_region is not None else None
 
-            # -----------------------------------------------------------------
-
-            # Check whether the image has to be sky subtracted
-            if image.frames.primary.sky_subtracted:
-                log.debug("The " + name + " image has already been sky subtracted")
-                self.image_preparer.config.subtract_sky = False
-            else: self.image_preparer.config.subtract_sky = True # Has yet to be sky subtracted
-
-            # Set the calibration error
-            self.image_preparer.config.uncertainties.calibration_error = calibration_errors[name]
-
-            # Set the output directory
-            self.image_preparer.config.output_path = output_path
-
-            # -----------------------------------------------------------------
-
-            # The units of the Halpha image don't have to be converted
-            if "Halpha" in name: self.image_preparer.config.convert_unit = False
-            else: self.image_preparer.config.convert_unit = True
+                # Load the extracted image
+                image = Image.from_file(extracted_path)
+                image.name = name
 
             # -----------------------------------------------------------------
 
@@ -434,8 +496,131 @@ class DataPreparer(PreparationComponent):
 
             # -----------------------------------------------------------------
 
+            # Inform the user
+            log.success("Preparation of " + name + " image finished")
+
             # Clear the image preparer
             self.image_preparer.clear()
+
+    # -----------------------------------------------------------------
+
+    def enable_all_preparation_steps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.image_preparer.config.calculate_calibration_uncertainties = True
+        self.image_preparer.config.extract_sources = True
+        self.image_preparer.config.correct_for_extinction = True
+        self.image_preparer.config.convert_unit = True
+        self.image_preparer.config.convolve = True
+        self.image_preparer.config.rebin = True
+        self.image_preparer.config.subtract_sky = True
+        self.image_preparer.config.set_uncertainties = True
+
+    # -----------------------------------------------------------------
+
+    def set_preparation_options(self, image, output_path):
+
+        """
+        This function ...
+        :param image:
+        :param output_path:
+        :return:
+        """
+
+        # Set the attenuation value
+        self.image_preparer.config.attenuation = self.attenuations[image.name]
+
+        # If this image is not the reference image, set the appropriate options for rebinning and convolution
+        # or this image does not need to be convolved (e.g. SPIRE images)
+        if image.name == self.config.reference_image or aniano_names[image.name] is None:
+
+            self.image_preparer.config.rebin = False
+            self.image_preparer.config.convolve = False
+
+        # Images that do need to be convolved
+        else:
+
+            # Debugging information
+            log.debug("Setting the path to the convolution kernel ...")
+
+            # Set the path to the convolution kernel
+            this_aniano_name = aniano_names[image.name]
+            reference_aniano_name = aniano_names[self.config.reference_image]
+            kernel_file_basename = "Kernel_HiRes_" + this_aniano_name + "_to_" + reference_aniano_name
+            kernel_file_path = filesystem.join(self.kernels_path, kernel_file_basename + ".fits")
+
+            # Download the kernel if it is not present
+            if not filesystem.is_file(kernel_file_path): download_kernel(kernel_file_basename, self.kernels_path)
+            self.image_preparer.config.convolution.kernel_path = kernel_file_path    # set kernel path
+            self.image_preparer.config.convolution.kernel_fwhm = self.reference_fwhm # set kernel FWHM (is a quantity here)
+
+            # Set flags to True
+            self.image_preparer.config.rebin = True
+            self.image_preparer.config.convolve = True
+
+        # Convolve the SDSS images remotely
+        if "SDSS" in image.name: self.image_preparer.config.convolution.remote = True
+        else: self.image_preparer.config.convolution.remote = False
+
+        # Check whether the image has to be sky subtracted
+        if image.frames.primary.sky_subtracted:
+            log.debug("The " + image.name + " image has already been sky subtracted")
+            self.image_preparer.config.subtract_sky = False
+        else: self.image_preparer.config.subtract_sky = True # Has yet to be sky subtracted
+
+        # Set the calibration error
+        self.image_preparer.config.uncertainties.calibration_error = calibration_errors[image.name]
+
+        # Set the output directory
+        self.image_preparer.config.output_path = output_path
+
+        # -----------------------------------------------------------------
+
+        # The units of the Halpha image don't have to be converted
+        if "Halpha" in image.name: self.image_preparer.config.convert_unit = False
+        else: self.image_preparer.config.convert_unit = True
+
+# -----------------------------------------------------------------
+
+def load_sources(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Load the galaxy region
+    galaxy_region_path = filesystem.join(path, "galaxies.reg")
+    galaxy_region = Region.from_file(galaxy_region_path)
+
+    # Load the star region (if present)
+    star_region_path = filesystem.join(path, "stars.reg")
+    star_region = Region.from_file(star_region_path) if filesystem.is_file(star_region_path) else None
+
+    # load the saturation region (if present)
+    saturation_region_path = filesystem.join(path, "saturation.reg")
+    saturation_region = Region.from_file(saturation_region_path) if filesystem.is_file(saturation_region_path) else None
+
+    # Load the region of other sources
+    other_region_path = filesystem.join(path, "other_sources.reg")
+    other_region = Region.from_file(other_region_path) if filesystem.is_file(other_region_path) else None
+
+    # Load the image with segmentation maps
+    segments_path = filesystem.join(path, "segments.fits")
+    segments = Image.from_file(segments_path)
+
+    # Get the different segmentation frames
+    galaxy_segments = segments.frames.galaxies
+    star_segments = segments.frames.stars if "stars" in segments.frames else None
+    other_segments = segments.frames.other_sources if "other_sources" in segments.frames else None
+
+    # Return the regions and segmentation maps
+    return galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments
 
 # -----------------------------------------------------------------
 

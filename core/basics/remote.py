@@ -12,6 +12,7 @@
 # Import standard modules
 import os
 import re
+import sys
 import pxssh
 import pexpect
 import tempfile
@@ -100,7 +101,7 @@ class Remote(object):
         """
 
         # Inform the user
-        log.info("Logging in to the remote SKIRT environment on host '" + self.host.id + "' ...")
+        log.info("Logging in to the remote environment on host '" + self.host.id + "' ...")
 
         # Connect to the remote host
         self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password)
@@ -118,7 +119,7 @@ class Remote(object):
         """
 
         # Inform the user
-        log.info("Logging out from the remote SKIRT environment ...")
+        log.info("Logging out from the remote environment ...")
 
         # Disconnect
         if self.connected: self.ssh.logout()
@@ -216,6 +217,7 @@ class Remote(object):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
@@ -268,7 +270,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def execute(self, command, output=True, expect_eof=True, contains_extra_eof=False):
+    def execute(self, command, output=True, expect_eof=True, contains_extra_eof=False, show_output=False, timeout=None):
 
         """
         This function ...
@@ -276,14 +278,21 @@ class Remote(object):
         :param output:
         :param expect_eof:
         :param contains_extra_eof:
+        :param show_output:
+        :param timeout:
         :return:
         """
 
         # Send the command
         self.ssh.sendline(command)
 
+        # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
+        # Otherwise, assure that the logfile is set to 'None'
+        if show_output: self.ssh.logfile = sys.stdout
+        else: self.ssh.logfile = None
+
         # Retrieve the output if requested
-        eof = self.ssh.prompt()
+        eof = self.ssh.prompt(timeout=timeout)
 
         # If an extra EOF is used before the actual output line (don't ask me why but I encounter this on the HPC UGent infrastructure), do prompt() again
         if contains_extra_eof: eof = self.ssh.prompt()
@@ -291,11 +300,47 @@ class Remote(object):
         # If the command could not be sent, raise an error
         if not eof and expect_eof and not contains_extra_eof: raise RuntimeError("The command could not be sent")
 
+        # Set the log file back to 'None'
+        self.ssh.logfile = None
+
         # Ignore the first and the last line (the first is the command itself, the last is always empty)
         if output:
             # Trial and error to get it right for HPC UGent login nodes; don't know what is happening
             if contains_extra_eof: return self.ssh.before.replace('\x1b[K', '').split("\r\n")[1:-1]
             else: return self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
+
+    # -----------------------------------------------------------------
+
+    def execute_python_interactive(self, lines, show_output=False):
+
+        """
+        This function ...
+        :param lines:
+        :param show_output:
+        :return:
+        """
+
+        # Initiate a remote interactive python session
+        self.execute("python", expect_eof=False, show_output=show_output)
+
+        # Inject each line into the remote python prompt
+        for line in lines: self.execute(line, expect_eof=False, show_output=show_output)
+
+        # Close the remote python session
+        self.execute("exit()")
+
+    # -----------------------------------------------------------------
+
+    def execute_python_script(self, script_path, show_output=False):
+
+        """
+        This function ...
+        :param script_path:
+        :param show_output:
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -404,15 +449,58 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def download(self, origin, destination, timeout=30):
+    def to_home_directory(self):
+
+        """
+        This function ...
+        """
+
+        # Navigate to the home directory
+        self.execute("cd ~", output=False)
+
+    # -----------------------------------------------------------------
+
+    def create_directory(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Create the remote directory
+        self.execute("mkdir " + path, output=False)
+
+    # -----------------------------------------------------------------
+
+    def create_directories(self, paths):
 
         """
         This function ...
         :return:
         """
 
+        # Create the remote directories
+        self.execute("mkdir " + " ".join(paths), output=False)
+
+    # -----------------------------------------------------------------
+
+    def download(self, origin, destination, timeout=30, new_name=None, compress=False, show_output=False):
+
+        """
+        This function ...
+        :param origin:
+        :param destination:
+        :param timeout:
+        :param new_name:
+        :param compress:
+        :param show_output:
+        :return:
+        """
+
         # Construct the command string
         copy_command = "scp "
+        if compress: copy_command += "-C "
 
         # Add the host address
         copy_command += self.host.user + "@" + self.host.name + ":"
@@ -452,49 +540,65 @@ class Remote(object):
 
         # Add the destination path to the command
         copy_command += destination.replace(" ", "\ ") + "/"
+        if new_name is not None: copy_command += new_name
 
+        # Debugging
         log.debug("Copy command: " + copy_command)
 
-        # Temporary file for output of the scp command
-        temp_file_path = tempfile.mktemp()
-        temp_file = open(temp_file_path, 'w')
-
-        # Execute the command
+        # Create the pexpect child instance
         child = pexpect.spawn(copy_command, timeout=timeout)
         if self.host.password is not None:
             child.expect(['password: '])
             child.sendline(self.host.password)
-        child.logfile = temp_file
+
+        # If the output does not have to be shown on the console, create a temporary file where the output is written to
+        if not show_output:
+
+            # Temporary file for output of the scp command
+            temp_file_path = tempfile.mktemp()
+            temp_file = open(temp_file_path, 'w')
+
+        # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
+        else: child.logfile = sys.stdout
+
+        # Execute the command and get the output
         child.expect(pexpect.EOF, timeout=None)
         child.close()
 
-        # Close the temporary output file
-        temp_file.close()
+        if not show_output:
 
-        # Open the output file again and read the contents
-        temp_file = open(temp_file_path, 'r')
-        stdout = temp_file.read()
-        temp_file.close()
+            # Close the temporary output file
+            temp_file.close()
 
-        # Raise an error if something went wrong
-        if child.exitstatus != 0: raise RuntimeError(stdout)
+            # Open the output file again and read the contents
+            temp_file = open(temp_file_path, 'r')
+            stdout = temp_file.read()
+            temp_file.close()
 
-        log.debug("Copy stdout: " + str(stdout))
+            # Raise an error if something went wrong
+            if child.exitstatus != 0: raise RuntimeError(stdout)
+
+            # Debugging: show the output of the scp command
+            log.debug("Copy stdout: " + str(stdout).replace("\n", " "))
 
     # -----------------------------------------------------------------
 
-    def upload(self, origin, destination, timeout=30):
+    def upload(self, origin, destination, timeout=30, new_name=None, compress=False, show_output=False):
 
         """
         This function ...
         :param origin:
         :param destination:
         :param timeout:
+        :param new_name:
+        :param compress:
+        :param show_output:
         :return:
         """
 
         # Construct the command string
         copy_command = "scp "
+        if compress: copy_command += "-C "
 
         # If the origin is a string, we assume it represents a single file path or directory path
         if isinstance(origin, basestring):
@@ -526,36 +630,51 @@ class Remote(object):
 
         # Add the host address and the destination directory
         copy_command += self.host.user + "@" + self.host.name + ":" + destination.replace(" ", "\ ") + "/"
+        if new_name is not None: copy_command += new_name
+
+        # Debugging
         log.debug("Copy command: " + copy_command)
 
-        # Temporary file for output of the scp command
-        temp_file_path = tempfile.mktemp()
-        temp_file = open(temp_file_path, 'w')
-
-        # Execute the command
+        # Create the pexpect child instance
         child = pexpect.spawn(copy_command, timeout=timeout)
         if self.host.password is not None:
             child.expect(['password: '])
             child.sendline(self.host.password)
-        child.logfile = temp_file
+
+        # If the output does not have to be shown on the console, create a temporary file where the output is written to
+        if not show_output:
+
+            # Temporary file for output of the scp command
+            temp_file_path = tempfile.mktemp()
+            temp_file = open(temp_file_path, 'w')
+
+            child.logfile = temp_file
+
+        # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
+        else: child.logfile = sys.stdout
+
+        # Execute the command and get the output
         try:
             child.expect(pexpect.EOF, timeout=None)
         except pexpect.EOF:
             pass
         child.close()
 
-        # Close the temporary output file
-        temp_file.close()
+        if not show_output:
 
-        # Open the output file again and read the contents
-        temp_file = open(temp_file_path, 'r')
-        stdout = temp_file.read()
-        temp_file.close()
+            # Close the temporary output file
+            temp_file.close()
 
-        # Raise an error if something went wrong
-        if child.exitstatus != 0: raise RuntimeError(stdout)
+            # Open the output file again and read the contents
+            temp_file = open(temp_file_path, 'r')
+            stdout = temp_file.read()
+            temp_file.close()
 
-        log.debug("Copy stdout: " + str(stdout))
+            # Raise an error if something went wrong
+            if child.exitstatus != 0: raise RuntimeError(stdout)
+
+            # Debugging: show the output of the scp command
+            log.debug("Copy stdout: " + str(stdout).replace("\n", " "))
 
     # -----------------------------------------------------------------
 
@@ -591,11 +710,11 @@ class Remote(object):
         self.execute("cd ~", output=False)
 
         # Create the SKIRT directory
-        self.execute("mkdir SKIRT", output=False)
+        self.create_directory("SKIRT")
 
         # In the SKIRT directory, create the necessary subdirectories
         self.execute("cd SKIRT", output=False)
-        self.execute("mkdir git run release", output=False)
+        self.create_directories(["git", "run", "release"])
 
         # Clone the SKIRT repository
         if private:
@@ -642,6 +761,7 @@ class Remote(object):
 
         """
         This function ...
+        :param path:
         :return:
         """
 
@@ -744,6 +864,89 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
+    def scheduler(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.host.scheduler
+
+    # -----------------------------------------------------------------
+
+    @property
+    def use_hyperthreading(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.host.use_hyperthreading
+
+    # -----------------------------------------------------------------
+
+    @property
+    def multi_node_communication(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If the remote host uses a scheduling system, check whether multi node communication is possible based on
+        # the configuration of the current cluster
+        if self.scheduler: return self.host.clusters[self.host.cluster_name].multi_node_communication
+
+        # If no scheduler is used, raise an error (this function should not get called)
+        else: raise RuntimeError("This function should only be called when using a remote with a scheduling system")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def virtual_memory_per_node(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If the remote host uses a scheduling system, the amount of virtual memory memory per node is defined
+        # in the configuration (this is in GB)
+        if self.scheduler: return self.host.clusters[self.host.cluster_name].memory
+
+        # If no scheduler is used, assume the number of nodes is 1 and get the total virtual memory (total swap)
+        else:
+
+            output = self.execute("free -t | grep Swap")
+            splitted = output[0].split(":")[1].split()
+
+            # Calculate the free amount of memory in gigabytes
+            total_swap = float(splitted[0]) / 1e6
+
+            # Return the free amount of virtual memory in gigabytes
+            return total_swap
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nodes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If the remote host uses a scheduling system, the number of nodes is defined in the host configuration
+        if self.scheduler: return self.host.clusters[self.host.cluster_name].nodes
+
+        # If no scheduling system is used, assume the system is only concised of one node
+        else: return 1
+
+    # -----------------------------------------------------------------
+
+    @property
     def cores(self):
 
         """
@@ -752,7 +955,7 @@ class Remote(object):
         """
 
         # If the remote host uses a scheduling system, the number of cores on the computing nodes is defined in the configuration
-        if self.host.scheduler: return self.host.clusters[self.host.cluster_name].cores
+        if self.scheduler: return self.host.clusters[self.host.cluster_name].cores
 
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:
@@ -775,7 +978,7 @@ class Remote(object):
         """
 
         # If the remote host uses a scheduling system, the number of threads per core is defined in the configuration
-        if self.host.scheduler: return self.host.clusters[self.host.cluster_name].threads_per_core
+        if self.scheduler: return self.host.clusters[self.host.cluster_name].threads_per_core
 
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:

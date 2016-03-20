@@ -111,6 +111,19 @@ class Mask(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
+    def is_inf(cls, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        return cls(np.isinf(frame))
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def is_zero(cls, frame):
 
         """
