@@ -69,7 +69,6 @@ class ParameterExplorer(FittingComponent):
 
         # Set the output path
         explorer.config.path = arguments.path
-        explorer.config.output_path = filesystem.join(arguments.path, "fit")
 
         # Set options for the young stellar population
         if arguments.young_nvalues is not None: explorer.config.young_stars.nvalues = arguments.young_nvalues

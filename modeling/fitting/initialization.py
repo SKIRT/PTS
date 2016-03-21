@@ -75,7 +75,6 @@ class InputInitializer(FittingComponent):
 
         # Set the output path
         initializer.config.path = arguments.path
-        initializer.config.output_path = filesystem.join(arguments.path, "fit")
 
         # Set minimum and maximum wavelength of the total grid
         if arguments.lambda_minmax is not None:

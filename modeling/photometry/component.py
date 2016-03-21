@@ -37,15 +37,6 @@ class PhotometryComponent(ModelingComponent):
 
         # -- Attributes --
 
-        # The path to the fit/in directory
-        #self.fit_in_path = None
-
-        # The path to the fit/out directory
-        #self.fit_out_path = None
-
-        # The path to the ski file
-        #self.fit_ski_path = None
-
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -58,16 +49,7 @@ class PhotometryComponent(ModelingComponent):
         # Call the setup function of the base class
         super(PhotometryComponent, self).setup()
 
-        # Set the path to the fit/in path
-        #self.fit_in_path = filesystem.join(self.fit_path, "in")
-
-        # Set the path to the fit/out path
-        #self.fit_out_path = filesystem.join(self.fit_path, "out")
-
-        # Create the fit/in and fit/out directories
-        #filesystem.create_directories([self.fit_in_path, self.fit_out_path])
-
-        # Determine the path to the ski file
-        #self.fit_ski_path = filesystem.join(self.fit_path, self.galaxy_name + ".ski")
+        # Set the output path
+        self.output_path = self.phot_path
 
 # -----------------------------------------------------------------

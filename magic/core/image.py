@@ -271,8 +271,6 @@ class Image(object):
 
         plane_index = 0
 
-        #header = None
-
         # Create a header from the wcs
         if self.wcs is not None: header = self.wcs.to_header() # Create a header from the coordinate system
         else: header = fits.Header() # Construct a new header

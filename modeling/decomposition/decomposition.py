@@ -98,8 +98,6 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Set the input and output path
         decomposer.config.path = arguments.path
-        decomposer.config.input_path = filesystem.join(arguments.path, "prep")
-        decomposer.config.output_path = filesystem.join(arguments.path, "components")
 
         # Return the new instance
         return decomposer

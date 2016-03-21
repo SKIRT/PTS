@@ -79,8 +79,6 @@ class PhotoMeter(PhotometryComponent):
 
         # Set the input and output path
         photometer.config.path = arguments.path
-        photometer.config.input_path = filesystem.join(arguments.path, "prep")
-        photometer.config.output_path = filesystem.join(arguments.path, "phot")
 
         # A single image can be specified so the photometry is only calculated for that image
         photometer.config.single_image = arguments.image
