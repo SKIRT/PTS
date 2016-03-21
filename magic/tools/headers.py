@@ -680,9 +680,9 @@ def ctype_to_csys(wcs):
 
     ctype = wcs.ctype[0]
     if 'RA' in ctype or 'DEC' in ctype:
-        if wcs.equinox == 2000:
+        if wcs.equinox == 2000 or wcs.equinox == 2000.:
             return 'fk5'
-        elif wcs.equinox == 1950:
+        elif wcs.equinox == 1950 or wcs.equinox == 1950.:
             return 'fk4'
         else:
             raise NotImplementedError("Non-fk4/fk5 equinoxes are not allowed")

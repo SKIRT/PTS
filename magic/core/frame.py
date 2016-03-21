@@ -187,6 +187,30 @@ class Frame(np.ndarray):
     # -----------------------------------------------------------------
 
     @property
+    def all_zero(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.all(self == 0)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_nonzero(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not np.any(self == 0)
+
+    # -----------------------------------------------------------------
+
+    @property
     def pixelscale(self):
 
         """

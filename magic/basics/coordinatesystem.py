@@ -467,9 +467,9 @@ class CoordinateSystem(wcs.WCS):
 
         ctype = self.wcs.ctype[0]
         if 'RA' in ctype or 'DEC' in ctype:
-            if self.wcs.equinox == 2000:
+            if self.wcs.equinox == 2000 or self.wcs.equinox == 2000.:
                 return 'fk5'
-            elif self.wcs.equinox == 1950:
+            elif self.wcs.equinox == 1950 or self.wcs.equinox == 1950.:
                 return 'fk4'
             else:
                 raise NotImplementedError("Non-fk4/fk5 equinoxes are not allowed")

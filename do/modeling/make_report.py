@@ -49,13 +49,16 @@ logfile_path = filesystem.join(arguments.path, time.unique_name("log") + ".txt")
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
-logging.setup_log(level=level, path=logfile_path)
-logging.log.info("Starting make_report ...")
+log = logging.setup_log(level=level, path=logfile_path)
+log.info("Starting make_report ...")
 
 # -----------------------------------------------------------------
 
 # Data initialization
 if arguments.step == "initialization":
+
+    # Inform the user
+    log.info("Making a report from the data initialization step")
 
     # Determine the path to the preparation directory
     modeling_path = arguments.path
@@ -118,12 +121,20 @@ if arguments.step == "initialization":
     data = [names_column, initialized_column, errors_column, galaxy_column, star_column, saturation_column, other_column, segments_column, fwhm_column]
     table = tables.new(data, names)
 
-    # Save the table
+    # Determine the path to the table
     table_path = filesystem.join(prep_path, "initialization.dat")
+
+    # Inform the user
+    log.info("Writing the report ...")
+
+    # Save the table
     tables.write(table, table_path)
 
 # Data preparation
 elif arguments.step == "preparation":
+
+    # Inform the user
+    log.info("Making a report from the data preparation step")
 
     # Determine the path to the preparation directory
     modeling_path = arguments.path
@@ -138,11 +149,20 @@ elif arguments.step == "preparation":
     rebinned_column = []
     subtracted_column = []
     result_column = []
+    unit_column = []
+    pixelscale_column = []
+    fwhm_column = []
+    errors_column = []
+    sky_column = []
+    sources_column = []
 
-    names = ["Image name", "Sources extracted", "Corrected for extinction", "Unit converted", "Convolved", "Rebinned", "Sky subtracted", "Result"]
+    names = ["Image name", "Sources extracted", "Corrected for extinction", "Unit converted", "Convolved", "Rebinned", "Sky subtracted", "Result", "Unit", "Pixelscale", "FWHM", "Has errors", "Has sky", "Has sources mask"]
 
     # Loop over all subdirectories of the preparation directory
     for path, name in filesystem.directories_in_path(prep_path, returns=["path", "name"]):
+
+        # Debugging
+        log.debug("Checking " + name + " image ...")
 
         # Determine the path to the extracted image
         extracted_path = filesystem.join(path, "extracted.fits")
@@ -172,6 +192,27 @@ elif arguments.step == "preparation":
         result_path = filesystem.join(path, "result.fits")
         has_result = filesystem.is_file(result_path)
 
+        # If the prepared image is present, open it and get some properties
+        if has_result:
+
+            result = Image.from_file(result_path)
+
+            unit = str(result.unit)
+            pixelscale = result.xy_average_pixelscale.to("arcsec/pix").value
+            fwhm = result.fwhm.to("arcsec").value if result.fwhm is not None else None
+            has_errors = "errors" in result.frames.keys() and not result.frames.errors.all_zero
+            has_sky = "sky" in result.frames.keys() and not result.frames.sky.all_zero
+            has_sources = "sources" in result.masks.keys()
+
+        else:
+
+            unit = None
+            pixelscale = None
+            fwhm = None
+            has_errors = None
+            has_sky = None
+            has_sources = None
+
         # Fill in the columns
         names_column.append(name)
         extracted_column.append(has_extracted)
@@ -181,13 +222,24 @@ elif arguments.step == "preparation":
         rebinned_column.append(has_rebinned)
         subtracted_column.append(has_subtracted)
         result_column.append(has_result)
+        unit_column.append(unit)
+        pixelscale_column.append(pixelscale)
+        fwhm_column.append(fwhm)
+        errors_column.append(has_errors)
+        sky_column.append(has_sky)
+        sources_column.append(has_sources)
 
     # Create the table
-    data = [names_column, extracted_column, corrected_column, converted_column, convolved_column, rebinned_column, subtracted_column, result_column]
+    data = [names_column, extracted_column, corrected_column, converted_column, convolved_column, rebinned_column, subtracted_column, result_column, unit_column, pixelscale_column, fwhm_column, errors_column, sky_column, sources_column]
     table = tables.new(data, names)
 
-    # Save the table
+    # Determine the path to the table
     table_path = filesystem.join(prep_path, "preparation.dat")
+
+    # Inform the user
+    log.info("Writing the report to " + table_path + " ...")
+
+    # Save the table
     tables.write(table, table_path)
 
 # Other
