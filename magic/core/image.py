@@ -1074,6 +1074,27 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def remove_frames_except(self, names):
+
+        """
+        This function ...
+        :param names:
+        :return:
+        """
+
+        if isinstance(names, basestring): names = []
+
+        # Loop over all frames
+        for frame_name in list(self.frames.keys()):
+
+            # Don't remove the frame with the specified name
+            if frame_name in names: continue
+
+            # Remove all other frames
+            self.remove_frame(frame_name)
+
+    # -----------------------------------------------------------------
+
     def remove_frame(self, name):
 
         """
@@ -1090,6 +1111,18 @@ class Image(object):
 
         # Delete the frame
         del self.frames[name]
+
+    # -----------------------------------------------------------------
+
+    def remove_all_frames(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all frames
+        for frame_name in list(self.frames.keys()): self.remove_frame(frame_name)
 
     # -----------------------------------------------------------------
 
@@ -1114,6 +1147,27 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def remove_regions_except(self, names):
+
+        """
+        This function ...
+        :param names:
+        :return:
+        """
+
+        if isinstance(names, basestring): names = [names]
+
+        # Loop over all regions
+        for region_name in list(self.regions.keys()):
+
+            # Don't remove the region with the specified name
+            if region_name in names: continue
+
+            # Remove all other regions
+            self.remove_region(region_name)
+
+    # -----------------------------------------------------------------
+
     def remove_region(self, name):
 
         """
@@ -1130,6 +1184,18 @@ class Image(object):
 
         # Delete the region
         del self.regions[name]
+
+    # -----------------------------------------------------------------
+
+    def remove_all_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all regions
+        for region_name in list(self.regions.keys()): self.remove_region(region_name)
 
     # -----------------------------------------------------------------
 
@@ -1157,6 +1223,27 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def remove_masks_except(self, names):
+
+        """
+        This function ...
+        :param names:
+        :return:
+        """
+
+        if isinstance(names, basestring): names = [names]
+
+        # Loop over all masks
+        for mask_name in list(self.masks.keys()):
+
+            # Don't remove the mask with the specified name
+            if mask_name in names: continue
+
+            # Remove all other masks
+            self.remove_mask(mask_name)
+
+    # -----------------------------------------------------------------
+
     def remove_mask(self, name):
 
         """
@@ -1173,5 +1260,17 @@ class Image(object):
 
         # Delete the mask
         del self.masks[name]
+
+    # -----------------------------------------------------------------
+
+    def remove_all_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all masks
+        for mask_name in list(self.masks.keys()): self.remove_mask(mask_name)
 
 # -----------------------------------------------------------------

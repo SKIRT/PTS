@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.modeling.photometry.truncation import Truncator
+from pts.modeling.truncation.truncation import Truncator
 from pts.core.tools import logging, time, filesystem
 
 # -----------------------------------------------------------------

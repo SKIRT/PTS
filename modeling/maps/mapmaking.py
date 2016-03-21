@@ -223,7 +223,7 @@ class MapMaker(MapsComponent):
         """
 
         # Determine the full path to the image
-        path = filesystem.join(self.trunc_path, image_name + ".fits")
+        path = filesystem.join(self.truncation_path, image_name + ".fits")
 
         # Check whether the image is present
         if not filesystem.is_file(path): raise IOError("Could not find the " + image_name + " image")
