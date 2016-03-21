@@ -64,6 +64,42 @@ skirt_run_dir = os.path.join(skirt_root_dir, "run") if skirt_path is not None el
 
 # -----------------------------------------------------------------
 
+def skirt_is_present():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return skirt_path is not None
+
+# -----------------------------------------------------------------
+
+def qmake_path():
+
+    """
+    This function ...
+    :return:
+    """
+
+    try: output = subprocess.check_output(["which", "qmake"]).split("\n")[0]
+    except subprocess.CalledProcessError: return None
+
+    return output
+
+# -----------------------------------------------------------------
+
+def qmake_is_present():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return qmake_path() is not None
+
+# -----------------------------------------------------------------
+
 def pts_installation_is_conform():
 
     """

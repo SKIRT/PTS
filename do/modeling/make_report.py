@@ -242,6 +242,12 @@ elif arguments.step == "preparation":
     # Save the table
     tables.write(table, table_path)
 
+# Decomposition
+elif arguments.step == "decomposition": pass
+
+# Photometry
+elif arguments.step == "photometry": pass
+
 # Other
 else: raise ValueError("Other modeling steps not enabled yet")
 

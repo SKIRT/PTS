@@ -29,7 +29,7 @@ from ...core.simulation.arguments import SkirtArguments
 from ...core.simulation.execute import SkirtExec
 from ...magic.tools import catalogs
 from ...magic.basics.vector import Extent
-from ...magic.basics.skygeometry import SkyEllipse, SkyCoord
+from ...magic.basics.skygeometry import SkyEllipse, SkyCoordinate
 from ...magic.basics.skyregion import SkyRegion
 from ...magic.core.frame import Frame
 
@@ -185,7 +185,7 @@ class GalaxyDecomposer(DecompositionComponent):
         # Galaxy center from decomposition (?)
         ra_center = table["_RAJ2000"][0]
         dec_center = table["_DEJ2000"][0]
-        center = SkyCoord(ra=ra_center, dec=dec_center, unit=(Unit("deg"), Unit("deg")), frame='fk5')
+        center = SkyCoordinate(ra=ra_center, dec=dec_center, unit="deg", frame='fk5')
         self.parameters.center = center
 
         # Distance
@@ -680,21 +680,90 @@ def load_parameters(path):
             splitted = line.split(":")
 
             # Bulge parameters
-            if splitted[0] == "Bulge": pass
+            if splitted[0] == "Bulge":
+
+                splitted = splitted[1].split(":")
+
+                if splitted[0] == "Relative contribution": parameters.bulge.rel = float(splitted[1])
+                elif splitted[0] == "IRAC 3.6um flux density": parameters.bulge.fluxdensity = get_quantity(splitted[1])
+                elif splitted[0] == "Axial ratio": parameters.bulge.ar = float(splitted[1])
+                elif splitted[0] == "Position angle": parameters.bulge.pa = get_angle(splitted[1])
+                elif splitted[0] == "Effective radius": parameters.bulge.re = get_quantity(splitted[1])
+                elif splitted[0] == "Sersic index": parameters.bulge.n = float(splitted[1])
 
             # Disk parameters
-            elif splitted[0] == "Disk": pass
+            elif splitted[0] == "Disk":
+
+                splitted = splitted[1].split(":")
+
+                if splitted[0] == "Relative contribution": parameters.disk.rel = float(splitted[1])
+                elif splitted[0] == "IRAC 3.6um flux density": parameters.disk.fluxdensity = get_quantity(splitted[1])
+                elif splitted[0] == "Axial ratio": parameters.disk.ar = float(splitted[1])
+                elif splitted[0] == "Position angle": parameters.disk.pa = get_angle(splitted[1])
+                elif splitted[0] == "Central surface brightness": parameters.disk.mu0 = float(splitted[1])
+                elif splitted[0] == "Exponential scale length": parameters.disk.hr = get_quantity(splitted[1])
 
             # Other parameters
             elif len(splitted) == 2:
 
                 if splitted[0] == "Name": parameters.galaxy_name = splitted[1]
-                elif splitted[0] == "Center RA": ra = float(splitted[1])
-                elif splitted[0] == "Center DEC": dec = float(splitted[1])
-                elif splitted[0] == "Major axis length": parameters.major = float(splitted[1])
+                elif splitted[0] == "Center RA": ra = get_quantity(splitted[1])
+                elif splitted[0] == "Center DEC": dec = get_quantity(splitted[1])
+                elif splitted[0] == "Major axis length": parameters.major = get_quantity(splitted[1])
                 elif splitted[0] == "Ellipticity": parameters.ellipticity = float(splitted[1])
+                elif splitted[0] == "Position angle": parameters.position_angle = get_angle(splitted[1])
+                elif splitted[0] == "Distance": parameters.distance = get_quantity(splitted[1])
+                elif splitted[0] == "Distance error": parameters.distance_error = get_quantity(splitted[1])
+                elif splitted[0] == "Inclination": parameters.inclination = get_angle(splitted[1])
+                elif splitted[0] == "IRAC 3.6um flux density": parameters.i1_fluxdensity = float(splitted[1])
+                elif splitted[0] == "IRAC 3.6um flux density error": parameters.i1_error = float(splitted[1])
+                elif splitted[0] == "IRAC 4.5um flux density": parameters.i2_fluxdensity = float(splitted[1])
+                elif splitted[0] == "IRAC 4.5um flux density error": parameters.i2_error = float(splitted[1])
+
+    # Add the center coordinate
+    parameters.center = SkyCoordinate(ra=ra, dec=dec)
 
     # Return the parameters
     return parameters
+
+# -----------------------------------------------------------------
+
+def get_quantity(entry, default_unit=None):
+
+    """
+    This function ...
+    :param entry:
+    :param default_unit:
+    :return:
+    """
+
+    splitted = entry.split()
+    value = float(splitted[0])
+    try: unit = splitted[1]
+    except IndexError: unit = default_unit
+
+    # Create a quantity object and return it
+    if unit is not None: value = value * Unit(unit)
+    return value
+
+# -----------------------------------------------------------------
+
+def get_angle(entry, default_unit=None):
+
+    """
+    This function ...
+    :param entry:
+    :param default_unit:
+    :return:
+    """
+
+    splitted = entry.split()
+    value = float(splitted[0])
+    try: unit = splitted[1]
+    except IndexError: unit = default_unit
+
+    # Create an Angle object and return it
+    if unit is not None: value = Angle(value, unit)
+    return value
 
 # -----------------------------------------------------------------

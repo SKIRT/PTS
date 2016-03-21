@@ -50,6 +50,6 @@ class DecompositionComponent(ModelingComponent):
         super(DecompositionComponent, self).setup()
 
         # Set the output path
-        self.output_path = self.components_path
+        self.config.output_path = self.components_path
 
 # -----------------------------------------------------------------

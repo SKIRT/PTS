@@ -30,10 +30,17 @@ import logging
 
 # -----------------------------------------------------------------
 
+# Add the 'START' log level
+START = 24
+logging.addLevelName(START, "START")
+def start(self, message, *args, **kwargs):
+    if self.isEnabledFor(START): self._log(START, message, args, **kwargs)
+logging.Logger.start = start
+
 # Add the 'SUCCESS' log level
 SUCCESS = 25
 logging.addLevelName(SUCCESS, "SUCCESS")
-Logger = logging.getLoggerClass()
+#Logger = logging.getLoggerClass()
 def success(self, message, *args, **kwargs):
     if self.isEnabledFor(SUCCESS): self._log(SUCCESS, message, args, **kwargs)
 logging.Logger.success = success
@@ -49,6 +56,7 @@ def init_log(level="INFO"):
 
     """
     This function ...
+    :param level:
     :return:
     """
 
@@ -116,6 +124,7 @@ class MyFormatter(logging.Formatter):
 
     debug_char = "D"
     info_char = " "
+    start_char = "-"
     success_char = "-"
     warning_char = "!"
     error_char = "*"
@@ -139,6 +148,9 @@ class MyFormatter(logging.Formatter):
 
         elif record.levelno == logging._levelNames["SUCCESS"]:
             self._fmt = MyFormatter.timestamp + " " + MyFormatter.success_char + " " + MyFormatter.message
+
+        elif record.levelno == logging._levelNames["START"]:
+            self._fmt = MyFormatter.timestamp + " " + MyFormatter.start_char + " " + MyFormatter.message
 
         elif record.levelno == logging.WARNING:
             self._fmt = MyFormatter.timestamp + " " + MyFormatter.warning_char + " " + MyFormatter.message
@@ -214,6 +226,7 @@ class ColorizingStreamHandler(logging.StreamHandler):
     level_map = {
         logging.DEBUG: (None, 'blue', False),
         logging.INFO: (None, None, False),
+        logging._levelNames["START"]: (None, None, True),
         logging._levelNames["SUCCESS"]: (None, 'green', False),
         logging.WARNING: (None, 'magenta', False),
         logging.ERROR: (None, 'red', False),

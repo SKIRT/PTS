@@ -152,25 +152,20 @@ class PhotoMeter(PhotometryComponent):
             # If only a single image has to be processed, skip the other images
             if self.config.single_image is not None and directory_name != self.config.single_image: continue
 
-            # Determine the filter
-            filter_name = directory_name
-            if filter_name == "Ha": filter_name = "H alpha"
-            filter = headers.get_filter(filter_name)
-
             # Look for a file called 'result.fits'
             image_path = filesystem.join(directory_path, "result.fits")
             if not filesystem.is_file(image_path):
                 log.warning("Prepared image could not be found for " + directory_name)
                 continue
 
+            # Skip the H alpha image
+            if "Halpha" in directory_name: continue
+
             # Open the prepared image
             image = Image.from_file(image_path)
 
             # Set the image name
             image.name = directory_name
-
-            # Set the filter
-            image.filter = filter
 
             # Add the image to the list
             self.images.append(image)
@@ -219,7 +214,7 @@ class PhotoMeter(PhotometryComponent):
             log.debug("Creating mask of truncated pixels ...")
 
             # Create ellipse in image coordinates from ellipse in sky coordinates for this image
-            ellipse = self.disk_ellipse.to_ellipse(image.wcs)
+            ellipse = self.disk_ellipse.to_pixel(image.wcs)
 
             # Create mask from ellipse
             inverted_mask = Mask.from_shape(ellipse, image.xsize, image.ysize, invert=True)
@@ -252,6 +247,7 @@ class PhotoMeter(PhotometryComponent):
 
             jansky_errors_frame = image.frames.errors * conversion_factor
             jansky_errors_frame[mask] = 0.0
+            jansky_errors_frame[np.isnan(jansky_errors_frame)] = 0.0
             flux_error = np.sum(jansky_errors_frame)
 
             # Create new image with primary and errors frame in Jansky and save it
@@ -275,6 +271,9 @@ class PhotoMeter(PhotometryComponent):
         This function ...
         :return:
         """
+
+        # Specify which references should be consulted
+        self.sed_fetcher.config.catalogs = ["GALEX", "2MASS", "SINGS", "LVL", "Spitzer", "Spitzer/IRS", "IRAS", "IRAS-FSC", "S4G", "Brown", "Planck"]
 
         # Fetch the reference SEDs
         self.sed_fetcher.run(self.galaxy_name)

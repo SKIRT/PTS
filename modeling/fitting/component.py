@@ -59,7 +59,7 @@ class FittingComponent(ModelingComponent):
         super(FittingComponent, self).setup()
 
         # Set the output path
-        self.output_path = self.fit_path
+        self.config.output_path = self.fit_path
 
         # Set the path to the fit/in path
         self.fit_in_path = filesystem.join(self.fit_path, "in")

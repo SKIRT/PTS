@@ -21,7 +21,7 @@ from astropy.wcs import utils
 import astropy.units as u
 
 # Import the relevant PTS classes and modules
-from .vector import Extent
+from .vector import Extent, Position
 from .geometry import Coordinate, Line, Circle, Ellipse, Rectangle, Polygon
 from ..tools import coordinates
 
@@ -287,7 +287,8 @@ class SkyEllipse(object):
         :return:
         """
 
-        center = self.center.to_pixel(wcs)
+        center_x, center_y = self.center.to_pixel(wcs)
+        center = Position(center_x, center_y)
 
         ## GET THE PIXELSCALE
         result = utils.proj_plane_pixel_scales(wcs)

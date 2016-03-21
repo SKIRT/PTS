@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.makemaps Make the maps of dust and stars for the SKIRT radiative transfer modeling procedure.
+## \package pts.do.modeling.truncate Create the truncated images.
 
 # -----------------------------------------------------------------
 
@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.modeling.maps.mapmaking import MapMaker
+from pts.modeling.photometry.truncation import Truncator
 from pts.core.tools import logging, time, filesystem
 
 # -----------------------------------------------------------------
@@ -26,11 +26,10 @@ parser = argparse.ArgumentParser()
 
 # Basic options
 parser.add_argument("path", type=str, nargs='?', help="the modeling path")
-parser.add_argument("--map", type=str, help="the map to be made (dust, old, NIY, IY)")
 
 # Logging options
 parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
-parser.add_argument("--report", action='store_true', help='write a report file')
+parser.add_argument("--report", action='store_true', help="write a report file")
 
 # Configuration
 parser.add_argument("--config", type=str, help="the name of a configuration file")
@@ -52,15 +51,15 @@ logfile_path = filesystem.join(arguments.path, time.unique_name("log") + ".txt")
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
-log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting make_maps ...")
+logging.setup_log(level=level, path=logfile_path)
+logging.log.info("Starting truncate ...")
 
 # -----------------------------------------------------------------
 
-# Create a MapMaker object
-maker = MapMaker.from_arguments(arguments)
+# Create a Truncator object
+photometer = Truncator.from_arguments(arguments)
 
-# Run the map maker
-maker.run()
+# Run the truncator
+photometer.run()
 
 # -----------------------------------------------------------------

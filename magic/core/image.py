@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -507,6 +508,9 @@ class Image(object):
         :param unit:
         """
 
+        # Make an Astropy Unit instance
+        if isinstance(unit, basestring): unit = Unit(unit)
+
         # Inform the user
         log.info("Converting the unit of the image from " + str(self.unit) + " to " + str(unit) + " ...")
 
@@ -740,6 +744,37 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def __mul__(self, factor):
+
+        """
+        This function ...
+        :param factor:
+        :return:
+        """
+
+        # Create a new image
+        image = Image(self.name)
+
+        # Set attributes
+        image.name = self.name
+        image.path = self.path
+        image.original_header = self.original_header
+        image.metadata = self.metadata
+
+        # Loop over the frames
+        for frame_name in self.frames: image.add_frame(self.frames[frame_name] * factor, frame_name)
+
+        # Loop over the masks
+        for mask_name in self.masks: image.add_mask(self.masks[mask_name] * factor, mask_name)
+
+        # Loop over the regions
+        for region_name in self.regions: image.add_region(copy.deepcopy(self.regions[region_name]), region_name)
+
+        # Return the new image
+        return image
+
+    # -----------------------------------------------------------------
+
     def __imul__(self, factor):
 
         """
@@ -748,7 +783,7 @@ class Image(object):
         :return:
         """
 
-        # Loop over all currently selected frames
+        # Loop over all frames
         for frame_name in self.frames:
 
             # Inform the user

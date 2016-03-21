@@ -13,20 +13,25 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.modeling.decomposition import GalaxyDecomposer
-from pts.core.tools import logging, time
+from pts.modeling.decomposition.decomposition import GalaxyDecomposer
+from pts.core.tools import logging, time, filesystem
 
 # -----------------------------------------------------------------
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
+
+# Basic options
 parser.add_argument("path", type=str, nargs='?', help="the modeling path")
+
+# Logging options
 parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
 parser.add_argument("--report", action='store_true', help="write a report file")
+
+# Configuration
 parser.add_argument("--config", type=str, help="the name of a configuration file")
 
 # Parse the command line arguments
@@ -35,19 +40,19 @@ arguments = parser.parse_args()
 # -----------------------------------------------------------------
 
 # Set the modeling path
-if arguments.path is None: arguments.path = os.getcwd()
+if arguments.path is None: arguments.path = filesystem.cwd()
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = os.path.join(arguments.path, time.unique_name("decomposition") + ".txt") if arguments.report else None
+logfile_path = filesystem.join(arguments.path, time.unique_name("log") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
 logging.setup_log(level=level, path=logfile_path)
-logging.log.info("Starting decomposition ...")
+logging.log.start("Starting decompose ...")
 
 # -----------------------------------------------------------------
 

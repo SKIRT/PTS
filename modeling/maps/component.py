@@ -50,6 +50,6 @@ class MapsComponent(ModelingComponent):
         super(MapsComponent, self).setup()
 
         # Set the output path (= the maps directory)
-        self.output_path = self.maps_path
+        self.config.output_path = self.maps_path
 
 # -----------------------------------------------------------------

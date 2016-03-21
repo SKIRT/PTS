@@ -65,7 +65,7 @@ class PreparationComponent(ModelingComponent):
         super(PreparationComponent, self).setup()
 
         # Set the output path (= the preparation directory)
-        self.output_path = self.prep_path
+        self.config.output_path = self.prep_path
 
         # Set the info path
         self.info_path = filesystem.join(self.data_path, "info.dat")

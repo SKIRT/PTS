@@ -46,7 +46,10 @@ class SkirtExec:
         if not self._path.endswith("skirt"): self._path = os.path.join(self._path, "skirt")
         if self._path != "skirt": self._path = os.path.realpath(os.path.expanduser(self._path))
 
-        if self._path == "skirt": self._path = inspection.skirt_path
+        if self._path == "skirt":
+
+            if inspection.skirt_is_present(): self._path = inspection.skirt_path
+            else: raise EnvironmentError("SKIRT is not installed or not in the PATH environment variable")
 
         # Indicate no simulations are running yet
         self._process = None

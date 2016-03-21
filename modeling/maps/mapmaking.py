@@ -17,6 +17,7 @@ import copy
 import numpy as np
 
 # Import astronomical modules
+from astropy.units import Unit
 from photutils import detect_sources
 
 # Import the relevant PTS classes and modules
@@ -25,59 +26,14 @@ from ...magic.core.image import Image
 from ...magic.core.frame import Frame
 from .component import MapsComponent
 from ...core.tools import time, filesystem
+from ..decomposition.decomposition import load_parameters
 
 # -----------------------------------------------------------------
 
-## FROM GALAXYMODELER CLASS:
+# Solar luminosity
+Lsun = 3.846e26 * Unit("Watt")
 
-# Open the prepared reference image
-#config.cutoff.reference_path = os.path.join(self.prep_path, self.config.reference_image, "final.fits")
-
-# Set the path to the low signal-to-noise cutoff mask file
-#config.saving.cutoff_mask_path = os.path.join(self.prep_path, self.config.reference_image, "cutoff_mask.fits")
-#config.saving.cutoff_mask_segments_path = os.path.join(self.prep_path, self.config.reference_image, "cutoff_mask_segments.fits")
-#config.saving.cutoff_mask_holes_path = os.path.join(self.prep_path, self.config.reference_image, "cutoff_mask_holes.fits")
-#config.saving.cutoff_mask_with_holes_path = os.path.join(self.prep_path, self.config.reference_image, "cutoff_mask_with_holes.fits")
-
-# Set the paths to the processed images
-#config.h_path = os.path.join(self.prep_path, "2MASSH", "final.fits")
-#config.fuv_path = os.path.join(self.prep_path, "GALEXFUV", "final.fits")
-#config.ha_path = os.path.join(self.prep_path, "Ha", "final.fits")
-#config.irac_path = os.path.join(self.prep_path, "IRACI1", "final.fits")
-#config.mips_path = os.path.join(self.prep_path, "MIPS24", "final.fits")
-#config.pacsblue_path = os.path.join(self.prep_path, "PACS70", "final.fits")
-#config.pacsred_path = os.path.join(self.prep_path, "PACS160", "final.fits")
-#config.disk_path = os.path.join(self.prep_path, "Disk", "final.fits")
-#config.bulge_path = os.path.join(self.prep_path, "Bulge", "final.fits")
-
-# Set the paths to the cutoff maps
-#config.saving.h_cutoff_path = os.path.join(self.prep_path, "2MASSH", "cutoff.fits")
-#config.saving.fuv_cutoff_path = os.path.join(self.prep_path, "GALEXFUV", "cutoff.fits")
-#config.saving.ha_cutoff_path = os.path.join(self.prep_path, "Ha", "cutoff.fits")
-#config.saving.irac_cutoff_path = os.path.join(self.prep_path, "IRACI1", "cutoff.fits")
-#config.saving.mips_cutoff_path = os.path.join(self.prep_path, "MIPS24", "cutoff.fits")
-#config.saving.pacsblue_cutoff_path = os.path.join(self.prep_path, "PACS70", "cutoff.fits")
-#config.saving.pacsred_cutoff_path = os.path.join(self.prep_path, "PACS160", "cutoff.fits")
-#config.saving.disk_cutoff_path = os.path.join(self.prep_path, "Disk", "cutoff.fits")
-#config.saving.bulge_cutoff_path = os.path.join(self.prep_path, "Bulge", "cutoff.fits")
-
-# Set the paths to the maps converted to solar luminosities
-#config.conversion.ha_output_path = os.path.join(self.in_path, "solar", "ha.fits")
-#config.conversion.ha_errors_output_path = os.path.join(self.in_path, "solar", "ha_errors.fits")
-#config.conversion.mips_output_path = os.path.join(self.in_path, "solar", "mips.fits")
-#config.conversion.mips_errors_output_path = os.path.join(self.in_path, "solar", "mips_errors.fits")
-#config.conversion.pacsblue_output_path = os.path.join(self.in_path, "solar", "pacsblue.fits")
-#config.conversion.pacsred_output_path = os.path.join(self.in_path, "solar", "pacsred.fits")
-
-# Set the paths to the output maps
-#config.dust.output_path = os.path.join(self.in_path, "dust.fits")
-#config.dust.ssfr.output_path = os.path.join(self.in_path, "ssfr.fits")  # Temporary ...
-#config.dust.ssfr.color_output_path = os.path.join(self.in_path, "fuv_h_color.fits") # Temporary ...
-#config.dust.ssfr.with_nans_output_path = os.path.join(self.in_path, "ssfr_withnans.fits")  # Temporary ...
-#config.dust.tir_to_fuv_output_path = os.path.join(self.in_path, "tir_to_fuv.fits") # Temporary ...
-#config.old_stars.output_path = os.path.join(self.in_path, "old_stars.fits")
-#config.ionizing_stars.output_path = os.path.join(self.in_path, "ionizing_stars.fits")
-#config.non_ionizing_stars.output_path = os.path.join(self.in_path, "non_ionizing_stars.fits")
+# -----------------------------------------------------------------
 
 class MapMaker(MapsComponent):
 
@@ -98,20 +54,12 @@ class MapMaker(MapsComponent):
 
         # -- Attributes --
 
-        # Input images
-        self.h = None
-        self.fuv = None
-        self.ha = None
-        self.irac = None
-        self.mips = None
-        self.pacsblue = None
-        self.pacsred = None
+        # The structural galaxy parameters
+        self.parameters = None
+        self.distance_mpc = None
 
-        # Error frames
-        self.fuv_errors = None
-        self.ha_errors = None
-        self.irac_errors = None
-        self.mips_errors = None
+        # Input images
+        self.images = dict()
 
         # Bulge and disk
         self.disk = None
@@ -159,13 +107,13 @@ class MapMaker(MapsComponent):
         self.load_images()
 
         # 3. Cut-off the low signal-to-noise pixels
-        self.cutoff_low_snr()
+        #self.cutoff_low_snr()
 
         # 4. If requested, save the maps with masked
-        if self.config.save_cutoff_maps: self.save_cutoff_maps()
+        #if self.config.save_cutoff_maps: self.save_cutoff_maps()
 
         # 5. Convert maps to solar luminosity units
-        self.convert_to_solar()
+        self.convert_units()
 
         # Make the dust map
         self.make_dust_map()
@@ -181,6 +129,27 @@ class MapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def setup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(MapMaker, self).setup()
+
+        # Determine the path to the parameters file
+        path = filesystem.join(self.components_path, "parameters.dat")
+
+        # Load the structural parameters
+        self.parameters = load_parameters(path)
+
+        # Get the galaxy distance
+        self.distance_mpc = self.parameters.distance.to("Mpc").value
+
+    # -----------------------------------------------------------------
+
     def load_images(self):
 
         """
@@ -188,93 +157,85 @@ class MapMaker(MapsComponent):
         :return:
         """
 
-        ### H - BAND IMAGE
+        # Load the SDSS i image
+        self.load_image("SDSS i", "i")
 
-        # Check whether the H-band image is present
-        if not filesystem.is_file(self.config.h_path): raise IOError("Could not find the H-band image")
+        # Load the GALEX FUV image
+        self.load_image("GALEX FUV", "FUV")
 
-        # Open the H-band image
-        self.h = Frame.from_file(self.config.h_path)
+        # Load the H-alpha image
+        self.load_image("Mosaic Halpha", "Halpha")
 
-        ### FUV IMAGE
+        # Load the 24 micron image
+        self.load_image("MIPS 24mu", "24mu")
 
-        # Check whether the FUV image is present
-        if filesystem.is_file(self.config.fuv_path):
+        # Load the IRAC 3.6 image
+        self.load_image("IRAC I1", "3.6mu")
 
-            # Open the FUV image
-            self.fuv = Frame.from_file(self.config.fuv_path)
-            self.fuv_errors = Frame.from_file(self.config.fuv_path, plane=self.config.errors)
+        # Load the PACS 70 image
+        self.load_image("Pacs blue", "70mu")
 
-        else: raise IOError("Could not find the FUV image")
+        # load the PACS 160 image
+        self.load_image("Pacs red", "160mu")
 
-        ### H ALPHA IMAGE
+        # Load the disk image
+        self.load_disk()
 
-        # Check whether the H Alpha image is present
-        if os.path.isfile(self.config.ha_path):
+        # Load the bulge image
+        self.load_bulge()
 
-            # Open the H Alpha image
-            self.ha = Frame.from_file(self.config.ha_path)
-            self.ha_errors = Frame.from_file(self.config.ha_path, plane=self.config.errors)
+    # -----------------------------------------------------------------
 
-        else: raise IOError("Could not find the H Alpha image")
+    def load_disk(self):
 
-        ### 24 MICRON IMAGE
+        """
+        This function ...
+        """
 
-        # Check whether the 24 micron image is present
-        if os.path.isfile(self.config.mips_path):
+        # Determine the path to the disk image
+        path = filesystem.join(self.components_path, "disk.fits")
 
-            # Open the 24 micron image
-            self.mips = Frame.from_file(self.config.mips_path)
-            self.mips_errors = Frame.from_file(self.config.mips_path, plane=self.config.errors)
+        # Load the disk image
+        self.disk = Frame.from_file(path)
 
-        else: raise IOError("Could not find the 24 micron image")
+    # -----------------------------------------------------------------
 
-        ### 3.6 MICRON IMAGE
+    def load_bulge(self):
 
-        # Check whether the 3.6 micron image is present
-        if os.path.isfile(self.config.irac_path):
+        """
+        This function ...
+        """
 
-            # Open the 3.6 micron image
-            self.irac = Frame.from_file(self.config.irac_path)
-            self.irac_errors = Frame.from_file(self.config.irac_path, plane=self.config.errors)
+        # Determine the path to the bulge image
+        path = filesystem.join(self.components_path, "bulge.fits")
 
-        else: raise IOError("Could not find the 3.6 micron image")
+        # Load the bulge image
+        self.bulge = Frame.from_file(path)
 
-        ### 70 MICRON IMAGE
+    # -----------------------------------------------------------------
 
-        # Check whether the 70 micron image is present
-        if os.path.isfile(self.config.pacsblue_path):
+    def load_image(self, image_name, image_id):
 
-            # Open the 70 micron image
-            self.pacsblue = Frame.from_file(self.config.pacsblue_path)
+        """
+        This function ...
+        :param image_name:
+        :param image_id:
+        """
 
-        ### 160 MICRON IMAGE
+        # Determine the full path to the image
+        path = filesystem.join(self.trunc_path, image_name + ".fits")
 
-        # Check whether the 160 micron image is present
-        if os.path.isfile(self.config.pacsred_path):
+        # Check whether the image is present
+        if not filesystem.is_file(path): raise IOError("Could not find the " + image_name + " image")
 
-            # Open the 160 micron image
-            self.pacsred = Frame.from_file(self.config.pacsred_path)
+        # Open the image
+        image = Image.from_file(path)
 
-        else: raise IOError("Could not find the 160 micron image")
+        # Assert that the units are MJy/sr
+        if not "Halpha" in image_name: assert image.unit == Unit("MJy/sr")
 
-        ### DISK AND BULGE
-
-        # Check whether the disk image is present
-        if os.path.isfile(self.config.disk_path):
-
-            # Open the disk image
-            self.disk = Frame.from_file(self.config.disk_path)
-
-        else: raise IOError("Could not find the disk image")
-
-        # Check whether the bulge image is present
-        if os.path.isfile(self.config.bulge_path):
-
-            # Open the bulge image
-            self.bulge = Frame.from_file(self.config.bulge_path)
-
-        else: raise IOError("Could not find the bulge image")
+        # Add the image to the dictionary
+        self.images[image_id] = image
 
     # -----------------------------------------------------------------
 
@@ -374,57 +335,74 @@ class MapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def convert_to_solar(self):
+    def convert_units(self):
 
         """
         This function ...
         :return:
         """
 
-        # Distance of M81
-        d_m81 = 3.6
+        # FUV is not converted to Lsun
 
+        # Convert the H-alpha image to solar luminosities
+        self.convert_halpha_to_solar()
 
-        ### FUV IS NOT CONVERTED TO LSUN !!!!!
+        # Convert the MIPS image to solar luminosities
+        self.convert_mips_to_solar()
 
+        # Convert the PACS images to solar luminosities
+        self.convert_pacs_to_solar()
 
-        # Convert all maps to solar luminosities
+    # -----------------------------------------------------------------
 
-        ### CONVERT THE H ALPHA IMAGE FROM MJY/SR TO SOLAR LUMINOSITIES
+    def convert_halpha_to_solar(self):
 
-        # Convert to Lsun
-        factor_ha = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/0.657894736e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
+        """
+        This function converts the H alpha image from
+        :return:
+        """
 
-        # Multiply
-        self.ha *= 10.0**factor_ha
+        # Convert from erg/s to Lsun
+        self.images["Halpha"].convert_to("Lsun")
 
-        # Convert errors !!
-        self.ha_errors *= 10.0**factor_ha
+    # -----------------------------------------------------------------
 
-        # Output
-        self.ha.save(self.config.conversion.ha_output_path)
-        self.ha_errors.save(self.config.conversion.ha_errors_output_path)
+    def convert_mips_to_solar(self):
 
-        ### CONVERT MIPS, PACSBLUE AND PACSRED TO SOLAR LUMINOSITIES
+        """
+        This function ...
+        :return:
+        """
 
         # Calculate conversion factors from MJy/sr to solar luminosities
-        factor24 = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/24e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
-        factor70 = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/70e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
-        factor160 = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/160e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(d_m81*3.08567758e22)) - np.log10(3.846e26)
+        exponent = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/24e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(self.distance_mpc*3.08567758e22)) - np.log10(3.846e26)
 
-        # Convert the units of the 24 micron, 70 micron and 160 micron images from MJy/sr to solar luminosities
-        self.mips *= 10.0**factor24
-        self.pacsblue *= 10.0**factor70
-        self.pacsred *= 10.0**factor160  ## ERROR ?
+        # Multiply the image
+        self.images["24mu"] *= 10.**exponent
 
-        # Convert errors !!
-        self.mips_errors *= 10.0**factor24
+        # Set the new unit
+        self.images["24mu"].unit = "Lsun"
 
-        # Output
-        self.mips.save(self.config.conversion.mips_output_path)
-        self.mips_errors.save(self.config.conversion.mips_errors_output_path)
-        self.pacsblue.save(self.config.conversion.pacsblue_output_path)
-        self.pacsred.save(self.config.conversion.pacsred_output_path)
+    # -----------------------------------------------------------------
+
+    def convert_pacs_to_solar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate the conversion factors
+        exponent_70 = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/70e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(self.distance_mpc*3.08567758e22)) - np.log10(3.846e26)
+        exponent_160 = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/160e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(self.distance_mpc*3.08567758e22)) - np.log10(3.846e26)
+
+        # Convert the units of the 70 micron and 160 micron images from MJy/sr to solar luminosities
+        self.images["70mu"] *= 10.0**exponent_70
+        self.images["160mu"] *= 10.0**exponent_160
+
+        # Set the new unit
+        self.images["70mu"].unit = "Lsun"
+        self.images["160mu"].unit = "Lsun"
 
     # -----------------------------------------------------------------
 
@@ -436,35 +414,29 @@ class MapMaker(MapsComponent):
         """
 
         # Inform the user
-        self.log.info("Creating the dust attenuation map")
+        self.log.info("Creating the dust attenuation map ...")
 
         # Dust = FUV attenuation = ratio of TIR and FUV luminosity
 
 
         ### CALCULATE FUV AND TIR MAP IN W/M2 UNIT
 
-        ## SELF.TIR IS IN W/M2
-
         # Convert the FUV map from MJy/sr to W/m2
         factor = - 20.0 + np.log10(3e8) - np.log10(0.153e-6) + (2*np.log10(2.85/206264.806247))
-        fuv_converted = self.fuv * 10.0**factor
+        fuv_converted = self.images["FUV"] * 10.0**factor
 
-
-        ### TIR:
-
-        d_m81 = 3.6
-
-        tir = self.tir  # In solar units
+        # Get the TIR map in solar units
+        tir_map = self.get_tir_map()
 
         # Convert the TIR frame from solar units to W/m2
-        factor = np.log10(3.846e26) - np.log10(4*np.pi) - (2.0*np.log10(d_m81*3.08567758e22))
-        tir *= 10.0**factor
+        exponent = np.log10(3.846e26) - np.log10(4*np.pi) - (2.0*np.log10(self.distance_mpc*3.08567758e22))
+        tir_map *= 10.0**exponent
 
 
-        ### CALCULATE TIR TO FUV RATIO (AND POWERS THEREOF)
+        # CALCULATE TIR TO FUV RATIO (AND POWERS THEREOF)
 
         # The ratio of TIR and FUV
-        tir_to_fuv = np.log10(tir/fuv_converted)
+        tir_to_fuv = np.log10(tir_map/fuv_converted)
 
         # Calculate powers of tir_to_fuv
         tir_to_fuv2 = np.power(tir_to_fuv, 2.0)
@@ -622,7 +594,7 @@ class MapMaker(MapsComponent):
         e.append(0.01517)
 
         # Calculate the specific star formation map
-        ssfr = self.ssfr
+        ssfr = self.get_ssfr_map()
 
         # Create the FUV attenuation map
         for i in range(len(limits)):
@@ -749,8 +721,7 @@ class MapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def ssfr(self):
+    def get_ssfr_map(self):
 
         """
         This function ...
@@ -792,8 +763,7 @@ class MapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def tir(self):
+    def get_tir_map(self):
 
         """
         This function ...
@@ -813,8 +783,7 @@ class MapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def fuv_young_stars(self):
+    def get_fuv_young_stars_map(self):
 
         """
         This function ...
@@ -857,8 +826,7 @@ class MapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def mips_young_stars(self):
+    def get_mips_young_stars_map(self):
 
         """
         This function ...

@@ -50,6 +50,6 @@ class PhotometryComponent(ModelingComponent):
         super(PhotometryComponent, self).setup()
 
         # Set the output path
-        self.output_path = self.phot_path
+        self.config.output_path = self.phot_path
 
 # -----------------------------------------------------------------
