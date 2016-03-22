@@ -17,9 +17,6 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from ...magic.core.image import Image
-from ...magic.tools import headers
-from ...magic.basics.mask import Mask
-from ...magic.basics.skyregion import SkyRegion
 from .component import PhotometryComponent
 from .sedfetching import SEDFetcher
 from ...core.tools import filesystem
@@ -77,11 +74,8 @@ class PhotoMeter(PhotometryComponent):
         # Create a new PhotoMeter instance
         photometer = cls(arguments.config)
 
-        # Set the input and output path
+        # Set the modeling path
         photometer.config.path = arguments.path
-
-        # A single image can be specified so the photometry is only calculated for that image
-        photometer.config.single_image = arguments.image
 
         # Return the new instance
         return photometer
@@ -98,22 +92,19 @@ class PhotoMeter(PhotometryComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Load the prepared images
+        # 2. Load the truncated images
         self.load_images()
 
-        # 3. Get the disk ellipse
-        self.get_disk_ellipse()
-
-        # 4. Do the photometry
+        # 3. Do the photometry
         self.do_photometry()
 
-        # 5. Get the photometric flux points from the literature for comparison
+        # 4. Get the photometric flux points from the literature for comparison
         self.get_references()
 
-        # 6. Calculate the differences between the calculated photometry and the reference SEDs
+        # 5. Calculate the differences between the calculated photometry and the reference SEDs
         self.calculate_differences()
 
-        # 7. Writing
+        # 6. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -146,47 +137,28 @@ class PhotoMeter(PhotometryComponent):
         # Inform the user
         log.info("Loading the images ...")
 
-        # Loop over all directories in the preparation directory
-        for directory_path, directory_name in filesystem.directories_in_path(self.prep_path, returns=["path", "name"]):
-
-            # If only a single image has to be processed, skip the other images
-            if self.config.single_image is not None and directory_name != self.config.single_image: continue
-
-            # Look for a file called 'result.fits'
-            image_path = filesystem.join(directory_path, "result.fits")
-            if not filesystem.is_file(image_path):
-                log.warning("Prepared image could not be found for " + directory_name)
-                continue
+        # Loop over all files found in the truncation directory
+        for path, name in filesystem.files_in_path(self.truncation_path, extension="fits", returns=["path", "name"]):
 
             # Skip the H alpha image
-            if "Halpha" in directory_name: continue
+            if "Halpha" in name: continue
 
-            # Open the prepared image
-            image = Image.from_file(image_path)
+            # Debugging
+            log.debug("Loading the " + name + " image ...")
 
-            # Set the image name
-            image.name = directory_name
+            # Open the truncated image
+            image = Image.from_file(path)
+
+            # Check that the image has a primary and and errors frame
+            if "primary" not in image.frames:
+                log.warning("The " + name + " image does not contain a primary frame: skipping")
+                continue
+            if "errors" not in image.frames:
+                log.warning("The " + name + " image does not contain an errors frame: skipping")
+                continue
 
             # Add the image to the list
             self.images.append(image)
-
-    # -----------------------------------------------------------------
-
-    def get_disk_ellipse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the path to the disk region
-        path = filesystem.join(self.components_path, "disk.reg")
-
-        # Open the region
-        region = SkyRegion.from_file(path)
-
-        # Get ellipse in sky coordinates
-        self.disk_ellipse = region[0]
 
     # -----------------------------------------------------------------
 
@@ -200,30 +172,13 @@ class PhotoMeter(PhotometryComponent):
         # Inform the user
         log.info("Performing the photometry calculation ...")
 
-        # Create directory to contain the images in Jansky with truncation
-        truncated_path = self.full_output_path("truncated")
-        filesystem.create_directory(truncated_path)
-
         # Loop over all the images
         for image in self.images:
 
-            # Inform the user
+            # Debugging
             log.debug("Performing photometry for " + image.name + " image ...")
 
-            # Inform the user
-            log.debug("Creating mask of truncated pixels ...")
-
-            # Create ellipse in image coordinates from ellipse in sky coordinates for this image
-            ellipse = self.disk_ellipse.to_pixel(image.wcs)
-
-            # Create mask from ellipse
-            inverted_mask = Mask.from_shape(ellipse, image.xsize, image.ysize, invert=True)
-
-            # Get mask of padded (and bad) pixels, for example for WISE, this mask even covers pixel within the elliptical region
-            mask = inverted_mask + image.masks.bad
-            if "padded" in image.masks: mask += image.masks.padded
-
-            # Inform the user
+            # Debugging
             log.debug("Converting image to Jansky ...")
 
             # Convert from MJy/sr to Jy/sr
@@ -231,13 +186,15 @@ class PhotoMeter(PhotometryComponent):
             conversion_factor *= 1e6
 
             # Conversion from Jy / sr to Jy / pixel
-            pixelscale = image.frames.primary.xy_average_pixelscale
+            pixelscale = image.xy_average_pixelscale
             pixel_factor = (1.0/pixelscale**2).to("pix2/sr").value
             conversion_factor /= pixel_factor
 
             # Frame in Janskys
             jansky_frame = image.frames.primary * conversion_factor
-            jansky_frame[mask] = 0.0
+
+            # Error farme in Janskys
+            jansky_errors_frame = image.frames.errors * conversion_factor
 
             # Debugging
             log.debug("Calculating the total flux and flux error ...")
@@ -245,17 +202,8 @@ class PhotoMeter(PhotometryComponent):
             # Calculate the total flux in Jansky
             flux = np.sum(jansky_frame)
 
-            jansky_errors_frame = image.frames.errors * conversion_factor
-            jansky_errors_frame[mask] = 0.0
-            jansky_errors_frame[np.isnan(jansky_errors_frame)] = 0.0
+            # Calculate the total flux error in Jansky
             flux_error = np.sum(jansky_errors_frame)
-
-            # Create new image with primary and errors frame in Jansky and save it
-            new_image = Image()
-            new_image.add_frame(jansky_frame, "primary")
-            new_image.add_frame(jansky_errors_frame, "errors")
-            new_image_path = filesystem.join(truncated_path, image.name + ".fits")
-            new_image.save(new_image_path)
 
             # Create errorbar
             errorbar = ErrorBar(float(flux_error))

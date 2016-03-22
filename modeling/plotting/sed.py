@@ -778,6 +778,7 @@ class SEDPlotter(object):
 
         # Set x label of the last residual plot
         if len(self._residual_axes) > 0: self._residual_axes[len(self._residual_axes)-1].set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
+        else: self._main_axis.set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
 
         self._figure.subplots_adjust(hspace=0)
         plt.setp([a.get_xticklabels() for a in self._figure.axes[:-1]], visible=False)

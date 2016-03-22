@@ -25,7 +25,6 @@ from pts.core.tools import logging, time, filesystem
 parser = argparse.ArgumentParser()
 
 # Basic options
-parser.add_argument("image", type=str, nargs='?', help="the name of the image for which to calculate the photometry")
 parser.add_argument("path", type=str, nargs='?', help="the modeling path")
 
 # Logging options
