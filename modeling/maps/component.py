@@ -37,6 +37,12 @@ class MapsComponent(ModelingComponent):
 
         # -- Attributes --
 
+        # The path to the maps/solar directory
+        self.maps_solar_path = None
+
+        # The path to the maps/intermediate directory
+        self.maps_intermediate_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -51,5 +57,14 @@ class MapsComponent(ModelingComponent):
 
         # Set the output path (= the maps directory)
         self.config.output_path = self.maps_path
+
+        # Set the path to the maps/solar directory
+        self.maps_solar_path = filesystem.join(self.maps_path, "solar")
+
+        # Set the path to the maps/intermediate directory
+        self.maps_intermediate_path = filesystem.join(self.maps_path, "intermediate")
+
+        # Create the maps/solar and maps/intermediate directories
+        filesystem.create_directories([self.maps_solar_path, self.maps_intermediate_path])
 
 # -----------------------------------------------------------------

@@ -677,31 +677,27 @@ def load_parameters(path):
         # Loop over all lines in the file
         for line in parameter_file:
 
-            splitted = line.split(":")
+            splitted = line.split(": ")
 
             # Bulge parameters
             if splitted[0] == "Bulge":
 
-                splitted = splitted[1].split(":")
-
-                if splitted[0] == "Relative contribution": parameters.bulge.rel = float(splitted[1])
-                elif splitted[0] == "IRAC 3.6um flux density": parameters.bulge.fluxdensity = get_quantity(splitted[1])
-                elif splitted[0] == "Axial ratio": parameters.bulge.ar = float(splitted[1])
-                elif splitted[0] == "Position angle": parameters.bulge.pa = get_angle(splitted[1])
-                elif splitted[0] == "Effective radius": parameters.bulge.re = get_quantity(splitted[1])
-                elif splitted[0] == "Sersic index": parameters.bulge.n = float(splitted[1])
+                if splitted[1] == "Relative contribution": parameters.bulge.rel = float(splitted[2])
+                elif splitted[1] == "IRAC 3.6um flux density": parameters.bulge.fluxdensity = get_quantity(splitted[2])
+                elif splitted[1] == "Axial ratio": parameters.bulge.ar = float(splitted[2])
+                elif splitted[1] == "Position angle": parameters.bulge.pa = get_angle(splitted[2])
+                elif splitted[1] == "Effective radius": parameters.bulge.re = get_quantity(splitted[2])
+                elif splitted[1] == "Sersic index": parameters.bulge.n = float(splitted[2])
 
             # Disk parameters
             elif splitted[0] == "Disk":
 
-                splitted = splitted[1].split(":")
-
-                if splitted[0] == "Relative contribution": parameters.disk.rel = float(splitted[1])
-                elif splitted[0] == "IRAC 3.6um flux density": parameters.disk.fluxdensity = get_quantity(splitted[1])
-                elif splitted[0] == "Axial ratio": parameters.disk.ar = float(splitted[1])
-                elif splitted[0] == "Position angle": parameters.disk.pa = get_angle(splitted[1])
-                elif splitted[0] == "Central surface brightness": parameters.disk.mu0 = float(splitted[1])
-                elif splitted[0] == "Exponential scale length": parameters.disk.hr = get_quantity(splitted[1])
+                if splitted[1] == "Relative contribution": parameters.disk.rel = float(splitted[2])
+                elif splitted[1] == "IRAC 3.6um flux density": parameters.disk.fluxdensity = get_quantity(splitted[2])
+                elif splitted[1] == "Axial ratio": parameters.disk.ar = float(splitted[2])
+                elif splitted[1] == "Position angle": parameters.disk.pa = get_angle(splitted[2])
+                elif splitted[1] == "Central surface brightness": parameters.disk.mu0 = float(splitted[2])
+                elif splitted[1] == "Exponential scale length": parameters.disk.hr = get_quantity(splitted[2])
 
             # Other parameters
             elif len(splitted) == 2:

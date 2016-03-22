@@ -353,6 +353,19 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def apply_mask(self, mask, fill=0.0):
+
+        """
+        This function ..
+        :param mask:
+        :param fill:
+        """
+
+        # Replace the masked pixels in all frames by the fill value
+        for frame_name in self.frames: self.frames[frame_name][mask] = fill
+
+    # -----------------------------------------------------------------
+
     def import_region(self, path, name, overwrite=False):
 
         """

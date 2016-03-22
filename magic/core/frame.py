@@ -186,6 +186,18 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
+    def apply_mask(self, mask, fill=0.0):
+
+        """
+        This function ...
+        :param mask:
+        :param fill:
+        """
+
+        self[mask] = fill
+
+    # -----------------------------------------------------------------
+
     @property
     def all_zero(self):
 
