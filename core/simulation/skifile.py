@@ -708,6 +708,32 @@ class SkiFile:
         # Invalid component id
         else: raise ValueError("Invalid component identifier (should be integer or string)")
 
+    ## This functino returns all properties of the stellar component with the specified id
+    def get_stellar_component_properties(self, component_id):
+
+        # Get the stellar component
+        stellar_component = self.get_stellar_component(component_id)
+
+        properties = dict()
+
+        def add_properties(element, dictionary):
+            for key, value in element.items(): properties[key] = value
+
+        def add_children(element, dictionary):
+
+            dictionary["children"] = dict()
+            for child in element.getchildren():
+
+                dictionary["children"][child.tag] = dict()
+
+                add_properties(child, dictionary["children"][child.tag])
+                add_children(child, dictionary["children"][child.tag])
+
+        add_properties(stellar_component, properties)
+        add_children(stellar_component, properties)
+
+        return properties
+
     ## This functions returns the normalization of the stellar component with the specified id
     def get_stellar_component_normalization(self, component_id):
 
@@ -903,8 +929,8 @@ class SkiFile:
         parent.remove(geometry)
 
         # Create and add the new geometry
-        attrs = {"filename": filename, "pixelScale": str(pixelscale), "positionAngle": str(position_angle.to("deg")) + " deg",
-                 "inclination": str(inclination.to("deg")) + " deg", "xelements": str(x_size), "yelements": str(y_size),
+        attrs = {"filename": filename, "pixelScale": str(pixelscale), "positionAngle": str_from_angle(position_angle),
+                 "inclination": str_from_angle(inclination), "xelements": str(x_size), "yelements": str(y_size),
                  "xcenter": str(x_center), "ycenter": str(y_center), "axialScale": str(scale_height)}
         parent.append(parent.makeelement("ReadFitsGeometry", attrs))
 
@@ -926,13 +952,15 @@ class SkiFile:
 
         attrs = {"type": "Geometry"}
         geometry_of_new_geometry = new_geometry.makeelement("geometry", attrs)
+        new_geometry.append(geometry_of_new_geometry)
 
         # Add sersic profile to the geometry
         attrs = {"index": str(index), "radius": str(radius)}
-        geometry_of_new_geometry.append(geometry_of_new_geometry.makeelement("SersicGeometry", attrs))
+        sersic_geometry = geometry_of_new_geometry.makeelement("SersicGeometry", attrs)
+        geometry_of_new_geometry.append(sersic_geometry)
 
         # Add the new geometry
-        parent.append(geometry)
+        parent.append(new_geometry)
 
     ## This function sets the geometry of the specified stellar component to an exponential disk profile
     def set_stellar_component_expdisk_geometry(self, component_id, radial_scale, axial_scale, radial_truncation=0, axial_truncation=0, inner_radius=0):
@@ -948,7 +976,10 @@ class SkiFile:
 
         # Create and add the new exponential disk geometry
         attrs = {"radialScale": str(radial_scale), "axialScale": str(axial_scale), "radialTrunc": str(radial_truncation), "axialTrunc": str(axial_truncation), "innerRadius": str(inner_radius)}
-        parent.append(parent.makeelement("ExpDiskGeometry", attrs))
+        new_geometry = parent.makeelement("ExpDiskGeometry", attrs)
+
+        # Add the new geometry
+        parent.append(new_geometry)
 
     ## This function returns the SED template of the specified stellar component
     def get_stellar_component_sed(self, component_id):
@@ -1197,8 +1228,8 @@ class SkiFile:
         instruments = self.get_instruments(as_list=False)
 
         # Make and add the new FullInstrument
-        attrs = {"instrumentName": name, "distance": str(distance), "inclination": str(inclination),
-                 "azimuth": str(azimuth), "positionAngle": str(position_angle), "fieldOfViewX": str(field_x),
+        attrs = {"instrumentName": name, "distance": str(distance), "inclination": str_from_angle(inclination),
+                 "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle), "fieldOfViewX": str(field_x),
                  "fieldOfViewY": str(field_y), "pixelsX": str(pixels_x), "pixelsY": str(pixels_y),
                  "centerX": str(center_x), "centerY": str(center_y), "scatteringLevels": str(scattering_levels)}
         instruments.append(instruments.makeelement("FullInstrument", attrs))
@@ -1211,8 +1242,8 @@ class SkiFile:
         instruments = self.get_instruments(as_list=False)
 
         # Make and add the new SimpleInstrument
-        attrs = {"instrumentName": name, "distance": str(distance), "inclination": str(inclination),
-                 "azimuth": str(azimuth), "positionAngle": str(position_angle), "fieldOfViewX": str(field_x),
+        attrs = {"instrumentName": name, "distance": str(distance), "inclination": str_from_angle(inclination),
+                 "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle), "fieldOfViewX": str(field_x),
                  "fieldOfViewY": str(field_y), "pixelsX": str(pixels_x), "pixelsY": str(pixels_y),
                  "centerX": str(center_x), "centerY": str(center_y)}
         instruments.append(instruments.makeelement("SimpleInstrument", attrs))
@@ -1224,8 +1255,8 @@ class SkiFile:
         instruments = self.get_instruments(as_list=False)
 
         # Make and add the new SEDInstrument
-        attrs = {"instrumentName": name, "distance": str(distance), "inclination": str(inclination),
-                 "azimuth": str(azimuth), "positionAngle": str(position_angle)}
+        attrs = {"instrumentName": name, "distance": str(distance), "inclination": str_from_angle(inclination),
+                 "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle)}
         instruments.append(instruments.makeelement("SEDInstrument", attrs))
 
     ## This function returns the instrument with the specified name
@@ -1489,5 +1520,12 @@ def set_quantity(element, name, value, default_unit=None):
 
 def recursive_dict(element):
     return element.tag, dict(map(recursive_dict, element)) or element.text
+
+# -----------------------------------------------------------------
+
+def str_from_angle(angle):
+
+    try: return str(angle.to("deg").value) + " deg"
+    except AttributeError: return str(angle)
 
 # -----------------------------------------------------------------

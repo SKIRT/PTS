@@ -32,6 +32,7 @@ from ...magic.basics.vector import Extent
 from ...magic.basics.skygeometry import SkyEllipse, SkyCoordinate
 from ...magic.basics.skyregion import SkyRegion
 from ...magic.core.frame import Frame
+from ...magic.basics.coordinatesystem import CoordinateSystem
 
 # -----------------------------------------------------------------
 
@@ -43,7 +44,13 @@ local_table_path = filesystem.join(inspection.pts_dat_dir("modeling"), "s4g", "s
 
 # -----------------------------------------------------------------
 
+# The path to the template ski files directory
 template_path = filesystem.join(inspection.pts_dat_dir("modeling"), "ski")
+
+# -----------------------------------------------------------------
+
+# Reference image
+reference_image = "Pacs red"
 
 # -----------------------------------------------------------------
 
@@ -154,6 +161,9 @@ class GalaxyDecomposer(DecompositionComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Getting the structural galaxy parameters from the S4G catalog ...")
 
         # Query the S4G catalog using Vizier for general parameters
         self.get_general_parameters()
@@ -348,18 +358,23 @@ class GalaxyDecomposer(DecompositionComponent):
         :return:
         """
 
+        # Get the parameters describing the pixel grid of the prepared images
+        reference_path = filesystem.join(self.prep_path, reference_image, "result.fits")
+        reference_wcs = CoordinateSystem.from_file(reference_path)
+
         # Simulate the stellar bulge
-        self.simulate_bulge()
+        self.simulate_bulge(reference_wcs)
 
         # Simulate the stellar disk
-        self.simulate_disk()
+        self.simulate_disk(reference_wcs)
 
     # -----------------------------------------------------------------
 
-    def simulate_bulge(self):
+    def simulate_bulge(self, reference_wcs):
 
         """
         This function ...
+        :param reference_wcs:
         :return:
         """
 
@@ -371,19 +386,26 @@ class GalaxyDecomposer(DecompositionComponent):
         ski = SkiFile(bulge_template_path)
 
         # Change the ski file parameters
+        # component_id, index, radius, y_flattening=1, z_flattening=1
         ski.set_stellar_component_sersic_geometry(0, self.parameters.bulge.n, self.parameters.bulge.re, z_flattening=self.parameters.bulge.ar)
 
-        # Set the distance of the instruments
-        for instrument_name in ski.get_instrument_names():
+        # Remove all existing instruments
+        ski.remove_all_instruments()
 
-            # Set the distance for all instruments
-            ski.set_instrument_distance(instrument_name, self.parameters.distance)
-
-            # Set the instrument orientation
-            if instrument_name == "earth": ski.set_instrument_orientation(instrument_name, self.parameters.inclination, self.parameters.position_angle, 0.0)
-            elif instrument_name == "face-on": ski.set_instrument_orientation_faceon(instrument_name)
-            elif instrument_name == "edge-on": ski.set_instrument_orientation_edgeon(instrument_name)
-            else: raise ValueError("Unknown instrument")
+        # Add a new SimpleInstrument
+        distance = self.parameters.distance
+        inclination = self.parameters.inclination
+        azimuth = 0.0
+        position_angle = self.parameters.position_angle
+        pixels_x = reference_wcs.xsize
+        pixels_y = reference_wcs.ysize
+        center_x = reference_wcs.center_pixel.x
+        center_y = reference_wcs.center_pixel.y
+        field_x_angular = reference_wcs.pixelscale.x.to("deg/pix") * pixels_x * Unit("pix")
+        field_y_angular = reference_wcs.pixelscale.y.to("deg/pix") * pixels_y * Unit("pix")
+        field_x_physical = (field_x_angular * distance).to("pc", equivalencies=dimensionless_angles())
+        field_y_physical = (field_y_angular * distance).to("pc", equivalencies=dimensionless_angles())
+        ski.add_simple_instrument("earth", distance, inclination, azimuth, position_angle, field_x_physical, field_y_physical, pixels_x, pixels_y, center_x, center_y)
 
         # Determine the path to the ski file
         ski_path = filesystem.join(self.bulge_directory, "bulge.ski")
@@ -409,7 +431,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Running the bulge simulation ...")
 
         # Run the simulation
-        simulation = self.skirt.run(arguments, silent=True)
+        simulation = self.skirt.run(arguments, silent=False if log.is_debug else True)
 
         # Determine the path to the output FITS file
         bulge_image_path = filesystem.join(out_path, "bulge_earth_total.fits")
@@ -437,10 +459,11 @@ class GalaxyDecomposer(DecompositionComponent):
 
     # -----------------------------------------------------------------
 
-    def simulate_disk(self):
+    def simulate_disk(self, reference_wcs):
 
         """
         This function ...
+        :param reference_wcs:
         :return:
         """
 
@@ -456,17 +479,23 @@ class GalaxyDecomposer(DecompositionComponent):
         axial_scale = self.parameters.disk.ar * radial_scale
         ski.set_stellar_component_expdisk_geometry(0, radial_scale, axial_scale, radial_truncation=0, axial_truncation=0, inner_radius=0)
 
-        # Set the distance of the instruments
-        for instrument_name in ski.get_instrument_names():
+        # Remove all existing instruments
+        ski.remove_all_instruments()
 
-            # Set the distance for all instruments
-            ski.set_instrument_distance(instrument_name, self.parameters.distance)
-
-            # Set the instrument orientation
-            if instrument_name == "earth": ski.set_instrument_orientation(instrument_name, self.parameters.inclination, self.parameters.position_angle, 0.0)
-            elif instrument_name == "face-on": ski.set_instrument_orientation_faceon(instrument_name)
-            elif instrument_name == "edge-on": ski.set_instrument_orientation_edgeon(instrument_name)
-            else: raise ValueError("Unknown instrument")
+        # Add a new SimpleInstrument
+        distance = self.parameters.distance
+        inclination = self.parameters.inclination
+        azimuth = 0.0
+        position_angle = self.parameters.position_angle
+        pixels_x = reference_wcs.xsize
+        pixels_y = reference_wcs.ysize
+        center_x = reference_wcs.center_pixel.x
+        center_y = reference_wcs.center_pixel.y
+        field_x_angular = reference_wcs.pixelscale.x.to("deg/pix") * pixels_x * Unit("pix")
+        field_y_angular = reference_wcs.pixelscale.y.to("deg/pix") * pixels_y * Unit("pix")
+        field_x_physical = (field_x_angular * distance).to("pc", equivalencies=dimensionless_angles())
+        field_y_physical = (field_y_angular * distance).to("pc", equivalencies=dimensionless_angles())
+        ski.add_simple_instrument("earth", distance, inclination, azimuth, position_angle, field_x_physical, field_y_physical, pixels_x, pixels_y, center_x, center_y)
 
         # Determine the path to the ski file
         ski_path = filesystem.join(self.disk_directory, "disk.ski")
@@ -492,7 +521,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Running the disk simulation ...")
 
         # Run the simulation
-        simulation = self.skirt.run(arguments, silent=True)
+        simulation = self.skirt.run(arguments, silent=False if log.is_debug else True)
 
         # Determine the path to the output FITS file
         disk_image_path = filesystem.join(out_path, "disk_earth_total.fits")

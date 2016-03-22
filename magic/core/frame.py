@@ -568,6 +568,7 @@ class Frame(np.ndarray):
 
         """
         This function ...
+        :param extent:
         :return:
         """
 

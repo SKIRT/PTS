@@ -609,19 +609,28 @@ class Image(object):
         for frame_name in self.frames:
 
             # Inform the user
-            log.info("Cropping the " + frame_name + " frame")
+            log.info("Cropping the " + frame_name + " frame ...")
 
-            # Rebin this frame
+            # Crop this frame
             self.frames[frame_name] = self.frames[frame_name].crop(x_min, x_max, y_min, y_max)
 
         # Loop over all masks
         for mask_name in self.masks:
 
             # Inform the user
-            log.info("Cropping the " + mask_name + " mask")
+            log.info("Cropping the " + mask_name + " mask ...")
 
-            # Rebin this mask
+            # Crop this mask
             self.masks[mask_name] = self.masks[mask_name][y_min:y_max, x_min:x_max]
+
+        # Loop over all regions
+        for region_name in self.regions:
+
+            # Inform the user
+            log.info("Cropping the " + region_name + " region ...")
+
+            # Crop the region
+            self.regions[region_name] = self.regions[region_name].cropped(x_min, x_max, y_min, y_max)
 
     # -----------------------------------------------------------------
 

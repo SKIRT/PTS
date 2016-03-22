@@ -21,6 +21,7 @@ from astropy.utils.exceptions import AstropyWarning
 # Import standard modules
 import os
 import sys
+import types
 import logging
 
 # -----------------------------------------------------------------
@@ -76,6 +77,9 @@ def init_log(level="INFO"):
     # Set level and stream handler
     log.setLevel(level)
     log.addHandler(handler)
+
+    def is_debug(self): return self.level <= 10
+    log.is_debug = types.MethodType(is_debug, log)
 
     # Show welcome message
     log.info("Welcome to PTS")
