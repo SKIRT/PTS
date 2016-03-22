@@ -156,7 +156,8 @@ class Truncator(TruncationComponent):
         region = SkyRegion.from_file(path)
 
         # Get ellipse in sky coordinates
-        self.disk_ellipse = region[0]
+        scale_factor = 0.82
+        self.disk_ellipse = region[0] * scale_factor
 
     # -----------------------------------------------------------------
 

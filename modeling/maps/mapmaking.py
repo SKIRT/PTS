@@ -412,6 +412,9 @@ class MapMaker(MapsComponent):
         :return:
         """
 
+        # Debugging
+        log.debug("Converting the H-alpha image to solar luminosities ...")
+
         # Convert from erg/s to Lsun
         self.images["Halpha"].convert_to("Lsun")
 
@@ -423,6 +426,9 @@ class MapMaker(MapsComponent):
         This function ...
         :return:
         """
+
+        # Debugging
+        log.debug("Converting the 24 micron image to solar luminosities ...")
 
         # Calculate conversion factors from MJy/sr to solar luminosities
         exponent = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/24e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(self.distance_mpc*3.08567758e22)) - np.log10(3.846e26)
@@ -441,6 +447,9 @@ class MapMaker(MapsComponent):
         This function ...
         :return:
         """
+
+        # Debugging
+        log.debug("Converting the 70 and 160 micron images to solar luminosities ...")
 
         # Calculate the conversion factors
         exponent_70 = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/70e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(self.distance_mpc*3.08567758e22)) - np.log10(3.846e26)
@@ -493,13 +502,12 @@ class MapMaker(MapsComponent):
         """
 
         # Inform the user
-        log.info("Creating the old stars map ...")
+        log.info("Creating the map of old stars ...")
 
         # Old stars = IRAC3.6 - bulge
         # From the IRAC 3.6 micron map, we must subtract the bulge component to only retain the disk emission
 
         # The relative contribution of the bulge to the 3.6mu emission
-        print(self.parameters)
         bulge_rel_contribution = self.parameters.bulge.rel
 
         # Total flux of the IRAC 3.6mu image
@@ -532,8 +540,11 @@ class MapMaker(MapsComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Creating the map of young stars ...")
+
         # Calculate the non ionizing young stars map from the FUV data
-        non_ionizing_stars = self.get_fuv_young_stars()
+        non_ionizing_stars = self.get_fuv_young_stars_map()
 
         # Set the young stars map
         self.young_stars = non_ionizing_stars
@@ -548,7 +559,7 @@ class MapMaker(MapsComponent):
         """
 
         # Inform the user
-        log.info("Creating the ionizing young stars map ...")
+        log.info("Creating the map of ionizing young stars ...")
 
         # H-ALPHA HAS BEEN CONVERTED TO LSUN (ABOVE)
 
@@ -564,7 +575,7 @@ class MapMaker(MapsComponent):
         mips_young_stars.save(mips_young_path)
 
         # Calculate ionizing stars map and ratio
-        ionizing = self.ha + 0.031 * mips_young_stars
+        ionizing = self.images["Halpha"].frames.primary + 0.031 * mips_young_stars
 
         #ionizing_ratio = self.ha / (0.031*mips_young_stars)
 
@@ -615,6 +626,9 @@ class MapMaker(MapsComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Subtracting the old stellar contribution from the FUV emission ...")
+
         ## Subtract old stellar contribution from FUV and MIPS 24 emission
 
         #     From the FUV and 24 micron maps we must subtract the diffuse radiation (old stellar contribution),
@@ -629,7 +643,7 @@ class MapMaker(MapsComponent):
         factor = 0.2 * flux_fuv / np.sum(self.disk)
 
         # Subtract the disk contribution to the FUV image
-        new_fuv = self.fuv - factor * self.disk
+        new_fuv = self.images["FUV"].frames.primary - factor * self.disk
 
         # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
         new_fuv[new_fuv < 0.0] = 0.0
@@ -649,6 +663,9 @@ class MapMaker(MapsComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Subtracting the old stellar contribution from the 24 micron emission ...")
+
         ## Subtract old stellar contribution from FUV and MIPS 24 emission
 
         #     From the FUV and 24 micron maps we must subtract the diffuse radiation (old stellar contribution),
@@ -665,7 +682,7 @@ class MapMaker(MapsComponent):
         factor = 0.48 * flux_mips / np.sum(self.disk)
 
         # Subtract the disk contribution to the 24 micron image
-        new_mips = self.mips - factor * self.disk
+        new_mips = self.images["24mu"].frames.primary - factor * self.disk
 
         # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
         new_mips[new_mips < 0.0] = 0.0
@@ -700,7 +717,7 @@ class MapMaker(MapsComponent):
         """
 
         # Inform the user
-        log.info("Creating the A(FUV) map according to the relation to the TIR/FUV ratio as described in Cortese et. al 2008")
+        log.info("Creating the A(FUV) map according to the relation to the TIR/FUV ratio as described in Cortese et. al 2008 ...")
 
         # CALCULATE FUV AND TIR MAP IN W/M2 UNIT
 
@@ -806,6 +823,9 @@ class MapMaker(MapsComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Calculating the FUV-H colour map ...")
+
         # Calculate the colour map
         fuv_h = -2.5 * np.log10(self.images["FUV"].frames.primary / self.images["H"].frames.primary)
 
@@ -832,6 +852,9 @@ class MapMaker(MapsComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Calculating the FUV-i colour map ...")
 
         # Calculate the colour map
         fuv_i = -2.5 * np.log10(self.images["FUV"].frames.primary / self.images["i"].frames.primary)
@@ -903,6 +926,9 @@ class MapMaker(MapsComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing ...")
+
         # Write out the output maps
         self.write_maps()
 
@@ -914,6 +940,9 @@ class MapMaker(MapsComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the output maps ...")
 
         # Determine the path to the dust map
         dust_path = filesystem.join(self.maps_path, "dust.fits")

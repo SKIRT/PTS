@@ -950,7 +950,7 @@ class SkiFile:
         attrs = {"yFlattening": str(y_flattening), "zFlattening": str(z_flattening)}
         new_geometry = parent.makeelement("TriaxialGeometryDecorator", attrs)
 
-        attrs = {"type": "Geometry"}
+        attrs = {"type": "SpheGeometry"}
         geometry_of_new_geometry = new_geometry.makeelement("geometry", attrs)
         new_geometry.append(geometry_of_new_geometry)
 

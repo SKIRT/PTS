@@ -28,7 +28,7 @@ from ...core.basics.errorbar import ErrorBar
 from ...core.simulation.arguments import SkirtArguments
 from ...core.simulation.execute import SkirtExec
 from ...magic.tools import catalogs
-from ...magic.basics.vector import Extent
+from ...magic.basics.vector import Extent, Position
 from ...magic.basics.skygeometry import SkyEllipse, SkyCoordinate
 from ...magic.basics.skyregion import SkyRegion
 from ...magic.core.frame import Frame
@@ -399,13 +399,15 @@ class GalaxyDecomposer(DecompositionComponent):
         position_angle = self.parameters.position_angle
         pixels_x = reference_wcs.xsize
         pixels_y = reference_wcs.ysize
-        center_x = reference_wcs.center_pixel.x
-        center_y = reference_wcs.center_pixel.y
+        #center_x = reference_wcs.center_pixel.x
+        #center_y = reference_wcs.center_pixel.y
+        pixel_center = self.parameters.center.to_pixel(reference_wcs)
+        center = Position(0.5*pixels_x - pixel_center.x, 0.5*pixels_y - pixel_center.y)
         field_x_angular = reference_wcs.pixelscale.x.to("deg/pix") * pixels_x * Unit("pix")
         field_y_angular = reference_wcs.pixelscale.y.to("deg/pix") * pixels_y * Unit("pix")
         field_x_physical = (field_x_angular * distance).to("pc", equivalencies=dimensionless_angles())
         field_y_physical = (field_y_angular * distance).to("pc", equivalencies=dimensionless_angles())
-        ski.add_simple_instrument("earth", distance, inclination, azimuth, position_angle, field_x_physical, field_y_physical, pixels_x, pixels_y, center_x, center_y)
+        ski.add_simple_instrument("earth", distance, inclination, azimuth, position_angle, field_x_physical, field_y_physical, pixels_x, pixels_y, center.x, center.y)
 
         # Determine the path to the ski file
         ski_path = filesystem.join(self.bulge_directory, "bulge.ski")
@@ -489,13 +491,15 @@ class GalaxyDecomposer(DecompositionComponent):
         position_angle = self.parameters.position_angle
         pixels_x = reference_wcs.xsize
         pixels_y = reference_wcs.ysize
-        center_x = reference_wcs.center_pixel.x
-        center_y = reference_wcs.center_pixel.y
+        #center_x = reference_wcs.center_pixel.x
+        #center_y = reference_wcs.center_pixel.y
+        pixel_center = self.parameters.center.to_pixel(reference_wcs)
+        center = Position(0.5*pixels_x - pixel_center.x, 0.5*pixels_y - pixel_center.y)
         field_x_angular = reference_wcs.pixelscale.x.to("deg/pix") * pixels_x * Unit("pix")
         field_y_angular = reference_wcs.pixelscale.y.to("deg/pix") * pixels_y * Unit("pix")
         field_x_physical = (field_x_angular * distance).to("pc", equivalencies=dimensionless_angles())
         field_y_physical = (field_y_angular * distance).to("pc", equivalencies=dimensionless_angles())
-        ski.add_simple_instrument("earth", distance, inclination, azimuth, position_angle, field_x_physical, field_y_physical, pixels_x, pixels_y, center_x, center_y)
+        ski.add_simple_instrument("earth", distance, inclination, azimuth, position_angle, field_x_physical, field_y_physical, pixels_x, pixels_y, center.x, center.y)
 
         # Determine the path to the ski file
         ski_path = filesystem.join(self.disk_directory, "disk.ski")
