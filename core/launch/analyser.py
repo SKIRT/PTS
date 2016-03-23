@@ -134,7 +134,7 @@ class SimulationAnalyser(Configurable):
         log.info("Analysing the scaling results ...")
 
         # Run the scaling analyser
-        self.scaling_analyser.run(self.simulation, self.analyser.timeline_extractor, self.analyser.memory_extractor)
+        self.scaling_analyser.run(self.simulation, self.basic_analyser.timeline_extractor, self.basic_analyser.memory_extractor)
 
     # -----------------------------------------------------------------
 
