@@ -508,7 +508,7 @@ class MapMaker(MapsComponent):
         # From the IRAC 3.6 micron map, we must subtract the bulge component to only retain the disk emission
 
         # The relative contribution of the bulge to the 3.6mu emission
-        bulge_rel_contribution = self.parameters.bulge.rel
+        bulge_rel_contribution = self.parameters.bulge.f
 
         # Total flux of the IRAC 3.6mu image
         total_flux = np.sum(self.images["3.6mu"].frames.primary)

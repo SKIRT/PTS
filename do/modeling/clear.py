@@ -61,11 +61,11 @@ analysis_path = filesystem.join(modeling_path, "analysis")
 
 if arguments.step == "prep": filesystem.clear_directory(prep_path)
 elif arguments.step == "components": filesystem.clear_directory(components_path)
-elif arguments.steps == "truncated": filesystem.clear_directory(truncated_path)
-elif arguments.steps == "phot": filesystem.clear_directory(phot_path)
-elif arguments.steps == "maps": filesystem.clear_directory(maps_path)
-elif arguments.steps == "fit": filesystem.clear_directory(fit_path)
-elif arguments.steps == "analysis": filesystem.clear_directory(analysis_path)
+elif arguments.step == "truncated": filesystem.clear_directory(truncated_path)
+elif arguments.step == "phot": filesystem.clear_directory(phot_path)
+elif arguments.step == "maps": filesystem.clear_directory(maps_path)
+elif arguments.step == "fit": filesystem.clear_directory(fit_path)
+elif arguments.step == "analysis": filesystem.clear_directory(analysis_path)
 else: raise ValueError("Invalid modeling step")
 
 # -----------------------------------------------------------------

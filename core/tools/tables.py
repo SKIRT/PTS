@@ -40,6 +40,28 @@ def find_index(table, key, column_name=None):
 
 # -----------------------------------------------------------------
 
+def find_indices(table, key, column_name=None):
+
+    """
+    This function ...
+    :param key:
+    :return:
+    """
+
+    # Get first column name is none is given
+    if column_name is None: column_name = table.colnames[0]
+
+    indices = []
+
+    # Loop over all entries in the column
+    for i in range(len(table)):
+
+        if table[column_name][i] == key: indices.append(i)
+
+    return indices
+
+# -----------------------------------------------------------------
+
 def write(table, path):
 
     """

@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import math
+
 # Import astronomical modules
 from astroquery.vizier import Vizier
 from astropy.units import Unit, dimensionless_angles
@@ -33,6 +36,7 @@ from ...magic.basics.skygeometry import SkyEllipse, SkyCoordinate
 from ...magic.basics.skyregion import SkyRegion
 from ...magic.core.frame import Frame
 from ...magic.basics.coordinatesystem import CoordinateSystem
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -78,6 +82,10 @@ class GalaxyDecomposer(DecompositionComponent):
         # The path to the disk and bulge directories
         self.bulge_directory = None
         self.disk_directory = None
+
+        # The Vizier querying object
+        self.vizier = Vizier()
+        self.vizier.ROW_LIMIT = -1
 
         # The bulge and disk parameters
         self.parameters = Map()
@@ -168,8 +176,11 @@ class GalaxyDecomposer(DecompositionComponent):
         # Query the S4G catalog using Vizier for general parameters
         self.get_general_parameters()
 
+        # Get the decomposition parameters
+        self.get_p4()
+
         # Parse the S4G table 8 to get the decomposition parameters
-        self.get_component_parameters()
+        #self.get_component_parameters()
 
     # -----------------------------------------------------------------
 
@@ -183,10 +194,8 @@ class GalaxyDecomposer(DecompositionComponent):
         # Inform the user
         log.info("Querying the S4G catalog ...")
 
-        vizier = Vizier(keywords=["galaxies"])
-
         # Get parameters from S4G catalog
-        result = vizier.query_object(self.galaxy_name, catalog=["J/PASP/122/1397/s4g"])
+        result = self.vizier.query_object(self.galaxy_name, catalog=["J/PASP/122/1397/s4g"])
         table = result[0]
 
         # Galaxy name for S4G catalog
@@ -242,13 +251,208 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Querying the catalog of radial profiles for 161 face-on spirals ...")
 
         # Radial profiles for 161 face-on spirals (Munoz-Mateos+, 2007)
-        radial_profiles_result = vizier.query_object(self.galaxy_name, catalog="J/ApJ/658/1006")
+        radial_profiles_result = self.vizier.query_object(self.galaxy_name, catalog="J/ApJ/658/1006")
 
         distance = float(radial_profiles_result[0][0]["Dist"])
         inclination = Angle(float(radial_profiles_result[0][0]["i"]), "deg")
 
         # Set the inclination
         self.parameters.inclination = inclination
+
+    # -----------------------------------------------------------------
+
+    def get_p4(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #http://vizier.cfa.harvard.edu/viz-bin/VizieR?-source=J/ApJS/219/4
+
+        # J/ApJS/219/4: S4G pipeline 4: multi-component decompositions (Salo+, 2015)
+
+        #  - J/ApJS/219/4/galaxies: Parameters of the galaxies; center, outer orientation, sky background; and 1-component Sersic fits (tables 1 and 6) (2352 rows)
+        #  - J/ApJS/219/4/table7: *Parameters of final multicomponent decompositions (Note) (4629 rows)
+
+        # Inform the user
+        log.info("Querying the S4G pipeline 4 catalog ...")
+
+        # Get the "galaxies" table
+        result = self.vizier.query_object(self.galaxy_name, catalog=["J/ApJS/219/4/galaxies"])
+        table = result[0]
+
+        # PA: [0.2/180] Outer isophote position angle
+        # e_PA: [0/63] Standard deviation in PA
+        # Ell:  [0.008/1] Outer isophote ellipticity
+        # e_Ell: [0/0.3] Standard deviation in Ell
+
+        pa = Angle(table["PA"][0] - 90., "deg")
+        pa_error = Angle(table["e_PA"][0], "deg")
+
+        ellipticity = table["Ell"][0]
+        ellipticity_error = table["e_Ell"][0]
+
+        # Get the "table7" table
+        result = self.vizier.get_catalogs("J/ApJS/219/4/table7")
+        table = result[0]
+
+        # Name: Galaxy name
+        # Mod: Type of final decomposition model
+        # Nc: [1/4] Number of components in the model (1-4)
+        # Q: [3/5] Quality flag, 5=most reliable
+        # C: Physical interpretation of the component
+        # Fn: The GALFIT function used for the component (sersic, edgedisk, expdisk, ferrer2 or psf)
+        # f1: [0.006/1] "sersic" fraction of the total model flux
+        # mag1:  [7/19.4] "sersic" total 3.6um AB magnitude
+        # q1: [0.1/1] "sersic" axis ratio
+        # PA1: [0.08/180] "sersic" position angle [deg]
+        # Re: [0.004/430] "sersic" effective radius (Re) [arcsec]
+        # n: [0.01/20] "sersic" parameter n
+        # f2: [0.02/1] "edgedisk" fraction of the total model flux
+        # mu02: [11.8/24.6] "edgedisk" central surface face-on brightness (µ0) [mag/arcsec2]
+        # PA2: [-90/90] "edgedisk" PA [deg]
+        # hr2: [1/153] "edgedisk" exponential scale length (hr) [arcsec]
+        # hz2: [0.003/39] "edgedisk" z-scale hz [arcsec]
+        # f3: [0.02/1] "expdisk" fraction of the total model flux
+        # mag3: [6.5/18.1] "expdisk" total 3.6um AB magnitude [mag]
+        # q3: [0.1/1] "expdisk" axis ratio
+        # PA3: [-90/90] "expdisk" position angle [deg]
+        # hr3: [0.7/332] "expdisk" exponential scale length (hr) [arcsec]
+        # mu03: [16.4/25.3] "expdisk" central surface face-on brightness (µ0) [mag/arcsec2]
+        # f4: [0.003/0.6] "ferrer2" fraction of the total model flux
+        # mu04: [16/24.8] "ferrer2" central surface sky brightness (µ0) [mag/arcsec2]
+        # q4: [0.01/1] "ferrer2" axis ratio
+        # PA4: [-90/90] "ferrer2" position angle [deg]
+        # Rbar: [3.7/232.5] "ferrer2" outer truncation radius of the bar (Rbar) [arcsec]
+        # f5: [0.001/0.4] "psf" fraction of the total model flux
+        # mag5: [11.5/21.1] "psf" total 3.6um AB magnitude [mag]
+
+        indices = tables.find_indices(table, self.ngc_id_nospaces, "Name")
+
+        labels = {"sersic": 1, "edgedisk": 2, "expdisk": 3, "ferrer2": 4, "psf": 5}
+
+        #units = {"f": None, "mag": "mag", "q": None, "PA": "deg", }
+
+        # Loop over the indices
+        for index in indices:
+
+            model_type = table["Mod"][index]
+            number_of_components = table["Nc"][index]
+            quality = table["Q"][index]
+            interpretation = table["C"][index]
+            functionname = table["Fn"][index]
+
+            component_parameters = Map()
+
+            if self.parameters.model_type is not None: assert model_type == self.parameters.model_type
+            if self.parameters.number_of_components is not None: assert number_of_components == self.parameters.number_of_components
+            if self.parameters.quality is not None: assert quality == self.parameters.quality
+            self.parameters.model_type = model_type
+            self.parameters.number_of_components = number_of_components
+            self.parameters.quality = quality
+
+            for key in table.colnames:
+
+                if not key.endswith(str(labels[functionname])): continue
+
+                parameter = key[:-1]
+
+                value = table[key][index]
+
+                if parameter == "PA":
+                    value = Angle(value + 90., "deg")
+                    if quadrant(value) == 2: value = value - Angle(180., "deg")
+                    elif quadrant(value) == 3: value = value + Angle(180., "deg")
+
+                    if value.to("deg").value > 180.: value = value - Angle(360., "deg")
+                    elif value.to("deg").value < -180.: value = value + Angle(360., "deg")
+                elif parameter == "mag":
+                    parameter = "fluxdensity"
+                    value = unitconversion.ab_to_jansky(value) * Unit("Jy")
+                elif parameter == "mu0": value = value * Unit("mag/arcsec2")
+                elif parameter == "hr":
+                    value = value * Unit("arcsec")
+                    value = (self.parameters.distance * value).to("pc", equivalencies=dimensionless_angles())
+                elif parameter == "hz":
+                    value = value * Unit("arcsec")
+                    value = (self.parameters.distance * value).to("pc", equivalencies=dimensionless_angles())
+
+                component_parameters[parameter] = value
+
+            if functionname == "sersic":
+
+                re = table["Re"][index] * Unit("arcsec")
+                component_parameters["Re"] = (self.parameters.distance * re).to("pc", equivalencies=dimensionless_angles())
+                print(re, component_parameters["Re"])
+                component_parameters["n"] = table["n"][index]
+
+            elif functionname == "ferrer2":
+
+                rbar = table["Rbar"][index] * Unit("arcsec")
+                component_parameters["Rbar"] = (self.parameters.distance * rbar).to("pc", equivalencies=dimensionless_angles())
+
+            if interpretation == "B": # bulge
+
+                self.parameters.bulge = component_parameters
+
+            elif interpretation == "D": # disk
+
+                self.parameters.disk = component_parameters
+
+            else: raise RuntimeError("Unrecognized component: " + interpretation)
+
+         # Determine the full path to the parameters file
+        path = self.full_output_path("parameters.dat")
+
+        # Write the parameters to the specified location
+        write_parameters(self.parameters, path)
+
+    # -----------------------------------------------------------------
+
+    def get_spiral_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # http://vizier.cfa.harvard.edu/viz-bin/VizieR?-source=J/A+A/582/A86
+
+        # J/A+A/582/A86: Catalogue of features in the S4G (Herrera-Endoqui+, 2015)
+
+        # - J/A+A/582/A86/table2: Properties of bars, ring- and lens-structures in the S4G (2387 rows)
+        # - J/A+A/582/A86/table3: Properties of spiral arms in the S4G (1854 rows)
+
+        # Get table2
+        result = self.vizier.query_object(self.galaxy_name, catalog=["J/A+A/582/A86/table2"])
+        table = result[0]
+
+        # Name: Galaxy name
+        # Class: Morphological classification
+        # Type: Type of feature
+        # sma: Semi-major axis [arcsec]
+        # PA: Position angle [deg]
+        # Ell: Ellipticity
+        # smaEll: Semi-major axis from ellipticity [arcsec]
+        # dsma: Deprojected semi-major axis [arcsec]
+        # dPA: Deprojected position angle [deg]
+        # dEll: Deprojected ellipticity
+        # dsmaEll: Deprojexted semi-major axis from Ell [arcsec]
+        # Qual: [1/3] Quality flag
+
+        # Get table 3
+        result = self.vizier.query_object(self.galaxy_name, catalog=["J/A+A/582/A86/table3"])
+        table = result[0]
+
+        # Name: Galaxy name
+        # Class: Morphological classification
+        # Type: Type of arms
+        # Segment: Segment
+        # Pitchang: Pitch angle [deg]
+        # ri: Inner radius [arcsec]
+        # ro: Outer radius [arcsec]
+        # Qual: [1/2] Quality flag
 
     # -----------------------------------------------------------------
 
@@ -329,9 +533,13 @@ class GalaxyDecomposer(DecompositionComponent):
                 # Effective radius in pc
                 re_arcsec = float(splitted[sersic_1_index + 3]) * Unit("arcsec")
                 self.parameters.bulge.re = (self.parameters.distance * re_arcsec).to("pc", equivalencies=dimensionless_angles())
+                print(re_arcsec, self.parameters.bulge.re)
+
+                ### THIS EFFECTIVE RADIUS (Re) IS DIFFERENT FROM THE ONE ON VIZIER !!!! (from get_p4) # something wrong?? other units ???
+                # Anyway, we use Vizier now.
 
                 self.parameters.bulge.ar = float(splitted[sersic_1_index + 4])
-                self.parameters.bulge.pa = float(splitted[sersic_1_index + 5])
+                self.parameters.bulge.pa = Angle(float(splitted[sersic_1_index + 5]) - 90., "deg")
                 self.parameters.bulge.n = float(splitted[sersic_1_index + 6])
 
                 # DISK
@@ -346,7 +554,7 @@ class GalaxyDecomposer(DecompositionComponent):
                 self.parameters.disk.hr = (self.parameters.distance * hr_arcsec).to("pc", equivalencies=dimensionless_angles())
 
                 self.parameters.disk.ar = float(splitted[disk_1_index + 4]) # axial ratio
-                self.parameters.disk.pa = float(splitted[disk_1_index + 5])
+                self.parameters.disk.pa = Angle(float(splitted[disk_1_index + 5]) - 90., "deg")
                 self.parameters.disk.mu0 = float(splitted[disk_1_index + 6])
 
     # -----------------------------------------------------------------
@@ -394,15 +602,18 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Add a new SimpleInstrument
         distance = self.parameters.distance
-        inclination = self.parameters.inclination
+        #inclination = self.parameters.inclination
+        inclination = 0.0
         azimuth = 0.0
-        position_angle = self.parameters.position_angle
+        #position_angle = self.parameters.position_angle
+        position_angle = self.parameters.bulge.PA + Angle(90., "deg")
         pixels_x = reference_wcs.xsize
         pixels_y = reference_wcs.ysize
         #center_x = reference_wcs.center_pixel.x
         #center_y = reference_wcs.center_pixel.y
         pixel_center = self.parameters.center.to_pixel(reference_wcs)
-        center = Position(pixel_center.x - 0.5 * pixels_x, pixel_center.y - 0.5 * pixels_y)
+        #center = Position(pixel_center.x - 0.5 * pixels_x, pixel_center.y - 0.5 * pixels_y)
+        center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5)
         center_x = center.x * Unit("pix")
         center_y = center.y * Unit("pix")
         center_x = (center_x * reference_wcs.pixelscale.x.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
@@ -482,7 +693,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Change the ski file parameters ...
         radial_scale = self.parameters.disk.hr
-        axial_scale = self.parameters.disk.ar * radial_scale
+        axial_scale = self.parameters.disk.q * radial_scale
         ski.set_stellar_component_expdisk_geometry(0, radial_scale, axial_scale, radial_truncation=0, axial_truncation=0, inner_radius=0)
 
         # Remove all existing instruments
@@ -492,13 +703,15 @@ class GalaxyDecomposer(DecompositionComponent):
         distance = self.parameters.distance
         inclination = self.parameters.inclination
         azimuth = 0.0
-        position_angle = self.parameters.position_angle
+        #position_angle = self.parameters.position_angle
+        position_angle = self.parameters.disk.PA
         pixels_x = reference_wcs.xsize
         pixels_y = reference_wcs.ysize
         #center_x = reference_wcs.center_pixel.x
         #center_y = reference_wcs.center_pixel.y
         pixel_center = self.parameters.center.to_pixel(reference_wcs)
-        center = Position(pixel_center.x - 0.5*pixels_x, pixel_center.y - 0.5*pixels_y)
+        #center = Position(pixel_center.x - 0.5*pixels_x, pixel_center.y - 0.5*pixels_y)
+        center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5)
         center_x = center.x * Unit("pix")
         center_y = center.y * Unit("pix")
         center_x = (center_x * reference_wcs.pixelscale.x.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
@@ -678,15 +891,15 @@ def write_parameters(parameters, path):
         for component in ["bulge", "disk"]:
 
             #print(component.title() + ": Interpretation:", parameters[component].interpretation, file=parameter_file)
-            print(component.title() + ": Relative contribution:", parameters[component].rel, file=parameter_file)
+            print(component.title() + ": Relative contribution:", parameters[component].f, file=parameter_file)
             #print(component.title() + ": Total IRAC 3.6um AB magnitude:", parameters[component].mag, file=parameter_file)
             print(component.title() + ": IRAC 3.6um flux density:", parameters[component].fluxdensity, file=parameter_file)
-            print(component.title() + ": Axial ratio:", parameters[component].ar, file=parameter_file)
-            print(component.title() + ": Position angle:", parameters[component].pa, file=parameter_file) # (degrees ccw from North)
+            print(component.title() + ": Axial ratio:", parameters[component].q, file=parameter_file)
+            print(component.title() + ": Position angle:", str(parameters[component].PA.to("deg").value) + " deg", file=parameter_file) # (degrees ccw from North)
 
             if component == "bulge":
 
-                print(component.title() + ": Effective radius:", str(parameters[component].re), file=parameter_file)
+                print(component.title() + ": Effective radius:", str(parameters[component].Re), file=parameter_file)
                 print(component.title() + ": Sersic index:", parameters[component].n, file=parameter_file)
 
             elif component == "disk":
@@ -723,21 +936,21 @@ def load_parameters(path):
             # Bulge parameters
             if splitted[0] == "Bulge":
 
-                if splitted[1] == "Relative contribution": parameters.bulge.rel = float(splitted[2])
+                if splitted[1] == "Relative contribution": parameters.bulge.f = float(splitted[2])
                 elif splitted[1] == "IRAC 3.6um flux density": parameters.bulge.fluxdensity = get_quantity(splitted[2])
-                elif splitted[1] == "Axial ratio": parameters.bulge.ar = float(splitted[2])
-                elif splitted[1] == "Position angle": parameters.bulge.pa = get_angle(splitted[2])
-                elif splitted[1] == "Effective radius": parameters.bulge.re = get_quantity(splitted[2])
+                elif splitted[1] == "Axial ratio": parameters.bulge.q = float(splitted[2])
+                elif splitted[1] == "Position angle": parameters.bulge.PA = get_angle(splitted[2])
+                elif splitted[1] == "Effective radius": parameters.bulge.Re = get_quantity(splitted[2])
                 elif splitted[1] == "Sersic index": parameters.bulge.n = float(splitted[2])
 
             # Disk parameters
             elif splitted[0] == "Disk":
 
-                if splitted[1] == "Relative contribution": parameters.disk.rel = float(splitted[2])
+                if splitted[1] == "Relative contribution": parameters.disk.f = float(splitted[2])
                 elif splitted[1] == "IRAC 3.6um flux density": parameters.disk.fluxdensity = get_quantity(splitted[2])
-                elif splitted[1] == "Axial ratio": parameters.disk.ar = float(splitted[2])
-                elif splitted[1] == "Position angle": parameters.disk.pa = get_angle(splitted[2])
-                elif splitted[1] == "Central surface brightness": parameters.disk.mu0 = float(splitted[2])
+                elif splitted[1] == "Axial ratio": parameters.disk.q = float(splitted[2])
+                elif splitted[1] == "Position angle": parameters.disk.PA = get_angle(splitted[2])
+                elif splitted[1] == "Central surface brightness": parameters.disk.mu0 = get_quantity(splitted[2])
                 elif splitted[1] == "Exponential scale length": parameters.disk.hr = get_quantity(splitted[2])
 
             # Other parameters
@@ -802,5 +1015,42 @@ def get_angle(entry, default_unit=None):
     # Create an Angle object and return it
     if unit is not None: value = Angle(value, unit)
     return value
+
+# -----------------------------------------------------------------
+
+def quadrant(angle):
+
+    """
+    This function ...
+    :param angle:
+    :return:
+    """
+
+    if -180 <= angle.to("deg").value < -90.: return 3
+    elif -90. <= angle.to("deg").value < 0.0: return 4
+    elif 0.0 <= angle.to("deg").value < 90.: return 1
+    elif 90. <= angle.to("deg").value < 180.: return 2
+    elif 180. <= angle.to("deg").value < 270.: return 3
+    elif 270. <= angle.to("deg").value <= 360.: return 4
+    else: raise ValueError("Failed to determine quadrant for " + str(angle))
+
+# -----------------------------------------------------------------
+
+def intrinsic_flattening(qprime, inclination):
+
+    """
+    This function ...
+    :param qprime:
+    :param inclination:
+    """
+
+    # Get the inclination angle in radians
+    i = inclination.to("radian").value
+
+    # Calculate the intrinsic flattening
+    q = math.sqrt((qprime**2 - math.cos(i)**2)/math.sin(i)**2)
+
+    # Return the intrinsic flattening
+    return q
 
 # -----------------------------------------------------------------

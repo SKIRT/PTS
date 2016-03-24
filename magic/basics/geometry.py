@@ -128,6 +128,8 @@ class Composite(object):
         self.base += extent
         self.exclude += extent
 
+        return self
+
     # -----------------------------------------------------------------
 
     def __sub__(self, extent):
@@ -150,6 +152,8 @@ class Composite(object):
 
         self.base -= extent
         self.exclude -= extent
+
+        return self
 
     # -----------------------------------------------------------------
 
@@ -174,6 +178,8 @@ class Composite(object):
         self.base *= value
         self.exclude *= value
 
+        return self
+
     # -----------------------------------------------------------------
 
     def __div__(self, value):
@@ -197,6 +203,8 @@ class Composite(object):
         self.base /= value
         self.exclude /= value
 
+        return self
+
     # -----------------------------------------------------------------
 
     def __truediv__(self, value):
@@ -218,6 +226,8 @@ class Composite(object):
         """
 
         self.__idiv__(value)
+
+        return self
 
 # -----------------------------------------------------------------
 
@@ -330,6 +340,8 @@ class Coordinate(Position):
         self.x += extent.x
         self.y += extent.y
 
+        return self
+
     # -----------------------------------------------------------------
 
     def __sub__(self, extent):
@@ -355,6 +367,8 @@ class Coordinate(Position):
         self.x -= extent.x
         self.y -= extent.y
 
+        return self
+
     # -----------------------------------------------------------------
 
     def __mul__(self, value):
@@ -377,7 +391,7 @@ class Coordinate(Position):
         :return:
         """
 
-        pass
+        return self
 
     # -----------------------------------------------------------------
 
@@ -401,7 +415,7 @@ class Coordinate(Position):
         :return:
         """
 
-        pass
+        return self
 
     # -----------------------------------------------------------------
 
@@ -425,7 +439,7 @@ class Coordinate(Position):
         :return:
         """
 
-        self.__idiv__(value)
+        return self.__idiv__(value)
 
 # -----------------------------------------------------------------
 
@@ -631,6 +645,8 @@ class Line(object):
         self.start += extent
         self.end += extent
 
+        return self
+
     # -----------------------------------------------------------------
 
     def __sub__(self, extent):
@@ -655,6 +671,8 @@ class Line(object):
 
         self.start -= extent
         self.end -= extent
+
+        return self
 
 # -----------------------------------------------------------------
 
@@ -726,6 +744,8 @@ class Circle(object):
 
         self.radius *= value
 
+        return self
+
     # -----------------------------------------------------------------
 
     def __div__(self, value):
@@ -748,6 +768,8 @@ class Circle(object):
 
         self.radius /= value
 
+        return self
+
     # -----------------------------------------------------------------
 
     def __truediv__(self, value):
@@ -768,7 +790,7 @@ class Circle(object):
         :return:
         """
 
-        self.__idiv__(value)
+        return self.__idiv__(value)
 
     # -----------------------------------------------------------------
 
@@ -985,6 +1007,8 @@ class Ellipse(object):
 
         self.radius *= value
 
+        return self
+
     # -----------------------------------------------------------------
 
     def __div__(self, value):
@@ -1009,6 +1033,8 @@ class Ellipse(object):
 
         self.radius /= value
 
+        return self
+
     # -----------------------------------------------------------------
 
     def __truediv__(self, value):
@@ -1032,6 +1058,8 @@ class Ellipse(object):
         """
 
         self.radius /= value
+
+        return self
 
     # -----------------------------------------------------------------
 
