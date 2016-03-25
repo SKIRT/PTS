@@ -1054,3 +1054,51 @@ def intrinsic_flattening(qprime, inclination):
     return q
 
 # -----------------------------------------------------------------
+
+def deproject_pa_into_azimuth(pa, inclination):
+
+    """
+    This function ...
+    :param pa:
+    :param inclination:
+    :return:
+    """
+
+    # Get the PA and inclination in radians
+    pa_radian = pa.to("radian").value
+    i_radian = inclination.to("radian").value
+
+    denominator = math.sqrt(math.cos(pa_radian)**2 + math.sin(pa_radian)**2 * math.cos(i_radian)**2)
+
+    cos_azimuth = math.cos(pa_radian) / denominator
+    sin_azimuth = math.sin(pa_radian) * math.cos(inclination) / denominator
+
+    azimuth_radian = math.atan2(sin_azimuth, cos_azimuth) * Unit("radian")
+
+    return azimuth_radian.to("deg")
+
+# -----------------------------------------------------------------
+
+def deproject_pa_into_tilt(pa, inclination):
+
+    """
+    This function ...
+    :param pa:
+    :param inclination:
+    :return:
+    """
+
+    # Get the PA and inclination in radians
+    pa_radian = pa.to("radian").value
+    i_radian = inclination.to("radian").value
+
+    denominator = math.sqrt(math.sin(pa_radian)**2 * math.sin(i_radian)**2 + math.cos(pa_radian)**2)
+
+    cos_tilt = math.sin(pa_radian) * math.sin(i_radian) / denominator
+    sin_tilt = math.cos(pa_radian) / denominator
+
+    tilt_radian = math.atan2(sin_tilt, cos_tilt) * Unit("radian")
+
+    return tilt_radian.to("deg")
+
+# -----------------------------------------------------------------
