@@ -508,16 +508,33 @@ class MapMaker(MapsComponent):
         # From the IRAC 3.6 micron map, we must subtract the bulge component to only retain the disk emission
 
         # The relative contribution of the bulge to the 3.6mu emission
-        bulge_rel_contribution = self.parameters.bulge.f
+        #bulge_rel_contribution = self.parameters.bulge.f
 
         # Total flux of the IRAC 3.6mu image
-        total_flux = np.sum(self.images["3.6mu"].frames.primary)
+        #total_flux = np.sum(self.images["3.6mu"].frames.primary)
 
         # Calculate factor
-        factor = bulge_rel_contribution * total_flux / np.sum(self.bulge)
+        #factor = bulge_rel_contribution * total_flux / np.sum(self.bulge)
 
         # Create the old stars map
-        old_stars = self.images["3.6mu"].frames.primary - factor * self.bulge
+        #old_stars = self.images["3.6mu"].frames.primary - factor * self.bulge
+
+        # Convert the 3.6 micron image from MJy/sr to Jy/sr
+        conversion_factor = 1.0
+        conversion_factor *= 1e6
+
+        # Convert the 3.6 micron image from Jy / sr to Jy / pixel
+        pixelscale = self.images["3.6mu"].xy_average_pixelscale
+        pixel_factor = (1.0/pixelscale**2).to("pix2/sr").value
+        conversion_factor /= pixel_factor
+        self.images["3.6mu"] *= conversion_factor
+        self.images["3.6mu"].unit = "Jy"
+
+        i1_jy_path = filesystem.join(self.maps_intermediate_path, "i1_jy.fits")
+        self.images["3.6mu"].save(i1_jy_path)
+
+        # Subtract bulge
+        old_stars = self.images["3.6mu"].frames.primary - (self.bulge * 1.5)
 
         # Set the old stars map zero for pixels with low signal-to-noise in the 3.6 micron image
         #old_stars[self.irac < self.config.old_stars.irac_snr_level*self.irac_errors] = 0.0

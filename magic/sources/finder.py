@@ -366,10 +366,10 @@ class SourceFinder(Configurable):
         """
 
         # Build the catalog
-        self.build_catalog()
+        if self.config.build_catalogs: self.build_catalog()
 
         # Synchronize the catalog
-        if self.config.synchronize_catalogs: self.synchronize_catalog()
+        if self.config.build_catalogs and self.config.synchronize_catalogs: self.synchronize_catalog()
 
     # -----------------------------------------------------------------
 

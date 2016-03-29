@@ -559,7 +559,8 @@ class GalaxyDecomposer(DecompositionComponent):
         pixels_x = self.reference_wcs.xsize
         pixels_y = self.reference_wcs.ysize
         pixel_center = self.parameters.center.to_pixel(self.reference_wcs)
-        center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5)
+        #center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5)
+        center = Position(0.5*pixels_x - pixel_center.x - 1, 0.5*pixels_y - pixel_center.y - 1)
         center_x = center.x * Unit("pix")
         center_y = center.y * Unit("pix")
         center_x = (center_x * self.reference_wcs.pixelscale.x.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
@@ -755,7 +756,7 @@ class GalaxyDecomposer(DecompositionComponent):
         self.bulge_image.unit = "Jy"
 
         # Convolve the frame to the PACS 160 resolution
-        self.bulge_image = self.bulge_image.convolved(self.psf)
+        #self.bulge_image = self.bulge_image.convolved(self.psf)
 
     # -----------------------------------------------------------------
 
@@ -1106,10 +1107,10 @@ def load_parameters(path):
                 elif splitted[0] == "Distance": parameters.distance = get_quantity(splitted[1])
                 elif splitted[0] == "Distance error": parameters.distance_error = get_quantity(splitted[1])
                 elif splitted[0] == "Inclination": parameters.inclination = get_angle(splitted[1])
-                elif splitted[0] == "IRAC 3.6um flux density": parameters.i1_fluxdensity = float(splitted[1])
-                elif splitted[0] == "IRAC 3.6um flux density error": parameters.i1_error = float(splitted[1])
-                elif splitted[0] == "IRAC 4.5um flux density": parameters.i2_fluxdensity = float(splitted[1])
-                elif splitted[0] == "IRAC 4.5um flux density error": parameters.i2_error = float(splitted[1])
+                elif splitted[0] == "IRAC 3.6um flux density": parameters.i1_fluxdensity = get_quantity(splitted[1])
+                elif splitted[0] == "IRAC 3.6um flux density error": parameters.i1_error = get_quantity(splitted[1])
+                elif splitted[0] == "IRAC 4.5um flux density": parameters.i2_fluxdensity = get_quantity(splitted[1])
+                elif splitted[0] == "IRAC 4.5um flux density error": parameters.i2_error = get_quantity(splitted[1])
 
     # Add the center coordinate
     parameters.center = SkyCoordinate(ra=ra, dec=dec)
