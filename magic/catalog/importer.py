@@ -297,4 +297,40 @@ class CatalogImporter(Configurable):
         # Inform the user
         log.debug("Number of stars: " + str(len(self.stellar_catalog)))
 
+    # -----------------------------------------------------------------
+
+    def write_galactic_catalog(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the catalog file
+        path = self.full_output_path(self.config.writing.galactic_catalog_path)
+
+        # Inform the user
+        log.info("Writing galactic catalog to " + path + " ...")
+
+        # Write the catalog to file
+        tables.write(self.galactic_catalog, path)
+
+    # -----------------------------------------------------------------
+
+    def write_stellar_catalog(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the full path to the catalog file
+        path = self.full_output_path(self.config.writing.stellar_catalog_path)
+
+        # Inform the user
+        log.info("Writing stellar catalog to " + path + " ...")
+
+        # Write the catalog to file
+        tables.write(self.stellar_catalog, path)
+
 # -----------------------------------------------------------------

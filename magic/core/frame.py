@@ -436,6 +436,8 @@ class Frame(np.ndarray):
         :return:
         """
 
+        # TODO: use the 'Reproject' package here: http://reproject.readthedocs.org/en/stable/
+
         # Do the rebinning
         data = transformations.new_align_and_rebin(self, self.wcs, reference_wcs)
 
