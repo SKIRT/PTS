@@ -13,10 +13,11 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit, dimensionless_angles
+from astropy.units import Unit, dimensionless_angles, spectral
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
@@ -24,8 +25,9 @@ from ...core.tools import inspection, tables, filesystem
 from ...core.simulation.skifile import SkiFile
 from ...core.basics.filter import Filter
 from ..basics.models import SersicModel, DeprojectionModel
-from ...magic.basics.vector import Position
+from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..decomposition.decomposition import load_parameters
+from ...magic.basics.skyregion import SkyRegion
 
 # -----------------------------------------------------------------
 
@@ -73,6 +75,9 @@ class InputInitializer(FittingComponent):
         # Filters
         self.i1 = None
         self.fuv = None
+
+        # Coordinate system
+        self.reference_wcs = None
 
     # -----------------------------------------------------------------
 
@@ -143,6 +148,9 @@ class InputInitializer(FittingComponent):
         # Create the bulge model
         self.create_bulge_model()
 
+        # Create the deprojection model
+        self.create_deprojection_model()
+
         # 5. Adjust the ski file
         self.adjust_ski()
 
@@ -167,6 +175,11 @@ class InputInitializer(FittingComponent):
         # Create filters
         self.i1 = Filter.from_string("I1")
         self.fuv = Filter.from_string("FUV")
+
+        # Reference coordinate system
+        reference_image = "Pacs red"
+        reference_path = filesystem.join(self.truncation_path, reference_image + ".fits")
+        self.reference_wcs = CoordinateSystem.from_file(reference_path)
 
     # -----------------------------------------------------------------
 
@@ -229,7 +242,7 @@ class InputInitializer(FittingComponent):
                 raise ValueError("the high-resolution subgrid should be properly nested in the low-resolution grid")
 
         # Build the high- and low-resolution grids independently
-        base_grid = np.logspace(float(self.config.wavelengths.min), float(self.config.wavelengths.max), num=self.config.wavelengts.npoints, endpoint=True, base=10.)
+        base_grid = np.logspace(float(self.config.wavelengths.min), float(self.config.wavelengths.max), num=self.config.wavelengths.npoints, endpoint=True, base=10.)
         zoom_grid = np.logspace(float(self.config.wavelengths.min_zoom), float(self.config.wavelengths.max_zoom), num=self.config.wavelengths.npoints_zoom, endpoint=True, base=10.)
 
         # Merge the two grids
@@ -297,25 +310,21 @@ class InputInitializer(FittingComponent):
         filename = None
         hz = None
 
+        # Get the galaxy distance, the inclination and position angle
         distance = self.parameters.distance
         inclination = self.parameters.inclination
-        #azimuth = 0.0
         pa = self.parameters.disk.PA
-        pixels_x = self.reference_wcs.xsize
-        pixels_y = self.reference_wcs.ysize
-        pixel_center = self.parameters.center.to_pixel(self.reference_wcs)
 
-        center = Position(0.5*pixels_x - pixel_center.x - 1, 0.5*pixels_y - pixel_center.y - 1)
-        center_x = center.x * Unit("pix")
-        center_y = center.y * Unit("pix")
-        center_x = (center_x * self.reference_wcs.pixelscale.x.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
-        center_y = (center_y * self.reference_wcs.pixelscale.y.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
+        # Get the center pixel
+        pixel_center = self.parameters.center.to_pixel(self.reference_wcs)
+        xc = pixel_center.x
+        yc = pixel_center.y
 
         # Get the pixelscale in physical units
         pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix") # in deg
         pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
 
-        # Get the x and y size
+        # Get the number of x and y pixels
         x_size = self.reference_wcs.xsize
         y_size = self.reference_wcs.ysize
 
@@ -350,14 +359,8 @@ class InputInitializer(FittingComponent):
         # Set transient dust emissivity
         self.ski.set_transient_dust_emissivity()
 
-        min_x = -15. * Unit("kpc")
-        max_x = 15. * Unit("kpc")
-        min_y = -15. * Unit("kpc")
-        max_y = 15. * Unit("kpc")
-        min_z = -3. * Unit("kpc")
-        max_z = 3. * Unit("kpc")
         # Set the dust grid
-        self.ski.set_binary_tree_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z)
+        self.set_dust_grid()
 
         # Set all-cells dust library
         self.ski.set_allcells_dust_lib()
@@ -402,11 +405,17 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
+        # Like M31
         bulge_template = "BruzualCharlot"
         bulge_age = 12
         bulge_metallicity = 0.02
 
-        fluxdensity =
+        # Convert the bulge 3.6 micron flux density into a luminosity
+        fluxdensity = self.parameters.bulge.fluxdensity
+        wavelength = self.i1.effectivewavelength() * Unit("micron")
+        frequency = wavelength.to("Hz", equivalencies=spectral())
+        flux = (fluxdensity * frequency).to("Lsun/m2")
+        luminosity = (flux * 4. * math.pi * self.parameters.distance**2.).to("Lsun")
 
         # Set the parameters of the bulge
         self.ski.set_stellar_component_geometry("Evolved stellar bulge", self.bulge)
@@ -422,14 +431,27 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
+        # Like M31
         disk_template = "BruzualCharlot"
         disk_age = 8
         disk_metallicity = 0.02
 
-        scale_height = 538 * Unit("pc")  # Andromeda
+        # Get the scale height
+        scale_height = 521. * Unit("pc") # first models
+        #scale_height = 538 * Unit("pc")  # M31
+
+        # Get the 3.6 micron flux density with the bulge subtracted
+        i1_index = tables.find_index(self.fluxes, "I1", "Band")
+        fluxdensity = self.fluxes["Flux"][i1_index]*Unit("Jy") - self.parameters.bulge.fluxdensity
+
+        # Convert the flux density into a luminosity
+        wavelength = self.i1.effectivewavelength() * Unit("micron")
+        frequency = wavelength.to("Hz", equivalencies=spectral())
+        flux = (fluxdensity * frequency).to("Lsun/m2", equivalencies=spectral())
+        luminosity = (flux * 4. * math.pi * self.parameters.distance**2.).to("Lsun")
 
         # Set the parameters of the evolved stellar component
-        self.deprojection.file_name = "old_stars.fits"
+        self.deprojection.filename = "old_stars.fits"
         self.deprojection.scale_height = scale_height
         self.ski.set_stellar_component_geometry("Evolved stellar disk", self.deprojection)
         self.ski.set_stellar_component_sed("Evolved stellar disk", disk_template, disk_age, disk_metallicity) # SED
@@ -444,14 +466,26 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
+        # Like M31
         young_template = "BruzualCharlot"
         young_age = 0.1
         young_metallicity = 0.02
 
-        scale_height = 190 * Unit("pc") # Andromeda
+        scale_height = 150 * Unit("pc") # first models
+        #scale_height = 190 * Unit("pc") # M31
+
+        # Get the FUV flux density
+        fuv_index = tables.find_index(self.fluxes, "FUV", "Band")
+        fluxdensity = 0.5 * self.fluxes["Flux"][fuv_index]*Unit("Jy")
+
+        # Convert the flux density into a luminosity
+        wavelength = self.fuv.effectivewavelength() * Unit("micron")
+        frequency = wavelength.to("Hz", equivalencies=spectral())
+        flux = (fluxdensity * frequency).to("Lsun/m2", equivalencies=spectral())
+        luminosity = (flux * 4. * math.pi * self.parameters.distance**2.).to("Lsun")
 
         # Set the parameters of the young stellar component
-        self.deprojection.file_name = "young_stars.fits"
+        self.deprojection.filename = "young_stars.fits"
         self.deprojection.scale_height = scale_height
         self.ski.set_stellar_component_geometry("Young stars", self.deprojection)
         self.ski.set_stellar_component_sed("Young stars", young_template, young_age, young_metallicity) # SED
@@ -466,15 +500,28 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
+        # Like M51 and M31
         ionizing_metallicity = 0.02
         ionizing_compactness = 6
         ionizing_pressure = 1e12 * Unit("K/m3")
         ionizing_covering_factor = 0.2
 
-        scale_height = 190 * Unit("pc") # Andromeda
+        # Get the scale height
+        scale_height = 150 * Unit("pc") # first models
+        #scale_height = 190 * Unit("pc") # M31
+
+        # Get the FUV flux density
+        fuv_index = tables.find_index(self.fluxes, "FUV", "Band")
+        fluxdensity = 0.5 * self.fluxes["Flux"][fuv_index]*Unit("Jy")
+
+        # Convert the flux density into a luminosity
+        wavelength = self.fuv.effectivewavelength() * Unit("micron")
+        frequency = wavelength.to("Hz", equivalencies=spectral())
+        flux = (fluxdensity * frequency).to("Lsun/m2")
+        luminosity = (flux * 4. * math.pi * self.parameters.distance**2.).to("Lsun")
 
         # Set the parameters of the ionizing stellar component
-        self.deprojection.file_name = "ionizing_stars.fits"
+        self.deprojection.filename = "ionizing_stars.fits"
         self.deprojection.scale_height = scale_height
         self.ski.set_stellar_component_geometry("Ionizing stars", self.deprojection)
         self.ski.set_stellar_component_mappingssed("Ionizing stars", ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor) # SED
@@ -489,15 +536,54 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
-        scale_height = 238 * Unit("pc") # Andromeda
-        dust_mass = 4.3e7 * Unit("Msun") # Andromeda
+        scale_height = 260.5 * Unit("pc") # first models
+        dust_mass = 2e7 * Unit("Msun") # first models
+
+        #scale_height = 238 * Unit("pc") # Andromeda
+        #dust_mass = 4.3e7 * Unit("Msun") # Andromeda
+
+        hydrocarbon_pops = 25
+        enstatite_pops = 25
+        forsterite_pops = 25
 
         # Set the parameters of the dust component
-        self.deprojection.file_name = "dust.fits"
+        self.deprojection.filename = "dust.fits"
         self.deprojection.scale_height = scale_height
         self.ski.set_dust_component_geometry(0, self.deprojection)
         self.ski.set_dust_component_themis_mix(0, hydrocarbon_pops, enstatite_pops, forsterite_pops) # dust mix
         self.ski.set_dust_component_mass(0, dust_mass) # dust mass
+
+    # -----------------------------------------------------------------
+
+    def set_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # From Truncator:
+
+        # Get the path to the disk region
+        path = filesystem.join(self.components_path, "disk.reg")
+        # Open the region
+        region = SkyRegion.from_file(path)
+        # Get ellipse in sky coordinates
+        scale_factor = 0.82
+        disk_ellipse = region[0] * scale_factor
+
+        major_angular = disk_ellipse.major # major axis length of the sky ellipse
+        radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
+
+        min_x = - radius_physical
+        max_x = radius_physical
+        min_y = - radius_physical
+        max_y = radius_physical
+        min_z = -3. * Unit("kpc")
+        max_z = 3. * Unit("kpc")
+
+        # Set the dust grid
+        self.ski.set_binary_tree_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z)
 
     # -----------------------------------------------------------------
 

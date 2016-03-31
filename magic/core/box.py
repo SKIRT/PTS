@@ -275,6 +275,18 @@ class Box(np.ndarray):
 
     # -----------------------------------------------------------------
 
+    @property
+    def origin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Position(self.x_min, self.y_min)
+
+    # -----------------------------------------------------------------
+
     def box_like(self, box):
 
         """

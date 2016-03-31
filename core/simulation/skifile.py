@@ -916,6 +916,24 @@ class SkiFile:
         attrs = {"filename": filename}
         parent.append(parent.makeelement("FileWavelengthGrid", attrs))
 
+    ## This function sets the wavelength grid to a NestedLogWavelengthGrid
+    def set_nestedlog_wavelength_grid(self, min_lambda, max_lambda, points, min_lambda_sub, max_lambda_sub, points_sub, write):
+
+        # Get the wavelength grid
+        wavelength_grid = self.get_wavelength_grid()
+
+        # Get the parent
+        parent = wavelength_grid.getparent()
+
+        # Remove the old wavelength grid
+        parent.remove(wavelength_grid)
+
+        # Make and add the new wavelength grid
+        attrs = {"minWavelength": str(min_lambda), "maxWavelength": str(max_lambda), "points": str(points),
+                 "minWavelengthSubGrid": str(min_lambda_sub), "maxWavelengthSubGrid": str(max_lambda_sub),
+                 "pointsSubGrid": str(points_sub), "writeWavelengths": str(write)}
+        parent.append(parent.makeelement("NestedLogWavelengthGrid", attrs))
+
     ## This function returns the geometry of the stellar component with the specified id
     def get_stellar_component_geometry(self, component_id):
 
@@ -924,6 +942,15 @@ class SkiFile:
 
         # Return the geometry element of the stellar component
         return get_unique_element(stellar_component, "geometry")
+
+    ## This function returns the geometry of the dust component with the specified id
+    def get_dust_component_geometry(self, component_id):
+
+        # Get the dust component
+        dust_component = self.get_dust_component(component_id)
+
+        # Return the geometry element of the dust component
+        return get_unique_element(dust_component, "geometry")
 
     ## This function rotates the geometry of the specified stellar component
     def rotate_stellar_component(self, component_id, alpha, beta, gamma):
@@ -934,6 +961,36 @@ class SkiFile:
 
         # Get the geomery of the stellar component
         geometry = self.get_stellar_component_geometry(component_id)
+
+        # Get the parent
+        parent = geometry.getparent()
+
+        # Remove the old geometry
+        parent.remove(geometry)
+
+        # Create the new rotated geometry
+        attrs = {"euleralpha": str_from_angle(alpha), "eulerbeta": str_from_angle(beta), "eulergamma": str_from_angle(gamma)}
+        new_geometry = parent.makeelement("RotateGeometryDecorator", attrs)
+
+        attrs = {"type": "Geometry"}
+        geometry_of_new_geometry = new_geometry.makeelement("geometry", attrs)
+        new_geometry.append(geometry_of_new_geometry)
+
+        # Add the original geometry that has to be rotated
+        geometry_of_new_geometry.append(geometry)
+
+        # Add the new geometry to the parent
+        parent.append(new_geometry)
+
+    ## This function rotates the geometry of the specified dust component
+    def rotate_dust_component(self, component_id, alpha, beta, gamma):
+
+        # alpha: 0 to 360 degrees
+        # beta: 0 to 180 degrees
+        # gamma: 0 to 360 degrees
+
+        # Get the geomery of the dust component
+        geometry = self.get_dust_component_geometry(component_id)
 
         # Get the parent
         parent = geometry.getparent()
@@ -971,7 +1028,27 @@ class SkiFile:
         attrs = {"filename": filename, "pixelScale": str(pixelscale), "positionAngle": str_from_angle(position_angle),
                  "inclination": str_from_angle(inclination), "xelements": str(x_size), "yelements": str(y_size),
                  "xcenter": str(x_center), "ycenter": str(y_center), "axialScale": str(scale_height)}
-        parent.append(parent.makeelement("ReadFitsGeometry", attrs))
+        new_geometry = parent.makeelement("ReadFitsGeometry", attrs)
+        parent.append(new_geometry)
+
+    ## This function sets the geometry of the specified dust component to a FITS file
+    def set_dust_component_fits_geometry(self, component_id, filename, pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height):
+
+        # Get the dust component geometry
+        geometry = self.get_dust_component_geometry(component_id)
+
+        # Get the parent
+        parent = geometry.getparent()
+
+        # Remove the old geometry
+        parent.remove(geometry)
+
+        # Create and add the new geometry
+        attrs = {"filename": filename, "pixelScale": str(pixelscale), "positionAngle": str_from_angle(position_angle),
+                 "inclination": str_from_angle(inclination), "xelements": str(x_size), "yelements": str(y_size),
+                 "xcenter": str(x_center), "ycenter": str(y_center), "axialScale": str(scale_height)}
+        new_geometry = parent.makeelement("ReadFitsGeometry", attrs)
+        parent.append(new_geometry)
 
     ## This function sets the geometry of the specified stellar component.
     def set_stellar_component_geometry(self, component_id, model):
@@ -1042,7 +1119,68 @@ class SkiFile:
     ## This function sets the geometry of the specified dust component
     def set_dust_component_geometry(self, component_id, model):
 
+        from astropy.coordinates import Angle
+        from ...modeling.basics.models import SersicModel, ExponentialDiskModel, DeprojectionModel
 
+        # Rotation:
+        #  alpha: 0 to 360 degrees
+        #  beta: 0 to 180 degrees
+        #  gamma: 0 to 360 degrees
+
+        # Sersic model
+        if isinstance(model, SersicModel):
+
+            # Set the Sersic geometry (with flattening)
+            self.set_dust_component_sersic_geometry(component_id, model.index, model.effective_radius, z_flattening=model.flattening)
+
+            # Rotate the Sersic geometry with the tilt angle
+            alpha = Angle(0.0, "deg")
+            beta = model.tilt
+            gamma = Angle(0.0, "deg")
+            if beta < Angle(0.0, "deg"): # beta must be between 0 and 180 degrees, if beta is negative, rotate over z axis with 180 degrees first
+                alpha = Angle(180, "deg")
+                beta = - beta
+            self.rotate_dust_component(component_id, alpha, beta, gamma)
+
+        # Exponential Disk
+        elif isinstance(model, ExponentialDiskModel):
+
+            # Set the exponential disk geometry
+            radial_scale = model.radial_scale
+            axial_scale = model.axial_scale
+            radial_truncation = model.radial_truncation
+            axial_truncation = model.axial_truncation
+            inner_radius = model.inner_radius
+            self.set_dust_component_expdisk_geometry(component_id, radial_scale, axial_scale, radial_truncation, axial_truncation, inner_radius)
+
+            # Rotate the exponential disk geometry with the tilt angle
+            alpha = Angle(0.0, "deg")
+            beta = model.tilt
+            print("beta", beta)
+            gamma = Angle(0.0, "deg")
+            if beta < Angle(0.0, "deg"): # beta must be between 0 and 180 degrees, if beta is negative, rotate over z axis with 180 degrees first
+                alpha = Angle(180, "deg")
+                beta = - beta
+            print(alpha, beta, gamma)
+            self.rotate_dust_component(component_id, alpha, beta, gamma)
+
+        # Deprojection model
+        elif isinstance(model, DeprojectionModel):
+
+            # Set the ReadFitsGeometry
+            filename = model.filename
+            scale = model.pixelscale
+            pa = model.position_angle
+            i = model.inclination
+            nx = model.x_size
+            ny = model.y_size
+            xc = model.x_center
+            yc = model.y_center
+            hz = model.scale_height
+            self.set_dust_component_fits_geometry(component_id, filename, scale, pa, i, nx, ny, xc, yc, hz)
+
+        # Unsupported model
+        else: raise ValueError("Models other than SersicModel, ExponentialDiskModel and DeprojectionModel are not supported yet")
 
     ## This function sets the geometry of the specified stellar component to a Sersic profile with an specific y and z flattening
     def set_stellar_component_sersic_geometry(self, component_id, index, radius, y_flattening=1, z_flattening=1):
@@ -1072,11 +1210,58 @@ class SkiFile:
         # Add the new geometry
         parent.append(new_geometry)
 
+    ## This function sets the geometry of the specified dust component to a Sersic profile with a specific y and z flattening
+    def set_dust_component_sersic_geometry(self, component_id, index, radius, y_flattening=1, z_flattening=1):
+
+        # Get the dust component geometry
+        geometry = self.get_dust_component_geometry(component_id)
+
+        # Get the parent
+        parent = geometry.getparent()
+
+        # Remove the old geometry
+        parent.remove(geometry)
+
+        # Create and add the new geometry
+        attrs = {"yFlattening": str(y_flattening), "zFlattening": str(z_flattening)}
+        new_geometry = parent.makeelement("TriaxialGeometryDecorator", attrs)
+
+        attrs = {"type": "SpheGeometry"}
+        geometry_of_new_geometry = new_geometry.makeelement("geometry", attrs)
+        new_geometry.append(geometry_of_new_geometry)
+
+        # Add sersic profile to the geometry
+        attrs = {"index": str(index), "radius": str(radius)}
+        sersic_geometry = geometry_of_new_geometry.makeelement("SersicGeometry", attrs)
+        geometry_of_new_geometry.append(sersic_geometry)
+
+        # Add the new geometry
+        parent.append(new_geometry)
+
     ## This function sets the geometry of the specified stellar component to an exponential disk profile
     def set_stellar_component_expdisk_geometry(self, component_id, radial_scale, axial_scale, radial_truncation=0, axial_truncation=0, inner_radius=0):
 
         # Get the stellar component geometry
         geometry = self.get_stellar_component_geometry(component_id)
+
+        # Get the parent
+        parent = geometry.getparent()
+
+        # Remove the old geometry
+        parent.remove(geometry)
+
+        # Create and add the new exponential disk geometry
+        attrs = {"radialScale": str(radial_scale), "axialScale": str(axial_scale), "radialTrunc": str(radial_truncation), "axialTrunc": str(axial_truncation), "innerRadius": str(inner_radius)}
+        new_geometry = parent.makeelement("ExpDiskGeometry", attrs)
+
+        # Add the new geometry
+        parent.append(new_geometry)
+
+    ## This function sets the geometry of the specified dust component to an exponential disk profile
+    def set_dust_component_expdisk_geometry(self, component_id, radial_scale, axial_scale, radial_truncation=0, axial_truncation=0, inner_radius=0):
+
+        # Get the dust component geometry
+        geometry = self.get_dust_component_geometry(component_id)
 
         # Get the parent
         parent = geometry.getparent()

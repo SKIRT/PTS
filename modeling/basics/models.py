@@ -120,7 +120,7 @@ class ExponentialDiskModel(object):
 
 # -----------------------------------------------------------------
 
-class DeprojectionModel():
+class DeprojectionModel(object):
 
     """
     This class ...
@@ -132,6 +132,10 @@ class DeprojectionModel():
         This function ...
         :return:
         """
+
+        # position angle: -360 deg to 360 deg
+        # inclination: 0 deg to 90 deg
+        # center in pixel coordinates!
 
         self.filename = filename
         self.pixelscale = pixelscale

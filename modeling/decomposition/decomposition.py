@@ -35,6 +35,7 @@ from ...magic.basics.vector import Extent, Position
 from ...magic.basics.skygeometry import SkyEllipse, SkyCoordinate
 from ...magic.basics.skyregion import SkyRegion
 from ...magic.core.frame import Frame
+from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...core.tools import tables
 from ..basics.models import SersicModel, ExponentialDiskModel
 from ..basics.instruments import SimpleInstrument
@@ -193,8 +194,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Get the parameters describing the pixel grid of the prepared images
         reference_path = filesystem.join(self.prep_path, reference_image, "result.fits")
-        reference_frame = Frame.from_file(reference_path)
-        self.reference_wcs = reference_frame.wcs
+        self.reference_wcs = CoordinateSystem.from_file(reference_path)
 
         # Load the PSF
         aniano = AnianoKernels()

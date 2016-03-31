@@ -26,6 +26,10 @@ from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
+# TODO: also crop the FITS files to the bounding box of the disk ellipse
+
+# -----------------------------------------------------------------
+
 class Truncator(TruncationComponent):
     
     """
