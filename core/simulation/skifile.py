@@ -802,7 +802,7 @@ class SkiFile:
             parent.remove(normalization)
 
             # Make and add the new normalization element
-            attrs = {"luminosity" : str(luminosity)}
+            attrs = {"luminosity" : str_from_quantity(luminosity)}
             parent.append(parent.makeelement("BolLuminosityStellarCompNormalization", attrs))
 
         # Filter is defined, use LuminosityStellarCompNormalization
@@ -815,7 +815,7 @@ class SkiFile:
             parent.remove(normalization)
 
             # Make and add the new normalization element
-            attrs = {"luminosity": str(luminosity), "band": filter_or_wavelength.skirt_description}
+            attrs = {"luminosity": str_from_quantity(luminosity, unit="Lsun"), "band": filter_or_wavelength.skirt_description}
             parent.append(parent.makeelement("LuminosityStellarCompNormalization", attrs))
 
         # Wavelength is defined as an Astropy quantity, use SpectralLuminosityStellarCompNormalization
@@ -828,7 +828,7 @@ class SkiFile:
             parent.remove(normalization)
 
             # Make and add the new normalization element
-            attrs = {"luminosity": str(luminosity), "wavelength": str(filter_or_wavelength)}
+            attrs = {"luminosity": str_from_quantity(luminosity), "wavelength": str_from_quantity(filter_or_wavelength)}
             parent.append(parent.makeelement("SpectralLuminosityStellarCompNormalization", attrs))
 
         # Invalid filter or wavelength argument
@@ -865,8 +865,8 @@ class SkiFile:
         parent.remove(mix)
 
         # Make and add the new mix
-        attrs = {"writeMix": str(write_mix).lower(), "writeMeanMix": str(write_mean_mix).lower(),
-                 "writeSize": str(write_size).lower(), "hydrocarbonPops": str(hydrocarbon_pops),
+        attrs = {"writeMix": str_from_bool(write_mix), "writeMeanMix": str_from_bool(write_mean_mix),
+                 "writeSize": str_from_bool(write_size), "hydrocarbonPops": str(hydrocarbon_pops),
                  "enstatitePops": str(enstatite_pops), "forsteritePops": str(forsterite_pops)}
         parent.append(parent.makeelement("ThemisDustMix", attrs))
 
@@ -892,7 +892,7 @@ class SkiFile:
         if not normalization.tag == "DustMassDustCompNormalization": raise ValueError("Dust component normalization is not of type 'DustMassDustCompNormalization")
 
         # Set the new dust mass
-        normalization.set("dustMass", str(mass.to("Msun")) + " Msun")
+        normalization.set("dustMass", str_from_quantity(mass))
 
     ## This function returns the wavelength grid
     def get_wavelength_grid(self):
@@ -929,9 +929,10 @@ class SkiFile:
         parent.remove(wavelength_grid)
 
         # Make and add the new wavelength grid
-        attrs = {"minWavelength": str(min_lambda), "maxWavelength": str(max_lambda), "points": str(points),
-                 "minWavelengthSubGrid": str(min_lambda_sub), "maxWavelengthSubGrid": str(max_lambda_sub),
-                 "pointsSubGrid": str(points_sub), "writeWavelengths": str(write)}
+        attrs = {"minWavelength": str_from_quantity(min_lambda), "maxWavelength": str_from_quantity(max_lambda),
+                 "points": str(points), "minWavelengthSubGrid": str_from_quantity(min_lambda_sub),
+                 "maxWavelengthSubGrid": str_from_quantity(max_lambda_sub), "pointsSubGrid": str(points_sub),
+                 "writeWavelengths": str_from_bool(write)}
         parent.append(parent.makeelement("NestedLogWavelengthGrid", attrs))
 
     ## This function returns the geometry of the stellar component with the specified id
@@ -1318,7 +1319,7 @@ class SkiFile:
         parent.remove(sed)
 
         # Create and add the new geometry
-        attrs = {"metallicity": str(metallicity), "compactness": str(compactness), "pressure": str(pressure), "coveringFactor": str(covering_factor)}
+        attrs = {"metallicity": str(metallicity), "compactness": str(compactness), "pressure": str_from_quantity(pressure), "coveringFactor": str(covering_factor)}
         parent.append(parent.makeelement("MappingsSED", attrs))
 
     ## This function returns the dust emissivity
@@ -1427,11 +1428,11 @@ class SkiFile:
 
         # Create and add the new grid
         attrs = {"minX": str(min_x), "maxX": str(max_x), "minY": str(min_y), "maxY": str(max_y), "minZ": str(min_z),
-                 "maxZ": str(max_z), "writeGrid": str(write_grid).lower(), "minLevel": str(min_level),
+                 "maxZ": str(max_z), "writeGrid": str_from_bool(write_grid), "minLevel": str(min_level),
                  "maxLevel": str(max_level), "searchMethod": search_method, "sampleCount": str(sample_count),
                  "maxOpticalDepth": str(max_optical_depth), "maxMassFraction": str(max_mass_fraction),
-                 "maxDensDispFraction": str(max_dens_disp_fraction), "directionMethod": direction_method,
-                 "assigner": assigner}
+                 "maxDensDispFraction": str(max_dens_disp_fraction), "directionMethod": direction_method}
+                 #"assigner": assigner}
         parent.append(parent.makeelement("BinTreeDustGrid", attrs))
 
     ## This function sets an octtree dust grid for the dust system
@@ -1451,10 +1452,10 @@ class SkiFile:
 
         # Create and add the new grid
         attrs = {"minX": str(min_x), "maxX": str(max_x), "minY": str(min_y), "maxY": str(max_y), "minZ": str(min_z),
-                 "maxZ": str(max_z), "writeGrid": str(write_grid).lower(), "minLevel": str(min_level),
+                 "maxZ": str(max_z), "writeGrid": str_from_bool(write_grid), "minLevel": str(min_level),
                  "maxLevel": str(max_level), "searchMethod": search_method, "sampleCount": sample_count,
                  "maxOpticalDepth": str(max_optical_depth), "maxMassFraction": str(max_mass_fraction),
-                 "maxDensDispFraction": str(max_dens_disp_fraction), "barycentric": str(barycentric).lower(),
+                 "maxDensDispFraction": str(max_dens_disp_fraction), "barycentric": str_from_bool(barycentric),
                  "assigner": assigner}
         parent.append(parent.makeelement("OctTreeDustGrid", attrs))
 
@@ -1863,5 +1864,19 @@ def str_from_angle(angle):
 
     try: return str(angle.to("deg").value) + " deg"
     except AttributeError: return str(angle)
+
+# -----------------------------------------------------------------
+
+def str_from_quantity(quantity, unit=None):
+
+    if unit is not None: return str(quantity.to(unit).value)
+
+    to_string = str(quantity.value) + " " + str(quantity.unit).replace(" ", "")
+    return to_string.replace("solMass", "Msun").replace("solLum", "Lsun")
+
+# -----------------------------------------------------------------
+
+def str_from_bool(boolean):
+    return str(boolean).lower()
 
 # -----------------------------------------------------------------
