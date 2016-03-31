@@ -46,8 +46,8 @@ logfile_path = os.path.join(arguments.path, time.unique_name("preparationplottin
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
-logging.setup_log(level=level, path=logfile_path)
-logging.log.info("Starting preparation plotting ...")
+log = logging.setup_log(level=level, path=logfile_path)
+log.start("Starting preparation plotting ...")
 
 # -----------------------------------------------------------------
 

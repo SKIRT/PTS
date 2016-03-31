@@ -38,7 +38,7 @@ from ...magic.core.frame import Frame
 from ...core.tools import tables
 from ..basics.models import SersicModel, ExponentialDiskModel
 from ..basics.instruments import SimpleInstrument
-from ...core.tools import special
+from ...magic.misc.kernels import AnianoKernels
 
 # -----------------------------------------------------------------
 
@@ -57,18 +57,6 @@ template_path = filesystem.join(inspection.pts_dat_dir("modeling"), "ski")
 
 # Reference image
 reference_image = "Pacs red"
-
-# -----------------------------------------------------------------
-
-# The link to the page with corrected PSF's for different instruments
-aniano_psf_files_link = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012_May/PSF_fits_Files/"
-
-# The path to the PTS kernels directory
-kernels_path = filesystem.join(inspection.pts_user_dir, "kernels")
-
-# The path to the Pacs 160 PSF file
-#reference_psf_path = filesystem.join(kernels_path, "Corrected_PSF_PACS_160.fits")
-reference_psf_path = filesystem.join(kernels_path, "PSF_PACS_160.fits")
 
 # -----------------------------------------------------------------
 
@@ -187,6 +175,10 @@ class GalaxyDecomposer(DecompositionComponent):
         # Call the setup function of the base class
         super(GalaxyDecomposer, self).setup()
 
+        # TEMP: provide a cfg file for this class
+        self.config.bulge_packages = 1e7
+        self.config.disk_packages = 1e8
+
         # Get the NGC name of the galaxy
         self.ngc_id = catalogs.get_ngc_name(self.galaxy_name)
         self.ngc_id_nospaces = self.ngc_id.replace(" ", "")
@@ -205,8 +197,8 @@ class GalaxyDecomposer(DecompositionComponent):
         self.reference_wcs = reference_frame.wcs
 
         # Load the PSF
-        self.psf = Frame.from_file(reference_psf_path)
-        self.psf.fwhm = reference_frame.fwhm
+        aniano = AnianoKernels()
+        self.psf = aniano.get_psf("PACS_160")
 
     # -----------------------------------------------------------------
 
@@ -220,14 +212,38 @@ class GalaxyDecomposer(DecompositionComponent):
         # Inform the user
         log.info("Getting the structural galaxy parameters from the S4G catalog ...")
 
+
+        # Tracing spiral density waves in M81: (Kendall et. al, 2008)
+        # - Sersic bulge:
+        #    n = 2.62
+        #    Re = 46.2 arcsec
+        #    b/a = 0.71
+        #    PA = −31.9°
+        # - Exponential disk:
+        #    Rs = 155.4 arcsec
+        #    b/a = 0.52
+        #    PA = −28.3°
+
         # Query the S4G catalog using Vizier for general parameters
         self.get_general_parameters()
 
         # Get the decomposition parameters
-        self.get_p4()
+        #self.get_p4() currently (writing on 31 of march 2016) there is a problem with the effective radius values
+        # (at least for M81) on Vizier as well as in the PDF version of table 7 (S4G models homepage).
 
         # Parse the S4G table 8 to get the decomposition parameters
-        #self.get_component_parameters()
+        self.get_parameters_from_table()
+
+        #self.parameters.bulge.n = 2.62
+        #self.parameters.bulge.PA = Angle(-31.9 + 90., "deg")
+        #self.parameters.bulge.q = 0.71
+        #value = 46.2 * Unit("arcsec")
+        #self.parameters.bulge.Re = (self.parameters.distance * value).to("pc", equivalencies=dimensionless_angles())
+
+        #value = 155.4 * Unit("arcsec")
+        #self.parameters.disk.hr = (self.parameters.distance * value).to("pc", equivalencies=dimensionless_angles())
+        #self.parameters.disk.q = 0.52
+        #self.parameters.disk.PA = Angle(-28.3 + 90., "deg")
 
     # -----------------------------------------------------------------
 
@@ -431,7 +447,6 @@ class GalaxyDecomposer(DecompositionComponent):
 
                 re = table["Re"][index] * Unit("arcsec")
                 component_parameters["Re"] = (self.parameters.distance * re).to("pc", equivalencies=dimensionless_angles())
-                #print(re, component_parameters["Re"])
                 component_parameters["n"] = table["n"][index]
 
             elif functionname == "ferrer2":
@@ -454,6 +469,105 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Write the parameters to the specified location
         write_parameters(self.parameters, path)
+
+    # -----------------------------------------------------------------
+
+    def get_parameters_from_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Parsing S4G table 8 to get the decomposition parameters ...")
+
+        #The table columns are:
+        # (1) the running number (1-2352),
+        # (2) the galaxy name,
+        # (3) the type of final decomposition model,
+        # (4) the number N of components in the final model , and
+        # (5) the quality flag Q.
+
+        # 6- 8 for unresolved central component ('psf'; phys, frel,  mag),
+        # 9-15 for inner sersic-component ('sersic1'; phys,  frel,  mag,    re,    ar,      pa,    n),
+        # 16-22 for inner disk-component ('expo1'; phys,  frel,  mag,    hr,    ar,      pa,   mu0),
+        # 23-28 for inner ferrers-component ('ferrers1'; phys,  frel,  mu0,   rout,   ar,     pa),
+        # 29-34 for inner edge-on disk component ('edgedisk1';  phys, frel, mu0,  rs,    hs,      pa ).
+        # 35-41 for outer sersic-component ('sersic2'; phys,  frel,  mag,    re,    ar,      pa,    n),
+        # 42-49 for outer disk-component ('expo2'; phys,  frel,  mag,    hr,    ar,      pa,   mu0),
+        # 50-55 for outer ferrers-component ('ferrers2'; phys,  frel,  mu0,   rout,   ar,     pa),
+        # 56-61 for outer edge-on disk component ('edgedisk2';  phys, frel, mu0,  rs,    hs,      pa ).
+
+        sersic_1_index = 8
+        disk_1_index = 15
+
+        #For each function:
+
+        #the first entry stands for the physical intepretation of the component:
+        #'N' for a central source (or unresolved bulge), 'B' for a bulge (or elliptical), 'D' for a disk, 'BAR' for a bar, and 'Z' for an edge-on disk.
+
+        # 'rel    =  the relative contribution of the component to the total model flux,
+        #  mag    =  the component's total 3.6 micron AB magnitude,
+        #  mu0    =  the central  surface brightness (mag/arcsec^2;  de-projected central surface brightness for expdisk and edgedisk, and
+        #                                                          sky-plane central surface brightness for ferrer)
+        #  ar     =  axial ratio
+        #  pa     =  position angle (degrees ccw from North)
+        #  n      =  sersic index
+        #  hr     =  exponential scale lenght (arcsec)
+        #  rs     =  radial scale lenght (arcsec)
+        #  hs     =  vertical scale height (arcsec)
+        #  rout   =  bar outer truncation radius (arcsec)
+
+        # SERSIC: phys,  frel,  mag,    re,    ar,      pa,    n
+        # DISK: phys,  frel,  mag,    hr,    ar,      pa,   mu0
+
+        with open(local_table_path, 'r') as s4g_table:
+
+            for line in s4g_table:
+
+                splitted = line.split()
+
+                if len(splitted) < 2: continue
+
+                name = splitted[1]
+
+                # Only look at the line corresponding to the galaxy
+                if name != self.ngc_id_nospaces: continue
+
+                self.parameters.model_type = splitted[2]
+                self.parameters.number_of_components = splitted[3]
+                self.parameters.quality = splitted[4]
+
+                # BULGE
+                self.parameters.bulge = Map()
+                #self.parameters.bulge.interpretation = splitted[sersic_1_index].split("|")[1]
+                self.parameters.bulge.f = float(splitted[sersic_1_index + 1])
+                mag = float(splitted[sersic_1_index + 2])
+                self.parameters.bulge.fluxdensity = unitconversion.ab_to_jansky(mag) * Unit("Jy")
+
+                # Effective radius in pc
+                re_arcsec = float(splitted[sersic_1_index + 3]) * Unit("arcsec")
+                self.parameters.bulge.Re = (self.parameters.distance * re_arcsec).to("pc", equivalencies=dimensionless_angles())
+
+                self.parameters.bulge.q = float(splitted[sersic_1_index + 4])
+                self.parameters.bulge.PA = Angle(float(splitted[sersic_1_index + 5]) - 90., "deg")
+                self.parameters.bulge.n = float(splitted[sersic_1_index + 6])
+
+                # DISK
+                self.parameters.disk = Map()
+                #self.parameters.disk.interpretation = splitted[disk_1_index].split("|")[1]
+                self.parameters.disk.f = float(splitted[disk_1_index + 1])
+                mag = float(splitted[disk_1_index + 2])
+                self.parameters.disk.fluxdensity = unitconversion.ab_to_jansky(mag) * Unit("Jy")
+
+                # Scale length in pc
+                hr_arcsec = float(splitted[disk_1_index + 3]) * Unit("arcsec")
+                self.parameters.disk.hr = (self.parameters.distance * hr_arcsec).to("pc", equivalencies=dimensionless_angles())
+
+                self.parameters.disk.q = float(splitted[disk_1_index + 4]) # axial ratio
+                self.parameters.disk.PA = Angle(float(splitted[disk_1_index + 5]) - 90., "deg")
+                self.parameters.disk.mu0 = float(splitted[disk_1_index + 6]) * Unit("mag/arcsec2")
 
     # -----------------------------------------------------------------
 
@@ -559,8 +673,8 @@ class GalaxyDecomposer(DecompositionComponent):
         pixels_x = self.reference_wcs.xsize
         pixels_y = self.reference_wcs.ysize
         pixel_center = self.parameters.center.to_pixel(self.reference_wcs)
-        #center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5)
-        center = Position(0.5*pixels_x - pixel_center.x - 1, 0.5*pixels_y - pixel_center.y - 1)
+        #center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5) # when not convolved ...
+        center = Position(0.5*pixels_x - pixel_center.x - 1, 0.5*pixels_y - pixel_center.y - 1) # when convolved ...
         center_x = center.x * Unit("pix")
         center_y = center.y * Unit("pix")
         center_x = (center_x * self.reference_wcs.pixelscale.x.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
@@ -616,6 +730,9 @@ class GalaxyDecomposer(DecompositionComponent):
         # Load the bulge ski file template
         bulge_template_path = filesystem.join(template_path, "bulge.ski")
         ski = SkiFile(bulge_template_path)
+
+        # Set the number of photon packages
+        ski.setpackages(self.config.bulge_packages)
 
         # Change the ski file parameters
         # component_id, index, radius, y_flattening=1, z_flattening=1
@@ -700,6 +817,9 @@ class GalaxyDecomposer(DecompositionComponent):
         bulge_template_path = filesystem.join(template_path, "bulge.ski")
         ski = SkiFile(bulge_template_path)
 
+        # Set the number of photon packages
+        ski.setpackages(self.config.bulge_packages)
+
         # Set the bulge geometry
         ski.set_stellar_component_geometry(0, self.bulge)
 
@@ -750,13 +870,19 @@ class GalaxyDecomposer(DecompositionComponent):
         # Set the coordinate system of the bulge image
         self.bulge_image.wcs = self.reference_wcs
 
+        # Debugging
+        log.debug("Rescaling the bulge image to the bulge flux density at 3.6 micron ...")
+
         # Rescale to the 3.6um flux density
         fluxdensity = self.parameters.bulge.fluxdensity
         self.bulge_image *= fluxdensity.to("Jy").value / np.sum(self.bulge_image)
         self.bulge_image.unit = "Jy"
 
+        # Debugging
+        log.debug("Convolving the bulge image to the PACS 160 resolution ...")
+
         # Convolve the frame to the PACS 160 resolution
-        #self.bulge_image = self.bulge_image.convolved(self.psf)
+        self.bulge_image = self.bulge_image.convolved(self.psf)
 
     # -----------------------------------------------------------------
 
@@ -773,6 +899,9 @@ class GalaxyDecomposer(DecompositionComponent):
         # Load the disk ski file template
         disk_template_path = filesystem.join(template_path, "disk.ski")
         ski = SkiFile(disk_template_path)
+
+        # Set the number of photon packages
+        ski.setpackages(self.config.disk_packages)
 
         # Change the ski file parameters
         ski.set_stellar_component_geometry(0, self.disk)
@@ -824,10 +953,16 @@ class GalaxyDecomposer(DecompositionComponent):
         # Set the coordinate system of the disk image
         self.disk_image.wcs = self.reference_wcs
 
+        # Debugging
+        log.debug("Rescaling the disk image to the disk flux density at 3.6 micron ...")
+
         # Rescale to the 3.6um flux density
         fluxdensity = self.parameters.disk.fluxdensity
         self.disk_image *= fluxdensity.to("Jy").value / np.sum(self.disk_image)
         self.disk_image.unit = "Jy"
+
+        # Debugging
+        log.debug("Convolving the disk image to the PACS 160 resolution ...")
 
         # Convolve the frame to the PACS 160 resolution
         self.disk_image = self.disk_image.convolved(self.psf)
@@ -846,6 +981,9 @@ class GalaxyDecomposer(DecompositionComponent):
         # Load the disk ski file template
         disk_template_path = filesystem.join(template_path, "model.ski")
         ski = SkiFile(disk_template_path)
+
+        # Set the number of photon packages
+        ski.setpackages(self.config.disk_packages)
 
         # Change the ski file parameters
         ski.set_stellar_component_geometry(0, self.disk)
@@ -902,10 +1040,16 @@ class GalaxyDecomposer(DecompositionComponent):
         # Set the coordinate system of the model image
         self.model_image.wcs = self.reference_wcs
 
+        # Debugging
+        log.debug("Rescaling the model image to the bulge+disk flux density at 3.6 micron ...")
+
         # Rescale to the 3.6um flux density
-        fluxdensity = self.parameters.i1_fluxdensity
+        fluxdensity = self.parameters.bulge.fluxdensity + self.parameters.disk.fluxdensity # sum of bulge and disk component flux density
         self.model_image *= fluxdensity.to("Jy").value / np.sum(self.model_image)
         self.model_image.unit = "Jy"
+
+        # Debugging
+        log.debug("Convolving the model image to the PACS 160 resolution ...")
 
         # Convolve the frame to the PACS 160 resolution
         self.model_image = self.model_image.convolved(self.psf)
@@ -1034,7 +1178,6 @@ def write_parameters(parameters, path):
 
             #print(component.title() + ": Interpretation:", parameters[component].interpretation, file=parameter_file)
             print(component.title() + ": Relative contribution:", parameters[component].f, file=parameter_file)
-            #print(component.title() + ": Total IRAC 3.6um AB magnitude:", parameters[component].mag, file=parameter_file)
             print(component.title() + ": IRAC 3.6um flux density:", parameters[component].fluxdensity, file=parameter_file)
             print(component.title() + ": Axial ratio:", parameters[component].q, file=parameter_file)
             print(component.title() + ": Position angle:", str(parameters[component].PA.to("deg").value) + " deg", file=parameter_file) # (degrees ccw from North)

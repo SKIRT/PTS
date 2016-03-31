@@ -59,8 +59,8 @@ logfile_path = os.path.join(arguments.output_path, time.unique_name("sedfetching
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
-logging.setup_log(level=level, path=logfile_path)
-logging.log.info("Starting fetchseds script ...")
+log = logging.setup_log(level=level, path=logfile_path)
+log.start("Starting fetchseds script ...")
 
 # -----------------------------------------------------------------
 

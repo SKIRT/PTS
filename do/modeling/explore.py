@@ -53,8 +53,8 @@ logfile_path = filesystem.join(arguments.path, time.unique_name("exploration") +
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
-logging.setup_log(level=level, path=logfile_path)
-logging.log.info("Starting parameter exploration ...")
+log = logging.setup_log(level=level, path=logfile_path)
+log.start("Starting parameter exploration ...")
 
 # -----------------------------------------------------------------
 

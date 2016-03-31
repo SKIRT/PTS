@@ -92,7 +92,7 @@ level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-log.info("Starting interpolate ...")
+log.start("Starting interpolate ...")
 
 # -----------------------------------------------------------------
 

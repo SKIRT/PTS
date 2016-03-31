@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.modeling.fitting import InputInitializer
+from pts.modeling.fitting.initialization import InputInitializer
 from pts.core.tools import logging, time, filesystem, parsing
 
 # -----------------------------------------------------------------
@@ -50,8 +50,8 @@ logfile_path = filesystem.join(arguments.path, time.unique_name("initialization"
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
-logging.setup_log(level=level, path=logfile_path)
-logging.log.info("Starting input initialization ...")
+log = logging.setup_log(level=level, path=logfile_path)
+log.start("Starting initialize_input ...")
 
 # -----------------------------------------------------------------
 

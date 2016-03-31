@@ -92,7 +92,7 @@ level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-logging.log.info("Starting extract ...")
+log.start("Starting extract ...")
 
 # -----------------------------------------------------------------
 

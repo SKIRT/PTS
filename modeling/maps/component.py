@@ -43,6 +43,9 @@ class MapsComponent(ModelingComponent):
         # The path to the maps/intermediate directory
         self.maps_intermediate_path = None
 
+        # The path to the maps/cutoff directory
+        self.maps_cutoff_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -64,7 +67,10 @@ class MapsComponent(ModelingComponent):
         # Set the path to the maps/intermediate directory
         self.maps_intermediate_path = filesystem.join(self.maps_path, "intermediate")
 
+        # Set the path to the maps/cutoff directory
+        self.maps_cutoff_path = filesystem.join(self.maps_path, "cutoff")
+
         # Create the maps/solar and maps/intermediate directories
-        filesystem.create_directories([self.maps_solar_path, self.maps_intermediate_path])
+        filesystem.create_directories([self.maps_solar_path, self.maps_intermediate_path, self.maps_cutoff_path])
 
 # -----------------------------------------------------------------

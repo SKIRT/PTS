@@ -40,8 +40,8 @@ logfile_path = os.path.join(os.getcwd(), time.unique_name("status") + ".txt") if
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
-logging.setup_log(level=level, path=logfile_path)
-logging.log.info("Starting status ...")
+log = logging.setup_log(level=level, path=logfile_path)
+log.start("Starting status ...")
 
 # -----------------------------------------------------------------
 

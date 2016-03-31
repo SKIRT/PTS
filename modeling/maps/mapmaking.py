@@ -31,11 +31,6 @@ from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-# Solar luminosity
-Lsun = 3.846e26 * Unit("Watt")
-
-# -----------------------------------------------------------------
-
 # The path to the table containing the parameters from Cortese et. al 2008
 cortese_table_path = filesystem.join(inspection.pts_dat_dir("modeling"), "cortese.dat")
 
@@ -66,6 +61,9 @@ class MapMaker(MapsComponent):
 
         # Input images
         self.images = dict()
+
+        # Cutoff masks
+        self.cutoff_masks = dict()
 
         # Bulge and disk
         self.disk = None
@@ -128,6 +126,10 @@ class MapMaker(MapsComponent):
 
         # 2. Load the input images
         self.load_images()
+
+        # Calculate the signal-to-noise
+        self.create_cutoff_masks()
+        self.write_cutoff_masks()
 
         # 3. Cut-off the low signal-to-noise pixels
         #self.cutoff_low_snr()
@@ -228,12 +230,10 @@ class MapMaker(MapsComponent):
         log.info("Loading the disk image ...")
 
         # Determine the path to the disk image
-        path = filesystem.join(self.components_path, "disk.fits")
+        path = filesystem.join(self.truncation_path, "disk.fits")
 
         # Load the disk image
         self.disk = Frame.from_file(path)
-
-        # TODO: normalize the frame?
 
     # -----------------------------------------------------------------
 
@@ -247,12 +247,10 @@ class MapMaker(MapsComponent):
         log.info("Loading the bulge image ...")
 
         # Determine the path to the bulge image
-        path = filesystem.join(self.components_path, "bulge.fits")
+        path = filesystem.join(self.truncation_path, "bulge.fits")
 
         # Load the bulge image
         self.bulge = Frame.from_file(path)
-
-        # TODO: normalize the frame ?
 
     # -----------------------------------------------------------------
 
@@ -281,6 +279,47 @@ class MapMaker(MapsComponent):
 
         # Add the image to the dictionary
         self.images[image_id] = image
+
+    # -----------------------------------------------------------------
+
+    def create_cutoff_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        sigma_level = 3.0
+
+        # Loop over all images
+        for name in self.images:
+
+            # Calculate the signal-to-noise ratio in each pixel
+            snr = self.images[name].frames.primary / self.images[name].frames.errors
+
+            # Calculate the snr > sigma level mask and add it to the dictionary
+            self.cutoff_masks[name] = Mask(snr < sigma_level)
+
+    # -----------------------------------------------------------------
+
+    def write_cutoff_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all cutoff masks
+        for name in self.cutoff_masks:
+
+            # Get the mask
+            mask = self.cutoff_masks[name]
+
+            # Determine the path to the FITS file
+            path = filesystem.join(self.maps_cutoff_path, name + ".fits")
+
+            # Save the mask as a FITS file
+            Frame(mask.astype(float)).save(path)
 
     # -----------------------------------------------------------------
 
@@ -483,11 +522,11 @@ class MapMaker(MapsComponent):
         # Set attenuation to zero where the original FUV map is smaller than zero
         a_fuv_cortese[self.images["FUV"].frames.primary <= 0.0] = 0.0
 
-        # Mask pixels outside of the low signal-to-noise contour
-        #a_fuv_cortese[self.mask] = 0.0
-
         # Make sure all pixel values are larger than or equal to zero
         a_fuv_cortese[a_fuv_cortese < 0.0] = 0.0
+
+        # Cutoff
+        a_fuv_cortese[self.cutoff_masks["160mu"]] = 0.0
 
         # Set the A(FUV) map as the dust map
         self.dust = a_fuv_cortese
@@ -534,7 +573,12 @@ class MapMaker(MapsComponent):
         self.images["3.6mu"].save(i1_jy_path)
 
         # Subtract bulge
-        old_stars = self.images["3.6mu"].frames.primary - (self.bulge * 1.5)
+        #old_stars = self.images["3.6mu"].frames.primary - (self.bulge * 1.5)
+        old_stars = self.images["3.6mu"].frames.primary - self.bulge
+
+        bulge_residual = self.images["3.6mu"].frames.primary - self.disk
+        bulge_residual_path = filesystem.join(self.maps_intermediate_path, "bulge_residual.fits")
+        bulge_residual.save(bulge_residual_path)
 
         # Set the old stars map zero for pixels with low signal-to-noise in the 3.6 micron image
         #old_stars[self.irac < self.config.old_stars.irac_snr_level*self.irac_errors] = 0.0
@@ -596,7 +640,6 @@ class MapMaker(MapsComponent):
 
         #ionizing_ratio = self.ha / (0.031*mips_young_stars)
 
-
         # MASK NEGATIVE AND LOW SIGNAL-TO-NOISE PIXELS
 
         # Set pixels to zero with low signal-to-noise in the H Alpha image
@@ -610,6 +653,9 @@ class MapMaker(MapsComponent):
         # Make sure all pixel values are larger than or equal to zero
         #ionizing[ionizing < 0.0] = 0.0
         #ionizing_ratio[ionizing < 0.0] = 0.0
+
+        # New
+        ionizing[self.cutoff_masks["Halpha"]] = 0.0
 
         # Set the ionizing stars map
         self.ionizing_stars = ionizing
@@ -821,6 +867,9 @@ class MapMaker(MapsComponent):
 
             # Set the appropriate pixels
             a_fuv_cortese[where] = a1_list[i] + a2_list[i]*tir_to_fuv[where] + a3_list[i]*tir_to_fuv2[where] + a4_list[i]*tir_to_fuv3[where] + a5_list[i]*tir_to_fuv4[where]
+
+        # Set attenuation to zero where tir_to_fuv is NaN
+        a_fuv_cortese[np.isnan(tir_to_fuv)] = 0.0
 
         # Set attenuation to zero where sSFR is smaller than zero
         a_fuv_cortese[ssfr < 0.0] = 0.0

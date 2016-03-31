@@ -977,7 +977,7 @@ class SkiFile:
     def set_stellar_component_geometry(self, component_id, model):
 
         from astropy.coordinates import Angle
-        from ...modeling.basics.models import SersicModel, ExponentialDiskModel
+        from ...modeling.basics.models import SersicModel, ExponentialDiskModel, DeprojectionModel
 
         # Rotation:
         #  alpha: 0 to 360 degrees
@@ -995,7 +995,7 @@ class SkiFile:
             beta = model.tilt
             gamma = Angle(0.0, "deg")
             if beta < Angle(0.0, "deg"): # beta must be between 0 and 180 degrees, if beta is negative, rotate over z axis with 180 degrees first
-                alpha = - Angle(180, "deg")
+                alpha = Angle(180, "deg")
                 beta = - beta
             self.rotate_stellar_component(component_id, alpha, beta, gamma)
 
@@ -1013,13 +1013,36 @@ class SkiFile:
             # Rotate the exponential disk geometry with the tilt angle
             alpha = Angle(0.0, "deg")
             beta = model.tilt
+            print("beta", beta)
             gamma = Angle(0.0, "deg")
             if beta < Angle(0.0, "deg"): # beta must be between 0 and 180 degrees, if beta is negative, rotate over z axis with 180 degrees first
-                alpha = - Angle(180, "deg")
+                alpha = Angle(180, "deg")
                 beta = - beta
+            print(alpha, beta, gamma)
             self.rotate_stellar_component(component_id, alpha, beta, gamma)
 
-        else: raise ValueError("Other models other than Sersic and ExponentialDisk are not supported yet")
+        # Deprojection model
+        elif isinstance(model, DeprojectionModel):
+
+            # Set the ReadFitsGeometry
+            filename = model.filename
+            scale = model.pixelscale
+            pa = model.position_angle
+            i = model.inclination
+            nx = model.x_size
+            ny = model.y_size
+            xc = model.x_center
+            yc = model.y_center
+            hz = model.scale_height
+            self.set_stellar_component_fits_geometry(component_id, filename, scale, pa, i, nx, ny, xc, yc, hz)
+
+        # Unsupported model
+        else: raise ValueError("Models other than SersicModel, ExponentialDiskModel and DeprojectionModel are not supported yet")
+
+    ## This function sets the geometry of the specified dust component
+    def set_dust_component_geometry(self, component_id, model):
+
+
 
     ## This function sets the geometry of the specified stellar component to a Sersic profile with an specific y and z flattening
     def set_stellar_component_sersic_geometry(self, component_id, index, radius, y_flattening=1, z_flattening=1):

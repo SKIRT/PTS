@@ -75,8 +75,8 @@ logfile_path = os.path.join(os.getcwd(), time.unique_name("launch") + ".txt") if
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
-logging.setup_log(level=level, path=logfile_path)
-logging.log.info("Starting launch script ...")
+log = logging.setup_log(level=level, path=logfile_path)
+log.start("Starting launch ...")
 
 # -----------------------------------------------------------------
 

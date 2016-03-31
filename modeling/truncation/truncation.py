@@ -17,6 +17,7 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from ...magic.core.image import Image
+from ...magic.core.frame import Frame
 from ...magic.basics.skyregion import SkyRegion
 from ...magic.basics.mask import Mask
 from .component import TruncationComponent
@@ -49,6 +50,11 @@ class Truncator(TruncationComponent):
 
         # The disk ellipse
         self.disk_ellipse = None
+
+        # The disk and bulge frames
+        self.disk = None
+        self.bulge = None
+        self.model = None
 
     # -----------------------------------------------------------------
 
@@ -140,6 +146,18 @@ class Truncator(TruncationComponent):
             # Add the image to the list
             self.images.append(image)
 
+        # Load the disk image
+        disk_path = filesystem.join(self.components_path, "disk.fits")
+        self.disk = Frame.from_file(disk_path)
+
+        # Load the bulge image
+        bulge_path = filesystem.join(self.components_path, "bulge.fits")
+        self.bulge = Frame.from_file(bulge_path)
+
+        # Load the model image
+        model_path = filesystem.join(self.components_path, "model.fits")
+        self.model = Frame.from_file(model_path)
+
     # -----------------------------------------------------------------
 
     def get_disk_ellipse(self):
@@ -203,6 +221,12 @@ class Truncator(TruncationComponent):
             # Remove all masks
             image.remove_all_masks()
 
+        # Truncate the bulge and disk images
+        mask = Mask.from_shape(self.disk_ellipse.to_pixel(self.disk.wcs), self.disk.xsize, self.disk.ysize, invert=True)
+        self.disk[mask] = 0.0
+        self.bulge[mask] = 0.0
+        self.model[mask] = 0.0
+
     # -----------------------------------------------------------------
 
     def write(self):
@@ -235,5 +259,13 @@ class Truncator(TruncationComponent):
 
             # Save the image
             image.save(truncated_path)
+
+        # Write the bulge, disk and total model images
+        disk_path = filesystem.join(self.truncation_path, "disk.fits")
+        self.disk.save(disk_path)
+        bulge_path = filesystem.join(self.truncation_path, "bulge.fits")
+        self.bulge.save(bulge_path)
+        model_path = filesystem.join(self.truncation_path, "model.fits")
+        self.model.save(model_path)
 
 # -----------------------------------------------------------------

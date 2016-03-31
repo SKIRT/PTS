@@ -48,8 +48,8 @@ logfile_path = filesystem.join(arguments.path, time.unique_name("log") + ".txt")
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
-logging.setup_log(level=level, path=logfile_path)
-logging.log.info("Starting inspect_data ...")
+log = logging.setup_log(level=level, path=logfile_path)
+log.start("Starting inspect_data ...")
 
 # -----------------------------------------------------------------
 

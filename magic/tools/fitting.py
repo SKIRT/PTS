@@ -238,7 +238,7 @@ def fit_2D_ShiftedGaussian(box, center=None, fixed_center=False, max_center_offs
 
 # -----------------------------------------------------------------
 
-def fit_2D_Gaussian(box, center=None, fixed_center=False, max_center_offset=None, sigma=None, zoom_factor=1.0, mask=None, amplitude=None):
+def fit_2D_Gaussian(box, center=None, fixed_center=False, max_center_offset=None, sigma=None, zoom_factor=1.0, mask=None, amplitude=None, max_sigma_offset=None):
 
     """
     This function ...
@@ -281,6 +281,11 @@ def fit_2D_Gaussian(box, center=None, fixed_center=False, max_center_offset=None
 
         bounds['x_mean'] = [init_xmean-max_center_offset, init_xmean+max_center_offset]
         bounds['y_mean'] = [init_ymean-max_center_offset, init_ymean+max_center_offset]
+
+    if max_sigma_offset is not None:
+
+        bounds["x_stddev"] = [init_x_stddev - max_sigma_offset, init_x_stddev + max_sigma_offset]
+        bounds["y_stddev"] = [init_y_stddev - max_sigma_offset, init_y_stddev + max_sigma_offset]
 
     # Define the 'tied' dictionary to specify that the y_stddev should vary along with x_stddev
     tied = {'y_stddev': (lambda model: model.x_stddev)}

@@ -48,8 +48,8 @@ logfile_path = os.path.join(os.getcwd(), time.unique_name("scaling") + ".txt") i
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
-logging.setup_log(level=level, path=logfile_path)
-logging.log.info("Starting scaling test procedure ...")
+log = logging.setup_log(level=level, path=logfile_path)
+log.start("Starting scaling test procedure ...")
 
 # -----------------------------------------------------------------
 

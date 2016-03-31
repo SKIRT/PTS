@@ -86,7 +86,7 @@ class ExponentialDiskModel(object):
         self.radial_truncation = radial_truncation
         self.axial_truncation = axial_truncation
         self.inner_radius = inner_radius
-        self.tilt = 0
+        self.tilt = tilt
 
     # -----------------------------------------------------------------
 
@@ -111,11 +111,37 @@ class ExponentialDiskModel(object):
         axial_scale = flattening * radial_scale
 
         # Calculate the tilt angle of the disk (tilt w.r.t. the x-axis)
-        tilt = deproject_pa_to_tilt(parameters.PA - position_angle, inclination)
+        #tilt = deproject_pa_to_tilt(parameters.PA - position_angle, inclination)
+        tilt = deproject_pa_to_tilt(position_angle - parameters.PA, inclination)
         tilt = Angle(90., "deg") - tilt
 
         # Create a new exponential disk model and return it
         return cls(radial_scale, axial_scale, tilt=tilt)
+
+# -----------------------------------------------------------------
+
+class DeprojectionModel():
+
+    """
+    This class ...
+    """
+
+    def __init__(self, filename, pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.filename = filename
+        self.pixelscale = pixelscale
+        self.position_angle = position_angle
+        self.inclination = inclination
+        self.x_size = x_size
+        self.y_size = y_size
+        self.x_center = x_center
+        self.y_center = y_center
+        self.scale_height = scale_height
 
 # -----------------------------------------------------------------
 

@@ -33,12 +33,12 @@ def find_host_ids():
 
     # Search for files that define remote host configurations
     hosts_directory = filesystem.join(inspection.pts_user_dir, "hosts")
-    if not os.path.isdir(hosts_directory): os.makedirs(hosts_directory)
+    if not filesystem.is_directory(hosts_directory): filesystem.create_directory(hosts_directory, recursive=True)
 
     # If the hosts directory is empty, place a template host configuration file there and exit with an error
-    if len([item for item in os.listdir(hosts_directory) if os.path.isfile(filesystem.join(hosts_directory, item))]) == 0:
-        config = configuration.new()
+    if len([item for item in os.listdir(hosts_directory) if filesystem.is_file(filesystem.join(hosts_directory, item))]) == 0:
 
+        config = configuration.new()
         config.name = "server.institute.com"
         config.user = "user000"
         config.password = None
