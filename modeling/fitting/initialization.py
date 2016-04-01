@@ -241,9 +241,14 @@ class InputInitializer(FittingComponent):
             or self.config.wavelengths.max <= self.config.wavelengths.max_zoom):
                 raise ValueError("the high-resolution subgrid should be properly nested in the low-resolution grid")
 
+        logmin = np.log10(float(self.config.wavelengths.min))
+        logmax = np.log10(float(self.config.wavelengths.max))
+        logmin_zoom = np.log10(float(self.config.wavelengths.min_zoom))
+        logmax_zoom = np.log10(float(self.config.wavelengths.max_zoom))
+
         # Build the high- and low-resolution grids independently
-        base_grid = np.logspace(float(self.config.wavelengths.min), float(self.config.wavelengths.max), num=self.config.wavelengths.npoints, endpoint=True, base=10.)
-        zoom_grid = np.logspace(float(self.config.wavelengths.min_zoom), float(self.config.wavelengths.max_zoom), num=self.config.wavelengths.npoints_zoom, endpoint=True, base=10.)
+        base_grid = np.logspace(logmin, logmax, num=self.config.wavelengths.npoints, endpoint=True, base=10)
+        zoom_grid = np.logspace(logmin_zoom, logmax_zoom, num=self.config.wavelengths.npoints_zoom, endpoint=True, base=10)
 
         # Merge the two grids
         total_grid = []
@@ -600,7 +605,8 @@ class InputInitializer(FittingComponent):
         grid_path = filesystem.join(self.fit_in_path, "wavelengths.txt")
 
         # Write the wavelength grid
-        tables.write(self.wavelength_grid, grid_path)
+        self.wavelength_grid.rename_column("Wavelength", str(len(self.wavelength_grid))) # Trick to have the number of wavelengths in the first line (required for SKIRT)
+        tables.write(self.wavelength_grid, grid_path, format="ascii")
 
         # -- The old stars map --
 

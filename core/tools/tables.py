@@ -62,19 +62,20 @@ def find_indices(table, key, column_name=None):
 
 # -----------------------------------------------------------------
 
-def write(table, path):
+def write(table, path, format="ascii.commented_header"):
 
     """
     This function ...
-    :param catalog:
+    :param table
     :param path:
+    :param format:
     :return:
     """
 
     # TODO: add metadata ?
 
     # Write the table
-    table.write(path, format="ascii.commented_header")
+    table.write(path, format=format)
 
 # -----------------------------------------------------------------
 
