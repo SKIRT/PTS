@@ -13,8 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import urllib
-from collections import OrderedDict
 import requests
 from lxml import html
 
@@ -51,12 +49,14 @@ class DustPedia(object):
 
         """
         The constructor ...
-        :param config:
         :return:
         """
 
         # Create the session
         self.session = requests.session()
+
+        # A flag that states whether we are connected
+        self.connected = False
 
     # -----------------------------------------------------------------
 
@@ -69,13 +69,35 @@ class DustPedia(object):
         :return:
         """
 
-        r = self.session.get(user_link)
+        # Inform the user
+        log.info("Logging in to the DustPedia database ...")
 
+        r = self.session.get(user_link)
         p = self.session.post(login_link, {'UserName': username, 'password': password})
 
         # Check login
         r = self.session.get(user_link)
-        assert username in r.content
+
+        # Check whether the login was succesful
+        self.connected = username in r.content
+
+        # If the login failed, raise an error
+        if not self.connected: raise RuntimeError("Login failed")
+
+    # -----------------------------------------------------------------
+
+    def logout(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Logging out from the DustPedia database ...")
+
+        # Disconnect
+        if self.connected: self.session.close()
 
     # -----------------------------------------------------------------
 
@@ -86,8 +108,8 @@ class DustPedia(object):
         :return:
         """
 
-        # Close the session
-        self.session.close()
+        # Log out from the database
+        self.logout()
 
     # -----------------------------------------------------------------
 
