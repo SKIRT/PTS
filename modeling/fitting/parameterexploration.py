@@ -17,7 +17,7 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
-from ...core.tools import filesystem
+from ...core.tools import filesystem, time, tables
 from ...core.simulation.arguments import SkirtArguments
 from ...core.basics.filter import Filter
 from ...core.simulation.skifile import SkiFile
@@ -44,6 +44,10 @@ class ParameterExplorer(FittingComponent):
 
         # The SKIRT batch launcher
         self.launcher = BatchLauncher()
+        self.launcher.config.shared_input = True # The input directories for the different simulations are shared
+
+        # Temporary
+        self.launcher.config.remotes = ["nancy"]
 
         # The ski file
         self.ski = None
@@ -52,6 +56,9 @@ class ParameterExplorer(FittingComponent):
         self.young_luminosities = None
         self.ionizing_luminosities = None
         self.dust_masses = None
+
+        # The table with the parameter values for each simulation
+        self.table = None
 
     # -----------------------------------------------------------------
 
@@ -115,8 +122,35 @@ class ParameterExplorer(FittingComponent):
         # 3. Set the ranges of the different fit parameters
         self.set_parameter_ranges()
 
-        # 3. Launch the simulations for different parameter values
+        # 4. Launch the simulations for different parameter values
         self.simulate()
+
+        # 5. Create and write a table with the parameter values for each simulation
+        self.write_parameter_table()
+
+    # -----------------------------------------------------------------
+
+    def setup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(ParameterExplorer, self).setup()
+
+        # If a parameter table already exists, load it
+        if filesystem.is_file(self.parameter_table_path): self.table = tables.from_file(self.parameter_table_path)
+
+        # If the table does not exist yet
+        else:
+
+            # Create an empty table
+            names = ["Simulation name", "FUV young", "FUV ionizing", "Dust mass"]
+            data = [[], [], [], []]
+            dtypes = ["S24", "float64", "float64", "float64"]
+            self.table = tables.new(data, names, dtypes=dtypes)
 
     # -----------------------------------------------------------------
 
@@ -226,7 +260,7 @@ class ParameterExplorer(FittingComponent):
         scheduling_options["walltime"] = None
 
         # Create a FUV filter object
-        fuv_filter = Filter.from_string("FUV")
+        fuv = Filter.from_string("FUV")
 
         # Create a SkirtArguments object
         arguments = SkirtArguments()
@@ -241,8 +275,8 @@ class ParameterExplorer(FittingComponent):
         arguments.output_path = None
 
         # Parallelization settings
-        arguments.parallel.threads = threads
-        arguments.parallel.processes = processes
+        arguments.parallel.threads = 2
+        arguments.parallel.processes = 4
 
         # Loop over the different values of the young stellar luminosity
         for young_luminosity in self.young_luminosities:
@@ -254,11 +288,11 @@ class ParameterExplorer(FittingComponent):
                 for dust_mass in self.dust_masses:
 
                     # Create a unique name for this combination of parameter values
-                    simulation_name = str(young_luminosity) + "_" + str(ionizing_luminosity) + "_" + str(dust_mass)
+                    simulation_name = time.unique_name()
 
                     # Change the parameter values in the ski file
-                    self.ski.set_stellar_component_luminosity("Young stars", young_luminosity, fuv_filter)
-                    self.ski.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv_filter)
+                    self.ski.set_stellar_component_luminosity("Young stars", young_luminosity, fuv)
+                    self.ski.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv)
                     self.ski.set_dust_component_mass(0, dust_mass)
 
                     # Determine the directory for this simulation
@@ -267,13 +301,13 @@ class ParameterExplorer(FittingComponent):
                     # Create the simulation directory
                     filesystem.create_directory(simulation_path)
 
+                    # Create an 'out' directory within the simulation directory
+                    output_path = filesystem.join(simulation_path, "out")
+                    filesystem.create_directory(output_path)
+
                     # Put the ski file with adjusted parameters into the simulation directory
                     ski_path = filesystem.join(simulation_path, self.galaxy_name + ".ski")
                     self.ski.saveto(ski_path)
-
-                    # Create a directory 'out' in the simulation directory to contain the SKIRT output
-                    ouput_path = filesystem.join(simulation_path, "out")
-                    filesystem.create_directory(output_path)
 
                     # Adjust the SKIRT arguments
                     arguments.ski_pattern = ski_path
@@ -281,6 +315,9 @@ class ParameterExplorer(FittingComponent):
 
                     # Put the parameters in the queue and get the simulation object
                     self.launcher.add_to_queue(arguments, scheduling_options)
+
+                    # Add an entry to the parameter table
+                    self.table.add_row([simulation_name, young_luminosity, ionizing_luminosity, dust_mass])
 
         # Run the launcher, schedules the simulations
         simulations = self.launcher.run()
@@ -293,5 +330,17 @@ class ParameterExplorer(FittingComponent):
 
             # Save the simulation object
             simulation.save()
+
+    # -----------------------------------------------------------------
+
+    def write_parameter_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write the parameter table
+        tables.write(self.table, self.parameter_table_path)
 
 # -----------------------------------------------------------------

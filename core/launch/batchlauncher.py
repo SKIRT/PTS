@@ -195,6 +195,9 @@ class BatchLauncher(Configurable):
         :return:
         """
 
+        # The remote input path
+        remote_input_path = None
+
         # The complete list of simulations
         simulations = []
 
@@ -211,8 +214,11 @@ class BatchLauncher(Configurable):
                 arguments, scheduling_options = self.queue.pop()
 
                 # Queue the simulation
-                simulation = remote.add_to_queue(arguments, scheduling_options=scheduling_options)
+                simulation = remote.add_to_queue(arguments, scheduling_options=scheduling_options, remote_input_path=remote_input_path)
                 simulations_remote.append(simulation)
+
+                # If the input directory is shared between the different simulations,
+                if self.config.shared_input and remote_input_path is None: remote_input_path = simulation.remote_input_path
 
                 # Add additional information to the simulation object
                 self.add_analysis_info(simulation)
@@ -221,7 +227,7 @@ class BatchLauncher(Configurable):
                 simulation.save()
 
             # Start the queue if the remote host does not use a scheduling system
-            if remote.scheduler:
+            if not remote.scheduler:
 
                 # Start the queue
                 screen_name = remote.start_queue()

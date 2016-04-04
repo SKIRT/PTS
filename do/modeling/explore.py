@@ -40,6 +40,7 @@ parser.add_argument("--ionizing_log", action="store_true", help="use logarithmic
 parser.add_argument("--dust_log", action="store_true", help="use logarithmic spacing of the dust mass values")
 
 # Logging options
+parser.add_argument("--debug", action="store_true", help="add this option to enable debug output")
 parser.add_argument("--report", action='store_true', help='write a report file')
 parser.add_argument("--config", type=str, help="the name of a configuration file")
 

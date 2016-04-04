@@ -498,6 +498,9 @@ class Remote(object):
         :return:
         """
 
+        # If debugging is enabled, always show the scp output
+        if log.is_debug: show_output = True
+
         # Construct the command string
         copy_command = "scp "
         if compress: copy_command += "-C "
@@ -595,6 +598,9 @@ class Remote(object):
         :param show_output:
         :return:
         """
+
+        # If debugging is enabled, always show the scp output
+        if log.is_debug: show_output = True
 
         # Construct the command string
         copy_command = "scp "
@@ -780,6 +786,8 @@ class Remote(object):
 
         # Get the output of the 'which' command
         output = self.execute("which " + name)
+
+        if len(output) == 0: return None
 
         # Only one line is expected
         return output[0]

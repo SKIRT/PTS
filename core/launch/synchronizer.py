@@ -166,7 +166,7 @@ class RemoteSynchronizer(Configurable):
         """
 
         # Inform the user
-        log.info("Retrieving the output of finished simulations...")
+        log.info("Retrieving the output of finished simulations ...")
 
         # Loop over the different remotes
         for remote in self.remotes:

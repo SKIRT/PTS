@@ -94,6 +94,9 @@ def has_simulations(host_id):
     # Check whether there are simulation files corresponding to this host ID
     host_run_dir = filesystem.join(inspection.skirt_run_dir, host_id)
 
+    # If the host run directory does not exist yet, create it
+    if not filesystem.is_directory(host_run_dir): filesystem.create_directory(host_run_dir)
+
     # If there are no simulation files for this host, skip it
     return len([item for item in os.listdir(host_run_dir) if item.endswith(".sim") and not item.startswith(".")]) > 0
 

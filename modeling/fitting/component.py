@@ -46,6 +46,9 @@ class FittingComponent(ModelingComponent):
         # The path to the ski file
         self.fit_ski_path = None
 
+        # The path to the parameter table
+        self.parameter_table_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -69,6 +72,9 @@ class FittingComponent(ModelingComponent):
 
         # Create the fit/in and fit/out directories
         filesystem.create_directories([self.fit_in_path, self.fit_out_path])
+
+        # Set the path to the parameter file
+        self.parameter_table_path = filesystem.join(self.fit_path, "parameters.dat")
 
         # Determine the path to the ski file
         self.fit_ski_path = filesystem.join(self.fit_path, self.galaxy_name + ".ski")

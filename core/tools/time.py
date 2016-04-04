@@ -100,15 +100,19 @@ def timestamp():
 
 # -----------------------------------------------------------------
 
-def unique_name(name, separator="_"):
+def unique_name(name=None, separator="_"):
 
     """
     This function ...
     :param name:
+    :param separator:
     :return:
     """
 
-    # Add a timestamp accurate up to the millisecond to the passed name
-    return name + separator + datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f")[:-3]
+    if name is None: return datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f")[:-3]
+    else:
+
+        # Add a timestamp accurate up to the millisecond to the passed name
+        return name + separator + datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f")[:-3]
 
 # -----------------------------------------------------------------

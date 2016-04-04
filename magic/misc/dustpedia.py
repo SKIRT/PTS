@@ -79,6 +79,18 @@ class DustPedia(object):
 
     # -----------------------------------------------------------------
 
+    def __del__(self):
+
+        """
+        The destructor ...
+        :return:
+        """
+
+        # Close the session
+        self.session.close()
+
+    # -----------------------------------------------------------------
+
     def get_image_links(self, galaxy_name):
 
         """
