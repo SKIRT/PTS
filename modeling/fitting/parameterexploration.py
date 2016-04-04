@@ -257,9 +257,9 @@ class ParameterExplorer(FittingComponent):
                     simulation_name = str(young_luminosity) + "_" + str(ionizing_luminosity) + "_" + str(dust_mass)
 
                     # Change the parameter values in the ski file
-                    self.ski.set_stellar_component_luminosity("Young stars", young_luminosity, fuv_filter) # TODO: units!
-                    self.ski.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv_filter) # TODO: units!
-                    self.ski.set_dust_component_mass(0, dust_mass) # TODO: units !
+                    self.ski.set_stellar_component_luminosity("Young stars", young_luminosity, fuv_filter)
+                    self.ski.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv_filter)
+                    self.ski.set_dust_component_mass(0, dust_mass)
 
                     # Determine the directory for this simulation
                     simulation_path = filesystem.join(self.fit_out_path, simulation_name)
