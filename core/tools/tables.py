@@ -24,7 +24,9 @@ def find_index(table, key, column_name=None):
 
     """
     This function ...
+    :param table:
     :param key:
+    :param column_name:
     :return:
     """
 
@@ -127,6 +129,7 @@ def fix_logical(table):
     
     """
     This function ...
+    :param table:
     """
 
     for column in table.columns.values():
@@ -140,13 +143,14 @@ def fix_logical(table):
 
 # -----------------------------------------------------------------
 
-def column_as_list(column, add_unit=True, unit=None):
+def column_as_list(column, add_unit=True, unit=None, masked_value=None):
 
     """
     This function ...
     :param column:
     :param add_unit:
     :param unit:
+    :param masked_value:
     :return:
     """
 
@@ -162,7 +166,7 @@ def column_as_list(column, add_unit=True, unit=None):
     # Loop over the entries in the column
     for i in range(len(column)):
 
-        if has_mask and column.mask[i]: result.append(None)
+        if has_mask and column.mask[i]: result.append(masked_value)
         else:
 
             if has_unit:
@@ -181,6 +185,19 @@ def column_as_list(column, add_unit=True, unit=None):
 
     # Return the list
     return result
+
+# -----------------------------------------------------------------
+
+def column_as_array(column, unit=None):
+
+    """
+    This function ...
+    :param column:
+    :param unit:
+    :return:
+    """
+
+    return np.array(column_as_list(column, unit=unit, masked_value=float('nan')))
 
 # -----------------------------------------------------------------
 

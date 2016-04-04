@@ -555,7 +555,8 @@ class RemoteSimulation(SkirtSimulation):
         self.plot_grids = False
         self.make_rgb = False
         self.make_wave = False
-        self.make_observations = False
+        self.calculate_observed_fluxes = False
+        self.make_observed_images = False
 
         # Extraction and plotting path
         self.extraction_path = None

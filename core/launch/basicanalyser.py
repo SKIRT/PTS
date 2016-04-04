@@ -27,6 +27,8 @@ from ..plot.seds import plotseds
 from ..plot.grids import plotgrids
 from ..plot.rgbimages import makergbimages
 from ..plot.wavemovie import makewavemovie
+from ..misc.fluxes import ObservedFluxCalculator
+from ..misc.images import ObservedImageMaker
 from ..tools.logging import log
 
 # -----------------------------------------------------------------
@@ -170,8 +172,11 @@ class BasicAnalyser(Configurable):
         # If requested, make wave movies from the ouput FITS files
         if self.simulation.make_wave: self.make_wave()
 
-        # If requested, calculate observed fluxes and create observed images from the output SEDs and FITS files
-        if self.simulation.make_observations: self.make_observations()
+        # If requested, calculate observed fluxes from the output SEDs
+        if self.simulation.calculate_observed_fluxes: self.calculate_observed_fluxes()
+
+        # If requested, create observed imgaes from the output FITS files
+        if self.simulation.make_observed_images: self.make_observed_images()
 
     # -----------------------------------------------------------------
 
@@ -337,7 +342,7 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
-    def make_observations(self):
+    def calculate_observed_fluxes(self):
 
         """
         This function ...
@@ -345,9 +350,26 @@ class BasicAnalyser(Configurable):
         """
 
         # Inform the user
-        log.info("Making the observed SEDs and images ...")
+        log.info("Calculating the observed fluxes ...")
 
-        # Make observed SEDs and images
-        pass
+        # Create and run a ObservedFluxCalculator object
+        calculator = ObservedFluxCalculator()
+        calculator.run(self.simulation)
+
+    # -----------------------------------------------------------------
+
+    def make_observed_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the observed images ...")
+
+        # Create and run an ObservedImageMaker object
+        maker = ObservedImageMaker()
+        maker.run(self.simulation)
 
 # -----------------------------------------------------------------

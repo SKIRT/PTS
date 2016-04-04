@@ -174,27 +174,31 @@ class SED(object):
 
     # -----------------------------------------------------------------
 
-    def wavelengths(self, unit=None):
+    def wavelengths(self, unit=None, asarray=False):
 
         """
         This function ...
         :param unit:
+        :param asarray:
         :return:
         """
 
-        return tables.column_as_list(self.table["Wavelength"], unit=unit)
+        if asarray: return tables.column_as_array(self.table["Wavelength"], unit=unit)
+        else: return tables.column_as_list(self.table["Wavelength"], unit=unit)
 
     # -----------------------------------------------------------------
 
-    def fluxes(self, unit=None):
+    def fluxes(self, unit=None, asarray=False):
 
         """
         This function ...
         :param unit:
+        :param asarray:
         :return:
         """
 
-        return tables.column_as_list(self.table["Flux"], unit=unit)
+        if asarray: return tables.column_as_array(self.table["Flux"], unit=unit)
+        else: return tables.column_as_list(self.table["Flux"], unit=unit)
 
     # -----------------------------------------------------------------
 

@@ -17,7 +17,7 @@ from __future__ import absolute_import, division, print_function
 from datetime import datetime
 
 # Import astronomical modules
-from astropy.table import Table
+from ..tools import tables
 from astropy.io import ascii
 
 # -----------------------------------------------------------------
@@ -70,6 +70,8 @@ class TimeLineExtractor(object):
 
         """
         This function ...
+        :param simulation:
+        :param output_path:
         :return:
         """
 
@@ -145,7 +147,7 @@ class TimeLineExtractor(object):
         data = [process_list, phase_list, start_list, end_list]
 
         # Create the table
-        self.table = Table(data, names=names, masked=True)
+        self.table = tables.new(data, names)
         self.table["Start time"].unit = "s"
         self.table["End time"].unit = "s"
 
@@ -160,7 +162,7 @@ class TimeLineExtractor(object):
         """
 
         # Write the table to file
-        self.table.write(output_path, format="ascii.commented_header")
+        tables.write(self.table, output_path)
 
     # -----------------------------------------------------------------
 
@@ -193,6 +195,7 @@ class TimeLineExtractor(object):
         """
         This function ...
         :param phase:
+        :param single:
         :return:
         """
 
@@ -227,7 +230,7 @@ class TimeLineExtractor(object):
 
         """
         This function ...
-        :param phase:
+        :param phases:
         :return:
         """
 
