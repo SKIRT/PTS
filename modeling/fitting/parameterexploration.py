@@ -137,11 +137,22 @@ class ParameterExplorer(FittingComponent):
         # Call the setup function of the base class
         super(ParameterExplorer, self).setup()
 
+        # Get the names of the filters for which we have photometry
+        filter_names = []
+        fluxes_table_path = filesystem.join(self.phot_path, "fluxes.dat")
+        fluxes_table = tables.from_file(fluxes_table_path)
+        # Loop over the entries in the fluxes table, get the filter
+        for entry in fluxes_table:
+            # Get the filter
+            filter_id = entry["Instrument"] + "." + entry["Band"]
+            filter_names.append(filter_id)
+
         # Set options for the BatchLauncher
         self.launcher.config.shared_input = True   # The input directories for the different simulations are shared
         self.launcher.config.plotting.seds = True  # Plot the output SEDs
-        self.launcher.config.misc.fluxes = True    # Calculate observed fluxess
+        self.launcher.config.misc.fluxes = True    # Calculate observed fluxes
         self.launcher.config.misc.images = True    # Make observed images
+        self.launcher.config.misc.observation_filters = filter_names # The filters for which to create the observations
         self.launcher.config.remotes = ["nancy"]   # temporary; only use Nancy
 
         # If a parameter table already exists, load it
@@ -279,8 +290,8 @@ class ParameterExplorer(FittingComponent):
         arguments.output_path = None
 
         # Parallelization settings
-        arguments.parallel.threads = 2
-        arguments.parallel.processes = 4
+        arguments.parallel.threads = None
+        arguments.parallel.processes = None
 
         # Loop over the different values of the young stellar luminosity
         for young_luminosity in self.young_luminosities:

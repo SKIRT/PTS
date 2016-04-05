@@ -128,6 +128,7 @@ class SkirtRemoteLauncher(Configurable):
         # Miscellaneous
         launcher.config.misc.fluxes = arguments.fluxes
         launcher.config.misc.images = arguments.images
+        launcher.config.misc.observation_filters = arguments.filters
 
         # Keep remote input and output
         launcher.config.keep = arguments.keep
@@ -415,6 +416,7 @@ class SkirtRemoteLauncher(Configurable):
         simulation.calculate_observed_fluxes = self.config.misc.fluxes
         simulation.make_observed_images = self.config.misc.images
         simulation.misc_path = self.misc_path
+        simulation.observation_filters = self.config.misc.observation_filters
 
         # Remove remote files
         simulation.remove_remote_input = not self.config.keep

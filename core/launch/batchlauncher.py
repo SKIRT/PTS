@@ -48,6 +48,9 @@ class BatchLauncher(Configurable):
         # The assignment from items in the queue to the different remotes
         self.assignment = None
 
+        # The parallelization scheme for the different remotes
+        self.parallelization = dict()
+
         # The simulations that have been retrieved
         self.simulations = []
 
@@ -99,13 +102,16 @@ class BatchLauncher(Configurable):
         # 2. Determine how many simulations are assigned to each remote
         self.assign()
 
-        # 2. Launch the simulations
+        # 3. Set the parallelization scheme for the different remotes
+        self.set_parallelization()
+
+        # 4. Launch the simulations
         simulations = self.simulate()
 
-        # 3. Retrieve the simulations that are finished
+        # 5. Retrieve the simulations that are finished
         self.retrieve()
 
-        # 4. Analyse the output of the retrieved simulations
+        # 6. Analyse the output of the retrieved simulations
         self.analyse()
 
         # Return the simulations that are just scheduled
@@ -188,6 +194,45 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def set_parallelization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parallelization scheme for the different remote hosts ...")
+
+        # Loop over the different remote hosts
+        for remote in self.remotes:
+
+            # Debugging
+            log.debug("Setting the parallelization scheme for host '" + remote.host_id + "' ...")
+
+            # Fix the number of processes to 16
+            processes = 16
+
+            # Calculate the maximum number of threads per process based on the current cpu load of the system
+            threads = int(remote.free_cores / processes)
+
+            # If hyperthreading should be used for the remote host, we can even use more threads
+            if remote.use_hyperthreading: threads *= remote.threads_per_core
+
+            # If there are too little free cpus for the amount of processes, the number of threads will be smaller than one
+            if threads < 1:
+
+                processes = int(remote.free_cores)
+                threads = 1
+
+            # Debugging
+            log.debug("Using " + str(processes) + " processes and " + str(threads) + " threads per process on this remote")
+
+            # Set the parallelization scheme for this host
+            self.parallelization[remote.host_id] = (processes, threads)
+
+    # -----------------------------------------------------------------
+
     def simulate(self):
 
         """
@@ -204,6 +249,9 @@ class BatchLauncher(Configurable):
         # Loop over the different remotes
         for remote in self.remotes:
 
+            # Get the parallelization scheme for this remote host
+            processes, threads = self.parallelization[remote.host_id]
+
             # Cache the simulation objects scheduled to the current remote
             simulations_remote = []
 
@@ -212,6 +260,10 @@ class BatchLauncher(Configurable):
 
                 # Get the last item from the queue (it is removed)
                 arguments, scheduling_options = self.queue.pop()
+
+                # Set the parallelization
+                arguments.parallel.processes = processes
+                arguments.parallel.threads = threads
 
                 # Queue the simulation
                 simulation = remote.add_to_queue(arguments, scheduling_options=scheduling_options, remote_input_path=remote_input_path)
@@ -327,6 +379,7 @@ class BatchLauncher(Configurable):
         # Make observations
         simulation.calculate_observed_fluxes = self.config.misc.fluxes
         simulation.make_observed_images = self.config.misc.images
+        simulation.observation_filters = self.config.misc.observation_filters
 
         # Determine the 'misc' directory for this simulation (and create it if necessary)
         if self.config.misc.path is not None: misc_path = filesystem.join(self.config.misc.path, simulation.id)

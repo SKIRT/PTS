@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import astronomical modules
 from astropy import units as u
 from astropy.table import Table
@@ -104,39 +107,46 @@ class ObservedSED(object):
 
     # -----------------------------------------------------------------
 
-    def wavelengths(self, unit=None):
+    def wavelengths(self, unit=None, asarray=False, add_unit=True):
 
         """
         This function ...
         :param unit:
+        :param asarray:
+        :param add_unit:
         :return:
         """
 
-        return tables.column_as_list(self.table["Wavelength"], unit=unit)
+        if asarray: return tables.column_as_array(self.table["Wavelength"], unit=unit)
+        else: return tables.column_as_list(self.table["Wavelength"], unit=unit, add_unit=add_unit)
 
     # -----------------------------------------------------------------
 
-    def fluxes(self, unit=None):
+    def fluxes(self, unit=None, asarray=False, add_unit=True):
 
         """
         This function ...
         :param unit:
+        :param asarray:
+        :param add_unit:
         :return:
         """
 
-        return tables.column_as_list(self.table["Flux"], unit=unit)
+        if asarray: return tables.column_as_array(self.table["Flux"], unit=unit)
+        else: return tables.column_as_list(self.table["Flux"], unit=unit, add_unit=add_unit)
 
     # -----------------------------------------------------------------
 
-    def errors(self, unit=None):
+    def errors(self, unit=None, add_unit=True):
 
         """
         This function ...
         :param unit:
+        :param add_unit:
         :return:
         """
 
-        return tables.columns_as_objects([self.table["Error-"], self.table["Error+"]], ErrorBar, unit=unit)
+        return tables.columns_as_objects([self.table["Error-"], self.table["Error+"]], ErrorBar, unit=unit, add_unit=add_unit)
 
     # -----------------------------------------------------------------
 
@@ -174,43 +184,46 @@ class SED(object):
 
     # -----------------------------------------------------------------
 
-    def wavelengths(self, unit=None, asarray=False):
+    def wavelengths(self, unit=None, asarray=False, add_unit=True):
 
         """
         This function ...
         :param unit:
         :param asarray:
+        :param add_unit:
         :return:
         """
 
         if asarray: return tables.column_as_array(self.table["Wavelength"], unit=unit)
-        else: return tables.column_as_list(self.table["Wavelength"], unit=unit)
+        else: return tables.column_as_list(self.table["Wavelength"], unit=unit, add_unit=add_unit)
 
     # -----------------------------------------------------------------
 
-    def fluxes(self, unit=None, asarray=False):
+    def fluxes(self, unit=None, asarray=False, add_unit=True):
 
         """
         This function ...
         :param unit:
         :param asarray:
+        :param add_unit:
         :return:
         """
 
         if asarray: return tables.column_as_array(self.table["Flux"], unit=unit)
-        else: return tables.column_as_list(self.table["Flux"], unit=unit)
+        else: return tables.column_as_list(self.table["Flux"], unit=unit, add_unit=add_unit)
 
     # -----------------------------------------------------------------
 
-    def errors(self, unit=None):
+    def errors(self, unit=None, add_unit=True):
 
         """
         This function ...
         :param unit:
+        :param add_unit:
         :return:
         """
 
-        return tables.columns_as_objects([self.table["Error-"], self.table["Error+"]], ErrorBar, unit=unit)
+        return tables.columns_as_objects([self.table["Error-"], self.table["Error+"]], ErrorBar, unit=unit, add_unit=add_unit)
 
     # -----------------------------------------------------------------
 
@@ -245,9 +258,12 @@ class SED(object):
         from ..preparation import unitconversion
 
         # Open the SED table
-        sed.table = tables.from_file(path, format="ascii.no_header")
-        sed.table.rename_column("col1", "Wavelength")
-        sed.table.rename_column("col2", "Flux")
+        #sed.table = tables.from_file(path, format="ascii.no_header") # sometimes doesn't work ?? why ??
+        #sed.table.rename_column("col1", "Wavelength")
+        #sed.table.rename_column("col2", "Flux")
+
+        wavelength_column, flux_column = np.loadtxt(path, dtype=float, unpack=True)
+        sed.table = tables.new([wavelength_column, flux_column], ["Wavelength", "Flux"])
         sed.table["Wavelength"].unit = u.Unit("micron")
 
         jansky_column = []

@@ -116,6 +116,7 @@ class SkirtLauncher(Configurable):
         # Miscellaneous
         launcher.config.misc.fluxes = arguments.fluxes
         launcher.config.misc.images = arguments.images
+        launcher.config.misc.observation_filters = arguments.filters
 
         # Return the new launcher
         return launcher
@@ -275,11 +276,16 @@ class SkirtLauncher(Configurable):
         self.simulation.plot_memory = self.config.plotting.memory
         self.simulation.make_rgb = self.config.advanced.rgb
         self.simulation.make_wave = self.config.advanced.wavemovie
+        self.simulation.calculate_observed_fluxes = self.config.misc.fluxes
+        self.simulation.make_observed_images = self.config.misc.images
 
         # Set simulation analysis paths
         self.simulation.extraction_path = self.extr_path # or self.config.extraction.path ?
         self.simulation.plot_path = self.plot_path # or self.config.plotting.path ?
         self.simulation.misc_path = self.misc_path # or self.config.misc.path ?
+
+        # Other options
+        self.simulation.observation_filters = self.config.misc.observation_filters
 
         # Run the analyser on the simulation
         self.analyser.run(self.simulation)

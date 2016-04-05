@@ -563,6 +563,9 @@ class RemoteSimulation(SkirtSimulation):
         self.plotting_path = None
         self.misc_path = None
 
+        # The filters for which to recreate the observations
+        self.observation_filters = None
+
         # Removal options
         self.remove_remote_input = True
         self.remove_remote_output = True

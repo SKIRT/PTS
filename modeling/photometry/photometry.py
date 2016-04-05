@@ -238,7 +238,7 @@ class PhotoMeter(PhotometryComponent):
         # Get list of instruments, bands and fluxes of the calculated SED
         instruments = self.sed.instruments()
         bands = self.sed.bands()
-        fluxes = self.sed.fluxes(unit="Jy")
+        fluxes = self.sed.fluxes(unit="Jy", add_unit=False)
 
         # The number of data points
         number_of_points = len(instruments)

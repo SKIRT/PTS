@@ -17,6 +17,7 @@ import numpy as np
 
 # Import astronomical modules
 from astropy.table import Table, Column
+from astropy.units import Unit
 
 # -----------------------------------------------------------------
 
@@ -46,7 +47,9 @@ def find_indices(table, key, column_name=None):
 
     """
     This function ...
+    :param table:
     :param key:
+    :param column_name:
     :return:
     """
 
@@ -175,8 +178,9 @@ def column_as_list(column, add_unit=True, unit=None, masked_value=None):
                 value = column[i] * column.unit
 
                 # If a target unit is specified, convert
-                if unit is not None: value = value.to(unit).value # If converted, do not add any unit
-                elif not add_unit: value = column[i] # If not converted and add_unit is enabled, add the unit
+                if unit is not None: value = value.to(unit).value * Unit(unit) # If converted, do not add any unit
+
+                if not add_unit: value = value.value # If not converted and add_unit is enabled, add the unit
 
             else: value = column[i]
 
@@ -197,7 +201,7 @@ def column_as_array(column, unit=None):
     :return:
     """
 
-    return np.array(column_as_list(column, unit=unit, masked_value=float('nan')))
+    return np.array(column_as_list(column, unit=unit, add_unit=False, masked_value=float('nan')))
 
 # -----------------------------------------------------------------
 
