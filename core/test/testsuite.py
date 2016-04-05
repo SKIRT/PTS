@@ -122,7 +122,8 @@ class SkirtTestSuite(object):
             threadspp = cores/processes
         else:
             threads = 1
-            processes = cores
+            #processes = cores  # If we would choose to build the 'reference test case output' seperately on each computer
+            processes = 4  # If we want the 'reference test case output' to be portable from one computer to another, this has to be fixed
             threadspp = 1
 
         # Check in which modes the test suite should be executed (singleprocessing and/or multiprocessing mode)
