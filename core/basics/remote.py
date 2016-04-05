@@ -19,6 +19,7 @@ import tempfile
 
 # Import the relevant PTS classes and modules
 from .host import Host
+from .vpn import VPN
 from ..tools.logging import log
 
 # -----------------------------------------------------------------
@@ -47,6 +48,9 @@ class Remote(object):
         # The host instance
         self.host = None
 
+        # The VPN service
+        self.vpn = None
+
         # A flag indicating whether the connection with the remote has been established
         self.connected = False
 
@@ -66,6 +70,9 @@ class Remote(object):
 
         # Create the host object
         self.host = Host(host_id, cluster)
+
+        # If a VPN connection is required for the remote host
+        if self.host.requires_vpn: self.connect_to_vpn()
 
         # Make the connection
         self.login()
@@ -90,6 +97,22 @@ class Remote(object):
 
         # Disconnect from the remote host
         self.logout()
+
+    # -----------------------------------------------------------------
+
+    def connect_to_vpn(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Connecting to vpn service '" + self.host.vpn.service + "' ...")
+
+        # Connect to the VPN service
+        self.vpn = VPN(self.host.vpn.service)
+        self.vpn.connect(self.host.vpn.user, self.host.vpn.password, self.host.vpn.secret, self.host.vpn.prompt_time_delay)
 
     # -----------------------------------------------------------------
 
@@ -123,6 +146,9 @@ class Remote(object):
 
         # Disconnect
         if self.connected: self.ssh.logout()
+
+        # Disconnect from the VPN service if necessary
+        if self.vpn is not None: self.vpn.disconnect()
 
     # -----------------------------------------------------------------
 

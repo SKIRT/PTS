@@ -12,52 +12,11 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import re
-from subprocess import call, check_output
-
 # Import the relevant PTS classes and modules
 from ...magic.core.frame import Frame
 from ..basics.remote import Remote
 from . import filesystem, time
 from .logging import log
-
-# -----------------------------------------------------------------
-
-# From: http://apple.stackexchange.com/questions/128297/how-to-create-a-vpn-connection-via-terminal
-def get_vpn_services():
-
-    """
-    This function ...
-    :return:
-    """
-
-    vpns_string = check_output(["scutil", "--nc", "list"]) # lists all VPN services
-    vpns = re.findall('"(.+)"', vpns_string) # service names are double-quoted
-
-    return vpns
-
-# -----------------------------------------------------------------
-
-# From: http://apple.stackexchange.com/questions/128297/how-to-create-a-vpn-connection-via-terminal
-def connect_to_vpn(service, user_name=None, password=None, secret=None):
-
-    """
-    This function ...
-    :param service:
-    :param user_name:
-    :param password:
-    :param secret:
-    :return:
-    """
-
-    command = ["scutil", "--nc", "start", service]
-
-    if user_name is not None: command += ["--user", user_name]
-    if password is not None: command += ["--password", password]
-    if secret is not None: command += ["--secret", secret]
-
-    call(command)
 
 # -----------------------------------------------------------------
 

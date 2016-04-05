@@ -112,8 +112,8 @@ class Host(object):
 
         """
         The constructor ...
-        :param config:
-        :param subpackage:
+        :param host_id:
+        :param cluster:
         :return:
         """
 
@@ -154,6 +154,7 @@ class Host(object):
         self.use_hyperthreading = config.use_hyperthreading
         self.modules = config.modules
         self.clusters = config.clusters
+        self.vpn = config.vpn
 
     # -----------------------------------------------------------------
 
@@ -167,5 +168,17 @@ class Host(object):
 
         if self.cluster_name is not None: return self.id + "-" + self.cluster_name
         else: return self.id
+
+    # -----------------------------------------------------------------
+
+    @property
+    def requires_vpn(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.vpn.service is not None
 
 # -----------------------------------------------------------------
