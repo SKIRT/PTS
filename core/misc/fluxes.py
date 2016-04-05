@@ -12,6 +12,12 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
+# Import astronomical modules
+from astropy.units import Unit, spectral_density
+
 # Import the relevant PTS classes and modules
 from ..tools import tables, filesystem
 from ..tools.logging import log
@@ -131,15 +137,19 @@ class ObservedFluxCalculator(object):
             dtypes = ["S10", "S10", "S10", "f8", "f8"]
             data = [[], [], [], [], []]
             table = tables.new(data, names, dtypes=dtypes)
+            table["Wavelength"].unit = "micron"
+            table["Flux"].unit = "Jy"
 
             # Load the simulated SED
             sed = SED.from_file(sed_path)
 
             # Get the wavelengths and flux densities
             wavelengths = sed.wavelengths("micron", asarray=True)
-            fluxdensities = sed.fluxes("Jy", asarray=True)
-
-            # densities must be per wavelength instead of per frequency!
+            fluxdensities = []
+            for wavelength, fluxdensity_jy in zip(sed.wavelengths("micron"), sed.fluxes("Jy")):
+                fluxdensity = fluxdensity_jy.to("W / (m2 * micron)", equivalencies=spectral_density(wavelength))
+                fluxdensities.append(fluxdensity.to("W / (m2 * micron)").value)
+            fluxdensities = np.array(fluxdensities) # in W / (m2 * micron)
 
             # Loop over the different filters
             for filter in self.filters:
@@ -147,11 +157,12 @@ class ObservedFluxCalculator(object):
                 # Debugging
                 log.debug("Calculating the observed flux for the " + filter.name + " filter ...")
 
-                # Calculate the flux
-                flux = filter.convolve(wavelengths, fluxdensities)
+                # Calculate the flux: flux densities must be per wavelength instead of per frequency!
+                fluxdensity = float(filter.convolve(wavelengths, fluxdensities)) * Unit("W / (m2 * micron)")
+                fluxdensity_value = fluxdensity.to("Jy", equivalencies=spectral_density(filter.pivotwavelength() * Unit("micron"))).value # convert back to Jy
 
                 # Add an entry to the flux table
-                table.add_row([filter.observatory, filter.instrument, filter.band, filter.pivotwavelength(), flux])
+                table.add_row([filter.observatory, filter.instrument, filter.band, filter.pivotwavelength(), fluxdensity_value])
 
             # Add the complete table to the dictionary (with the SKIRT SED name as key)
             self.tables[sed_name] = table

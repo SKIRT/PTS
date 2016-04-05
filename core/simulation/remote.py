@@ -490,7 +490,6 @@ class SkirtRemote(Remote):
 
         """
         This function ...
-        :param count:
         :return:
         """
 
