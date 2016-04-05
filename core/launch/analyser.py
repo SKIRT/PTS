@@ -149,6 +149,7 @@ class SimulationAnalyser(Configurable):
         log.info("Analysing the radiative transfer model ...")
 
         # Run the modeling analyser
+        self.model_analyser.config.path = self.simulation.modeling_path
         self.model_analyser.run(self.simulation)
 
 # -----------------------------------------------------------------

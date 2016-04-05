@@ -301,9 +301,10 @@ class BatchLauncher(Configurable):
         simulation.extract_timeline = self.config.extraction.timeline
         simulation.extract_memory = self.config.extraction.memory
 
-        # Determine the extraction directory for this simulation
+        # Determine the extraction directory for this simulation (and create it if necessary)
         if self.config.extraction.path is not None: extraction_path = filesystem.join(self.config.extraction.path, simulation.id)
         else: extraction_path = filesystem.join(simulation.output_path, "extract")
+        if not filesystem.is_directory(extraction_path): filesystem.create_directory(extraction_path, recursive=True)
         simulation.extraction_path = extraction_path
 
         # Plotting
@@ -313,14 +314,25 @@ class BatchLauncher(Configurable):
         simulation.plot_seds = self.config.plotting.seds
         simulation.plot_grids = self.config.plotting.grids
 
-        # Determine the plotting directory for this simulation
+        # Determine the plotting directory for this simulation (and create it if necessary)
         if self.config.plotting.path is not None: plotting_path = filesystem.join(self.config.plotting.path, simulation.id)
         else: plotting_path = filesystem.join(simulation.output_path, "plot")
+        if not filesystem.is_directory(plotting_path): filesystem.create_directory(plotting_path, recursive=True)
         simulation.plotting_path = plotting_path
 
         # Advanced
         simulation.make_rgb = self.config.advanced.rgb
         simulation.make_wave = self.config.advanced.wavemovie
+
+        # Make observations
+        simulation.calculate_observed_fluxes = self.config.misc.fluxes
+        simulation.make_observed_images = self.config.misc.images
+
+        # Determine the 'misc' directory for this simulation (and create it if necessary)
+        if self.config.misc.path is not None: misc_path = filesystem.join(self.config.misc.path, simulation.id)
+        else: misc_path = filesystem.join(simulation.output_path, "misc")
+        if not filesystem.is_directory(misc_path): filesystem.create_directory(misc_path, recursive=True)
+        simulation.misc_path = misc_path
 
         # Remove remote files
         simulation.remove_remote_input = not self.config.keep and not self.config.shared_input

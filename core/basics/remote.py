@@ -499,7 +499,7 @@ class Remote(object):
         """
 
         # If debugging is enabled, always show the scp output
-        if log.is_debug: show_output = True
+        if log.is_debug(): show_output = True
 
         # Construct the command string
         copy_command = "scp "
@@ -600,7 +600,7 @@ class Remote(object):
         """
 
         # If debugging is enabled, always show the scp output
-        if log.is_debug: show_output = True
+        if log.is_debug(): show_output = True
 
         # Construct the command string
         copy_command = "scp "

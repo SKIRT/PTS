@@ -43,7 +43,7 @@ class ObservedFluxCalculator(object):
 
         # Filter names
         self.filter_names = ["FUV", "NUV", "u", "g", "r", "i", "z", "H", "J", "Ks", "I1", "I2", "I3", "I4", "W1", "W2",
-                             "W3", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250", "SPIRE 350", "SPIRE 500"]
+                             "W3", "W4", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250", "SPIRE 350", "SPIRE 500"]
 
         # The filters for which the fluxes should be calculated
         self.filters = None
@@ -87,11 +87,17 @@ class ObservedFluxCalculator(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Constructing the filter objects ...")
+
         # Initialize the list
         self.filters = []
 
         # Loop over the different filter names
         for filter_name in self.filter_names:
+
+            # Debugging
+            log.debug("Constructing the " + filter_name + " filter ...")
 
             # Create the filter
             filter = Filter.from_string(filter_name)
@@ -117,6 +123,9 @@ class ObservedFluxCalculator(object):
             # Get the name of the SED
             sed_name = filesystem.name(sed_path).split("_sed")[0]
 
+            # Debugging
+            log.debug("Calculating the observed fluxes for the " + sed_name + " SED ...")
+
             # Create a flux table for this SED
             names = ["Observatory", "Instrument", "Band", "Wavelength", "Flux"]
             dtypes = ["S10", "S10", "S10", "f8", "f8"]
@@ -134,6 +143,9 @@ class ObservedFluxCalculator(object):
 
             # Loop over the different filters
             for filter in self.filters:
+
+                # Debugging
+                log.debug("Calculating the observed flux for the " + filter.name + " filter ...")
 
                 # Calculate the flux
                 flux = filter.convolve(wavelengths, fluxdensities)

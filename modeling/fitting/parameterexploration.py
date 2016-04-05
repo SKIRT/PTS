@@ -22,6 +22,7 @@ from ...core.simulation.arguments import SkirtArguments
 from ...core.basics.filter import Filter
 from ...core.simulation.skifile import SkiFile
 from ...core.launch.batchlauncher import BatchLauncher
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -44,10 +45,6 @@ class ParameterExplorer(FittingComponent):
 
         # The SKIRT batch launcher
         self.launcher = BatchLauncher()
-        self.launcher.config.shared_input = True # The input directories for the different simulations are shared
-
-        # Temporary
-        self.launcher.config.remotes = ["nancy"]
 
         # The ski file
         self.ski = None
@@ -139,6 +136,13 @@ class ParameterExplorer(FittingComponent):
 
         # Call the setup function of the base class
         super(ParameterExplorer, self).setup()
+
+        # Set options for the BatchLauncher
+        self.launcher.config.shared_input = True   # The input directories for the different simulations are shared
+        self.launcher.config.plotting.seds = True  # Plot the output SEDs
+        self.launcher.config.misc.fluxes = True    # Calculate observed fluxess
+        self.launcher.config.misc.images = True    # Make observed images
+        self.launcher.config.remotes = ["nancy"]   # temporary; only use Nancy
 
         # If a parameter table already exists, load it
         if filesystem.is_file(self.parameter_table_path): self.table = tables.from_file(self.parameter_table_path)
@@ -312,6 +316,11 @@ class ParameterExplorer(FittingComponent):
                     # Adjust the SKIRT arguments
                     arguments.ski_pattern = ski_path
                     arguments.output_path = output_path
+
+                    # Debugging
+                    log.debug("Adding a simulation to the queue with:")
+                    log.debug(" - ski path: " + arguments.ski_pattern)
+                    log.debug(" - output path: " + arguments.output_path)
 
                     # Put the parameters in the queue and get the simulation object
                     self.launcher.add_to_queue(arguments, scheduling_options)

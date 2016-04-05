@@ -49,6 +49,8 @@ parser.add_argument("--plottimeline", action="store_true", help="make a plot of 
 parser.add_argument("--plotmemory", action="store_true", help="make a plot of the memory consumption as a function of time")
 parser.add_argument("--makergb", action="store_true", help="add this option to make RGB images from the SKIRT output")
 parser.add_argument("--makewave", action="store_true", help="add this option to make a wave movie from the SKIRT output")
+parser.add_argument("--fluxes", action="store_true", help="add this option to calculate observed fluxes from the SKIRT output SEDs")
+parser.add_argument("--images", action="store_true", help="add this option to make observed images from the SKIRT output datacubes")
 parser.add_argument("--debug", action="store_true", help="add this option to enable debug output")
 parser.add_argument('--report', action='store_true', help='write a report file')
 parser.add_argument("--keep", action="store_true", help="add this option to keep the remote input and output")

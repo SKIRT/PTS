@@ -47,7 +47,7 @@ class ObservedImageMaker(object):
 
         # Filter names
         self.filter_names = ["FUV", "NUV", "u", "g", "r", "i", "z", "H", "J", "Ks", "I1", "I2", "I3", "I4", "W1", "W2",
-                             "W3", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250", "SPIRE 350", "SPIRE 500"]
+                             "W3", "W4", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250", "SPIRE 350", "SPIRE 500"]
 
         # The filters for which the images should be created
         self.filters = None
@@ -94,11 +94,17 @@ class ObservedImageMaker(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Constructing the filter objects ...")
+
         # Initialize the list
         self.filters = []
 
         # Loop over the different filter names
         for filter_name in self.filter_names:
+
+            # Debugging
+            log.debug("Constructing the " + filter_name + " filter ...")
 
             # Create the filter
             filter = Filter.from_string(filter_name)
@@ -124,6 +130,9 @@ class ObservedImageMaker(object):
             # Get the name of the datacube (as given by SKIRT)
             datacube_name = filesystem.strip_extension(filesystem.name(path))
 
+            # Debugging
+            log.debug("Making the observed images for " + datacube_name + ".fits ...")
+
             # Create a dictionary to contain the observed images for this FITS file
             images = dict()
 
@@ -137,6 +146,9 @@ class ObservedImageMaker(object):
 
             # Loop over the different filters
             for filter in self.filters:
+
+                # Debugging
+                log.debug("Making the observed image for the " + filter.name + " filter ...")
 
                 # Calculate the observed image
                 data = filter.convolve(self.wavelengths, fluxdensities)

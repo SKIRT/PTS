@@ -256,7 +256,9 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
         def sort_function(x):
             item_name = strip_extension(name(x))
             if item_name.startswith("."): value = 0
-            else: value = sort(item_name)
+            else:
+                try: value = sort(item_name)
+                except ValueError: value = 0
             return value
         items.sort(key=sort_function)
 
@@ -358,7 +360,9 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
         def sort_function(x):
             item_name = name(x)
             if item_name.startswith("."): value = 0
-            else: value = sort(item_name)
+            else:
+                try: value = sort(item_name)
+                except ValueError: value = 0
             return value
         items.sort(key=sort_function)
 

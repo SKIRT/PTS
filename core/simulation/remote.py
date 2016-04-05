@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.simulation.remote Contains the SkirtRemote class, used for launching, checking and retreiving
+## \package pts.core.simulation.remote Contains the SkirtRemote class, used for launching, checking and retrieving
 #  remote SKIRT simulations.
 
 # -----------------------------------------------------------------
@@ -577,13 +577,14 @@ class SkirtRemote(Remote):
                 simulation = RemoteSimulation.from_file(path)
 
                 # Debug info
-                log.debug("Retreiving simulation " + str(simulation.name) + " with id " + str(simulation.id) + " ...")
+                log.debug("Retrieving simulation " + str(simulation.name) + " with id " + str(simulation.id) + " ...")
 
                 # If retrieve file types are not defined, download the complete output directory
                 if simulation.retrieve_types is None or simulation.retrieve_types == "None":
 
                     # Debug info
                     log.debug("Retrieve file types are not defined, retrieving complete remote output directory ...")
+                    log.debug("Local output directory: " + simulation.output_path)
 
                     # Download the simulation output
                     self.download(simulation.remote_output_path, simulation.output_path)
@@ -624,8 +625,9 @@ class SkirtRemote(Remote):
                         elif filename.endswith("_ds_convergence.dat"):
                             if "convergence" in simulation.retrieve_types: copy_paths.append(filepath)
 
-                    # Debug info
+                    # Debugging
                     log.debug("Retrieving files: " + str(copy_paths))
+                    log.debug("Local output directory: " + simulation.output_path)
 
                     # Download the list of files to the local output directory
                     self.download(copy_paths, simulation.output_path)

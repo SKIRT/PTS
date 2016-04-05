@@ -266,28 +266,30 @@ class InputInitializer(FittingComponent):
 
         # -- Add the wavelengths of the bands of interest --
 
-        # Open the fluxes.dat table to get the filters that are used for the SED
-        fluxes_table_path = filesystem.join(self.phot_path, "fluxes.dat")
-        fluxes_table = tables.from_file(fluxes_table_path)
+        if False: # don't do this anymore ...
 
-        # Loop over the entries in the fluxes table, get the filter
-        for entry in fluxes_table:
+            # Open the fluxes.dat table to get the filters that are used for the SED
+            fluxes_table_path = filesystem.join(self.phot_path, "fluxes.dat")
+            fluxes_table = tables.from_file(fluxes_table_path)
 
-            # Get the filter
-            filter_id = entry["Instrument"] + "." + entry["Band"]
-            filter = Filter.from_string(filter_id)
+            # Loop over the entries in the fluxes table, get the filter
+            for entry in fluxes_table:
 
-            # Get the wavelength in micron
-            wavelength = filter.pivotwavelength()
+                # Get the filter
+                filter_id = entry["Instrument"] + "." + entry["Band"]
+                filter = Filter.from_string(filter_id)
 
-            # Insert the wavelength at the appropriate place
-            for i in range(len(total_grid)):
-                if total_grid[i] > wavelength:
-                    total_grid.insert(i, wavelength)
-                    break
-            # If no break is encountered, no value in the grid was greater than our filter wavelength,
-            # so add the filter wavelength at the end
-            else: total_grid.append(wavelength)
+                # Get the wavelength in micron
+                wavelength = filter.pivotwavelength()
+
+                # Insert the wavelength at the appropriate place
+                for i in range(len(total_grid)):
+                    if total_grid[i] > wavelength:
+                        total_grid.insert(i, wavelength)
+                        break
+                # If no break is encountered, no value in the grid was greater than our filter wavelength,
+                # so add the filter wavelength at the end
+                else: total_grid.append(wavelength)
 
         # Create table for the wavelength grid
         self.wavelength_grid = tables.new([total_grid], names=["Wavelength"])

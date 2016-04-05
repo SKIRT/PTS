@@ -14,7 +14,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import math
 
 # Import the relevant PTS classes and modules
@@ -23,6 +22,7 @@ from ..simulation.remote import SkirtRemote
 from ..simulation.arguments import SkirtArguments
 from ..basics.configurable import Configurable
 from ..test.resources import ResourceEstimator
+from ..tools import filesystem
 from ..tools.logging import log
 
 # -----------------------------------------------------------------
@@ -61,6 +61,7 @@ class SkirtRemoteLauncher(Configurable):
         self.output_path = None
         self.extr_path = None
         self.plot_path = None
+        self.misc_path = None
 
     # -----------------------------------------------------------------
 
@@ -123,6 +124,10 @@ class SkirtRemoteLauncher(Configurable):
         # Advanced options
         launcher.config.advanced.rgb = arguments.makergb
         launcher.config.advanced.wavemovie = arguments.makewave
+
+        # Miscellaneous
+        launcher.config.misc.fluxes = arguments.fluxes
+        launcher.config.misc.images = arguments.images
 
         # Keep remote input and output
         launcher.config.keep = arguments.keep
@@ -187,30 +192,35 @@ class SkirtRemoteLauncher(Configurable):
         self.remote.setup(self.config.remote, self.config.cluster)
 
         # Set the paths
-        self.base_path = os.path.dirname(self.config.arguments.ski_pattern) if "/" in self.config.arguments.ski_pattern else os.getcwd()
-        self.input_path = os.path.join(self.base_path, "in")
-        self.output_path = os.path.join(self.base_path, "out")
-        self.extr_path = os.path.join(self.base_path, "extr")
-        self.plot_path = os.path.join(self.base_path, "plot")
+        self.base_path = filesystem.directory_of(self.config.arguments.ski_pattern) if "/" in self.config.arguments.ski_pattern else filesystem.cwd()
+        self.input_path = filesystem.join(self.base_path, "in")
+        self.output_path = filesystem.join(self.base_path, "out")
+        self.extr_path = filesystem.join(self.base_path, "extr")
+        self.plot_path = filesystem.join(self.base_path, "plot")
+        self.misc_path = filesystem.join(self.base_path, "misc")
 
         # Check if an input directory exists
-        if not os.path.isdir(self.input_path): self.input_path = None
+        if not filesystem.is_directory(self.input_path): self.input_path = None
 
         # Set the paths for the simulation
         self.config.arguments.input_path = self.input_path
         self.config.arguments.output_path = self.output_path
 
         # Create the output directory if necessary
-        if not os.path.isdir(self.output_path): os.makedirs(self.output_path)
+        if not filesystem.is_directory(self.output_path): filesystem.create_directory(self.output_path, recursive=True)
 
         # Create the extraction directory if necessary
         if self.config.extraction.progress or self.config.extraction.timeline or self.config.extraction.memory:
-            if not os.path.isdir(self.extr_path): os.makedirs(self.extr_path)
+            if not filesystem.is_directory(self.extr_path): filesystem.create_directory(self.extr_path, recursive=True)
 
         # Create the plotting directory if necessary
         if self.config.plotting.seds or self.config.plotting.grids or self.config.plotting.progress \
             or self.config.plotting.timeline or self.config.plotting.memory:
-            if not os.path.isdir(self.plot_path): os.makedirs(self.plot_path)
+            if not filesystem.is_directory(self.plot_path): filesystem.create_directory(self.plot_path, recursive=True)
+
+        # Create the 'misc' directory if necessary
+        if self.config.misc.fluxes or self.config.misc.images:
+            if not filesystem.is_directory(self.misc_path): filesystem.create_directory(self.misc_path, recursive=True)
 
     # -----------------------------------------------------------------
 
@@ -400,6 +410,11 @@ class SkirtRemoteLauncher(Configurable):
         # Advanced
         simulation.make_rgb = self.config.advanced.rgb
         simulation.make_wave = self.config.advanced.wavemovie
+
+        # Misc
+        simulation.calculate_observed_fluxes = self.config.misc.fluxes
+        simulation.make_observed_images = self.config.misc.images
+        simulation.misc_path = self.misc_path
 
         # Remove remote files
         simulation.remove_remote_input = not self.config.keep

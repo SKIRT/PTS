@@ -558,9 +558,10 @@ class RemoteSimulation(SkirtSimulation):
         self.calculate_observed_fluxes = False
         self.make_observed_images = False
 
-        # Extraction and plotting path
+        # Extraction, plotting and 'misc' path
         self.extraction_path = None
         self.plotting_path = None
+        self.misc_path = None
 
         # Removal options
         self.remove_remote_input = True
@@ -592,17 +593,11 @@ class RemoteSimulation(SkirtSimulation):
         :return:
         """
 
-        # Check whether the simulation file is composed in the 'old' format
-        simulation = try_old_format(path)
+        # Load the simulation object from file
+        simulation = serialization.load(path)
 
-        # If the simulation file was not in the old format
-        if simulation is None:
-
-            # Load the simulation object from file
-            simulation = serialization.load(path)
-
-            # Set the path of the simulation file
-            simulation.path = path
+        # Set the path of the simulation file
+        simulation.path = path
 
         # Return the simulation object
         return simulation
@@ -661,149 +656,5 @@ class RemoteSimulation(SkirtSimulation):
 
         # Serialize and dump the simulation object
         serialization.dump(self, self.path, method="pickle")
-
-# -----------------------------------------------------------------
-
-def try_old_format(path):
-
-    """
-    This function ...
-    :param path:
-    :return:
-    """
-
-    # Properties obtained from the simulation file
-    simulation_name = None
-    local_ski_path = None
-    remote_ski_path = None
-    local_input_path = None
-    local_output_path = None
-    remote_input_path = None
-    remote_output_path = None
-    remote_simulation_path = None
-    extract_progress = None
-    extract_timeline = None
-    extract_memory = None
-    plot_seds = None
-    plot_grids = None
-    plot_progress = None
-    plot_timeline = None
-    plot_memory = None
-    make_rgb = None
-    make_wave = None
-    remove_remote_input = None
-    remove_remote_output = None
-    retrieve_types = None
-    extraction_directory = None
-    plotting_directory = None
-    scaling_run_name = None
-    scaling_file_path = None
-    scaling_plot_path = None
-    screen_session = None
-    submitted_at = None
-    retrieved = False
-
-    # Open the simulation file and check whether it's composed in the old format or the new (pickle) format
-    with open(path, 'r') as simulation_file:
-
-        lines = 0
-
-        for line in simulation_file:
-
-            if lines == 0:
-
-                if "simulation name" in line: simulation_name = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-
-                # If the first line of the file does not state the simulation name, the simulation file is in the
-                # new format
-                else: return None
-
-            elif "local skifile path" in line: local_ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-            elif "remote skifile path" in line: remote_ski_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-            elif "local input directory" in line: local_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-            elif "local output directory" in line: local_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-            elif "remote input directory" in line: remote_input_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-            elif "remote output directory" in line: remote_output_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-            elif "remote simulation directory" in line: remote_simulation_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-            elif "extract progress" in line: extract_progress = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-            elif "extract timeline" in line: extract_timeline = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-            elif "extract memory" in line: extract_memory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-            elif "plot seds" in line: plot_seds = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-            elif "plot grids" in line: plot_grids = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-            elif "plot progress" in line: plot_progress = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-            elif "plot timeline" in line: plot_timeline = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-            elif "plot memory" in line: plot_memory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-            elif "make rgb images" in line: make_rgb = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-            elif "make wave movie" in line: make_wave = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-            elif "remove remote input" in line: remove_remote_input = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-            elif "remove remote output" in line: remove_remote_output = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip() == "True"
-            elif "retrieve types" in line: retrieve_types = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-            elif "extraction directory" in line: extraction_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-            elif "plotting directory" in line: plotting_directory = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-            elif "part of scaling test run" in line: scaling_run_name = line.split("scaling test run ")[1].replace('\n', ' ').replace('\r', '').strip()
-            elif "scaling data file" in line: scaling_file_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-            elif "scaling plot path" in line: scaling_plot_path = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-            elif "launched within screen session" in line: screen_session = line.split("screen session ")[1].replace('\n', ' ').replace('\r', '').strip()
-            elif "submitted at" in line: submitted_at = line.split(": ")[1].replace('\n', ' ').replace('\r', '').strip()
-            elif "retrieved at" in line: retrieved = True
-
-            lines += 1
-
-        simulation = RemoteSimulation(local_ski_path, local_input_path, local_output_path)
-
-        # The simulation file path
-        simulation.path = path
-
-        # Basic properties
-        simulation.id = int(os.path.basename(path).split(".sim")[0])
-        simulation.name = simulation_name
-        simulation.remote_ski_path = remote_ski_path
-        simulation.remote_simulation_path = remote_simulation_path
-        simulation.remote_input_path = remote_input_path
-        simulation.remote_output_path = remote_output_path
-        simulation.submitted_at = submitted_at
-
-        import json
-        if retrieve_types == "None" or retrieve_types == "null": retrieve_types = None
-        else: retrieve_types = json.loads(retrieve_types)
-
-        # Options for retrieval
-        simulation.retrieve_types = retrieve_types
-
-        # Options for analysis of the simulation output
-        simulation.extract_progress = extract_progress
-        simulation.extract_timeline = extract_timeline
-        simulation.extract_memory = extract_memory
-        simulation.plot_progress = plot_progress
-        simulation.plot_timeline = plot_timeline
-        simulation.plot_memory = plot_memory
-        simulation.plot_seds = plot_seds
-        simulation.plot_grids = plot_grids
-        simulation.make_rgb = make_rgb
-        simulation.make_wave = make_wave
-        simulation.extraction_path = extraction_directory
-        simulation.plotting_path = plotting_directory
-
-        # Removal options
-        simulation.remove_remote_input = remove_remote_input
-        simulation.remove_remote_output = remove_remote_output
-        simulation.remove_remote_simulation_directory = remove_remote_input and remove_remote_output
-
-        # Screen session name
-        simulation.screen_name = screen_session
-
-        # Properties relevant for simulations part of a scaling test
-        simulation.scaling_run_name = scaling_run_name
-        simulation.scaling_data_file = scaling_file_path
-        simulation.scaling_plot_path = scaling_plot_path
-
-        # Flag indicating whether this simulation has been retrieved or not
-        simulation.retrieved = retrieved
-
-        # Overwrite the file to the new format
-        simulation.save()
-
-        # Return the new simulation object
-        return simulation
 
 # -----------------------------------------------------------------

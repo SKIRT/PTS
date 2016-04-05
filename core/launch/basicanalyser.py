@@ -354,7 +354,7 @@ class BasicAnalyser(Configurable):
 
         # Create and run a ObservedFluxCalculator object
         calculator = ObservedFluxCalculator()
-        calculator.run(self.simulation)
+        calculator.run(self.simulation, output_path=self.simulation.misc_path)
 
     # -----------------------------------------------------------------
 
@@ -370,6 +370,6 @@ class BasicAnalyser(Configurable):
 
         # Create and run an ObservedImageMaker object
         maker = ObservedImageMaker()
-        maker.run(self.simulation)
+        maker.run(self.simulation, output_path=self.simulation.misc_path)
 
 # -----------------------------------------------------------------

@@ -792,7 +792,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Running the bulge simulation ...")
 
         # Run the simulation
-        simulation = self.skirt.run(arguments, silent=False if log.is_debug else True)
+        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True)
 
         # Determine the path to the output FITS file
         bulge_image_path = filesystem.join(out_path, "bulge_earth_total.fits")
@@ -855,7 +855,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Running the bulge simulation ...")
 
         # Run the simulation
-        simulation = self.skirt.run(arguments, silent=False if log.is_debug else True)
+        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True)
 
         # Determine the path to the output FITS file
         bulge_image_path = filesystem.join(out_path, "bulge_earth_total.fits")
@@ -938,7 +938,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Running the disk simulation ...")
 
         # Run the simulation
-        simulation = self.skirt.run(arguments, silent=False if log.is_debug else True)
+        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True)
 
         # Determine the path to the output FITS file
         disk_image_path = filesystem.join(out_path, "disk_earth_total.fits")
@@ -1025,7 +1025,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Running the disk+bulge simulation ...")
 
         # Run the simulation
-        simulation = self.skirt.run(arguments, silent=False if log.is_debug else True)
+        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True)
 
         # Determine the path to the output FITS file
         model_image_path = filesystem.join(out_path, "model_earth_total.fits")
