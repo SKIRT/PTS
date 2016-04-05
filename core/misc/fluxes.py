@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..tools import tables
+from ..tools import tables, filesystem
 from ..tools.logging import log
 from ..basics.filter import Filter
 from ...modeling.core.sed import SED
@@ -48,8 +48,8 @@ class ObservedFluxCalculator(object):
         # The filters for which the fluxes should be calculated
         self.filters = None
 
-        # The fluxes table
-        self.fluxes = None
+        # The flux tables for the different output SEDs
+        self.tables = dict()
 
     # -----------------------------------------------------------------
 
@@ -114,6 +114,15 @@ class ObservedFluxCalculator(object):
         # Loop over the different SEDs
         for sed_path in self.sed_paths:
 
+            # Get the name of the SED
+            sed_name = filesystem.name(sed_path).split("_sed")[0]
+
+            # Create a flux table for this SED
+            names = ["Observatory", "Instrument", "Band", "Wavelength", "Flux"]
+            dtypes = ["S10", "S10", "S10", "f8", "f8"]
+            data = [[], [], [], [], []]
+            table = tables.new(data, names, dtypes=dtypes)
+
             # Load the simulated SED
             sed = SED.from_file(sed_path)
 
@@ -121,13 +130,19 @@ class ObservedFluxCalculator(object):
             wavelengths = sed.wavelengths("micron", asarray=True)
             fluxdensities = sed.fluxes("Jy", asarray=True)
 
+            # densities must be per wavelength instead of per frequency!
+
             # Loop over the different filters
             for filter in self.filters:
 
                 # Calculate the flux
                 flux = filter.convolve(wavelengths, fluxdensities)
 
+                # Add an entry to the flux table
+                table.add_row([filter.observatory, filter.instrument, filter.band, filter.pivotwavelength(), flux])
 
+            # Add the complete table to the dictionary (with the SKIRT SED name as key)
+            self.tables[sed_name] = table
 
     # -----------------------------------------------------------------
 
@@ -142,7 +157,13 @@ class ObservedFluxCalculator(object):
         # Inform the user
         log.info("Writing the observed flux table ...")
 
-        # Write the fluxes table
-        tables.write(self.fluxes, output_path)
+        # Loop over the different flux tables
+        for name in self.tables:
+
+            # Determine the path to the output flux table
+            path = filesystem.join(output_path, name + "_fluxes.dat")
+
+            # Write out the flux table
+            tables.write(self.tables[name], path)
 
 # -----------------------------------------------------------------

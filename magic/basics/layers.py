@@ -35,6 +35,21 @@ class Layers(dict):
 
     # -----------------------------------------------------------------
 
+    def as_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        layer_list = []
+
+        for name in self: layer_list.append(self[name])
+
+        return layer_list
+
+    # -----------------------------------------------------------------
+
     def get_first(self):
 
         """

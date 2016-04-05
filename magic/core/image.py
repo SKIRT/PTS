@@ -97,6 +97,21 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def asarray(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get a list that contains the frames
+        frame_list = self.frames.as_list()
+
+        # Stack the frames into a 3D numpy array
+        return np.dstack(frame_list)
+
+    # -----------------------------------------------------------------
+
     @property
     def shape(self):
 

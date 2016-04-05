@@ -52,7 +52,7 @@ class ObservedImageMaker(object):
         # The filters for which the images should be created
         self.filters = None
 
-        # The dictionary containing the images
+        # The dictionary containing the images for various SKIRT output datacubes
         self.images = dict()
 
     # -----------------------------------------------------------------
@@ -121,11 +121,19 @@ class ObservedImageMaker(object):
         # Loop over the different simulated images
         for path in self.fits_paths:
 
+            # Get the name of the datacube (as given by SKIRT)
+            datacube_name = filesystem.strip_extension(filesystem.name(path))
+
+            # Create a dictionary to contain the observed images for this FITS file
+            images = dict()
+
             # Load the simulated image
             datacube = Image.from_file(path)
 
             # Convert the datacube to a numpy array where wavelength is the third dimension
-            fluxdensities = datacube.as_array()
+            fluxdensities = datacube.asarray()
+
+            # densities must be per wavelength instead of per frequency!
 
             # Loop over the different filters
             for filter in self.filters:
@@ -135,7 +143,10 @@ class ObservedImageMaker(object):
                 image = Frame(data)
 
                 # Add the observed image to the dictionary
-                self.images[filter.name] = image
+                images[filter.name] = image
+
+            # Add the dictionary of images of the current datacube to the complete images dictionary (with the datacube name as a key)
+            self.images[datacube_name] = images
 
     # -----------------------------------------------------------------
 
@@ -150,13 +161,14 @@ class ObservedImageMaker(object):
         # Inform the user
         log.info("Writing the images ...")
 
-        # Loop over the different images
-        for image_name in self.images:
+        # Loop over the different images (self.images is a nested dictionary of dictionaries)
+        for datacube_name in self.images:
+            for filter_name in self.images[datacube_name]:
 
-            # Determine the path to the output image
-            path = filesystem.join(output_path, image_name + ".fits")
+                # Determine the path to the output FITS file
+                path = filesystem.join(output_path, datacube_name + "_" + filter_name + ".fits")
 
-            # Save the image
-            self.images[image_name].save(path)
+                # Save the image
+                self.images[datacube_name][filter_name].save(path)
 
 # -----------------------------------------------------------------
