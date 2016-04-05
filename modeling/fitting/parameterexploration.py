@@ -277,22 +277,6 @@ class ParameterExplorer(FittingComponent):
         # Create a FUV filter object
         fuv = Filter.from_string("FUV")
 
-        # Create a SkirtArguments object
-        arguments = SkirtArguments()
-
-        # The ski file pattern
-        arguments.ski_pattern = None
-        arguments.recursive = False
-        arguments.relative = False
-
-        # Input and output
-        arguments.input_path = self.fit_in_path
-        arguments.output_path = None
-
-        # Parallelization settings
-        arguments.parallel.threads = None
-        arguments.parallel.processes = None
-
         # Loop over the different values of the young stellar luminosity
         for young_luminosity in self.young_luminosities:
 
@@ -324,9 +308,8 @@ class ParameterExplorer(FittingComponent):
                     ski_path = filesystem.join(simulation_path, self.galaxy_name + ".ski")
                     self.ski.saveto(ski_path)
 
-                    # Adjust the SKIRT arguments
-                    arguments.ski_pattern = ski_path
-                    arguments.output_path = output_path
+                    # Create the SKIRT arguments object
+                    arguments = create_arguments(ski_path, self.fit_in_path, output_path)
 
                     # Debugging
                     log.debug("Adding a simulation to the queue with:")
@@ -362,5 +345,35 @@ class ParameterExplorer(FittingComponent):
 
         # Write the parameter table
         tables.write(self.table, self.parameter_table_path)
+
+# -----------------------------------------------------------------
+
+def create_arguments(ski_path, input_path, output_path):
+
+    """
+    This function ...
+    :param ski_path:
+    :param input_path:
+    :param output_path:
+    :return:
+    """
+
+    # Create a new SkirtArguments object
+    arguments = SkirtArguments()
+
+    # The ski file pattern
+    arguments.ski_pattern = ski_path
+    arguments.recursive = False
+    arguments.relative = False
+
+    # Input and output
+    arguments.input_path = input_path
+    arguments.output_path = output_path
+
+    # Parallelization settings
+    arguments.parallel.threads = None
+    arguments.parallel.processes = None
+
+    return arguments
 
 # -----------------------------------------------------------------
