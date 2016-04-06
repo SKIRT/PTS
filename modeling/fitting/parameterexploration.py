@@ -148,6 +148,8 @@ class ParameterExplorer(FittingComponent):
             filter_names.append(filter_id)
 
         # Set options for the BatchLauncher
+        self.launcher.config.misc.path = self.fit_res_path      # The base directory where all of the simulations will have a seperate directory with the 'misc' analysis output
+        self.launcher.config.plotting.path = self.fit_plot_path # The base directory where all of the simulations will have a seperate directory with the plotting analysis output
         self.launcher.config.shared_input = True   # The input directories for the different simulations are shared
         self.launcher.config.plotting.seds = True  # Plot the output SEDs
         self.launcher.config.misc.fluxes = True    # Calculate observed fluxes
@@ -317,7 +319,10 @@ class ParameterExplorer(FittingComponent):
                     log.debug(" - output path: " + arguments.output_path)
 
                     # Put the parameters in the queue and get the simulation object
-                    self.launcher.add_to_queue(arguments, scheduling_options)
+                    self.launcher.add_to_queue(arguments, simulation_name)
+
+                    # Set scheduling options
+                    self.launcher.set_scheduling_options(simulation_name, scheduling_options)
 
                     # Add an entry to the parameter table
                     self.table.add_row([simulation_name, young_luminosity, ionizing_luminosity, dust_mass])
@@ -330,6 +335,9 @@ class ParameterExplorer(FittingComponent):
 
             # Add the path to the modeling directory to the simulation object
             simulation.modeling_path = self.config.path
+
+            # Set the path to the reference SED (for plotting the simulated SED against the reference points)
+            simulation.reference_sed = filesystem.join(self.phot_path, "fluxes.dat")
 
             # Save the simulation object
             simulation.save()

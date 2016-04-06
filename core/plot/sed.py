@@ -21,7 +21,9 @@ import matplotlib.patches as patches
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ..tools.logging import log
+
+# -----------------------------------------------------------------
 
 import matplotlib.gridspec as gridspec
 from scipy.interpolate import interp1d

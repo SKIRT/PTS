@@ -77,6 +77,9 @@ class ScalingAnalyser(Configurable):
 
         """
         This function ...
+        :param simulation:
+        :param timeline_extractor:
+        :param memory_extractor:
         :return:
         """
 

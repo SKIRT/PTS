@@ -45,6 +45,10 @@ class BatchLauncher(Configurable):
         # The queue
         self.queue = []
 
+        # The scheduling options for (some of) the simulations, accesed by keys that are the names given to the
+        # simulations (see 'name' parameter of 'add_to_queue')
+        self.scheduling_options = dict()
+
         # The assignment from items in the queue to the different remotes
         self.assignment = None
 
@@ -75,17 +79,30 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_to_queue(self, arguments, scheduling_options=None):
+    def add_to_queue(self, arguments, name=None):
 
         """
         This function ...
         :param arguments:
-        :param scheduling_options: can for example specify the walltime ...
+        :param name: a name that is given to the simulation
         :return:
         """
 
         # Add the SkirtArguments object to the queue
-        self.queue.append((arguments, scheduling_options))
+        self.queue.append((arguments, name))
+
+    # -----------------------------------------------------------------
+
+    def set_scheduling_options(self, name, options):
+
+        """
+        This function ...
+        :param name:
+        :param options:
+        :return:
+        """
+
+        self.scheduling_options[name] = options
 
     # -----------------------------------------------------------------
 
@@ -134,6 +151,9 @@ class BatchLauncher(Configurable):
 
         # Clear the queue
         self.queue = []
+
+        # Clear the scheduling options
+        self.scheduling_options = dict()
 
         # Clear the assignment
         self.assignment = None
@@ -259,14 +279,17 @@ class BatchLauncher(Configurable):
             for _ in range(next(self.assignment)):
 
                 # Get the last item from the queue (it is removed)
-                arguments, scheduling_options = self.queue.pop()
+                arguments, name = self.queue.pop()
 
                 # Set the parallelization
                 arguments.parallel.processes = processes
                 arguments.parallel.threads = threads
 
+                # Check whether scheduling options are defined for this simulation
+                scheduling_options = self.scheduling_options[name] if name in self.scheduling_options else None
+
                 # Queue the simulation
-                simulation = remote.add_to_queue(arguments, scheduling_options=scheduling_options, remote_input_path=remote_input_path)
+                simulation = remote.add_to_queue(arguments, name=name, scheduling_options=scheduling_options, remote_input_path=remote_input_path)
                 simulations_remote.append(simulation)
 
                 # If the input directory is shared between the different simulations,
@@ -354,10 +377,11 @@ class BatchLauncher(Configurable):
         simulation.extract_memory = self.config.extraction.memory
 
         # Determine the extraction directory for this simulation (and create it if necessary)
-        if self.config.extraction.path is not None: extraction_path = filesystem.join(self.config.extraction.path, simulation.id)
-        else: extraction_path = filesystem.join(simulation.output_path, "extract")
-        if not filesystem.is_directory(extraction_path): filesystem.create_directory(extraction_path, recursive=True)
-        simulation.extraction_path = extraction_path
+        if self.config.extraction.path is not None: extraction_path = filesystem.join(self.config.extraction.path, simulation.name)
+        else: extraction_path = filesystem.join(simulation.output_path, "extr")
+        if self.config.extraction.progress or self.config.extraction.timeline or self.config.extraction.memory:
+            if not filesystem.is_directory(extraction_path): filesystem.create_directory(extraction_path, recursive=True)
+            simulation.extraction_path = extraction_path
 
         # Plotting
         simulation.plot_progress = self.config.plotting.progress
@@ -367,10 +391,12 @@ class BatchLauncher(Configurable):
         simulation.plot_grids = self.config.plotting.grids
 
         # Determine the plotting directory for this simulation (and create it if necessary)
-        if self.config.plotting.path is not None: plotting_path = filesystem.join(self.config.plotting.path, simulation.id)
+        if self.config.plotting.path is not None: plotting_path = filesystem.join(self.config.plotting.path, simulation.name)
         else: plotting_path = filesystem.join(simulation.output_path, "plot")
-        if not filesystem.is_directory(plotting_path): filesystem.create_directory(plotting_path, recursive=True)
-        simulation.plotting_path = plotting_path
+        if self.config.plotting.seds or self.config.plotting.grids or self.config.plotting.progress \
+            or self.config.plotting.timeline or self.config.plotting.memory:
+                if not filesystem.is_directory(plotting_path): filesystem.create_directory(plotting_path, recursive=True)
+                simulation.plotting_path = plotting_path
 
         # Advanced
         simulation.make_rgb = self.config.advanced.rgb
@@ -382,10 +408,11 @@ class BatchLauncher(Configurable):
         simulation.observation_filters = self.config.misc.observation_filters
 
         # Determine the 'misc' directory for this simulation (and create it if necessary)
-        if self.config.misc.path is not None: misc_path = filesystem.join(self.config.misc.path, simulation.id)
+        if self.config.misc.path is not None: misc_path = filesystem.join(self.config.misc.path, simulation.name)
         else: misc_path = filesystem.join(simulation.output_path, "misc")
-        if not filesystem.is_directory(misc_path): filesystem.create_directory(misc_path, recursive=True)
-        simulation.misc_path = misc_path
+        if self.config.misc.fluxes or self.config.misc.images:
+            if not filesystem.is_directory(misc_path): filesystem.create_directory(misc_path, recursive=True)
+            simulation.misc_path = misc_path
 
         # Remove remote files
         simulation.remove_remote_input = not self.config.keep and not self.config.shared_input

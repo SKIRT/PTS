@@ -108,7 +108,7 @@ class SkirtRemote(Remote):
         """
         This function ...
         :param arguments:
-        :param name:
+        :param name: a name given to the simulation
         :param scheduling_options:
         :param remote_input_path:
         :return:

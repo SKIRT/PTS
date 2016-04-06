@@ -40,6 +40,9 @@ class VPN(object):
         # Set the service name
         self.service = service
 
+        # A flag that indicates whether the VPN connection was already active before calling connect()
+        self.was_connected = self.connected
+
     # -----------------------------------------------------------------
 
     def connect(self, user_name=None, password=None, secret=None, delay=None):
@@ -56,6 +59,7 @@ class VPN(object):
 
         # Show a warning if the connection already exists
         if self.connected:
+            self.was_connected = True
             warnings.warn("The VPN connection is already active")
             return
 
@@ -84,6 +88,10 @@ class VPN(object):
 
         if not self.connected:
             warnings.warn("The VPN connection is not active")
+            return
+
+        if self.was_connected:
+            warnings.warn("Not disconnecting from the VPN service since the connection was already active beforehand")
             return
 
         command = ["scutil", "--nc", "stop", self.service]

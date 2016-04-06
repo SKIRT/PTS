@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import os
 
 # Import the relevant PTS classes and modules
-from ..tools import configuration, inspection, filesystem
+from ..tools import configuration, inspection, filesystem, network
 from ..tools.logging import log
 
 # -----------------------------------------------------------------
@@ -179,6 +179,25 @@ class Host(object):
         :return:
         """
 
-        return self.vpn.service is not None
+        # If a VPN service is specified in the host configuration file
+        if self.vpn.service is not None:
+
+            # If the VPN connection is not required when connected to a certain DNS server, check which servers we
+            # are connected to
+            if self.vpn.not_for_dns_domain is not None:
+
+                # Get the DNS search domains currently connected to
+                domains = network.dns_search_domains()
+
+                # Check whether the DNS domain in the host configuration file is in the list of current DNS domains
+                # If this is the case, no VPN connection is required. Else, the VPN connection is required.
+                if self.vpn.not_for_dns_domain in domains: return False
+                else: return True
+
+            # If the VPN connection is always required, regardless of which DNS server we are connected to, return True.
+            else: return True
+
+        # If no VPN service is specified in the host configuration file, assume VPN is not required
+        else: return False
 
 # -----------------------------------------------------------------

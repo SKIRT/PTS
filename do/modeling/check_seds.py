@@ -124,7 +124,7 @@ def main():
 
     # Sort according to model number
     if OutputChi2List:
-        sedlist = np.array(sedlist,dtype=int)
+        sedlist = np.array(sedlist, dtype=int)
         
         idx = np.argsort(sedlist)
         rankedSEDList = sedlist[idx]

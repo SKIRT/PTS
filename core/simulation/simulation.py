@@ -563,6 +563,9 @@ class RemoteSimulation(SkirtSimulation):
         self.plotting_path = None
         self.misc_path = None
 
+        # The path to a file containing an SED for which the points have to be plotted against the simulated curve (when plot_seds is enabled)
+        self.reference_sed = None
+
         # The filters for which to recreate the observations
         self.observation_filters = None
 

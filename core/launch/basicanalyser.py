@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import os
-
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..extract.progress import ProgressExtractor
@@ -30,6 +27,8 @@ from ..plot.wavemovie import makewavemovie
 from ..misc.fluxes import ObservedFluxCalculator
 from ..misc.images import ObservedImageMaker
 from ..tools.logging import log
+from ..tools import filesystem
+from ..plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------
 
@@ -59,6 +58,10 @@ class BasicAnalyser(Configurable):
         self.progress_extractor = ProgressExtractor()
         self.timeline_extractor = TimeLineExtractor()
         self.memory_extractor = MemoryExtractor()
+
+        # The flux calculator and image maker
+        self.flux_calculator = None
+        self.image_maker = None
 
     # -----------------------------------------------------------------
 
@@ -191,7 +194,7 @@ class BasicAnalyser(Configurable):
         log.info("Extracting the progress information ...")
 
         # Determine the path to the progress file
-        path = os.path.join(self.simulation.extraction_path, "progress.dat")
+        path = filesystem.join(self.simulation.extraction_path, "progress.dat")
 
         # Run the progress extractor
         self.progress_extractor.run(self.simulation, path)
@@ -209,7 +212,7 @@ class BasicAnalyser(Configurable):
         log.info("Extracting the timeline information ...")
 
         # Determine the path to the timeline file
-        path = os.path.join(self.simulation.extraction_path, "timeline.dat")
+        path = filesystem.join(self.simulation.extraction_path, "timeline.dat")
 
         # Run the timeline extractor
         self.timeline_extractor.run(self.simulation, path)
@@ -227,7 +230,7 @@ class BasicAnalyser(Configurable):
         log.info("Extracting the memory information ...")
 
         # Determine the path to the memory file
-        path = os.path.join(self.simulation.extraction_path, "memory.dat")
+        path = filesystem.join(self.simulation.extraction_path, "memory.dat")
 
         # Run the memory extractor
         self.memory_extractor.run(self.simulation, path)
@@ -244,8 +247,37 @@ class BasicAnalyser(Configurable):
         # Inform the user
         log.info("Plotting SEDs ...")
 
-        # Plot the SEDs for the simulation
-        plotseds(self.simulation, output_path=self.simulation.plotting_path)
+        # If the simulated SED must be plotted against a set of reference flux points
+        if self.simulation.reference_sed is not None:
+
+            # Inform the user
+            log.info("Plotting the SED with reference fluxes ...")
+
+            # Create a new SEDPlotter instance
+            plotter = SEDPlotter(self.simulation.name)
+
+            # Loop over the simulated SED files and add the SEDs to the SEDPlotter
+            for sed_path in self.simulation.seddatpaths():
+
+                # Determine a label for this simulated SED
+                sed_label = filesystem.name(sed_path).split("_sed.dat")[0]
+
+                # Load the SED
+                sed = SED.from_file(sed_path)
+
+                # Add the simulated SED to the plotter
+                plotter.add_modeled_sed(sed, sed_label)
+
+            # Add the reference SED
+            reference_sed = ObservedSED.from_file(self.simulation.reference_sed)
+            plotter.add_observed_sed(reference_sed, "observation")
+
+            # Determine the path to the plot file
+            path = filesystem.join(self.simulation.plotting_path, "sed.pdf")
+            plotter.run(path)
+
+        # Use the simple plotseds function
+        else: plotseds(self.simulation, output_path=self.simulation.plotting_path)
 
     # -----------------------------------------------------------------
 
@@ -353,8 +385,8 @@ class BasicAnalyser(Configurable):
         log.info("Calculating the observed fluxes ...")
 
         # Create and run a ObservedFluxCalculator object
-        calculator = ObservedFluxCalculator()
-        calculator.run(self.simulation, output_path=self.simulation.misc_path, filter_names=self.simulation.observation_filters)
+        self.flux_calculator = ObservedFluxCalculator()
+        self.flux_calculator.run(self.simulation, output_path=self.simulation.misc_path, filter_names=self.simulation.observation_filters)
 
     # -----------------------------------------------------------------
 
@@ -369,7 +401,7 @@ class BasicAnalyser(Configurable):
         log.info("Making the observed images ...")
 
         # Create and run an ObservedImageMaker object
-        maker = ObservedImageMaker()
-        maker.run(self.simulation, output_path=self.simulation.misc_path, filter_names=self.simulation.observation_filters)
+        self.image_maker = ObservedImageMaker()
+        self.image_maker.run(self.simulation, output_path=self.simulation.misc_path, filter_names=self.simulation.observation_filters)
 
 # -----------------------------------------------------------------

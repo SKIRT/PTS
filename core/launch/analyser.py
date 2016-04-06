@@ -150,6 +150,6 @@ class SimulationAnalyser(Configurable):
 
         # Run the modeling analyser
         self.model_analyser.config.path = self.simulation.modeling_path
-        self.model_analyser.run(self.simulation)
+        self.model_analyser.run(self.simulation, self.basic_analyser.flux_calculator)
 
 # -----------------------------------------------------------------

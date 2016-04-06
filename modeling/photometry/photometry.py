@@ -24,7 +24,7 @@ from ...core.tools.logging import log
 from ..core.sed import ObservedSED
 from ...core.basics.errorbar import ErrorBar
 from ...core.tools import tables
-from ..plotting.sed import SEDPlotter
+from ...core.plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------
 
@@ -320,11 +320,8 @@ class PhotoMeter(PhotometryComponent):
         # Inform the user
         log.info("Writing SED to a data file ...")
 
-        # Determine the full path to the output file
-        path = self.full_output_path("fluxes.dat")
-
         # Save the SED
-        self.sed.save(path)
+        self.sed.save(self.fluxes_path)
 
     # -----------------------------------------------------------------
 
