@@ -20,6 +20,8 @@
 
 # Import standard modules
 import sys
+import argparse
+import time
 
 # Import the relevant PTS classes and modules
 from pts.core.simulation.simulation import createsimulations
@@ -27,15 +29,35 @@ from pts.core.plot.polarization import plotpolarization
 
 # -----------------------------------------------------------------
 
-print "Starting plotpolarization..."
+start = time.time()
 
-# get the command-line argument specifying the simulation(s)
-argument = sys.argv[1] if len(sys.argv) > 1 else ""
-
+#get the command-line argument(s)
+parser = argparse.ArgumentParser()
+parser.add_argument("-s", "--simulation", metavar='sim', nargs='+', type=str, default="",
+            help='Simulation(s) to be plotted. Default:all')
+parser.add_argument("-i", "--instrument", metavar='instr', nargs='+', type=str, default='all',
+            help='NOT YET IMPLEMENTED: Intstrument(s) to be plotted. Default:all')
+parser.add_argument("-w", "--wavelength", default='all',
+            help='Wavelenght to be plotted. Default:all')
+parser.add_argument("-x", "--binx", type = int, default = 10,
+            help = "Binning range in x-direction. Default:10")
+parser.add_argument("-y", "--biny", type = int, default = 10,
+            help = "Binning range in y-direction. Default:10")
+parser.add_argument("-nm", "--noMaps", action="store_true", default = False,
+            help="Do not plot the polarization maps, just the additional options (speeds things up).")
+parser.add_argument("-pay", "--polAvY", action="store_true", default = False,
+            help="Plot the polarization degree integrated over y-direction for all x-pixels")
+parser.add_argument("-e", "--export", action="store_true", default = False,
+            help="Exports data files in addition to the plots.")
+args = parser.parse_args()
+binsize = (args.binx, args.biny)
 # construct the list of simulation objects and make the plots
-for simulation in createsimulations(argument):
-    plotpolarization(simulation)
-
-print "Finished plotpolarization"
+for simulation in createsimulations(args.simulation):
+    print "Starting plotpolarization for simulation '" + simulation.prefix() + "'",
+    plotpolarization(simulation, instrumentList=args.instrument, binsize=binsize,
+                    wavelength=args.wavelength, polAvY=args.polAvY, noMaps = args.noMaps,
+                    export = args.export)
+end = time.time()
+print "Finished plotpolarization in {0:0.2f} s".format(end-start)
 
 # -----------------------------------------------------------------
