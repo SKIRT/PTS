@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-from astropy import units as u
+from astropy.units import Unit
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
@@ -40,10 +40,10 @@ class ObservedSED(object):
 
         # Attributes
         self.table = Table(names=["Observatory", "Instrument", "Band", "Wavelength", "Flux", "Error-", "Error+"], dtype=('S10', 'S10', 'S10', 'f8', 'f8', 'f8', 'f8'))
-        self.table["Wavelength"].unit = u.Unit("micron")
-        self.table["Flux"].unit = u.Unit("Jy")
-        self.table["Error-"].unit = u.Unit("Jy")
-        self.table["Error+"].unit = u.Unit("Jy")
+        self.table["Wavelength"].unit = Unit("micron")
+        self.table["Flux"].unit = Unit("Jy")
+        self.table["Error-"].unit = Unit("Jy")
+        self.table["Error+"].unit = Unit("Jy")
 
     # -----------------------------------------------------------------
 
@@ -61,10 +61,10 @@ class ObservedSED(object):
 
         # Open the SED table
         sed.table = tables.from_file(path, format="ascii.commented_header")
-        sed.table["Wavelength"].unit = u.Unit("micron")
-        sed.table["Flux"].unit = u.Unit("Jy")
-        sed.table["Error-"].unit = u.Unit("Jy")
-        sed.table["Error+"].unit = u.Unit("Jy")
+        sed.table["Wavelength"].unit = Unit("micron")
+        sed.table["Flux"].unit = Unit("Jy")
+        sed.table["Error-"].unit = Unit("Jy")
+        sed.table["Error+"].unit = Unit("Jy")
 
         # Return the observed SED
         return sed
@@ -147,6 +147,65 @@ class ObservedSED(object):
         """
 
         return tables.columns_as_objects([self.table["Error-"], self.table["Error+"]], ErrorBar, unit=unit, add_unit=add_unit)
+
+    # -----------------------------------------------------------------
+
+    def flux_for_filter(self, filter, unit=None, add_unit=True):
+
+        """
+        This function ...
+        :param filter:
+        :param unit:
+        :param add_unit:
+        :return:
+        """
+
+        return self.flux_for_band(filter.instrument, filter.band, unit, add_unit)
+
+    # -----------------------------------------------------------------
+
+    def flux_for_band(self, instrument, band, unit=None, add_unit=True):
+
+        """
+        This function ...
+        :param instrument:
+        :param band:
+        :param unit:
+        :param add_unit:
+        :return:
+        """
+
+        has_unit = self.table["Flux"].unit is not None
+        has_mask = hasattr(self.table["Flux"], "mask")
+
+        # If unit has to be converted, check whether the original unit is specified
+        if not has_unit and unit is not None: raise ValueError(
+            "Cannot determine the unit of the flux column so values cannot be converted to " + str(unit))
+
+        # Loop over all the entries in the table
+        for i in range(len(self.table)):
+
+            instrument_entry = self.table["Instrument"][i]
+            band_entry = self.table["Band"][i]
+
+            if not (instrument_entry == instrument and band_entry == band): continue
+
+            if has_unit:
+
+                # Add the unit initially to be able to convert
+                flux = self.table["Flux"][i] * self.table["Flux"].unit
+
+                # If a target unit is specified, convert
+                if unit is not None: flux = flux.to(unit).value * Unit(unit)  # If converted, do not add any unit
+
+                if not add_unit: flux = flux.value  # If not converted and add_unit is enabled, add the unit
+
+            else: flux = self.table["Flux"][i]
+
+            return flux
+
+        # If no match is found, return None
+        return None
 
     # -----------------------------------------------------------------
 

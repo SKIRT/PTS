@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..core.component import ModelingComponent
-from ...core.tools import filesystem
+from ...core.tools import filesystem, tables
 
 # -----------------------------------------------------------------
 
@@ -55,6 +55,9 @@ class FittingComponent(ModelingComponent):
         # The path to the parameter table
         self.parameter_table_path = None
 
+        # The path to the chi squared table
+        self.chi_squared_table_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -90,5 +93,18 @@ class FittingComponent(ModelingComponent):
 
         # Determine the path to the ski file
         self.fit_ski_path = filesystem.join(self.fit_path, self.galaxy_name + ".ski")
+
+        # Set the path to the chi squared table file
+        self.chi_squared_table_path = filesystem.join(self.fit_path, "chi_squared.dat")
+
+        # Initialize the chi squared file if that hasn't been done yet
+        if not filesystem.is_file(self.chi_squared_table_path):
+
+            # Initialize
+            names = ["Simulation name", "Chi squared"]
+            data = [[], []]
+            dtypes = ["S24", "float64"]
+            table = tables.new(data, names, dtypes=dtypes)
+            tables.write(table, self.chi_squared_table_path)
 
 # -----------------------------------------------------------------
