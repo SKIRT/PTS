@@ -147,8 +147,6 @@ class ModelAnalyser(FittingComponent):
         # Load the observed SED
         self.fluxes = ObservedSED.from_file(fluxes_path)
 
-        print(self.fluxes.table)
-
     # -----------------------------------------------------------------
 
     def calculate_differences(self):

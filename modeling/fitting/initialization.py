@@ -93,7 +93,7 @@ class InputInitializer(FittingComponent):
         # Create a new InputInitializer instance
         initializer = cls(arguments.config)
 
-        # Set the output path
+        # Set the modeling path
         initializer.config.path = arguments.path
 
         # Set minimum and maximum wavelength of the total grid

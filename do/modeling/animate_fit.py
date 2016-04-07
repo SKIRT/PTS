@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.explore Explore the parameter space for the radiative transfer modeling.
+## \package pts.do.modeling.animate_fit Make an animation from the SED fitting procedure
 
 # -----------------------------------------------------------------
 
@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.modeling.fitting.parameterexploration import ParameterExplorer
+from pts.modeling.fitting.animation import FitAnimator
 from pts.core.tools import logging, time, parsing, filesystem
 
 # -----------------------------------------------------------------
@@ -26,18 +26,6 @@ parser = argparse.ArgumentParser()
 
 # Basic
 parser.add_argument("path", type=str, nargs='?', help="the modeling path")
-
-parser.add_argument("--young_nvalues", type=int, help="the number of different values for the young stellar luminosity")
-parser.add_argument("--ionizing_nvalues", type=int, help="the number of different values for the ionizing stellar luminosity")
-parser.add_argument("--dust_nvalues", type=int, help="the number of different values for the dust mass")
-
-parser.add_argument("--young_range", type=parsing.float_tuple, help="the range of the luminosity of non-ionizing stars")
-parser.add_argument("--ionizing_range", type=parsing.float_tuple, help="the range of the luminosity of ionizing stars")
-parser.add_argument("--dust_range", type=parsing.float_tuple, help="the range of the dust mass")
-
-parser.add_argument("--young_log", action="store_true", help="use logarithmic spacing of the young stellar luminosity values")
-parser.add_argument("--ionizing_log", action="store_true", help="use logarithmic spacing of the ionizing stellar luminosity values")
-parser.add_argument("--dust_log", action="store_true", help="use logarithmic spacing of the dust mass values")
 
 # Logging options
 parser.add_argument("--debug", action="store_true", help="add this option to enable debug output")
@@ -62,14 +50,14 @@ level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting explore ...")
+log.start("Starting animate_fit ...")
 
 # -----------------------------------------------------------------
 
-# Create a ParameterExplorer object
-explorer = ParameterExplorer.from_arguments(arguments)
+# Create a FitAnimator object
+animator = FitAnimator.from_arguments(arguments)
 
-# Run the parameter exploration
-explorer.run()
+# Run the fit animator
+animator.run()
 
 # -----------------------------------------------------------------

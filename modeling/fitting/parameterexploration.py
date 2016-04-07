@@ -71,7 +71,7 @@ class ParameterExplorer(FittingComponent):
         # Create a new ParameterExplorer instance
         explorer = cls(arguments.config)
 
-        # Set the output path
+        # Set the modeling path
         explorer.config.path = arguments.path
 
         # Set options for the young stellar population

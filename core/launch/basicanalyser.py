@@ -274,7 +274,7 @@ class BasicAnalyser(Configurable):
             plotter.add_observed_sed(reference_sed, "observation")
 
             # Determine the path to the plot file
-            path = filesystem.join(self.simulation.plotting_path, "sed.pdf")
+            path = filesystem.join(self.simulation.plotting_path, "sed.png")
             plotter.run(path)
 
         # Use the simple plotseds function
