@@ -80,6 +80,13 @@ def int_list(string, name="ids"):
     :return:
     """
 
+    if "-" in string and "," in string:
+
+        parts = string.split(",")
+        total_int_list = []
+        for part in parts: total_int_list += int_list(part)
+        return total_int_list
+
     # Split the string
     splitted = string.split('-')
 

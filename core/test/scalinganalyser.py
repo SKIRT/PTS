@@ -60,6 +60,7 @@ class ScalingAnalyser(Configurable):
         :param simulation:
         :param timeline_extractor:
         :param memory_extractor:
+        :param plot:
         """
 
         # 1. Call the setup function

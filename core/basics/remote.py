@@ -21,6 +21,7 @@ import tempfile
 from .host import Host
 from .vpn import VPN
 from ..tools.logging import log
+from ..tools import parsing
 
 # -----------------------------------------------------------------
 
@@ -76,6 +77,8 @@ class Remote(object):
 
         # Make the connection
         self.login()
+
+        # TODO: swap to cluster here?
 
         # Load the necessary modules
         if self.host.modules is not None:
@@ -1023,6 +1026,102 @@ class Remote(object):
 
             # Return the amount of hyperthreads or 'hardware' threads per physical core
             return threads_per_core
+
+    # -----------------------------------------------------------------
+
+    @property
+    def numa_domains(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If the remote host uses a scheduling system, the number of numa domains is defined in the configuration
+        if self.scheduler: return self.host.clusters[self.host.cluster_name].numa_domains
+
+        # If no scheduler is used, the computing node is the actual node we are logged in to
+        else:
+
+            # Use the 'lscpu' command to get the number of NUMA domains
+            output = self.execute("lscpu | grep '^NUMA node(s):'")
+            numa_domains = int(output[0])
+
+            # Return the number of NUMA domains
+            return numa_domains
+
+    # -----------------------------------------------------------------
+
+    @property
+    def numa_cpus(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list to contain the
+        cpus = [[] for i in range(self.numa_domains)]
+
+        # Only works for up to 10 domains!
+        output = self.execute("lscpu")
+
+        for line in output:
+
+            # Skip irrelevant lines
+            if not line.startswith("NUMA node") or line.startswith("NUMA node(s)"): continue
+
+            # Get the NUMA domain
+            domain = int(line.split("NUMA node")[1].split(" CPU")[0])
+
+            # Get the list of CPU's
+            string = line.split(": ")[1].strip()
+            cpu_list = parsing.int_list(string)
+
+            # Set the CPU list for the current NUMA domain
+            cpus[domain] = cpu_list
+
+        # Return the list of CPU lists for each NUMA domain
+        return cpus
+
+    # -----------------------------------------------------------------
+
+    def cpus_for_numa_domain(self, domain_index):
+
+        """
+        This function ...
+        :param domain_index:
+        :return:
+        """
+
+        return self.numa_cpus[domain_index]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def hpc_ugent_node_status(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        lines = ["from vsc.jobs.pbs.nodes import collect_nodeinfo"]
+        lines.append("node_list, state_list, types = collect_nodeinfo()")
+        lines.append("print node_list")
+        lines.append("print state_list")
+        lines.append("print types")
+
+        # For interpreting 'types':
+        #template = "%sppn=%s, physmem=%sGB, swap=%sGB, vmem=%sGB, local disk=%sGB"
+        #for typ, nodes in sorted(types.items(), key=lambda x: len(x[1]), reverse=True):
+            # most frequent first
+            #cores, phys, swap, disk = typ
+            #txt.append(template % (offset, cores, phys, swap, phys + swap, disk))
+
+        output = self.execute_python_interactive(lines)
+
+        return output
 
     # -----------------------------------------------------------------
 
