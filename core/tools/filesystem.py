@@ -43,6 +43,28 @@ def home():
 
 # -----------------------------------------------------------------
 
+def desktop():
+
+    """
+    This function returns the full path to the desktop directory
+    :return:
+    """
+
+    return os.path.expanduser("~/Desktop") # On Mac OS X
+
+# -----------------------------------------------------------------
+
+def documents():
+
+    """
+    This function returns the full path to the documents directory
+    :return:
+    """
+
+    return os.path.expanduser("~/Documents") # On Mac OS X
+
+# -----------------------------------------------------------------
+
 def absolute(path):
 
     """

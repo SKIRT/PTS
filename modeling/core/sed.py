@@ -323,7 +323,7 @@ class SED(object):
 
         wavelength_column, flux_column = np.loadtxt(path, dtype=float, unpack=True)
         sed.table = tables.new([wavelength_column, flux_column], ["Wavelength", "Flux"])
-        sed.table["Wavelength"].unit = u.Unit("micron")
+        sed.table["Wavelength"].unit = Unit("micron")
 
         jansky_column = []
 
@@ -331,7 +331,7 @@ class SED(object):
 
             # Get the flux density in W / m2 and the wavelength in micron
             neutral_fluxdensity = sed.table["Flux"][i]
-            wavelength = sed.table["Wavelength"][i] * u.Unit("micron")
+            wavelength = sed.table["Wavelength"][i] * Unit("micron")
 
             # Convert to Jansky
             jansky = unitconversion.neutral_fluxdensity_to_jansky(neutral_fluxdensity, wavelength)

@@ -566,8 +566,18 @@ class SkirtRemote(Remote):
         # Loop over the different entries of the status list
         for path, simulation_status in self.get_status():
 
-            # Skip already retrieved simulations
-            if simulation_status == "retrieved": continue
+            # Skip already retrieved and analysed simulations
+            if simulation_status == "analysed": continue
+
+            # If a simulation has been retrieved earlier, but is not yet analysed, also add it to the list of retrieved
+            # simulations (again) so that its results can be analysed
+            elif simulation_status == "retrieved":
+
+                # Open the simulation file
+                simulation = RemoteSimulation.from_file(path)
+
+                # Add the retrieved simulation to the list
+                simulations.append(simulation)
 
             # Finished simulations
             elif simulation_status == "finished":
@@ -715,8 +725,13 @@ class SkirtRemote(Remote):
                 # The path to the simulation log file
                 remote_log_file_path = filesystem.join(simulation.remote_output_path, ski_name + "_log.txt")
 
+                # Check whether the simulation has already been analysed
+                if simulation.analysed: simulation_status = "analysed"
+
+                # Check whether the simulation has already been retrieved
+                elif simulation.retrieved: simulation_status = "retrieved"
+
                 # Get the simulation status from the remote log file if not yet retrieved
-                if simulation.retrieved: simulation_status = "retrieved"
                 else: simulation_status = self.status_from_log_file(remote_log_file_path, simulation.screen_name, ski_name)
 
                 # Add the simulation properties to the list
@@ -767,8 +782,11 @@ class SkirtRemote(Remote):
                 # Get the job ID from the name of the simulation file
                 job_id = int(name)
 
+                # Check if the simulation has already been analysed
+                if simulation.analysed: simulation_status = "analysed"
+
                 # Check if the simulation has already been retrieved
-                if simulation.retrieved: simulation_status = "retrieved"
+                elif simulation.retrieved: simulation_status = "retrieved"
 
                 # Check if the job ID is in the list of queued or running jobs
                 elif job_id in queue_status:

@@ -574,6 +574,9 @@ class RemoteSimulation(SkirtSimulation):
         self.remove_remote_output = True
         self.remove_remote_simulation_directory = True
 
+        # Local removal (after analysis)
+        self.remove_local_output = False
+
         # Screen session name
         self.screen_name = None
 
@@ -587,6 +590,9 @@ class RemoteSimulation(SkirtSimulation):
 
         # Flag indicating whether this simulation has been retrieved or not
         self.retrieved = False
+
+        # Flag indicating whether this simulation has been analysed or not
+        self.analysed = False
 
     # -----------------------------------------------------------------
 

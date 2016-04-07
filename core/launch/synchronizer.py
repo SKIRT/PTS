@@ -223,23 +223,22 @@ class RemoteSynchronizer(Configurable):
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)
 
-                # Get the simulation rank
-                #simulation_rank = os.path.basename(simulation_file_path).split(".")[0]
-
                 prefix = " - "
                 tag = "[" + str(simulation.id) + "]"
 
-                # Finished, but not yet retrieved simulation
-                if simulation_status == "finished":
+                # Finished, retrieved and analysed simulation (remote output has already been removed, if requested)
+                if simulation_status == "analysed":
 
-                    if (self.config.ids is not None and (remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id]))\
-                            or (self.config.statuses is not None and "finished" in self.config.statuses):
+                    if (self.config.ids is not None and (
+                            remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id])) \
+                            or (self.config.statuses is not None and "retrieved" in self.config.statuses):
 
-                        log.warning("The simulation with ID " + str(simulation.id) + " has finished, but has not been"
-                                    " retrieved yet. Deleting it now would mean all simulation output is lost. Run "
-                                    " 'pts status' again to retrieve the simulation output.")
+                        tag = "[ X ]"
 
-                    formatter = format.BLUE
+                        # Remove the simulation file
+                        filesystem.remove_file(path)
+
+                    formatter = format.GREEN
 
                 # Finished and retrieved simulation (remote output has already been removed, if requested)
                 elif simulation_status == "retrieved":
@@ -253,6 +252,19 @@ class RemoteSynchronizer(Configurable):
                         filesystem.remove_file(path)
 
                     formatter = format.GREEN
+
+                # Finished, but not yet retrieved simulation
+                elif simulation_status == "finished":
+
+                    if (self.config.ids is not None and (
+                            remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id])) \
+                            or (self.config.statuses is not None and "finished" in self.config.statuses):
+                        log.warning(
+                            "The simulation with ID " + str(simulation.id) + " has finished, but has not been"
+                                                                             " retrieved yet. Deleting it now would mean all simulation output is lost. Run "
+                                                                             " 'pts status' again to retrieve the simulation output.")
+
+                    formatter = format.BLUE
 
                 # Running simulation
                 elif "running" in simulation_status:

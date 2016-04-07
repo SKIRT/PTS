@@ -18,6 +18,7 @@ from ..launch.basicanalyser import BasicAnalyser
 from ..test.scalinganalyser import ScalingAnalyser
 from ...modeling.fitting.modelanalyser import ModelAnalyser
 from ..tools.logging import log
+from ..tools import filesystem
 
 # -----------------------------------------------------------------
 
@@ -69,6 +70,9 @@ class SimulationAnalyser(Configurable):
 
         # 4. Analyse the goodness of fit of the radiative transfer model, if the simulation is part of a modeling run
         if self.simulation.from_modeling: self.analyse_model()
+
+        # 5. Finish the analysis for the current simulation
+        self.finish()
 
     # -----------------------------------------------------------------
 
@@ -151,5 +155,21 @@ class SimulationAnalyser(Configurable):
         # Run the modeling analyser
         self.model_analyser.config.path = self.simulation.modeling_path
         self.model_analyser.run(self.simulation, self.basic_analyser.flux_calculator)
+
+    # -----------------------------------------------------------------
+
+    def finish(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Indicate that this simulation has been analysed
+        self.simulation.analysed = True
+        self.simulation.save()
+
+        # If requested, remove the local output directory
+        if self.simulation.remove_local_output: filesystem.remove_directory(self.simulation.output_path)
 
 # -----------------------------------------------------------------
