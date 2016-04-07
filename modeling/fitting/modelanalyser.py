@@ -72,8 +72,8 @@ class ModelAnalyser(FittingComponent):
         # 1. Call the setup function
         self.setup(simulation, flux_calculator)
 
-        # 2. Load the observed fluxes
-        self.load_observed_fluxes()
+        # 2. Load the observed SED
+        self.load_observed_sed()
 
         # 3. Calculate the differences
         self.calculate_differences()
@@ -129,7 +129,7 @@ class ModelAnalyser(FittingComponent):
         # Initialize the differences table
         names = ["Instrument", "Band", "Flux difference", "Relative difference"]
         data = [[], [], [], []]
-        dtypes = ["S8", "S5", "S7", "float64", "float64"]
+        dtypes = ["S5", "S7", "float64", "float64"]
         self.differences = tables.new(data, names, dtypes=dtypes)
 
     # -----------------------------------------------------------------
@@ -147,6 +147,8 @@ class ModelAnalyser(FittingComponent):
         # Load the observed SED
         self.fluxes = ObservedSED.from_file(fluxes_path)
 
+        print(self.fluxes.table)
+
     # -----------------------------------------------------------------
 
     def calculate_differences(self):
@@ -158,13 +160,8 @@ class ModelAnalyser(FittingComponent):
 
         # In the flux-density tables derived from the simulation (created by the ObservedFluxCalculator object),
         # search the one corresponding to the "earth" instrument
-        table_name = None
-        for name in self.flux_calculator.tables:
-            print("Flux calculator table name:", name)
-            if "earth" in name:
-                table_name = name
-                break
-        if table_name is None: raise RuntimeError("Could not find a flux-density table for the 'earth' instrument")
+        table_name = self.galaxy_name + "_earth"
+        if table_name not in self.flux_calculator.tables: raise RuntimeError("Could not find a flux-density table for the 'earth' instrument")
 
         # Get the table
         table = self.flux_calculator.tables[table_name]
@@ -301,7 +298,7 @@ class ModelAnalyser(FittingComponent):
         resultfile = open(self.chi_squared_table_path, 'a')
 
         # Add a line to the chi squared file containing the simulation name and the chi squared value
-        resultfile.write(self.simulation.name + " " + self.chi_squared + "\n")
+        resultfile.write(self.simulation.name + " " + str(self.chi_squared) + "\n")
 
         # Close the output file
         resultfile.close()

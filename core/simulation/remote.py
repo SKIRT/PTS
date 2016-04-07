@@ -641,7 +641,7 @@ class SkirtRemote(Remote):
                     # Download the list of files to the local output directory
                     self.download(copy_paths, simulation.output_path)
 
-                # If retreival was succesful, add this information to the simulation file
+                # If retrieval was succesful, add this information to the simulation file
                 simulation.retrieved = True
                 simulation.save()
 

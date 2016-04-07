@@ -121,6 +121,9 @@ class SkirtSimulation(object):
         self._processes = None
         self._threads = None
 
+        self._delegate = True # I added this flag because I want to turn it off for RemoteSimulation (pickling the
+                              # SkiFile is not possible)
+
     ## This function returns whether the simulation requires input
     @property
     def has_input(self):
@@ -237,12 +240,13 @@ class SkirtSimulation(object):
     def __getattr__(self, attrname):
         # if this is not a system attribute
         if not attrname.startswith("__"):
-            # attempt delegating to our SkiFile object
-            try: return getattr(self.parameters(), attrname)
-            except AttributeError: pass
-            # attempt delegating to our SkirtUnits object
-            try: return getattr(self.units(), attrname)
-            except AttributeError: pass
+            if self._delegate:
+                # attempt delegating to our SkiFile object
+                try: return getattr(self.parameters(), attrname)
+                except AttributeError: pass
+                # attempt delegating to our SkirtUnits object
+                try: return getattr(self.units(), attrname)
+                except AttributeError: pass
         raise AttributeError("Can't delegate this attribute")
 
     # -----------------------------------------------------------------
@@ -527,6 +531,8 @@ class RemoteSimulation(SkirtSimulation):
         # Call the constructor of the base class
         super(RemoteSimulation, self).__init__(prefix, input_path, output_path, ski_path)
 
+        self._delegate = False # Don't delegate (temporary fix)
+
         # -- Attributes --
 
         # The simulation file path
@@ -665,6 +671,9 @@ class RemoteSimulation(SkirtSimulation):
 
         # Check whether a path is defined for the simulation file
         if self.path is None: raise RuntimeError("The simulation file does not exist yet")
+
+        # Set the _parameters to None to avoid an error when trying to pickle the SkiFile instance
+        self._parameters = None
 
         # Serialize and dump the simulation object
         serialization.dump(self, self.path, method="pickle")

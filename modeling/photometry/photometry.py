@@ -354,7 +354,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Plotting the SED ...")
 
         # Create a new SEDPlotter instance
-        plotter = SEDPlotter("M81")
+        plotter = SEDPlotter(self.galaxy_name)
 
         # Add the SED
         plotter.add_observed_sed(self.sed, "PTS")
@@ -376,7 +376,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Plotting the SED with reference fluxes ...")
 
         # Create a new SEDPlotter instance
-        plotter = SEDPlotter("M81")
+        plotter = SEDPlotter(self.galaxy_name)
 
         # Add the SED
         plotter.add_observed_sed(self.sed, "PTS")

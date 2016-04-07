@@ -142,6 +142,9 @@ class SEDPlotter(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Clearing the SED plotter ...")
+
         # Set default values for all attributes
         self.models = OrderedDict()
         self.observations = OrderedDict()
@@ -162,6 +165,9 @@ class SEDPlotter(object):
         :param path:
         :return:
         """
+
+        # Inform the user
+        log.info("Making the SED plot ...")
 
         if len(self.models) == 0: self.plot_no_models(path)
         else: self.plot_with_models(path)
@@ -821,6 +827,9 @@ class SEDPlotter(object):
 
         # Add title if requested
         if self.title is not None: self._figure.suptitle(self.title, fontsize=14, fontweight='bold')
+
+        # Debugging
+        log.debug("Saving the SED plot to " + path + " ...")
 
         # Save the figure
         plt.savefig(path, bbox_inches='tight', pad_inches=0.25)
