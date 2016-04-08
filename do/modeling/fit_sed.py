@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.animate_fit Make an animation from the SED fitting procedure
+## \package pts.do.modeling.fit_sed Determine the best fit with the observed SED
 
 # -----------------------------------------------------------------
 
@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.modeling.fitting.animation import FitAnimator
+from pts.modeling.fitting.sedfitting import SEDFitter
 from pts.core.tools import logging, time, parsing, filesystem
 
 # -----------------------------------------------------------------
@@ -50,14 +50,14 @@ level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting animate_fit ...")
+log.start("Starting fit_sed ...")
 
 # -----------------------------------------------------------------
 
-# Create a FitAnimator object
-animator = FitAnimator.from_arguments(arguments)
+# Create a SEDFitter object
+fitter = SEDFitter.from_arguments(arguments)
 
-# Run the fit animator
-animator.run()
+# Run the fitter
+fitter.run()
 
 # -----------------------------------------------------------------

@@ -20,7 +20,8 @@ from scipy import integrate
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
-from ...core.tools import tables
+from ...core.tools import tables, filesystem
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -46,6 +47,9 @@ class SEDFitter(FittingComponent):
         # The table of chi squared values
         self.chi_squared = None
 
+        # The model parameter table
+        self.parameters = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -59,6 +63,9 @@ class SEDFitter(FittingComponent):
 
         # Create a new SEDFitter instance
         fitter = cls(arguments.config)
+
+        # Set the modeling path
+        fitter.config.path = arguments.path
 
         # Return the new instance
         return fitter
@@ -77,6 +84,9 @@ class SEDFitter(FittingComponent):
 
         # 2. Load the chi squared table
         self.load_chi_squared()
+
+        # Load the parameter table
+        self.load_parameters()
 
         # 3. Calculate the probability distributions
         self.calculate_probabilities()
@@ -108,8 +118,30 @@ class SEDFitter(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the table with the chi squared value for each model ...")
+
         # Load the chi squared table
         self.chi_squared = tables.from_file(self.chi_squared_table_path)
+
+        # Sort the table for decreasing chi squared value
+        self.chi_squared.sort("Chi squared")
+        self.chi_squared.reverse()
+
+    # -----------------------------------------------------------------
+
+    def load_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the table with the model parameters ...")
+
+        # Load the parameter table
+        self.parameters = tables.from_file(self.parameter_table_path)
 
     # -----------------------------------------------------------------
 
@@ -119,6 +151,9 @@ class SEDFitter(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Calculating the probability distributions for each parameter ...")
 
         return
 
@@ -156,11 +191,26 @@ class SEDFitter(FittingComponent):
         :return:
         """
 
-        # Load the image (as a NumPy array)
-        image = imageio.imread(path)
+        # Inform the user
+        log.info("Creating an animation of the SED fitting procedure ...")
 
-        # Add the image to the list of frames
-        frames.append(image)
+        # Initialize a list to contain the frames of the animation
+        frames = []
+
+        # Loop over the entries of the chi squared table (sorted by decreasing chi squared)
+        for i in range(len(self.chi_squared)):
+
+            # Get the name of the simulation
+            simulation_name = self.chi_squared["Simulation name"][i]
+
+            # Determine the path to the corresponding SED plot file
+            path = filesystem.join(self.fit_plot_path, simulation_name, "sed.png")
+
+            # Load the image (as a NumPy array)
+            image = imageio.imread(path)
+
+            # Add the image to the list of frames
+            frames.append(image)
 
         # Determine the path to the animation file
         path = self.full_output_path("fitting.gif")
@@ -177,6 +227,9 @@ class SEDFitter(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing ...")
+
         # Write the ski file of the best simulation
         self.write_best()
 
@@ -189,7 +242,37 @@ class SEDFitter(FittingComponent):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Writing the best model parameters ...")
+
+        # Get the simulation name of the last entry in the chi squared table (the lowest chi squared value)
+        simulation_name = self.chi_squared["Simulation name"][len(self.chi_squared)-1]
+
+        # Determine the path to the simulation's ski file
+        ski_path = filesystem.join(self.fit_out_path, simulation_name, self.galaxy_name + ".ski")
+
+        print("path", self.config.path)
+        print("galaxy name", self.galaxy_name)
+        print(ski_path)
+        print(self.fit_best_path)
+
+        # Copy the ski file to the fit/best directory
+        filesystem.copy_file(ski_path, self.fit_best_path)
+
+        # Find the corresponding index in the parameter table
+        index = tables.find_index(self.parameters, simulation_name, "Simulation name")
+
+        # Get the best parameter values
+        fuv_young = self.parameters["FUV young"][index]
+        fuv_ionizing = self.parameters["FUV ionizing"][index]
+        dust_mass = self.parameters["Dust mass"][index]
+
+        # Write a file with the best parameter values
+        path = filesystem.join(self.fit_best_path, "parameters.dat")
+        with open(path, 'w') as best_parameters:
+            best_parameters.write("FUV young: " + str(fuv_young) + "\n")
+            best_parameters.write("FUV ionizing: " + str(fuv_ionizing) + "\n")
+            best_parameters.write("Dust mass: " + str(dust_mass) + "\n")
 
 # -----------------------------------------------------------------
 
