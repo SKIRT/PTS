@@ -127,9 +127,9 @@ class ModelAnalyser(FittingComponent):
         self.flux_calculator = flux_calculator
 
         # Initialize the differences table
-        names = ["Instrument", "Band", "Flux difference", "Relative difference"]
-        data = [[], [], [], []]
-        dtypes = ["S5", "S7", "float64", "float64"]
+        names = ["Instrument", "Band", "Flux difference", "Relative difference", "Chi squared term"]
+        data = [[], [], [], [], []]
+        dtypes = ["S5", "S7", "float64", "float64", "float64"]
         self.differences = tables.new(data, names, dtypes=dtypes)
 
     # -----------------------------------------------------------------
@@ -176,6 +176,9 @@ class ModelAnalyser(FittingComponent):
             # Find the corresponding flux in the SED derived from observation
             observed_fluxdensity = self.fluxes.flux_for_band(instrument, band, unit="Jy").value
 
+            # Find the corresponding flux error in the SED derived from observation
+            observed_fluxdensity_error = self.fluxes.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
+
             # If no match with (instrument, band) is found in the observed SED
             if observed_fluxdensity is None:
                 log.warning("The observed flux density could not be found for the " + instrument + " " + band + " band")
@@ -183,9 +186,10 @@ class ModelAnalyser(FittingComponent):
 
             difference = fluxdensity - observed_fluxdensity
             relative_difference = difference / observed_fluxdensity
+            chi_squared_term = difference**2 / observed_fluxdensity_error**2
 
             # Add an entry to the differences table
-            self.differences.add_row([instrument, band, difference, relative_difference])
+            self.differences.add_row([instrument, band, difference, relative_difference, chi_squared_term])
 
     # -----------------------------------------------------------------
 
@@ -196,7 +200,15 @@ class ModelAnalyser(FittingComponent):
         :return:
         """
 
-        self.chi_squared = 1.
+        # Inform the user
+        log.info("Calculating the chi squared value for this model ...")
+
+        # TODO: use weights for bands
+
+        self.chi_squared = np.sum(self.differences["Chi squared term"])
+
+        # Debugging
+        log.debug("Found a chi squared value of " + str(self.chi_squared))
 
         return
 

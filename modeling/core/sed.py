@@ -209,13 +209,82 @@ class ObservedSED(object):
                 flux = self.table["Flux"][i] * self.table["Flux"].unit
 
                 # If a target unit is specified, convert
-                if unit is not None: flux = flux.to(unit).value * Unit(unit)  # If converted, do not add any unit
+                if unit is not None: flux = flux.to(unit).value * Unit(unit)
 
-                if not add_unit: flux = flux.value  # If not converted and add_unit is enabled, add the unit
+                if not add_unit: flux = flux.value
 
             else: flux = self.table["Flux"][i]
 
             return flux
+
+        # If no match is found, return None
+        return None
+
+    # -----------------------------------------------------------------
+
+    def error_for_filter(self, filter, unit=None, add_unit=True):
+
+        """
+        This function ...
+        :param filter:
+        :param unit:
+        :param add_unit:
+        :return:
+        """
+
+        return self.error_for_band(filter.instrument, filter.band, unit, add_unit)
+
+    # -----------------------------------------------------------------
+
+    def error_for_band(self, instrument, band, unit=None, add_unit=True):
+
+        """
+        This function ...
+        :param instrument:
+        :param band:
+        :param unit:
+        :param add_unit:
+        :return:
+        """
+
+        has_unit = self.table["Error-"].unit is not None and self.table["Error+"].unit is not None
+        has_mask = hasattr(self.table["Error-"], "mask")
+        assert has_mask == hasattr(self.table["Error+"], "mask")
+
+        # If unit has to be converted, check whether the original unit is specified
+        if not has_unit and unit is not None: raise ValueError(
+            "Cannot determine the unit of the error columns so values cannot be converted to " + str(unit))
+
+        # Loop over all the entries in the table
+        for i in range(len(self.table)):
+
+            instrument_entry = self.table["Instrument"][i]
+            band_entry = self.table["Band"][i]
+
+            if not (instrument_entry == instrument and band_entry == band): continue
+
+            if has_unit:
+
+                # Add the unit initially to be able to convert
+                error_min = self.table["Error-"][i] * self.table["Error-"].unit
+                error_plus = self.table["Error+"][i] * self.table["Error+"].unit
+
+                # If a target unit is specified, convert
+                if unit is not None:
+
+                    error_min = error_min.to(unit).value * Unit(unit)
+                    error_plus = error_plus.to(unit).value * Unit(unit)
+
+                if not add_unit:
+
+                    error_min = error_min.value
+                    error_plus = error_plus.value
+
+                error = ErrorBar(error_min, error_plus)
+
+            else: error = ErrorBar(self.table["Error-"][i], self.table["Error+"][i])
+
+            return error
 
         # If no match is found, return None
         return None
