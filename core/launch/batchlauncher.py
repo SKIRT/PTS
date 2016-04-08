@@ -295,8 +295,8 @@ class BatchLauncher(Configurable):
                 # If the input directory is shared between the different simulations,
                 if self.config.shared_input and remote_input_path is None: remote_input_path = simulation.remote_input_path
 
-                # Add additional information to the simulation object
-                self.add_analysis_info(simulation)
+                # Set the analysis options for the simulation
+                self.set_analysis_options(simulation)
 
                 # Save the simulation object
                 simulation.save()
@@ -350,7 +350,7 @@ class BatchLauncher(Configurable):
         """
 
         # Inform the user
-        log.info("Analysing the output of retrieved simulations...")
+        log.info("Analysing the output of retrieved simulations ...")
 
         # Loop over the list of simulations and analyse them
         for simulation in self.simulations:
@@ -363,7 +363,7 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_analysis_info(self, simulation):
+    def set_analysis_options(self, simulation):
 
         """
         This function ...
@@ -371,48 +371,29 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        # Extraction
-        simulation.extract_progress = self.config.extraction.progress
-        simulation.extract_timeline = self.config.extraction.timeline
-        simulation.extract_memory = self.config.extraction.memory
+        # Set the options
+        simulation.set_analysis_options(self.config.analysis)
 
         # Determine the extraction directory for this simulation (and create it if necessary)
-        if self.config.extraction.path is not None: extraction_path = filesystem.join(self.config.extraction.path, simulation.name)
+        if self.config.analysis.extraction.path is not None: extraction_path = filesystem.join(self.config.analysis.extraction.path, simulation.name)
         else: extraction_path = filesystem.join(simulation.output_path, "extr")
-        if self.config.extraction.progress or self.config.extraction.timeline or self.config.extraction.memory:
+        if simulation.analysis.any_extraction:
             if not filesystem.is_directory(extraction_path): filesystem.create_directory(extraction_path, recursive=True)
-            simulation.extraction_path = extraction_path
-
-        # Plotting
-        simulation.plot_progress = self.config.plotting.progress
-        simulation.plot_timeline = self.config.plotting.timeline
-        simulation.plot_memory = self.config.plotting.memory
-        simulation.plot_seds = self.config.plotting.seds
-        simulation.plot_grids = self.config.plotting.grids
+            simulation.analysis.extraction.path = extraction_path
 
         # Determine the plotting directory for this simulation (and create it if necessary)
-        if self.config.plotting.path is not None: plotting_path = filesystem.join(self.config.plotting.path, simulation.name)
+        if self.config.analysis.plotting.path is not None: plotting_path = filesystem.join(self.config.analysis.plotting.path, simulation.name)
         else: plotting_path = filesystem.join(simulation.output_path, "plot")
-        if self.config.plotting.seds or self.config.plotting.grids or self.config.plotting.progress \
-            or self.config.plotting.timeline or self.config.plotting.memory:
-                if not filesystem.is_directory(plotting_path): filesystem.create_directory(plotting_path, recursive=True)
-                simulation.plotting_path = plotting_path
-
-        # Advanced
-        simulation.make_rgb = self.config.advanced.rgb
-        simulation.make_wave = self.config.advanced.wavemovie
-
-        # Make observations
-        simulation.calculate_observed_fluxes = self.config.misc.fluxes
-        simulation.make_observed_images = self.config.misc.images
-        simulation.observation_filters = self.config.misc.observation_filters
+        if simulation.analysis.any_plotting:
+            if not filesystem.is_directory(plotting_path): filesystem.create_directory(plotting_path, recursive=True)
+            simulation.analysis.plotting.path = plotting_path
 
         # Determine the 'misc' directory for this simulation (and create it if necessary)
-        if self.config.misc.path is not None: misc_path = filesystem.join(self.config.misc.path, simulation.name)
+        if self.config.analysis.misc.path is not None: misc_path = filesystem.join(self.config.analysis.misc.path, simulation.name)
         else: misc_path = filesystem.join(simulation.output_path, "misc")
-        if self.config.misc.fluxes or self.config.misc.images:
+        if simulation.analysis.any_misc:
             if not filesystem.is_directory(misc_path): filesystem.create_directory(misc_path, recursive=True)
-            simulation.misc_path = misc_path
+            simulation.analysis.misc.path = misc_path
 
         # Remove remote files
         simulation.remove_remote_input = not self.config.keep and not self.config.shared_input

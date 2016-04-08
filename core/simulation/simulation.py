@@ -19,10 +19,11 @@ import types
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ..tools import serialization
+from ..tools import serialization, filesystem
 from .skifile import SkiFile
 from .logfile import LogFile
 from ..tools import archive as arch
+from ..launch.options import AnalysisOptions
 
 # -----------------------------------------------------------------
 
@@ -522,7 +523,7 @@ class RemoteSimulation(SkirtSimulation):
         """
 
         # Determine the simulation prefix
-        prefix = os.path.basename(ski_path).split(".ski")[0]
+        prefix = filesystem.strip_extension(filesystem.name(ski_path))
 
         # Call the constructor of the base class
         super(RemoteSimulation, self).__init__(prefix, input_path, output_path, ski_path)
@@ -544,49 +545,17 @@ class RemoteSimulation(SkirtSimulation):
         # Options for retrieval
         self.retrieve_types = None
 
-        # Options for analysis of the simulation output
-        self.extract_progress = False
-        self.extract_timeline = False
-        self.extract_memory = False
-        self.plot_progress = False
-        self.plot_timeline = False
-        self.plot_memory = False
-        self.plot_seds = False
-        self.plot_grids = False
-        self.make_rgb = False
-        self.make_wave = False
-        self.calculate_observed_fluxes = False
-        self.make_observed_images = False
+        # The options for analysing the simulation output
+        self.analysis = AnalysisOptions()
 
-        # Extraction, plotting and 'misc' path
-        self.extraction_path = None
-        self.plotting_path = None
-        self.misc_path = None
-
-        # The path to a file containing an SED for which the points have to be plotted against the simulated curve (when plot_seds is enabled)
-        self.reference_sed = None
-
-        # The filters for which to recreate the observations
-        self.observation_filters = None
-
-        # Removal options
-        self.remove_remote_input = True
-        self.remove_remote_output = True
-        self.remove_remote_simulation_directory = True
-
-        # Local removal (after analysis)
-        self.remove_local_output = False
+        # Options for removing remote or local input and output
+        self.remove_remote_input = True                 # After retrieval
+        self.remove_remote_output = True                # After retrieval
+        self.remove_remote_simulation_directory = True  # After retrieval
+        self.remove_local_output = False                # After analysis
 
         # Screen session name
         self.screen_name = None
-
-        # Properties relevant for simulations part of a scaling test
-        self.scaling_run_name = None
-        self.scaling_data_file = None
-        self.scaling_plot_path = None
-
-        # Properties relevant for simulations part of radiative transfer modeling
-        self.modeling_path = None
 
         # Flag indicating whether this simulation has been retrieved or not
         self.retrieved = False
@@ -624,7 +593,7 @@ class RemoteSimulation(SkirtSimulation):
         :return:
         """
 
-        return self.scaling_run_name is not None
+        return self.analysis.scaling_run_name is not None
 
     # -----------------------------------------------------------------
 
@@ -636,7 +605,7 @@ class RemoteSimulation(SkirtSimulation):
         :return:
         """
 
-        return self.modeling_path is not None
+        return self.analysis.modeling_path is not None
 
     # -----------------------------------------------------------------
 
@@ -653,6 +622,19 @@ class RemoteSimulation(SkirtSimulation):
 
         # Set the simulation file path
         self.path = path
+
+    # -----------------------------------------------------------------
+
+    def set_analysis_options(self, options):
+
+        """
+        This function allows setting the analysi options from a dictionary
+        :param options:
+        :return:
+        """
+
+        # Load the options into the AnalysisOptions object
+        self.analysis.set_options(options)
 
     # -----------------------------------------------------------------
 

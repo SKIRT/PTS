@@ -63,14 +63,14 @@ class ScalingExtractor(object):
         """
 
         # Set the parallelization mode
-        self.mode = simulation.scaling_run_name.split("__")[4]
+        self.mode = simulation.analysis.scaling_run_name.split("__")[4]
 
         # Set the number of processes and threads
         self.processes = simulation.processes()
         self.threads = simulation.threads()
 
         # Set the path to the scaling file
-        self.scaling_file_path = simulation.scaling_data_file
+        self.scaling_file_path = simulation.analysis.scaling_data_file
 
         # Cache local references to the timeline and memory extractors
         self.te = timeline_extractor

@@ -13,13 +13,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from PIL import Image, ImageSequence
 import imageio
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools.logging import log
-from ...core.tools import gif, filesystem
+from ...core.tools import filesystem
 
 # -----------------------------------------------------------------
 
@@ -116,9 +115,7 @@ class FitAnimator(FittingComponent):
         # Find all PNG files within the the fit/plot directory
         for path in filesystem.files_in_path(self.fit_plot_path, extension="png", recursive=True):
 
-            # Load the image
-            #image = Image.open(path)
-
+            # Load the image (as a NumPy array)
             image = imageio.imread(path)
 
             # Add the image to the list of frames
@@ -151,8 +148,6 @@ class FitAnimator(FittingComponent):
         path = self.full_output_path("fitting.gif")
 
         # Create and write the GIF file
-        #gif.writeGif(path, self.frames, duration=0.2)
-
-        imageio.mimwrite(path, self.frames, format="gif")
+        imageio.mimwrite(path, self.frames)
 
 # -----------------------------------------------------------------

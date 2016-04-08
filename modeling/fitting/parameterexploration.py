@@ -148,13 +148,15 @@ class ParameterExplorer(FittingComponent):
             filter_names.append(filter_id)
 
         # Set options for the BatchLauncher
-        self.launcher.config.misc.path = self.fit_res_path      # The base directory where all of the simulations will have a seperate directory with the 'misc' analysis output
-        self.launcher.config.plotting.path = self.fit_plot_path # The base directory where all of the simulations will have a seperate directory with the plotting analysis output
+        self.launcher.config.analysis.misc.path = self.fit_res_path # The base directory where all of the simulations will have a seperate directory with the 'misc' analysis output
+        self.launcher.config.analysis.plotting.path = self.fit_plot_path # The base directory where all of the simulations will have a seperate directory with the plotting analysis output
+        self.launcher.config.analysis.plotting.seds = True  # Plot the output SEDs
+        self.launcher.config.analysis.misc.fluxes = True  # Calculate observed fluxes
+        self.launcher.config.analysis.misc.images = True  # Make observed images
+        self.launcher.config.analysis.misc.observation_filters = filter_names  # The filters for which to create the observations
+        self.launcher.config.analysis.plotting.format = "png" # plot in PNG format so that an animation can be made from the fit SEDs
+
         self.launcher.config.shared_input = True   # The input directories for the different simulations are shared
-        self.launcher.config.plotting.seds = True  # Plot the output SEDs
-        self.launcher.config.misc.fluxes = True    # Calculate observed fluxes
-        self.launcher.config.misc.images = True    # Make observed images
-        self.launcher.config.misc.observation_filters = filter_names # The filters for which to create the observations
         self.launcher.config.remotes = ["nancy"]   # temporary; only use Nancy
 
         # If a parameter table already exists, load it
@@ -334,10 +336,10 @@ class ParameterExplorer(FittingComponent):
         for simulation in simulations:
 
             # Add the path to the modeling directory to the simulation object
-            simulation.modeling_path = self.config.path
+            simulation.analysis.modeling_path = self.config.path
 
             # Set the path to the reference SED (for plotting the simulated SED against the reference points)
-            simulation.reference_sed = filesystem.join(self.phot_path, "fluxes.dat")
+            simulation.analysis.plotting.reference_sed = filesystem.join(self.phot_path, "fluxes.dat")
 
             # Save the simulation object
             simulation.save()

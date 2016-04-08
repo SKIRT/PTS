@@ -110,25 +110,24 @@ class SkirtRemoteLauncher(Configurable):
         launcher.config.arguments.single = True  # For now, we only allow single simulations
 
         # Extraction
-        launcher.config.extraction.progress = arguments.extractprogress
-        launcher.config.extraction.timeline = arguments.extracttimeline
-        launcher.config.extraction.memory = arguments.extractmemory
+        launcher.config.analysis.extraction.progress = arguments.extractprogress
+        launcher.config.analysis.extraction.timeline = arguments.extracttimeline
+        launcher.config.analysis.extraction.memory = arguments.extractmemory
 
         # Plotting
-        launcher.config.plotting.seds = arguments.plotseds
-        launcher.config.plotting.grids = arguments.plotgrids
-        launcher.config.plotting.progress = arguments.plotprogress
-        launcher.config.plotting.timeline = arguments.plottimeline
-        launcher.config.plotting.memory = arguments.plotmemory
-
-        # Advanced options
-        launcher.config.advanced.rgb = arguments.makergb
-        launcher.config.advanced.wavemovie = arguments.makewave
+        launcher.config.analysis.plotting.seds = arguments.plotseds
+        launcher.config.analysis.plotting.grids = arguments.plotgrids
+        launcher.config.analysis.plotting.progress = arguments.plotprogress
+        launcher.config.analysis.plotting.timeline = arguments.plottimeline
+        launcher.config.analysis.plotting.memory = arguments.plotmemory
+        launcher.config.analysis.plotting.reference_sed = arguments.refsed
 
         # Miscellaneous
-        launcher.config.misc.fluxes = arguments.fluxes
-        launcher.config.misc.images = arguments.images
-        launcher.config.misc.observation_filters = arguments.filters
+        launcher.config.analysis.misc.rgb = arguments.makergb
+        launcher.config.analysis.misc.wave = arguments.makewave
+        launcher.config.analysis.misc.fluxes = arguments.fluxes
+        launcher.config.analysis.misc.images = arguments.images
+        launcher.config.analysis.misc.observation_filters = arguments.filters
 
         # Keep remote input and output
         launcher.config.keep = arguments.keep
@@ -342,8 +341,8 @@ class SkirtRemoteLauncher(Configurable):
         arguments = SkirtArguments(self.config.arguments)
         simulation = self.remote.run(arguments, scheduling_options=scheduling_options)
 
-        # Add additional information to the simulation object
-        self.add_analysis_info(simulation)
+        # Set the analysis options for the simulation
+        self.set_analysis_options(simulation)
 
         # Save the simulation object
         simulation.save()
@@ -386,7 +385,7 @@ class SkirtRemoteLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_analysis_info(self, simulation):
+    def set_analysis_options(self, simulation):
 
         """
         This function ...
@@ -394,29 +393,8 @@ class SkirtRemoteLauncher(Configurable):
         :return:
         """
 
-        # Extraction
-        simulation.extract_progress = self.config.extraction.progress
-        simulation.extract_timeline = self.config.extraction.timeline
-        simulation.extract_memory = self.config.extraction.memory
-        simulation.extraction_path = self.extr_path
-
-        # Plotting
-        simulation.plot_progress = self.config.plotting.progress
-        simulation.plot_timeline = self.config.plotting.timeline
-        simulation.plot_memory = self.config.plotting.memory
-        simulation.plot_seds = self.config.plotting.seds
-        simulation.plot_grids = self.config.plotting.grids
-        simulation.plotting_path = self.plot_path
-
-        # Advanced
-        simulation.make_rgb = self.config.advanced.rgb
-        simulation.make_wave = self.config.advanced.wavemovie
-
-        # Misc
-        simulation.calculate_observed_fluxes = self.config.misc.fluxes
-        simulation.make_observed_images = self.config.misc.images
-        simulation.misc_path = self.misc_path
-        simulation.observation_filters = self.config.misc.observation_filters
+        # Set the analysis options from the configuration settings
+        simulation.set_analysis_options(self.config.analysis)
 
         # Remove remote files
         simulation.remove_remote_input = not self.config.keep

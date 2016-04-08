@@ -511,26 +511,8 @@ class ScalingTest(Configurable):
         # Add the simulation to the remote queue
         simulation = self.remote.add_to_queue(self.arguments, simulation_name, scheduling_options)
 
-        # Add additional information to the simulation object
-        simulation.extract_progress = True
-        simulation.extract_timeline = True
-        simulation.extract_memory = True
-        simulation.plot_progress = True
-        simulation.plot_timeline = True
-        simulation.plot_memory = True
-        simulation.remove_remote_input = not self.config.keep
-        simulation.remove_remote_output = not self.config.keep
-        simulation.remove_remote_simulation_directory = not self.config.keep
-        simulation.retrieve_types = ["log"]
-        simulation.extraction_path = self.result_path_simulation
-        simulation.plotting_path = self.plot_path_simulation
-        simulation.scaling_run_name = self.long_scaling_run_name
-        simulation.scaling_data_file = self.scaling_file_path
-        simulation.scaling_plot_path = self.plot_path_system
-        if not self.remote.scheduler: simulation.screen_name = self.long_scaling_run_name
-
-        # Save the simulation file
-        simulation.save()
+        # Set analysis options for the simulation
+        self.set_analysis_options(simulation)
 
         # Add information about the path to the directory where the extracted data will be placed
         infofile.write(" - progress information will be extracted to: " + self.result_path_simulation + "\n")
@@ -541,6 +523,47 @@ class ScalingTest(Configurable):
         infofile.write(" - progress data will be plotted to: " + self.plot_path_simulation + "\n")
         infofile.write(" - timeline data will be plotted to: " + self.plot_path_simulation + "\n")
         infofile.write(" - memory data will be plotted to: " + self.plot_path_simulation + "\n")
+
+    # -----------------------------------------------------------------
+
+    def set_analysis_options(self, simulation):
+
+        """
+        This function ...
+        :param simulation:
+        :return:
+        """
+
+        # Set options for extraction
+        simulation.analysis.extraction.path = self.result_path_simulation
+        simulation.analysis.extraction.progress = True
+        simulation.analysis.extraction.timeline = True
+        simulation.analysis.extraction.memory = True
+
+        # Set options for plotting
+        simulation.analysis.plotting.path = self.plot_path_simulation
+        simulation.analysis.plotting.progress = True
+        simulation.analysis.plotting.timeline = True
+        simulation.analysis.plotting.memory = True
+
+        # Set options for removing input/output
+        simulation.remove_remote_input = not self.config.keep
+        simulation.remove_remote_output = not self.config.keep
+        simulation.remove_remote_simulation_directory = not self.config.keep
+
+        # Options for retrieval
+        simulation.retrieve_types = ["log"]
+
+        # Scaling test characteristics
+        simulation.analysis.scaling_run_name = self.long_scaling_run_name
+        simulation.analysis.scaling_data_file = self.scaling_file_path
+        simulation.analysis.scaling_plot_path = self.plot_path_system
+
+        # Other
+        if not self.remote.scheduler: simulation.screen_name = self.long_scaling_run_name
+
+        # Save the simulation file
+        simulation.save()
 
     # -----------------------------------------------------------------
 

@@ -139,6 +139,6 @@ class ScalingAnalyser(Configurable):
 
         # Create and run a ScalingPlotter object
         plotter = ScalingPlotter()
-        plotter.run(self.scaling, self.simulation.scaling_plot_path)
+        plotter.run(self.scaling, self.simulation.analysis.scaling_plot_path)
 
 # -----------------------------------------------------------------

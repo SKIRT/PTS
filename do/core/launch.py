@@ -47,6 +47,7 @@ parser.add_argument("--plotgrids", action="store_true", help="make plots of the 
 parser.add_argument("--plotprogress", action="store_true", help="make plots of the progress of the different processes as a function of time")
 parser.add_argument("--plottimeline", action="store_true", help="make a plot of the timeline for the different processes")
 parser.add_argument("--plotmemory", action="store_true", help="make a plot of the memory consumption as a function of time")
+parser.add_argument("--refsed", type=str, help="specify the path to a reference SED file against which the simulated SKIRT SEDs should be plotted")
 parser.add_argument("--makergb", action="store_true", help="add this option to make RGB images from the SKIRT output")
 parser.add_argument("--makewave", action="store_true", help="add this option to make a wave movie from the SKIRT output")
 parser.add_argument("--fluxes", action="store_true", help="add this option to calculate observed fluxes from the SKIRT output SEDs")
