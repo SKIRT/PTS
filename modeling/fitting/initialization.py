@@ -441,7 +441,7 @@ class InputInitializer(FittingComponent):
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength() * Unit("micron"), self.parameters.distance)
 
         # Get the spectral luminosity in solar units
-        luminosity = luminosity.to("W/m").value / solar_luminosity.to("W/m").value
+        luminosity = (luminosity.to("W/m").value / solar_luminosity.to("W/m").value ) * Unit("Lsun") # !! the unit is not really the Lsun that Astropy means
 
         # Set the parameters of the bulge
         self.ski.set_stellar_component_geometry("Evolved stellar bulge", self.bulge)
@@ -483,7 +483,7 @@ class InputInitializer(FittingComponent):
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength()*Unit("micron"), self.parameters.distance)
 
         # Get the spectral luminosity in solar units
-        luminosity = luminosity.to("W/m").value / solar_luminosity.to("W/m").value
+        luminosity = (luminosity.to("W/m").value / solar_luminosity.to("W/m").value) * Unit("Lsun") # !! the unit is not really the Lsun that Astropy means
 
         # Set the parameters of the evolved stellar component
         self.deprojection.filename = "old_stars.fits"
@@ -526,7 +526,7 @@ class InputInitializer(FittingComponent):
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv.pivotwavelength()*Unit("micron"), self.parameters.distance)
 
         # Get the spectral luminosity in solar units
-        luminosity = luminosity.to("W/m").value / solar_luminosity.to("W/m").value
+        luminosity = (luminosity.to("W/m").value / solar_luminosity.to("W/m").value) * Unit("Lsun") # !! the unit is not really the Lsun that Astropy means
 
         # Set the parameters of the young stellar component
         self.deprojection.filename = "young_stars.fits"
@@ -571,7 +571,7 @@ class InputInitializer(FittingComponent):
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv.pivotwavelength() * Unit("micron"), self.parameters.distance)
 
         # Get the spectral luminosity in solar units
-        luminosity = luminosity.to("W/m").value / solar_luminosity.to("W/m").value
+        luminosity = (luminosity.to("W/m").value / solar_luminosity.to("W/m").value) * Unit("Lsun") # !! the unit is not really the Lsun that Astropy means
 
         # Set the parameters of the ionizing stellar component
         self.deprojection.filename = "ionizing_stars.fits"
@@ -741,9 +741,12 @@ def fluxdensity_to_luminosity(fluxdensity, wavelength, distance):
     """
 
     luminosity = (fluxdensity * 4. * math.pi * distance ** 2.).to("W/Hz")
-    luminosity_ = luminosity.to("W/micron", equivalencies=spectral_density(wavelength))
+
+    # 3 ways:
+    #luminosity_ = luminosity.to("W/micron", equivalencies=spectral_density(wavelength)) # does not work
+    luminosity_ = (speed_of_light * luminosity / wavelength**2).to("W/micron")
     luminosity = luminosity.to("W/Hz").value * spectral_factor_hz_to_micron(wavelength) * Unit("W/micron")
-    print(luminosity_, luminosity)
+    #print(luminosity_, luminosity) # is OK!
 
     return luminosity
 

@@ -84,10 +84,12 @@ class Sun(object):
         :return:
         """
 
-        #luminosities = filter.integrate(self.sed["Wavelength"], self.sed["Luminosity"])
+        #luminosity = filter.integrate(self.sed["Wavelength"], self.sed["Luminosity"])
 
-        luminosities = filter.convolve(self.sed["Wavelength"], self.sed["Luminosity"]) # also in W/micron
+        luminosity = filter.convolve(self.sed.wavelengths(unit="micron", asarray=True), self.sed.luminosities(unit="W/micron", asarray=True)) # also in W/micron
 
-        return luminosities
+        print(luminosity, type(luminosity))
+
+        return luminosity * Unit("W/micron")
 
 # -----------------------------------------------------------------

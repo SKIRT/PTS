@@ -86,7 +86,7 @@ class AnalysisOptions(object):
             if hasattr(self, option):
 
                 # Check if the option is composed of other options (a Map), or if it is just a simple variable
-                if isinstance(getattr(self, option), Map): getattr(self, option).set_values(options[option])
+                if isinstance(getattr(self, option), Map): getattr(self, option).set_items(options[option])
 
                 # If it is a simple variable, just use setattr to set the attribute of this class
                 else: setattr(self, option, options[option])
