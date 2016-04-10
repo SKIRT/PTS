@@ -83,10 +83,6 @@ def spectral_factor(wavelength, wavelength_unit, frequency_unit):
 
     conversion_factor_unit = wavelength_unit / frequency_unit
 
-    #print(conversion_factor_unit)
-    #print(wavelength)
-    #print(speed_of_light)
-
     # Calculate the conversion factor
     return (wavelength**2 / speed_of_light).to(conversion_factor_unit).value
 

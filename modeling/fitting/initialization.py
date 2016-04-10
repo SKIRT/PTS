@@ -17,7 +17,8 @@ import math
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit, dimensionless_angles, spectral
+from astropy.units import Unit, dimensionless_angles, spectral, spectral_density
+from astropy import constants
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
@@ -28,6 +29,7 @@ from ..basics.models import SersicModel, DeprojectionModel
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..decomposition.decomposition import load_parameters
 from ...magic.basics.skyregion import SkyRegion
+from ..core.sun import Sun
 
 # -----------------------------------------------------------------
 
@@ -75,6 +77,9 @@ class InputInitializer(FittingComponent):
         # Filters
         self.i1 = None
         self.fuv = None
+
+        # Solar properties
+        self.sun = None
 
         # Coordinate system
         self.reference_wcs = None
@@ -175,6 +180,9 @@ class InputInitializer(FittingComponent):
         # Create filters
         self.i1 = Filter.from_string("I1")
         self.fuv = Filter.from_string("FUV")
+
+        # Solar properties
+        self.sun = Sun()
 
         # Reference coordinate system
         reference_image = "Pacs red"
@@ -417,12 +425,23 @@ class InputInitializer(FittingComponent):
         bulge_age = 12
         bulge_metallicity = 0.02
 
-        # Convert the bulge 3.6 micron flux density into a luminosity
-        fluxdensity = self.parameters.bulge.fluxdensity
-        wavelength = self.i1.effectivewavelength() * Unit("micron")
-        frequency = wavelength.to("Hz", equivalencies=spectral())
-        flux = (fluxdensity * frequency).to("Lsun/m2")
-        luminosity = (flux * 4. * math.pi * self.parameters.distance**2.).to("Lsun")
+        # Get the flux density of the bulge
+        fluxdensity = self.parameters.bulge.fluxdensity # In Jy
+
+        # Convert the bulge 3.6 micron flux density into a luminosity, old way:
+        #wavelength = self.i1.effectivewavelength() * Unit("micron")
+        #frequency = wavelength.to("Hz", equivalencies=spectral())
+        #flux = (fluxdensity * frequency).to("Lsun/m2")
+        #luminosity = (flux * 4. * math.pi * self.parameters.distance**2.)
+
+        # Get the luminosity of the Sun for the 3.6 micron band
+        solar_luminosity = self.sun.luminosity_for_filter(self.i1)
+
+        # Convert the flux density into a spectral luminosity
+        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength() * Unit("micron"), self.parameters.distance)
+
+        # Get the spectral luminosity in solar units
+        luminosity = luminosity.to("W/m").value / solar_luminosity.to("W/m").value
 
         # Set the parameters of the bulge
         self.ski.set_stellar_component_geometry("Evolved stellar bulge", self.bulge)
@@ -451,11 +470,20 @@ class InputInitializer(FittingComponent):
         i1_index = tables.find_index(self.fluxes, "I1", "Band")
         fluxdensity = self.fluxes["Flux"][i1_index]*Unit("Jy") - self.parameters.bulge.fluxdensity
 
-        # Convert the flux density into a luminosity
-        wavelength = self.i1.effectivewavelength() * Unit("micron")
-        frequency = wavelength.to("Hz", equivalencies=spectral())
-        flux = (fluxdensity * frequency).to("Lsun/m2", equivalencies=spectral())
-        luminosity = (flux * 4. * math.pi * self.parameters.distance**2.).to("Lsun")
+        # Convert the flux density into a luminosity, old way:
+        #wavelength = self.i1.effectivewavelength() * Unit("micron")
+        #frequency = wavelength.to("Hz", equivalencies=spectral())
+        #flux = (fluxdensity * frequency).to("Lsun/m2", equivalencies=spectral())
+        #luminosity = (flux * 4. * math.pi * self.parameters.distance**2.).to("Lsun")
+
+        # Get the luminosity of the Sun for the 3.6 micron band
+        solar_luminosity = self.sun.luminosity_for_filter(self.i1)
+
+        # Convert the flux density into a spectral luminosity
+        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength()*Unit("micron"), self.parameters.distance)
+
+        # Get the spectral luminosity in solar units
+        luminosity = luminosity.to("W/m").value / solar_luminosity.to("W/m").value
 
         # Set the parameters of the evolved stellar component
         self.deprojection.filename = "old_stars.fits"
@@ -483,13 +511,22 @@ class InputInitializer(FittingComponent):
 
         # Get the FUV flux density
         fuv_index = tables.find_index(self.fluxes, "FUV", "Band")
-        fluxdensity = 0.5 * self.fluxes["Flux"][fuv_index]*Unit("Jy")
+        fluxdensity = 0.8 * self.fluxes["Flux"][fuv_index]*Unit("Jy")
 
-        # Convert the flux density into a luminosity
-        wavelength = self.fuv.effectivewavelength() * Unit("micron")
-        frequency = wavelength.to("Hz", equivalencies=spectral())
-        flux = (fluxdensity * frequency).to("Lsun/m2", equivalencies=spectral())
-        luminosity = (flux * 4. * math.pi * self.parameters.distance**2.).to("Lsun")
+        # Convert the flux density into a luminosity, old way:
+        #wavelength = self.fuv.effectivewavelength() * Unit("micron")
+        #frequency = wavelength.to("Hz", equivalencies=spectral())
+        #flux = (fluxdensity * frequency).to("Lsun/m2", equivalencies=spectral())
+        #luminosity = (flux * 4. * math.pi * self.parameters.distance**2.).to("Lsun")
+
+        # Get the luminosity of the Sun for the FUV band
+        solar_luminosity = self.sun.luminosity_for_filter(self.fuv)
+
+        # Convert the flux density into a spectral luminosity
+        luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv.pivotwavelength()*Unit("micron"), self.parameters.distance)
+
+        # Get the spectral luminosity in solar units
+        luminosity = luminosity.to("W/m").value / solar_luminosity.to("W/m").value
 
         # Set the parameters of the young stellar component
         self.deprojection.filename = "young_stars.fits"
@@ -519,13 +556,22 @@ class InputInitializer(FittingComponent):
 
         # Get the FUV flux density
         fuv_index = tables.find_index(self.fluxes, "FUV", "Band")
-        fluxdensity = 0.5 * self.fluxes["Flux"][fuv_index]*Unit("Jy")
+        fluxdensity = 0.8 * self.fluxes["Flux"][fuv_index]*Unit("Jy")
 
-        # Convert the flux density into a luminosity
-        wavelength = self.fuv.effectivewavelength() * Unit("micron")
-        frequency = wavelength.to("Hz", equivalencies=spectral())
-        flux = (fluxdensity * frequency).to("Lsun/m2")
-        luminosity = (flux * 4. * math.pi * self.parameters.distance**2.).to("Lsun")
+        # Convert the flux density into a luminosity, old way:
+        #wavelength = self.fuv.effectivewavelength() * Unit("micron")
+        #frequency = wavelength.to("Hz", equivalencies=spectral())
+        #flux = (fluxdensity * frequency).to("Lsun/m2")
+        #luminosity = (flux * 4. * math.pi * self.parameters.distance**2.).to("Lsun")
+
+        # Get the spectral luminosity of the Sun for the FUV band
+        solar_luminosity = self.sun.luminosity_for_filter(self.fuv)
+
+        # Convert the flux density into a spectral luminosity
+        luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv.pivotwavelength() * Unit("micron"), self.parameters.distance)
+
+        # Get the spectral luminosity in solar units
+        luminosity = luminosity.to("W/m").value / solar_luminosity.to("W/m").value
 
         # Set the parameters of the ionizing stellar component
         self.deprojection.filename = "ionizing_stars.fits"
@@ -653,5 +699,52 @@ class InputInitializer(FittingComponent):
 
         # Save the ski file to the specified location
         self.ski.saveto(self.fit_ski_path)
+
+# -----------------------------------------------------------------
+
+# The speed of light
+speed_of_light = constants.c
+
+# -----------------------------------------------------------------
+
+def spectral_factor_hz_to_micron(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    wavelength_unit = "micron"
+    frequency_unit = "Hz"
+
+    # Convert string units to Unit objects
+    if isinstance(wavelength_unit, basestring): wavelength_unit = Unit(wavelength_unit)
+    if isinstance(frequency_unit, basestring): frequency_unit = Unit(frequency_unit)
+
+    conversion_factor_unit = wavelength_unit / frequency_unit
+
+    # Calculate the conversion factor
+    factor = (wavelength ** 2 / speed_of_light).to(conversion_factor_unit).value
+    return 1. / factor
+
+# -----------------------------------------------------------------
+
+def fluxdensity_to_luminosity(fluxdensity, wavelength, distance):
+
+    """
+    This function ...
+    :param fluxdensity:
+    :param wavelength:
+    :param distance:
+    :return:
+    """
+
+    luminosity = (fluxdensity * 4. * math.pi * distance ** 2.).to("W/Hz")
+    luminosity_ = luminosity.to("W/micron", equivalencies=spectral_density(wavelength))
+    luminosity = luminosity.to("W/Hz").value * spectral_factor_hz_to_micron(wavelength) * Unit("W/micron")
+    print(luminosity_, luminosity)
+
+    return luminosity
 
 # -----------------------------------------------------------------

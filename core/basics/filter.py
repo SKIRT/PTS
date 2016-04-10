@@ -404,6 +404,30 @@ class Filter:
         else:
             return np.trapz(x=w, y=F*T) / self._IntegratedTransmission
 
+    ## This function calculates and returns the integrated value for a given spectral energy distribution over the
+    #  filter's wavelength range,
+    def integrate(self, wavelengths, densities):
+        # define short names for the involved wavelength grids
+        wa = wavelengths
+        wb = self._Wavelengths
+
+        # create a combined wavelength grid, restricted to the overlapping interval
+        w1 = wa[(wa >= wb[0]) & (wa <= wb[-1])]
+        w2 = wb[(wb >= wa[0]) & (wb <= wa[-1])]
+        w = np.unique(np.hstack((w1, w2)))
+        if len(w) < 2: return 0
+
+        # log-log interpolate SED and transmission on the combined wavelength grid
+        # (use scipy interpolation function for SED because np.interp does not support broadcasting)
+        F = np.exp(interp1d(np.log(wa), _log(densities), copy=False, bounds_error=False, fill_value=0.)(np.log(w)))
+        T = np.exp(np.interp(np.log(w), np.log(wb), _log(self._Transmission), left=0., right=0.))
+
+        # perform the integration
+        if self._PhotonCounter:
+            return np.trapz(x=w, y=w * F * T) / self._IntegratedTransmission
+        else:
+            return np.trapz(x=w, y=F * T) / self._IntegratedTransmission
+
 ## This private helper function returns the natural logarithm for positive values, and a large negative number
 # (but not infinity) for zero or negative values.
 def _log(X):

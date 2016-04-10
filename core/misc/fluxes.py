@@ -17,6 +17,7 @@ import numpy as np
 
 # Import astronomical modules
 from astropy.units import Unit, spectral_density
+from astropy import constants
 
 # Import the relevant PTS classes and modules
 from ..tools import tables, filesystem
@@ -147,8 +148,15 @@ class ObservedFluxCalculator(object):
             wavelengths = sed.wavelengths("micron", asarray=True)
             fluxdensities = []
             for wavelength, fluxdensity_jy in zip(sed.wavelengths("micron"), sed.fluxes("Jy")):
-                fluxdensity = fluxdensity_jy.to("W / (m2 * micron)", equivalencies=spectral_density(wavelength))
+
+                # 2 different ways should be the same:
+                fluxdensity_ = fluxdensity_jy.to("W / (m2 * micron)", equivalencies=spectral_density(wavelength))
+                fluxdensity = fluxdensity_jy.to("W / (m2 * Hz)").value * spectral_factor_hz_to_micron(wavelength) * Unit("W / (m2 * micron)")
+
+                print(fluxdensity_, fluxdensity)
+
                 fluxdensities.append(fluxdensity.to("W / (m2 * micron)").value)
+
             fluxdensities = np.array(fluxdensities) # in W / (m2 * micron)
 
             # Loop over the different filters
@@ -188,5 +196,55 @@ class ObservedFluxCalculator(object):
 
             # Write out the flux table
             tables.write(self.tables[name], path)
+
+# -----------------------------------------------------------------
+
+# The speed of light
+speed_of_light = constants.c
+
+# -----------------------------------------------------------------
+
+def spectral_factor_hz_to_micron(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    wavelength_unit = "micron"
+    frequency_unit = "Hz"
+
+    # Convert string units to Unit objects
+    if isinstance(wavelength_unit, basestring): wavelength_unit = Unit(wavelength_unit)
+    if isinstance(frequency_unit, basestring): frequency_unit = Unit(frequency_unit)
+
+    conversion_factor_unit = wavelength_unit / frequency_unit
+
+    # Calculate the conversion factor
+    factor = (wavelength ** 2 / speed_of_light).to(conversion_factor_unit).value
+    return 1. / factor
+
+# -----------------------------------------------------------------
+
+def spectral_factor_hz_to_meter(wavelength):
+
+    """
+    This function ...
+    :return:
+    """
+
+    wavelength_unit = "m"
+    frequency_unit = "Hz"
+
+    # Convert string units to Unit objects
+    if isinstance(wavelength_unit, basestring): wavelength_unit = Unit(wavelength_unit)
+    if isinstance(frequency_unit, basestring): frequency_unit = Unit(frequency_unit)
+
+    conversion_factor_unit = wavelength_unit / frequency_unit
+
+    # Calculate the conversion factor
+    factor = (wavelength ** 2 / speed_of_light).to(conversion_factor_unit).value
+    return 1./factor
 
 # -----------------------------------------------------------------

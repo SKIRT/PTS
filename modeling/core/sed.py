@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit
+from astropy.units import Unit, spectral
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
@@ -25,10 +25,79 @@ from ...core.basics.errorbar import ErrorBar
 
 # -----------------------------------------------------------------
 
+class IntrinsicSED(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        This function ...
+        """
+
+        # Attributes
+        self.table = None
+
+    # -----------------------------------------------------------------
+
+    def wavelengths(self, unit=None, asarray=False, add_unit=True):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray:
+        :param add_unit:
+        :return:
+        """
+
+        if asarray: return tables.column_as_array(self.table["Wavelength"], unit=unit)
+        else: return tables.column_as_list(self.table["Wavelength"], unit=unit, add_unit=add_unit)
+
+    # -----------------------------------------------------------------
+
+    def luminosities(self, unit=None, asarray=False, add_unit=True):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray:
+        :param add_unit:
+        :return:
+        """
+
+        if asarray: return tables.column_as_array(self.table["Luminosity"], unit=unit)
+        else: return tables.column_as_list(self.table["Luminosity"], unit=unit, add_unit=add_unit)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path, skiprows=0):
+        """
+        This function ...
+        :param path:
+        :param skiprows:
+        :return:
+        """
+
+        # Create a new SED
+        sed = cls()
+
+        wavelength_column, luminosity_column = np.loadtxt(path, dtype=float, unpack=True, skiprows=skiprows)
+        sed.table = tables.new([wavelength_column, luminosity_column], ["Wavelength", "Luminosity"])
+        sed.table["Wavelength"].unit = Unit("micron")
+        sed.table["Luminosity"].unit = Unit("W/micron")
+
+        # Return the SED
+        return sed
+
+# -----------------------------------------------------------------
+
 class ObservedSED(object):
 
     """
-    This function ...
+    This class ...
     """
 
     def __init__(self):
@@ -381,11 +450,12 @@ class SED(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, skiprows=0):
 
         """
         This function ...
         :param path:
+        :param skiprows:
         :return:
         """
 
@@ -403,7 +473,7 @@ class SED(object):
         #sed.table.rename_column("col1", "Wavelength")
         #sed.table.rename_column("col2", "Flux")
 
-        wavelength_column, flux_column = np.loadtxt(path, dtype=float, unpack=True)
+        wavelength_column, flux_column = np.loadtxt(path, dtype=float, unpack=True, skiprows=skiprows)
         sed.table = tables.new([wavelength_column, flux_column], ["Wavelength", "Flux"])
         sed.table["Wavelength"].unit = Unit("micron")
 
@@ -412,11 +482,12 @@ class SED(object):
         for i in range(len(sed.table)):
 
             # Get the flux density in W / m2 and the wavelength in micron
-            neutral_fluxdensity = sed.table["Flux"][i]
+            neutral_fluxdensity = sed.table["Flux"][i] * Unit("W/m2")
             wavelength = sed.table["Wavelength"][i] * Unit("micron")
 
-            # Convert to Jansky
-            jansky = unitconversion.neutral_fluxdensity_to_jansky(neutral_fluxdensity, wavelength)
+            # Convert to Jansky (2 methods give same result)
+            #jansky_ = unitconversion.neutral_fluxdensity_to_jansky(neutral_fluxdensity, wavelength)
+            jansky = (neutral_fluxdensity / wavelength.to("Hz", equivalencies=spectral())).to("Jy").value
 
             # Add the fluxdensity in Jansky to the new column
             jansky_column.append(jansky)
