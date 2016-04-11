@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.basics.sun Contains the Sun class
+## \package pts.modeling.core.sun Contains the Sun class
 
 # -----------------------------------------------------------------
 
@@ -85,11 +85,9 @@ class Sun(object):
         """
 
         #luminosity = filter.integrate(self.sed["Wavelength"], self.sed["Luminosity"])
-
         luminosity = filter.convolve(self.sed.wavelengths(unit="micron", asarray=True), self.sed.luminosities(unit="W/micron", asarray=True)) # also in W/micron
 
-        print(luminosity, type(luminosity))
-
+        # Return the luminosity in W/micron
         return luminosity * Unit("W/micron")
 
 # -----------------------------------------------------------------
