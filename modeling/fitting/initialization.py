@@ -30,6 +30,7 @@ from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..decomposition.decomposition import load_parameters
 from ...magic.basics.skyregion import SkyRegion
 from ..core.sun import Sun
+from ..core.mappings import Mappings
 
 # -----------------------------------------------------------------
 
@@ -272,33 +273,6 @@ class InputInitializer(FittingComponent):
         for wavelength in base_grid:
             if wavelength > self.config.wavelengths.max_zoom: total_grid.append(wavelength)
 
-        # -- Add the wavelengths of the bands of interest --
-
-        if False: # don't do this anymore ...
-
-            # Open the fluxes.dat table to get the filters that are used for the SED
-            fluxes_table_path = filesystem.join(self.phot_path, "fluxes.dat")
-            fluxes_table = tables.from_file(fluxes_table_path)
-
-            # Loop over the entries in the fluxes table, get the filter
-            for entry in fluxes_table:
-
-                # Get the filter
-                filter_id = entry["Instrument"] + "." + entry["Band"]
-                filter = Filter.from_string(filter_id)
-
-                # Get the wavelength in micron
-                wavelength = filter.pivotwavelength()
-
-                # Insert the wavelength at the appropriate place
-                for i in range(len(total_grid)):
-                    if total_grid[i] > wavelength:
-                        total_grid.insert(i, wavelength)
-                        break
-                # If no break is encountered, no value in the grid was greater than our filter wavelength,
-                # so add the filter wavelength at the end
-                else: total_grid.append(wavelength)
-
         # Create table for the wavelength grid
         self.wavelength_grid = tables.new([total_grid], names=["Wavelength"])
 
@@ -428,12 +402,6 @@ class InputInitializer(FittingComponent):
         # Get the flux density of the bulge
         fluxdensity = self.parameters.bulge.fluxdensity # In Jy
 
-        # Convert the bulge 3.6 micron flux density into a luminosity, old way:
-        #wavelength = self.i1.effectivewavelength() * Unit("micron")
-        #frequency = wavelength.to("Hz", equivalencies=spectral())
-        #flux = (fluxdensity * frequency).to("Lsun/m2")
-        #luminosity = (flux * 4. * math.pi * self.parameters.distance**2.)
-
         # Get the luminosity of the Sun for the 3.6 micron band
         solar_luminosity = self.sun.luminosity_for_filter(self.i1)
 
@@ -470,12 +438,6 @@ class InputInitializer(FittingComponent):
         i1_index = tables.find_index(self.fluxes, "I1", "Band")
         fluxdensity = self.fluxes["Flux"][i1_index]*Unit("Jy") - self.parameters.bulge.fluxdensity
 
-        # Convert the flux density into a luminosity, old way:
-        #wavelength = self.i1.effectivewavelength() * Unit("micron")
-        #frequency = wavelength.to("Hz", equivalencies=spectral())
-        #flux = (fluxdensity * frequency).to("Lsun/m2", equivalencies=spectral())
-        #luminosity = (flux * 4. * math.pi * self.parameters.distance**2.).to("Lsun")
-
         # Get the luminosity of the Sun for the 3.6 micron band
         solar_luminosity = self.sun.luminosity_for_filter(self.i1)
 
@@ -511,13 +473,7 @@ class InputInitializer(FittingComponent):
 
         # Get the FUV flux density
         fuv_index = tables.find_index(self.fluxes, "FUV", "Band")
-        fluxdensity = 0.8 * self.fluxes["Flux"][fuv_index]*Unit("Jy")
-
-        # Convert the flux density into a luminosity, old way:
-        #wavelength = self.fuv.effectivewavelength() * Unit("micron")
-        #frequency = wavelength.to("Hz", equivalencies=spectral())
-        #flux = (fluxdensity * frequency).to("Lsun/m2", equivalencies=spectral())
-        #luminosity = (flux * 4. * math.pi * self.parameters.distance**2.).to("Lsun")
+        fluxdensity = 0.5 * self.fluxes["Flux"][fuv_index]*Unit("Jy")
 
         # Get the luminosity of the Sun for the FUV band
         solar_luminosity = self.sun.luminosity_for_filter(self.fuv)
@@ -555,22 +511,22 @@ class InputInitializer(FittingComponent):
         #scale_height = 190 * Unit("pc") # M31
 
         # Get the FUV flux density
-        fuv_index = tables.find_index(self.fluxes, "FUV", "Band")
-        fluxdensity = 0.8 * self.fluxes["Flux"][fuv_index]*Unit("Jy")
-
-        # Convert the flux density into a luminosity, old way:
-        #wavelength = self.fuv.effectivewavelength() * Unit("micron")
-        #frequency = wavelength.to("Hz", equivalencies=spectral())
-        #flux = (fluxdensity * frequency).to("Lsun/m2")
-        #luminosity = (flux * 4. * math.pi * self.parameters.distance**2.).to("Lsun")
+        #fuv_index = tables.find_index(self.fluxes, "FUV", "Band")
+        #fluxdensity = 0.8 * self.fluxes["Flux"][fuv_index]*Unit("Jy")
 
         # Get the spectral luminosity of the Sun for the FUV band
-        solar_luminosity = self.sun.luminosity_for_filter(self.fuv)
+        #solar_luminosity = self.sun.luminosity_for_filter(self.fuv)
 
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv.pivotwavelength() * Unit("micron"), self.parameters.distance)
+        #luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv.pivotwavelength() * Unit("micron"), self.parameters.distance)
 
         # Get the spectral luminosity in solar units
+        #luminosity = (luminosity.to("W/m").value / solar_luminosity.to("W/m").value) * Unit("Lsun") # !! the unit is not really the Lsun that Astropy means
+
+        sfr = 1.0 # The star formation rate
+        mappings = Mappings(ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor, sfr)
+        luminosity = mappings.luminosity_for_filter(self.fuv)
+        solar_luminosity = self.sun.luminosity_for_filter(self.fuv)
         luminosity = (luminosity.to("W/m").value / solar_luminosity.to("W/m").value) * Unit("Lsun") # !! the unit is not really the Lsun that Astropy means
 
         # Set the parameters of the ionizing stellar component

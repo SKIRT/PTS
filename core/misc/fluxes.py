@@ -150,11 +150,9 @@ class ObservedFluxCalculator(object):
             for wavelength, fluxdensity_jy in zip(sed.wavelengths("micron"), sed.fluxes("Jy")):
 
                 # 2 different ways should be the same:
-                fluxdensity_ = fluxdensity_jy.to("W / (m2 * micron)", equivalencies=spectral_density(wavelength))
+                #fluxdensity_ = fluxdensity_jy.to("W / (m2 * micron)", equivalencies=spectral_density(wavelength))
                 fluxdensity = fluxdensity_jy.to("W / (m2 * Hz)").value * spectral_factor_hz_to_micron(wavelength) * Unit("W / (m2 * micron)")
-
-                print(fluxdensity_, fluxdensity)
-
+                #print(fluxdensity_, fluxdensity) # IS OK!
                 fluxdensities.append(fluxdensity.to("W / (m2 * micron)").value)
 
             fluxdensities = np.array(fluxdensities) # in W / (m2 * micron)

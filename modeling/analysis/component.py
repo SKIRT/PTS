@@ -37,14 +37,24 @@ class AnalysisComponent(ModelingComponent):
 
         # -- Attributes --
 
-        # The path to the fit/in directory
-        #self.fit_in_path = None
+        # The path to the analysis/out directory
+        self.analysis_out_path = None
 
-        # The path to the fit/out directory
-        #self.fit_out_path = None
+        # The path to the analysis/attenuation directory
+        self.analysis_attenuation_path = None
 
-        # The path to the ski file
-        #self.fit_ski_path = None
+        # The path to the analysis/colours directory
+        self.analysis_colours_path = None
+
+        # The path to the analysis/residuals directory
+        self.analysis_residuals_path = None
+
+        # The path to the analysis/heating directory
+        self.analysis_heating_path = None
+
+        # The path to the ski file and the wavelength grid file
+        self.analysis_ski_path = None
+        self.analysis_wavelengths_path = None
 
     # -----------------------------------------------------------------
 
@@ -58,16 +68,28 @@ class AnalysisComponent(ModelingComponent):
         # Call the setup function of the base class
         super(AnalysisComponent, self).setup()
 
-        # Set the path to the fit/in path
-        #self.fit_in_path = filesystem.join(self.fit_path, "in")
+        # Set the path to the analysis/out path
+        self.analysis_out_path = filesystem.join(self.analysis_path, "out")
 
-        # Set the path to the fit/out path
-        #self.fit_out_path = filesystem.join(self.fit_path, "out")
+        # Set the path to the analysis/attenuation path
+        self.analysis_attenuation_path = filesystem.join(self.analysis_path, "attenuation")
 
-        # Create the fit/in and fit/out directories
-        #filesystem.create_directories([self.fit_in_path, self.fit_out_path])
+        # Set the path to the analysis/colours path
+        self.analysis_colours_path = filesystem.join(self.analysis_path, "colours")
 
-        # Determine the path to the ski file
-        #self.fit_ski_path = filesystem.join(self.fit_path, self.galaxy_name + ".ski")
+        # Set the path to the analysis/residuals path
+        self.analysis_residuals_path = filesystem.join(self.analysis_path, "residuals")
+
+        # Set the path to the analysis/heating path
+        self.analysis_heating_path = filesystem.join(self.analysis_path, "heating")
+
+        # Create the analysis/out and fit/out directories
+        filesystem.create_directories([self.analysis_out_path, self.analysis_attenuation_path,
+                                       self.analysis_colours_path, self.analysis_residuals_path,
+                                       self.analysis_heating_path])
+
+        # Set the path to the ski file and wavelength grid file
+        self.analysis_ski_path = filesystem.join(self.analysis_path, self.galaxy_name + ".ski")
+        self.analysis_wavelengths_path = filesystem.join(self.analysis_path, "wavelengths.txt")
 
 # -----------------------------------------------------------------

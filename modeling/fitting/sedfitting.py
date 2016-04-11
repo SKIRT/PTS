@@ -251,11 +251,6 @@ class SEDFitter(FittingComponent):
         # Determine the path to the simulation's ski file
         ski_path = filesystem.join(self.fit_out_path, simulation_name, self.galaxy_name + ".ski")
 
-        print("path", self.config.path)
-        print("galaxy name", self.galaxy_name)
-        print(ski_path)
-        print(self.fit_best_path)
-
         # Copy the ski file to the fit/best directory
         filesystem.copy_file(ski_path, self.fit_best_path)
 
