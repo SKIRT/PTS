@@ -110,6 +110,8 @@ class ModelAnalyser(FittingComponent):
 
         # Set the attributes to default values
         self.simulation = None
+        self.log_file = None
+        self.ski = None
         self.flux_calculator = None
         self.fluxes = None
         self.differences = None
@@ -139,7 +141,7 @@ class ModelAnalyser(FittingComponent):
         self.flux_calculator = flux_calculator
 
         # Load the weights table
-        self.weights = tables.from_file(self.weights_table_path, fix_float=True) # For some reason, the weights are parsed as strings instead of floats (but not from the command line!!??)
+        self.weights = tables.from_file(self.weights_table_path, fix_floats=True) # For some reason, the weights are parsed as strings instead of floats (but not from the command line!!??)
 
         # Initialize the differences table
         names = ["Instrument", "Band", "Flux difference", "Relative difference", "Chi squared term"]
@@ -297,17 +299,16 @@ class ModelAnalyser(FittingComponent):
         # Get the runtime in seconds
         runtime = self.log_file.total_runtime
 
-        # Get the number of photon packages and dust cells
+        # Get the number of photon packages
         packages = self.ski.packages()
-        cells = self.ski.ncells()
 
         # Open the runtime file (in 'append' mode)
         runtimefile = open(self.runtime_table_path, 'a')
 
         # Add a line to the table file containing the simulation name, the host on which it was run, the number of
-        # processes and threads, the number of photon packages and dust cells and at last, the runtime in seconds
+        # processes and threads, the number of photon packages and at last, the runtime in seconds
         runtimefile.write(self.simulation.name + " " + host + " " + str(processes) + " " + str(threads) + " "
-                          + str(packages) + " " + str(cells) + " " + str(runtime) + "\n")
+                          + str(packages) + " " + str(runtime) + "\n")
 
         # Close the file
         runtimefile.close()

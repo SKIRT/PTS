@@ -108,7 +108,7 @@ def write(table, path, format="ascii.commented_header"):
 
 # -----------------------------------------------------------------
 
-def from_file(path, format="ascii.commented_header", fix_float=False):
+def from_file(path, format="ascii.commented_header", fix_floats=False):
 
     """
     This function ...

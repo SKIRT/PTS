@@ -129,9 +129,9 @@ class FittingComponent(ModelingComponent):
         if not filesystem.is_file(self.runtime_table_path):
 
             # Initialize
-            names = ["Simulation name", "Remote host", "Processes", "Threads", "Packages", "Dust cells", "Runtime"]
-            data = [[], [], [], [], [], [], []]
-            dtypes = ["S24", "S15", "int64", "int64", "int64", "int64", "float64"]
+            names = ["Simulation name", "Remote host", "Processes", "Threads", "Packages", "Runtime"]
+            data = [[], [], [], [], [], []]
+            dtypes = ["S24", "S15", "int64", "int64", "int64", "float64"]
             table = tables.new(data, names, dtypes=dtypes)
             tables.write(table, self.runtime_table_path)
 
