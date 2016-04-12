@@ -273,6 +273,10 @@ class Filter:
         elif name in ha_names: return cls("Halpha")
         else: raise ValueError("No corresponding filter found")
 
+    @classmethod
+    def from_instrument_and_band(cls, instrument, band):
+        return cls.from_string(instrument + "." + band)
+
     # ---------- Retrieving information -------------------------------
 
     @property

@@ -31,15 +31,39 @@ def find_index(table, key, column_name=None):
     :return:
     """
 
-    # Get first column name if none is given
-    if column_name is None: column_name = table.colnames[0]
+    if isinstance(key, list):
 
-    # Loop over all entries in the column
-    for i in range(len(table)):
+        if column_name is None: raise ValueError("Column names must be specified when specifying multiple keys")
+        if not isinstance(column_name, list): raise ValueError("If key(s) is a list, column_name(s) must also be a list")
 
-        if table[column_name][i] == key: return i
+        # Loop over all entries in the table
+        for i in range(len(table)):
 
-    return None
+            found_mismatch = False
+
+            for k, c in zip(key, column_name):
+
+                if not (table[c][i] == k):
+                    found_mismatch = True
+                    break
+
+            if not found_mismatch: return i
+
+        return None
+
+    elif isinstance(key, basestring):
+
+        # Get first column name if none is given
+        if column_name is None: column_name = table.colnames[0]
+
+        # Loop over all entries in the column
+        for i in range(len(table)):
+
+            if table[column_name][i] == key: return i
+
+        return None
+
+    else: ValueError("Invalid key: must be a list (of strings) or a string")
 
 # -----------------------------------------------------------------
 

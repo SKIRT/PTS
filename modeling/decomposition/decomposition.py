@@ -665,7 +665,7 @@ class GalaxyDecomposer(DecompositionComponent):
         # XZ-plane	90	 -90	0
         # YZ-plane	90	 0	    0
 
-        # Add a new SimpleInstrument
+        # Determine the instrument properties
         distance = self.parameters.distance
         inclination = self.parameters.inclination
         azimuth = 0.0

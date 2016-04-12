@@ -147,8 +147,6 @@ class Mappings(object):
         self.sed.table["Wavelength"].unit = Unit("micron")
         self.sed.table["Luminosity"].unit = Unit("W/micron")
 
-        print(self.sed.table)
-
     # -----------------------------------------------------------------
 
     def load_data(self):
@@ -222,9 +220,10 @@ class Mappings(object):
 
         #luminosity = filter.integrate(self.sed["Wavelength"], self.sed["Luminosity"])
         luminosity = filter.convolve(self.sed.wavelengths(unit="micron", asarray=True), self.sed.luminosities(unit="W/micron", asarray=True)) # also in W/micron
+        luminosity = luminosity * Unit("W/micron")
 
-        # Return the luminosity in W/micron
-        return luminosity * Unit("W/micron")
+        # Return the luminosity in the desired unit
+        return luminosity.to(unit)
 
 # -----------------------------------------------------------------
 

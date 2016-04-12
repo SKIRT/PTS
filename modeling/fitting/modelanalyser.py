@@ -49,6 +49,9 @@ class ModelAnalyser(FittingComponent):
         # The flux calculator
         self.flux_calculator = None
 
+        # The weights given to each band for the calculation of the chi squared
+        self.weights = None
+
         # The observed fluxes
         self.fluxes = None
 
@@ -126,6 +129,9 @@ class ModelAnalyser(FittingComponent):
                                "each simulation that is part of the radiative transfer modeling")
         self.flux_calculator = flux_calculator
 
+        # Load the weights table
+        self.weights = tables.from_file(self.weights_table_path)
+
         # Initialize the differences table
         names = ["Instrument", "Band", "Flux difference", "Relative difference", "Chi squared term"]
         data = [[], [], [], [], []]
@@ -186,7 +192,15 @@ class ModelAnalyser(FittingComponent):
 
             difference = fluxdensity - observed_fluxdensity
             relative_difference = difference / observed_fluxdensity
-            chi_squared_term = difference**2 / observed_fluxdensity_error**2
+
+            # Find the index of the current band in the weights table
+            index = tables.find_index(self.weights, key=[instrument, band], column_name=["Instrument", "Band"])
+
+            # Get the weight
+            weight = self.weights["Weight"][index]
+
+            # Calculate the chi squared term
+            chi_squared_term = weight * difference ** 2 / observed_fluxdensity_error ** 2
 
             # Add an entry to the differences table
             self.differences.add_row([instrument, band, difference, relative_difference, chi_squared_term])
@@ -203,58 +217,11 @@ class ModelAnalyser(FittingComponent):
         # Inform the user
         log.info("Calculating the chi squared value for this model ...")
 
-        # TODO: use weights for bands
-
+        # The chi squared value is the sum of all the terms (for each band)
         self.chi_squared = np.sum(self.differences["Chi squared term"])
 
         # Debugging
         log.debug("Found a chi squared value of " + str(self.chi_squared))
-
-        return
-
-        # From Sébastien for M31 ..
-
-        refSED   = "Files/M31skirtSED_weight.dat"
-
-        D = 2.4222569e22 # 0.785 Mpc in m
-        Lsun = 3.846e26
-
-        # Observed SED
-        input   = np.loadtxt(refSED)
-        obsWls  = input[:,0]
-        obsFlux = input[:,1]
-        obsErr  = input[:,2]
-        chi2weight = input[:,3]
-
-        obsFlux = obsFlux * 1.e-26 * 4.*np.pi*D**2 * 3.e8/(obsWls*1.e-6) / Lsun
-        obsErr  = obsErr * 1.e-26 * 4.*np.pi*D**2 * 3.e8/(obsWls*1.e-6) / Lsun
-
-        compareFlux = obsFlux[chi2weight>=0]
-        compareErr  = obsErr[chi2weight>=0]
-
-        # skirt SED
-        input      = np.loadtxt(inpath+sed)
-        modWls     = input[:,0]
-        modFlux    = input[:,1]
-        modDirect  = input[:,2]
-        modStellarScatter = input[:,3]
-        modDust    = input[:,4]
-        modDustScatter = input[:,5]
-        modTrans   = input[:,6]
-
-        modFlux    = modFlux    * 1.e-26 * 4.*np.pi*D**2 * 3.e8/(modWls*1.e-6) / Lsun
-        modDirect  = modDirect  * 1.e-26 * 4.*np.pi*D**2 * 3.e8/(modWls*1.e-6) / Lsun
-        modStellarScatter = modStellarScatter * 1.e-26 * 4.*np.pi*D**2 * 3.e8/(modWls*1.e-6) / Lsun
-        modDust    = modDust    * 1.e-26 * 4.*np.pi*D**2 * 3.e8/(modWls*1.e-6) / Lsun
-        modTrans   = modTrans   * 1.e-26 * 4.*np.pi*D**2 * 3.e8/(modWls*1.e-6) / Lsun
-        modDustScatter = modDustScatter * 1.e-26 * 4.*np.pi*D**2 * 3.e8/(modWls*1.e-6) / Lsun
-
-        modBands = np.array([])
-        for band in bands:
-            filter = "Files/Filters/transmission_"+band+".dat"
-            modBands = np.append(modBands, convolveFilter(modFlux,modWls,filter))
-
-        self.chi_squared = np.sum(chi2weight[chi2weight>=0] * (compareFlux - modBands)**2/compareErr**2)
 
     # -----------------------------------------------------------------
 

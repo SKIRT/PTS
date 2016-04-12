@@ -17,7 +17,7 @@ import math
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit, dimensionless_angles, spectral, spectral_density
+from astropy.units import Unit, dimensionless_angles
 from astropy import constants
 
 # Import the relevant PTS classes and modules
@@ -29,8 +29,10 @@ from ..basics.models import SersicModel, DeprojectionModel
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..decomposition.decomposition import load_parameters
 from ...magic.basics.skyregion import SkyRegion
+from ..basics.instruments import SEDInstrument
 from ..core.sun import Sun
 from ..core.mappings import Mappings
+from ...magic.tools import wavelengths
 
 # -----------------------------------------------------------------
 
@@ -71,6 +73,12 @@ class InputInitializer(FittingComponent):
 
         # The deprojection model
         self.deprojection = None
+
+        # The instrument
+        self.instrument = None
+
+        # The table of weights for each band
+        self.weights = None
 
         # The fluxes table
         self.fluxes = None
@@ -145,26 +153,29 @@ class InputInitializer(FittingComponent):
         # 3. Load the structural parameters for the galaxy
         self.load_parameters()
 
-        # Load the fluxes
+        # 4. Load the fluxes
         self.load_fluxes()
 
-        # 4. Create the wavelength grid
+        # 5. Create the wavelength grid
         self.create_wavelength_grid()
 
-        # Create the bulge model
+        # 6. Create the bulge model
         self.create_bulge_model()
 
-        # Create the deprojection model
+        # 7. Create the deprojection model
         self.create_deprojection_model()
 
-        # 5. Adjust the ski file
+        # 8. Create the instrument
+        self.create_instrument()
+
+        # 9. Adjust the ski file
         self.adjust_ski()
 
-        # 4. Place the input
-        self.place_input()
+        # 10. Calculate the weight factor to give to each band
+        self.calculate_weights()
 
-        # 5. Place ski file
-        self.place_ski_file()
+        # 11. Writing
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -322,6 +333,19 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def create_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create an SED instrument
+        azimuth = 0.0
+        self.instrument = SEDInstrument(self.parameters.distance, self.parameters.inclination, azimuth, self.parameters.disk.PA)
+
+    # -----------------------------------------------------------------
+
     def adjust_ski(self):
 
         """
@@ -332,9 +356,8 @@ class InputInitializer(FittingComponent):
         # Remove the existing instruments
         self.ski.remove_all_instruments()
 
-        # Add a new SEDInstrument
-        # name, distance, inclination, azimuth, position_angle
-        self.ski.add_sed_instrument("earth", self.parameters.distance, self.parameters.inclination, 0.0, self.parameters.disk.PA)
+        # Add the instrument
+        self.ski.add_instrument("earth", self.instrument)
 
         # Set the number of photon packages
         self.ski.setpackages(self.config.packages)
@@ -596,7 +619,90 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def place_input(self):
+    def calculate_weights(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the table to contain the weights
+        self.weights = tables.new([[], [], []], names=["Instrument", "Band", "Weight"], dtypes=["S5", "S7", "float64"])
+
+        # Initialize lists to contain the filters of the different wavelength ranges
+        uv_bands = []
+        optical_bands = []
+        nir_bands = []
+        mir_bands = []
+        fir_bands = []
+        submm_bands = []
+
+        # Set the number of groups
+        number_of_groups = 6
+
+        # Loop over the entries in the observed fluxes table
+        for i in range(len(self.fluxes)):
+
+            instrument = self.fluxes["Instrument"][i]
+            band = self.fluxes["Band"][i]
+
+            # Construct filter
+            filter = Filter.from_instrument_and_band(instrument, band)
+
+            # Get the central wavelength
+            wavelength = filter.centerwavelength() * Unit("micron")
+
+            # Get a string identifying which portion of the wavelength spectrum this wavelength belongs to
+            spectrum = wavelengths.name_in_spectrum(wavelength)
+
+            # Determine to which group
+            if spectrum[0] == "UV": uv_bands.append(filter)
+            elif spectrum[0] == "Optical": optical_bands.append(filter)
+            elif spectrum[0] == "IR":
+                if spectrum[1] == "NIR": nir_bands.append(filter)
+                elif spectrum[1] == "MIR": mir_bands.append(filter)
+                elif spectrum[1] == "FIR": fir_bands.append(filter)
+                else: raise RuntimeError("Unknown IR range")
+            elif spectrum[0] == "Submm": submm_bands.append(filter)
+            else: raise RuntimeError("Unknown wavelength range")
+
+        # Determine the weight for each group of filters
+        uv_weight = 1. / (len(uv_bands) * number_of_groups)
+        optical_weight = 1. / (len(optical_bands) * number_of_groups)
+        nir_weight = 1. / (len(nir_bands) * number_of_groups)
+        mir_weight = 1. / (len(mir_bands) * number_of_groups)
+        fir_weight = 1. / (len(fir_bands) * number_of_groups)
+        submm_weight = 1. / (len(submm_bands) * number_of_groups)
+
+        # Loop over the bands in each group and set the weight in the weights table
+        for filter in uv_bands: self.weights.add_row([filter.instrument, filter.band, uv_weight])
+        for filter in optical_bands: self.weights.add_row([filter.instrument, filter.band, optical_weight])
+        for filter in nir_bands: self.weights.add_row([filter.instrument, filter.band, nir_weight])
+        for filter in mir_bands: self.weights.add_row([filter.instrument, filter.band, mir_weight])
+        for filter in fir_bands: self.weights.add_row([filter.instrument, filter.band, fir_weight])
+        for filter in submm_bands: self.weights.add_row([filter.instrument, filter.band, submm_weight])
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write the input
+        self.write_input()
+
+        # Write the ski file
+        self.place_ski_file()
+
+        # Write the weights table
+        self.write_weights()
+
+    # -----------------------------------------------------------------
+
+    def write_input(self):
 
         """
         This function ...
@@ -609,7 +715,8 @@ class InputInitializer(FittingComponent):
         grid_path = filesystem.join(self.fit_in_path, "wavelengths.txt")
 
         # Write the wavelength grid
-        self.wavelength_grid.rename_column("Wavelength", str(len(self.wavelength_grid))) # Trick to have the number of wavelengths in the first line (required for SKIRT)
+        self.wavelength_grid.rename_column("Wavelength", str(len(
+            self.wavelength_grid)))  # Trick to have the number of wavelengths in the first line (required for SKIRT)
         tables.write(self.wavelength_grid, grid_path, format="ascii")
 
         # -- The old stars map --
@@ -646,7 +753,7 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def place_ski_file(self):
+    def write_ski_file(self):
 
         """
         This function ...
@@ -655,6 +762,18 @@ class InputInitializer(FittingComponent):
 
         # Save the ski file to the specified location
         self.ski.saveto(self.fit_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def write_weights(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write the table with weights
+        tables.write(self.weights, self.weights_table_path)
 
 # -----------------------------------------------------------------
 

@@ -15,11 +15,17 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
+# Import astronomical modules
+from astropy.units import Unit, dimensionless_angles
+from astropy.coordinates import Angle
+
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
 from ...core.tools import filesystem, tables
 from ...core.simulation.skifile import SkiFile
 from ...core.tools.logging import log
+from ..basics.instruments import FullInstrument
+from ...magic.basics.vector import Position
 
 # -----------------------------------------------------------------
 
@@ -50,6 +56,9 @@ class BestModelLauncher(AnalysisComponent):
 
         # The wavelength grid
         self.wavelength_grid = None
+
+        # The instruments
+        self.instruments = dict()
 
     # -----------------------------------------------------------------
 
@@ -89,10 +98,13 @@ class BestModelLauncher(AnalysisComponent):
         # 3. Create the wavelength grid
         self.create_wavelength_grid()
 
-        # 4. Adjust the ski file
+        # 4. Create the instruments
+        self.create_instruments()
+
+        # 5. Adjust the ski file
         self.adjust_ski()
 
-        # 5. Writing
+        # 6. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -180,6 +192,54 @@ class BestModelLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def create_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # SKIRT:  incl.  azimuth PA
+        # XY-plane	0	 0	    90
+        # XZ-plane	90	 -90	0
+        # YZ-plane	90	 0	    0
+
+        # Determine the instrument properties
+        distance = self.parameters.distance
+        inclination = self.parameters.inclination
+        azimuth = 0.0
+        position_angle = self.parameters.disk.PA  # SAME PA AS THE DISK, BUT TILT THE BULGE W.R.T. THE DISK
+        pixels_x = self.reference_wcs.xsize
+        pixels_y = self.reference_wcs.ysize
+        pixel_center = self.parameters.center.to_pixel(self.reference_wcs)
+        # center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5) # when not convolved ...
+        center = Position(0.5 * pixels_x - pixel_center.x - 1,
+                          0.5 * pixels_y - pixel_center.y - 1)  # when convolved ...
+        center_x = center.x * Unit("pix")
+        center_y = center.y * Unit("pix")
+        center_x = (center_x * self.reference_wcs.pixelscale.x.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
+        center_y = (center_y * self.reference_wcs.pixelscale.y.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
+        field_x_angular = self.reference_wcs.pixelscale.x.to("deg/pix") * pixels_x * Unit("pix")
+        field_y_angular = self.reference_wcs.pixelscale.y.to("deg/pix") * pixels_y * Unit("pix")
+        field_x_physical = (field_x_angular * distance).to("pc", equivalencies=dimensionless_angles())
+        field_y_physical = (field_y_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Create the 'earth' instrument
+        self.instruments["earth"] = FullInstrument(distance, inclination, azimuth, position_angle, field_x_physical,
+                                                   field_y_physical, pixels_x, pixels_y, center_x, center_y)
+
+        # Create the face-on instrument
+        position_angle = Angle(90., "deg")
+        self.instruments["faceon"] = FullInstrument(distance, 0.0, 0.0, position_angle, field_x_physical,
+                                                    field_y_physical, pixels_x, pixels_y, center_x, center_y)
+
+        # Create the edge-on instrument
+        # azimuth = Angle(-90., "deg")
+        self.instruments["edgeon"] = FullInstrument(distance, 90.0, 0.0, 0.0, field_x_physical, field_y_physical,
+                                                    pixels_x, pixels_y, center_x, center_y)
+
+    # -----------------------------------------------------------------
+
     def adjust_ski(self):
 
         """
@@ -193,15 +253,14 @@ class BestModelLauncher(AnalysisComponent):
         # Remove the existing instruments
         self.ski.remove_all_instruments()
 
-        # Add a new SEDInstrument
-        # name, distance, inclination, azimuth, position_angle
-        self.ski.add_sed_instrument("earth", self.parameters.distance, self.parameters.inclination, 0.0,
-                                    self.parameters.disk.PA)
+        # Add the instruments
+        for name in self.instruments: self.ski.add_instrument(name, self.instruments[name])
 
         # Set the number of photon packages
         self.ski.setpackages(self.config.packages)
 
-        # Enable writing options for analysis ...
+        # Enable all writing options for analysis
+        self.ski.enable_all_writing_options()
 
     # -----------------------------------------------------------------
 

@@ -61,6 +61,9 @@ class FittingComponent(ModelingComponent):
         # The path to the chi squared table
         self.chi_squared_table_path = None
 
+        # The path to the weights table
+        self.weights_table_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -112,5 +115,8 @@ class FittingComponent(ModelingComponent):
             dtypes = ["S24", "float64"]
             table = tables.new(data, names, dtypes=dtypes)
             tables.write(table, self.chi_squared_table_path)
+
+        # Set the path to the weights table file
+        self.weights_table_path = filesystem.join(self.fit_path, "weights.dat")
 
 # -----------------------------------------------------------------
