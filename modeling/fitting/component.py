@@ -64,6 +64,9 @@ class FittingComponent(ModelingComponent):
         # The path to the weights table
         self.weights_table_path = None
 
+        # The path to the runtime table
+        self.runtime_table_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -118,5 +121,18 @@ class FittingComponent(ModelingComponent):
 
         # Set the path to the weights table file
         self.weights_table_path = filesystem.join(self.fit_path, "weights.dat")
+
+        # Set the path to the runtime table file
+        self.runtime_table_path = filesystem.join(self.fit_path, "runtimes.dat")
+
+        # Initialize the runtime file if that hasn't been done yet
+        if not filesystem.is_file(self.runtime_table_path):
+
+            # Initialize
+            names = ["Simulation name", "Remote host", "Processes", "Threads", "Packages", "Dust cells", "Runtime"]
+            data = [[], [], [], [], [], [], []]
+            dtypes = ["S24", "S15", "int64", "int64", "int64", "int64", "float64"]
+            table = tables.new(data, names, dtypes=dtypes)
+            tables.write(table, self.runtime_table_path)
 
 # -----------------------------------------------------------------

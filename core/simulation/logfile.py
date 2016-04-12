@@ -62,6 +62,29 @@ class LogFile(object):
     # -----------------------------------------------------------------
 
     @property
+    def host(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all the log file entries
+        for i in range(len(self.contents)):
+
+            # Get the current log message
+            message = self.contents["Message"][i]
+
+            if "Running on" in message:
+
+                host = message.split("on ")[1].split(" for")[0]
+                return host
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
     def t_0(self):
 
         """
@@ -84,6 +107,30 @@ class LogFile(object):
 
         # Return the time of the last log message
         return self.contents["Time"][-1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_runtime(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all the log file entries
+        for i in range(len(self.contents)):
+
+            # Get the current log message
+            message = self.contents["Message"][i]
+
+            # Look for the message that indicates the start of the simulation
+            if "Finished simulation" in message:
+
+                seconds = float(message.split(" in ")[1].split(" s (")[0])
+                return seconds
+
+        return None
 
     # -----------------------------------------------------------------
 

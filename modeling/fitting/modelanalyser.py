@@ -43,8 +43,14 @@ class ModelAnalyser(FittingComponent):
 
         # -- Attributes --
 
-        # Set the simulation object to None initially
+        # The simulation object
         self.simulation = None
+
+        # The log file of the simulation
+        self.log_file = None
+
+        # The ski file corresponding to the simulation
+        self.ski = None
 
         # The flux calculator
         self.flux_calculator = None
@@ -75,16 +81,19 @@ class ModelAnalyser(FittingComponent):
         # 1. Call the setup function
         self.setup(simulation, flux_calculator)
 
-        # 2. Load the observed SED
+        # 2. Load the log file of the simulation
+        self.load_log_file()
+
+        # 3. Load the observed SED
         self.load_observed_sed()
 
-        # 3. Calculate the differences
+        # 4. Calculate the differences
         self.calculate_differences()
 
-        # 4. Calculate the chi squared for this model
+        # 5. Calculate the chi squared for this model
         self.calculate_chi_squared()
 
-        # 5. Write
+        # 6. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -138,6 +147,21 @@ class ModelAnalyser(FittingComponent):
         dtypes = ["S5", "S7", "float64", "float64", "float64"]
         self.differences = tables.new(data, names, dtypes=dtypes)
 
+        # Load the ski file
+        self.ski = self.simulation.parameters()
+
+    # -----------------------------------------------------------------
+
+    def load_log_file(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the log file produced by the simulation
+        self.log_file = self.simulation.log_file
+
     # -----------------------------------------------------------------
 
     def load_observed_sed(self):
@@ -175,8 +199,6 @@ class ModelAnalyser(FittingComponent):
 
         # Get the table
         table = self.flux_calculator.tables[table_name]
-
-        print(self.weights)
 
         # Loop over the entries in the fluxdensity table (SED) derived from the simulation
         for i in range(len(table)):
@@ -244,11 +266,51 @@ class ModelAnalyser(FittingComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # Write the runtime
+        self.write_runtime()
+
         # Write the flux differences
         self.write_differences()
 
         # Write the chi-squared value
         self.write_chi_squared()
+
+    # -----------------------------------------------------------------
+
+    def write_runtime(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the runtime of this simulation ...")
+
+        # Get the name of the host on which the simulation was run
+        host = self.log_file.host
+
+        # Get the number of processes and threads
+        processes = self.log_file.processes
+        threads = self.log_file.threads
+
+        # Get the runtime in seconds
+        runtime = self.log_file.total_runtime
+
+        # Get the number of photon packages and dust cells
+        packages = self.ski.packages()
+        cells = self.ski.ncells()
+
+        # Open the runtime file (in 'append' mode)
+        runtimefile = open(self.runtime_table_path, 'a')
+
+        # Add a line to the table file containing the simulation name, the host on which it was run, the number of
+        # processes and threads, the number of photon packages and dust cells and at last, the runtime in seconds
+        runtimefile.write(self.simulation.name + " " + host + " " + str(processes) + " " + str(threads) + " "
+                          + str(packages) + " " + str(cells) + " " + str(runtime) + "\n")
+
+        # Close the file
+        runtimefile.close()
 
     # -----------------------------------------------------------------
 
