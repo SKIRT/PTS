@@ -103,7 +103,7 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def add_to_queue(self, arguments, name=None, scheduling_options=None, remote_input_path=None):
+    def add_to_queue(self, arguments, name=None, scheduling_options=None, remote_input_path=None, analysis_options=None):
 
         """
         This function ...
@@ -111,6 +111,7 @@ class SkirtRemote(Remote):
         :param name: a name given to the simulation
         :param scheduling_options:
         :param remote_input_path:
+        :param analysis_options:
         :return:
         """
 
@@ -146,8 +147,16 @@ class SkirtRemote(Remote):
             # Generate a new simulation ID based on the ID's currently in use
             simulation_id = self._new_simulation_id()
 
-        # Create a simulation object and return it
+        # Create a simulation object
         simulation = self.create_simulation_object(arguments, name, simulation_id, remote_simulation_path, local_ski_path, local_input_path, local_output_path)
+
+        # If analysis options are defined, adjust the correponding settings of the simulation object
+        if analysis_options is not None: simulation.set_analysis_options(analysis_options)
+
+        # Save the simulation object
+        simulation.save()
+
+        # Return the simulation object
         return simulation
 
     # -----------------------------------------------------------------
@@ -226,13 +235,14 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def run(self, arguments, name=None, scheduling_options=None):
+    def run(self, arguments, name=None, scheduling_options=None, analysis_options=None):
 
         """
         This function ...
         :param arguments:
         :param name:
         :param scheduling_options:
+        :param analysis_options:
         :return:
         """
 
@@ -243,7 +253,7 @@ class SkirtRemote(Remote):
         if len(self.queue) > 0: raise RuntimeError("The simulation queue is not empty")
 
         # Add the simulation arguments to the queue
-        simulation = self.add_to_queue(arguments, name, scheduling_options)
+        simulation = self.add_to_queue(arguments, name, scheduling_options, analysis_options=analysis_options)
 
         # Start the queue if that is not left up to the remote's own scheduling system
         if not self.scheduler:

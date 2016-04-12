@@ -33,6 +33,7 @@ from ..basics.instruments import SEDInstrument
 from ..core.sun import Sun
 from ..core.mappings import Mappings
 from ...magic.tools import wavelengths
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -210,6 +211,9 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the ski file template ...")
+
         # Open the template ski file
         self.ski = SkiFile(template_ski_path)
 
@@ -221,6 +225,9 @@ class InputInitializer(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the decomposition parameters ...")
 
         # Determine the path to the parameters file
         path = filesystem.join(self.components_path, "parameters.dat")
@@ -237,6 +244,9 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the observed fluxes table ...")
+
         # Determine the path to the fluxes table
         fluxes_path = filesystem.join(self.phot_path, "fluxes.dat")
 
@@ -251,6 +261,9 @@ class InputInitializer(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Creating the wavelength grid ...")
 
         # Verify the grid parameters
         if self.config.wavelengths.npoints < 2: raise ValueError("the number of points in the low-resolution grid should be at least 2")
@@ -295,6 +308,9 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Creating the bulge model ...")
+
         # Create a Sersic model for the bulge
         self.bulge = SersicModel.from_galfit(self.parameters.bulge, self.parameters.inclination, self.parameters.disk.PA)
 
@@ -306,6 +322,9 @@ class InputInitializer(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Calculating the deprojection parameters ...")
 
         filename = None
         hz = None
@@ -340,6 +359,9 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Creating the instrument ...")
+
         # Create an SED instrument
         azimuth = 0.0
         self.instrument = SEDInstrument(self.parameters.distance, self.parameters.inclination, azimuth, self.parameters.disk.PA)
@@ -352,6 +374,9 @@ class InputInitializer(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Adjusting the ski file parameters ...")
 
         # Remove the existing instruments
         self.ski.remove_all_instruments()
@@ -393,6 +418,9 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Setting the stellar and dust components ...")
+
         # Set the evolved stellar bulge component
         self.set_bulge_component()
 
@@ -416,6 +444,9 @@ class InputInitializer(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Configuring the bulge component ...")
 
         # Like M31
         bulge_template = "BruzualCharlot"
@@ -447,6 +478,9 @@ class InputInitializer(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Configuring the old stellar component ...")
 
         # Like M31
         disk_template = "BruzualCharlot"
@@ -486,6 +520,9 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Configuring the young stellar component ...")
+
         # Like M31
         young_template = "BruzualCharlot"
         young_age = 0.1
@@ -522,6 +559,9 @@ class InputInitializer(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Configuring the ionizing stellar component ...")
 
         # Like M51 and M31
         ionizing_metallicity = 0.02
@@ -568,6 +608,9 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Configuring the dust component ...")
+
         scale_height = 260.5 * Unit("pc") # first models
         dust_mass = 2e7 * Unit("Msun") # first models
 
@@ -594,7 +637,8 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
-        # From Truncator:
+        # Inform the user
+        log.info("Configuring the dust grid ...")
 
         # Get the path to the disk region
         path = filesystem.join(self.components_path, "disk.reg")
@@ -626,6 +670,9 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Calculating the weight to give to each band ...")
+
         # Create the table to contain the weights
         self.weights = tables.new([[], [], []], names=["Instrument", "Band", "Weight"], dtypes=["S5", "S7", "float64"])
 
@@ -655,9 +702,12 @@ class InputInitializer(FittingComponent):
             # Get a string identifying which portion of the wavelength spectrum this wavelength belongs to
             spectrum = wavelengths.name_in_spectrum(wavelength)
 
+            #print(band, wavelength, spectrum)
+
             # Determine to which group
             if spectrum[0] == "UV": uv_bands.append(filter)
             elif spectrum[0] == "Optical": optical_bands.append(filter)
+            elif spectrum[0] == "Optical/IR": optical_bands.append(filter)
             elif spectrum[0] == "IR":
                 if spectrum[1] == "NIR": nir_bands.append(filter)
                 elif spectrum[1] == "MIR": mir_bands.append(filter)
@@ -673,6 +723,13 @@ class InputInitializer(FittingComponent):
         mir_weight = 1. / (len(mir_bands) * number_of_groups)
         fir_weight = 1. / (len(fir_bands) * number_of_groups)
         submm_weight = 1. / (len(submm_bands) * number_of_groups)
+
+        #print("UV", len(uv_bands), uv_weight)
+        #print("Optical", len(optical_bands), optical_weight)
+        #print("NIR", len(nir_bands), nir_weight)
+        #print("MIR", len(mir_bands), mir_weight)
+        #print("FIR", len(fir_bands), fir_weight)
+        #print("Submm", len(submm_bands), submm_weight)
 
         # Loop over the bands in each group and set the weight in the weights table
         for filter in uv_bands: self.weights.add_row([filter.instrument, filter.band, uv_weight])
@@ -691,11 +748,14 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing ...")
+
         # Write the input
         self.write_input()
 
         # Write the ski file
-        self.place_ski_file()
+        self.write_ski_file()
 
         # Write the weights table
         self.write_weights()
@@ -708,6 +768,9 @@ class InputInitializer(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the input ...")
 
         # -- The wavelength grid --
 
@@ -760,6 +823,9 @@ class InputInitializer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the ski file to " + self.fit_ski_path + " ...")
+
         # Save the ski file to the specified location
         self.ski.saveto(self.fit_ski_path)
 
@@ -771,6 +837,9 @@ class InputInitializer(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the table with weights to " + self.weights_table_path + " ...")
 
         # Write the table with weights
         tables.write(self.weights, self.weights_table_path)

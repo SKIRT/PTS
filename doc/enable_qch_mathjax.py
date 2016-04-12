@@ -5,8 +5,6 @@ import xml.etree.ElementTree as ET
 tree = ET.parse('../html/index.qhp')
 root = tree.getroot()
 
-print(root.tag)
-
 for child in root:
   if child.tag == "filterSection":
     for grandchild in child:

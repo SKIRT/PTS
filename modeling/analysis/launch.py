@@ -26,6 +26,8 @@ from ...core.simulation.skifile import SkiFile
 from ...core.tools.logging import log
 from ..basics.instruments import FullInstrument
 from ...magic.basics.vector import Position
+from ...core.launch.options import AnalysisOptions
+from ...core.simulation.arguments import SkirtArguments
 
 # -----------------------------------------------------------------
 
@@ -106,6 +108,9 @@ class BestModelLauncher(AnalysisComponent):
 
         # 6. Writing
         self.write()
+
+        # 7. Launch the simulation
+        self.launch()
 
     # -----------------------------------------------------------------
 
@@ -274,11 +279,67 @@ class BestModelLauncher(AnalysisComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # Write the input
+        self.write_input()
+
         # Write the ski file
         self.write_ski()
 
+    # -----------------------------------------------------------------
+
+    def write_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Write the wavelength grid
         self.write_wavelength_grid()
+
+        # Copy the input map
+        self.copy_maps()
+
+    # -----------------------------------------------------------------
+
+    def write_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the wavelength grid ...")
+
+        # Write the wavelength table
+        self.wavelength_grid.rename_column("Wavelength", str(len(self.wavelength_grid)))  # Trick to have the number of wavelengths in the first line (required for SKIRT)
+        tables.write(self.wavelength_grid, self.analysis_wavelengths_path, format="ascii")
+
+    # -----------------------------------------------------------------
+
+    def copy_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Copying the input maps ...")
+
+        # Determine the paths to the input maps in the fit/in directory
+        fit_in_path = filesystem.join(self.fit_path, "in")
+        old_path = filesystem.join(fit_in_path, "old_stars.fits")
+        young_path = filesystem.join(fit_in_path, "young_stars.fits")
+        ionizing_path = filesystem.join(fit_in_path, "ionizing_stars.fits")
+        dust_path = filesystem.join(fit_in_path, "dust.fits")
+
+        # Copy the files to the analysis/in directory
+        filesystem.copy_file(old_path, self.analysis_in_path)
+        filesystem.copy_file(young_path, self.analysis_in_path)
+        filesystem.copy_file(ionizing_path, self.analysis_in_path)
+        filesystem.copy_file(dust_path, self.analysis_in_path)
 
     # -----------------------------------------------------------------
 
@@ -297,17 +358,61 @@ class BestModelLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def write_wavelength_grid(self):
+    def launch(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Writing the wavelength grid ...")
+        # Get the names of the filters for which we have photometry
+        filter_names = []
+        fluxes_table_path = filesystem.join(self.phot_path, "fluxes.dat")
+        fluxes_table = tables.from_file(fluxes_table_path)
+        # Loop over the entries in the fluxes table, get the filter
+        for entry in fluxes_table:
+            # Get the filter
+            filter_id = entry["Instrument"] + "." + entry["Band"]
+            filter_names.append(filter_id)
 
-        self.wavelength_grid.rename_column("Wavelength", str(len(self.wavelength_grid)))  # Trick to have the number of wavelengths in the first line (required for SKIRT)
-        tables.write(self.wavelength_grid, self.analysis_wavelengths_path, format="ascii")
+        # Scheduling options
+        scheduling_options = None
+
+        # Analysis options
+        analysis_options = AnalysisOptions()
+
+        # Set options for extraction
+        analysis_options.extraction.path = self.analysis_extr_path
+        analysis_options.extraction.progress = True
+        analysis_options.extraction.timeline = True
+
+        # Set options for plotting
+        analysis_options.plotting.path = self.analysis_plot_path
+        analysis_options.plotting.progress = True
+        analysis_options.plotting.timeline = True
+        analysis_options.plotting.seds = True
+        analysis_options.plotting.grids = True
+        analysis_options.plotting.reference_sed = filesystem.join(self.phot_path, "fluxes.dat")
+
+        # Set miscellaneous options
+        analysis_options.misc.path = self.analysis_misc_path
+        analysis_options.misc.rgb = True
+        analysis_options.misc.wave = True
+        analysis_options.misc.fluxes = True
+        analysis_options.misc.images = True
+        analysis_options.misc.observation_filters = filter_names
+
+        # Create the SKIRT arguments object
+        arguments = SkirtArguments()
+
+        # Set the arguments
+        arguments.ski_pattern = self.analysis_ski_path
+        arguments.single = True
+        arguments.input_path = self.analysis_in_path
+        arguments.output_path = self.analysis_out_path
+        arguments.logging.verbose = True
+
+        # Run the simulation
+        simulation = self.remote.run(arguments, scheduling_options=scheduling_options, analysis_options=analysis_options)
 
 # -----------------------------------------------------------------

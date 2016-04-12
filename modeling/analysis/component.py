@@ -37,6 +37,9 @@ class AnalysisComponent(ModelingComponent):
 
         # -- Attributes --
 
+        # The path to the analysis/in directory
+        self.analysis_in_path = None
+
         # The path to the analysis/out directory
         self.analysis_out_path = None
 
@@ -68,6 +71,9 @@ class AnalysisComponent(ModelingComponent):
         # Call the setup function of the base class
         super(AnalysisComponent, self).setup()
 
+        # Set the path to the analysis/in path
+        self.analysis_in_path = filesystem.join(self.analysis_path, "in")
+
         # Set the path to the analysis/out path
         self.analysis_out_path = filesystem.join(self.analysis_path, "out")
 
@@ -83,13 +89,12 @@ class AnalysisComponent(ModelingComponent):
         # Set the path to the analysis/heating path
         self.analysis_heating_path = filesystem.join(self.analysis_path, "heating")
 
-        # Create the analysis/out and fit/out directories
-        filesystem.create_directories([self.analysis_out_path, self.analysis_attenuation_path,
-                                       self.analysis_colours_path, self.analysis_residuals_path,
-                                       self.analysis_heating_path])
+        # Create the analysis subdirectories
+        filesystem.create_directories([self.analysis_in_path, self.analysis_out_path, self.analysis_attenuation_path,
+                                       self.analysis_colours_path, self.analysis_residuals_path, self.analysis_heating_path])
 
         # Set the path to the ski file and wavelength grid file
         self.analysis_ski_path = filesystem.join(self.analysis_path, self.galaxy_name + ".ski")
-        self.analysis_wavelengths_path = filesystem.join(self.analysis_path, "wavelengths.txt")
+        self.analysis_wavelengths_path = filesystem.join(self.analysis_in_path, "wavelengths.txt")
 
 # -----------------------------------------------------------------

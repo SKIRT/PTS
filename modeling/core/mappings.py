@@ -79,19 +79,19 @@ class Mappings(object):
         log_p = min(log_p, 8.0 - 1e-8)
 
         # Find the appropriate SED from interpolating in the library
-        i_ = find_nearest(np.array(_Zrelv), rel_metallicity)
+        #i_ = find_nearest(np.array(_Zrelv), rel_metallicity)
         i = locate_clip(_Zrelv, rel_metallicity)
-        if i_ != i: print(i_, i)
+        #if i_ != i: print(i_, i)
         hZrel = (rel_metallicity-_Zrelv[i])/(_Zrelv[i+1]-_Zrelv[i])
 
-        j_ = find_nearest(np.array(_logCv), log_c)
+        #j_ = find_nearest(np.array(_logCv), log_c)
         j = locate_clip(_logCv, log_c)
-        if j_ != j: print(j_, j)
+        #if j_ != j: print(j_, j)
         hlogC = (log_c - _logCv[j])/(_logCv[j+1]-_logCv[j])
 
-        k_ = find_nearest(np.array(_logpv), log_p)
+        #k_ = find_nearest(np.array(_logpv), log_p)
         k = locate_clip(_logpv, log_p)
-        if k_ != k: print(k_, k)
+        #if k_ != k: print(k_, k)
         hlogp = (log_p - _logpv[k])/(_logpv[k+1]-_logpv[k])
 
         j0LLLv = j0_dict[i  , j  , k  ]
