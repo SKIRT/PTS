@@ -124,6 +124,9 @@ class SEDFitter(FittingComponent):
         # Load the chi squared table
         self.chi_squared = tables.from_file(self.chi_squared_table_path)
 
+        # Check whether the table is non-empty
+        if len(self.chi_squared) == 0: raise RuntimeError("Could not find any chi squared value, it appears no simulations have been run yet")
+
         # Sort the table for decreasing chi squared value
         self.chi_squared.sort("Chi squared")
         self.chi_squared.reverse()

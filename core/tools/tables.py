@@ -108,12 +108,13 @@ def write(table, path, format="ascii.commented_header"):
 
 # -----------------------------------------------------------------
 
-def from_file(path, format="ascii.commented_header"):
+def from_file(path, format="ascii.commented_header", fix_float=False):
 
     """
     This function ...
     :param path:
     :param format:
+    :param fix_float:
     :return:
     """
 
@@ -123,6 +124,9 @@ def from_file(path, format="ascii.commented_header"):
 
     # Fix boolean values
     fix_logical(table)
+
+    if fix_float: fix_float(table)
+    # Sometimes, a column of floats is parsed as a column of strings ... But then importing this function from the python command line and loading the same table does work ... straaange..
 
     # Return the new table
     return table
@@ -167,6 +171,38 @@ def fix_logical(table):
 
                 bool_column = Column(trues)
                 table.replace_column(column.name, bool_column)
+
+# -----------------------------------------------------------------
+
+def fix_float(table):
+
+    """
+    This function ...
+    :param table:
+    :return:
+    """
+
+    for column in table.columns.values():
+
+        if str(column.dtype).startswith("|S"):
+
+            failed = False
+
+            values = []
+
+            for value in column:
+
+                try:
+                    value = float(value)
+                    values.append(value)
+                except ValueError:
+                    failed = True
+                    break # break the loop over the values in the column
+
+            if not failed:
+
+                float_column = Column(values)
+                table.replace_column(column.name, float_column)
 
 # -----------------------------------------------------------------
 

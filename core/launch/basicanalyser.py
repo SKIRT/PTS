@@ -272,6 +272,8 @@ class BasicAnalyser(Configurable):
             # Create a new SEDPlotter instance
             plotter = SEDPlotter(self.simulation.name)
 
+            print(self.simulation.ski_path)
+
             # Loop over the simulated SED files and add the SEDs to the SEDPlotter
             for sed_path in self.simulation.seddatpaths():
 

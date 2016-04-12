@@ -130,7 +130,7 @@ class ModelAnalyser(FittingComponent):
         self.flux_calculator = flux_calculator
 
         # Load the weights table
-        self.weights = tables.from_file(self.weights_table_path)
+        self.weights = tables.from_file(self.weights_table_path, fix_float=True) # For some reason, the weights are parsed as strings instead of floats (but not from the command line!!??)
 
         # Initialize the differences table
         names = ["Instrument", "Band", "Flux difference", "Relative difference", "Chi squared term"]
@@ -147,6 +147,9 @@ class ModelAnalyser(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the observed SED ...")
+
         # Determine the path to the fluxes table
         fluxes_path = filesystem.join(self.phot_path, "fluxes.dat")
 
@@ -162,6 +165,9 @@ class ModelAnalyser(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Calculating the differences between the observed and simulated SED ...")
+
         # In the flux-density tables derived from the simulation (created by the ObservedFluxCalculator object),
         # search the one corresponding to the "earth" instrument
         table_name = self.galaxy_name + "_earth"
@@ -169,6 +175,8 @@ class ModelAnalyser(FittingComponent):
 
         # Get the table
         table = self.flux_calculator.tables[table_name]
+
+        print(self.weights)
 
         # Loop over the entries in the fluxdensity table (SED) derived from the simulation
         for i in range(len(table)):
@@ -197,7 +205,8 @@ class ModelAnalyser(FittingComponent):
             index = tables.find_index(self.weights, key=[instrument, band], column_name=["Instrument", "Band"])
 
             # Get the weight
-            weight = self.weights["Weight"][index]
+            weight = self.weights["Weight"][index] # apparently, this is a string, so parsing the table went wrong ...
+            weight = float(weight)
 
             # Calculate the chi squared term
             chi_squared_term = weight * difference ** 2 / observed_fluxdensity_error ** 2

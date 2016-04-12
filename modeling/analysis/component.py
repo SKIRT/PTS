@@ -43,6 +43,15 @@ class AnalysisComponent(ModelingComponent):
         # The path to the analysis/out directory
         self.analysis_out_path = None
 
+        # The path to the analysis/extr directory
+        self.analysis_extr_path = None
+
+        # The path to the analysis/plot directory
+        self.analysis_plot_path = None
+
+        # The path to the analysis/misc directory
+        self.analysis_misc_path = None
+
         # The path to the analysis/attenuation directory
         self.analysis_attenuation_path = None
 
@@ -77,6 +86,15 @@ class AnalysisComponent(ModelingComponent):
         # Set the path to the analysis/out path
         self.analysis_out_path = filesystem.join(self.analysis_path, "out")
 
+        # Set the path to the analysis/extr path
+        self.analysis_extr_path = filesystem.join(self.analysis_path, "extr")
+
+        # Set the path to the analysis/plot path
+        self.analysis_plot_path = filesystem.join(self.analysis_path, "plot")
+
+        # Set the path to the analysis/misc path
+        self.analysis_misc_path = filesystem.join(self.analysis_path, "misc")
+
         # Set the path to the analysis/attenuation path
         self.analysis_attenuation_path = filesystem.join(self.analysis_path, "attenuation")
 
@@ -90,7 +108,8 @@ class AnalysisComponent(ModelingComponent):
         self.analysis_heating_path = filesystem.join(self.analysis_path, "heating")
 
         # Create the analysis subdirectories
-        filesystem.create_directories([self.analysis_in_path, self.analysis_out_path, self.analysis_attenuation_path,
+        filesystem.create_directories([self.analysis_in_path, self.analysis_out_path, self.analysis_extr_path,
+                                       self.analysis_plot_path, self.analysis_misc_path, self.analysis_attenuation_path,
                                        self.analysis_colours_path, self.analysis_residuals_path, self.analysis_heating_path])
 
         # Set the path to the ski file and wavelength grid file
