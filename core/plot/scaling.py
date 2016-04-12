@@ -347,6 +347,9 @@ class ScalingPlotter(Plotter):
             times = self.data[phase][mode].times
             errors = self.data[phase][mode].errors
 
+            # Sort the lists
+            processor_counts, times, errors = sort_lists(processor_counts, times, errors)
+
             # Plot the data points for this mode
             plt.errorbar(processor_counts, times, errors, marker='.', label=mode)
 
@@ -418,6 +421,9 @@ class ScalingPlotter(Plotter):
             processor_counts = self.data[phase][mode].processor_counts
             times = self.data[phase][mode].times
             errors = self.data[phase][mode].errors
+
+            # Sort the lists
+            processor_counts, times, errors = sort_lists(processor_counts, times, errors)
 
             # Calculate the speedups and the errors on the speedups
             speedups = []
@@ -579,6 +585,9 @@ class ScalingPlotter(Plotter):
             processor_counts = self.data[phase][mode].processor_counts
             times = self.data[phase][mode].times
             errors = self.data[phase][mode].errors
+
+            # Sort the lists
+            processor_counts, times, errors = sort_lists(processor_counts, times, errors)
 
             # Calculate the efficiencies and the errors on the efficiencies
             efficiencies = []
@@ -765,6 +774,9 @@ class ScalingPlotter(Plotter):
             memories = self.data["memory"][mode].times
             errors = self.data["memory"][mode].errors
 
+            # Sort the lists
+            processor_counts, memories, errors = sort_lists(processor_counts, memories, errors)
+
             # Plot the data points for this mode
             plt.errorbar(processor_counts, memories, errors, marker='.', label=mode)
 
@@ -805,5 +817,9 @@ def Amdahl(n, p): return 1.0 / (1 - p + p / n)
 
 # This function defines a modified version of Amdahl's law, which accounts for different kinds of overhead
 def modAmdahl(n, p, a, b, c): return 1.0 / (1 - p + p / n + a + b * n + c * n**2)
+
+# -----------------------------------------------------------------
+
+def sort_lists(*args): return [list(t) for t in zip(*sorted(zip(*args)))]
 
 # -----------------------------------------------------------------
