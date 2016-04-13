@@ -57,6 +57,9 @@ class ParameterExplorer(FittingComponent):
         # The table with the parameter values for each simulation
         self.table = None
 
+        # The table with the runtimes
+        self.runtimes = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -119,10 +122,13 @@ class ParameterExplorer(FittingComponent):
         # 3. Set the ranges of the different fit parameters
         self.set_parameter_ranges()
 
-        # 4. Launch the simulations for different parameter values
+        # 4. Load the runtime table
+        self.load_runtimes()
+
+        # 5. Launch the simulations for different parameter values
         self.simulate()
 
-        # 5. Create and write a table with the parameter values for each simulation
+        # 6. Create and write a table with the parameter values for each simulation
         self.write_parameter_table()
 
     # -----------------------------------------------------------------
@@ -264,6 +270,18 @@ class ParameterExplorer(FittingComponent):
         elif self.config.dust.scale == "log":
             self.dust_masses = np.logspace(min, max, num=self.config.dust.nvalues, endpoint=True)
         else: raise ValueError("Invalid scale for the dust mass values")
+
+    # -----------------------------------------------------------------
+
+    def load_runtimes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the runtime table
+        self.runtimes = tables.from_file(self.runtime_table_path)
 
     # -----------------------------------------------------------------
 
