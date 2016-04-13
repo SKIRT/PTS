@@ -161,7 +161,7 @@ class SEDFitter(FittingComponent):
         return
 
         # Degrees of freedom = datapoints - free parameters - 1
-        dof = 9. - 3. - 1.
+
 
         params, probabilities = getPDFs(chi2list, parList, dof)
 
@@ -274,7 +274,7 @@ class SEDFitter(FittingComponent):
 
 # -----------------------------------------------------------------
 
-def getPDFs(chi2file, parfile,dof):
+def getPDFs(chi2file, parfile, dof):
 
     input = np.loadtxt(chi2file)
     chi2list = input[:,1]/dof

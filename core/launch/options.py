@@ -20,7 +20,67 @@ from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
-class AnalysisOptions(object):
+class Options(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def set_options(self, options):
+
+        """
+        This function allows setting multiple options at once from a dictionary
+        :param options:
+        :return:
+        """
+
+        # Loop over all the options defined in the 'options' dictionary
+        for option in options:
+
+            # Check whether an option with this name exists in this class
+            if hasattr(self, option):
+
+                # Check if the option is composed of other options (a Map), or if it is just a simple variable
+                if isinstance(getattr(self, option), Map):
+                    getattr(self, option).set_items(options[option])
+
+                # If it is a simple variable, just use setattr to set the attribute of this class
+                else:
+                    setattr(self, option, options[option])
+
+            # If the option does not exist, ignore it but give a warning
+            else: warnings.warn("The option " + option + " does not exist")
+
+# -----------------------------------------------------------------
+
+class SchedulingOptions(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        """
+
+        # Call the constructor of the base class
+        super(SchedulingOptions, self).__init__()
+
+# -----------------------------------------------------------------
+
+class AnalysisOptions(Options):
 
     """
     This class ...
@@ -32,6 +92,9 @@ class AnalysisOptions(object):
         The constructor ...
         :return:
         """
+
+        # Call the constructor of the base class
+        super(AnalysisOptions, self).__init__()
 
         # Options for extracting data from the simulation's log files
         self.extraction = Map()
@@ -68,31 +131,6 @@ class AnalysisOptions(object):
 
         # Properties relevant for simulations part of radiative transfer modeling
         self.modeling_path = None
-
-    # -----------------------------------------------------------------
-
-    def set_options(self, options):
-
-        """
-        This function allows setting multiple options at once from a dictionary
-        :param options:
-        :return:
-        """
-
-        # Loop over all the options defined in the 'options' dictionary
-        for option in options:
-
-            # Check whether an option with this name exists in this class
-            if hasattr(self, option):
-
-                # Check if the option is composed of other options (a Map), or if it is just a simple variable
-                if isinstance(getattr(self, option), Map): getattr(self, option).set_items(options[option])
-
-                # If it is a simple variable, just use setattr to set the attribute of this class
-                else: setattr(self, option, options[option])
-
-            # If the option does not exist, ignore it but give a warning
-            else: warnings.warn("The option " + option + " does not exist")
 
     # -----------------------------------------------------------------
 

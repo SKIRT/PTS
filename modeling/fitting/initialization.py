@@ -717,12 +717,13 @@ class InputInitializer(FittingComponent):
             else: raise RuntimeError("Unknown wavelength range")
 
         # Determine the weight for each group of filters
-        uv_weight = 1. / (len(uv_bands) * number_of_groups)
-        optical_weight = 1. / (len(optical_bands) * number_of_groups)
-        nir_weight = 1. / (len(nir_bands) * number_of_groups)
-        mir_weight = 1. / (len(mir_bands) * number_of_groups)
-        fir_weight = 1. / (len(fir_bands) * number_of_groups)
-        submm_weight = 1. / (len(submm_bands) * number_of_groups)
+        number_of_data_points = len(self.fluxes)
+        uv_weight = 1. / (len(uv_bands) * number_of_groups) * number_of_data_points
+        optical_weight = 1. / (len(optical_bands) * number_of_groups) * number_of_data_points
+        nir_weight = 1. / (len(nir_bands) * number_of_groups) * number_of_data_points
+        mir_weight = 1. / (len(mir_bands) * number_of_groups) * number_of_data_points
+        fir_weight = 1. / (len(fir_bands) * number_of_groups) * number_of_data_points
+        submm_weight = 1. / (len(submm_bands) * number_of_groups) * number_of_data_points
 
         #print("UV", len(uv_bands), uv_weight)
         #print("Optical", len(optical_bands), optical_weight)

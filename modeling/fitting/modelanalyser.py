@@ -250,8 +250,12 @@ class ModelAnalyser(FittingComponent):
         # Inform the user
         log.info("Calculating the chi squared value for this model ...")
 
-        # The chi squared value is the sum of all the terms (for each band)
-        self.chi_squared = np.sum(self.differences["Chi squared term"])
+        # Calculate the degrees of freedom
+        dof = len(self.fluxes.table) - 3. - 1.  # number of data points - number of fitted parameters - 1
+
+        # The (reduced) chi squared value is the sum of all the terms (for each band),
+        # divided by the number of degrees of freedom
+        self.chi_squared = np.sum(self.differences["Chi squared term"]) / dof
 
         # Debugging
         log.debug("Found a chi squared value of " + str(self.chi_squared))
