@@ -45,7 +45,14 @@ class DustHeatingAnalyser(AnalysisComponent):
         :return:
         """
 
-        pass
+        # Create a new HeatingAnalyser instance
+        analyser = cls()
+
+        # Set the modeling path
+        analyser.config.path = arguments.path
+
+        # Return the new instance
+        return analyser
 
     # -----------------------------------------------------------------
 

@@ -701,6 +701,19 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
+    def replace_infs(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set all inf pixels to the specified value
+        self[np.isinf(self)] = value
+
+    # -----------------------------------------------------------------
+
     def fit_polynomial(self, order, mask=None):
 
         """

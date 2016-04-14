@@ -26,6 +26,8 @@ from .component import AnalysisComponent
 #    http://vizier.cfa.harvard.edu/viz-bin/VizieR-3?-source=J/AJ/141/205/table3
 #  -> has "AV": Best fitting internal extinction A_V
 
+# -----------------------------------------------------------------
+
 class AttenuationAnalyser(AnalysisComponent):
     
     """
@@ -54,7 +56,14 @@ class AttenuationAnalyser(AnalysisComponent):
         :return:
         """
 
-        pass
+        # Create a new AttenuationAnalyser instance
+        analyser = cls()
+
+        # Set the modeling path
+        analyser.config.path = arguments.path
+
+        # Return the new instance
+        return analyser
 
     # -----------------------------------------------------------------
 

@@ -45,7 +45,14 @@ class ColourAnalyser(AnalysisComponent):
         :return:
         """
 
-        pass
+        # Create a new ColourAnalyser instance
+        analyser = cls()
+
+        # Set the modeling path
+        analyser.config.path = arguments.path
+
+        # Return the new instance
+        return analyser
 
     # -----------------------------------------------------------------
 

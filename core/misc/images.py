@@ -178,7 +178,7 @@ class ObservedImageMaker(object):
             for filter_name in self.images[datacube_name]:
 
                 # Determine the path to the output FITS file
-                path = filesystem.join(output_path, datacube_name + "_" + filter_name + ".fits")
+                path = filesystem.join(output_path, datacube_name + "__" + filter_name + ".fits")
 
                 # Save the image
                 self.images[datacube_name][filter_name].save(path)
