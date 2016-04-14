@@ -20,14 +20,14 @@ import numpy as np
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from ...magic.core.frame import Frame
-from ...magic.basics.coordinatesystem import CoordinateSystem
-from ...magic.basics.mask import Mask
-from ...magic.sources.extractor import SourceExtractor
-from ...magic.sky.skysubtractor import SkySubtractor
-from ...core.basics.configurable import Configurable
+from ..core.frame import Frame
+from ..basics.coordinatesystem import CoordinateSystem
+from ..basics.mask import Mask
+from ..sources.extractor import SourceExtractor
+from ..sky.skysubtractor import SkySubtractor
+from ..basics.configurable import Configurable
 from ...core.tools.logging import log
-from . import unitconversion
+from ...modeling.preparation import unitconversion
 from ...core.tools import special
 
 # -----------------------------------------------------------------

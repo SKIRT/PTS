@@ -52,6 +52,9 @@ class FittingComponent(ModelingComponent):
         # The path to the fit/best directory
         self.fit_best_path = None
 
+        # The path to the fit/prob directory
+        self.fit_prob_path = None
+
         # The path to the ski file
         self.fit_ski_path = None
 
@@ -97,8 +100,11 @@ class FittingComponent(ModelingComponent):
         # Set the path to the fit/best directory
         self.fit_best_path = filesystem.join(self.fit_path, "best")
 
-        # Create the fit/in, fit/out, fit/res, fit/plot and fit/best directories
-        filesystem.create_directories([self.fit_in_path, self.fit_out_path, self.fit_res_path, self.fit_plot_path, self.fit_best_path])
+        # Set the path to the fit/prob directory
+        self.fit_prob_path = filesystem.join(self.fit_path, "prob")
+
+        # Create the fit/in, fit/out, fit/res, fit/plot, fit/best and fit/prob directories
+        filesystem.create_directories([self.fit_in_path, self.fit_out_path, self.fit_res_path, self.fit_plot_path, self.fit_best_path, self.fit_prob_path])
 
         # Set the path to the parameter file
         self.parameter_table_path = filesystem.join(self.fit_path, "parameters.dat")

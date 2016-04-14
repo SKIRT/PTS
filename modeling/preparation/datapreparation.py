@@ -25,7 +25,7 @@ from ...magic.core.image import Image
 from ...magic.core.frame import Frame
 from ...magic.basics.region import Region
 from .component import PreparationComponent
-from .imagepreparation import ImagePreparer
+from ...magic.prepare.imagepreparation import ImagePreparer
 from ...core.tools import filesystem, tables
 from ...core.tools.logging import log
 from ...magic.tools import regions
