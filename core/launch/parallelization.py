@@ -133,4 +133,16 @@ class Parallelization(object):
         # Return the new instance
         return parallelization
 
+    # -----------------------------------------------------------------
+
+    def __eq__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return self.cores == other.cores and self.threads_per_core == other.threads_per_core and self.processes == other.processes
+
 # -----------------------------------------------------------------

@@ -60,8 +60,8 @@ class ParameterExplorer(FittingComponent):
         # The table with the parameter values for each simulation
         self.table = None
 
-        # The table with the runtimes
-        self.runtimes = None
+        # A dictionary with the average runtime for the different remote hosts
+        self.runtimes = dict()
 
     # -----------------------------------------------------------------
 
@@ -163,15 +163,17 @@ class ParameterExplorer(FittingComponent):
             filter_names.append(filter_id)
 
         # Set options for the BatchLauncher
+        self.launcher.config.analysis.extraction.path = self.fit_res_path
         self.launcher.config.analysis.misc.path = self.fit_res_path # The base directory where all of the simulations will have a seperate directory with the 'misc' analysis output
         self.launcher.config.analysis.plotting.path = self.fit_plot_path # The base directory where all of the simulations will have a seperate directory with the plotting analysis output
+        self.launcher.config.analysis.extraction.timeline = True # extract the simulation timeline
         self.launcher.config.analysis.plotting.seds = True  # Plot the output SEDs
         self.launcher.config.analysis.misc.fluxes = True  # Calculate observed fluxes
         self.launcher.config.analysis.misc.images = True  # Make observed images
         self.launcher.config.analysis.misc.observation_filters = filter_names  # The filters for which to create the observations
         self.launcher.config.analysis.plotting.format = "png" # plot in PNG format so that an animation can be made from the fit SEDs
-
         self.launcher.config.shared_input = True   # The input directories for the different simulations are shared
+        self.launcher.config.group_simulations = True # group multiple simulations into a single job (because a very large number of simulations will be scheduled)
         #self.launcher.config.remotes = ["nancy"]   # temporary; only use Nancy
 
     # -----------------------------------------------------------------
@@ -336,8 +338,6 @@ class ParameterExplorer(FittingComponent):
             # Set the parallelization for this host
             self.launcher.set_parallelization_for_host(host.id, parallelization)
 
-            #self.parallelization[host.id] = parallelization
-
     # -----------------------------------------------------------------
 
     def estimate_runtimes(self):
@@ -351,7 +351,7 @@ class ParameterExplorer(FittingComponent):
         log.info("Estimating the runtimes based on the results of previous runs ...")
 
         # Get the number of photon packages (per wavelength) for this batch of simulations
-        packages = self.ski.packages()
+        current_packages = self.ski.packages()
 
         # Load the runtime table
         runtimes_table = tables.from_file(self.runtime_table_path)
@@ -363,7 +363,25 @@ class ParameterExplorer(FittingComponent):
         # "Simulation name", "Remote host", "Cores", "Hyperthreads per core", "Processes", "Packages", "Runtime"
         for i in range(len(runtimes_table)):
 
+            host_id = runtimes_table["Remote host"][i]
+            cores = runtimes_table["Cores"][i]
+            threads_per_core = runtimes_table["Hyperthreads per core"][i]
+            processes = runtimes_table["Processes"][i]
+            packages = runtimes_table["Packages"][i]
+            runtime = runtimes_table["Runtime"][i]
 
+            parallelization = Parallelization()
+            parallelization.cores = cores
+            parallelization.threads_per_core = threads_per_core
+            parallelization.processes = processes
+
+            parallelization_for_host = self.launcher.parallelization_for_host(host_id)
+
+            if parallelization == parallelization_for_host and packages == current_packages:
+                runtimes_for_hosts[host_id].append(runtime)
+
+        # For each remote host, determine the mean runtime
+        for host_id in runtimes_for_hosts: self.runtimes[host_id] = np.mean(np.array(runtimes_for_hosts[host_id]))
 
     # -----------------------------------------------------------------
 
@@ -380,16 +398,26 @@ class ParameterExplorer(FittingComponent):
         # Create scheduling options for each remote host with a scheduling system
         for host in self.launcher.scheduler_hosts:
 
-            # Get the parallelization for this host
-            parallelization = self.launcher.parallelization_for_host(host.id)
-
-            # Get the number of cores used and the number of hyperthreads per core
-            cores = parallelization.cores
-            threads_per_core = parallelization.threads_per_core
-
-            # Scheduling options
+            # Initialize a scheduling options object
             scheduling_options = SchedulingOptions()
-            scheduling_options.walltime = None
+
+            # A simulation with the current number of photon packages and with the same parallelization has already
+            # been executed (and analysed) on this remote host
+            if host.id in self.runtimes: scheduling_options.walltime = self.runtimes[host.id] * 1.2
+
+            # No matching simulation could be found on this remote host, estimate the walltime based on simulations
+            # with other number of photon packages and/or other parallelization on this remote host, or else simulations
+            # performed on other hosts
+            else:
+
+                # 1. Search for timeline files from simulations ran on this remote host
+
+                # 2. Search for the average runtime with the current number of photon packages and parallelization
+                #    on other remote hosts
+
+                # 3. Search for timeline files from simulations ran on another remote host
+
+                pass
 
             # Add the scheduling options to the dictionary
             sched_options[host.id] = scheduling_options
