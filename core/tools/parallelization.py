@@ -5,24 +5,16 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.tools.units Provides functions for dealing with units.
+## \package pts.core.tools.parallelization Functions related to parallelization.
 
-# Ensure Python 3 functionality
+# -----------------------------------------------------------------
+
+# Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical units
-from astropy.units import Unit
+# Import the relevant PTS classes and modules
+from .logging import log
 
 # -----------------------------------------------------------------
 
-def parse(unit):
 
-    """
-    This function ...
-    :param unit:
-    :return:
-    """
-
-    return Unit(unit)
-    
-# -----------------------------------------------------------------

@@ -88,8 +88,9 @@ class InputInitializer(FittingComponent):
         self.i1 = None
         self.fuv = None
 
-        # Solar properties
-        self.sun = None
+        # Solar luminosity units
+        self.sun_fuv = None
+        self.sun_i1 = None
 
         # Coordinate system
         self.reference_wcs = None
@@ -195,7 +196,9 @@ class InputInitializer(FittingComponent):
         self.fuv = Filter.from_string("FUV")
 
         # Solar properties
-        self.sun = Sun()
+        sun = Sun()
+        self.sun_fuv = sun.luminosity_for_filter_as_unit(self.fuv) # Get the luminosity of the Sun in the FUV band
+        self.sun_i1 = sun.luminosity_for_filter_as_unit(self.i1)   # Get the luminosity of the Sun in the IRAC I1 band
 
         # Reference coordinate system
         reference_image = "Pacs red"
@@ -456,14 +459,11 @@ class InputInitializer(FittingComponent):
         # Get the flux density of the bulge
         fluxdensity = self.parameters.bulge.fluxdensity # In Jy
 
-        # Get the luminosity of the Sun for the 3.6 micron band
-        solar_luminosity = self.sun.luminosity_for_filter(self.i1)
-
         # Convert the flux density into a spectral luminosity
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength() * Unit("micron"), self.parameters.distance)
 
         # Get the spectral luminosity in solar units
-        luminosity = (luminosity.to("W/m").value / solar_luminosity.to("W/m").value ) * Unit("Lsun") # !! the unit is not really the Lsun that Astropy means
+        luminosity = luminosity.to(self.sun_i1).value
 
         # Set the parameters of the bulge
         self.ski.set_stellar_component_geometry("Evolved stellar bulge", self.bulge)
@@ -489,20 +489,16 @@ class InputInitializer(FittingComponent):
 
         # Get the scale height
         scale_height = 521. * Unit("pc") # first models
-        #scale_height = 538 * Unit("pc")  # M31
 
         # Get the 3.6 micron flux density with the bulge subtracted
         i1_index = tables.find_index(self.fluxes, "I1", "Band")
         fluxdensity = self.fluxes["Flux"][i1_index]*Unit("Jy") - self.parameters.bulge.fluxdensity
 
-        # Get the luminosity of the Sun for the 3.6 micron band
-        solar_luminosity = self.sun.luminosity_for_filter(self.i1)
-
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength()*Unit("micron"), self.parameters.distance)
+        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength() * Unit("micron"), self.parameters.distance)
 
         # Get the spectral luminosity in solar units
-        luminosity = (luminosity.to("W/m").value / solar_luminosity.to("W/m").value) * Unit("Lsun") # !! the unit is not really the Lsun that Astropy means
+        luminosity = luminosity.to(self.sun_i1).value
 
         # Set the parameters of the evolved stellar component
         self.deprojection.filename = "old_stars.fits"
@@ -528,21 +524,18 @@ class InputInitializer(FittingComponent):
         young_age = 0.1
         young_metallicity = 0.02
 
+        # Get the scale height
         scale_height = 150 * Unit("pc") # first models
-        #scale_height = 190 * Unit("pc") # M31
 
         # Get the FUV flux density
         fuv_index = tables.find_index(self.fluxes, "FUV", "Band")
         fluxdensity = 0.5 * self.fluxes["Flux"][fuv_index]*Unit("Jy")
 
-        # Get the luminosity of the Sun for the FUV band
-        solar_luminosity = self.sun.luminosity_for_filter(self.fuv)
-
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv.pivotwavelength()*Unit("micron"), self.parameters.distance)
+        luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv.pivotwavelength() * Unit("micron"), self.parameters.distance)
 
         # Get the spectral luminosity in solar units
-        luminosity = (luminosity.to("W/m").value / solar_luminosity.to("W/m").value) * Unit("Lsun") # !! the unit is not really the Lsun that Astropy means
+        luminosity = luminosity.to(self.sun_fuv).value
 
         # Set the parameters of the young stellar component
         self.deprojection.filename = "young_stars.fits"
@@ -571,26 +564,12 @@ class InputInitializer(FittingComponent):
 
         # Get the scale height
         scale_height = 150 * Unit("pc") # first models
-        #scale_height = 190 * Unit("pc") # M31
 
-        # Get the FUV flux density
-        #fuv_index = tables.find_index(self.fluxes, "FUV", "Band")
-        #fluxdensity = 0.8 * self.fluxes["Flux"][fuv_index]*Unit("Jy")
-
-        # Get the spectral luminosity of the Sun for the FUV band
-        #solar_luminosity = self.sun.luminosity_for_filter(self.fuv)
-
-        # Convert the flux density into a spectral luminosity
-        #luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv.pivotwavelength() * Unit("micron"), self.parameters.distance)
-
-        # Get the spectral luminosity in solar units
-        #luminosity = (luminosity.to("W/m").value / solar_luminosity.to("W/m").value) * Unit("Lsun") # !! the unit is not really the Lsun that Astropy means
-
+        # Convert the SFR into a FUV luminosity
         sfr = 1.0 # The star formation rate
         mappings = Mappings(ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor, sfr)
         luminosity = mappings.luminosity_for_filter(self.fuv)
-        solar_luminosity = self.sun.luminosity_for_filter(self.fuv)
-        luminosity = (luminosity.to("W/m").value / solar_luminosity.to("W/m").value) * Unit("Lsun") # !! the unit is not really the Lsun that Astropy means
+        luminosity = luminosity.to(self.sun_fuv).value
 
         # Set the parameters of the ionizing stellar component
         self.deprojection.filename = "ionizing_stars.fits"
@@ -612,10 +591,7 @@ class InputInitializer(FittingComponent):
         log.info("Configuring the dust component ...")
 
         scale_height = 260.5 * Unit("pc") # first models
-        dust_mass = 2e7 * Unit("Msun") # first models
-
-        #scale_height = 238 * Unit("pc") # Andromeda
-        #dust_mass = 4.3e7 * Unit("Msun") # Andromeda
+        dust_mass = 2.e7 * Unit("Msun") # first models
 
         hydrocarbon_pops = 25
         enstatite_pops = 25

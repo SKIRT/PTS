@@ -23,6 +23,8 @@ from ...core.basics.filter import Filter
 from ...core.simulation.skifile import SkiFile
 from ...core.launch.batchlauncher import BatchLauncher
 from ...core.tools.logging import log
+from ...core.launch.options import SchedulingOptions
+from ...core.launch.parallelization import Parallelization
 
 # -----------------------------------------------------------------
 
@@ -116,20 +118,26 @@ class ParameterExplorer(FittingComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Load the ski file
+        # 2. Load the current parameter table
+        self.load_table()
+
+        # 3. Load the ski file
         self.load_ski()
 
-        # 3. Set the ranges of the different fit parameters
+        # 4. Set the ranges of the different fit parameters
         self.set_parameter_ranges()
 
-        # 4. Load the runtime table
+        # 5. Load the runtime table
         self.load_runtimes()
 
-        # 5. Launch the simulations for different parameter values
+        # Set the parallelization
+        self.set_parallelization()
+
+        # 6. Launch the simulations for different parameter values
         self.simulate()
 
-        # 6. Create and write a table with the parameter values for each simulation
-        self.write_parameter_table()
+        # 7. Writing
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -163,19 +171,22 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.plotting.format = "png" # plot in PNG format so that an animation can be made from the fit SEDs
 
         self.launcher.config.shared_input = True   # The input directories for the different simulations are shared
-        self.launcher.config.remotes = ["nancy"]   # temporary; only use Nancy
+        #self.launcher.config.remotes = ["nancy"]   # temporary; only use Nancy
 
-        # If a parameter table already exists, load it
-        if filesystem.is_file(self.parameter_table_path): self.table = tables.from_file(self.parameter_table_path)
+    # -----------------------------------------------------------------
 
-        # If the table does not exist yet
-        else:
+    def load_table(self):
 
-            # Create an empty table
-            names = ["Simulation name", "FUV young", "FUV ionizing", "Dust mass"]
-            data = [[], [], [], []]
-            dtypes = ["S24", "float64", "float64", "float64"]
-            self.table = tables.new(data, names, dtypes=dtypes)
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the parameter table ...")
+
+        # Load the parameter table
+        self.table = tables.from_file(self.parameter_table_path, format="ascii.ecsv")
 
     # -----------------------------------------------------------------
 
@@ -185,6 +196,9 @@ class ParameterExplorer(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the ski file ...")
 
         # Open the ski file (created by InputInitializer)
         self.ski = SkiFile(self.fit_ski_path)
@@ -197,6 +211,9 @@ class ParameterExplorer(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Determining the parameter ranges ...")
 
         # Get the current values in the ski file prepared by InputInitializer
         young_luminosity, young_filter = self.ski.get_stellar_component_luminosity("Young stars")
@@ -217,6 +234,9 @@ class ParameterExplorer(FittingComponent):
         :param luminosity:
         :return:
         """
+
+        # Inform the user
+        log.info("Setting the range for the FUV luminosity of the young stars ...")
 
         # Set the range of the FUV luminosity of the young stellar population
         min = self.config.young_stars.rel_min * luminosity
@@ -239,6 +259,9 @@ class ParameterExplorer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Setting the range for the FUV luminosity of the ionizing stars ...")
+
         # Determine the minimum and maximum luminosity
         min = self.config.ionizing_stars.rel_min * luminosity
         max = self.config.ionizing_stars.rel_max * luminosity
@@ -260,6 +283,9 @@ class ParameterExplorer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Setting the range for the dust mass ...")
+
         # Set the dust mass range
         min = self.config.dust.rel_min * mass
         max = self.config.dust.rel_max * mass
@@ -280,8 +306,52 @@ class ParameterExplorer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("")
+
+        # Get the number of photon packages (per wavelength) for this batch of simulations
+        packages = self.ski.packages()
+
         # Load the runtime table
         self.runtimes = tables.from_file(self.runtime_table_path)
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization(self):
+
+        """
+        This function sets the parallelization scheme for those remote hosts used by the batch launcher that use
+        a scheduling system (the parallelization for the other hosts is left up to the batch launcher and will be
+        based on the current load of the correponding system).
+        :return:
+        """
+
+        # Loop over the IDs of the hosts used by the batch launcher that use a scheduling system
+        for host in self.launcher.scheduler_hosts:
+
+            # Get the number of cores per node for this host
+            cores_per_node = host.clusters[host.cluster_name].cores
+
+            # Determine the number of cores corresponding to 4 full nodes
+            cores = cores_per_node * 4
+
+            # Use 1 core for each process (assume there is enough memory)
+            processes = cores
+
+            # Determine the number of threads per core
+            if host.use_hyperthreading: threads_per_core = host.clusters[host.cluster_name].threads_per_core
+            else: threads_per_core = 1
+
+            # Create a Parallelization instance
+            parallelization = Parallelization()
+
+            # Set the parallelization properties
+            parallelization.cores = cores
+            parallelization.threads_per_core = threads_per_core
+            parallelization.processes = processes
+
+            # Set the parallelization for this host
+            self.launcher.set_parallelization_for_host(host.id, parallelization)
 
     # -----------------------------------------------------------------
 
@@ -293,8 +363,8 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Scheduling options
-        scheduling_options = {}
-        scheduling_options["walltime"] = None
+        scheduling_options = SchedulingOptions()
+        scheduling_options.walltime = None
 
         # Create a FUV filter object
         fuv = Filter.from_string("FUV")
@@ -364,6 +434,21 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Create and write a table with the parameter values for each simulation
+        self.write_parameter_table()
+
+    # -----------------------------------------------------------------
+
     def write_parameter_table(self):
 
         """
@@ -371,8 +456,16 @@ class ParameterExplorer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the parameter table ...")
+
+        # Set the units of the parameter table
+        self.table["FUV young"] = "Lsun_FUV"
+        self.table["FUV ionizing"] = "Lsun_FUV"
+        self.table["Dust mass"] = "Msun"
+
         # Write the parameter table
-        tables.write(self.table, self.parameter_table_path)
+        tables.write(self.table, self.parameter_table_path, format="ascii.ecsv")
 
 # -----------------------------------------------------------------
 

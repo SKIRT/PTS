@@ -29,6 +29,8 @@ from ..simulation.remote import SkirtRemote
 from ..extract.timeline import TimeLineExtractor
 from ..tools import time, filesystem
 from ..tools.logging import log
+from ..launch.options import SchedulingOptions
+from ..launch.parallelization import Parallelization
 
 # -----------------------------------------------------------------
 
@@ -499,14 +501,16 @@ class ScalingTest(Configurable):
             # the current number of processors is less than the number of cores per node
             jobscript_path = filesystem.join(self.temp_path_run, "job_" + str(processors) + ".sh")
 
+            # Create a SchedulingOptions instance
+            scheduling_options = SchedulingOptions()
+
             # Adjust the scheduling options
-            scheduling_options = {}
-            scheduling_options["nodes"] = nodes
-            scheduling_options["ppn"] = ppn
-            scheduling_options["walltime"] = walltime
-            scheduling_options["jobscript_path"] = jobscript_path
-            scheduling_options["mail"] = False
-            scheduling_options["full_node"] = True
+            scheduling_options.nodes = nodes
+            scheduling_options.ppn = ppn
+            scheduling_options.walltime = walltime
+            scheduling_options.local_jobscript_path = jobscript_path
+            scheduling_options.mail = False
+            scheduling_options.full_node = True
 
         # Add the simulation to the remote queue
         simulation = self.remote.add_to_queue(self.arguments, simulation_name, scheduling_options)
@@ -663,7 +667,7 @@ class ScalingTest(Configurable):
         if self.config.mode == "hybrid":
 
             threads = self.threads_per_process
-            cores_per_process = self.self.threads_per_process / self.threads_per_core
+            cores_per_process = self.threads_per_process / self.threads_per_core
             processes = processors // cores_per_process
 
         # Return the number of processes and the number of threads

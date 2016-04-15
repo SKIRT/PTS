@@ -78,6 +78,14 @@ class SchedulingOptions(object):
         # Call the constructor of the base class
         super(SchedulingOptions, self).__init__()
 
+        # Scheduling options
+        self.nodes = None
+        self.ppn = None
+        self.mail = None
+        self.full_node = None
+        self.walltime = None
+        self.local_jobscript_path = None
+
 # -----------------------------------------------------------------
 
 class AnalysisOptions(Options):

@@ -17,6 +17,8 @@ from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
 from ..tools import inspection, filesystem
 from ..tools.logging import log
+from ..basics.host import Host
+from .parallelization import Parallelization
 
 # -----------------------------------------------------------------
 
@@ -49,10 +51,10 @@ class BatchLauncher(Configurable):
         # simulations (see 'name' parameter of 'add_to_queue')
         self.scheduling_options = dict()
 
-        # The assignment from items in the queue to the different remotes
+        # The assignment from items in the queue to the different remote hosts
         self.assignment = None
 
-        # The parallelization scheme for the different remotes
+        # The parallelization scheme for the different remote hosts
         self.parallelization = dict()
 
         # The simulations that have been retrieved
@@ -71,8 +73,6 @@ class BatchLauncher(Configurable):
 
         # Create a new BatchLauncher instance
         launcher = cls()
-
-        ## Adjust the configuration settings according to the command-line arguments
 
         # Return the new batch launcher
         return launcher
@@ -106,6 +106,109 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def host_ids(self):
+
+        """
+        This function returns the IDs of the hosts that will be used by the batch launcher
+        :return:
+        """
+
+        # If a list of remotes is defined
+        if self.config.remotes is not None: host_ids = self.config.remotes
+
+        # If a list of remotes is not defined, create a remote for all of the hosts that have a configuration file
+        else: host_ids = inspection.remote_host_ids()
+
+        # Return the list of host IDs
+        return host_ids
+
+    # -----------------------------------------------------------------
+
+    @property
+    def hosts(self):
+
+        """
+        This function returns the Host objects for all the hosts that will be used by the batch launcher
+        :return:
+        """
+
+        # Create the list of hosts
+        hosts = []
+        for host_id in self.host_ids: hosts.append(Host(host_id))
+
+        # Return the list of hosts
+        return hosts
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scheduler_host_ids(self):
+
+        """
+        This function returns just the IDS of the hosts which use a scheduling system. This is useful for when example
+        the user wants to specify the parallelization scheme only for these hosts, while the parallelization strategy
+        for the other hosts can be left up to the BatchLauncher class based on the current load of that system.
+        :return:
+        """
+
+        # Initialize a list to contain the host IDs
+        host_ids = []
+
+        # Loop over the IDs of all the hosts used by the BatchLauncher
+        for id in self.host_ids:
+
+            # Create Host instance
+            host = Host(id)
+
+            # If it's a scheduler, add it to the list
+            if host.scheduler: host_ids.append(id)
+
+        # Return the list of hosts which use a scheduling system
+        return host_ids
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scheduler_hosts(self):
+
+        """
+        This function is similar to 'scheduler_host_ids' but returns the Host objects instead of just the IDs of these
+        hosts.
+        :return:
+        """
+
+        # Initialize a list to contain the hosts
+        hosts = []
+
+        # Loop over the IDs of all the hosts used by the BatchLauncher
+        for id in self.host_ids:
+
+            # Create a Host instance
+            host = Host(id)
+
+            # If it's a scheulder, add it to the list
+            if host.scheduler: hosts.append(host)
+
+        # Return the list of hosts
+        return hosts
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_for_host(self, host_id, parallelization):
+
+        """
+        This function ...
+        :param host_id:
+        :param parallelization:
+        :return:
+        """
+
+        # Set the parallelization properties for the specified host
+        self.parallelization[host_id] = parallelization
+
+    # -----------------------------------------------------------------
+
     def run(self):
 
         """
@@ -119,7 +222,7 @@ class BatchLauncher(Configurable):
         # 2. Determine how many simulations are assigned to each remote
         self.assign()
 
-        # 3. Set the parallelization scheme for the different remotes
+        # 3. Set the parallelization scheme for the remote hosts for which this was not specified by the user
         self.set_parallelization()
 
         # 4. Launch the simulations
@@ -131,7 +234,7 @@ class BatchLauncher(Configurable):
         # 6. Analyse the output of the retrieved simulations
         self.analyse()
 
-        # Return the simulations that are just scheduled
+        # 7. Return the simulations that are just scheduled
         return simulations
 
     # -----------------------------------------------------------------
@@ -227,29 +330,34 @@ class BatchLauncher(Configurable):
         # Loop over the different remote hosts
         for remote in self.remotes:
 
+            # Check whether the parallelization has already been defined by the user for this remote host
+            if remote.host_id in self.parallelization: continue
+
             # Debugging
             log.debug("Setting the parallelization scheme for host '" + remote.host_id + "' ...")
 
-            # Fix the number of processes to 16
-            processes = 16
+            # Get the number of cores per process as defined in the configuration
+            cores_per_process = self.config.cores_per_process
 
-            # Calculate the maximum number of threads per process based on the current cpu load of the system
-            threads = int(remote.free_cores / processes)
+            # Get the amount of (currently) free cores on the remote host
+            cores = remote.free_cores
 
-            # If hyperthreading should be used for the remote host, we can even use more threads
-            if remote.use_hyperthreading: threads *= remote.threads_per_core
+            # Using the number of cores per process defined in the configuration, determine the number of processes
+            processes = int(cores / cores_per_process)
 
-            # If there are too little free cpus for the amount of processes, the number of threads will be smaller than one
-            if threads < 1:
+            # Create the parallelization object
+            parallelization = Parallelization()
 
-                processes = int(remote.free_cores)
-                threads = 1
+            # Set the parallelization properties
+            parallelization.cores = cores
+            parallelization.threads_per_core = remote.threads_per_core if remote.use_hyperthreading else 1
+            parallelization.processes = processes
 
             # Debugging
-            log.debug("Using " + str(processes) + " processes and " + str(threads) + " threads per process on this remote")
+            log.debug("Using " + str(parallelization.processes) + " processes and " + str(parallelization.threads) + " threads per process on this remote")
 
             # Set the parallelization scheme for this host
-            self.parallelization[remote.host_id] = (processes, threads)
+            self.parallelization[remote.host_id] = parallelization
 
     # -----------------------------------------------------------------
 
@@ -270,7 +378,9 @@ class BatchLauncher(Configurable):
         for remote in self.remotes:
 
             # Get the parallelization scheme for this remote host
-            processes, threads = self.parallelization[remote.host_id]
+            parallellization = self.parallelization[remote.host_id]
+            processes = parallellization.processes
+            threads = parallellization.threads
 
             # Cache the simulation objects scheduled to the current remote
             simulations_remote = []
@@ -294,6 +404,9 @@ class BatchLauncher(Configurable):
 
                 # If the input directory is shared between the different simulations,
                 if self.config.shared_input and remote_input_path is None: remote_input_path = simulation.remote_input_path
+
+                # Set the parallelization properties for the simulation (this is actually already done by SkirtRemote in the add_to_queue function)
+                simulation.parallelization = parallellization
 
                 # Set the analysis options for the simulation
                 self.set_analysis_options(simulation)

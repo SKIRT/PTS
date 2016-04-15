@@ -53,8 +53,6 @@ eff_wavelengths = {"FUV": 152e-9 * Unit("m"),
 
 # -----------------------------------------------------------------
 
-#_LX_Wm = _LX_Lsun * Units::Lsun() * SunSED::solarluminosity(this, _ell);
-
 class Sun(object):
     
     """
@@ -75,6 +73,30 @@ class Sun(object):
 
     # -----------------------------------------------------------------
 
+    def total_luminosity(self, unit="W"):
+
+        """
+        This function ...
+        :param unit:
+        :return:
+        """
+
+        return Lsun.to(unit)
+
+    # -----------------------------------------------------------------
+
+    def total_luminosity_as_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create and return the new unit
+        return Unit("Lsun", self.total_luminosity())
+
+    # -----------------------------------------------------------------
+
     def luminosity_for_filter(self, filter, unit="W/micron"):
 
         """
@@ -84,10 +106,27 @@ class Sun(object):
         :return:
         """
 
-        #luminosity = filter.integrate(self.sed["Wavelength"], self.sed["Luminosity"])
+        # Convole the Sun SED over the filter transmission curve
         luminosity = filter.convolve(self.sed.wavelengths(unit="micron", asarray=True), self.sed.luminosities(unit="W/micron", asarray=True)) # also in W/micron
+        luminosity = luminosity * Unit("W/micron")
 
-        # Return the luminosity in W/micron
-        return luminosity * Unit("W/micron")
+        # Return the luminosity
+        return luminosity.to(unit)
+
+    # -----------------------------------------------------------------
+
+    def luminosity_for_filter_as_unit(self, filter):
+
+        """
+        This function ...
+        :param filter:
+        :return:
+        """
+
+        # Determine a name for this unit
+        unit_name = "Lsun_" + filter.band
+
+        # Create and return the new unit
+        return Unit(unit_name, self.luminosity_for_filter(filter))
 
 # -----------------------------------------------------------------

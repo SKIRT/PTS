@@ -24,6 +24,7 @@ from ..basics.configurable import Configurable
 from ..test.resources import ResourceEstimator
 from ..tools import filesystem
 from ..tools.logging import log
+from .options import SchedulingOptions
 
 # -----------------------------------------------------------------
 
@@ -334,7 +335,9 @@ class SkirtRemoteLauncher(Configurable):
         log.info("Performing the simulation...")
 
         # Add the walltime to the scheduling options
-        if self.config.walltime is not None: scheduling_options = {"walltime": self.config.walltime}
+        if self.config.walltime is not None:
+            scheduling_options = SchedulingOptions()
+            scheduling_options.walltime = self.config.walltime
         else: scheduling_options = None
 
         # Run the simulation

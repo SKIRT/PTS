@@ -109,6 +109,16 @@ class FittingComponent(ModelingComponent):
         # Set the path to the parameter file
         self.parameter_table_path = filesystem.join(self.fit_path, "parameters.dat")
 
+        # Initialize the parameter file if that hasn't been done yet
+        if not filesystem.is_file(self.parameter_table_path):
+
+            # Create an empty table
+            names = ["Simulation name", "FUV young", "FUV ionizing", "Dust mass"]
+            data = [[], [], [], []]
+            dtypes = ["S24", "float64", "float64", "float64"]
+            table = tables.new(data, names, dtypes=dtypes)
+            table.write(table, self.parameter_table_path, format="ascii.ecsv")
+
         # Determine the path to the ski file
         self.fit_ski_path = filesystem.join(self.fit_path, self.galaxy_name + ".ski")
 
@@ -135,9 +145,9 @@ class FittingComponent(ModelingComponent):
         if not filesystem.is_file(self.runtime_table_path):
 
             # Initialize
-            names = ["Simulation name", "Remote host", "Processes", "Threads", "Packages", "Runtime"]
-            data = [[], [], [], [], [], []]
-            dtypes = ["S24", "S15", "int64", "int64", "int64", "float64"]
+            names = ["Simulation name", "Remote host", "Cores", "Hyperthreads per core", "Processes", "Packages", "Runtime"]
+            data = [[], [], [], [], [], [], []]
+            dtypes = ["S24", "S15", "int64", "int64", "int64", "int64", "float64"]
             table = tables.new(data, names, dtypes=dtypes)
             tables.write(table, self.runtime_table_path)
 

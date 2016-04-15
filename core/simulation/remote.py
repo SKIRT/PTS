@@ -23,6 +23,8 @@ from ..tools import time, inspection, filesystem
 from ..test.resources import ResourceEstimator
 from .simulation import RemoteSimulation
 from ..tools.logging import log
+from ..launch.options import SchedulingOptions
+from ..launch.parallelization import Parallelization
 
 # -----------------------------------------------------------------
 
@@ -149,6 +151,12 @@ class SkirtRemote(Remote):
 
         # Create a simulation object
         simulation = self.create_simulation_object(arguments, name, simulation_id, remote_simulation_path, local_ski_path, local_input_path, local_output_path)
+
+        # Set the parallelization properties to the simulation object
+        processes = arguments.parallel.processes
+        threads = arguments.parallel.threads
+        threads_per_core = self.threads_per_core if self.use_hyperthreading else 1
+        simulation.parallelization = Parallelization.from_processes_and_threads(processes, threads, threads_per_core)
 
         # If analysis options are defined, adjust the correponding settings of the simulation object
         if analysis_options is not None: simulation.set_analysis_options(analysis_options)
@@ -420,12 +428,12 @@ class SkirtRemote(Remote):
         scheduling_options = self._verify_scheduling_options(scheduling_options, arguments, local_ski_path)
 
         # Now get the options
-        nodes = scheduling_options["nodes"]
-        ppn = scheduling_options["ppn"]
-        mail = scheduling_options["mail"]
-        full_node = scheduling_options["full_node"]
-        walltime = scheduling_options["walltime"]
-        local_jobscript_path = scheduling_options["jobscript_path"]
+        nodes = scheduling_options.nodes
+        ppn = scheduling_options.ppn
+        mail = scheduling_options.mail
+        full_node = scheduling_options.full_node
+        walltime = scheduling_options.walltime
+        local_jobscript_path = scheduling_options.local_jobscript_path
 
         # Create a job script next to the (local) simulation's ski file
         jobscript_name = filesystem.name(local_jobscript_path)
@@ -967,28 +975,28 @@ class SkirtRemote(Remote):
         :return:
         """
 
-        # If scheduling options is not defined
-        if options is None: options = {}
+        # If scheduling options is not defined, create a new SchedulingOptions object
+        if options is None: options = SchedulingOptions()
 
         # Test the presence of the 'nodes' and 'ppn' options
-        if "nodes" not in options or "ppn" not in options:
+        if options.nodes is None or options.ppn is None:
 
             # Get the requirements in number of nodes and ppn
             processors = arguments.parallel.processes * arguments.parallel.threads
             nodes, ppn = self.get_requirements(processors)
 
             # Set the nodes and pppn
-            options["nodes"] = nodes
-            options["ppn"] = ppn
+            options.nodes = nodes
+            options.ppn = ppn
 
         # Check if 'mail' option is defined
-        if "mail" not in options: options["mail"] = False
+        if options.mail is None: options.mail = False
 
         # Check if 'full_node' option is defined
-        if "full_node" not in options: options["full_node"] = True
+        if options.full_node is None: options.full_node = True
 
         # We want to estimate the walltime here if it is not defined in the options
-        if "walltime" not in options:
+        if options.walltime is None:
 
             factor = 1.2
 
@@ -1002,16 +1010,16 @@ class SkirtRemote(Remote):
             options.walltime = estimator.walltime_for(arguments.parallel.processes, arguments.parallel.threads) * factor
 
         # Check if job script path is defined
-        if "jobscript_path" not in options:
+        if options.local_jobscript_path is None:
 
             # Determine the jobscript path
             local_simulation_path = filesystem.directory_of(local_ski_path)
             local_jobscript_path = filesystem.join(local_simulation_path, "job.sh")
 
-            # Set the jobscript path
-            options["jobscript_path"] = local_jobscript_path
+            # Set the local jobscript path
+            options.local_jobscript_path = local_jobscript_path
 
-        # Return the dictionary of scheduling options
+        # Return the scheduling options
         return options
 
 # -----------------------------------------------------------------
