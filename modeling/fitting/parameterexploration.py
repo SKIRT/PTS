@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
@@ -127,11 +128,11 @@ class ParameterExplorer(FittingComponent):
         # 4. Set the ranges of the different fit parameters
         self.set_parameter_ranges()
 
-        # 5. Load the runtime table
-        self.load_runtimes()
-
         # Set the parallelization
         self.set_parallelization()
+
+        # Estimate the runtimes
+        self.estimate_runtimes()
 
         # 6. Launch the simulations for different parameter values
         self.simulate()
@@ -299,24 +300,6 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def load_runtimes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("")
-
-        # Get the number of photon packages (per wavelength) for this batch of simulations
-        packages = self.ski.packages()
-
-        # Load the runtime table
-        self.runtimes = tables.from_file(self.runtime_table_path)
-
-    # -----------------------------------------------------------------
-
     def set_parallelization(self):
 
         """
@@ -353,6 +336,35 @@ class ParameterExplorer(FittingComponent):
             # Set the parallelization for this host
             self.launcher.set_parallelization_for_host(host.id, parallelization)
 
+            #self.parallelization[host.id] = parallelization
+
+    # -----------------------------------------------------------------
+
+    def estimate_runtimes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Estimating the runtimes based on the results of previous runs ...")
+
+        # Get the number of photon packages (per wavelength) for this batch of simulations
+        packages = self.ski.packages()
+
+        # Load the runtime table
+        runtimes_table = tables.from_file(self.runtime_table_path)
+
+        # Keep a list of all the runtimes recorded for a certain remote host
+        runtimes_for_hosts = defaultdict(list)
+
+        # Loop over the entries in the runtime table
+        # "Simulation name", "Remote host", "Cores", "Hyperthreads per core", "Processes", "Packages", "Runtime"
+        for i in range(len(runtimes_table)):
+
+
+
     # -----------------------------------------------------------------
 
     def simulate(self):
@@ -362,9 +374,25 @@ class ParameterExplorer(FittingComponent):
         :return:
         """
 
-        # Scheduling options
-        scheduling_options = SchedulingOptions()
-        scheduling_options.walltime = None
+        # Create a dictionary for the scheduling options for the different remotes with a scheduling system
+        sched_options = dict()
+
+        # Create scheduling options for each remote host with a scheduling system
+        for host in self.launcher.scheduler_hosts:
+
+            # Get the parallelization for this host
+            parallelization = self.launcher.parallelization_for_host(host.id)
+
+            # Get the number of cores used and the number of hyperthreads per core
+            cores = parallelization.cores
+            threads_per_core = parallelization.threads_per_core
+
+            # Scheduling options
+            scheduling_options = SchedulingOptions()
+            scheduling_options.walltime = None
+
+            # Add the scheduling options to the dictionary
+            sched_options[host.id] = scheduling_options
 
         # Create a FUV filter object
         fuv = Filter.from_string("FUV")
@@ -411,8 +439,8 @@ class ParameterExplorer(FittingComponent):
                     # Put the parameters in the queue and get the simulation object
                     self.launcher.add_to_queue(arguments, simulation_name)
 
-                    # Set scheduling options
-                    self.launcher.set_scheduling_options(simulation_name, scheduling_options)
+                    # Set scheduling options (for the different remote hosts with a scheduling system)
+                    for host_id in sched_options: self.launcher.set_scheduling_options(host_id, simulation_name, sched_options[host_id])
 
                     # Add an entry to the parameter table
                     self.table.add_row([simulation_name, young_luminosity, ionizing_luminosity, dust_mass])

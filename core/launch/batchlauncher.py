@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import defaultdict
+
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
@@ -47,9 +50,10 @@ class BatchLauncher(Configurable):
         # The queue
         self.queue = []
 
-        # The scheduling options for (some of) the simulations, accesed by keys that are the names given to the
-        # simulations (see 'name' parameter of 'add_to_queue')
-        self.scheduling_options = dict()
+        # The scheduling options for (some of) the simulations and (some of) the remote hosts. This is a nested
+        # dictionary where the first key represents the remote host ID and the next key represents the name of the
+        # simulation (see 'name' parameter of 'add_to_queue')
+        self.scheduling_options = defaultdict(dict)
 
         # The assignment from items in the queue to the different remote hosts
         self.assignment = None
@@ -93,16 +97,18 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def set_scheduling_options(self, name, options):
+    def set_scheduling_options(self, host_id, name, options):
 
         """
         This function ...
         :param name:
+        :param host_id:
         :param options:
         :return:
         """
 
-        self.scheduling_options[name] = options
+        # Set the scheduling options for the specified host and for the specified simulation
+        self.scheduling_options[host_id][name] = options
 
     # -----------------------------------------------------------------
 
@@ -114,14 +120,20 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        # If a list of remotes is defined
-        if self.config.remotes is not None: host_ids = self.config.remotes
+        # If the setup has not been called yet
+        if len(self.remotes) == 0:
 
-        # If a list of remotes is not defined, create a remote for all of the hosts that have a configuration file
-        else: host_ids = inspection.remote_host_ids()
+            # If a list of remotes is defined
+            if self.config.remotes is not None: host_ids = self.config.remotes
 
-        # Return the list of host IDs
-        return host_ids
+            # If a list of remotes is not defined, create a remote for all of the hosts that have a configuration file
+            else: host_ids = inspection.remote_host_ids()
+
+            # Return the list of host IDs
+            return host_ids
+
+        # If the setup has already been called
+        else: return [remote.host_id for remote in self.remotes]
 
     # -----------------------------------------------------------------
 
@@ -133,12 +145,18 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        # Create the list of hosts
-        hosts = []
-        for host_id in self.host_ids: hosts.append(Host(host_id))
+        # If the setup has not been called yet
+        if len(self.remotes) == 0:
 
-        # Return the list of hosts
-        return hosts
+            # Create the list of hosts
+            hosts = []
+            for host_id in self.host_ids: hosts.append(Host(host_id))
+
+            # Return the list of hosts
+            return hosts
+
+        # If the setup has already been called
+        else: return [remote.host for remote in self.remotes]
 
     # -----------------------------------------------------------------
 
@@ -152,20 +170,26 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        # Initialize a list to contain the host IDs
-        host_ids = []
+        # If the setup has not been called yet
+        if len(self.remotes) == 0:
 
-        # Loop over the IDs of all the hosts used by the BatchLauncher
-        for id in self.host_ids:
+            # Initialize a list to contain the host IDs
+            host_ids = []
 
-            # Create Host instance
-            host = Host(id)
+            # Loop over the IDs of all the hosts used by the BatchLauncher
+            for id in self.host_ids:
 
-            # If it's a scheduler, add it to the list
-            if host.scheduler: host_ids.append(id)
+                # Create Host instance
+                host = Host(id)
 
-        # Return the list of hosts which use a scheduling system
-        return host_ids
+                # If it's a scheduler, add it to the list
+                if host.scheduler: host_ids.append(id)
+
+            # Return the list of hosts which use a scheduling system
+            return host_ids
+
+        # If the setup has already been called
+        else: return [remote.host_id for remote in self.remotes if remote.scheduler]
 
     # -----------------------------------------------------------------
 
@@ -178,20 +202,26 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        # Initialize a list to contain the hosts
-        hosts = []
+        # If the setup has not been called yet
+        if len(self.remotes) == 0:
 
-        # Loop over the IDs of all the hosts used by the BatchLauncher
-        for id in self.host_ids:
+            # Initialize a list to contain the hosts
+            hosts = []
 
-            # Create a Host instance
-            host = Host(id)
+            # Loop over the IDs of all the hosts used by the BatchLauncher
+            for id in self.host_ids:
 
-            # If it's a scheulder, add it to the list
-            if host.scheduler: hosts.append(host)
+                # Create a Host instance
+                host = Host(id)
 
-        # Return the list of hosts
-        return hosts
+                # If it's a scheulder, add it to the list
+                if host.scheduler: hosts.append(host)
+
+            # Return the list of hosts
+            return hosts
+
+        # If the setup has already been called
+        else: return [remote.host for remote in self.remotes if remote.scheduler]
 
     # -----------------------------------------------------------------
 
@@ -206,6 +236,18 @@ class BatchLauncher(Configurable):
 
         # Set the parallelization properties for the specified host
         self.parallelization[host_id] = parallelization
+
+    # -----------------------------------------------------------------
+
+    def parallelization_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.parallelization[host_id]
 
     # -----------------------------------------------------------------
 
@@ -256,7 +298,7 @@ class BatchLauncher(Configurable):
         self.queue = []
 
         # Clear the scheduling options
-        self.scheduling_options = dict()
+        self.scheduling_options = defaultdict(dict())
 
         # Clear the assignment
         self.assignment = None
@@ -368,6 +410,9 @@ class BatchLauncher(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Launching the simulations ...")
+
         # The remote input path
         remote_input_path = None
 
@@ -395,14 +440,16 @@ class BatchLauncher(Configurable):
                 arguments.parallel.processes = processes
                 arguments.parallel.threads = threads
 
-                # Check whether scheduling options are defined for this simulation
-                scheduling_options = self.scheduling_options[name] if name in self.scheduling_options else None
+                # Check whether scheduling options are defined for this simulation and for this remote host
+                if remote.host_id in self.scheduling_options and name in self.scheduling_options[remote.host_id]:
+                    scheduling_options = self.scheduling_options[remote.host_id][name]
+                else: scheduling_options = None
 
                 # Queue the simulation
                 simulation = remote.add_to_queue(arguments, name=name, scheduling_options=scheduling_options, remote_input_path=remote_input_path)
                 simulations_remote.append(simulation)
 
-                # If the input directory is shared between the different simulations,
+                # If the input directory is shared between the different simulations
                 if self.config.shared_input and remote_input_path is None: remote_input_path = simulation.remote_input_path
 
                 # Set the parallelization properties for the simulation (this is actually already done by SkirtRemote in the add_to_queue function)

@@ -56,6 +56,9 @@ class SkirtRemote(Remote):
         # Initialize an empty list for the simulation queue
         self.queue = []
 
+        # Initialize a dictionary for the scheduling options
+        self.scheduling_options = dict()
+
     # -----------------------------------------------------------------
 
     def setup(self, host_id, cluster=None):
@@ -133,21 +136,14 @@ class SkirtRemote(Remote):
         # Make preparations for this simulation
         local_ski_path, local_input_path, local_output_path = self.prepare(arguments, remote_simulation_path, remote_input_path)
 
-        # If the remote host uses a scheduling system, submit the simulation right away
-        if self.scheduler:
+        # Add the SkirtArguments object to the queue
+        self.queue.append((arguments, name))
 
-            # Submit the simulation to the remote scheduling system
-            simulation_id = self.schedule(arguments, name, scheduling_options, local_ski_path, remote_simulation_path)
+        # If scheduling options are defined, add them to the dictionary
+        if scheduling_options is not None: self.scheduling_options[name] = scheduling_options
 
-        # If no scheduling system is used, just store the SKIRT arguments in a list for now and execute the complete
-        # list of simulations later on (when 'start_queue' is called)
-        else:
-
-            # Add the SkirtArguments object to the queue
-            self.queue.append(arguments)
-
-            # Generate a new simulation ID based on the ID's currently in use
-            simulation_id = self._new_simulation_id()
+        # Generate a new simulation ID based on the ID's currently in use
+        simulation_id = self._new_simulation_id()
 
         # Create a simulation object
         simulation = self.create_simulation_object(arguments, name, simulation_id, remote_simulation_path, local_ski_path, local_input_path, local_output_path)
@@ -182,14 +178,59 @@ class SkirtRemote(Remote):
         # Raise an error if a connection to the remote has not been made
         if not self.connected: raise RuntimeError("Not connected to the remote")
 
-        # If a scheduling system is used by the remote host, we don't need to do anything, simulations added to the queue
-        # are already waiting to be executed (or are already being executed)
-        if self.scheduler:
-            log.warning("The remote host uses its own scheduling system so calling 'start_queue' will have no effect")
-            return
-
         # Inform the user
         log.info("Starting the queued simulations remotely ...")
+
+        # If the remote host uses a scheduling system, schedule all the simulations in the queue
+        if self.scheduler: screen_name = self.start_queue_jobs()
+
+        # Else, initiate a screen session in which the simulations are executed
+        else: screen_name = self.start_queue_screen(screen_name, local_script_path, screen_output_path)
+
+        # Clear the queue
+        self.clear_queue()
+
+        # Return the screen name
+        return screen_name
+
+    # -----------------------------------------------------------------
+
+    def start_queue_jobs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Starting the queue by scheduling the simulation as seperate jobs ...")
+
+        # Loop over the items in the queue
+        for arguments, name in self.queue:
+
+            # Check whether scheduling options are defined for this simulation
+            scheduling_options = self.scheduling_options[name] if name in self.scheduling_options else None
+
+            # Submit the simulation to the remote scheduling system
+            job_id = self.schedule(arguments, name, scheduling_options, local_ski_path=None, remote_simulation_path=None)
+
+        # Return the screen name = None
+        return None
+
+    # -----------------------------------------------------------------
+
+    def start_queue_screen(self, screen_name, local_script_path, screen_output_path):
+
+        """
+        This function ...
+        :param screen_name:
+        :param local_script_path:
+        :param screen_output_path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Starting the queue by initiating a screen session in which all simulations are executed ...")
 
         # Create a unique screen name indicating we are running SKIRT simulations if none is given
         if screen_name is None: screen_name = time.unique_name("SKIRT")
@@ -208,7 +249,7 @@ class SkirtRemote(Remote):
         script_file.write("\n")
 
         # Loop over the items in the queue
-        for arguments in self.queue:
+        for arguments, name in self.queue:
 
             # Write the command string to the job script
             threads_per_core = self.threads_per_core if self.use_hyperthreading else 1
@@ -224,9 +265,6 @@ class SkirtRemote(Remote):
         # Close the script file (if it is temporary it will automatically be removed)
         script_file.close()
 
-        # Clear the queue
-        self.clear_queue()
-
         # Return the screen name
         return screen_name
 
@@ -239,7 +277,9 @@ class SkirtRemote(Remote):
         :return:
         """
 
+        # Empty the queue and clear the scheduling options dictionary
         self.queue = []
+        self.scheduling_options = dict()
 
     # -----------------------------------------------------------------
 
@@ -263,10 +303,9 @@ class SkirtRemote(Remote):
         # Add the simulation arguments to the queue
         simulation = self.add_to_queue(arguments, name, scheduling_options, analysis_options=analysis_options)
 
-        # Start the queue if that is not left up to the remote's own scheduling system
-        if not self.scheduler:
-            screen_name = self.start_queue(name)
-            simulation.screen_name = screen_name
+        # Start the queue
+        screen_name = self.start_queue(name)
+        simulation.screen_name = screen_name
 
         # Return the simulation object
         return simulation
@@ -422,7 +461,7 @@ class SkirtRemote(Remote):
         """
 
         # Inform the suer
-        log.info("Scheduling simulation on the remote host")
+        log.info("Scheduling simulation '" + name + "' on the remote host ...")
 
         # Verify the scheduling options
         scheduling_options = self._verify_scheduling_options(scheduling_options, arguments, local_ski_path)
@@ -442,6 +481,7 @@ class SkirtRemote(Remote):
                               name=name, mail=mail, full_node=full_node, bind_to_cores=self.host.force_process_binding)
 
         # Copy the job script to the remote simulation directory
+        remote_simulation_path = filesystem.directory_of(arguments.ski_pattern) # NEW, to avoid having to pass this as an argument
         remote_jobscript_path = filesystem.join(remote_simulation_path, jobscript_name)
         self.upload(local_jobscript_path, remote_simulation_path)
 
@@ -454,10 +494,10 @@ class SkirtRemote(Remote):
         output = self.execute("qsub " + remote_jobscript_path)
 
         # The queue number of the submitted job is used to identify this simulation
-        simulation_id = int(output[0].split(".")[0])
+        job_id = int(output[0].split(".")[0])
 
-        # Return the simulation ID
-        return simulation_id
+        # Return the job ID
+        return job_id
 
     # -----------------------------------------------------------------
 
@@ -998,23 +1038,26 @@ class SkirtRemote(Remote):
         # We want to estimate the walltime here if it is not defined in the options
         if options.walltime is None:
 
-            factor = 1.2
+            #factor = 1.2
 
             # Create and run a ResourceEstimator instance
-            estimator = ResourceEstimator()
-            #estimator.run(local_ski_path, arguments.parallel.processes, arguments.parallel.threads)
-            estimator.run(local_ski_path, 1, 1)
+            #estimator = ResourceEstimator()
+            ##estimator.run(local_ski_path, arguments.parallel.processes, arguments.parallel.threads)
+            #estimator.run(local_ski_path, 1, 1)
 
             # Return the estimated walltime
-            #walltime = estimator.walltime * factor
-            options.walltime = estimator.walltime_for(arguments.parallel.processes, arguments.parallel.threads) * factor
+            ##walltime = estimator.walltime * factor
+            #options.walltime = estimator.walltime_for(arguments.parallel.processes, arguments.parallel.threads) * factor
+
+            raise RuntimeError("The walltime is not defined in the scheduling options")
 
         # Check if job script path is defined
         if options.local_jobscript_path is None:
 
             # Determine the jobscript path
-            local_simulation_path = filesystem.directory_of(local_ski_path)
-            local_jobscript_path = filesystem.join(local_simulation_path, "job.sh")
+            #local_simulation_path = filesystem.directory_of(local_ski_path)
+            #local_jobscript_path = filesystem.join(local_simulation_path, "job.sh")
+            local_jobscript_path = filesystem.join(filesystem.home(), time.unique_name("job") + ".sh")
 
             # Set the local jobscript path
             options.local_jobscript_path = local_jobscript_path
