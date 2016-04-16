@@ -461,16 +461,13 @@ class BatchLauncher(Configurable):
                 # Save the simulation object
                 simulation.save()
 
-            # Start the queue if the remote host does not use a scheduling system
-            if not remote.scheduler:
+            # Start the queue
+            screen_name = remote.start_queue(group_simulations=self.config.group_simulations)
 
-                # Start the queue
-                screen_name = remote.start_queue()
-
-                # Set the screen name for all of the simulation objects
-                for simulation in simulations_remote:
-                    simulation.screen_name = screen_name
-                    simulation.save()
+            # Set the screen name for all of the simulation objects
+            for simulation in simulations_remote:
+                simulation.screen_name = screen_name
+                simulation.save()
 
             # Add the simulations of this remote to the total list of simulations
             simulations += simulations_remote

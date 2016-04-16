@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import tempfile
 import numpy as np
 
 # Import astronomical modules
@@ -25,7 +24,7 @@ from ..basics.coordinatesystem import CoordinateSystem
 from ..basics.mask import Mask
 from ..sources.extractor import SourceExtractor
 from ..sky.skysubtractor import SkySubtractor
-from ..basics.configurable import Configurable
+from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from ...modeling.preparation import unitconversion
 from ...core.tools import special
@@ -68,6 +67,39 @@ class ImagePreparer(Configurable):
         # The principal ellipse and saturation region in sky coordinates
         self.principal_ellipse_sky = None
         self.saturation_region_sky = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_arguments(cls, arguments):
+
+        """
+        This function ...
+        :param arguments:
+        :return:
+        """
+
+        # Create a new class instance
+        preparer = cls()
+
+        # The path to the reference image (for rebinning)
+        preparer.config.rebinning.rebin_to = arguments.reference
+
+        # The path to the convolution kernel
+        preparer.config.convolution.kernel_path = arguments.kernel
+
+        # Set flags
+        preparer.config.calculate_calibration_uncertainties = True
+        preparer.config.extract_sources = True
+        preparer.config.correct_for_extinction = True
+        preparer.config.convert_unit = True
+        preparer.config.convolve = True
+        preparer.config.rebin = True
+        preparer.config.subtract_sky = True
+        preparer.config.set_uncertainties = True
+
+        # Return the new instance
+        return preparer
 
     # -----------------------------------------------------------------
 

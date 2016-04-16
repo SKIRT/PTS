@@ -165,13 +165,14 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def start_queue(self, screen_name=None, local_script_path=None, screen_output_path=None):
+    def start_queue(self, screen_name=None, local_script_path=None, screen_output_path=None, group_simulations=False):
 
         """
         This function ...
         :param screen_name:
         :param local_script_path:
         :param screen_output_path:
+        :param group_simulations:
         :return:
         """
 
@@ -182,7 +183,7 @@ class SkirtRemote(Remote):
         log.info("Starting the queued simulations remotely ...")
 
         # If the remote host uses a scheduling system, schedule all the simulations in the queue
-        if self.scheduler: screen_name = self.start_queue_jobs()
+        if self.scheduler: screen_name = self.start_queue_jobs(group_simulations)
 
         # Else, initiate a screen session in which the simulations are executed
         else: screen_name = self.start_queue_screen(screen_name, local_script_path, screen_output_path)
@@ -195,24 +196,31 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def start_queue_jobs(self):
+    def start_queue_jobs(self, group_simulations=False):
 
         """
         This function ...
+        :param group_simulations:
         :return:
         """
 
         # Inform the user
         log.info("Starting the queue by scheduling the simulation as seperate jobs ...")
 
-        # Loop over the items in the queue
-        for arguments, name in self.queue:
+        # Group simulations in one job script
+        if group_simulations: raise NotImplementedError("Group simulations is not implemented yet")
 
-            # Check whether scheduling options are defined for this simulation
-            scheduling_options = self.scheduling_options[name] if name in self.scheduling_options else None
+        # Don't group simulations
+        else:
 
-            # Submit the simulation to the remote scheduling system
-            job_id = self.schedule(arguments, name, scheduling_options, local_ski_path=None, remote_simulation_path=None)
+            # Loop over the items in the queue
+            for arguments, name in self.queue:
+
+                # Check whether scheduling options are defined for this simulation
+                scheduling_options = self.scheduling_options[name] if name in self.scheduling_options else None
+
+                # Submit the simulation to the remote scheduling system
+                job_id = self.schedule(arguments, name, scheduling_options, local_ski_path=None, remote_simulation_path=None)
 
         # Return the screen name = None
         return None
