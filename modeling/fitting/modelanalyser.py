@@ -294,7 +294,9 @@ class ModelAnalyser(FittingComponent):
         log.info("Writing the runtime of this simulation ...")
 
         # Get the name of the host on which the simulation was run
-        host = self.log_file.host
+        #host = self.log_file.host
+        host_id = self.simulation.host_id
+        cluster_name = self.simulation.cluster_name
 
         # Get the parallelization object from the simulation
         parallelization = self.simulation.parallelization
@@ -315,9 +317,9 @@ class ModelAnalyser(FittingComponent):
 
         # Add a line to the table file containing the simulation name, the host on which it was run, the number of
         # processes and threads, the number of photon packages and at last, the runtime in seconds
-        # columns: "Simulation name", "Remote host", "Cores", "Hyperthreads per core", "Processes", "Packages", "Runtime"
-        runtimefile.write(self.simulation.name + " " + host + " " + str(cores) + " " + str(hyperthreads) + " " +
-                          str(processes) + " " + str(packages) + " " + str(runtime) + "\n")
+        # columns: "Simulation name", "Host id", "Cluster name", "Cores", "Hyperthreads per core", "Processes", "Packages", "Runtime"
+        runtimefile.write(self.simulation.name + " " + host_id + " " + cluster_name + " " + str(cores) + " " +
+                          str(hyperthreads) + " " + str(processes) + " " + str(packages) + " " + str(runtime) + "\n")
 
         # Close the file
         runtimefile.close()

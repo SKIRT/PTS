@@ -1225,4 +1225,16 @@ class Remote(object):
 
         return self.host.id
 
+    # -----------------------------------------------------------------
+
+    @property
+    def cluster_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.host.cluster_name
+
 # -----------------------------------------------------------------

@@ -363,7 +363,8 @@ class ParameterExplorer(FittingComponent):
         # "Simulation name", "Remote host", "Cores", "Hyperthreads per core", "Processes", "Packages", "Runtime"
         for i in range(len(runtimes_table)):
 
-            host_id = runtimes_table["Remote host"][i]
+            host_id = runtimes_table["Host id"][i]
+            #cluster_name = runtimes_table["Cluster name"][i]
             cores = runtimes_table["Cores"][i]
             threads_per_core = runtimes_table["Hyperthreads per core"][i]
             processes = runtimes_table["Processes"][i]

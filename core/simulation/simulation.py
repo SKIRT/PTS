@@ -531,6 +531,10 @@ class RemoteSimulation(SkirtSimulation):
 
         # -- Attributes --
 
+        # Properties of the remote host on which the simulation was run
+        self.host_id = None
+        self.cluster_name = None
+
         # The simulation file path
         self.path = None
 

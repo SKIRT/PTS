@@ -441,6 +441,10 @@ class SkirtRemote(Remote):
         # Determine and set the simulation file path
         simulation_file_path = filesystem.join(self.local_skirt_host_run_dir, str(simulation_id) + ".sim")
 
+        # Set the host ID and cluster name (if applicable)
+        simulation.host_id = self.host_id
+        simulation.cluster_name = self.cluster_name
+
         # Set other attributes
         simulation.path = simulation_file_path
         simulation.id = simulation_id
