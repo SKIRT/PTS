@@ -137,7 +137,7 @@ class SEDFitter(FittingComponent):
         log.info("Loading the table with the chi squared value for each model ...")
 
         # Load the chi squared table
-        self.chi_squared = tables.from_file(self.chi_squared_table_path)
+        self.chi_squared = tables.from_file(self.chi_squared_table_path, format="ascii.ecsv")
 
         # Check whether the table is non-empty
         if len(self.chi_squared) == 0: raise RuntimeError("Could not find any chi squared value, it appears no simulations have been run yet")
@@ -159,7 +159,7 @@ class SEDFitter(FittingComponent):
         log.info("Loading the table with the model parameters ...")
 
         # Load the parameter table
-        self.parameters = tables.from_file(self.parameter_table_path)
+        self.parameters = tables.from_file(self.parameter_table_path, format="ascii.ecsv")
 
     # -----------------------------------------------------------------
 

@@ -18,7 +18,7 @@ from collections import defaultdict
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
-from ..tools import inspection, filesystem
+from ..tools import inspection, filesystem, time
 from ..tools.logging import log
 from ..basics.host import Host
 from .parallelization import Parallelization
@@ -60,6 +60,9 @@ class BatchLauncher(Configurable):
 
         # The parallelization scheme for the different remote hosts
         self.parallelization = dict()
+
+        # The paths to the directories for placing the (screen/job) scripts (for manual inspection) for the different remote hosts
+        self.script_paths = dict()
 
         # The simulations that have been retrieved
         self.simulations = []
@@ -306,6 +309,9 @@ class BatchLauncher(Configurable):
         # Clear the simulations
         self.simulations = []
 
+        # Clear the script path dictionary
+        self.script_paths = dict()
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -382,7 +388,7 @@ class BatchLauncher(Configurable):
             cores_per_process = self.config.cores_per_process
 
             # Get the amount of (currently) free cores on the remote host
-            cores = remote.free_cores
+            cores = int(remote.free_cores)
 
             # Using the number of cores per process defined in the configuration, determine the number of processes
             processes = int(cores / cores_per_process)
@@ -397,9 +403,24 @@ class BatchLauncher(Configurable):
 
             # Debugging
             log.debug("Using " + str(parallelization.processes) + " processes and " + str(parallelization.threads) + " threads per process on this remote")
+            if log.is_debug(): print(parallelization)
 
             # Set the parallelization scheme for this host
             self.parallelization[remote.host_id] = parallelization
+
+    # -----------------------------------------------------------------
+
+    def set_script_path(self, host_id, path):
+
+        """
+        This function ...
+        :param host_id:
+        :param path:
+        :return:
+        """
+
+        # Set the path to the script paths dictionary for the remote host
+        self.script_paths[host_id] = path
 
     # -----------------------------------------------------------------
 
@@ -461,8 +482,13 @@ class BatchLauncher(Configurable):
                 # Save the simulation object
                 simulation.save()
 
+            # Set a path for the script file to be saved to locally (for manual inspection)
+            if remote.host_id in self.script_paths:
+                local_script_path = filesystem.join(self.script_paths[remote.host_id], time.unique_name() + ".sh")
+            else: local_script_path = None
+
             # Start the queue
-            screen_name = remote.start_queue(group_simulations=self.config.group_simulations)
+            screen_name = remote.start_queue(group_simulations=self.config.group_simulations, local_script_path=local_script_path)
 
             # Set the screen name for all of the simulation objects
             for simulation in simulations_remote:

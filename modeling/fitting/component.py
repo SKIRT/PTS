@@ -117,7 +117,7 @@ class FittingComponent(ModelingComponent):
             data = [[], [], [], []]
             dtypes = ["S24", "float64", "float64", "float64"]
             table = tables.new(data, names, dtypes=dtypes)
-            table.write(table, self.parameter_table_path, format="ascii.ecsv")
+            tables.write(table, self.parameter_table_path, format="ascii.ecsv")
 
         # Determine the path to the ski file
         self.fit_ski_path = filesystem.join(self.fit_path, self.galaxy_name + ".ski")
@@ -133,7 +133,7 @@ class FittingComponent(ModelingComponent):
             data = [[], []]
             dtypes = ["S24", "float64"]
             table = tables.new(data, names, dtypes=dtypes)
-            tables.write(table, self.chi_squared_table_path)
+            tables.write(table, self.chi_squared_table_path, format="ascii.ecsv")
 
         # Set the path to the weights table file
         self.weights_table_path = filesystem.join(self.fit_path, "weights.dat")
@@ -149,6 +149,7 @@ class FittingComponent(ModelingComponent):
             data = [[], [], [], [], [], [], [], []]
             dtypes = ["S24", "S15", "S15", "int64", "int64", "int64", "int64", "float64"]
             table = tables.new(data, names, dtypes=dtypes)
-            tables.write(table, self.runtime_table_path)
+            table["Runtime"] = "s" # runtimes are expressed in seconds
+            tables.write(table, self.runtime_table_path, format="ascii.ecsv")
 
 # -----------------------------------------------------------------

@@ -108,7 +108,7 @@ def write(table, path, format="ascii.commented_header"):
 
 # -----------------------------------------------------------------
 
-def from_file(path, format="ascii.commented_header", fix_floats=False):
+def from_file(path, format="ascii.commented_header", fix_floats=False, fix_string_length=False):
 
     """
     This function ...
@@ -125,8 +125,10 @@ def from_file(path, format="ascii.commented_header", fix_floats=False):
     # Fix boolean values
     fix_logical(table)
 
-    if fix_float: fix_float(table)
+    if fix_floats: fix_float(table)
     # Sometimes, a column of floats is parsed as a column of strings ... But then importing this function from the python command line and loading the same table does work ... straaange..
+
+    if fix_string_length: fix_string_length_column(table, fix_string_length[0], fix_string_length[1])
 
     # Return the new table
     return table
@@ -203,6 +205,21 @@ def fix_float(table):
 
                 float_column = Column(values)
                 table.replace_column(column.name, float_column)
+
+# -----------------------------------------------------------------
+
+def fix_string_length_column(table, column_name, length):
+
+    """
+    This function ...
+    :param table:
+    :param column_name:
+    :param length:
+    :return:
+    """
+
+    length_str = "S"+str(length)
+    table[column_name].dtype = length_str
 
 # -----------------------------------------------------------------
 

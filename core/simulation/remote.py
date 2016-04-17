@@ -291,7 +291,7 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def run(self, arguments, name=None, scheduling_options=None, analysis_options=None):
+    def run(self, arguments, name=None, scheduling_options=None, analysis_options=None, local_script_path=None, screen_output_path=None):
 
         """
         This function ...
@@ -312,7 +312,7 @@ class SkirtRemote(Remote):
         simulation = self.add_to_queue(arguments, name, scheduling_options, analysis_options=analysis_options)
 
         # Start the queue
-        screen_name = self.start_queue(name)
+        screen_name = self.start_queue(name, local_script_path, screen_output_path)
         simulation.screen_name = screen_name
 
         # Return the simulation object
@@ -377,9 +377,7 @@ class SkirtRemote(Remote):
         local_output_path = arguments.output_path
 
         # The simulation does not require input
-        if local_input_path is None:
-
-            remote_input_path = None
+        if local_input_path is None: remote_input_path = None
 
         # The simulation does require input
         else:

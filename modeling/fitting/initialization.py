@@ -529,7 +529,7 @@ class InputInitializer(FittingComponent):
 
         # Get the FUV flux density
         fuv_index = tables.find_index(self.fluxes, "FUV", "Band")
-        fluxdensity = 0.5 * self.fluxes["Flux"][fuv_index]*Unit("Jy")
+        fluxdensity = 5. * self.fluxes["Flux"][fuv_index]*Unit("Jy")
 
         # Convert the flux density into a spectral luminosity
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv.pivotwavelength() * Unit("micron"), self.parameters.distance)
@@ -819,7 +819,7 @@ class InputInitializer(FittingComponent):
         log.info("Writing the table with weights to " + self.weights_table_path + " ...")
 
         # Write the table with weights
-        tables.write(self.weights, self.weights_table_path)
+        tables.write(self.weights, self.weights_table_path, format="ascii.ecsv")
 
 # -----------------------------------------------------------------
 

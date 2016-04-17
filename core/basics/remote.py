@@ -845,7 +845,7 @@ class Remote(object):
         :return:
         """
 
-        return self.cores * self.cpu_load
+        return self.cores * (1.0 - self.cpu_load)
 
     # -----------------------------------------------------------------
 

@@ -16,6 +16,7 @@ import os.path
 from datetime import datetime
 from lxml import etree
 from numpy import arctan
+import warnings
 
 # Import the relevant PTS classes and modules
 from .units import SkirtUnits
@@ -802,7 +803,7 @@ class SkiFile:
             parent.remove(normalization)
 
             # Make and add the new normalization element
-            attrs = {"luminosity" : str_from_quantity(luminosity)}
+            attrs = {"luminosity" : str_from_quantity(luminosity, unit="Lsun")}
             parent.append(parent.makeelement("BolLuminosityStellarCompNormalization", attrs))
 
         # Filter is defined, use LuminosityStellarCompNormalization
@@ -815,7 +816,7 @@ class SkiFile:
             parent.remove(normalization)
 
             # Make and add the new normalization element
-            attrs = {"luminosity": str_from_quantity(luminosity, unit="Lsun"), "band": filter_or_wavelength.skirt_description}
+            attrs = {"luminosity": str_from_quantity(luminosity), "band": filter_or_wavelength.skirt_description}
             parent.append(parent.makeelement("LuminosityStellarCompNormalization", attrs))
 
         # Wavelength is defined as an Astropy quantity, use SpectralLuminosityStellarCompNormalization
@@ -1869,10 +1870,21 @@ def str_from_angle(angle):
 
 def str_from_quantity(quantity, unit=None):
 
-    if unit is not None: return str(quantity.to(unit).value)
+    if unit is not None:
 
-    to_string = str(quantity.value) + " " + str(quantity.unit).replace(" ", "")
-    return to_string.replace("solMass", "Msun").replace("solLum", "Lsun")
+        if not quantity.__class__.__name__ == "Quantity": raise ValueError("Value is not a quantity, so unit cannot be converted")
+        return str(quantity.to(unit).value)
+
+    elif quantity.__class__.__name__ == "Quantity":
+
+        to_string = str(quantity.value) + " " + str(quantity.unit).replace(" ", "")
+        return to_string.replace("solMass", "Msun").replace("solLum", "Lsun")
+
+    else:
+
+        warnings.warn("The given value is not a quantity but a scalar value. No guarantee can be given that the parameter value"
+                      "is specified in the correct unit")
+        return str(quantity)
 
 # -----------------------------------------------------------------
 

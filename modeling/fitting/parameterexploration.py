@@ -174,7 +174,7 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.plotting.format = "png" # plot in PNG format so that an animation can be made from the fit SEDs
         self.launcher.config.shared_input = True   # The input directories for the different simulations are shared
         self.launcher.config.group_simulations = True # group multiple simulations into a single job (because a very large number of simulations will be scheduled)
-        #self.launcher.config.remotes = ["nancy"]   # temporary; only use Nancy
+        self.launcher.config.remotes = ["nancy"]   # temporary; only use Nancy
 
     # -----------------------------------------------------------------
 
@@ -189,7 +189,7 @@ class ParameterExplorer(FittingComponent):
         log.info("Loading the parameter table ...")
 
         # Load the parameter table
-        self.table = tables.from_file(self.parameter_table_path, format="ascii.ecsv")
+        self.table = tables.from_file(self.parameter_table_path, format="ascii.ecsv", fix_string_length=("Simulation name", 24))
 
     # -----------------------------------------------------------------
 
@@ -354,7 +354,7 @@ class ParameterExplorer(FittingComponent):
         current_packages = self.ski.packages()
 
         # Load the runtime table
-        runtimes_table = tables.from_file(self.runtime_table_path)
+        runtimes_table = tables.from_file(self.runtime_table_path, format="ascii.ecsv")
 
         # Keep a list of all the runtimes recorded for a certain remote host
         runtimes_for_hosts = defaultdict(list)
@@ -392,6 +392,13 @@ class ParameterExplorer(FittingComponent):
         This function ...
         :return:
         """
+
+        fit_scripts_path = filesystem.join(self.fit_path, "scripts")
+        if not filesystem.is_directory(fit_scripts_path): filesystem.create_directory(fit_scripts_path)
+        for host_id in self.launcher.host_ids:
+            script_dir_path = filesystem.join(fit_scripts_path, host_id)
+            if not filesystem.is_directory(script_dir_path): filesystem.create_directory(script_dir_path)
+            self.launcher.set_script_path(host_id, script_dir_path)
 
         # Create a dictionary for the scheduling options for the different remotes with a scheduling system
         sched_options = dict()
@@ -517,9 +524,9 @@ class ParameterExplorer(FittingComponent):
         log.info("Writing the parameter table ...")
 
         # Set the units of the parameter table
-        self.table["FUV young"] = "Lsun_FUV"
-        self.table["FUV ionizing"] = "Lsun_FUV"
-        self.table["Dust mass"] = "Msun"
+        self.table["FUV young"].unit = "Lsun_FUV"
+        self.table["FUV ionizing"].unit = "Lsun_FUV"
+        self.table["Dust mass"].unit = "Msun"
 
         # Write the parameter table
         tables.write(self.table, self.parameter_table_path, format="ascii.ecsv")

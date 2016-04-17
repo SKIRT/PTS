@@ -141,7 +141,8 @@ class ModelAnalyser(FittingComponent):
         self.flux_calculator = flux_calculator
 
         # Load the weights table
-        self.weights = tables.from_file(self.weights_table_path, fix_floats=True) # For some reason, the weights are parsed as strings instead of floats (but not from the command line!!??)
+        #self.weights = tables.from_file(self.weights_table_path, fix_floats=True) # For some reason, the weights are parsed as strings instead of floats (but not from the command line!!??)
+        self.weights = tables.from_file(self.weights_table_path, format="ascii.ecsv")
 
         # Initialize the differences table
         names = ["Instrument", "Band", "Flux difference", "Relative difference", "Chi squared term"]

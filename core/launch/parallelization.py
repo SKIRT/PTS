@@ -145,4 +145,26 @@ class Parallelization(object):
 
         return self.cores == other.cores and self.threads_per_core == other.threads_per_core and self.processes == other.processes
 
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        """
+
+        return self.__class__.__name__ + " scheme with " + str(self.processes) + " processes and " \
+               + str(self.threads_per_core) + " threads per core on a total of " + str(self.cores) + " cores"
+
+    # -----------------------------------------------------------------
+
+    def __repr__(self):
+
+        """
+        This function ...
+        """
+
+        return '<' + self.__class__.__name__ + " cores: " + str(self.cores) + ", threads per core: " \
+               + str(self.threads_per_core) + ", processes: " + str(self.processes) + ">"
+
 # -----------------------------------------------------------------
