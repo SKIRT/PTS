@@ -297,6 +297,7 @@ class ModelAnalyser(FittingComponent):
         #host = self.log_file.host
         host_id = self.simulation.host_id
         cluster_name = self.simulation.cluster_name
+        if cluster_name is None: cluster_name = "--"
 
         # Get the parallelization object from the simulation
         parallelization = self.simulation.parallelization
