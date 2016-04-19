@@ -215,6 +215,45 @@ class SkirtArguments(object):
         # Return the new object
         return arguments
 
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        """
+
+        properties = []
+        properties.append("ski path: " + self.ski_pattern)
+        properties.append("recursive: " + str(self.recursive))
+        properties.append("relative: " + str(self.relative))
+        properties.append("input path: " + str(self.input_path))
+        properties.append("output path: " + str(self.output_path))
+        properties.append("emulate: " + str(self.emulate))
+        properties.append("single: " + str(self.single))
+        properties.append("brief: " + str(self.logging.brief))
+        properties.append("verbose: " + str(self.logging.verbose))
+        properties.append("memory: " + str(self.logging.memory))
+        properties.append("allocation: " + str(self.logging.allocation))
+        properties.append("allocation_limit: " + str(self.logging.allocation_limit))
+        properties.append("simulations: " + str(self.parallel.simulations))
+        properties.append("threads: " + str(self.parallel.threads))
+        properties.append("processes: " + str(self.parallel.processes))
+
+        return_str = self.__class__.__name__ + ":\n"
+        for property in properties: return_str += " -" + property + "\n"
+        return return_str
+
+        # -----------------------------------------------------------------
+
+    def __repr__(self):
+
+        """
+        This function ...
+        """
+
+        return '<' + self.__class__.__name__ + " ski path: '" + self.ski_pattern + "'>"
+
 # -----------------------------------------------------------------
 
 def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, threads_per_core, scheduler):

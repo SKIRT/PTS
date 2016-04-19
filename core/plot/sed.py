@@ -460,10 +460,13 @@ class SEDPlotter(object):
 
             model_label = model_labels[j]
 
-            log_model = np.log10(self.models[model_label].fluxes(unit="Jy", add_unit=False))
+            #log_model = np.log10(self.models[model_label].fluxes(unit="Jy", add_unit=False))
 
-            f2 = interp1d(self.models[model_label].wavelengths(unit="micron", add_unit=False), log_model, kind='cubic')
-            ax2.plot(wavelengths, -(fluxes - f2(wavelengths))/fluxes * 100., line_styles[j], color='black', label='model')
+            model_fluxes= self.models[model_label].fluxes(unit="Jy", add_unit=False)
+            f2 = interp1d(self.models[model_label].wavelengths(unit="micron", add_unit=False), model_fluxes, kind='cubic')
+            residuals = -(fluxes - f2(wavelengths))/fluxes * 100.
+
+            ax2.plot(wavelengths, residuals, line_styles[j], color='black', label='model')
 
         # Add model SEDs
         model_labels = self.models.keys()

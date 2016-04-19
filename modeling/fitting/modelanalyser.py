@@ -305,7 +305,7 @@ class ModelAnalyser(FittingComponent):
 
         # Get the paralleliation properties
         cores = parallelization.cores
-        hyperthreads = parallelization.hyperthreads_per_core
+        hyperthreads = parallelization.threads_per_core
         processes = parallelization.processes
 
         # Get the runtime in seconds

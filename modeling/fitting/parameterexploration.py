@@ -174,7 +174,7 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.plotting.format = "png" # plot in PNG format so that an animation can be made from the fit SEDs
         self.launcher.config.shared_input = True   # The input directories for the different simulations are shared
         self.launcher.config.group_simulations = True # group multiple simulations into a single job (because a very large number of simulations will be scheduled)
-        self.launcher.config.remotes = ["nancy"]   # temporary; only use Nancy
+        #self.launcher.config.remotes = ["nancy"]   # temporary; only use Nancy
 
     # -----------------------------------------------------------------
 

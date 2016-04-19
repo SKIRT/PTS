@@ -260,6 +260,10 @@ class SEDFitter(FittingComponent):
         # Inform the user
         log.info("Calculating the percentiles for the different parameter values ...")
 
+        dust_mass_values = len(self.probabilities["Dust mass"])
+        fuv_young_values = len(self.probabilities["FUV young"])
+        fuv_ionizing_values = len(self.probabilities["FUV ionizing"])
+
         # Calculate the percentiles
         dust_mass_16, dust_mass_50, dust_mass_84 = find_percentiles(self.probabilities["Dust mass"]["Dust mass"], self.probabilities["Dust mass"]["Probability"])
         fuv_young_16, fuv_young_50, fuv_young_84 = find_percentiles(self.probabilities["FUV young"]["FUV young"], self.probabilities["FUV young"]["Probability"])
@@ -556,7 +560,8 @@ def find_percentiles(values, probabilities):
     :return:
     """
 
-    return find_percentile_16(values, probabilities), find_percentile_50(values, probabilities), find_percentile_84(values, probabilities)
+    if len(values) > 1: return find_percentile_16(values, probabilities), find_percentile_50(values, probabilities), find_percentile_84(values, probabilities)
+    else: return None, None, None
 
 # -----------------------------------------------------------------
 

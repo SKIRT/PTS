@@ -259,9 +259,13 @@ class SkirtRemote(Remote):
         # Loop over the items in the queue
         for arguments, name in self.queue:
 
+            print(arguments)
+
             # Write the command string to the job script
             threads_per_core = self.threads_per_core if self.use_hyperthreading else 1
+            print("threasd per core", threads_per_core, type(threads_per_core))
             command = arguments.to_command(self.skirt_path, self.host.mpi_command, scheduler=False, bind_to_cores=self.host.force_process_binding, threads_per_core=threads_per_core, to_string=True)
+            print("command:", command)
             script_file.write(command + "\n")
 
         # Write to disk

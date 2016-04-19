@@ -20,20 +20,23 @@ class Parallelization(object):
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, cores, threads_per_core, processes):
 
         """
         This function ...
+        :param cores:
+        :param threads_per_core:
+        :param processes:
         """
 
         # The number of cores
-        self.cores = None
+        self.cores = cores
 
         # The number of threads used per core
-        self.threads_per_core = None
+        self.threads_per_core = threads_per_core
 
         # The number of processes
-        self.processes = None
+        self.processes = processes
 
     # -----------------------------------------------------------------
 
@@ -57,7 +60,7 @@ class Parallelization(object):
         :return:
         """
 
-        return self.cores / self.processes
+        return int(self.cores / self.processes)
 
     # -----------------------------------------------------------------
 
@@ -72,20 +75,12 @@ class Parallelization(object):
         :return:
         """
 
-        # Create a new class instance
-        parallelization = cls()
-
         # Determine the number of required cores
         cores_per_process = threads / threads_per_core
         cores = cores_per_process * processes
 
-        # Set the properties
-        parallelization.cores = cores
-        parallelization.threads_per_core = threads_per_core
-        parallelization.processes = processes
-
-        # Return the new instance
-        return parallelization
+        # Create a new class instance and return it
+        return cls(cores, threads_per_core, processes)
 
     # -----------------------------------------------------------------
 
@@ -100,9 +95,6 @@ class Parallelization(object):
         :param threads_per_process:
         :return:
         """
-
-        # Create a new class instance
-        parallelization = cls()
 
         # Set default values for the number of threads and processes
         processes = 1
@@ -125,13 +117,30 @@ class Parallelization(object):
             # Hyperthreading
             used_threads_per_core = threads_per_core
 
-        # Set the properties
-        parallelization.cores = cores
-        parallelization.threads_per_core = used_threads_per_core
-        parallelization.processes = processes
+        # Create a new class instance and return it
+        return cls(cores, used_threads_per_core, processes)
 
-        # Return the new instance
-        return parallelization
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_free_cores(cls, free_cores, cores_per_process, threads_per_core):
+
+        """
+        This function ...
+        :param free_cores:
+        :param cores_per_process:
+        :param threads_per_core:
+        :return:
+        """
+
+        # Using the number of cores per process, determine the number of processes
+        processes = int(free_cores / cores_per_process)
+
+        # The actual number of cores
+        cores = processes * cores_per_process
+
+        # Create a new class instance and return it
+        return cls(cores, threads_per_core, processes)
 
     # -----------------------------------------------------------------
 

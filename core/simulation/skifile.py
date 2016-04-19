@@ -762,7 +762,7 @@ class SkiFile:
         elif normalization.tag == "LuminosityStellarCompNormalization":
 
             # Return the luminosity and the corresponding band
-            return get_quantity(normalization, "luminosity", default_unit="Lsun"), Filter.from_string(normalization.get("band"))
+            return get_quantity(normalization, "luminosity"), Filter.from_string(normalization.get("band"))
 
         elif normalization.tag == "SpectralLuminosityStellarCompNormalization":
 

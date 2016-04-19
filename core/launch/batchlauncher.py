@@ -390,16 +390,11 @@ class BatchLauncher(Configurable):
             # Get the amount of (currently) free cores on the remote host
             cores = int(remote.free_cores)
 
-            # Using the number of cores per process defined in the configuration, determine the number of processes
-            processes = int(cores / cores_per_process)
+            # Determine the number of thread to be used per core
+            threads_per_core = remote.threads_per_core if remote.use_hyperthreading else 1
 
             # Create the parallelization object
-            parallelization = Parallelization()
-
-            # Set the parallelization properties
-            parallelization.cores = cores
-            parallelization.threads_per_core = remote.threads_per_core if remote.use_hyperthreading else 1
-            parallelization.processes = processes
+            parallelization = Parallelization.from_free_cores(cores, cores_per_process, threads_per_core)
 
             # Debugging
             log.debug("Using " + str(parallelization.processes) + " processes and " + str(parallelization.threads) + " threads per process on this remote")
