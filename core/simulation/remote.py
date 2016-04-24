@@ -20,7 +20,6 @@ import tempfile
 from ..basics.remote import Remote
 from .jobscript import JobScript
 from ..tools import time, inspection, filesystem
-from ..test.resources import ResourceEstimator
 from .simulation import RemoteSimulation
 from ..tools.logging import log
 from ..launch.options import SchedulingOptions

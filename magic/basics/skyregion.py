@@ -284,20 +284,8 @@ class SkyRegion(list):
         # Initialize the region string
         print("# Region file format: DS9 version 4.1", file=f)
 
-        # Loop over all ellipses
-        for ellipse in self:
-
-            # Get aperture properties
-            ra_deg = ellipse.center.ra.to("deg").value
-            dec_deg = ellipse.center.dec.to("deg").value
-            major = ellipse.major.to("arcsec").value
-            minor = ellipse.minor.to("arcsec").value
-            angle = ellipse.angle.degree
-
-            line = "fk5;ellipse(%s,%s,%.2f\",%.2f\",%s)" % (ra_deg, dec_deg, major, minor, angle)
-
-            # Write to region file
-            print(line, file=f)
+        # Loop over all shapes, get string and print it to the region file
+        for shape in self: print(shape.to_region_string(), file=f)
 
         # Close the file
         f.close()

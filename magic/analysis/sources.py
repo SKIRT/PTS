@@ -401,7 +401,7 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
     :return:
     """
 
-    if special: log.debug("finding segmentation source, expansion level =", expansion_level)
+    if special: log.debug("finding segmentation source, expansion level = " + str(expansion_level))
 
     # Allow for a custom sigma level
     sigma_level = config.sigma_level if sigma_level is None else sigma_level

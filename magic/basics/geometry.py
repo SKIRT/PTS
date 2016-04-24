@@ -280,7 +280,7 @@ class Coordinate(Position):
         from .skygeometry import SkyCoordinate
 
         # Return a new SkyCoordinate
-        return SkyCoordinate.from_pixel(self, wcs)
+        return SkyCoordinate.from_pixel(self, wcs, meta=self.meta)
 
     # -----------------------------------------------------------------
 
@@ -458,6 +458,7 @@ class Line(object):
         :return:
         """
 
+        # The start and end coordinate
         self.start = start
         self.end = end
 
@@ -1515,9 +1516,10 @@ class Rectangle(object):
         radius = self.radius
         width = 2.0 * radius.x
         height = 2.0 * radius.y
+        angle = self.angle.degree
 
         # Create and return the line
-        line = "image;box({},{},{},{},{})".format(center.x+1, center.y+1, width, height) + suffix
+        line = "image;box({},{},{},{},{})".format(center.x+1, center.y+1, width, height, angle) + suffix
         return line
 
     # -----------------------------------------------------------------

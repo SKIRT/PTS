@@ -44,9 +44,11 @@ parser.add_argument('--report', action='store_true', help='write a report file')
 parser.add_argument("-i", "--input", type=str, help="the name of the input directory")
 parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
 
+# Advanced options
 parser.add_argument("--synchronize", action="store_true", help="synchronize with DustPedia catalog")
 parser.add_argument("--filecatalog", action="store_true", help="use file catalogs")
 parser.add_argument("--interpolation_method", type=str, help="the interpolation method to use")
+parser.add_argument("--downsample", type=float, help="specify the degree of downsampling (no downsampling if not specified)")
 
 # Input regions
 parser.add_argument("--ignore", type=str, help="the name of the file specifying regions to ignore")
@@ -168,22 +170,22 @@ finder.run(image.frames.primary, catalog_importer.galactic_catalog, catalog_impo
 # -----------------------------------------------------------------
 
 # Save the galaxy region
-galaxy_region = finder.galaxy_region
+galaxy_region = finder.galaxy_sky_region.to_pixel(image.wcs)
 path = filesystem.join(output_path, "galaxies.reg")
 galaxy_region.save(path)
 
 # Save the star region
-star_region = finder.star_region
+star_region = finder.star_sky_region.to_pixel(image.wcs)
 path = filesystem.join(output_path, "stars.reg")
 star_region.save(path)
 
 # Save the saturation region
-saturation_region = finder.saturation_region
+saturation_region = finder.saturation_sky_region.to_pixel(image.wcs)
 path = filesystem.join(output_path, "saturation.reg")
 saturation_region.save(path)
 
 # Save the region of other sources
-other_region = finder.other_region
+other_region = finder.other_sky_region.to_pixel(image.wcs)
 path = filesystem.join(output_path, "other_sources.reg")
 other_region.save(path)
 

@@ -500,22 +500,57 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def downsample(self, factor):
+    @property
+    def center(self):
 
         """
         This function ...
         :return:
         """
 
-        # TODO: change the WCS !!!
+        return Position(self.wcs.wcs.crpix[0], self.wcs.wcs.crpix[1])
+
+    # -----------------------------------------------------------------
+
+    def downsampled(self, factor):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Calculate the downsampled array
         data = ndimage.interpolation.zoom(self, zoom=1.0/factor)
 
+        new_xsize = data.shape[1]
+        new_ysize = data.shape[0]
+
+        relative_center = Position(self.center.x / self.xsize, self.center.y / self.ysize)
+
+        new_center = Position(relative_center.x * new_xsize, relative_center.y * new_ysize)
+
+        # Make a copy of the current WCS
+        new_wcs = self.wcs.copy()
+
+        # Change the center pixel position
+        new_wcs.wcs.crpix[0] = new_center.x
+        new_wcs.wcs.crpix[1] = new_center.y
+
+        # Change the number of pixels
+        new_wcs.naxis1 = new_xsize
+        new_wcs.naxis2 = new_ysize
+
+        new_wcs._naxis1 = new_wcs.naxis1
+        new_wcs._naxis2 = new_wcs.naxis2
+
+        # Change the pixel scale
+        new_wcs.wcs.cdelt[0] *= float(self.xsize) / float(new_xsize)
+        new_wcs.wcs.cdelt[1] *= float(self.ysize) / float(new_ysize)
+
         # Return the downsampled frame
         # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
         return Frame(data,
-                     wcs=None,
+                     wcs=new_wcs,
                      name=self.name,
                      description=self.description,
                      unit=self.unit,
@@ -523,6 +558,18 @@ class Frame(np.ndarray):
                      filter=self.filter,
                      sky_subtracted=self.sky_subtracted,
                      fwhm=self.fwhm)
+
+    # -----------------------------------------------------------------
+
+    def upsampled(self, factor):
+
+        """
+        This function ...
+        :param factor:
+        :return:
+        """
+
+        return self.downsampled(1./factor)
 
     # -----------------------------------------------------------------
 

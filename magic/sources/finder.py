@@ -87,6 +87,9 @@ class SourceFinder(Configurable):
             finder.config.catalogs.stars.use_catalog_file = True
             finder.config.catalogs.stars.catalog_path = "stars.cat"
 
+        # Set the downsample factor
+        if arguments.downsample is not None: finder.config.downsample_factor = arguments.downsample
+
         # Return the new instance
         return finder
 
@@ -105,6 +108,18 @@ class SourceFinder(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def galaxy_sky_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_finder.region.to_sky(self.frame.wcs)
+
+    # -----------------------------------------------------------------
+
+    @property
     def star_region(self):
 
         """
@@ -113,6 +128,18 @@ class SourceFinder(Configurable):
         """
 
         return self.star_finder.star_region
+
+    # -----------------------------------------------------------------
+
+    @property
+    def star_sky_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.star_finder.star_region.to_sky(self.frame.wcs)
 
     # -----------------------------------------------------------------
 
@@ -129,6 +156,18 @@ class SourceFinder(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def saturation_sky_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.star_finder.saturation_region.to_sky(self.frame.wcs)
+
+    # -----------------------------------------------------------------
+
+    @property
     def other_region(self):
 
         """
@@ -141,6 +180,18 @@ class SourceFinder(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def other_sky_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.trained_finder.region.to_sky(self.frame.wcs) if self.trained_finder.region is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
     def galaxy_segments(self):
 
         """
@@ -148,7 +199,9 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        return self.galaxy_finder.segments
+        #if self.downsampled: self.galaxy_finder.segments.rebinned(self.original_wcs)
+        if self.downsampled: self.galaxy_finder.segments.upsampled(self.config.downsample_factor)
+        else: return self.galaxy_finder.segments
 
     # -----------------------------------------------------------------
 
@@ -160,7 +213,8 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        return self.star_finder.segments
+        if self.downsampled: self.star_finder.segments.upsampled(self.config.downsample_factor)
+        else: return self.star_finder.segments
 
     # -----------------------------------------------------------------
 
@@ -172,6 +226,7 @@ class SourceFinder(Configurable):
         :return:
         """
 
+        if self.downsampled: self.trained_finder.segments.upsampled(self.config.downsample_factor)
         return self.trained_finder.segments
 
     # -----------------------------------------------------------------
@@ -277,8 +332,14 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Setting up the source finder ...")
 
-        # Make a local reference to the image frame
-        self.frame = frame
+        # Downsample or just make a local reference to the image frame
+        if self.downsampled:
+            self.frame = frame.downsampled(self.config.downsample_factor)
+            #from ..tools import plotting
+            #plotting.plot_box(self.frame)
+            #self.frame.save("test.fits")
+            #exit()
+        else: self.frame = frame
 
         # Set the galactic and stellar catalog
         self.galactic_catalog = galactic_catalog
@@ -290,6 +351,18 @@ class SourceFinder(Configurable):
 
         # Set a reference to the mask of bad pixels
         self.bad_mask = bad_mask
+
+    # -----------------------------------------------------------------
+
+    @property
+    def downsampled(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.downsample_factor is not None and self.config.downsample != 1
 
     # -----------------------------------------------------------------
 

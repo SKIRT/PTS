@@ -451,8 +451,12 @@ class StarFinder(Configurable):
         # Inform the user
         log.info("Looking for saturated stars ...")
 
+        # Check whether sources are found
+        with_source = self.have_source
+        if with_source == 0: raise RuntimeError("Not a single source was found")
+
         # Inform the user on the number of stars that have a source
-        log.debug("Number of stars with source = " + str(self.have_source))
+        log.debug("Number of stars with source = " + str(with_source))
 
         # Calculate the default FWHM, for the stars for which a model was not found
         default_fwhm = self.fwhm_pix

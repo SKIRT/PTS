@@ -374,8 +374,6 @@ class CoordinateSystem(wcs.WCS):
 
         return alignment
 
-        #return ra_alignment, dec_alignment
-
     # -----------------------------------------------------------------
 
     @property
