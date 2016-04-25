@@ -280,7 +280,7 @@ class Coordinate(Position):
         from .skygeometry import SkyCoordinate
 
         # Return a new SkyCoordinate
-        return SkyCoordinate.from_pixel(self, wcs, meta=self.meta)
+        return SkyCoordinate.from_pixel(self, wcs)
 
     # -----------------------------------------------------------------
 

@@ -576,19 +576,21 @@ class Frame(np.ndarray):
             # Create a new Frame
             #frame = Frame.zeros_like(self)
 
-            print("self.shape", self.shape)
+            #print("self.shape", self.shape)
 
             frame = self.downsampled(1./factor)
 
-            print("frame.shape", frame.shape)
+            #print("frame.shape", frame.shape)
 
-            print("Checking indices ...")
-            indices = np.unique(frame)
+            #print("Checking indices ...")
+            indices = np.unique(self)
+
+            #print("indices:", indices)
 
             # Loop over the indices
             for index in list(indices):
 
-                print(index)
+                #print(index)
 
                 index = int(index)
 
@@ -603,6 +605,8 @@ class Frame(np.ndarray):
                 upsampled_where = data > 0.5
 
                 frame[upsampled_where] = index
+
+            return frame
 
         else: return self.downsampled(1./factor)
 

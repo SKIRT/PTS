@@ -12,17 +12,14 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-
 # Import astronomical modules
 import pyregion
-from astropy import units as u
-from astropy.coordinates import Angle, SkyCoord
+from astropy.units import Unit
+from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
-from .vector import Extent, Position
-from .skygeometry import SkyLine, SkyCircle, SkyEllipse, SkyRectangle, SkyPolygon
+from .vector import Extent
+from .skygeometry import SkyCoordinate, SkyLine, SkyCircle, SkyEllipse, SkyRectangle, SkyPolygon
 
 # -----------------------------------------------------------------
 
@@ -45,11 +42,15 @@ class SkyRegion(list):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, only=None, ignore=None, color=None, ignore_color=None):
 
         """
         This function ...
         :param path:
+        :param only:
+        :param ignore:
+        :param color:
+        :param ignore_color:
         :return:
         """
 
@@ -66,6 +67,16 @@ class SkyRegion(list):
         # Loop over all shapes in the region
         for shape in _region:
 
+            # Meta information
+            meta = {}
+            if "text" in shape.attr[1]: meta["text"] = shape.attr[1]["text"]
+            if "color" in shape.attr[1]: meta["color"] = shape.attr[1]["color"]
+            if "point" in shape.attr[1]: meta["point"] = shape.attr[1]["point"]
+
+            # Check the color of the shape
+            if color is not None and shape.attr[1]["color"] != color: continue
+            if ignore_color is not None and shape.attr[1]["color"] == ignore_color: continue
+
             # Get the coordinate format of this shape
             coord_format = shape.coord_format
 
@@ -76,9 +87,10 @@ class SkyRegion(list):
                 ra = shape.coord_list[0]
                 dec = shape.coord_list[1]
 
-                # Create sky coordinate and add it to the region
-                coordinate = SkyCoord(ra=ra, dec=dec, unit="deg", frame=coord_format)
-                region.append(coordinate)
+                # Create sky coordinate
+                coordinate = SkyCoordinate(ra=ra, dec=dec, unit="deg", frame=coord_format, meta=meta)
+
+                new_shape = coordinate
 
             # The shape is a line or vector -> SkyLine
             elif shape.name == "line" or shape.name == "vector":
@@ -90,12 +102,13 @@ class SkyRegion(list):
                 dec_2 = shape.coord_list[3]
 
                 # Create the sky coordinates
-                coordinate_1 = SkyCoord(ra=ra_1, dec=dec_1, unit="deg", frame=coord_format)
-                coordinate_2 = SkyCoord(ra=ra_2, dec=dec_2, unit="deg", frame=coord_format)
+                coordinate_1 = SkyCoordinate(ra=ra_1, dec=dec_1, unit="deg", frame=coord_format)
+                coordinate_2 = SkyCoordinate(ra=ra_2, dec=dec_2, unit="deg", frame=coord_format)
 
-                # Create the SkyLine object and add it to the region
-                line = SkyLine(coordinate_1, coordinate_2)
-                region.append(line)
+                # Create the SkyLine object
+                line = SkyLine(coordinate_1, coordinate_2, meta=meta)
+
+                new_shape = line
 
             # The shape is a circle -> SkyCircle
             elif shape.name == "circle":
@@ -103,14 +116,15 @@ class SkyRegion(list):
                 # Get the RA and declination of the center and the radius
                 ra_center = shape.coord_list[0]
                 dec_center = shape.coord_list[1]
-                radius = shape.coord_list[2] * u.Unit("deg")
+                radius = shape.coord_list[2] * Unit("deg")
 
                 # Create a sky cooridnate for the center
-                center = SkyCoord(ra=ra_center, dec=dec_center, unit="deg", frame=coord_format)
+                center = SkyCoordinate(ra=ra_center, dec=dec_center, unit="deg", frame=coord_format)
 
                 # Create a SkyCircle object and add it to the region
-                circle = SkyCircle(center, radius)
-                region.append(circle)
+                circle = SkyCircle(center, radius, meta=meta)
+
+                new_shape = circle
 
             # The shape is an ellipse -> SkyEllipse
             elif shape.name == "ellipse":
@@ -118,19 +132,20 @@ class SkyRegion(list):
                 # Get the RA and declination of the center
                 ra_center = shape.coord_list[0]
                 dec_center = shape.coord_list[1]
-                center = SkyCoord(ra=ra_center, dec=dec_center, unit="deg", frame=coord_format)
+                center = SkyCoordinate(ra=ra_center, dec=dec_center, unit="deg", frame=coord_format)
 
                 # Get the radius
-                x_radius = shape.coord_list[2] * u.Unit("deg")
-                y_radius = shape.coord_list[3] * u.Unit("deg")
+                x_radius = shape.coord_list[2] * Unit("deg")
+                y_radius = shape.coord_list[3] * Unit("deg")
                 radius = Extent(x_radius, y_radius)
 
                 # Get the angle
                 angle = Angle(shape.coord_list[4], "deg")
 
                 # Create a SkyEllipse object and add it to the region
-                ellipse = SkyEllipse(center, radius, angle)
-                region.append(ellipse)
+                ellipse = SkyEllipse(center, radius, angle, meta=meta)
+
+                new_shape = ellipse
 
             # The shape is a rectangle -> SkyRectangle
             elif shape.name == "box":
@@ -138,11 +153,11 @@ class SkyRegion(list):
                 # Get the RA and declination of the center
                 ra_center = shape.coord_list[0]
                 dec_center = shape.coord_list[1]
-                center = SkyCoord(ra=ra_center, dec=dec_center, unit="deg", frame=coord_format)
+                center = SkyCoordinate(ra=ra_center, dec=dec_center, unit="deg", frame=coord_format)
 
                 # Get the width and height
-                width = shape.coord_list[2] * u.Unit("deg")
-                height = shape.coord_list[3] * u.Unit("deg")
+                width = shape.coord_list[2] * Unit("deg")
+                height = shape.coord_list[3] * Unit("deg")
 
                 # Create radius
                 radius = Extent(0.5 * width, 0.5*height)
@@ -151,8 +166,9 @@ class SkyRegion(list):
                 angle = Angle(shape.coord_list[4], "deg")
 
                 # Create a SkyRectangle and add it to the region
-                rectangle = SkyRectangle(center, radius, angle)
-                region.append(rectangle)
+                rectangle = SkyRectangle(center, radius, angle, meta=meta)
+
+                new_shape = rectangle
 
             # The shape is a polygon -> SkyPolygon
             elif shape.name == "polygon":
@@ -162,24 +178,25 @@ class SkyRegion(list):
                 number_of_points = int(number_of_points)
 
                 # Create a new SkyPolygon
-                polygon = SkyPolygon()
+                polygon = SkyPolygon(meta=meta)
 
                 # Get the RA and declination of the different points
                 for i in range(number_of_points):
 
-                    # Create a new SkyCoord object
+                    # Create a new SkyCoordinate object
                     ra = shape.coord_list[0]
                     dec = shape.coord_list[1]
-                    coordinate = SkyCoord(ra=ra, dec=dec, unit="deg", frame=coord_format)
+                    coordinate = SkyCoordinate(ra=ra, dec=dec, unit="deg", frame=coord_format)
 
                     # Add the coordinate to the polygon
                     polygon.add_point(coordinate)
 
-                # Add the polygon to the region
-                region.append(polygon)
+                new_shape = polygon
 
             # Unrecognized shape
             else: raise ValueError("Unrecognized shape (should be point, line, vector, circle, ellipse, box or polygon")
+
+            region.append(new_shape)
 
         # Return the new region
         return region
@@ -195,7 +212,7 @@ class SkyRegion(list):
         """
 
         # Check whether the shape is in sky coordinates
-        if not shape.__class__.__name__.startswith("Sky"): raise ValueError("Shape must be SkyCoord, SkyLine, SkyCircle, SkyEllipse or SkyRectangle")
+        if not shape.__class__.__name__.startswith("Sky"): raise ValueError("Shape must be SkyCoordinate, SkyLine, SkyCircle, SkyEllipse or SkyRectangle")
 
         # Otherwise, add the shape
         super(SkyRegion, self).append(shape)

@@ -18,10 +18,10 @@ import math
 # Import astronomical modules
 from astropy.coordinates import SkyCoord, Angle
 from astropy.wcs import utils
-import astropy.units as u
+from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from .vector import Extent, Position
+from .vector import Extent
 from .geometry import Coordinate, Line, Circle, Ellipse, Rectangle, Polygon
 from ..tools import coordinates
 
@@ -233,7 +233,7 @@ class SkyCoordinate(SkyCoord):
         super(SkyCoordinate, self).__init__(*args, **kwargs)
 
         # Set meta information
-        if "meta" is not None: self.meta = meta
+        if meta is not None: self.meta = meta
         else: self.meta = dict()
 
     # -----------------------------------------------------------------
@@ -253,19 +253,18 @@ class SkyCoordinate(SkyCoord):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_pixel(cls, coordinate, wcs, mode='wcs', meta=None):
+    def from_pixel(cls, coordinate, wcs, mode='wcs'):
 
         """
         This function ...
         :param coordinate:
         :param wcs:
         :param mode:
-        :param meta:
         :return:
         """
 
         skycoordinate = super(SkyCoordinate, cls).from_pixel(coordinate.x, coordinate.y, wcs, origin=0, mode=mode)
-        return cls(ra=skycoordinate.ra.deg, dec=skycoordinate.dec.deg, unit="deg", meta=meta)
+        return cls(ra=skycoordinate.ra.deg, dec=skycoordinate.dec.deg, unit="deg", meta=coordinate.meta)
 
     # -----------------------------------------------------------------
 
@@ -348,8 +347,8 @@ class SkyLine(object):
         ra_distance = abs(coordinates.ra_distance(dec_center, ra_start, ra_end))
         dec_distance = abs(dec_end - dec_start)
 
-        ra_span = ra_distance * u.Unit("deg")
-        dec_span = dec_distance * u.Unit("deg")
+        ra_span = ra_distance * Unit("deg")
+        dec_span = dec_distance * Unit("deg")
 
         return math.sqrt(ra_span**2 + dec_span**2)
 
@@ -453,24 +452,24 @@ class SkyEllipse(object):
         :return:
         """
 
-        center = SkyCoordinate.from_pixel(ellipse.center, wcs)
+        center = SkyCoordinate.from_pixel(Coordinate(ellipse.center.x, ellipse.center.y), wcs)
 
         ## GET THE PIXELSCALE
         result = utils.proj_plane_pixel_scales(wcs)
         # returns: A vector (ndarray) of projection plane increments corresponding to each pixel side (axis).
         # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
         # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
-        x_pixelscale = result[0] * u.Unit("deg/pix")
-        y_pixelscale = result[1] * u.Unit("deg/pix")
+        x_pixelscale = result[0] * Unit("deg/pix")
+        y_pixelscale = result[1] * Unit("deg/pix")
         #pixelscale = Extent(x_pixelscale, y_pixelscale)
 
-        major = ellipse.major * u.Unit("pix") * x_pixelscale
-        minor = ellipse.minor * u.Unit("pix") * y_pixelscale
+        major = ellipse.major * Unit("pix") * x_pixelscale
+        minor = ellipse.minor * Unit("pix") * y_pixelscale
 
         radius = Extent(major, minor)
 
         # Create a new SkyEllipse
-        return cls(center, radius, ellipse.angle)
+        return cls(center, radius, ellipse.angle, meta=ellipse.meta)
 
     # -----------------------------------------------------------------
 
@@ -549,8 +548,8 @@ class SkyEllipse(object):
         # returns: A vector (ndarray) of projection plane increments corresponding to each pixel side (axis).
         # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
         # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
-        x_pixelscale = result[0] * u.Unit("deg/pix")
-        y_pixelscale = result[1] * u.Unit("deg/pix")
+        x_pixelscale = result[0] * Unit("deg/pix")
+        y_pixelscale = result[1] * Unit("deg/pix")
         #pixelscale = Extent(x_pixelscale, y_pixelscale)
 
         major = (self.major / x_pixelscale).to("pix").value
@@ -628,10 +627,10 @@ class SkyCircle(object):
         center = SkyCoordinate.from_pixel(circle.center, wcs)
 
         # Get the pixelscale
-        radius = circle.radius * u.Unit("pix") * wcs.xy_average_pixelscale
+        radius = circle.radius * Unit("pix") * wcs.xy_average_pixelscale
 
         # Create a new SkyCircle
-        return cls(center, radius)
+        return cls(center, radius, meta=circle.meta)
 
     # -----------------------------------------------------------------
 
@@ -757,7 +756,7 @@ class SkyRectangle(object):
         center = SkyCoordinate.from_pixel(rectangle.center, wcs)
 
         # Get the pixelscale
-        radius = rectangle.radius * u.Unit("pix") * wcs.xy_average_pixelscale
+        radius = rectangle.radius * Unit("pix") * wcs.xy_average_pixelscale
 
         # Create a new SkyRectangle
         return cls(center, radius, rectangle.angle, meta=rectangle.meta)

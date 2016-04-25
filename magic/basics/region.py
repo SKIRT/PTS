@@ -60,7 +60,7 @@ class Region(list):
         # Open the region file with pyregion and check if its in image coordinates
         try:
             _region = pyregion.open(path)
-            if not _region.check_imagecoord(): raise ValueError("Region is not in image coordinates")
+            if not _region.check_imagecoord(): raise IOError("Region is not in image coordinates")
         except ValueError: # If a ValueError comes out, assume the region file is empty (no shapes)
             _region = []
 
@@ -203,7 +203,6 @@ class Region(list):
                     polygon.add_point(position)
 
                 # Add the polygon to the region
-                #region.append(polygon)
                 new_shape = polygon
 
             # Unrecognized shape
@@ -231,7 +230,7 @@ class Region(list):
         :return:
         """
 
-        # Check whether the shape is in sky coordinates
+        # Check whether the argument is a valid shape
         if not (shape.__class__.__name__ == "Coordinate" or shape.__class__.__name__ == "Line"
                 or shape.__class__.__name__ == "Circle" or shape.__class__.__name__ == "Ellipse"
                 or shape.__class__.__name__ == "Rectangle" or shape.__class__.__name__ == "Polygon"):
