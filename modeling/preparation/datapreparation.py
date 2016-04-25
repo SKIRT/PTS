@@ -14,9 +14,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import urllib
-
 # Import astronomical modules
 from astroquery.irsa_dust import IrsaDust
 

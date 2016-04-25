@@ -88,6 +88,12 @@ class ImagePreparer(Configurable):
         # The path to the convolution kernel
         preparer.config.convolution.kernel_path = arguments.kernel
 
+        # The calibration error (in magnitude or percentage)
+        preparer.config.uncertainties.calibration_error = arguments.calibration
+
+        # The galactic attenuation
+        preparer.config.attenuation = arguments.attenuation
+
         # Set flags
         preparer.config.calculate_calibration_uncertainties = True
         preparer.config.extract_sources = True

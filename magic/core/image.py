@@ -258,6 +258,21 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def coordinate_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if "primary" not in self.frames: return None
+
+        # Return the coordinate range of the primary frame
+        return self.frames.primary.coordinate_range
+
+    # -----------------------------------------------------------------
+
     def __repr__(self):
 
         """

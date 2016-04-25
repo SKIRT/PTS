@@ -30,6 +30,7 @@ from ..basics.coordinatesystem import CoordinateSystem
 from ..tools import coordinates, cropping, transformations, interpolation, headers, fitting
 from ...core.tools import filesystem
 from ...core.tools.logging import log
+from ..basics.mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -561,15 +562,49 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def upsampled(self, factor):
+    def upsampled(self, factor, integers=False):
 
         """
         This function ...
         :param factor:
+        :param integers:
         :return:
         """
 
-        return self.downsampled(1./factor)
+        if integers:
+
+            # Create a new Frame
+            #frame = Frame.zeros_like(self)
+
+            print("self.shape", self.shape)
+
+            frame = self.downsampled(1./factor)
+
+            print("frame.shape", frame.shape)
+
+            print("Checking indices ...")
+            indices = np.unique(frame)
+
+            # Loop over the indices
+            for index in list(indices):
+
+                print(index)
+
+                index = int(index)
+
+                where = Mask(self == index)
+
+                # Rebin this mask
+                #data = transformations.new_align_and_rebin(self.masks[mask_name].astype(float), original_wcs, reference_wcs)
+
+                # Calculate the downsampled array
+                data = ndimage.interpolation.zoom(where.astype(float), zoom=factor)
+
+                upsampled_where = data > 0.5
+
+                frame[upsampled_where] = index
+
+        else: return self.downsampled(1./factor)
 
     # -----------------------------------------------------------------
 

@@ -103,6 +103,9 @@ class SourceFinder(Configurable):
         :return:
         """
 
+        if self.downsampled:
+            sky_region = self.galaxy_sky_region
+            return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
         return self.galaxy_finder.region
 
     # -----------------------------------------------------------------
@@ -127,7 +130,10 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        return self.star_finder.star_region
+        if self.downsampled:
+            sky_region = self.star_sky_region
+            return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
+        else: return self.star_finder.star_region
 
     # -----------------------------------------------------------------
 
@@ -151,7 +157,10 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        return self.star_finder.saturation_region
+        if self.downsampled:
+            sky_region = self.saturation_sky_region
+            return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
+        else: return self.star_finder.saturation_region
 
     # -----------------------------------------------------------------
 
@@ -175,7 +184,10 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        return self.trained_finder.region
+        if self.downsampled:
+            sky_region = self.other_sky_region
+            return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
+        else: return self.trained_finder.region
 
     # -----------------------------------------------------------------
 
@@ -200,7 +212,7 @@ class SourceFinder(Configurable):
         """
 
         #if self.downsampled: self.galaxy_finder.segments.rebinned(self.original_wcs)
-        if self.downsampled: self.galaxy_finder.segments.upsampled(self.config.downsample_factor)
+        if self.downsampled: return self.galaxy_finder.segments.upsampled(self.config.downsample_factor, integers=True) if self.galaxy_finder.segments is not None else None
         else: return self.galaxy_finder.segments
 
     # -----------------------------------------------------------------
@@ -213,7 +225,7 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        if self.downsampled: self.star_finder.segments.upsampled(self.config.downsample_factor)
+        if self.downsampled: return self.star_finder.segments.upsampled(self.config.downsample_factor, integers=True) if self.star_finder.segments is not None else None
         else: return self.star_finder.segments
 
     # -----------------------------------------------------------------
@@ -226,7 +238,7 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        if self.downsampled: self.trained_finder.segments.upsampled(self.config.downsample_factor)
+        if self.downsampled: return self.trained_finder.segments.upsampled(self.config.downsample_factor, integers=True) if self.trained_finder.segments is not None else None
         return self.trained_finder.segments
 
     # -----------------------------------------------------------------
@@ -286,6 +298,9 @@ class SourceFinder(Configurable):
         # The image frame
         self.frame = None
 
+        # The WCS of the original input frame
+        self.original_wcs = None
+
         # The galactic and stellar catalog
         self.galactic_catalog = None
         self.stellar_catalog = None
@@ -335,6 +350,7 @@ class SourceFinder(Configurable):
         # Downsample or just make a local reference to the image frame
         if self.downsampled:
             self.frame = frame.downsampled(self.config.downsample_factor)
+            self.original_wcs = frame.wcs
             #from ..tools import plotting
             #plotting.plot_box(self.frame)
             #self.frame.save("test.fits")

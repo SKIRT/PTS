@@ -15,11 +15,61 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import argparse
 
+# Import astronomical modules
+from astroquery.irsa_dust import IrsaDust
+
 # Import the relevant PTS classes and modules
 from pts.magic.prepare.imagepreparation import ImagePreparer
-from pts.core.tools import logging, time, filesystem
+from pts.core.tools import logging, time, filesystem, tables
 from pts.magic.core.image import Image
 from pts.magic.basics.region import Region
+
+# -----------------------------------------------------------------
+
+irsa_names = {"SDSS u": "SDSS u",
+              "SDSS g": "SDSS g",
+              "SDSS r": "SDSS r",
+              "SDSS i": "SDSS i",
+              "SDSS z": "SDSS z",
+              "2MASS J": "2MASS J",
+              "2MASS H": "2MASS H",
+              "2MASS Ks": "2MASS Ks",
+              "IRAC I1": "IRAC-1",
+              "IRAC I2": "IRAC-2",
+              "IRAC I3": "IRAC-3",
+              "IRAC I4": "IRAC-4",
+              "WISE W1": "WISE-1",
+              "WISE W2": "WISE-2"}
+
+# -----------------------------------------------------------------
+
+calibration_errors = {"GALEX FUV": "0.05 mag",
+                      "GALEX NUV": "0.03 mag",
+                      "SDSS u": "2%",
+                      "SDSS g": "2%",
+                      "SDSS r": "2%",
+                      "Mosaic Halpha": "5%",
+                      "SDSS i": "2%",
+                      "SDSS z": "2%",
+                      "2MASS J": "0.03 mag",
+                      "2MASS H": "0.03 mag",
+                      "2MASS Ks": "0.03 mag",
+                      "WISE W1": "2.4%",
+                      "IRAC I1": "1.8%",
+                      "IRAC I2": "1.9%",
+                      "WISE W2": "2.8%",
+                      "IRAC I3": "2.0%",
+                      "IRAC I4": "2.1%",
+                      "WISE W3": "4.5%",
+                      "WISE W4": "5.7%",
+                      "MIPS 24mu": "4%",
+                      "MIPS 70mu": "5%", # ref: Absolute_Calibration_and_Characterization_of_the_Multiband_Imaging_Photometer_for_Spitzer._II._70_micron_Imaging
+                      "MIPS 160mu": "5%",
+                      "Pacs blue": "5%",
+                      "Pacs red": "5%",
+                      "SPIRE PSW_ext": "4%",
+                      "SPIRE PMW_ext": "4%",
+                      "SPIRE PLW_ext": "4%"}
 
 # -----------------------------------------------------------------
 
@@ -28,8 +78,8 @@ parser = argparse.ArgumentParser()
 
 # Basic
 parser.add_argument("image", type=str, nargs='?', help="the name/path of the image for which to run the preparation")
-parser.add_argument("reference", type=str, help="the name/path of the reference image (to which the image is rebinned)")
 parser.add_argument("kernel", type=str, help="the name/path of the kernel file for the convolution")
+parser.add_argument("reference", type=str, help="the name/path of the reference image (to which the image is rebinned)")
 
 # Input and output
 parser.add_argument("--input", type=str, help="the input path (output of find_sources step)")
@@ -111,6 +161,66 @@ segments = Image.from_file(segments_path)
 galaxy_segments = segments.frames.galaxies
 star_segments = segments.frames.stars
 other_segments = segments.frames.other_sources
+
+# -----------------------------------------------------------------
+
+# Get the center coordinate of the frame
+center_coordinate = image.coordinate_range[0]
+
+# Get the filter name
+if image.filter is None: raise RuntimeError("Filter not recognized!")
+filter_name = image.filter.name
+
+# -----------------------------------------------------------------
+
+# Debugging
+log.debug("Getting galactic extinction ...")
+
+# Get the extinction table from IRSA
+table = IrsaDust.get_extinction_table(center_coordinate.to_astropy())
+
+# GALEX bands
+if "GALEX" in filter_name:
+
+    # Get the A(V) / E(B-V) ratio
+    v_band_index = tables.find_index(table, "CTIO V")
+    av_ebv_ratio = table["A_over_E_B_V_SandF"][v_band_index]
+
+    # Get the attenuation of the V band A(V)
+    attenuation_v = table["A_SandF"][v_band_index]
+
+    # Determine the factor
+    if "NUV" in filter_name: factor = 8.0
+    elif "FUV" in filter_name: factor = 7.9
+    else: raise ValueError("Unsure which GALEX band this is")
+
+    # Calculate the attenuation
+    attenuation = factor * attenuation_v / av_ebv_ratio
+
+# Fill in the Ha attenuation manually
+elif "Halpha" in filter_name: attenuation = 0.174
+
+# Other bands for which attenuation is listed by IRSA
+elif filter_name in irsa_names:
+
+    irsa_name = irsa_names[filter_name]
+
+    # Find the index of the corresponding table entry
+    index = tables.find_index(table, irsa_name)
+
+    # Get the attenuation
+    attenuation = table["A_SandF"][index]
+
+# All other bands: set attenuation to zero
+else: attenuation = 0.0
+
+# Set the attenuation
+arguments.attenuation = attenuation
+
+# -----------------------------------------------------------------
+
+# Set the calibration error
+arguments.calibration = calibration_errors[image.name]
 
 # -----------------------------------------------------------------
 
