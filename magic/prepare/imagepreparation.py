@@ -94,6 +94,9 @@ class ImagePreparer(Configurable):
         # The galactic attenuation
         preparer.config.attenuation = arguments.attenuation
 
+        # Write the results of intermediate steps
+        preparer.config.write_steps = arguments.steps
+
         # Set flags
         preparer.config.calculate_calibration_uncertainties = True
         preparer.config.extract_sources = True
