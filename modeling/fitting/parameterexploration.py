@@ -130,10 +130,10 @@ class ParameterExplorer(FittingComponent):
         # 4. Set the ranges of the different fit parameters
         self.set_parameter_ranges()
 
-        # Set the parallelization
+        # 5. Set the parallelization schemes for the different remote hosts
         self.set_parallelization()
 
-        # Estimate the runtimes
+        # 6. Estimate the runtimes for the different remote hosts
         self.estimate_runtimes()
 
         # 6. Launch the simulations for different parameter values
@@ -461,7 +461,7 @@ class ParameterExplorer(FittingComponent):
                     for serial, parallel_times_cores, overhead_per_core in serial_parallel_overhead_for_hosts[host_id]:
                         runtimes.append(serial + parallel_times_cores / cores_for_host + overhead_per_core * cores_for_host)
 
-                    distribution = Distribution(runtimes, bins=25)
+                    distribution = Distribution.from_values(runtimes, bins=25)
 
                     distribution.plot()
 
@@ -481,7 +481,7 @@ class ParameterExplorer(FittingComponent):
                         for serial, parallel_times_cores, overhead_per_core in serial_parallel_overhead_for_hosts[other_host_id]:
                             runtimes.append(serial + parallel_times_cores / cores_for_host + overhead_per_core * cores_for_host)
 
-                    distribution = Distribution(runtimes, bins=25)
+                    distribution = Distribution.from_values(runtimes, bins=25)
 
                     if log.is_debug(): distribution.plot(title="Distribution of runtimes estimated for remote host '" + host_id + "' based on simulations run on other hosts")
 

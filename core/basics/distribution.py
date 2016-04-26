@@ -13,6 +13,7 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from scipy.interpolate import spline
 from scipy.signal import argrelextrema
 from scipy.signal import find_peaks_cwt
@@ -25,15 +26,77 @@ class Distribution(object):
     This class ...
     """
     
-    def __init__(self, values, bins):
+    def __init__(self, counts, edges, centers, mean, median, percentile_16=None, percentile_84=None):
         
         """
         The constructor ...
+        :param counts:
+        :param edges:
+        :param centers:
+        :param mean:
+        :param median:
         """
 
-        self.values = np.array(values)
-        self.bins = bins
-        self.counts, self.edges = np.histogram(values, bins=bins, density=True)
+        self.counts = counts
+        self.edges = edges
+        self.centers = centers
+        self.mean = mean
+        self.median = median
+        self.percentile_16 = percentile_16
+        self.percentile_84 = percentile_84
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_values(cls, values, bins):
+
+        """
+        This function ...
+        :param values:
+        :param bins:
+        :return:
+        """
+
+        counts, edges = np.histogram(values, bins=bins, density=True)
+
+        centers = []
+        for i in range(len(edges) - 1):
+            centers.append(0.5 * (edges[i] + edges[i + 1]))
+
+        mean = np.mean(values)
+        median = np.median(values)
+
+        percentile_16 = np.percentile(values, 15.86)
+        percentile_84 = np.percentile(values, 84.14)
+
+        return cls(counts, edges, centers, mean, median, percentile_16, percentile_84)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.centers)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bin_widths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        widths = []
+        for i in range(len(self.edges) - 1):
+            widths.append(self.edges[i+1] - self.edges[i])
+        return widths
 
     # -----------------------------------------------------------------
 
@@ -45,31 +108,18 @@ class Distribution(object):
         :return:
         """
 
-        return (self.max_value - self.min_value) / self.bins
+        widths = self.bin_widths
 
-    # -----------------------------------------------------------------
+        if not all_close(widths):
 
-    @property
-    def mean(self):
+            print(widths)
+            raise RuntimeError("Bin widths not equal")
 
-        """
-        This function ...
-        :return:
-        """
+        width = (self.max_value - self.min_value) / self.bins
 
-        return np.mean(self.values)
+        assert np.isclose(width, widths[0])
 
-    # -----------------------------------------------------------------
-
-    @property
-    def median(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.median(self.values)
+        return width
 
     # -----------------------------------------------------------------
 
@@ -119,24 +169,6 @@ class Distribution(object):
         """
 
         return np.max(self.counts)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def centers(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        centers = []
-
-        for i in range(len(self.edges)-1):
-
-            centers.append(0.5*(self.edges[i]+self.edges[i+1]))
-
-        return centers
 
     # -----------------------------------------------------------------
 
@@ -231,15 +263,18 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, title=None):
+    def plot(self, title=None, path=None):
 
         """
         This function ...
+        :param title:
+        :param path:
         :return:
         """
 
         # Create a canvas to place the subgraphs
         canvas = plt.figure()
+        #canvas = Figure()
         rect = canvas.patch
         rect.set_facecolor('white')
 
@@ -278,6 +313,41 @@ class Distribution(object):
         plt.tight_layout()
         plt.grid(alpha=0.8)
 
-        plt.show()
+        if path is None: plt.show()
+        else: canvas.savefig(path)
+
+# -----------------------------------------------------------------
+
+def all_equal(array):
+
+    """
+    This function ...
+    :param array:
+    :return:
+    """
+
+    first = array[0]
+
+    for i in range(1, len(array)):
+        if array[i] != first: return False
+
+    return True
+
+# -----------------------------------------------------------------
+
+def all_close(array):
+
+    """
+    This function ...
+    :param array:
+    :return:
+    """
+
+    first = array[0]
+
+    for i in range(1, len(array)):
+        if not np.isclose(array[i], first): return False
+
+    return True
 
 # -----------------------------------------------------------------

@@ -101,13 +101,13 @@ for host_id in runtimes_for_hosts:
     # Loop over the different configurations (packages, parallelization)
     for packages, parallelization in runtimes_for_hosts[host_id]:
 
-        print("host ID:", host_id)
-        print("packages:", packages)
-        print("parallelization:", parallelization)
+        #print("host ID:", host_id)
+        #print("packages:", packages)
+        #print("parallelization:", parallelization)
 
         runtimes = runtimes_for_hosts[host_id][packages, parallelization]
 
-        distribution = Distribution(runtimes, 15)
+        distribution = Distribution.from_values(runtimes, 15)
 
         #histogram = np.histogram(runtimes, bins=bins)
 
@@ -116,8 +116,8 @@ for host_id in runtimes_for_hosts:
         # the histogram of the data
         #n, bins, patches = plt.hist(runtimes, bins, normed=1, facecolor='green', alpha=0.75)
 
-        print(distribution.counts)
-        print(distribution.edges)
+        #print(distribution.counts)
+        #print(distribution.edges)
 
         #plt.hist(runtimes, distribution.edges)
 

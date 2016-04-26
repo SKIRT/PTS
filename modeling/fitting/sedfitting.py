@@ -23,6 +23,7 @@ from matplotlib import pyplot as plt
 from .component import FittingComponent
 from ...core.tools import tables, filesystem
 from ...core.tools.logging import log
+from ...core.basics.distribution import Distribution
 
 # -----------------------------------------------------------------
 
@@ -422,6 +423,41 @@ class SEDFitter(FittingComponent):
         :return:
         """
 
+        for parameter in ["FUV young", "FUV ionizing", "Dust mass"]:
+
+            values = self.probabilities[parameter][parameter]
+            probabilities = self.probabilities[parameter]["Probability"]
+
+            mean = np.sum(values*probabilities) / np.sum(probabilities)
+
+            percentile_16 = self.percentiles[parameter][0]
+            median = self.percentiles[parameter][1]
+            percentile_84 = self.percentiles[2]
+
+            edges = [0]
+
+            for i in range(len(values)-1):
+                edges.append(0.5 * (values[i] + values[i+1]))
+
+            edges[0] = values[0] - (edges[1] - values[0])
+            edges.append(values[-1] + (values[-1] - edges[-1]))
+
+            centers = values
+
+            distribution = Distribution(probabilities, edges, centers, mean, median, percentile_16, percentile_84)
+
+            path = filesystem.join(self.fit_prob_path, parameter + ".pdf")
+            distribution.plot(title="Probability of " + parameter, path=path)
+
+    # -----------------------------------------------------------------
+
+    def plot_probabilities_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Inform the user
         log.info("Plotting the probability distributions ...")
 
@@ -456,10 +492,10 @@ class SEDFitter(FittingComponent):
         fig_a.set_xlabel('M$_\mathrm{dust}\, [10^7 M_\odot]$', fontsize=18)
         #abcissa = np.array(params[0]) / MdustScale
         abcissa = dust_mass_values / dust_mass_scale
-        width = 0.3
+        width = 0.3e7
         fig_a.bar(abcissa - 0.5 * width, dust_mass_probs, width=width, color='g', ec='k')
-        fig_a.plot([best_dust_mass, best_dust_mass], [0, 1], 'k--')
-        fig_a.plot([dust_mass_50, dust_mass_50], [0, 1], 'r--')
+        fig_a.plot([best_dust_mass, best_dust_mass], [0, 1], 'k--') # most probable value
+        fig_a.plot([dust_mass_50, dust_mass_50], [0, 1], 'r--') # median
         #fig_a.set_xlim(2.5, 6.4)
         #fig_a.set_ylim(0, 0.4)
 
@@ -468,10 +504,10 @@ class SEDFitter(FittingComponent):
         fig_b.set_xlabel('$\lambda L_\lambda^{\mathrm{young}} \, [10^8 L_\odot]$', fontsize=18)
         #abcissa = np.array(params[1]) / LyoungScale
         abcissa = fuv_young_values / fuv_young_scale
-        width = 1.05
+        width = 1.05e16
         fig_b.bar(abcissa - 0.5 * width, fuv_young_probs, width=width, color='g', ec='k')
-        fig_b.plot([best_fuv_young, best_fuv_young], [0, 1], 'k--')
-        fig_b.plot([fuv_young_50, fuv_young_50], [0, 1], 'r--')
+        fig_b.plot([best_fuv_young, best_fuv_young], [0, 1], 'k--') # most probable value
+        fig_b.plot([fuv_young_50, fuv_young_50], [0, 1], 'r--') # median
         #fig_b.set_xlim(6, 19.5)
         #fig_b.set_ylim(0, 0.4)
         fig_b.get_yaxis().set_visible(False)
@@ -481,10 +517,10 @@ class SEDFitter(FittingComponent):
         fig_c.set_xlabel('$\lambda L_\lambda^{\mathrm{ion.}} \, [10^8 L_\odot]$', fontsize=18)
         #abcissa = np.array(params[2]) / LionizingScale
         abcissa = fuv_ionizing_values / fuv_ionizing_scale
-        width = 0.10
+        width = 0.10e8
         fig_c.bar(abcissa - 0.5 * width, fuv_ionizing_probs, width=width, color='g', ec='k')
-        fig_c.plot([best_fuv_ionizing, best_fuv_ionizing], [0, 1], 'k--')
-        fig_c.plot([fuv_ionizing_50, fuv_ionizing_50], [0, 1], 'r--')
+        fig_c.plot([best_fuv_ionizing, best_fuv_ionizing], [0, 1], 'k--')  # most probable value
+        fig_c.plot([fuv_ionizing_50, fuv_ionizing_50], [0, 1], 'r--') # median
         #fig_c.set_xlim(0.001, 2.9)
         #fig_c.set_ylim(0, 0.4)
         fig_c.get_yaxis().set_visible(False)
