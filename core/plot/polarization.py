@@ -38,8 +38,9 @@ from ..tools import archive as arch
 # - polAvY: to plot the over the y-axis averaged polarization degree for all x pixels
 # - noMaps: to not plot the polarization map. Only additional options. Speeds up the procedure.
 # - export: to write things as .dat files in addition to the .pdf files for all enabled additional options.
+# - degreeLength: to set the scale of the polarization plot (degree, length). zeros for dynamic setting.
 def plotpolarization(simulation, instrumentList = 'all', figsize = (6,6), binsize = (7,7), wavelength = "all",
-                    polAvY=False, noMaps = False, export = True):
+                    polAvY=False, noMaps = False, export = True, degreeLength = [0,0]):
     binX = binsize[0]
     binY = binsize[1]
     instruments = zip(simulation.stokesfitspaths(), simulation.instrumentnames())
@@ -149,11 +150,13 @@ def plotpolarization(simulation, instrumentList = 'all', figsize = (6,6), binsiz
             if not 0<charDegree<1:
                 charDegree = np.nanmax((np.max(degreeLD), 0.01)) #  a warning means no polarization at all
 
-            # calculate the scaling. It is relative to the picture size, thus the high polarization 'charDegree' should
-            # be short enough so it does not overlap with the polarization around it.
-            scale = (charDegree* 2.2)*max(len(posX)/figsize[0], len(posY)/figsize[1])
-            keyLength = 10**(int(np.log10(charDegree))) # a runtime error here means no polarization in the whole picture
-            key = "{:.3g}%".format(100 * keyLength)
+                # calculate the scaling. It is relative to the picture size, thus the high polarization 'charDegree' should
+                # be short enough so it does not overlap with the polarization around it.
+            if degreeLength[1]==0:
+                degreeLength[1] = 1./(charDegree* 2.2)*max(len(posX)/figsize[0], len(posY)/figsize[1])
+            if degreeLength[0]==0:
+                degreeLength[0] = 10**(int(np.log10(charDegree))) # runtime error here means no polarization in the whole picture
+            key = "{:.3g}%".format(100 * degreeLength[0])
 
             # create the polarization vector arrays
             xPolarization = degreeLD*np.sin(angle)
@@ -162,11 +165,11 @@ def plotpolarization(simulation, instrumentList = 'all', figsize = (6,6), binsiz
             # plot the vector field (in LD)
             X,Y = np.meshgrid( posX , posY)
             quiverplot = plt.quiver(X,Y, xPolarization, yPolarization, pivot='middle', units='inches',
-                                    angles = 'xy', scale = scale, scale_units = 'inches', headwidth=0, headlength=1,
-                                    headaxislength=1, minlength = 0.6)
+                                    angles = 'xy', scale = 1./degreeLength[1], scale_units = 'inches', headwidth=0,
+                                    headlength=1, headaxislength=1, minlength = 0.6)
 
             # add legend, labels and title
-            plt.quiverkey(quiverplot, 0.85, 0.02, keyLength, key,
+            plt.quiverkey(quiverplot, 0.85, 0.02, degreeLength[0], key,
                           coordinates='axes', labelpos='E')
             plt.suptitle(simulation.prefix(), fontsize=14, fontweight='bold')
             plt.title('instrument: ' + name + ', $\lambda=' +
@@ -189,14 +192,15 @@ def plotpolarization(simulation, instrumentList = 'all', figsize = (6,6), binsiz
             if polAvY:
                 figure = plt.figure()
                 degreeHD = np.sqrt(np.average(Q, axis = 0)**2 + np.average(U, axis=0)**2)
-                degreeHD[degreeHD>0] /= np.average(I,axis = 0)[degreeHD>0]
-                plt.plot(100. * degreeHD)
+                degreeHD = np.average(I,axis = 0)
+                plt.plot(degreeHD)
+                plt.yscale('log')
                 plt.suptitle(simulation.prefix(), fontsize=14, fontweight='bold')
                 plt.title('instrument: ' + name + ', $\lambda=' +
                             str(simulation.wavelengths()[index])+'\ \mu m$', fontsize=12)
                 plt.xlabel('x (pixels)')
                 plt.ylabel('Average polarization (%)')
-                polAvYfile = "polAvY".join(plotfile.rsplit("pol", 1))
+                polAvYfile = "IAvY".join(plotfile.rsplit("pol", 1))
                 plt.savefig(polAvYfile, bbox_inches='tight', pad_inches=0.25)
                 if export:
                     np.savetxt(polAvYfile.replace(".pdf", ".dat"), degreeHD,
