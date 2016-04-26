@@ -84,7 +84,13 @@ class ModelingComponent(Configurable):
         # Determine the path to the kernels user directory
         self.kernels_path = os.path.join(inspection.pts_user_dir, "kernels")
 
-        # Create the prep path if it does not exist yet
-        filesystem.create_directories([self.prep_path, self.truncation_path, self.maps_path, self.phot_path, self.maps_path, self.components_path, self.fit_path, self.analysis_path])
+        # Check whether the 'data' directory exists, otherwise exit with an error
+        if filesystem.is_directory(self.data_path):
+
+            # Create the prep path if it does not exist yet
+            filesystem.create_directories([self.prep_path, self.truncation_path, self.maps_path, self.phot_path, self.maps_path, self.components_path, self.fit_path, self.analysis_path])
+
+        # Exit with an error
+        else: raise ValueError("The current working directory is not a radiative transfer modeling directory (the data directory is missing)")
 
 # -----------------------------------------------------------------
