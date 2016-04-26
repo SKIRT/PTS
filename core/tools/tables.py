@@ -51,7 +51,8 @@ def find_index(table, key, column_name=None):
 
         return None
 
-    elif isinstance(key, basestring):
+    #elif isinstance(key, basestring):
+    else:
 
         # Get first column name if none is given
         if column_name is None: column_name = table.colnames[0]
@@ -63,7 +64,7 @@ def find_index(table, key, column_name=None):
 
         return None
 
-    else: ValueError("Invalid key: must be a list (of strings) or a string")
+    #else: raise ValueError("Invalid key: must be a list (of strings) or a string")
 
 # -----------------------------------------------------------------
 
@@ -77,17 +78,44 @@ def find_indices(table, key, column_name=None):
     :return:
     """
 
-    # Get first column name is none is given
-    if column_name is None: column_name = table.colnames[0]
+    if isinstance(key, list):
 
-    indices = []
+        if column_name is None: raise ValueError("Column names must be specified when specifying multiple keys")
+        if not isinstance(column_name, list): raise ValueError("If key(s) is a list, column_name(s) must also be a list")
 
-    # Loop over all entries in the column
-    for i in range(len(table)):
+        indices = []
 
-        if table[column_name][i] == key: indices.append(i)
+        # Loop over all entries in the table
+        for i in range(len(table)):
 
-    return indices
+            found_mismatch = False
+
+            for k, c in zip(key, column_name):
+
+                if not (table[c][i] == k):
+                    found_mismatch = True
+                    break
+
+            if not found_mismatch: indices.append(i)
+
+        return indices
+
+    #elif isinstance(key, basestring):
+    else:
+
+        # Get first column name is none is given
+        if column_name is None: column_name = table.colnames[0]
+
+        indices = []
+
+        # Loop over all entries in the column
+        for i in range(len(table)):
+
+            if table[column_name][i] == key: indices.append(i)
+
+        return indices
+
+    #else: raise ValueError("Invalid key: must be a list (of strings) or a string")
 
 # -----------------------------------------------------------------
 

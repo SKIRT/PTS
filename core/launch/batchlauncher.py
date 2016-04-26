@@ -250,7 +250,7 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        return self.parallelization[host_id]
+        return self.parallelization[host_id] if host_id in self.parallelization else None
 
     # -----------------------------------------------------------------
 

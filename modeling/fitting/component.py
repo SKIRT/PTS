@@ -70,6 +70,9 @@ class FittingComponent(ModelingComponent):
         # The path to the runtime table
         self.runtime_table_path = None
 
+        # The path to the scripts directory
+        self.fit_scripts_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -105,6 +108,12 @@ class FittingComponent(ModelingComponent):
 
         # Create the fit/in, fit/out, fit/res, fit/plot, fit/best and fit/prob directories
         filesystem.create_directories([self.fit_in_path, self.fit_out_path, self.fit_res_path, self.fit_plot_path, self.fit_best_path, self.fit_prob_path])
+
+        # Set the path to the fit/scripts directory
+        self.fit_scripts_path = filesystem.join(self.fit_path, "scripts")
+
+        # Create the fit/scripts directory
+        if not filesystem.is_directory(self.fit_scripts_path): filesystem.create_directory(self.fit_scripts_path)
 
         # Set the path to the parameter file
         self.parameter_table_path = filesystem.join(self.fit_path, "parameters.dat")

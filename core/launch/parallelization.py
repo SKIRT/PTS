@@ -48,7 +48,9 @@ class Parallelization(object):
         :return:
         """
 
-        return self.cores_per_process * self.threads_per_core
+        threads = self.cores_per_process * self.threads_per_core
+        assert int(threads) == threads
+        return int(threads)
 
     # -----------------------------------------------------------------
 
@@ -60,7 +62,9 @@ class Parallelization(object):
         :return:
         """
 
-        return int(self.cores / self.processes)
+        corespp = self.cores / self.processes
+        assert int(corespp) == corespp
+        return int(corespp)
 
     # -----------------------------------------------------------------
 
