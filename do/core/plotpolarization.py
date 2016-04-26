@@ -33,7 +33,7 @@ start = time.time()
 
 #get the command-line argument(s)
 parser = argparse.ArgumentParser()
-parser.add_argument("-s", "--simulation", metavar='sim', nargs='+', type=str, default="",
+parser.add_argument("-sim", "--simulation", metavar='sim', nargs='+', type=str, default="",
             help='Simulation(s) to be plotted. Default:all')
 parser.add_argument("-i", "--instrument", metavar='instr', nargs='+', type=str, default='all',
             help='NOT YET IMPLEMENTED: Intstrument(s) to be plotted. Default:all')
@@ -43,6 +43,8 @@ parser.add_argument("-x", "--binx", type = int, default = 10,
             help = "Binning range in x-direction. Default:10")
 parser.add_argument("-y", "--biny", type = int, default = 10,
             help = "Binning range in y-direction. Default:10")
+parser.add_argument("-sc", "--scale", nargs=2, type = float, metavar=('d', 's'), default = [0,0],
+            help = "Scale of polarization segments. [degree, length]. Default:[0,0] (automatic)")
 parser.add_argument("-nm", "--noMaps", action="store_true", default = False,
             help="Do not plot the polarization maps, just the additional options (speeds things up).")
 parser.add_argument("-pay", "--polAvY", action="store_true", default = False,
@@ -56,7 +58,7 @@ for simulation in createsimulations(args.simulation):
     print "Starting plotpolarization for simulation '" + simulation.prefix() + "'",
     plotpolarization(simulation, instrumentList=args.instrument, binsize=binsize,
                     wavelength=args.wavelength, polAvY=args.polAvY, noMaps = args.noMaps,
-                    export = args.export)
+                    export = args.export, degreeLength = args.scale)
 end = time.time()
 print "Finished plotpolarization in {0:0.2f} s".format(end-start)
 
