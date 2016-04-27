@@ -24,7 +24,6 @@ from ...core.tools import filesystem
 from ...core.simulation.skifile import SkiFile
 from ...core.launch.batchlauncher import BatchLauncher
 from ...core.tools.logging import log
-from ...core.launch.options import AnalysisOptions
 from ...core.simulation.arguments import SkirtArguments
 
 # -----------------------------------------------------------------
@@ -66,6 +65,7 @@ class HeatingContributionLauncher(AnalysisComponent):
         # The paths to the analysis/heating/tot, analysis/heating/old, analysis/heating/young and analysis/heating/ionizing directory
         self.simulation_paths = {}
         self.output_paths = {}
+        self.ski_paths = {}
 
     # -----------------------------------------------------------------
 
@@ -142,6 +142,11 @@ class HeatingContributionLauncher(AnalysisComponent):
             self.simulation_paths[contribution] = simulation_path
             self.output_paths[contribution] = output_path
 
+        # Set options for the BatchLauncher
+        self.launcher.config.shared_input = True  # The input directories for the different simulations are shared
+        #self.launcher.config.group_simulations = True  # group multiple simulations into a single job
+        self.launcher.config.remotes = self.config.remotes  # the remote hosts on which to run the simulations
+
     # -----------------------------------------------------------------
 
     def load_ski(self):
@@ -199,7 +204,7 @@ class HeatingContributionLauncher(AnalysisComponent):
             elif contribution == "old":
 
                 # Remove all stellar components except for the old stellar bulge and disk
-                ski.remove_stellar_components_except(["Old"])
+                ski.remove_stellar_components_except(["Evolved stellar bulge", "Evolved stellar disk"])
 
                 # Add the ski file instance to the dictionary
                 self.ski_files[contribution] = ski
@@ -207,7 +212,7 @@ class HeatingContributionLauncher(AnalysisComponent):
             elif contribution == "young":
 
                 # Remove all stellar components except for the young stellar component
-                ski.remove_stellar_components_except("")
+                ski.remove_stellar_components_except("Young stars")
 
                 # Add the ski file instance to the dictionary
                 self.ski_files[contribution] = ski
@@ -215,7 +220,7 @@ class HeatingContributionLauncher(AnalysisComponent):
             elif contribution == "ionizing":
 
                 # Remove all stellar components except for the ionizing stellar component
-                ski.remove_stellar_components_except("")
+                ski.remove_stellar_components_except("Ionizing stars")
 
                 # Add the ski file instance to the dictionary
                 self.ski_files[contribution] = ski
@@ -254,7 +259,10 @@ class HeatingContributionLauncher(AnalysisComponent):
             path = filesystem.join(self.simulation_paths[contribution], self.galaxy_name + ".ski")
 
             # Save the ski file
-            self.ski_files[contribution].save(path)
+            self.ski_files[contribution].saveto(path)
+
+            # Set the ski file path
+            self.ski_paths[contribution] = path
 
     # -----------------------------------------------------------------
 
@@ -265,47 +273,75 @@ class HeatingContributionLauncher(AnalysisComponent):
         :return:
         """
 
-        # Get the names of the filters for which we have photometry
-        filter_names = self.get_filter_names()
+        scripts_path = filesystem.join(self.analysis_heating_path, "scripts")
+        if not filesystem.is_directory(scripts_path): filesystem.create_directory(scripts_path)
 
-        # Scheduling options
-        scheduling_options = None
+        for host_id in self.launcher.host_ids:
+            script_dir_path = filesystem.join(scripts_path, host_id)
+            if not filesystem.is_directory(script_dir_path): filesystem.create_directory(script_dir_path)
+            self.launcher.set_script_path(host_id, script_dir_path)
 
-        # Analysis options
-        analysis_options = AnalysisOptions()
+        # Loop over the contributions
+        for contribution in self.ski_paths:
 
-        # Set options for extraction
-        analysis_options.extraction.path = self.analysis_extr_path
-        analysis_options.extraction.progress = True
-        analysis_options.extraction.timeline = True
+            # Determine a name for this simulation
+            simulation_name = self.galaxy_name + "_heating_" + contribution
 
-        # Set options for plotting
-        analysis_options.plotting.path = self.analysis_plot_path
-        analysis_options.plotting.progress = True
-        analysis_options.plotting.timeline = True
-        analysis_options.plotting.seds = True
-        analysis_options.plotting.grids = True
-        analysis_options.plotting.reference_sed = filesystem.join(self.phot_path, "fluxes.dat")
+            # Get the ski path for this simulation
+            ski_path = self.ski_paths[contribution]
 
-        # Set miscellaneous options
-        analysis_options.misc.path = self.analysis_misc_path
-        analysis_options.misc.rgb = True
-        analysis_options.misc.wave = True
-        analysis_options.misc.fluxes = True
-        analysis_options.misc.images = True
-        analysis_options.misc.observation_filters = filter_names
+            # Get the local output path for the simulation
+            output_path = self.output_paths[contribution]
 
-        # Create the SKIRT arguments object
-        arguments = SkirtArguments()
+            # Create the SKIRT arguments object
+            arguments = create_arguments(ski_path, self.analysis_in_path, output_path)
 
-        # Set the arguments
-        arguments.ski_pattern = self.analysis_ski_path
-        arguments.single = True
-        arguments.input_path = self.analysis_in_path
-        arguments.output_path = self.analysis_out_path
-        arguments.logging.verbose = True
+            # Debugging
+            log.debug("Adding a simulation to the queue with:")
+            log.debug(" - ski path: " + arguments.ski_pattern)
+            log.debug(" - output path: " + arguments.output_path)
 
-        # Run the simulation
-        simulation = self.remote.run(arguments, scheduling_options=scheduling_options, analysis_options=analysis_options)
+            # Put the parameters in the queue and get the simulation object
+            self.launcher.add_to_queue(arguments, simulation_name)
+
+            # Set scheduling options (for the different remote hosts with a scheduling system)
+            #for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
+
+        # Run the launcher, schedules the simulations
+        simulations = self.launcher.run()
+
+        # Loop over the scheduled simulations (if something has to be set)
+        #for simulation in simulations: pass
+
+# -----------------------------------------------------------------
+
+def create_arguments(ski_path, input_path, output_path):
+
+    """
+    This function ...
+    :param ski_path:
+    :param input_path:
+    :param output_path:
+    :return:
+    """
+
+    # Create a new SkirtArguments object
+    arguments = SkirtArguments()
+
+    # The ski file pattern
+    arguments.ski_pattern = ski_path
+    arguments.recursive = False
+    arguments.relative = False
+
+    # Input and output
+    arguments.input_path = input_path
+    arguments.output_path = output_path
+
+    # Parallelization settings
+    arguments.parallel.threads = None
+    arguments.parallel.processes = None
+
+    # Return the SKIRT arguments object
+    return arguments
 
 # -----------------------------------------------------------------

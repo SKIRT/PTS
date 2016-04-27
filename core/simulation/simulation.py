@@ -24,7 +24,6 @@ from .skifile import SkiFile
 from .logfile import LogFile
 from ..tools import archive as arch
 from ..launch.options import AnalysisOptions
-from ..launch.parallelization import Parallelization
 
 # -----------------------------------------------------------------
 
@@ -554,7 +553,7 @@ class RemoteSimulation(SkirtSimulation):
         self.analysis = AnalysisOptions()
 
         # The parallelization properties
-        self.parallelization = Parallelization()
+        self.parallelization = None
 
         # Options for removing remote or local input and output
         self.remove_remote_input = True                 # After retrieval

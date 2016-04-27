@@ -294,6 +294,7 @@ def create_arguments(ski_path, input_path, output_path):
     arguments.parallel.threads = None
     arguments.parallel.processes = None
 
+    # Return the SKIRT arguments object
     return arguments
 
 # -----------------------------------------------------------------

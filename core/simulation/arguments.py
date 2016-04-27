@@ -283,7 +283,7 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
             # Hyperthreading: threads_per_core will be > 1
             # No hyperthreading: threads_per_core will be 1
             # cores / process = (cores / thread) * (threads / process)
-            cores_per_process = threads / threads_per_core
+            cores_per_process = int(threads / threads_per_core)
             command += ["--cpus-per-proc", str(cores_per_process)] # "CPU'S per process" means "core per process" in our definitions
 
         # Add the SKIRT path and return the final command list

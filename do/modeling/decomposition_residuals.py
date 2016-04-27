@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.residuals Calculate the residuals between the 3.6 micron image and the simulated bulge and disk images.
+## \package pts.do.modeling.decomposition_residuals Calculate the residuals between the 3.6 micron image and the simulated bulge and disk images.
 
 # -----------------------------------------------------------------
 
@@ -62,7 +62,7 @@ level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting residuals ...")
+log.start("Starting decomposition_residuals ...")
 
 # -----------------------------------------------------------------
 
