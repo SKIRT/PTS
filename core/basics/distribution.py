@@ -137,6 +137,33 @@ class Distribution(object):
     # -----------------------------------------------------------------
 
     @property
+    def least_frequent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        index = np.argmin(self.counts)
+        return self.centers[index]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def least_frequent_non_zero(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        ma = np.ma.masked_equal(self.counts, 0.0, copy=False)
+        index = np.argmin(ma)
+        return self.centers[index]
+
+    # -----------------------------------------------------------------
+
+    @property
     def min_value(self):
 
         """
@@ -169,6 +196,31 @@ class Distribution(object):
         """
 
         return np.max(self.counts)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_count(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.min(self.counts)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_count_nonzero(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        ma = np.ma.masked_equal(self.counts, 0.0, copy=False)
+        return np.min(ma)
 
     # -----------------------------------------------------------------
 
@@ -263,12 +315,13 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, title=None, path=None):
+    def plot(self, title=None, path=None, logscale=False):
 
         """
         This function ...
         :param title:
         :param path:
+        :param logscale:
         :return:
         """
 
@@ -283,7 +336,9 @@ class Distribution(object):
         sp1.bar(self.edges[:-1], self.counts, linewidth=0, width=self.bin_width, alpha=0.75)
 
         sp1.set_xlim(0.8 * self.min_value, 1.2 * self.max_value)
-        sp1.set_ylim(0, 1.1 * self.max_count)
+
+        if logscale: sp1.set_ylim(0.5*self.min_count_nonzero, 2.0*self.max_count)
+        else: sp1.set_ylim(0, 1.1 * self.max_count)
 
         x_smooth, y_smooth = self.smooth
         sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
@@ -308,7 +363,9 @@ class Distribution(object):
         # Put the title and labels
         if title is not None: sp1.set_title(title, color='red')
         sp1.set_xlabel('Values', color='red')
-        sp1.set_ylabel('Frequency', color='red')
+        sp1.set_ylabel('Probability', color='red')
+
+        if logscale: sp1.set_yscale("log", nonposx='clip')
 
         plt.tight_layout()
         plt.grid(alpha=0.8)

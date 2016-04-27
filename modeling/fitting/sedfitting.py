@@ -447,7 +447,7 @@ class SEDFitter(FittingComponent):
             distribution = Distribution(probabilities, edges, centers, mean, median, percentile_16, percentile_84)
 
             path = filesystem.join(self.fit_prob_path, parameter + ".pdf")
-            distribution.plot(title="Probability of " + parameter, path=path)
+            distribution.plot(title="Probability of " + parameter, path=path, logscale=True)
 
     # -----------------------------------------------------------------
 
