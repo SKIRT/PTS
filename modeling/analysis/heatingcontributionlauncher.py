@@ -183,7 +183,7 @@ class HeatingContributionLauncher(AnalysisComponent):
         # Parameters of the wavelength grid
         min_wavelength = self.config.wavelengths.min * Unit(self.config.wavelengths.unit)
         max_wavelength = self.config.wavelengths.max * Unit(self.config.wavelengths.unit)
-        points = self.config.wavelengths.points
+        points = self.config.wavelengths.npoints
 
         # Set the logarithmic wavelength grid
         self.ski.set_log_wavelength_grid(min_wavelength, max_wavelength, points, write=True)
