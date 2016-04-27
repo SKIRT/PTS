@@ -109,7 +109,7 @@ class BestModelLauncher(AnalysisComponent):
         # 6. Writing
         self.write()
 
-        # 7. Launch the simulation
+        # 7. Launch the simulations
         self.launch()
 
     # -----------------------------------------------------------------
@@ -366,14 +366,7 @@ class BestModelLauncher(AnalysisComponent):
         """
 
         # Get the names of the filters for which we have photometry
-        filter_names = []
-        fluxes_table_path = filesystem.join(self.phot_path, "fluxes.dat")
-        fluxes_table = tables.from_file(fluxes_table_path)
-        # Loop over the entries in the fluxes table, get the filter
-        for entry in fluxes_table:
-            # Get the filter
-            filter_id = entry["Instrument"] + "." + entry["Band"]
-            filter_names.append(filter_id)
+        filter_names = self.get_filter_names()
 
         # Scheduling options
         scheduling_options = None

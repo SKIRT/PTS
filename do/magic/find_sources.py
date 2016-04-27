@@ -169,6 +169,11 @@ finder.run(image.frames.primary, catalog_importer.galactic_catalog, catalog_impo
 
 # -----------------------------------------------------------------
 
+# Show the FWHM
+log.info("The FWHM that could be fitted to the point sources is " + str(finder.fwhm))
+
+# -----------------------------------------------------------------
+
 # Save the galaxy region
 galaxy_region = finder.galaxy_sky_region.to_pixel(image.wcs)
 path = filesystem.join(output_path, "galaxies.reg")

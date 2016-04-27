@@ -17,7 +17,7 @@ import os
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
-from ...core.tools import inspection, filesystem
+from ...core.tools import inspection, filesystem, tables
 
 # -----------------------------------------------------------------
 
@@ -92,5 +92,23 @@ class ModelingComponent(Configurable):
 
         # Exit with an error
         else: raise ValueError("The current working directory is not a radiative transfer modeling directory (the data directory is missing)")
+
+    # -----------------------------------------------------------------
+
+    def get_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        filter_names = []
+        fluxes_table_path = filesystem.join(self.phot_path, "fluxes.dat")
+        fluxes_table = tables.from_file(fluxes_table_path)
+        # Loop over the entries in the fluxes table, get the filter
+        for entry in fluxes_table:
+            # Get the filter
+            filter_id = entry["Instrument"] + "." + entry["Band"]
+            filter_names.append(filter_id)
 
 # -----------------------------------------------------------------

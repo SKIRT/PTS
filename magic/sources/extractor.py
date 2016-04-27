@@ -312,7 +312,7 @@ class SourceExtractor(Configurable):
         for source in self.sources:
 
             # Debugging
-            log.debug("Estimating background and replacing the frame pixels of source " + str(count) + " of " + str(nsources) + " ...")
+            log.debug("Estimating background and replacing the frame pixels of source " + str(count+1) + " of " + str(nsources) + " ...")
 
             # Estimate the background
             try:

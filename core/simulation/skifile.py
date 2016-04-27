@@ -709,7 +709,59 @@ class SkiFile:
         # Invalid component id
         else: raise ValueError("Invalid component identifier (should be integer or string)")
 
-    ## This functino returns all properties of the stellar component with the specified id
+    ## This functions removes the stellar component with the specified ID
+    def remove_stellar_component(self, component_id):
+
+        # Get the stellar component with the specified ID
+        component = self.get_stellar_component(component_id)
+
+        # Get the parent
+        parent = component.getparent()
+
+        # Remove the stellar component
+        parent.remove(component)
+
+    ## This function removes the dust component with the specified ID
+    def remove_dust_component(self, component_id):
+
+        # Get the dust component with the specified ID
+        component = self.get_dust_component(component_id)
+
+        # Get the parent
+        parent = component.getparent()
+
+        # Remove the dust component
+        parent.remove(component)
+
+    ## This function removes the stellar components except for the component(s) with the specified ID(s)
+    def remove_stellar_components_except(self, component_ids):
+
+        if isinstance(component_ids, basestring): component_ids = [component_ids]
+
+        # Loop over the stellar component IDs
+        for id_i in self.get_stellar_component_ids():
+
+            # Skip IDs that are specified by the user
+            if id_i in component_ids: continue
+
+            # Remove all other stellar components
+            self.remove_stellar_component(id_i)
+
+    ## This function removes the dust components except for the component(s) with the specified ID(s)
+    def remove_dust_components_except(self, component_ids):
+
+        if isinstance(component_ids, basestring): component_ids = [component_ids]
+
+        # Loop over the stellar component IDs
+        for id_i in self.get_dust_component_ids():
+
+            # Skip IDs that are specified by the user
+            if id_i in component_ids: continue
+
+            # Remove all other dust components
+            self.remove_dust_component(id_i)
+
+    ## This function returns all properties of the stellar component with the specified id
     def get_stellar_component_properties(self, component_id):
 
         # Get the stellar component
@@ -935,6 +987,23 @@ class SkiFile:
                  "maxWavelengthSubGrid": str_from_quantity(max_lambda_sub), "pointsSubGrid": str(points_sub),
                  "writeWavelengths": str_from_bool(write)}
         parent.append(parent.makeelement("NestedLogWavelengthGrid", attrs))
+
+    ## This functions sets the wavelength grid to a LogWavelengthGrid
+    def set_log_wavelength_grid(self, min_lambda, max_lambda, points, write):
+
+        # Get the wavelength grid
+        wavelength_grid = self.get_wavelength_grid()
+
+        # Get the parent
+        parent = wavelength_grid.getparent()
+
+        # Remove the old wavelength grid
+        parent.remove(wavelength_grid)
+
+        # Make and add the new wavelength grid
+        attrs = {"minWavelength": str_from_quantity(min_lambda), "maxWavelength": str_from_quantity(max_lambda),
+                 "points": str(points), "writeWavelengths": str_from_bool(write)}
+        parent.append(parent.makeelement("LogWavelengthGrid", attrs))
 
     ## This function returns the geometry of the stellar component with the specified id
     def get_stellar_component_geometry(self, component_id):

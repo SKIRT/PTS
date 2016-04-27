@@ -31,7 +31,7 @@ class Distribution(object):
     This class ...
     """
     
-    def __init__(self, counts, edges, centers, mean, median, percentile_16=None, percentile_84=None, name=None):
+    def __init__(self, counts, edges, centers, mean, median, percentile_16, percentile_84, name=None):
         
         """
         The constructor ...
@@ -45,10 +45,10 @@ class Distribution(object):
         self.counts = counts
         self.edges = edges
         self.centers = centers
-        self.mean = mean
-        self.median = median
-        self.percentile_16 = percentile_16
-        self.percentile_84 = percentile_84
+        self.mean = float(mean)
+        self.median = float(median)
+        self.percentile_16 = float(percentile_16) if percentile_16 is not None else None
+        self.percentile_84 = float(percentile_84) if percentile_84 is not None else None
 
         self.name = name
 
@@ -139,9 +139,9 @@ class Distribution(object):
 
         centers = values
 
-        median = None
-        percentile_16 = None
-        percentile_84 = None
+        median = table.meta["median"]
+        percentile_16 = table.meta["percentile16"]
+        percentile_84 = table.meta["percentile84"]
 
         return cls(probabilities, edges, centers, mean, median, percentile_16, percentile_84)
 

@@ -97,6 +97,9 @@ class ImagePreparer(Configurable):
         # Write the results of intermediate steps
         preparer.config.write_steps = arguments.steps
 
+        # Set the output path
+        preparer.config.output_path = arguments.output
+
         # Set flags
         preparer.config.calculate_calibration_uncertainties = True
         preparer.config.extract_sources = True
