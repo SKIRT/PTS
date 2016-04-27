@@ -15,8 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 import imageio
-from scipy import interpolate
-from scipy import integrate
 from matplotlib import pyplot as plt
 
 # Import the relevant PTS classes and modules
@@ -24,6 +22,12 @@ from .component import FittingComponent
 from ...core.tools import tables, filesystem
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
+
+# -----------------------------------------------------------------
+
+descriptions = {"FUV young": "FUV luminosity of the young stars",
+                "FUV ionizing": "FUV luminosity of the ionizing stars",
+                "Dust mass": "dust mass"}
 
 # -----------------------------------------------------------------
 
@@ -57,11 +61,8 @@ class SEDFitter(FittingComponent):
         self.best_fuv_ionizing = None
         self.best_dust_mass = None
 
-        # The tables with the probabilities for the different fit parameters
-        self.probabilities = dict()
-
-        # The table with the percentiles for each fit parameter
-        self.percentiles = None
+        # The tables with the probability distributions for the different fit parameters
+        self.distributions = dict()
 
     # -----------------------------------------------------------------
 
@@ -102,15 +103,12 @@ class SEDFitter(FittingComponent):
         self.load_parameters()
 
         # 4. Calculate the probability distributions
-        self.calculate_probabilities()
+        self.calculate_distributions()
 
-        # 5. Calculate the percentiles for the probability distributions
-        self.calculate_percentiles()
+        # 5. Make an animation of the fitting procedure
+        #self.animate()
 
-        # 6. Make an animation of the fitting procedure
-        self.animate()
-
-        # 7. Writing
+        # 6. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -164,7 +162,7 @@ class SEDFitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def calculate_probabilities(self):
+    def calculate_distributions(self):
 
         """
         This function ...
@@ -239,42 +237,10 @@ class SEDFitter(FittingComponent):
         ionizing_lum_probabilities = np.array(ionizing_lum_probabilities) / sum(ionizing_lum_probabilities)
         dust_mass_probabilities = np.array(dust_mass_probabilities) / sum(dust_mass_probabilities)
 
-        # Create tables
-        young_lum_table = tables.new([young_lum_unique, young_lum_probabilities], ["FUV young", "Probability"])
-        ionizing_lum_table = tables.new([ionizing_lum_unique, ionizing_lum_probabilities], ["FUV ionizing", "Probability"])
-        dust_mass_table = tables.new([dust_mass_unique, dust_mass_probabilities], ["Dust mass", "Probability"])
-
-        # Add the tables to the 'probabilities' dictionary
-        self.probabilities["FUV young"] = young_lum_table
-        self.probabilities["FUV ionizing"] = ionizing_lum_table
-        self.probabilities["Dust mass"] = dust_mass_table
-
-    # -----------------------------------------------------------------
-
-    def calculate_percentiles(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Calculating the percentiles for the different parameter values ...")
-
-        # Calculate the percentiles
-        dust_mass_16, dust_mass_50, dust_mass_84 = find_percentiles(self.probabilities["Dust mass"]["Dust mass"], self.probabilities["Dust mass"]["Probability"])
-        fuv_young_16, fuv_young_50, fuv_young_84 = find_percentiles(self.probabilities["FUV young"]["FUV young"], self.probabilities["FUV young"]["Probability"])
-        fuv_ionizing_16, fuv_ionizing_50, fuv_ionizing_84 = find_percentiles(self.probabilities["FUV ionizing"]["FUV ionizing"], self.probabilities["FUV ionizing"]["Probability"])
-
-        # Initialize the columns of the table
-        percentile_column = [15.86, 50., 84.14]
-        dust_mass_column = [dust_mass_16, dust_mass_50, dust_mass_84]
-        fuv_young_column = [fuv_young_16, fuv_young_50, fuv_young_84]
-        fuv_ionizing_column = [fuv_ionizing_16, fuv_ionizing_50, fuv_ionizing_84]
-        names = ["Percentile", "Dust mass", "FUV young", "FUV ionizing"]
-
-        # Create the table
-        self.percentiles = tables.new([percentile_column, dust_mass_column, fuv_young_column, fuv_ionizing_column], names)
+        # Create the probability distributions for the different parameters
+        self.distributions["FUV young"] = Distribution.from_probabilities(young_lum_probabilities, young_lum_unique, "FUV young")
+        self.distributions["FUV ionizing"] = Distribution.from_probabilities(ionizing_lum_probabilities, ionizing_lum_unique, "FUV ionizing")
+        self.distributions["Dust mass"] = Distribution.from_probabilities(dust_mass_probabilities, dust_mass_unique, "Dust mass")
 
     # -----------------------------------------------------------------
 
@@ -327,14 +293,11 @@ class SEDFitter(FittingComponent):
         # Write the ski file of the best simulation
         self.write_best()
 
-        # Write the probabilities
-        self.write_probabilities()
+        # Write the probability distributions in table format
+        self.write_distributions()
 
-        # Write the percentiles
-        self.write_percentiles()
-
-        # Plot the probabilities
-        self.plot_probabilities()
+        # Plot the probability distributions as histograms
+        self.plot_distributions()
 
     # -----------------------------------------------------------------
 
@@ -374,7 +337,7 @@ class SEDFitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def write_probabilities(self):
+    def write_distributions(self):
 
         """
         This function ...
@@ -385,20 +348,20 @@ class SEDFitter(FittingComponent):
         log.info("Writing the probability distributions ...")
 
         # Loop over the entries in the 'probabilities' table
-        for parameter_name in self.probabilities:
+        for parameter_name in self.distributions:
 
             # Debugging
-            log.debug("Writing the probability distribution of the " + parameter_name.lower() + " ...")
+            log.debug("Writing the probability distribution of the " + descriptions[parameter_name] + " ...")
 
             # Determine the path to the resulting table file
             path = filesystem.join(self.fit_prob_path, parameter_name.lower().replace(" ", "_") + ".dat")
 
             # Write the table of probabilities for this parameter
-            tables.write(self.probabilities[parameter_name], path, format="ascii.ecsv")
+            self.distributions[parameter_name].save(path)
 
     # -----------------------------------------------------------------
 
-    def write_percentiles(self):
+    def plot_distributions(self):
 
         """
         This function ...
@@ -406,48 +369,21 @@ class SEDFitter(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing the percentiles ...")
+        log.info("Plotting the probability distributions ...")
 
-        # Determine the path to the percentiles table
-        path = filesystem.join(self.fit_prob_path, "percentiles.dat")
+        # Loop over the different fit parameters
+        for parameter_name in self.distributions:
 
-        # Write the table of percentiles
-        tables.write(self.percentiles, path, format="ascii.ecsv")
+            # Debugging
+            log.debug("Plotting the probability distribution of the " + descriptions[parameter_name] + " ...")
 
-    # -----------------------------------------------------------------
+            # Get the probability distributinon for
+            distribution = self.distributions[parameter_name]
+            description = descriptions[parameter_name]
 
-    def plot_probabilities(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        for parameter in ["FUV young", "FUV ionizing", "Dust mass"]:
-
-            values = self.probabilities[parameter][parameter]
-            probabilities = self.probabilities[parameter]["Probability"]
-
-            mean = np.sum(values*probabilities) / np.sum(probabilities)
-
-            percentile_16 = self.percentiles[parameter][0]
-            median = self.percentiles[parameter][1]
-            percentile_84 = self.percentiles[2]
-
-            edges = [0]
-
-            for i in range(len(values)-1):
-                edges.append(0.5 * (values[i] + values[i+1]))
-
-            edges[0] = values[0] - (edges[1] - values[0])
-            edges.append(values[-1] + (values[-1] - edges[-1]))
-
-            centers = values
-
-            distribution = Distribution(probabilities, edges, centers, mean, median, percentile_16, percentile_84)
-
-            path = filesystem.join(self.fit_prob_path, parameter + ".pdf")
-            distribution.plot(title="Probability of " + parameter, path=path, logscale=True)
+            # Create a plot file for the probability distribution
+            path = filesystem.join(self.fit_prob_path, parameter_name + ".pdf")
+            distribution.plot(title="Probability of the " + description, path=path, logscale=True)
 
     # -----------------------------------------------------------------
 
@@ -538,6 +474,10 @@ class SEDFitter(FittingComponent):
 
 # -----------------------------------------------------------------
 
+# PLOT CONTOURS: http://stackoverflow.com/questions/13781025/matplotlib-contour-from-xyz-data-griddata-invalid-index
+
+# -----------------------------------------------------------------
+
 def plotContours(params, MdustProb, FyoungProb, FionizedProb):
 
     MdustScale     = 1.e7 # in 1e7 Msun
@@ -580,86 +520,5 @@ def plotContours(params, MdustProb, FyoungProb, FionizedProb):
     fig_c.imshow(p3, cmap='gray', interpolation=None,
                  origin='lower', extent=[x[0],x[-1],y[0],y[-1]] )
     fig_c.set_aspect('auto')
-
-# -----------------------------------------------------------------
-
-def find_percentiles(values, probabilities):
-
-    """
-    This function ...
-    :param values:
-    :param probabilities:
-    :return:
-    """
-
-    if len(values) > 1: return find_percentile_16(values, probabilities), find_percentile_50(values, probabilities), find_percentile_84(values, probabilities)
-    else: return None, None, None
-
-# -----------------------------------------------------------------
-
-def find_percentile_16(values, probabilities):
-
-    """
-    This function ...
-    :param values:
-    :param probabilities:
-    :return:
-    """
-
-    find_percentile(values, probabilities, 15.86)
-
-# -----------------------------------------------------------------
-
-def find_percentile_50(values, probabilities):
-
-    """
-    This function ...
-    :param values:
-    :param probabilities:
-    :return:
-    """
-
-    return find_percentile(values, probabilities, 50.)
-
-# -----------------------------------------------------------------
-
-def find_percentile_84(values, probabilities):
-
-    """
-    This function ...
-    :param values:
-    :param probabilities:
-    :return:
-    """
-
-    return find_percentile(values, probabilities, 84.14)
-
-# -----------------------------------------------------------------
-
-def find_percentile(values, probabilities, percentile):
-
-    """
-    This function ...
-    :param values:
-    :param probabilities:
-    :param percentile:
-    :return:
-    """
-
-    npoints = 10000
-    interpfunc = interpolate.interp1d(values, probabilities, kind='linear')
-
-    parRange = np.linspace(min(values), max(values), npoints)
-    interProb = interpfunc(parRange)
-
-    cumInteg = np.zeros(npoints-1)
-
-    for i in range(1,npoints-1):
-        cumInteg[i] = cumInteg[i-1] + (0.5*(interProb[i+1] + interProb[i]) * (parRange[i+1] - parRange[i]))
-
-    cumInteg = cumInteg / cumInteg[-1]
-    idx = (np.abs(cumInteg-percentile/100.)).argmin()
-
-    return parRange[idx]
 
 # -----------------------------------------------------------------

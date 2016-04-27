@@ -129,8 +129,6 @@ def write(table, path, format="ascii.commented_header"):
     :return:
     """
 
-    # TODO: add metadata ?
-
     # Write the table
     table.write(path, format=format)
 
