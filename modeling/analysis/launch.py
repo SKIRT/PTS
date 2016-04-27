@@ -21,7 +21,8 @@ from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
-from ...core.tools import filesystem, tables
+from ...core.tools import tables
+from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import SkiFile
 from ...core.tools.logging import log
 from ..basics.instruments import FullInstrument
@@ -125,7 +126,7 @@ class BestModelLauncher(AnalysisComponent):
         super(BestModelLauncher, self).setup()
 
         # The path to the directory with the best model parameters
-        self.best_path = filesystem.join(self.fit_path, "best")
+        self.best_path = fs.join(self.fit_path, "best")
 
     # -----------------------------------------------------------------
 
@@ -140,7 +141,7 @@ class BestModelLauncher(AnalysisComponent):
         log.info("Loading the ski file for the best fitting model ...")
 
         # Determine the path to the best model ski file
-        path = filesystem.join(self.best_path, self.galaxy_name + ".ski")
+        path = fs.join(self.best_path, self.galaxy_name + ".ski")
 
         # Load the ski file
         self.ski = SkiFile(path)
@@ -329,17 +330,17 @@ class BestModelLauncher(AnalysisComponent):
         log.info("Copying the input maps ...")
 
         # Determine the paths to the input maps in the fit/in directory
-        fit_in_path = filesystem.join(self.fit_path, "in")
-        old_path = filesystem.join(fit_in_path, "old_stars.fits")
-        young_path = filesystem.join(fit_in_path, "young_stars.fits")
-        ionizing_path = filesystem.join(fit_in_path, "ionizing_stars.fits")
-        dust_path = filesystem.join(fit_in_path, "dust.fits")
+        fit_in_path = fs.join(self.fit_path, "in")
+        old_path = fs.join(fit_in_path, "old_stars.fits")
+        young_path = fs.join(fit_in_path, "young_stars.fits")
+        ionizing_path = fs.join(fit_in_path, "ionizing_stars.fits")
+        dust_path = fs.join(fit_in_path, "dust.fits")
 
-        # Copy the files to the analysis/in directory
-        filesystem.copy_file(old_path, self.analysis_in_path)
-        filesystem.copy_file(young_path, self.analysis_in_path)
-        filesystem.copy_file(ionizing_path, self.analysis_in_path)
-        filesystem.copy_file(dust_path, self.analysis_in_path)
+        # Copy the files to the analysis/in directory (if necessary)
+        if not fs.has_file(self.analysis_in_path, fs.name(old_path)): fs.copy_file(old_path, self.analysis_in_path)
+        if not fs.has_file(self.analysis_in_path, fs.name(young_path)): fs.copy_file(young_path, self.analysis_in_path)
+        if not fs.has_file(self.analysis_in_path, fs.name(ionizing_path)): fs.copy_file(ionizing_path, self.analysis_in_path)
+        if not fs.has_file(self.analysis_in_path, fs.name(dust_path)): fs.copy_file(dust_path, self.analysis_in_path)
 
     # -----------------------------------------------------------------
 
@@ -385,7 +386,7 @@ class BestModelLauncher(AnalysisComponent):
         analysis_options.plotting.timeline = True
         analysis_options.plotting.seds = True
         analysis_options.plotting.grids = True
-        analysis_options.plotting.reference_sed = filesystem.join(self.phot_path, "fluxes.dat")
+        analysis_options.plotting.reference_sed = fs.join(self.phot_path, "fluxes.dat")
 
         # Set miscellaneous options
         analysis_options.misc.path = self.analysis_misc_path

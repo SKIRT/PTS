@@ -20,7 +20,7 @@ from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
-from ...core.tools import filesystem
+from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import SkiFile
 from ...core.launch.batchlauncher import BatchLauncher
 from ...core.tools.logging import log
@@ -124,19 +124,22 @@ class HeatingContributionLauncher(AnalysisComponent):
         super(HeatingContributionLauncher, self).setup()
 
         # The path to the directory with the best model parameters
-        self.best_path = filesystem.join(self.fit_path, "best")
+        self.best_path = fs.join(self.fit_path, "best")
 
         # Set the paths to the different simulation directories and corresponding output directories
         for contribution in self.contributions:
 
             # Set the simulation path
-            simulation_path = filesystem.join(self.analysis_heating_path, contribution)
+            simulation_path = fs.join(self.analysis_heating_path, contribution)
 
-            # Create the directory if it is not present
-            if not filesystem.is_directory(simulation_path): filesystem.create_directory(simulation_path)
+            # Create the simulation directory if it is not present
+            if not fs.is_directory(simulation_path): fs.create_directory(simulation_path)
 
             # Set the path to the output directory
-            output_path = filesystem.join(simulation_path, "out")
+            output_path = fs.join(simulation_path, "out")
+
+            # Create the output directory if it is not present
+            if not fs.is_directory(simulation_path): fs.create_directory(output_path)
 
             # Add the paths to the appropriate dictionaries
             self.simulation_paths[contribution] = simulation_path
@@ -160,7 +163,7 @@ class HeatingContributionLauncher(AnalysisComponent):
         log.info("Loading the ski file for the best fitting model ...")
 
         # Determine the path to the best model ski file
-        path = filesystem.join(self.best_path, self.galaxy_name + ".ski")
+        path = fs.join(self.best_path, self.galaxy_name + ".ski")
 
         # Load the ski file
         self.ski = SkiFile(path)
@@ -237,8 +240,36 @@ class HeatingContributionLauncher(AnalysisComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # Copy the input maps (if necessary)
+        self.copy_maps()
+
         # Write the ski file
         self.write_ski_files()
+
+    # -----------------------------------------------------------------
+
+    def copy_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Copying the input maps ...")
+
+        # Determine the paths to the input maps in the fit/in directory
+        fit_in_path = fs.join(self.fit_path, "in")
+        old_path = fs.join(fit_in_path, "old_stars.fits")
+        young_path = fs.join(fit_in_path, "young_stars.fits")
+        ionizing_path = fs.join(fit_in_path, "ionizing_stars.fits")
+        dust_path = fs.join(fit_in_path, "dust.fits")
+
+        # Copy the files to the analysis/in directory (if necessary)
+        if not fs.has_file(self.analysis_in_path, fs.name(old_path)): fs.copy_file(old_path, self.analysis_in_path)
+        if not fs.has_file(self.analysis_in_path, fs.name(young_path)): fs.copy_file(young_path, self.analysis_in_path)
+        if not fs.has_file(self.analysis_in_path, fs.name(ionizing_path)): fs.copy_file(ionizing_path, self.analysis_in_path)
+        if not fs.has_file(self.analysis_in_path, fs.name(dust_path)): fs.copy_file(dust_path, self.analysis_in_path)
 
     # -----------------------------------------------------------------
 
@@ -256,7 +287,7 @@ class HeatingContributionLauncher(AnalysisComponent):
         for contribution in self.ski_files:
 
             # Determine the path to the ski file
-            path = filesystem.join(self.simulation_paths[contribution], self.galaxy_name + ".ski")
+            path = fs.join(self.simulation_paths[contribution], self.galaxy_name + ".ski")
 
             # Save the ski file
             self.ski_files[contribution].saveto(path)
@@ -273,12 +304,12 @@ class HeatingContributionLauncher(AnalysisComponent):
         :return:
         """
 
-        scripts_path = filesystem.join(self.analysis_heating_path, "scripts")
-        if not filesystem.is_directory(scripts_path): filesystem.create_directory(scripts_path)
+        scripts_path = fs.join(self.analysis_heating_path, "scripts")
+        if not fs.is_directory(scripts_path): fs.create_directory(scripts_path)
 
         for host_id in self.launcher.host_ids:
-            script_dir_path = filesystem.join(scripts_path, host_id)
-            if not filesystem.is_directory(script_dir_path): filesystem.create_directory(script_dir_path)
+            script_dir_path = fs.join(scripts_path, host_id)
+            if not fs.is_directory(script_dir_path): fs.create_directory(script_dir_path)
             self.launcher.set_script_path(host_id, script_dir_path)
 
         # Loop over the contributions

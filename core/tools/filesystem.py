@@ -101,6 +101,19 @@ def is_file(path):
 
 # -----------------------------------------------------------------
 
+def has_file(directory, filename):
+
+    """
+    This function ...
+    :param directory:
+    :param filename:
+    :return:
+    """
+
+    return is_file(join(directory, filename))
+
+# -----------------------------------------------------------------
+
 def is_directory(path):
 
     """

@@ -662,6 +662,9 @@ class SkirtRemote(Remote):
                     log.debug("Retrieve file types are not defined, retrieving complete remote output directory ...")
                     log.debug("Local output directory: " + simulation.output_path)
 
+                    # Check whether the output directory exists; if not, create it
+                    if not filesystem.is_directory(simulation.output_path): filesystem.create_directory(simulation.output_path)
+
                     # Download the simulation output
                     self.download(simulation.remote_output_path, simulation.output_path)
 
@@ -704,6 +707,9 @@ class SkirtRemote(Remote):
                     # Debugging
                     log.debug("Retrieving files: " + str(copy_paths))
                     log.debug("Local output directory: " + simulation.output_path)
+
+                    # Check whether the output directory exists; if not, create it
+                    if not filesystem.is_directory(simulation.output_path): filesystem.create_directory(simulation.output_path)
 
                     # Download the list of files to the local output directory
                     self.download(copy_paths, simulation.output_path)
