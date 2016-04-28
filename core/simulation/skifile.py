@@ -261,6 +261,40 @@ class SkiFile:
         # Disable dust self-absorption
         dust_system.set("selfAbsorption", "false")
 
+    def enable_all_dust_system_writing_options(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Loop over all elements of the dust system
+        for element in dust_system.getiterator():
+
+            # Check if any of the settings of this element is a writing option
+            for setting_name, setting_value in element.items():
+
+                # Skip settings that are not writing settings
+                if not setting_name.startswith("write"): continue
+
+                # Set the setting to true
+                element.set(setting_name, "true")
+
+    def disable_all_dust_system_writing_options(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Loop over all elements of the dust system
+        for element in dust_system.getiterator():
+
+            # Check if any of the settings of this element is a writing option
+            for setting_name, setting_value in element.items():
+
+                # Skip settings that are not writing settings
+                if not setting_name.startswith("write"): continue
+
+                # Set the setting to true
+                element.set(setting_name, "false")
+
     def enable_all_writing_options(self):
 
         # Loop over all elements in the tree

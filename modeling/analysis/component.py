@@ -14,7 +14,8 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..core.component import ModelingComponent
-from ...core.tools import filesystem
+from ...core.tools import filesystem as fs
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -68,6 +69,9 @@ class AnalysisComponent(ModelingComponent):
         self.analysis_ski_path = None
         self.analysis_wavelengths_path = None
 
+        # The path to the timing table
+        self.timing_table_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -81,39 +85,58 @@ class AnalysisComponent(ModelingComponent):
         super(AnalysisComponent, self).setup()
 
         # Set the path to the analysis/in path
-        self.analysis_in_path = filesystem.join(self.analysis_path, "in")
+        self.analysis_in_path = fs.join(self.analysis_path, "in")
 
         # Set the path to the analysis/out path
-        self.analysis_out_path = filesystem.join(self.analysis_path, "out")
+        self.analysis_out_path = fs.join(self.analysis_path, "out")
 
         # Set the path to the analysis/extr path
-        self.analysis_extr_path = filesystem.join(self.analysis_path, "extr")
+        self.analysis_extr_path = fs.join(self.analysis_path, "extr")
 
         # Set the path to the analysis/plot path
-        self.analysis_plot_path = filesystem.join(self.analysis_path, "plot")
+        self.analysis_plot_path = fs.join(self.analysis_path, "plot")
 
         # Set the path to the analysis/misc path
-        self.analysis_misc_path = filesystem.join(self.analysis_path, "misc")
+        self.analysis_misc_path = fs.join(self.analysis_path, "misc")
 
         # Set the path to the analysis/attenuation path
-        self.analysis_attenuation_path = filesystem.join(self.analysis_path, "attenuation")
+        self.analysis_attenuation_path = fs.join(self.analysis_path, "attenuation")
 
         # Set the path to the analysis/colours path
-        self.analysis_colours_path = filesystem.join(self.analysis_path, "colours")
+        self.analysis_colours_path = fs.join(self.analysis_path, "colours")
 
         # Set the path to the analysis/residuals path
-        self.analysis_residuals_path = filesystem.join(self.analysis_path, "residuals")
+        self.analysis_residuals_path = fs.join(self.analysis_path, "residuals")
 
         # Set the path to the analysis/heating path
-        self.analysis_heating_path = filesystem.join(self.analysis_path, "heating")
+        self.analysis_heating_path = fs.join(self.analysis_path, "heating")
 
         # Create the analysis subdirectories
-        filesystem.create_directories([self.analysis_in_path, self.analysis_out_path, self.analysis_extr_path,
-                                       self.analysis_plot_path, self.analysis_misc_path, self.analysis_attenuation_path,
-                                       self.analysis_colours_path, self.analysis_residuals_path, self.analysis_heating_path])
+        fs.create_directories([self.analysis_in_path, self.analysis_out_path, self.analysis_extr_path,
+                               self.analysis_plot_path, self.analysis_misc_path, self.analysis_attenuation_path,
+                               self.analysis_colours_path, self.analysis_residuals_path, self.analysis_heating_path])
 
         # Set the path to the ski file and wavelength grid file
-        self.analysis_ski_path = filesystem.join(self.analysis_path, self.galaxy_name + ".ski")
-        self.analysis_wavelengths_path = filesystem.join(self.analysis_in_path, "wavelengths.txt")
+        self.analysis_ski_path = fs.join(self.analysis_path, self.galaxy_name + ".ski")
+        self.analysis_wavelengths_path = fs.join(self.analysis_in_path, "wavelengths.txt")
+
+        # Set the path to the timing table
+        self.timing_table_path = fs.join(self.analysis_path, "timing.dat")
+
+        # Initialize the timing file (if that hasn't been done yet)
+        if not fs.is_file(self.timing_table_path):
+
+            # Create the table
+            names = ["Submission time", "Host id", "Cluster name", "Cores", "Hyperthreads per core", "Processes",
+                     "Packages", "Total runtime", "Serial runtime", "Parallel runtime", "Runtime overhead"]
+            data = [[], [], [], [], [], [], [], [], [], [], []]
+            dtypes = ["S23", "S15", "S15", "int64", "int64", "int64", "int64", "float64", "float64", "float64", "float64"]
+            table = tables.new(data, names, dtypes=dtypes)
+
+            # Set column units
+            table["Runtime"] = "s"  # runtimes are expressed in seconds
+
+            # Write the (empty) table
+            tables.write(table, self.timing_table_path, format="ascii.ecsv")
 
 # -----------------------------------------------------------------

@@ -29,6 +29,7 @@ from ..basics.instruments import FullInstrument
 from ...magic.basics.vector import Position
 from ...core.launch.options import AnalysisOptions
 from ...core.simulation.arguments import SkirtArguments
+from ...core.launch.runtime import RuntimeEstimator
 
 # -----------------------------------------------------------------
 
@@ -107,10 +108,16 @@ class BestModelLauncher(AnalysisComponent):
         # 5. Adjust the ski file
         self.adjust_ski()
 
-        # 6. Writing
+        # 6. Set parallelization
+        if self.remote.scheduler: self.set_parallelization()
+
+        # 7. Estimate the runtime for the simulation
+        if self.remote.scheduler: self.estimate_runtime()
+
+        # 8. Writing
         self.write()
 
-        # 7. Launch the simulations
+        # 9. Launch the simulations
         self.launch()
 
     # -----------------------------------------------------------------
@@ -267,6 +274,30 @@ class BestModelLauncher(AnalysisComponent):
 
         # Enable all writing options for analysis
         self.ski.enable_all_writing_options()
+
+    # -----------------------------------------------------------------
+
+    def estimate_runtime(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Estimating the runtime for the simulation ...")
+
+        # Debugging
+        log.debug("Loading the table with the total runtimes of previous simulations ...")
+
+        # Load the timing table
+        timing_table = tables.from_file(self.timing_table_path, format="ascii.ecsv")
+
+        # Create a RuntimeEstimator instance
+        estimator = RuntimeEstimator(timing_table)
+
+        # Estimate the runtime for the configured number of photon packages and the configured remote host
+        runtime = estimator.runtime_for(self.config.remote, self.config.packages, parallelization)
 
     # -----------------------------------------------------------------
 

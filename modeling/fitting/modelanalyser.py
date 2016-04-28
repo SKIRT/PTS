@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.fitting.modelanalyser Contains the ModelAnalyser class, used for analysing the goodness
+## \package pts.modeling.fitting.modelanalyser Contains the FitModelAnalyser class, used for analysing the goodness
 #  of the radiative transfer model.
 
 # -----------------------------------------------------------------
@@ -24,7 +24,7 @@ from ..core.sed import ObservedSED
 
 # -----------------------------------------------------------------
 
-class ModelAnalyser(FittingComponent):
+class FitModelAnalyser(FittingComponent):
 
     """
     This class ...
@@ -39,7 +39,7 @@ class ModelAnalyser(FittingComponent):
         """
 
         # Call the constructor of the base class
-        super(ModelAnalyser, self).__init__(config)
+        super(FitModelAnalyser, self).__init__(config)
 
         # -- Attributes --
 
@@ -106,7 +106,7 @@ class ModelAnalyser(FittingComponent):
         """
 
         # Inform the user
-        log.info("Clearing the model analyser ...")
+        log.info("Clearing the fit model analyser ...")
 
         # Set the attributes to default values
         self.simulation = None
@@ -129,7 +129,7 @@ class ModelAnalyser(FittingComponent):
         """
 
         # Call the setup function of the base class
-        super(ModelAnalyser, self).setup()
+        super(FitModelAnalyser, self).setup()
 
         # Make a local reference to the simulation object
         self.simulation = simulation
@@ -161,6 +161,9 @@ class ModelAnalyser(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the log file produced by the simulation ...")
 
         # Get the log file produced by the simulation
         self.log_file = self.simulation.log_file
@@ -314,17 +317,39 @@ class ModelAnalyser(FittingComponent):
         # Get the number of photon packages
         packages = self.ski.packages()
 
-        # Open the runtime file (in 'append' mode)
-        runtimefile = open(self.runtime_table_path, 'a')
+        # Open the timing file in 'append' mode
+        timing_file = open(self.timing_table_path, 'a')
 
-        # Add a line to the table file containing the simulation name, the host on which it was run, the number of
-        # processes and threads, the number of photon packages and at last, the runtime in seconds
-        # columns: "Simulation name", "Host id", "Cluster name", "Cores", "Hyperthreads per core", "Processes", "Packages", "Runtime"
-        runtimefile.write(self.simulation.name + " " + host_id + " " + cluster_name + " " + str(cores) + " " +
-                          str(hyperthreads) + " " + str(processes) + " " + str(packages) + " " + str(runtime) + "\n")
+        # Initialize a list to contain the values of the row
+        row = []
+
+        # Columns:
+        # "Submission time"
+        # "Host id"
+        # "Cluster name"
+        # "Cores"
+        # "Hyperthreads per core"
+        # "Processes"
+        # "Packages"
+        # "Total runtime"
+        # "Serial runtime"
+        # "Parallel runtime"
+        # "
+        row.append(self.simulation.name)
+        row.append(host_id)
+        row.append(cluster_name)
+        row.append(str(cores))
+        row.append(str(hyperthreads))
+        row.append(str(processes))
+        row.append(str(packages))
+        row.append(str(runtime))
+        row.append(str())
+
+        # Add the row to the runtime file
+        timing_file.write(" ".join(row) + "\n")
 
         # Close the file
-        runtimefile.close()
+        timing_file.close()
 
     # -----------------------------------------------------------------
 

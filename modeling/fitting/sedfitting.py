@@ -106,7 +106,7 @@ class SEDFitter(FittingComponent):
         self.calculate_distributions()
 
         # 5. Make an animation of the fitting procedure
-        #self.animate()
+        self.animate()
 
         # 6. Writing
         self.write()
