@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.analysis.dustheatinganalysiscomponent Contains the DustHeatingAnalysisComponent class
+## \package pts.modeling.analysis.heating.component Contains the DustHeatingAnalysisComponent class
 
 # -----------------------------------------------------------------
 
@@ -13,8 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .component import AnalysisComponent
-from ...core.tools import filesystem as fs
+from ..component import AnalysisComponent
+from ....core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 

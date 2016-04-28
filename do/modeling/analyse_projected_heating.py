@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.launch_heating Launch simulations for analysing the heating contributions.
+## \package pts.do.modeling.analyse_projected_heating Analyse the projected dust heating in the best fitting model.
 
 # -----------------------------------------------------------------
 
@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.modeling.analysis.heating.launch import DustHeatingContributionLauncher
+from pts.modeling.analysis.heating.projected import ProjectedDustHeatingAnalyser
 from pts.core.tools import logging, time, parsing, filesystem
 
 # -----------------------------------------------------------------
@@ -50,14 +50,14 @@ level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting launch_heating ...")
+log.start("Starting analyse_projected_heating ...")
 
 # -----------------------------------------------------------------
 
-# Create a DustHeatingContributionLauncher object
-launcher = DustHeatingContributionLauncher.from_arguments(arguments)
+# Create a ProjectedDustHeatingAnalyser object
+analyser = ProjectedDustHeatingAnalyser.from_arguments(arguments)
 
-# Run the launcher
-launcher.run()
+# Run the analyser
+analyser.run()
 
 # -----------------------------------------------------------------

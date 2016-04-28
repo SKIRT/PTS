@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.analysis.launch Contains the BestModelLauncher class
+## \package pts.modeling.analysis.heating.launch Contains the DustHeatingContributionLauncher class
 
 # -----------------------------------------------------------------
 
@@ -19,16 +19,16 @@ import copy
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from .dustheatinganalysiscomponent import DustHeatingAnalysisComponent
-from ...core.tools import filesystem as fs
-from ...core.simulation.skifile import SkiFile
-from ...core.launch.batchlauncher import BatchLauncher
-from ...core.tools.logging import log
-from ...core.simulation.arguments import SkirtArguments
+from .component import DustHeatingAnalysisComponent
+from ....core.tools import filesystem as fs
+from ....core.simulation.skifile import SkiFile
+from ....core.launch.batchlauncher import BatchLauncher
+from ....core.tools.logging import log
+from ....core.simulation.arguments import SkirtArguments
 
 # -----------------------------------------------------------------
 
-class HeatingContributionLauncher(DustHeatingAnalysisComponent):
+class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
     
     """
     This class...
@@ -43,7 +43,7 @@ class HeatingContributionLauncher(DustHeatingAnalysisComponent):
         """
 
         # Call the constructor of the base class
-        super(HeatingContributionLauncher, self).__init__(config)
+        super(DustHeatingContributionLauncher, self).__init__(config)
 
         # -- Attributes --
 
@@ -113,7 +113,7 @@ class HeatingContributionLauncher(DustHeatingAnalysisComponent):
         """
 
         # Call the setup function of the base class
-        super(HeatingContributionLauncher, self).setup()
+        super(DustHeatingContributionLauncher, self).setup()
 
         # The path to the directory with the best model parameters
         self.best_path = fs.join(self.fit_path, "best")

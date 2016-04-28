@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.analyse_heating Analyse the dust heating in the best fitting model.
+## \package pts.do.modeling.analyse_cell_heating Analyse the dust cell heating in the best fitting model.
 
 # -----------------------------------------------------------------
 
@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.modeling.analysis.celldustheating import CellDustHeatingAnalyser
+from pts.modeling.analysis.heating.cell import CellDustHeatingAnalyser
 from pts.core.tools import logging, time, parsing, filesystem
 
 # -----------------------------------------------------------------
@@ -50,7 +50,7 @@ level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting analyse_heating ...")
+log.start("Starting analyse_cell_heating ...")
 
 # -----------------------------------------------------------------
 

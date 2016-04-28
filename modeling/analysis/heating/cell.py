@@ -20,10 +20,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
-from .dustheatinganalysiscomponent import DustHeatingAnalysisComponent
-from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
-from ...core.tools import tables, inspection
+from .component import DustHeatingAnalysisComponent
+from ....core.tools import filesystem as fs
+from ....core.tools.logging import log
+from ....core.tools import tables, inspection
 
 # -----------------------------------------------------------------
 
