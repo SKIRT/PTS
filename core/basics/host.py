@@ -91,6 +91,9 @@ def has_simulations(host_id):
     :return:
     """
 
+    # Check whether the SKIRT run directory can be found
+    if inspection.skirt_run_dir is None: raise RuntimeError("The SKIRT run directory could not be located. Missing SKIRT installation?")
+
     # Check whether there are simulation files corresponding to this host ID
     host_run_dir = filesystem.join(inspection.skirt_run_dir, host_id)
 

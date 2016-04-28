@@ -79,7 +79,7 @@
       </StellarSystem>
     </stellarSystem>
     <dustSystem type="PanDustSystem">
-      <PanDustSystem sampleCount="100" writeConvergence="false" writeDensity="true" writeDepthMap="false" writeQuality="false" writeCellProperties="false" writeCellsCrossed="false" emissionBoost="1" selfAbsorption="false" writeEmissivity="false" writeTemperature="false" writeISRF="false">
+      <PanDustSystem sampleCount="100" writeConvergence="false" writeDensity="true" writeDepthMap="false" writeQuality="false" writeCellProperties="false" writeCellsCrossed="false" emissionBoost="1" selfAbsorption="false" writeEmissivity="false" writeTemperature="false" writeISRF="false", writeAbsorption="false">
         <dustDistribution type="DustDistribution">
           <CompDustDistribution>
             <components type="DustComp">

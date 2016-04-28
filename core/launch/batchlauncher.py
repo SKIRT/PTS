@@ -18,7 +18,8 @@ from collections import defaultdict
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
-from ..tools import inspection, filesystem, time
+from ..tools import inspection, time
+from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..basics.host import Host
 from .parallelization import Parallelization
@@ -398,7 +399,7 @@ class BatchLauncher(Configurable):
 
             # Debugging
             log.debug("Using " + str(parallelization.processes) + " processes and " + str(parallelization.threads) + " threads per process on this remote")
-            if log.is_debug(): print(parallelization)
+            log.debug("Parallelization scheme: " + str(parallelization))
 
             # Set the parallelization scheme for this host
             self.parallelization[remote.host_id] = parallelization
@@ -479,7 +480,7 @@ class BatchLauncher(Configurable):
 
             # Set a path for the script file to be saved to locally (for manual inspection)
             if remote.host_id in self.script_paths:
-                local_script_path = filesystem.join(self.script_paths[remote.host_id], time.unique_name() + ".sh")
+                local_script_path = fs.join(self.script_paths[remote.host_id], time.unique_name() + ".sh")
             else: local_script_path = None
 
             # Start the queue
@@ -553,24 +554,24 @@ class BatchLauncher(Configurable):
         simulation.set_analysis_options(self.config.analysis)
 
         # Determine the extraction directory for this simulation (and create it if necessary)
-        if self.config.analysis.extraction.path is not None: extraction_path = filesystem.join(self.config.analysis.extraction.path, simulation.name)
-        else: extraction_path = filesystem.join(simulation.output_path, "extr")
+        if self.config.analysis.extraction.path is not None: extraction_path = fs.join(self.config.analysis.extraction.path, simulation.name)
+        else: extraction_path = fs.join(simulation.output_path, "extr")
         if simulation.analysis.any_extraction:
-            if not filesystem.is_directory(extraction_path): filesystem.create_directory(extraction_path, recursive=True)
+            if not fs.is_directory(extraction_path): fs.create_directory(extraction_path, recursive=True)
             simulation.analysis.extraction.path = extraction_path
 
         # Determine the plotting directory for this simulation (and create it if necessary)
-        if self.config.analysis.plotting.path is not None: plotting_path = filesystem.join(self.config.analysis.plotting.path, simulation.name)
-        else: plotting_path = filesystem.join(simulation.output_path, "plot")
+        if self.config.analysis.plotting.path is not None: plotting_path = fs.join(self.config.analysis.plotting.path, simulation.name)
+        else: plotting_path = fs.join(simulation.output_path, "plot")
         if simulation.analysis.any_plotting:
-            if not filesystem.is_directory(plotting_path): filesystem.create_directory(plotting_path, recursive=True)
+            if not fs.is_directory(plotting_path): fs.create_directory(plotting_path, recursive=True)
             simulation.analysis.plotting.path = plotting_path
 
         # Determine the 'misc' directory for this simulation (and create it if necessary)
-        if self.config.analysis.misc.path is not None: misc_path = filesystem.join(self.config.analysis.misc.path, simulation.name)
-        else: misc_path = filesystem.join(simulation.output_path, "misc")
+        if self.config.analysis.misc.path is not None: misc_path = fs.join(self.config.analysis.misc.path, simulation.name)
+        else: misc_path = fs.join(simulation.output_path, "misc")
         if simulation.analysis.any_misc:
-            if not filesystem.is_directory(misc_path): filesystem.create_directory(misc_path, recursive=True)
+            if not fs.is_directory(misc_path): fs.create_directory(misc_path, recursive=True)
             simulation.analysis.misc.path = misc_path
 
         # Remove remote files

@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.modeling.analysis.heating import DustHeatingAnalyser
+from pts.modeling.analysis.celldustheating import CellDustHeatingAnalyser
 from pts.core.tools import logging, time, parsing, filesystem
 
 # -----------------------------------------------------------------
@@ -50,12 +50,12 @@ level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting analyse_colours ...")
+log.start("Starting analyse_heating ...")
 
 # -----------------------------------------------------------------
 
-# Create a DustHeatingAnalyser object
-analyser = DustHeatingAnalyser.from_arguments(arguments)
+# Create a CellDustHeatingAnalyser object
+analyser = CellDustHeatingAnalyser.from_arguments(arguments)
 
 # Run the analyser
 analyser.run()

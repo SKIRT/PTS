@@ -442,6 +442,7 @@ def similarfiles(filepath1, filepath2, threshold=0.1):
     if filepath1.endswith("_sed.dat"): return similarseds(filepath1, filepath2, threshold)
     if filepath1.endswith("_convergence.dat"): return similarconvergence(filepath1, filepath1, threshold)
     if filepath1.endswith("_isrf.dat"): return True
+    if filepath1.endswith("_abs.dat"): return True
     if filepath1.endswith("_gridxz.dat") or filepath1.endswith("_gridyz.dat") or filepath1.endswith("_gridxy.dat") or filepath1.endswith("_gridxyz.dat"):
         return True
 

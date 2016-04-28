@@ -683,6 +683,8 @@ class SkirtRemote(Remote):
                         # Loop over the different possible file types and add the filepath if the particular type is in the list of types to retrieve
                         if filename.endswith("_ds_isrf.dat"):
                             if "isrf" in simulation.retrieve_types: copy_paths.append(filepath)
+                        elif filename.endswith("_ds_abs.dat"):
+                            if "abs" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif "_ds_temp" in filename and filename.endswith(".fits"):
                             if "temp" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif filename.endswith("_sed.dat"):

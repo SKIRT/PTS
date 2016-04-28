@@ -28,6 +28,7 @@ def main():
     # load SEDs
     input       = np.loadtxt(inpath+inSED)
     wavelengths = input[:,0]
+
     # Load the widths of the wavelength bins. Crucial for integration!
     delta_wls = np.loadtxt("SKIRTOutput/iteration5_J14/M31_reference_wavelengths512.dat", usecols=(1,))
 
