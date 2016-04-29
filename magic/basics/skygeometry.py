@@ -248,7 +248,7 @@ class SkyCoordinate(SkyCoord):
         """
 
         x, y = super(SkyCoordinate, self).to_pixel(wcs, origin=0, mode=mode)
-        return Coordinate(x, y)
+        return Coordinate(x, y, meta=self.meta)
 
     # -----------------------------------------------------------------
 

@@ -487,7 +487,7 @@ class ImagePreparer(Configurable):
         # Convert the principal ellipse in sky coordinates into pixel coordinates
         principal_ellipse = self.principal_ellipse_sky.to_pixel(self.image.wcs)
 
-        # Conver the saturation region in sky coordinate into pixel coordinates
+        # Convert the saturation region in sky coordinates into pixel coordinates
         if self.saturation_region_sky is not None:
             saturation_region = self.saturation_region_sky.to_pixel(self.image.wcs)
         else: saturation_region = None

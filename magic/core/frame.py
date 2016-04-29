@@ -412,8 +412,12 @@ class Frame(np.ndarray):
         # Rebin the kernel to the same grid of the image
         kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
 
+        nans_mask = np.isnan(self)
+
         # Do the convolution on this frame
-        data = convolve_fft(self, kernel, normalize_kernel=True)
+        data = convolve_fft(self, kernel, normalize_kernel=True, interpolate_nan=True)
+
+        data[nans_mask] = float("nan")
 
         # Return the convolved frame
         # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
