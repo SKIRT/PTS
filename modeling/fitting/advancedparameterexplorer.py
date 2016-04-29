@@ -157,42 +157,47 @@ class AdvancedParameterExplorer(ParameterExplorer):
         log.info("Picking random parameter values based on the probability distributions ...")
 
         # Debugging
-        if log.is_debug():
+        if log.is_debug() and False:
 
             # Young stars
             x_limits = [self.config.young_stars.min, self.config.young_stars.max]
+            #print(self.distributions["FUV young"].cumulative_smooth(x_limits[0], x_limits[1]))
             self.distributions["FUV young"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of young stars will be drawn")
             self.distributions["FUV young"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of young stars will be drawn (in log scale)")
+            self.distributions["FUV young"].plot_cumulative_smooth(x_limits=x_limits, title="Cumulative distribution of FUV luminosities of young stars")
 
             # Ionizing stars
             x_limits = [self.config.ionizing_stars.min, self.config.ionizing_stars.max]
+            #print(self.distributions["FUV ionizing"].cumulative_smooth(x_limits[0], x_limits[1]))
             self.distributions["FUV ionizing"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of ionizing stars will be drawn")
             self.distributions["FUV ionizing"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of ionizing stars will be drawn (in log scale)")
+            self.distributions["FUV ionizing"].plot_cumulative_smooth(x_limits=x_limits, title="Cumulative distribution of FUV luminosities of ionizing stars")
 
             # Dust mass
             x_limits = [self.config.dust.min, self.config.dust.max]
+            #print(self.distributions["Dust mass"].cumulative_smooth(x_limits[0], x_limits[1]))
             self.distributions["Dust mass"].plot_smooth(x_limits=x_limits, title="Probability distribution from which dust masses will be drawn")
             self.distributions["Dust mass"].plot_smooth(x_limits=x_limits, title="Probability distribution from which dust masses will be drawn (in log scale)")
+            self.distributions["Dust mass"].plot_cumulative_smooth(x_limits=x_limits, title="Cumulative distribution of dust masses")
 
         # Draw parameters values for the specified number of simulations
-        for _ in range(self.config.simulations):
+        for counter in range(self.config.simulations):
+
+            # Debugging
+            log.debug("Calculating random parameter set " + str(counter+1) + " of " + str(self.config.simulations) + " ...")
 
             # Draw a random FUV luminosity of the young stellar population
-            young_luminosity = self.distributions["FUV young"].random()
+            young_luminosity = self.distributions["FUV young"].random(self.config.young_stars.min, self.config.young_stars.max)
 
             # Draw a random FUV luminosity of the ionizing stellar population
-            ionizing_luminosity = self.distributions["FUV ionizing"].random()
+            ionizing_luminosity = self.distributions["FUV ionizing"].random(self.config.ionizing_stars.min, self.config.ionizing_stars.max)
 
             # Draw a random dust mass
-            dust_mass = self.distributions["Dust mass"].random()
+            dust_mass = self.distributions["Dust mass"].random(self.config.dust.min, self.config.dust.max)
 
             # Add the combination of parameter values to the list
             combination = (young_luminosity, ionizing_luminosity, dust_mass)
             self.parameters.append(combination)
-
-        print(self.parameters)
-
-        exit()
 
     # -----------------------------------------------------------------
 

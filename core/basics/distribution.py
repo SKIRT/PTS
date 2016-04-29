@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import spline
 from scipy.interpolate import interp1d
 from scipy.signal import argrelextrema
-from scipy.signal import find_peaks_cwt
 from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy.integrate import quad, simps
 
 # Import astronomical modules
 from astropy.table import Table
@@ -51,7 +51,7 @@ class Distribution(object):
 
         self.name = name
 
-        self._rv = None
+        self._cum_smooth = None # Not a good solution to cache this, function can be called with different x_min and x_max ...
 
     # -----------------------------------------------------------------
 
@@ -452,36 +452,177 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
-    def get_rv(self):
+    def cumulative_smooth(self, x_min, x_max, npoints=200):
 
         """
         This function ...
+        :param x_min:
+        :param x_max:
+        :param npoints:
         :return:
         """
 
-        if self._rv is None:
+        if self._cum_smooth is None:
 
-            class RVDistribution(rv_continuous):
-                def _pdf(self, x): return np.exp(-x ** 2 / 2.) / np.sqrt(2.0 * np.pi) # TODO
+            x_smooth, y_smooth = self.smooth_values(x_min, x_max, npoints)
 
-            self._rv = RVDistribution()
+            # Set negative values to zero
+            y_smooth[y_smooth < 0.0] = 0.0
 
-        return self._rv
+            # Normalize y by calculating the integral
+            #total = simps(y_smooth, x_smooth)
+
+            # NO, by calculating the sum (why?)
+            total = np.sum(y_smooth)
+
+            # Now, y should be normalized within x_min:x_max
+            y_smooth /= total
+
+            # Return the cumulative distribution
+            #return x_smooth, np.cumsum(y_smooth)
+
+            self._cum_smooth = (x_smooth, np.cumsum(y_smooth))
+
+        return self._cum_smooth
 
     # -----------------------------------------------------------------
 
-    def random(self):
+    def cumulative_log_smooth(self, x_min, x_max, npoints=200):
 
         """
         This function ...
+        :param x_min:
+        :param x_max:
+        :param npoints:
         :return:
         """
 
-        # Get the distribution function (in Scipy's API)
-        rv_function = self.get_rv()
+        x_smooth, y_smooth = self.smooth_values_log(x_min, x_max, npoints)
 
-        # Get a random variate
-        return rv_function.rvs()
+        # Normalize y by calculating the integral
+        #total = simps(y_smooth, x_smooth)
+
+        # NO, by calculating the sum (why?)
+        total = np.sum(y_smooth)
+
+        # Now, y should be normalized within x_min:x_max
+        y_smooth /= total
+
+        # Return the cumulative distribution
+        return x_smooth, np.cumsum(y_smooth)
+
+    # -----------------------------------------------------------------
+
+    def random(self, x_min, x_max):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :return:
+        """
+
+        # Draw a random uniform variate between 0 and 1
+        uniform = np.random.uniform(low=0.0, high=1.0)
+
+        x, y_cumulative = self.cumulative_smooth(x_min, x_max)
+
+        index = locate_clip(y_cumulative, uniform)
+
+        return x[index]
+
+    # -----------------------------------------------------------------
+
+    def plot_cumulative(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, npoints=200):
+
+        """
+        This function ...
+        :param title:
+        :param path:
+        :param logscale:
+        :param x_limits:
+        :param y_limits:
+        :param npoints:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def plot_cumulative_smooth(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, npoints=200):
+
+        """
+        This function ...
+        :param title:
+        :param path:
+        :param logscale:
+        :param x_limits:
+        :param y_limits:
+        :param npoints:
+        :return:
+        """
+
+        # Create a canvas to place the subgraphs
+        canvas = plt.figure()
+        rect = canvas.patch
+        rect.set_facecolor('white')
+
+        sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
+
+        # Determine the x limits
+        if x_limits is None:
+            x_min = 0.8 * self.min_value
+            x_max = 1.2 * self.max_value
+        else:
+            x_min = x_limits[0]
+            x_max = x_limits[1]
+
+        # Determine the y limits
+        if y_limits is None:
+            y_min = 0. if not logscale else 0.5 * self.min_count_nonzero
+            y_max = 1.1 * self.max_count if not logscale else 2. * self.max_count
+        else:
+            y_min = y_limits[0]
+            y_max = y_limits[1]
+
+        # Set the axis limits
+        sp1.set_xlim(x_min, x_max)
+        sp1.set_ylim(y_min, y_max)
+
+        if logscale:
+            x_smooth, y_smooth = self.cumulative_log_smooth(x_min=x_min, x_max=x_max, npoints=npoints)
+            sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
+        else:
+            x_smooth, y_smooth = self.cumulative_smooth(x_min=x_min, x_max=x_max, npoints=npoints)
+            sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
+
+        sp1.axvline(self.mean, color="green", linestyle="dashed")
+        sp1.axvline(self.median, color="purple", linestyle="dashed")
+        sp1.axvline(self.most_frequent, color="orange", linestyle="dashed")
+
+        # Colorcode the tick tabs
+        sp1.tick_params(axis='x', colors='red')
+        sp1.tick_params(axis='y', colors='red')
+
+        # Colorcode the spine of the graph
+        sp1.spines['bottom'].set_color('r')
+        sp1.spines['top'].set_color('r')
+        sp1.spines['left'].set_color('r')
+        sp1.spines['right'].set_color('r')
+
+        # Put the title and labels
+        if title is not None: sp1.set_title(title, color='red')
+        sp1.set_xlabel('Values', color='red')
+        sp1.set_ylabel('Cumulative probability', color='red')
+
+        if logscale: sp1.set_yscale("log", nonposx='clip')
+
+        plt.tight_layout()
+        plt.grid(alpha=0.8)
+
+        if path is None: plt.show()
+        else: canvas.savefig(path)
 
     # -----------------------------------------------------------------
 
@@ -810,5 +951,44 @@ def get_local_minima(x, y):
     y_minima = [y[i] for i in m]
 
     return x_minima, y_minima
+
+# -----------------------------------------------------------------
+
+def locate_clip(array, value):
+
+    """
+    This function ...
+    :param array: actually a list
+    :param value:
+    :return:
+    """
+
+    #n = array.size
+    n = len(array)
+    if value < array[0]: return 0
+    return locate_basic_impl(array, value, n-1)
+
+# -----------------------------------------------------------------
+
+def locate_basic_impl(xv, x, n):
+
+    """
+    This function ...
+    :param xv:
+    :param x:
+    :param n:
+    :return:
+    """
+
+    jl = -1
+    ju = n
+
+    while ju - jl > 1:
+
+        jm = (ju + jl) >> 1
+        if x < xv[jm]: ju = jm
+        else: jl = jm
+
+    return jl
 
 # -----------------------------------------------------------------
