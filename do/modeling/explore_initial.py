@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.explore Explore the parameter space for the radiative transfer modeling.
+## \package pts.do.modeling.explore_initial Explore the parameter space for the radiative transfer modeling.
 
 # -----------------------------------------------------------------
 
@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.modeling.fitting.parameterexploration import ParameterExplorer
+from pts.modeling.fitting.initialparameterexplorer import InitialParameterExplorer
 from pts.core.tools import logging, time, parsing, filesystem
 
 # -----------------------------------------------------------------
@@ -26,6 +26,9 @@ parser = argparse.ArgumentParser()
 
 # Basic
 parser.add_argument("path", type=str, nargs='?', help="the modeling path")
+
+# The remote host(s)
+parser.add_argument("remote", type=parsing.string_list, help="the number of simulations to launch in the batch")
 
 # The number of values for each parameter
 parser.add_argument("--young_nvalues", type=int, help="the number of different values for the young stellar luminosity")
@@ -65,12 +68,12 @@ level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting explore ...")
+log.start("Starting explore_initial ...")
 
 # -----------------------------------------------------------------
 
-# Create a ParameterExplorer object
-explorer = ParameterExplorer.from_arguments(arguments)
+# Create a InitialParameterExplorer object
+explorer = InitialParameterExplorer.from_arguments(arguments)
 
 # Run the parameter exploration
 explorer.run()

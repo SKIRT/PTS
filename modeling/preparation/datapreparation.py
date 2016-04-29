@@ -6,8 +6,6 @@
 # *****************************************************************
 
 ## \package pts.modeling.preparation.datapreparation Contains the DataPreparer class
-#
-# Info ...
 
 # -----------------------------------------------------------------
 
@@ -23,7 +21,8 @@ from ...magic.core.frame import Frame
 from ...magic.basics.region import Region
 from .component import PreparationComponent
 from ...magic.prepare.imagepreparation import ImagePreparer
-from ...core.tools import filesystem, tables
+from ...core.tools import tables
+from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.tools import regions
 from ...magic.misc.kernels import AnianoKernels
@@ -213,7 +212,7 @@ class DataPreparer(PreparationComponent):
         # -- Fixed properties for the image preparer (valid for all target images)
 
         # Set the path to the reference image for the rebinning
-        reference_path = filesystem.join(self.prep_paths[self.config.reference_image], "initialized.fits")
+        reference_path = fs.join(self.prep_paths[self.config.reference_image], "initialized.fits")
 
         # Set the path of the rebinning reference path and the kernel image
         self.image_preparer.config.rebinning.rebin_to = reference_path
@@ -241,28 +240,28 @@ class DataPreparer(PreparationComponent):
         log.info("Checking the initialized images ...")
 
         # Loop over all subdirectories of the preparation directory
-        for path in filesystem.directories_in_path(self.prep_path):
+        for path in fs.directories_in_path(self.prep_path):
 
             # Debugging
             log.debug("Opening " + path + " ...")
 
             # Look if an initialized image file is present
-            image_path = filesystem.join(path, "initialized.fits")
-            if not filesystem.is_file(image_path):
+            image_path = fs.join(path, "initialized.fits")
+            if not fs.is_file(image_path):
 
                 log.warning("Initialized image could not be found for " + path)
                 continue
 
             # Look if the 'sources' directory is present
-            sources_path = filesystem.join(path, "sources")
-            if not filesystem.is_directory(sources_path):
+            sources_path = fs.join(path, "sources")
+            if not fs.is_directory(sources_path):
 
                 log.warning("Sources directory could not be found for " + path)
                 continue
 
             # Check if a prepared image is already present
-            result_path = filesystem.join(path, "result.fits")
-            if filesystem.is_file(result_path): continue
+            result_path = fs.join(path, "result.fits")
+            if fs.is_file(result_path): continue
 
             # Add the path to the initialized image to the list
             self.paths.append(image_path)
@@ -287,7 +286,7 @@ class DataPreparer(PreparationComponent):
         for image_path in self.paths:
 
             # Get the image name
-            name = filesystem.name(filesystem.directory_of(image_path))
+            name = fs.name(fs.directory_of(image_path))
 
             # Debugging
             log.debug("Getting galactic extinction for " + name + " ...")
@@ -347,13 +346,13 @@ class DataPreparer(PreparationComponent):
         for image_path in self.paths:
 
             # Get the directory containing this image = the output path for that image
-            output_path = filesystem.directory_of(image_path)
+            output_path = fs.directory_of(image_path)
 
             # Get the directory containing the output from the SourceFinder
-            sources_path = filesystem.join(output_path, "sources")
+            sources_path = fs.join(output_path, "sources")
 
             # Get the name
-            name = filesystem.name(output_path)
+            name = fs.name(output_path)
 
             # Inform the user
             log.info("Starting preparation of " + name + " image ...")
@@ -377,15 +376,15 @@ class DataPreparer(PreparationComponent):
 
             # Check if the intermediate results have already been produced for this image and saved to the
             # corresponding preparation subdirectory
-            extracted_path = filesystem.join(output_path, "extracted.fits")
-            corrected_path = filesystem.join(output_path, "corrected_for_extinction.fits")
-            converted_path = filesystem.join(output_path, "converted_unit.fits")
-            convolved_path = filesystem.join(output_path, "convolved.fits")
-            rebinned_path = filesystem.join(output_path, "rebinned.fits")
-            subtracted_path = filesystem.join(output_path, "sky_subtracted.fits")
+            extracted_path = fs.join(output_path, "extracted.fits")
+            corrected_path = fs.join(output_path, "corrected_for_extinction.fits")
+            converted_path = fs.join(output_path, "converted_unit.fits")
+            convolved_path = fs.join(output_path, "convolved.fits")
+            rebinned_path = fs.join(output_path, "rebinned.fits")
+            subtracted_path = fs.join(output_path, "sky_subtracted.fits")
 
             # Check if the sky-subtracted image is present
-            if filesystem.is_file(subtracted_path):
+            if fs.is_file(subtracted_path):
 
                 # Disable all steps preceeding and including the sky subtraction
                 self.image_preparer.config.calculate_calibration_uncertainties = False
@@ -405,7 +404,7 @@ class DataPreparer(PreparationComponent):
                 image.name = name
 
             # Check if the rebinned image is present
-            elif filesystem.is_file(rebinned_path):
+            elif fs.is_file(rebinned_path):
 
                 # Disable all steps preceeding and including the rebinning
                 self.image_preparer.config.calculate_calibration_uncertainties = False
@@ -424,7 +423,7 @@ class DataPreparer(PreparationComponent):
                 image.name = name
 
             # Check if the convolved image is present
-            elif filesystem.is_file(convolved_path):
+            elif fs.is_file(convolved_path):
 
                 # Disable all steps preceeding and including the convolution
                 self.image_preparer.config.calculate_calibration_uncertainties = False
@@ -442,7 +441,7 @@ class DataPreparer(PreparationComponent):
                 image.name = name
 
             # Check if the converted image is present
-            elif filesystem.is_file(converted_path):
+            elif fs.is_file(converted_path):
 
                 # Disable all steps preceeding and including the unit conversion
                 self.image_preparer.config.calculate_calibration_uncertainties = False
@@ -459,7 +458,7 @@ class DataPreparer(PreparationComponent):
                 image.name = name
 
             # Check if the extinction-corrected image is present
-            elif filesystem.is_file(corrected_path):
+            elif fs.is_file(corrected_path):
 
                 # Disable all steps preceeding and including the correction for extinction
                 self.image_preparer.config.calculate_calibration_uncertainties = False
@@ -475,7 +474,7 @@ class DataPreparer(PreparationComponent):
                 image.name = name
 
             # Check if the source-extracted image is present
-            elif filesystem.is_file(extracted_path):
+            elif fs.is_file(extracted_path):
 
                 # Disable all steps preceeding and including the source extraction
                 self.image_preparer.config.calculate_calibration_uncertainties = False
@@ -593,23 +592,23 @@ def load_sources(path):
     """
 
     # Load the galaxy region
-    galaxy_region_path = filesystem.join(path, "galaxies.reg")
+    galaxy_region_path = fs.join(path, "galaxies.reg")
     galaxy_region = Region.from_file(galaxy_region_path)
 
     # Load the star region (if present)
-    star_region_path = filesystem.join(path, "stars.reg")
-    star_region = Region.from_file(star_region_path) if filesystem.is_file(star_region_path) else None
+    star_region_path = fs.join(path, "stars.reg")
+    star_region = Region.from_file(star_region_path) if fs.is_file(star_region_path) else None
 
     # load the saturation region (if present)
-    saturation_region_path = filesystem.join(path, "saturation.reg")
-    saturation_region = Region.from_file(saturation_region_path) if filesystem.is_file(saturation_region_path) else None
+    saturation_region_path = fs.join(path, "saturation.reg")
+    saturation_region = Region.from_file(saturation_region_path) if fs.is_file(saturation_region_path) else None
 
     # Load the region of other sources
-    other_region_path = filesystem.join(path, "other_sources.reg")
-    other_region = Region.from_file(other_region_path) if filesystem.is_file(other_region_path) else None
+    other_region_path = fs.join(path, "other_sources.reg")
+    other_region = Region.from_file(other_region_path) if fs.is_file(other_region_path) else None
 
     # Load the image with segmentation maps
-    segments_path = filesystem.join(path, "segments.fits")
+    segments_path = fs.join(path, "segments.fits")
     segments = Image.from_file(segments_path)
 
     # Get the different segmentation frames

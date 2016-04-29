@@ -40,6 +40,8 @@ class AdvancedParameterExplorer(ParameterExplorer):
         # Call the constructor of the base class
         super(AdvancedParameterExplorer, self).__init__(config)
 
+        # -- Attributes --
+
         # The probability distributions for the different fit parameters
         self.distributions = dict()
 

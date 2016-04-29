@@ -167,7 +167,8 @@ class Parallelization(object):
         """
 
         return self.__class__.__name__ + " scheme with " + str(self.processes) + " processes and " \
-               + str(self.threads_per_core) + " threads per core on a total of " + str(self.cores) + " cores"
+               + str(self.threads_per_core) + " threads per core on a total of " + str(self.cores) + " cores " \
+               + "(" + str(self.threads) + " threads per process)"
 
     # -----------------------------------------------------------------
 

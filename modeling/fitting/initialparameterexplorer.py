@@ -55,6 +55,9 @@ class InitialParameterExplorer(ParameterExplorer):
         # Set the modeling path
         explorer.config.path = arguments.path
 
+        # Set the remote host IDs
+        if arguments.remotes is not None: explorer.config.remotes = arguments.remotes
+
         # Set options for the young stellar population
         if arguments.young_nvalues is not None: explorer.config.young_stars.nvalues = arguments.young_nvalues
         if arguments.young_range is not None:
@@ -156,18 +159,15 @@ class InitialParameterExplorer(ParameterExplorer):
         log.info("Setting the range for the FUV luminosity of the young stars ...")
 
         # Set the range of the FUV luminosity of the young stellar population
-        min = self.config.young_stars.rel_min * luminosity
-        max = self.config.young_stars.rel_max * luminosity
+        min_value = self.config.young_stars.rel_min * luminosity
+        max_value = self.config.young_stars.rel_max * luminosity
 
         # Create a linear or logarithmic range of luminosities
         if self.config.young_stars.scale == "linear":
-            young_luminosities = np.linspace(min, max, num=self.config.young_stars.nvalues,
-                                             endpoint=True)
+            young_luminosities = np.linspace(min_value, max_value, num=self.config.young_stars.nvalues, endpoint=True)
         elif self.config.young_stars.scale == "logarithmic":
-            young_luminosities = np.logspace(min, max, num=self.config.young_stars.nvalues,
-                                             endpoint=True)
-        else:
-            raise ValueError("Invalid scale for the young stellar luminosity values")
+            young_luminosities = np.logspace(min_value, max_value, num=self.config.young_stars.nvalues, endpoint=True)
+        else: raise ValueError("Invalid scale for the young stellar luminosity values")
 
         # Return the range of FUV luminosities of the young stellar component
         return young_luminosities
@@ -185,15 +185,15 @@ class InitialParameterExplorer(ParameterExplorer):
         # Inform the user
         log.info("Setting the range for the FUV luminosity of the ionizing stars ...")
 
-        # Determine the minimum and maximum luminosity
-        min = self.config.ionizing_stars.rel_min * luminosity
-        max = self.config.ionizing_stars.rel_max * luminosity
+        # Determine the minimum and maximum FUV luminosity of the ionizing stellar population
+        min_value = self.config.ionizing_stars.rel_min * luminosity
+        max_value = self.config.ionizing_stars.rel_max * luminosity
 
         # Create a linear or logarithmic range of luminosities
         if self.config.ionizing_stars.scale == "linear":
-            ionizing_luminosities = np.linspace(min, max, num=self.config.ionizing_stars.nvalues, endpoint=True)
+            ionizing_luminosities = np.linspace(min_value, max_value, num=self.config.ionizing_stars.nvalues, endpoint=True)
         elif self.config.ionizing_stars.scale == "log":
-            ionizing_luminosities = np.logspace(min, max, num=self.config.ionizing_stars.nvalues, endpoint=True)
+            ionizing_luminosities = np.logspace(min_value, max_value, num=self.config.ionizing_stars.nvalues, endpoint=True)
         else: raise ValueError("Invalid scale for the ionizing stellar luminosity values")
 
         # Return the range of FUV luminosities of the ionizing stellar component
@@ -213,12 +213,12 @@ class InitialParameterExplorer(ParameterExplorer):
         log.info("Setting the range for the dust mass ...")
 
         # Set the dust mass range
-        min = self.config.dust.rel_min * mass
-        max = self.config.dust.rel_max * mass
+        min_value = self.config.dust.rel_min * mass
+        max_value = self.config.dust.rel_max * mass
 
         # Create a linear or logarithmic range of dust masses
-        if self.config.dust.scale == "linear": dust_masses = np.linspace(min, max, num=self.config.dust.nvalues, endpoint=True)
-        elif self.config.dust.scale == "log": dust_masses = np.logspace(min, max, num=self.config.dust.nvalues, endpoint=True)
+        if self.config.dust.scale == "linear": dust_masses = np.linspace(min_value, max_value, num=self.config.dust.nvalues, endpoint=True)
+        elif self.config.dust.scale == "log": dust_masses = np.logspace(min_value, max_value, num=self.config.dust.nvalues, endpoint=True)
         else: raise ValueError("Invalid scale for the dust mass values")
 
         # Return the range of dust masses

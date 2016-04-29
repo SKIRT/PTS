@@ -32,6 +32,9 @@ from ...core.launch.options import SchedulingOptions
 from ...core.simulation.arguments import SkirtArguments
 from ...core.launch.runtime import RuntimeEstimator
 from ...core.launch.parallelization import Parallelization
+from ..decomposition.decomposition import load_parameters
+from ...magic.basics.coordinatesystem import CoordinateSystem
+from ...core.simulation.remote import SkirtRemote
 
 # -----------------------------------------------------------------
 
@@ -54,6 +57,9 @@ class BestModelLauncher(AnalysisComponent):
 
         # -- Attributes --
 
+        # Create the SKIRT remote execution context
+        self.remote = SkirtRemote()
+
         # The path to the directory with the best model parameters
         self.best_path = None
 
@@ -62,6 +68,12 @@ class BestModelLauncher(AnalysisComponent):
 
         # The wavelength grid
         self.wavelength_grid = None
+
+        # The structural parameters
+        self.parameters = None
+
+        # Coordinate system
+        self.reference_wcs = None
 
         # The instruments
         self.instruments = dict()
@@ -110,28 +122,31 @@ class BestModelLauncher(AnalysisComponent):
         # 2. Load the ski file describing the best model
         self.load_ski()
 
-        # 3. Create the wavelength grid
+        # 3. Load the structural parameters for the galaxy
+        self.load_parameters()
+
+        # 4. Create the wavelength grid
         self.create_wavelength_grid()
 
-        # 4. Create the instruments
+        # 5. Create the instruments
         self.create_instruments()
 
-        # 5. Adjust the ski file
+        # 6. Adjust the ski file
         self.adjust_ski()
 
-        # 6. Set parallelization
-        if self.remote.scheduler: self.set_parallelization()
+        # 7. Set parallelization
+        self.set_parallelization()
 
-        # 7. Estimate the runtime for the simulation
+        # 8. Estimate the runtime for the simulation
         if self.remote.scheduler: self.estimate_runtime()
 
-        # 8. Set the analysis options
+        # 9. Set the analysis options
         self.set_analysis_options()
 
-        # 9. Writing
+        # 10. Writing
         self.write()
 
-        # 10. Launch the simulations
+        # 11. Launch the simulation
         self.launch()
 
     # -----------------------------------------------------------------
@@ -146,8 +161,34 @@ class BestModelLauncher(AnalysisComponent):
         # Call the setup function of the base class
         super(BestModelLauncher, self).setup()
 
+        # Setup the remote execution environment
+        self.remote.setup(self.config.remote)
+
         # The path to the directory with the best model parameters
         self.best_path = fs.join(self.fit_path, "best")
+
+        # Reference coordinate system
+        reference_image = "Pacs red"
+        reference_path = fs.join(self.truncation_path, reference_image + ".fits")
+        self.reference_wcs = CoordinateSystem.from_file(reference_path)
+
+    # -----------------------------------------------------------------
+
+    def load_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the decomposition parameters ...")
+
+        # Determine the path to the parameters file
+        path = fs.join(self.components_path, "parameters.dat")
+
+        # Load the parameters
+        self.parameters = load_parameters(path)
 
     # -----------------------------------------------------------------
 
@@ -304,21 +345,42 @@ class BestModelLauncher(AnalysisComponent):
         # Get the remote host
         host = self.remote.host
 
-        # Get the number of cores per node for this host
-        cores_per_node = host.clusters[host.cluster_name].cores
+        # If the host uses a scheduling system
+        if host.scheduler:
 
-        # Determine the number of cores corresponding to 4 full nodes
-        cores = cores_per_node * 4
+            # Get the number of cores per node for this host
+            cores_per_node = host.clusters[host.cluster_name].cores
 
-        # Use 1 core for each process (assume there is enough memory)
-        processes = cores
+            # Determine the number of cores corresponding to 4 full nodes
+            cores = cores_per_node * 4
 
-        # Determine the number of threads per core
-        if host.use_hyperthreading: threads_per_core = host.clusters[host.cluster_name].threads_per_core
-        else: threads_per_core = 1
+            # Use 1 core for each process (assume there is enough memory)
+            processes = cores
 
-        # Create a Parallelization instance
-        self.parallelization = Parallelization(cores, threads_per_core, processes)
+            # Determine the number of threads per core
+            if host.use_hyperthreading: threads_per_core = host.clusters[host.cluster_name].threads_per_core
+            else: threads_per_core = 1
+
+            # Create a Parallelization instance
+            self.parallelization = Parallelization(cores, threads_per_core, processes)
+
+        # If the remote host does not use a scheduling system
+        else:
+
+            # Use 4 cores per process
+            cores_per_process = 4
+
+            # Get the amount of (currently) free cores on the remote host
+            cores = int(self.remote.free_cores)
+
+            # Determine the number of thread to be used per core
+            threads_per_core = self.remote.threads_per_core if self.remote.use_hyperthreading else 1
+
+            # Create the parallelization object
+            self.parallelization = Parallelization.from_free_cores(cores, cores_per_process, threads_per_core)
+
+        # Debugging
+        log.debug("Parallelization scheme that will be used: " + str(self.parallelization))
 
     # -----------------------------------------------------------------
 
@@ -367,6 +429,7 @@ class BestModelLauncher(AnalysisComponent):
         self.analysis_options.extraction.path = self.analysis_extr_path
         self.analysis_options.extraction.progress = True
         self.analysis_options.extraction.timeline = True
+        self.analysis_options.extraction.memory = True
 
         # Set options for plotting
         self.analysis_options.plotting.path = self.analysis_plot_path
@@ -494,6 +557,7 @@ class BestModelLauncher(AnalysisComponent):
         arguments.input_path = self.analysis_in_path
         arguments.output_path = self.analysis_out_path
         arguments.logging.verbose = True
+        arguments.logging.memory = True
 
         # Set the parallelization options
         arguments.parallel.processes = self.parallelization.processes

@@ -298,6 +298,8 @@ class SkirtRemote(Remote):
         :param name:
         :param scheduling_options:
         :param analysis_options:
+        :param local_script_path:
+        :param screen_output_path:
         :return:
         """
 
@@ -313,6 +315,7 @@ class SkirtRemote(Remote):
         # Start the queue
         screen_name = self.start_queue(name, local_script_path, screen_output_path)
         simulation.screen_name = screen_name
+        simulation.save()
 
         # Return the simulation object
         return simulation

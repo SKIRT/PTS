@@ -635,13 +635,16 @@ class RemoteSimulation(SkirtSimulation):
     def set_analysis_options(self, options):
 
         """
-        This function allows setting the analysi options from a dictionary
+        This function allows setting the analysis options from a dictionary (or an actual AnalysisOptions object)
         :param options:
         :return:
         """
 
+        # If the options is an actual AnalysisOptions object, set the analysis attribute directly
+        if isinstance(options, AnalysisOptions): self.analysis = options
+
         # Load the options into the AnalysisOptions object
-        self.analysis.set_options(options)
+        else: self.analysis.set_options(options)
 
     # -----------------------------------------------------------------
 

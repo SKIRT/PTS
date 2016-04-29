@@ -49,7 +49,7 @@ class TimingTable(object):
         names = ["Simulation name", "Timestamp", "Host id", "Cluster name", "Cores", "Threads per core",
                  "Processes", "Packages", "Total runtime", "Serial runtime", "Parallel runtime", "Runtime overhead"]
         data = [[], [], [], [], [], [], [], [], [], [], [], []]
-        dtypes = ["S24", "S23" "S15", "S15", "int64", "int64", "int64", "int64", "float64", "float64", "float64", "float64"]
+        dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "float64", "float64", "float64", "float64"]
         table = tables.new(data, names, dtypes=dtypes)
 
         # Set the column units
