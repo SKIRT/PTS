@@ -18,7 +18,7 @@ from astropy.units import Unit
 # Import the relevant PTS classes and modules
 from .component import PreparationComponent
 from ...magic.sources.finder import SourceFinder
-from ...core.tools import filesystem
+from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.misc.imageimporter import ImageImporter
 from ...magic.catalog.importer import CatalogImporter
@@ -206,19 +206,19 @@ class DataInitializer(PreparationComponent):
         log.info("Checking the input images ...")
 
         # Loop over all subdirectories of the data directory
-        for path in filesystem.directories_in_path(self.data_path, not_contains="bad", returns="path"):
+        for path in fs.directories_in_path(self.data_path, not_contains="bad", returns="path"):
 
             # Debugging
             log.debug("Opening " + path + " ...")
 
             # Loop over all FITS files found in the current subdirectory
-            for image_path in filesystem.files_in_path(path, extension="fits", not_contains="_Error", returns="path"):
+            for image_path in fs.files_in_path(path, extension="fits", not_contains="_Error", returns="path"):
 
                 # Ignore the Planck data (for now)
                 if "Planck" in image_path: continue
 
                 # Name
-                image_name = filesystem.strip_extension(filesystem.name(image_path))
+                image_name = fs.strip_extension(fs.name(image_path))
 
                 # Debugging
                 log.debug("Checking " + image_path + " ...")
@@ -228,8 +228,8 @@ class DataInitializer(PreparationComponent):
                 output_path = self.prep_paths[prep_name]
 
                 # Check whether this image already has an initialized image
-                final_path = filesystem.join(output_path, "initialized.fits")
-                if filesystem.is_file(final_path): continue
+                final_path = fs.join(output_path, "initialized.fits")
+                if fs.is_file(final_path): continue
 
                 # Add the image path to the list
                 self.paths.append(image_path)
@@ -247,7 +247,7 @@ class DataInitializer(PreparationComponent):
         for image_path in self.paths:
 
             # Get the name of the image
-            image_name = filesystem.strip_extension(filesystem.name(image_path))
+            image_name = fs.strip_extension(fs.name(image_path))
 
             # Determine the name used to identify this image for the preparation routines
             prep_name = self.prep_names[image_name]
@@ -256,8 +256,8 @@ class DataInitializer(PreparationComponent):
             output_path = self.prep_paths[prep_name]
 
             # Set the path to the region of bad pixels
-            bad_region_path = filesystem.join(self.data_path, "bad", prep_name + ".reg")
-            if not filesystem.is_file(bad_region_path): bad_region_path = None
+            bad_region_path = fs.join(self.data_path, "bad", prep_name + ".reg")
+            if not fs.is_file(bad_region_path): bad_region_path = None
 
             # Set the FWHM if the instrument has a fixed PSF
             if prep_name in fwhms: fwhm = fwhms[prep_name]
@@ -285,10 +285,10 @@ class DataInitializer(PreparationComponent):
 
             # -----------------------------------------------------------------
 
-            #sources_output_path = filesystem.join(output_path, "sources")
+            #sources_output_path = fs.join(output_path, "sources")
 
             # Already done ...
-            #if filesystem.is_directory(sources_output_path):
+            #if fs.is_directory(sources_output_path):
 
             #    if prep_name in fwhms: fwhm = fwhms[prep_name]
             #    else: fwhm = fwhms_from_finding[prep_name]
@@ -303,7 +303,7 @@ class DataInitializer(PreparationComponent):
             #    image.fwhm = fwhm
 
             #    # Determine the path to the initialized image
-            #    path = filesystem.join(output_path, "initialized.fits")
+            #    path = fs.join(output_path, "initialized.fits")
 
             #    # Save the image
             #    image.save(path)
@@ -332,27 +332,27 @@ class DataInitializer(PreparationComponent):
             self.source_finder.run(image.frames.primary, self.galactic_catalog, self.stellar_catalog, bad_mask=bad_mask)
 
             # Determine the path to the "sources" directory within the output path for this image
-            sources_output_path = filesystem.join(output_path, "sources")
-            filesystem.create_directory(sources_output_path)
+            sources_output_path = fs.join(output_path, "sources")
+            fs.create_directory(sources_output_path)
 
             # Save the galaxy region
             galaxy_region = self.source_finder.galaxy_region
-            galaxy_region_path = filesystem.join(sources_output_path, "galaxies.reg")
+            galaxy_region_path = fs.join(sources_output_path, "galaxies.reg")
             galaxy_region.save(galaxy_region_path)
 
             # Save the star region
             star_region = self.source_finder.star_region
-            star_region_path = filesystem.join(sources_output_path, "stars.reg")
+            star_region_path = fs.join(sources_output_path, "stars.reg")
             if star_region is not None: star_region.save(star_region_path)
 
             # Save the saturation region
             saturation_region = self.source_finder.saturation_region
-            saturation_region_path = filesystem.join(sources_output_path, "saturation.reg")
+            saturation_region_path = fs.join(sources_output_path, "saturation.reg")
             if saturation_region is not None: saturation_region.save(saturation_region_path)
 
             # Save the region of other sources
             other_region = self.source_finder.other_region
-            path = filesystem.join(sources_output_path, "other_sources.reg")
+            path = fs.join(sources_output_path, "other_sources.reg")
             if other_region is not None: other_region.save(path)
 
             # -----------------------------------------------------------------
@@ -370,7 +370,7 @@ class DataInitializer(PreparationComponent):
             if self.source_finder.other_segments is not None: segments.add_frame(self.source_finder.other_segments, "other_sources")
 
             # Save the FITS file with the segmentation maps
-            path = filesystem.join(sources_output_path, "segments.fits")
+            path = fs.join(sources_output_path, "segments.fits")
             segments.save(path)
 
             # -----------------------------------------------------------------
@@ -381,7 +381,7 @@ class DataInitializer(PreparationComponent):
             # -----------------------------------------------------------------
 
             # Determine the path to the initialized image
-            path = filesystem.join(output_path, "initialized.fits")
+            path = fs.join(output_path, "initialized.fits")
 
             # Save the image
             image.save(path)

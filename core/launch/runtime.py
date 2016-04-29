@@ -17,6 +17,7 @@ from ..tools.logging import log
 from .parallelization import Parallelization
 from ..basics.distribution import Distribution
 from ..tools import tables
+from .timing import TimingTable
 
 # -----------------------------------------------------------------
 
@@ -37,6 +38,23 @@ class RuntimeEstimator(object):
 
         # Set the timing table
         self.timing_table = timing_table
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Load the timing table
+        timing_table = TimingTable.read(path)
+
+        # Create the RuntimeEstimator object
+        return cls(timing_table)
 
     # -----------------------------------------------------------------
 
@@ -260,7 +278,7 @@ class RuntimeEstimator(object):
 
         # Get the number of cores, threads per core and the number of processes
         cores = self.timing_table["Cores"][index]
-        threads_per_core = self.timing_table["Hyperthreads per core"][index]
+        threads_per_core = self.timing_table["Threads per core"][index]
         processes = self.timing_table["Processes"][index]
 
         # Create and return a Parallelization instance

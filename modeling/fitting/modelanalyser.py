@@ -21,6 +21,7 @@ from .component import FittingComponent
 from ...core.tools.logging import log
 from ...core.tools import filesystem, tables
 from ..core.sed import ObservedSED
+from ...core.launch.timing import TimingTable
 
 # -----------------------------------------------------------------
 
@@ -285,8 +286,8 @@ class FitModelAnalyser(FittingComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the runtime
-        self.write_runtime()
+        # Write the timing information
+        self.write_timing()
 
         # Write the flux differences
         self.write_differences()
@@ -296,7 +297,7 @@ class FitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def write_runtime(self):
+    def write_timing(self):
 
         """
         This function ...
@@ -304,13 +305,11 @@ class FitModelAnalyser(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing the runtime of this simulation ...")
+        log.info("Writing the timing information of the simulation ...")
 
         # Get the name of the host on which the simulation was run
-        #host = self.log_file.host
         host_id = self.simulation.host_id
         cluster_name = self.simulation.cluster_name
-        if cluster_name is None: cluster_name = "--"
 
         # Get the parallelization object from the simulation
         parallelization = self.simulation.parallelization
@@ -320,45 +319,23 @@ class FitModelAnalyser(FittingComponent):
         hyperthreads = parallelization.threads_per_core
         processes = parallelization.processes
 
-        # Get the runtime in seconds
-        runtime = self.log_file.total_runtime
-
         # Get the number of photon packages
         packages = self.ski.packages()
 
-        # Open the timing file in 'append' mode
-        timing_file = open(self.timing_table_path, 'a')
+        # Get the total_runtime (in seconds)
+        total_runtime = self.log_file.total_runtime
 
-        # Initialize a list to contain the values of the row
-        row = []
+        # Get the serial, parallel runtime and runtime overhead
+        serial_runtime = self.te.serial
+        parallel_runtime = self.te.parallel
+        runtime_overhead = self.te.overhead
 
-        # Columns:
-        # "Submission time"
-        # "Host id"
-        # "Cluster name"
-        # "Cores"
-        # "Hyperthreads per core"
-        # "Processes"
-        # "Packages"
-        # "Total runtime"
-        # "Serial runtime"
-        # "Parallel runtime"
-        # "
-        row.append(self.simulation.name)
-        row.append(host_id)
-        row.append(cluster_name)
-        row.append(str(cores))
-        row.append(str(hyperthreads))
-        row.append(str(processes))
-        row.append(str(packages))
-        row.append(str(runtime))
-        row.append(str())
+        # Open the timing table
+        timing_table = TimingTable(self.timing_table_path)
 
-        # Add the row to the runtime file
-        timing_file.write(" ".join(row) + "\n")
-
-        # Close the file
-        timing_file.close()
+        # Add an entry to the timing table
+        timing_table.add_entry(self.simulation.name, self.simulation.submitted_at, host_id, cluster_name, cores,
+                               hyperthreads, processes, packages, total_runtime, serial_runtime, parallel_runtime, runtime_overhead)
 
     # -----------------------------------------------------------------
 

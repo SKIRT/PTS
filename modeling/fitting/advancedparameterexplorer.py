@@ -156,6 +156,24 @@ class AdvancedParameterExplorer(ParameterExplorer):
         # Inform the user
         log.info("Picking random parameter values based on the probability distributions ...")
 
+        # Debugging
+        if log.is_debug():
+
+            # Young stars
+            x_limits = [self.config.young_stars.min, self.config.young_stars.max]
+            self.distributions["FUV young"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of young stars will be drawn")
+            self.distributions["FUV young"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of young stars will be drawn (in log scale)")
+
+            # Ionizing stars
+            x_limits = [self.config.ionizing_stars.min, self.config.ionizing_stars.max]
+            self.distributions["FUV ionizing"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of ionizing stars will be drawn")
+            self.distributions["FUV ionizing"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of ionizing stars will be drawn (in log scale)")
+
+            # Dust mass
+            x_limits = [self.config.dust.min, self.config.dust.max]
+            self.distributions["Dust mass"].plot_smooth(x_limits=x_limits, title="Probability distribution from which dust masses will be drawn")
+            self.distributions["Dust mass"].plot_smooth(x_limits=x_limits, title="Probability distribution from which dust masses will be drawn (in log scale)")
+
         # Draw parameters values for the specified number of simulations
         for _ in range(self.config.simulations):
 
@@ -172,6 +190,10 @@ class AdvancedParameterExplorer(ParameterExplorer):
             combination = (young_luminosity, ionizing_luminosity, dust_mass)
             self.parameters.append(combination)
 
+        print(self.parameters)
+
+        exit()
+
     # -----------------------------------------------------------------
 
     def set_parallelization(self):
@@ -183,8 +205,14 @@ class AdvancedParameterExplorer(ParameterExplorer):
         :return:
         """
 
+        # Inform the user
+        log.info("Setting the parallelization scheme for the remote host(s) that use a scheduling system ...")
+
         # Loop over the IDs of the hosts used by the batch launcher that use a scheduling system
         for host in self.launcher.scheduler_hosts:
+
+            # Debugging
+            log.debug("Setting the parallelization scheme for host '" + host.id + "' ...")
 
             # Get the number of cores per node for this host
             cores_per_node = host.clusters[host.cluster_name].cores
@@ -201,6 +229,9 @@ class AdvancedParameterExplorer(ParameterExplorer):
 
             # Create a Parallelization instance
             parallelization = Parallelization(cores, threads_per_core, processes)
+
+            # Debugging
+            log.debug("Parallelization scheme: " + str(parallelization))
 
             # Set the parallelization for this host
             self.launcher.set_parallelization_for_host(host.id, parallelization)
@@ -220,14 +251,8 @@ class AdvancedParameterExplorer(ParameterExplorer):
         # Get the number of photon packages (per wavelength) for this batch of simulations
         current_packages = self.ski.packages()
 
-        # Debugging
-        log.debug("Loading the table with the total runtimes of previous simulations ...")
-
-        # Load the timing table
-        timing_table = tables.from_file(self.timing_table_path, format="ascii.ecsv")
-
         # Create a RuntimeEstimator instance
-        estimator = RuntimeEstimator(timing_table)
+        estimator = RuntimeEstimator.from_file(self.timing_table_path)
 
         # Initialize a dictionary to contain the estimated walltimes for the different hosts with scheduling system
         walltimes = dict()
@@ -235,11 +260,17 @@ class AdvancedParameterExplorer(ParameterExplorer):
         # Loop over the hosts which use a scheduling system and estimate the walltime
         for host_id in self.launcher.scheduler_host_ids:
 
+            # Debugging
+            log.debug("Estimating the runtime for host '" + host_id + "' ...")
+
             # Get the parallelization scheme that we have defined for this remote host
             parallelization = self.launcher.parallelization_for_host(host_id)
 
             # Estimate the runtime for the current number of photon packages and the current remote host
             runtime = estimator.runtime_for(host_id, current_packages, parallelization)
+
+            # Debugging
+            log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
 
             # Set the estimated walltime
             walltimes[host_id] = runtime

@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
 from ...core.tools.logging import log
+from ...core.launch.timing import TimingTable
 
 # -----------------------------------------------------------------
 
@@ -165,46 +166,23 @@ class BestModelAnalyser(AnalysisComponent):
         hyperthreads = parallelization.threads_per_core
         processes = parallelization.processes
 
-        # Get the runtime in seconds
-        runtime = self.log_file.total_runtime
+        # Get the total runtime (in seconds)
+        total_runtime = self.log_file.total_runtime
 
         # Get the number of photon packages
         packages = self.ski.packages()
 
-        # Open the timing file in 'append' mode
-        timing_file = open(self.timing_table_path, 'a')
+        # Get the serial, parallel runtime and runtime overhead (in seconds)
+        serial_runtime = self.te.serial
+        parallel_runtime = self.te.parallel
+        runtime_overhead = self.te.overhead
 
-        # Initialize a list to contain the values of the row
-        row = []
+        # Open the timing table
+        timing_table = TimingTable(self.timing_table_path)
 
-        # Columns:
-        # "Submission time"
-        # "Host id"
-        # "Cluster name"
-        # "Cores"
-        # "Hyperthreads per core"
-        # "Processes"
-        # "Packages"
-        # "Total runtime"
-        # "Serial runtime"
-        # "Parallel runtime"
-        # "Overhead runtime"
-        row.append(self.simulation.submitted_at)
-        row.append(host_id)
-        row.append(cluster_name)
-        row.append(str(cores))
-        row.append(str(hyperthreads))
-        row.append(str(processes))
-        row.append(str(packages))
-        row.append(str(runtime))
-        row.append(str(self.te.serial))
-        row.append(str(self.te.parallel))
-        row.append(str(self.te.overhead))
-
-        # Add the row to the table file
-        timing_file.write(" ".join(row) + "\n")
-
-        # Close the file
-        timing_file.close()
+        # Add an entry to the timing table
+        timing_table.add_entry(self.simulation.name, self.simulation.submitted_at, host_id, cluster_name, cores,
+                               hyperthreads, processes, packages, total_runtime, serial_runtime, parallel_runtime,
+                               runtime_overhead)
 
 # -----------------------------------------------------------------

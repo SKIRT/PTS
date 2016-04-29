@@ -15,13 +15,12 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import argparse
-import numpy as np
 from collections import defaultdict
-import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time, filesystem, tables
+from pts.core.tools import logging, time, filesystem
 from pts.core.basics.distribution import Distribution
+from pts.core.launch.timing import TimingTable
 
 # -----------------------------------------------------------------
 
@@ -57,35 +56,32 @@ log.start("Starting plot_runtimes ...")
 
 # -----------------------------------------------------------------
 
-# Determine the path to the runtime table
-runtime_table_path = filesystem.join(arguments.path, "fit", "runtimes.dat")
+# Determine the path to the timing table
+timing_table_path = filesystem.join(arguments.path, "fit", "timing.dat")
 
-# Load the runtime table
-runtimes_table = tables.from_file(runtime_table_path, format="ascii.ecsv")
+# Load the timing table
+timing_table = TimingTable.read(timing_table_path)
 
 # Keep a list of all the runtimes recorded for a certain remote host
 runtimes_for_hosts = defaultdict(lambda: defaultdict(list))
 
-# Loop over the entries in the runtime table
-# "Simulation name", "Host id", "Cluster name", "Cores", "Hyperthreads per core", "Processes", "Packages", "Runtime"
-for i in range(len(runtimes_table)):
+# Loop over the entries in the timing table
+for i in range(len(timing_table)):
 
     # Get the ID of the host and the cluster name for this particular simulation
-    host_id = runtimes_table["Host id"][i]
-    cluster_name = runtimes_table["Cluster name"][i]
+    host_id = timing_table["Host id"][i]
+    cluster_name = timing_table["Cluster name"][i]
 
     # Get the parallelization properties for this particular simulation
-    cores = runtimes_table["Cores"][i]
-    threads_per_core = runtimes_table["Hyperthreads per core"][i]
-    processes = runtimes_table["Processes"][i]
+    cores = timing_table["Cores"][i]
+    threads_per_core = timing_table["Threads per core"][i]
+    processes = timing_table["Processes"][i]
 
     # Get the number of photon packages (per wavelength) used for this simulation
-    packages = runtimes_table["Packages"][i]
+    packages = timing_table["Packages"][i]
 
     # Get the total runtime
-    runtime = runtimes_table["Runtime"][i]
-
-    #parallelization = Parallelization(cores, threads_per_core, processes)
+    runtime = timing_table["Total runtime"][i]
 
     parallelization = (cores, threads_per_core, processes)
 
@@ -101,40 +97,11 @@ for host_id in runtimes_for_hosts:
     # Loop over the different configurations (packages, parallelization)
     for packages, parallelization in runtimes_for_hosts[host_id]:
 
-        #print("host ID:", host_id)
-        #print("packages:", packages)
-        #print("parallelization:", parallelization)
-
         runtimes = runtimes_for_hosts[host_id][packages, parallelization]
 
         distribution = Distribution.from_values(runtimes, 15)
 
-        #histogram = np.histogram(runtimes, bins=bins)
-
-        #print(histogram)
-
-        # the histogram of the data
-        #n, bins, patches = plt.hist(runtimes, bins, normed=1, facecolor='green', alpha=0.75)
-
-        #print(distribution.counts)
-        #print(distribution.edges)
-
-        #plt.hist(runtimes, distribution.edges)
-
+        # Plot the distribution
         distribution.plot()
-
-        #from scipy.signal import argrelextrema
-        #from matplotlib.pyplot import *
-
-        #np.random.seed()
-        #x = np.random.random(50)
-        #m = argrelextrema(x, np.greater)  # array of indexes of the locals maxima
-        #y = [x[m] for i in m]
-        #plot(x)
-        #plot(m, y, 'rs')
-        #show()
-
-
-        #plt.show()
 
 # -----------------------------------------------------------------

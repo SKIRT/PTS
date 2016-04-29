@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ..core.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.tools import tables
+from ...core.launch.timing import TimingTable
 
 # -----------------------------------------------------------------
 
@@ -161,23 +162,8 @@ class FittingComponent(ModelingComponent):
         # Set the path to the timing table file
         self.timing_table_path = fs.join(self.fit_path, "timing.dat")
 
-        # Initialize the timing data file (if that hasn't been done yet)
-        if not fs.is_file(self.timing_table_path):
-
-            # Create the table
-            names = ["Simulation name", "Host id", "Cluster name", "Cores", "Hyperthreads per core", "Processes", "Packages", "Total runtime", "Serial runtime", "Parallel runtime", "Runtime overhead"]
-            data = [[], [], [], [], [], [], [], [], [], [], []]
-            dtypes = ["S24", "S15", "S15", "int64", "int64", "int64", "int64", "float64", "float64", "float64", "float64"]
-            table = tables.new(data, names, dtypes=dtypes)
-
-            # Set the column units
-            table["Total runtime"] = "s" # runtimes are expressed in seconds
-            table["Serial runtime"] = "s"
-            table["Parallel runtime"] = "s"
-            table["Runtime overhead"] = "s"
-
-            # Write the (empty) table
-            tables.write(table, self.timing_table_path, format="ascii.ecsv")
+        # Initialize the timing table
+        timing_table = TimingTable(self.timing_table_path)
 
         # Set the paths to the probability distribution tables
         for parameter_name in self.parameter_names:

@@ -10,11 +10,9 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-import math
 import numpy as np
 from scipy.stats import rv_continuous
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
 from scipy.interpolate import spline
 from scipy.interpolate import interp1d
 from scipy.signal import argrelextrema
@@ -45,7 +43,7 @@ class Distribution(object):
 
         self.counts = counts
         self.edges = edges
-        self.centers = centers
+        self.centers = np.array(centers)
         self.mean = float(mean)
         self.median = float(median)
         self.percentile_16 = float(percentile_16) if percentile_16 is not None else None
@@ -328,18 +326,7 @@ class Distribution(object):
         :return:
         """
 
-        m = argrelextrema(self.counts, np.greater)[0].tolist()
-
-        centers = np.array(self.centers)
-
-        # Find the index of the absolute maximum (should also be included, is not for example when it is at the edge)
-        index = np.argmax(self.counts)
-        if index not in m: m.append(index)
-
-        x = [centers[i] for i in m]
-        y = [self.counts[i] for i in m]
-
-        return x, y
+        return get_local_maxima(self.centers, self.counts)
 
     # -----------------------------------------------------------------
 
@@ -351,18 +338,7 @@ class Distribution(object):
         :return:
         """
 
-        m = argrelextrema(self.counts, np.less)[0].tolist()
-
-        centers = np.array(self.centers)
-
-        # Find the indx of the absolute minimum (should also be included, is not for example when it is at the edge)
-        index = np.argmin(self.counts)
-        if index not in m: m.append(index)
-
-        x = [centers[i] for i in m]
-        y = [self.counts[i] for i in m]
-
-        return x, y
+        return get_local_minima(self.centers, self.counts)
 
     # -----------------------------------------------------------------
 
@@ -406,15 +382,20 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
-    @property
-    def smooth_values(self):
+    def smooth_values(self, x_min=None, x_max=None, npoints=200):
 
         """
         This function ...
+        :param x_min:
+        :param x_max:
+        :param npoints:
         :return:
         """
 
-        x_smooth = np.linspace(self.min_value, self.max_value, 200)
+        if x_min is None: x_min = self.min_value
+        if x_max is None: x_max = self.max_value
+
+        x_smooth = np.linspace(x_min, x_max, npoints)
 
         s = self.smooth
         y_smooth = s(x_smooth)
@@ -423,15 +404,20 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
-    @property
-    def smooth_values_log(self):
+    def smooth_values_log(self, x_min=None, x_max=None, npoints=200):
 
         """
         This function ...
+        :param x_min:
+        :param x_max:
+        :param npoints:
         :return:
         """
 
-        x_smooth = np.linspace(self.min_value, self.max_value, 200)
+        if x_min is None: x_min = self.min_value
+        if x_max is None: x_max = self.max_value
+
+        x_smooth = np.linspace(x_min, x_max, npoints)
 
         s = self.smooth_log
         y_smooth_log = s(x_smooth)
@@ -448,14 +434,8 @@ class Distribution(object):
         :return:
         """
 
-        x_smooth, y_smooth = self.smooth
-
-        m = argrelextrema(y_smooth, np.greater)
-
-        x = [x_smooth[i] for i in m]
-        y = [y_smooth[i] for i in m]
-
-        return x, y
+        x_smooth, y_smooth = self.smooth_values()
+        return get_local_maxima(x_smooth, y_smooth)
 
     # -----------------------------------------------------------------
 
@@ -467,14 +447,8 @@ class Distribution(object):
         :return:
         """
 
-        x_smooth, y_smooth = self.smooth
-
-        m = argrelextrema(y_smooth, np.less)
-
-        x = [x_smooth[i] for i in m]
-        y = [y_smooth[i] for i in m]
-
-        return x, y
+        x_smooth, y_smooth = self.smooth_values()
+        return get_local_minima(x_smooth, y_smooth)
 
     # -----------------------------------------------------------------
 
@@ -511,19 +485,103 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, title=None, path=None, logscale=False):
+    def plot_smooth(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, npoints=200):
 
         """
         This function ...
         :param title:
         :param path:
         :param logscale:
+        :param x_limits:
+        :param y_limits:
+        :param npoints:
         :return:
         """
 
         # Create a canvas to place the subgraphs
         canvas = plt.figure()
-        #canvas = Figure()
+        rect = canvas.patch
+        rect.set_facecolor('white')
+
+        sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
+
+        # Determine the x limits
+        if x_limits is None:
+            x_min = 0.8 * self.min_value
+            x_max = 1.2 * self.max_value
+        else:
+            x_min = x_limits[0]
+            x_max = x_limits[1]
+
+        # Determine the y limits
+        if y_limits is None:
+            y_min = 0. if not logscale else 0.5 * self.min_count_nonzero
+            y_max = 1.1 * self.max_count if not logscale else 2. * self.max_count
+        else:
+            y_min = y_limits[0]
+            y_max = y_limits[1]
+
+        # Set the axis limits
+        sp1.set_xlim(x_min, x_max)
+        sp1.set_ylim(y_min, y_max)
+
+        if logscale:
+            x_smooth, y_smooth = self.smooth_values_log(x_min=x_min, x_max=x_max, npoints=npoints)
+            sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
+        else:
+            x_smooth, y_smooth = self.smooth_values(x_min=x_min, x_max=x_max, npoints=npoints)
+            sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
+
+        x, y = get_local_maxima(x_smooth, y_smooth)
+        sp1.plot(x, y, 'g^')
+
+        x, y = get_local_minima(x_smooth, y_smooth)
+        sp1.plot(x, y, 'rv')
+
+        sp1.axvline(self.mean, color="green", linestyle="dashed")
+        sp1.axvline(self.median, color="purple", linestyle="dashed")
+        sp1.axvline(self.most_frequent, color="orange", linestyle="dashed")
+
+        # Colorcode the tick tabs
+        sp1.tick_params(axis='x', colors='red')
+        sp1.tick_params(axis='y', colors='red')
+
+        # Colorcode the spine of the graph
+        sp1.spines['bottom'].set_color('r')
+        sp1.spines['top'].set_color('r')
+        sp1.spines['left'].set_color('r')
+        sp1.spines['right'].set_color('r')
+
+        # Put the title and labels
+        if title is not None: sp1.set_title(title, color='red')
+        sp1.set_xlabel('Values', color='red')
+        sp1.set_ylabel('Probability', color='red')
+
+        if logscale: sp1.set_yscale("log", nonposx='clip')
+
+        plt.tight_layout()
+        plt.grid(alpha=0.8)
+
+        if path is None: plt.show()
+        else: canvas.savefig(path)
+
+    # -----------------------------------------------------------------
+
+    def plot(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, add_smooth=True):
+
+        """
+        This function ...
+        :param title:
+        :param path:
+        :param logscale:
+        :param x_limits:
+        :param y_limits:
+        :param add_smooth:
+        :return:
+        """
+
+        # Create a canvas to place the subgraphs
+        canvas = plt.figure()
         rect = canvas.patch
         rect.set_facecolor('white')
 
@@ -531,20 +589,35 @@ class Distribution(object):
 
         sp1.bar(self.edges[:-1], self.counts, linewidth=0, width=self.bin_width, alpha=0.75)
 
-        sp1.set_xlim(0.8 * self.min_value, 1.2 * self.max_value)
-
-        if logscale: sp1.set_ylim(0.5*self.min_count_nonzero, 2.0*self.max_count)
-        else: sp1.set_ylim(0, 1.1 * self.max_count)
-
-        if logscale:
-
-            x_smooth, y_smooth = self.smooth_values_log
-            sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
-
+        # Determine the x limits
+        if x_limits is None:
+            x_min = 0.8 * self.min_value
+            x_max = 1.2 * self.max_value
         else:
+            x_min = x_limits[0]
+            x_max = x_limits[1]
 
-            x_smooth, y_smooth = self.smooth_values
-            sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
+        # Determine the y limits
+        if y_limits is None:
+            y_min = 0. if not logscale else 0.5 * self.min_count_nonzero
+            y_max = 1.1 * self.max_count if not logscale else 2. * self.max_count
+        else:
+            y_min = y_limits[0]
+            y_max = y_limits[1]
+
+        # Set the axis limits
+        sp1.set_xlim(x_min, x_max)
+        sp1.set_ylim(y_min, y_max)
+
+        # Add smooth
+        if add_smooth:
+
+            if logscale:
+                x_smooth, y_smooth = self.smooth_values_log(x_min=x_min, x_max=x_max)
+                sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
+            else:
+                x_smooth, y_smooth = self.smooth_values(x_min=x_min, x_max=x_max)
+                sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
 
         x, y = self.local_maxima
         sp1.plot(x, y, 'g^')
@@ -693,5 +766,49 @@ def find_percentile(values, probabilities, percentile):
     idx = (np.abs(cumInteg-percentile/100.)).argmin()
 
     return parRange[idx]
+
+# -----------------------------------------------------------------
+
+def get_local_maxima(x, y):
+
+    """
+    This function ...
+    :param x:
+    :param y:
+    :return:
+    """
+
+    m = argrelextrema(y, np.greater)[0].tolist()
+
+    # Find the index of the absolute maximum (should also be included, is not for example when it is at the edge)
+    index = np.argmax(y)
+    if index not in m: m.append(index)
+
+    x_maxima = [x[i] for i in m]
+    y_maxima = [y[i] for i in m]
+
+    return x_maxima, y_maxima
+
+# -----------------------------------------------------------------
+
+def get_local_minima(x, y):
+
+    """
+    This function ...
+    :param x:
+    :param y:
+    :return:
+    """
+
+    m = argrelextrema(y, np.less)[0].tolist()
+
+    # Find the indx of the absolute minimum (should also be included, is not for example when it is at the edge)
+    index = np.argmin(y)
+    if index not in m: m.append(index)
+
+    x_minima = [x[i] for i in m]
+    y_minima = [y[i] for i in m]
+
+    return x_minima, y_minima
 
 # -----------------------------------------------------------------
