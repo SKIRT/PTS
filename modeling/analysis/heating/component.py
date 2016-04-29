@@ -44,9 +44,9 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
                                 "ionizing": "Ionizing stars"}
 
         # The paths to the analysis/heating/total, analysis/heating/old, analysis/heating/young and analysis/heating/ionizing directory
-        self.simulation_paths = {}
-        self.output_paths = {}
-        self.ski_paths = {}
+        self.simulation_paths = dict()
+        self.output_paths = dict()
+        self.ski_paths = dict()
 
     # -----------------------------------------------------------------
 

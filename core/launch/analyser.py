@@ -177,7 +177,7 @@ class SimulationAnalyser(Configurable):
 
         # Run the fit model analyser
         self.fit_model_analyser.config.path = self.simulation.analysis.modeling_path
-        self.fit_model_analyser.run(self.simulation, self.basic_analyser.flux_calculator)
+        self.fit_model_analyser.run(self.simulation, self.basic_analyser.timeline_extractor, self.basic_analyser.flux_calculator)
 
     # -----------------------------------------------------------------
 

@@ -85,6 +85,7 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.plotting.path = self.fit_plot_path # The base directory where all of the simulations will have a seperate directory with the plotting analysis output
         self.launcher.config.analysis.extraction.timeline = True # extract the simulation timeline
         self.launcher.config.analysis.plotting.seds = True  # Plot the output SEDs
+        self.launcher.config.analysis.plotting.reference_sed = filesystem.join(self.phot_path, "fluxes.dat") # the path to the reference SED (for plotting the simulated SED against the reference points)
         self.launcher.config.analysis.misc.fluxes = True  # Calculate observed fluxes
         self.launcher.config.analysis.misc.images = True  # Make observed images
         self.launcher.config.analysis.misc.observation_filters = filter_names  # The filters for which to create the observations
@@ -224,9 +225,6 @@ class ParameterExplorer(FittingComponent):
 
             # Add the path to the modeling directory to the simulation object
             simulation.analysis.modeling_path = self.config.path
-
-            # Set the path to the reference SED (for plotting the simulated SED against the reference points)
-            simulation.analysis.plotting.reference_sed = filesystem.join(self.phot_path, "fluxes.dat")
 
             # Save the simulation object
             simulation.save()

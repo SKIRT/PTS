@@ -354,7 +354,7 @@ class SEDFitter(FittingComponent):
             log.debug("Writing the probability distribution of the " + descriptions[parameter_name] + " ...")
 
             # Determine the path to the resulting table file
-            path = filesystem.join(self.fit_prob_path, parameter_name.lower().replace(" ", "_") + ".dat")
+            #path = filesystem.join(self.fit_prob_path, parameter_name.lower().replace(" ", "_") + ".dat")
 
             # Write the table of probabilities for this parameter
             self.distributions[parameter_name].save(path)

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.fitting.parameterexploration Contains the ParameterExplorer class.
+## \package pts.modeling.fitting.advancedparameterexplorer Contains the AdvancedParameterExplorer class.
 
 # -----------------------------------------------------------------
 
@@ -14,11 +14,12 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .parameterexploration import ParameterExplorer
-from ...core.tools import filesystem, tables
+from ...core.tools import tables
 from ...core.tools.logging import log
 from ...core.launch.options import SchedulingOptions
 from ...core.launch.parallelization import Parallelization
 from ...core.launch.runtime import RuntimeEstimator
+from ...core.basics.distribution import Distribution
 
 # -----------------------------------------------------------------
 
@@ -38,6 +39,9 @@ class AdvancedParameterExplorer(ParameterExplorer):
 
         # Call the constructor of the base class
         super(AdvancedParameterExplorer, self).__init__(config)
+
+        # The probability distributions for the different fit parameters
+        self.distributions = dict()
 
         # A dictionary with the scheduling options for the different remote hosts
         self.scheduling_options = dict()
@@ -59,7 +63,26 @@ class AdvancedParameterExplorer(ParameterExplorer):
         # Set the modeling path
         explorer.config.path = arguments.path
 
-        # Set options ...
+        # Set the number of simulations to launch in the batch
+        if arguments.simulations is not None: explorer.config.simulations = arguments.simulations
+
+        # Set the remote host IDs
+        if arguments.remotes is not None: explorer.config.remotes = arguments.remotes
+
+        # Set the limits of the FUV luminosity of the young stellar population
+        if arguments.young is not None:
+            explorer.config.young_stars.min = arguments.young[0]
+            explorer.config.young_stars_max = arguments.young[1]
+
+        # Set the limits of the FUV luminosity of the ionizing stellar population
+        if arguments.ionizing is not None:
+            explorer.config.ionizing_stars.min = arguments.ionizing[0]
+            explorer.config.ionizing_stars.max = arguments.ionizing[1]
+
+        # Set the limits of the dust mass
+        if arguments.dust is not None:
+            explorer.config.dust.min = arguments.dust[0]
+            explorer.config.dust.max = arguments.dust[1]
 
         # Return the new instance
         return explorer
@@ -82,6 +105,9 @@ class AdvancedParameterExplorer(ParameterExplorer):
         # 3. Load the ski file
         self.load_ski()
 
+        # Load the probability distributions for the different parameters
+        self.load_distributions()
+
         # 4. Set the combinations of parameter values
         self.set_parameters()
 
@@ -99,18 +125,7 @@ class AdvancedParameterExplorer(ParameterExplorer):
 
     # -----------------------------------------------------------------
 
-    def set_parameters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    def set_parameter_ranges(self):
+    def load_distributions(self):
 
         """
         This function ...
@@ -118,17 +133,44 @@ class AdvancedParameterExplorer(ParameterExplorer):
         """
 
         # Inform the user
-        log.info("Determining the parameter ranges ...")
+        log.info("Loading the probability distributions for the different fit parameters ...")
 
-        # Get the current values in the ski file prepared by InputInitializer
-        young_luminosity, young_filter = self.ski.get_stellar_component_luminosity("Young stars")
-        ionizing_luminosity, ionizing_filter = self.ski.get_stellar_component_luminosity("Ionizing stars")
-        dust_mass = self.ski.get_dust_component_mass(0)
+        # Loop over the different fit parameters
+        for parameter_name in self.parameter_names:
 
-        # Set the parameter ranges
-        #self.set_young_luminosity_range(young_luminosity)
-        #self.set_ionizing_luminosity_range(ionizing_luminosity)
-        #self.set_dust_mass_range(dust_mass)
+            # Load the probability distribution
+            distribution = Distribution.from_file(self.distribution_table_paths[parameter_name])
+
+            # Set the distribution
+            self.distributions[parameter_name] = distribution
+
+    # -----------------------------------------------------------------
+
+    def set_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Picking random parameter values based on the probability distributions ...")
+
+        # Draw parameters values for the specified number of simulations
+        for _ in range(self.config.simulations):
+
+            # Draw a random FUV luminosity of the young stellar population
+            young_luminosity = self.distributions["FUV young"].random()
+
+            # Draw a random FUV luminosity of the ionizing stellar population
+            ionizing_luminosity = self.distributions["FUV ionizing"].random()
+
+            # Draw a random dust mass
+            dust_mass = self.distributions["Dust mass"].random()
+
+            # Add the combination of parameter values to the list
+            combination = (young_luminosity, ionizing_luminosity, dust_mass)
+            self.parameters.append(combination)
 
     # -----------------------------------------------------------------
 
@@ -202,10 +244,8 @@ class AdvancedParameterExplorer(ParameterExplorer):
             # Set the estimated walltime
             walltimes[host_id] = runtime
 
-        # Create scheduling options
-        for host_id in walltimes:
-            self.scheduling_options[host_id] = SchedulingOptions()
-            self.scheduling_options[host_id].walltime = walltimes[host_id]
+        # Create and set scheduling options for each host that uses a scheduling system
+        for host_id in walltimes: self.scheduling_options[host_id] = SchedulingOptions.from_dict({"walltime": walltimes[host_id]})
 
     # -----------------------------------------------------------------
 

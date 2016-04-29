@@ -28,8 +28,10 @@ from ...core.tools.logging import log
 from ..basics.instruments import FullInstrument
 from ...magic.basics.vector import Position
 from ...core.launch.options import AnalysisOptions
+from ...core.launch.options import SchedulingOptions
 from ...core.simulation.arguments import SkirtArguments
 from ...core.launch.runtime import RuntimeEstimator
+from ...core.launch.parallelization import Parallelization
 
 # -----------------------------------------------------------------
 
@@ -63,6 +65,15 @@ class BestModelLauncher(AnalysisComponent):
 
         # The instruments
         self.instruments = dict()
+
+        # The parallelization scheme
+        self.parallelization = None
+
+        # The scheduling options
+        self.scheduling_options = None
+
+        # The analysis options
+        self.analysis_options = None
 
     # -----------------------------------------------------------------
 
@@ -114,10 +125,13 @@ class BestModelLauncher(AnalysisComponent):
         # 7. Estimate the runtime for the simulation
         if self.remote.scheduler: self.estimate_runtime()
 
-        # 8. Writing
+        # 8. Set the analysis options
+        self.set_analysis_options()
+
+        # 9. Writing
         self.write()
 
-        # 9. Launch the simulations
+        # 10. Launch the simulations
         self.launch()
 
     # -----------------------------------------------------------------
@@ -277,6 +291,37 @@ class BestModelLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def set_parallelization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Determining the parallelization scheme ...")
+
+        # Get the remote host
+        host = self.remote.host
+
+        # Get the number of cores per node for this host
+        cores_per_node = host.clusters[host.cluster_name].cores
+
+        # Determine the number of cores corresponding to 4 full nodes
+        cores = cores_per_node * 4
+
+        # Use 1 core for each process (assume there is enough memory)
+        processes = cores
+
+        # Determine the number of threads per core
+        if host.use_hyperthreading: threads_per_core = host.clusters[host.cluster_name].threads_per_core
+        else: threads_per_core = 1
+
+        # Create a Parallelization instance
+        self.parallelization = Parallelization(cores, threads_per_core, processes)
+
+    # -----------------------------------------------------------------
+
     def estimate_runtime(self):
 
         """
@@ -297,7 +342,50 @@ class BestModelLauncher(AnalysisComponent):
         estimator = RuntimeEstimator(timing_table)
 
         # Estimate the runtime for the configured number of photon packages and the configured remote host
-        runtime = estimator.runtime_for(self.config.remote, self.config.packages, parallelization)
+        runtime = estimator.runtime_for(self.config.remote, self.config.packages, self.parallelization)
+
+        # Create the scheduling options, set the walltime
+        self.scheduling_options = SchedulingOptions()
+        self.scheduling_options.walltime = runtime
+
+    # -----------------------------------------------------------------
+
+    def set_analysis_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the names of the filters for which we have photometry
+        filter_names = self.get_filter_names()
+
+        # Analysis options
+        self.analysis_options = AnalysisOptions()
+
+        # Set options for extraction
+        self.analysis_options.extraction.path = self.analysis_extr_path
+        self.analysis_options.extraction.progress = True
+        self.analysis_options.extraction.timeline = True
+
+        # Set options for plotting
+        self.analysis_options.plotting.path = self.analysis_plot_path
+        self.analysis_options.plotting.progress = True
+        self.analysis_options.plotting.timeline = True
+        self.analysis_options.plotting.seds = True
+        self.analysis_options.plotting.grids = True
+        self.analysis_options.plotting.reference_sed = fs.join(self.phot_path, "fluxes.dat")
+
+        # Set miscellaneous options
+        self.analysis_options.misc.path = self.analysis_misc_path
+        self.analysis_options.misc.rgb = True
+        self.analysis_options.misc.wave = True
+        self.analysis_options.misc.fluxes = True
+        self.analysis_options.misc.images = True
+        self.analysis_options.misc.observation_filters = filter_names
+
+        # Set the modeling path
+        self.analysis_options.modeling_path = self.config.path
 
     # -----------------------------------------------------------------
 
@@ -397,36 +485,6 @@ class BestModelLauncher(AnalysisComponent):
         :return:
         """
 
-        # Get the names of the filters for which we have photometry
-        filter_names = self.get_filter_names()
-
-        # Scheduling options
-        scheduling_options = None
-
-        # Analysis options
-        analysis_options = AnalysisOptions()
-
-        # Set options for extraction
-        analysis_options.extraction.path = self.analysis_extr_path
-        analysis_options.extraction.progress = True
-        analysis_options.extraction.timeline = True
-
-        # Set options for plotting
-        analysis_options.plotting.path = self.analysis_plot_path
-        analysis_options.plotting.progress = True
-        analysis_options.plotting.timeline = True
-        analysis_options.plotting.seds = True
-        analysis_options.plotting.grids = True
-        analysis_options.plotting.reference_sed = fs.join(self.phot_path, "fluxes.dat")
-
-        # Set miscellaneous options
-        analysis_options.misc.path = self.analysis_misc_path
-        analysis_options.misc.rgb = True
-        analysis_options.misc.wave = True
-        analysis_options.misc.fluxes = True
-        analysis_options.misc.images = True
-        analysis_options.misc.observation_filters = filter_names
-
         # Create the SKIRT arguments object
         arguments = SkirtArguments()
 
@@ -437,7 +495,11 @@ class BestModelLauncher(AnalysisComponent):
         arguments.output_path = self.analysis_out_path
         arguments.logging.verbose = True
 
+        # Set the parallelization options
+        arguments.parallel.processes = self.parallelization.processes
+        arguments.parallel.threads = self.parallelization.threads
+
         # Run the simulation
-        simulation = self.remote.run(arguments, scheduling_options=scheduling_options, analysis_options=analysis_options)
+        simulation = self.remote.run(arguments, scheduling_options=self.scheduling_options, analysis_options=self.analysis_options)
 
 # -----------------------------------------------------------------

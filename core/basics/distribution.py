@@ -12,6 +12,7 @@
 # Import standard modules
 import math
 import numpy as np
+from scipy.stats import rv_continuous
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from scipy.interpolate import spline
@@ -51,6 +52,8 @@ class Distribution(object):
         self.percentile_84 = float(percentile_84) if percentile_84 is not None else None
 
         self.name = name
+
+        self._rv = None
 
     # -----------------------------------------------------------------
 
@@ -472,6 +475,39 @@ class Distribution(object):
         y = [y_smooth[i] for i in m]
 
         return x, y
+
+    # -----------------------------------------------------------------
+
+    def get_rv(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self._rv is None:
+
+            class RVDistribution(rv_continuous):
+                def _pdf(self, x): return np.exp(-x ** 2 / 2.) / np.sqrt(2.0 * np.pi) # TODO
+
+            self._rv = RVDistribution()
+
+        return self._rv
+
+    # -----------------------------------------------------------------
+
+    def random(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the distribution function (in Scipy's API)
+        rv_function = self.get_rv()
+
+        # Get a random variate
+        return rv_function.rvs()
 
     # -----------------------------------------------------------------
 

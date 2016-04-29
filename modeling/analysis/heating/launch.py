@@ -57,7 +57,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         self.ski = None
 
         # The ski files for the different contributions
-        self.ski_files = {}
+        self.ski_files = dict()
 
     # -----------------------------------------------------------------
 

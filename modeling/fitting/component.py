@@ -38,6 +38,9 @@ class FittingComponent(ModelingComponent):
 
         # -- Attributes --
 
+        # The names of the fit parameters
+        self.parameter_names = ["FUV young", "FUV ionizing", "Dust mass"]
+
         # The path to the fit/in directory
         self.fit_in_path = None
 
@@ -73,6 +76,9 @@ class FittingComponent(ModelingComponent):
 
         # The path to the scripts directory
         self.fit_scripts_path = None
+
+        # The paths to the probability distribution tables
+        self.distribution_table_paths = dict()
 
     # -----------------------------------------------------------------
 
@@ -172,5 +178,14 @@ class FittingComponent(ModelingComponent):
 
             # Write the (empty) table
             tables.write(table, self.timing_table_path, format="ascii.ecsv")
+
+        # Set the paths to the probability distribution tables
+        for parameter_name in self.parameter_names:
+
+            # Determine the path to the table
+            path = fs.join(self.fit_prob_path, parameter_name.lower() + ".dat")
+
+            # Set the path
+            self.distribution_table_paths[parameter_name] = path
 
 # -----------------------------------------------------------------

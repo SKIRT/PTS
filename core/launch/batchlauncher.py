@@ -181,13 +181,13 @@ class BatchLauncher(Configurable):
             host_ids = []
 
             # Loop over the IDs of all the hosts used by the BatchLauncher
-            for id in self.host_ids:
+            for host_id in self.host_ids:
 
                 # Create Host instance
-                host = Host(id)
+                host = Host(host_id)
 
                 # If it's a scheduler, add it to the list
-                if host.scheduler: host_ids.append(id)
+                if host.scheduler: host_ids.append(host_id)
 
             # Return the list of hosts which use a scheduling system
             return host_ids

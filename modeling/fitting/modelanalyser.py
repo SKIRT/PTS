@@ -46,6 +46,9 @@ class FitModelAnalyser(FittingComponent):
         # The simulation object
         self.simulation = None
 
+        # The timeline extractor
+        self.te = None
+
         # The log file of the simulation
         self.log_file = None
 
@@ -69,17 +72,18 @@ class FitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, flux_calculator):
+    def run(self, simulation, timeline_extractor, flux_calculator):
 
         """
         This function ...
         :param simulation:
+        :param timeline_extractor:
         :param flux_calculator:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(simulation, flux_calculator)
+        self.setup(simulation, timeline_extractor, flux_calculator)
 
         # 2. Load the log file of the simulation
         self.load_log_file()
@@ -110,6 +114,7 @@ class FitModelAnalyser(FittingComponent):
 
         # Set the attributes to default values
         self.simulation = None
+        self.te = None
         self.log_file = None
         self.ski = None
         self.flux_calculator = None
@@ -119,11 +124,12 @@ class FitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation, flux_calculator):
+    def setup(self, simulation, timeline_extractor, flux_calculator):
 
         """
         This function ...
         :param simulation:
+        :param timeline_extractor:
         :param flux_calculator:
         :return:
         """
@@ -133,6 +139,9 @@ class FitModelAnalyser(FittingComponent):
 
         # Make a local reference to the simulation object
         self.simulation = simulation
+
+        # Make a reference to the timeline extractor
+        self.te = timeline_extractor
 
         # Make a local reference to the flux calculator
         if flux_calculator is None:

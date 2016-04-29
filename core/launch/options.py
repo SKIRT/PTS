@@ -86,6 +86,30 @@ class SchedulingOptions(object):
         self.walltime = None
         self.local_jobscript_path = None
 
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_dict(cls, dictionary):
+
+        """
+        This function ...
+        :param dictionary:
+        :return:
+        """
+
+        # Create a new SchedulingOptions instance
+        options = cls()
+
+        if "nodes" in dictionary: options.nodes = dictionary["nodes"]
+        if "ppn" in dictionary: options.ppn = dictionary["ppn"]
+        if "mail" in dictionary: options.mail = dictionary["mail"]
+        if "full_node" in dictionary: options.full_node = dictionary["full_node"]
+        if "walltime" in dictionary: options.walltime = dictionary["walltime"]
+        if "local_jobscript_path" in dictionary: options.local_jobscript_path = dictionary["local jobscript path"]
+
+        # Return the scheduling options object
+        return options
+
 # -----------------------------------------------------------------
 
 class AnalysisOptions(Options):
