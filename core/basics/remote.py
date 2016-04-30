@@ -179,10 +179,10 @@ class Remote(object):
         self.execute("chmod +x " + remote_script_path, output=False)
 
         # Record the screen output: 'script' command
-        if screen_output_path is not None: self.execute("script " + screen_output_path)
+        #if screen_output_path is not None: self.execute("script " + screen_output_path)
 
         # Create the screen session and execute the batch script
-        self.execute("screen -S " + name + " -d -m " + remote_script_path, output=False)
+        self.execute("screen -S " + name + " -L -d -m " + remote_script_path, output=False)
 
         # Remove the remote shell script
         self.execute("rm " + remote_script_path, output=False)

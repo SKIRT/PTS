@@ -21,7 +21,7 @@ from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
-from ...core.tools import tables
+from ...core.tools import tables, time
 from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import SkiFile
 from ...core.tools.logging import log
@@ -328,7 +328,7 @@ class BestModelLauncher(AnalysisComponent):
         self.ski.setpackages(self.config.packages)
 
         # Enable all writing options for analysis
-        self.ski.enable_all_writing_options()
+        #self.ski.enable_all_writing_options()
 
     # -----------------------------------------------------------------
 
@@ -563,7 +563,14 @@ class BestModelLauncher(AnalysisComponent):
         arguments.parallel.processes = self.parallelization.processes
         arguments.parallel.threads = self.parallelization.threads
 
+        # Debugging: save the screen output in a text file
+        remote_skirt_dir_path = self.remote.skirt_dir
+        remote_skirt_run_debug_path = fs.join(remote_skirt_dir_path, "run-debug")
+        if not self.remote.is_directory(remote_skirt_run_debug_path): self.remote.create_directory(remote_skirt_run_debug_path)
+        screen_output_path = fs.join(remote_skirt_run_debug_path, time.unique_name("screen") + ".txt")
+
         # Run the simulation
-        simulation = self.remote.run(arguments, scheduling_options=self.scheduling_options, analysis_options=self.analysis_options)
+        simulation = self.remote.run(arguments, scheduling_options=self.scheduling_options,
+                                     analysis_options=self.analysis_options, screen_output_path=screen_output_path)
 
 # -----------------------------------------------------------------

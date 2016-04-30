@@ -226,7 +226,7 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def start_queue_screen(self, screen_name, local_script_path, screen_output_path):
+    def start_queue_screen(self, screen_name, local_script_path, screen_output_path=None):
 
         """
         This function ...
