@@ -18,6 +18,7 @@ from ..tools import filesystem
 from ..basics.filter import Filter
 from ...magic.core.image import Image
 from ...magic.core.frame import Frame
+from ..tools.special import remote_filter_convolution
 
 # -----------------------------------------------------------------
 
@@ -57,13 +58,14 @@ class ObservedImageMaker(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, output_path=None, filter_names=None):
+    def run(self, simulation, output_path=None, filter_names=None, host_id=None):
 
         """
         This function ...
         :param simulation:
         :param output_path:
         :param filter_names:
+        :param host_id:
         :return:
         """
 
@@ -80,7 +82,7 @@ class ObservedImageMaker(object):
         self.create_filters()
 
         # Make the observed images
-        self.make_images()
+        self.make_images(host_id)
 
         # Write the results
         if output_path is not None: self.write(output_path)
@@ -107,22 +109,23 @@ class ObservedImageMaker(object):
             log.debug("Constructing the " + filter_name + " filter ...")
 
             # Create the filter
-            filter = Filter.from_string(filter_name)
+            fltr = Filter.from_string(filter_name)
 
             # Add the filter to the list
-            self.filters.append(filter)
+            self.filters.append(fltr)
 
     # -----------------------------------------------------------------
 
-    def make_images(self):
+    def make_images(self, host_id=None):
 
         """
         This function ...
+        :param host_id:
         :return:
         """
 
         # Inform the user
-        log.info("Making the observed images ...")
+        log.info("Making the observed images (this may take a while) ...")
 
         # Loop over the different simulated images
         for path in self.fits_paths:
@@ -136,26 +139,40 @@ class ObservedImageMaker(object):
             # Create a dictionary to contain the observed images for this FITS file
             images = dict()
 
-            # Load the simulated image
-            datacube = Image.from_file(path)
+            # The filter convolution is performed remotely
+            if host_id is not None:
 
-            # Convert the datacube to a numpy array where wavelength is the third dimension
-            fluxdensities = datacube.asarray()
+                # Upload the datacube, wavelength grid and filter properties, perform the convolution on the remote and get the resulting image frames back (as a dictionary where the keys are the filter names)
+                frames = remote_filter_convolution(host_id, path, self.wavelengths, self.filters)
 
-            # densities must be per wavelength instead of per frequency!
+                # Add the resulting image frames to the dictionary
+                for filter_name in frames:
+                    # Add the observed image to the dictionary
+                    images[filter_name] = frames[filter_name]
 
-            # Loop over the different filters
-            for filter in self.filters:
+            # The calculation is performed locally
+            else:
 
-                # Debugging
-                log.debug("Making the observed image for the " + filter.name + " filter ...")
+                # Load the simulated image
+                datacube = Image.from_file(path)
 
-                # Calculate the observed image
-                data = filter.convolve(self.wavelengths, fluxdensities)
-                image = Frame(data)
+                # Convert the datacube to a numpy array where wavelength is the third dimension
+                fluxdensities = datacube.asarray()
 
-                # Add the observed image to the dictionary
-                images[filter.name] = image
+                # densities must be per wavelength instead of per frequency!
+
+                # Loop over the different filters
+                for filter in self.filters:
+
+                    # Debugging
+                    log.debug("Making the observed image for the " + filter.name + " filter ...")
+
+                    # Calculate the observed image frame
+                    data = filter.convolve(self.wavelengths, fluxdensities)
+                    frame = Frame(data)
+
+                    # Add the observed image to the dictionary
+                    images[filter.name] = frame
 
             # Add the dictionary of images of the current datacube to the complete images dictionary (with the datacube name as a key)
             self.images[datacube_name] = images

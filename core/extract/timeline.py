@@ -485,9 +485,9 @@ def verify_phases(process_list, phase_list, start_list, end_list):
             start_list.insert(entry_index, end_list[entry_index-1])
             end_list.insert(entry_index, missing_end)
 
-        for rank in range(1,nprocs):
+        #for rank in range(1,nprocs):
 
-            print(phase_process_0, phase_list[process_indices[rank]+entry_index])
-            print(rank, process_list[process_indices[rank]+entry_index])
+            #print(phase_process_0, phase_list[process_indices[rank]+entry_index])
+            #print(rank, process_list[process_indices[rank]+entry_index])
 
 # -----------------------------------------------------------------

@@ -252,6 +252,31 @@ def remove_file(path):
 
 # -----------------------------------------------------------------
 
+def size(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return os.path.getsize(path)
+
+# -----------------------------------------------------------------
+
+def ls(path=None):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    if path is None: path = cwd()
+    return os.listdir(path)
+
+# -----------------------------------------------------------------
+
 def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
                   extensions=False, returns="path", exact_name=None, startswith=None, endswith=None, sort=None):
 

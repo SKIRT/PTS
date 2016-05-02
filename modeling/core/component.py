@@ -12,12 +12,10 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import os
-
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
-from ...core.tools import inspection, filesystem, tables
+from ...core.tools import inspection, tables
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -69,26 +67,26 @@ class ModelingComponent(Configurable):
         # -- Attributes --
 
         # Get the name of the galaxy (the name of the base directory)
-        self.galaxy_name = os.path.basename(self.config.path)
+        self.galaxy_name = fs.name(self.config.path)
 
         # Get the full paths to the necessary subdirectories
-        self.data_path = filesystem.join(self.config.path, "data")
-        self.prep_path = os.path.join(self.config.path, "prep")
-        self.truncation_path = filesystem.join(self.config.path, "truncated")
-        self.phot_path = filesystem.join(self.config.path, "phot")
-        self.maps_path = os.path.join(self.config.path, "maps")
-        self.components_path = os.path.join(self.config.path, "components")
-        self.fit_path = os.path.join(self.config.path, "fit")
-        self.analysis_path = os.path.join(self.config.path, "analysis")
+        self.data_path = fs.join(self.config.path, "data")
+        self.prep_path = fs.join(self.config.path, "prep")
+        self.truncation_path = fs.join(self.config.path, "truncated")
+        self.phot_path = fs.join(self.config.path, "phot")
+        self.maps_path = fs.join(self.config.path, "maps")
+        self.components_path = fs.join(self.config.path, "components")
+        self.fit_path = fs.join(self.config.path, "fit")
+        self.analysis_path = fs.join(self.config.path, "analysis")
 
         # Determine the path to the kernels user directory
-        self.kernels_path = os.path.join(inspection.pts_user_dir, "kernels")
+        self.kernels_path = fs.join(inspection.pts_user_dir, "kernels")
 
         # Check whether the 'data' directory exists, otherwise exit with an error
-        if filesystem.is_directory(self.data_path):
+        if fs.is_directory(self.data_path):
 
             # Create the prep path if it does not exist yet
-            filesystem.create_directories([self.prep_path, self.truncation_path, self.maps_path, self.phot_path, self.maps_path, self.components_path, self.fit_path, self.analysis_path])
+            fs.create_directories([self.prep_path, self.truncation_path, self.maps_path, self.phot_path, self.maps_path, self.components_path, self.fit_path, self.analysis_path])
 
         # Exit with an error
         else: raise ValueError("The current working directory is not a radiative transfer modeling directory (the data directory is missing)")
@@ -103,7 +101,7 @@ class ModelingComponent(Configurable):
         """
 
         filter_names = []
-        fluxes_table_path = filesystem.join(self.phot_path, "fluxes.dat")
+        fluxes_table_path = fs.join(self.phot_path, "fluxes.dat")
         fluxes_table = tables.from_file(fluxes_table_path)
         # Loop over the entries in the fluxes table, get the filter
         for entry in fluxes_table:

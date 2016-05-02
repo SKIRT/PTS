@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.clear Clear retrieved, crashed, cancelled and aborted simulations
+## \package pts.do.core.unretrieve Reverse the retrieval step for a particular simulation.
 
 # -----------------------------------------------------------------
 
@@ -17,7 +17,7 @@ import argparse
 
 # Import the relevant PTS classes and modules
 from pts.core.simulation.simulation import RemoteSimulation
-from pts.core.tools import filesystem
+from pts.core.tools import filesystem as fs
 from pts.core.basics.remote import Remote
 from pts.core.tools import logging, time, parsing
 
@@ -38,9 +38,7 @@ arguments = parser.parse_args()
 remote = Remote()
 remote.setup(arguments.remote)
 
-
-
-for path in filesystem.files_in_path(filesystem.cwd(), extension="sim"):
+for path in fs.files_in_path(fs.cwd(), extension="sim"):
     
     # Create simulation
     sim = RemoteSimulation.from_file(path)
@@ -55,11 +53,9 @@ for path in filesystem.files_in_path(filesystem.cwd(), extension="sim"):
     
     if not remote.is_directory(remote_simulation_path): remote.create_directory(remote_simulation_path)
     if not remote.is_directory(remote_output_path): remote.create_directory(remote_output_path)
-    
-    #nancy.upload(local_output_path, remote_output_path)
-    
-    for filepath in filesystem.files_in_path(local_output_path):
-        nancy.upload(filepath, remote_output_path, show_output=True)
+
+    for filepath in fs.files_in_path(local_output_path):
+        remote.upload(filepath, remote_output_path, show_output=True)
     
     sim.retrieved = False
     

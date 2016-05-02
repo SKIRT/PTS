@@ -25,6 +25,10 @@ from ..tools import parsing
 
 # -----------------------------------------------------------------
 
+connected_remotes = dict()
+
+# -----------------------------------------------------------------
+
 class Remote(object):
 
     """
@@ -135,6 +139,9 @@ class Remote(object):
         # Check whether connection was succesful
         if not self.connected: raise RuntimeError("Connection failed")
 
+        # If the connection was succesful, add the remote to the dictionary of currently connected remotes
+        if self.connected: connected_remotes[self.host.id] = self
+
     # -----------------------------------------------------------------
 
     def logout(self):
@@ -148,7 +155,11 @@ class Remote(object):
         log.info("Logging out from the remote environment ...")
 
         # Disconnect
-        if self.connected: self.ssh.logout()
+        if self.connected:
+
+            self.ssh.logout()
+            connected_remotes[self.host.id] = None
+            self.connected = False
 
         # Disconnect from the VPN service if necessary
         if self.vpn is not None: self.vpn.disconnect()

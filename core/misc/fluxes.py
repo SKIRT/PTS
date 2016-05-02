@@ -20,7 +20,8 @@ from astropy.units import Unit, spectral_density
 from astropy import constants
 
 # Import the relevant PTS classes and modules
-from ..tools import tables, filesystem
+from ..tools import tables
+from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..basics.filter import Filter
 from ...modeling.core.sed import SED
@@ -128,7 +129,7 @@ class ObservedFluxCalculator(object):
         for sed_path in self.sed_paths:
 
             # Get the name of the SED
-            sed_name = filesystem.name(sed_path).split("_sed")[0]
+            sed_name = fs.name(sed_path).split("_sed")[0]
 
             # Debugging
             log.debug("Calculating the observed fluxes for the " + sed_name + " SED ...")
@@ -190,7 +191,7 @@ class ObservedFluxCalculator(object):
         for name in self.tables:
 
             # Determine the path to the output flux table
-            path = filesystem.join(output_path, name + "_fluxes.dat")
+            path = fs.join(output_path, name + "_fluxes.dat")
 
             # Write out the flux table
             tables.write(self.tables[name], path)

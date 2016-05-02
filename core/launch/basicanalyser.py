@@ -458,11 +458,11 @@ class BasicAnalyser(Configurable):
         """
 
         # Inform the user
-        log.info("Making the observed images ...")
+        log.info("Making the observed images (this may take a while) ...")
 
         # Create and run an ObservedImageMaker object
         self.image_maker = ObservedImageMaker()
-        self.image_maker.run(self.simulation, output_path=self.misc_options.path, filter_names=self.misc_options.observation_filters)
+        self.image_maker.run(self.simulation, output_path=self.misc_options.path, filter_names=self.misc_options.observation_filters, host_id=self.misc_options.make_images_remote)
 
 # -----------------------------------------------------------------
 
