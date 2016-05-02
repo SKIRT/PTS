@@ -105,10 +105,12 @@ class TimeLineExtractor(object):
             if log_file.t_0 < t_0: t_0 = log_file.t_0
 
         # Loop over the log files again and fill the column lists
+        unique_processes = []
         for log_file in self.log_files:
 
             # Get the process rank associated with this log file
             process = log_file.process
+            unique_processes.append(process)
 
             # Keep track of the current phase while looping over the log file entries
             current_phase = log_file.contents["Phase"][0]
@@ -141,6 +143,9 @@ class TimeLineExtractor(object):
 
             # Add the last recorded time in the log file as the end of the last simulation phase
             end_list.append((log_file.t_last - t_0).total_seconds())
+
+        # Fix for when the number of phases does not correspond between the different processes
+        if len(unique_processes) > 1: verify_phases(process_list, phase_list, start_list, end_list)
 
         # Create the table data structures
         names = ["Process rank", "Simulation phase", "Start time", "End time"]
@@ -434,5 +439,55 @@ class TimeLineExtractor(object):
         """
 
         return self.communication + self.waiting
+
+# -----------------------------------------------------------------
+
+def verify_phases(process_list, phase_list, start_list, end_list):
+
+    """
+    This function ...
+    :param process_list:
+    :param phase_list:
+    :param start_list:
+    :param end_list:
+    :return:
+    """
+
+    # TODO: right now, it does not fix everything ! only the case where the root process misses a phase at the end compared to the other processes
+
+    # Get the number of processes
+    nprocs = max(process_list) + 1
+
+    # For each process rank, get the index in the columns where the entries of that process start
+    process_indices = [None] * nprocs
+    previous_process = -1
+    for i in range(len(process_list)):
+        if process_list[i] == previous_process: continue
+        else:
+            process_indices[process_list[i]] = i
+            previous_process = process_list[i]
+            if previous_process == nprocs - 1: break
+
+    max_number_of_entries = max([process_indices[i+1]-process_indices[i] for i in range(len(process_indices)-1)])
+
+    for entry_index in range(max_number_of_entries):
+
+        # Check whether the phases correspond and if the process ranks are actually the ranks we loop over below
+        phase_process_0 = phase_list[entry_index]
+        if process_list[entry_index] != 0: # but already an entry of process rank 1
+            if process_list[entry_index] != 1: raise RuntimeError("I don't know how to solve this inconsistent set of columns")
+
+            missing_phase = phase_list[process_indices[1]+entry_index]
+            missing_end = end_list[process_indices[1]+entry_index]
+
+            process_list.insert(entry_index, 0)
+            phase_list.insert(entry_index, missing_phase)
+            start_list.insert(entry_index, end_list[entry_index-1])
+            end_list.insert(entry_index, missing_end)
+
+        for rank in range(1,nprocs):
+
+            print(phase_process_0, phase_list[process_indices[rank]+entry_index])
+            print(rank, process_list[process_indices[rank]+entry_index])
 
 # -----------------------------------------------------------------

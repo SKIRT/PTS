@@ -325,7 +325,7 @@ class BasicAnalyser(Configurable):
                     plotter.add_modeled_sed(sed, contribution, residuals=(contribution == "total"))
 
                 # Add the reference SED
-                #plotter.add_observed_sed(reference_sed, "observation")
+                plotter.add_observed_sed(reference_sed, "observation")
 
                 # Determine the path to the plot file
                 path = fs.join(self.plotting_options.path, "sed_" + instr_name + "." + self.plotting_options.format)
