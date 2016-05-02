@@ -121,7 +121,8 @@ class RGBImage:
 
         # FITS file
         elif isinstance(source,types.StringTypes) and source.lower().endswith(".fits"):
-            data = pyfits.getdata(arch.openbinary(os.path.expanduser(source))).T
+            try: data = pyfits.getdata(arch.openbinary(os.path.expanduser(source))).T
+            except TypeError: raise ValueError("Something is wrong with the FITS file (the file may have been truncated)")
             # the above gives us an array with shape (nx, ny) or (nx, ny, nlambda)
             if data.ndim == 2:
                 self.setarr(np.dstack(( data,data,data )))

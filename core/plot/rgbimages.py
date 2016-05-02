@@ -17,6 +17,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import warnings
 import numpy as np
 
 # Import astronomical modules
@@ -54,8 +55,14 @@ def makergbimages(simulation, wavelength_tuples=None, from_percentile=30, to_per
             # determine the appropriate pixel range for ALL output images for this galaxy
             ranges = []
             for outname in outnames:
-                im = RGBImage(outname, frames=frames)
-                ranges += list(im.percentilepixelrange(from_percentile,to_percentile))
+                try:
+                    im = RGBImage(outname, frames=frames)
+                    ranges += list(im.percentilepixelrange(from_percentile, to_percentile))
+                except ValueError:
+                    warnings.warn("Something is wrong with " + outname + ": skipping")
+                    outnames.remove(outname)
+                    continue
+
             rmin = min(ranges)
             rmax = max(ranges)
 
