@@ -19,9 +19,9 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools.logging import log
-from ...core.tools import filesystem, tables
+from ...core.tools import filesystem as fs
+from ...core.tools import tables
 from ..core.sed import ObservedSED
-from ...core.launch.timing import TimingTable
 
 # -----------------------------------------------------------------
 
@@ -47,15 +47,6 @@ class FitModelAnalyser(FittingComponent):
         # The simulation object
         self.simulation = None
 
-        # The timeline extractor
-        self.te = None
-
-        # The log file of the simulation
-        self.log_file = None
-
-        # The ski file corresponding to the simulation
-        self.ski = None
-
         # The flux calculator
         self.flux_calculator = None
 
@@ -73,18 +64,17 @@ class FitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, timeline_extractor, flux_calculator):
+    def run(self, simulation, flux_calculator):
 
         """
         This function ...
         :param simulation:
-        :param timeline_extractor:
         :param flux_calculator:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(simulation, timeline_extractor, flux_calculator)
+        self.setup(simulation, flux_calculator)
 
         # 2. Load the log file of the simulation
         self.load_log_file()
@@ -115,9 +105,6 @@ class FitModelAnalyser(FittingComponent):
 
         # Set the attributes to default values
         self.simulation = None
-        self.te = None
-        self.log_file = None
-        self.ski = None
         self.flux_calculator = None
         self.fluxes = None
         self.differences = None
@@ -125,12 +112,11 @@ class FitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation, timeline_extractor, flux_calculator):
+    def setup(self, simulation, flux_calculator):
 
         """
         This function ...
         :param simulation:
-        :param timeline_extractor:
         :param flux_calculator:
         :return:
         """
@@ -140,9 +126,6 @@ class FitModelAnalyser(FittingComponent):
 
         # Make a local reference to the simulation object
         self.simulation = simulation
-
-        # Make a reference to the timeline extractor
-        self.te = timeline_extractor
 
         # Make a local reference to the flux calculator
         if flux_calculator is None:
@@ -160,24 +143,6 @@ class FitModelAnalyser(FittingComponent):
         dtypes = ["S5", "S7", "float64", "float64", "float64"]
         self.differences = tables.new(data, names, dtypes=dtypes)
 
-        # Load the ski file
-        self.ski = self.simulation.parameters()
-
-    # -----------------------------------------------------------------
-
-    def load_log_file(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the log file produced by the simulation ...")
-
-        # Get the log file produced by the simulation
-        self.log_file = self.simulation.log_file
-
     # -----------------------------------------------------------------
 
     def load_observed_sed(self):
@@ -191,7 +156,7 @@ class FitModelAnalyser(FittingComponent):
         log.info("Loading the observed SED ...")
 
         # Determine the path to the fluxes table
-        fluxes_path = filesystem.join(self.phot_path, "fluxes.dat")
+        fluxes_path = fs.join(self.phot_path, "fluxes.dat")
 
         # Load the observed SED
         self.fluxes = ObservedSED.from_file(fluxes_path)
@@ -286,56 +251,11 @@ class FitModelAnalyser(FittingComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the timing information
-        self.write_timing()
-
         # Write the flux differences
         self.write_differences()
 
         # Write the chi-squared value
         self.write_chi_squared()
-
-    # -----------------------------------------------------------------
-
-    def write_timing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the timing information of the simulation ...")
-
-        # Get the name of the host on which the simulation was run
-        host_id = self.simulation.host_id
-        cluster_name = self.simulation.cluster_name
-
-        # Get the parallelization object from the simulation
-        parallelization = self.simulation.parallelization
-
-        # Get the paralleliation properties
-        cores = parallelization.cores
-        hyperthreads = parallelization.threads_per_core
-        processes = parallelization.processes
-
-        # Get the number of photon packages
-        packages = self.ski.packages()
-
-        # Get the total_runtime (in seconds)
-        total_runtime = self.log_file.total_runtime
-
-        # Get the serial, parallel runtime and runtime overhead
-        serial_runtime = self.te.serial
-        parallel_runtime = self.te.parallel
-        runtime_overhead = self.te.overhead
-
-        # Open the timing table
-        timing_table = TimingTable(self.timing_table_path)
-
-        # Add an entry to the timing table
-        timing_table.add_entry(self.simulation.name, self.simulation.submitted_at, host_id, cluster_name, cores,
-                               hyperthreads, processes, packages, total_runtime, serial_runtime, parallel_runtime, runtime_overhead)
 
     # -----------------------------------------------------------------
 
@@ -350,7 +270,7 @@ class FitModelAnalyser(FittingComponent):
         log.info("Writing the table with the flux-density differences for the current model ...")
 
         # Determine the path to the differences table
-        path = filesystem.join(self.fit_res_path, self.simulation.name, "differences.dat")
+        path = fs.join(self.fit_res_path, self.simulation.name, "differences.dat")
 
         # Save the differences table
         tables.write(self.differences, path)

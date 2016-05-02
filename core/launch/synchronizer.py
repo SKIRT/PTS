@@ -266,6 +266,8 @@ class RemoteSynchronizer(Configurable):
 
                     formatter = format.BLUE
 
+                    simulation_status += " (do 'pts status' again to retrieve)"
+
                 # Running simulation
                 elif "running" in simulation_status:
 

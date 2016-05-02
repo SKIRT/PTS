@@ -18,7 +18,8 @@ from astropy.units import Unit, spectral
 
 # Import the relevant PTS classes and modules
 from ..core.sed import ObservedSED
-from ...core.tools import tables, filesystem
+from ...core.tools import tables
+from ...core.tools import filesystem as fs
 from ...core.basics.filter import Filter
 from ...core.tools.logging import log
 from ...core.basics.errorbar import ErrorBar
@@ -1337,7 +1338,7 @@ class SEDFetcher(Configurable):
         path = self.full_output_path(self.config.writing.seds_path)
 
         # Create the SEDs directory if necessary
-        filesystem.create_directory(path)
+        fs.create_directory(path)
 
         # Loop over the different SEDs
         for label in self.seds:
@@ -1346,7 +1347,7 @@ class SEDFetcher(Configurable):
             log.debug("Writing SED from " + label)
 
             # Determine the path to the new SED file
-            sed_path = filesystem.join(path, label + ".dat")
+            sed_path = fs.join(path, label + ".dat")
 
             # Save the SED at the specified location
             self.seds[label].save(sed_path)

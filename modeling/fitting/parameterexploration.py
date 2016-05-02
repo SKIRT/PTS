@@ -79,7 +79,12 @@ class ParameterExplorer(FittingComponent):
             filter_id = entry["Instrument"] + "." + entry["Band"]
             filter_names.append(filter_id)
 
-        # Set options for the BatchLauncher
+        # Set options for the BatchLauncher: basic options
+        self.launcher.config.shared_input = True  # The input directories for the different simulations are shared
+        self.launcher.config.group_simulations = True  # group multiple simulations into a single job (because a very large number of simulations will be scheduled)
+        self.launcher.config.remotes = self.config.remotes  # the remote hosts on which to run the simulations
+
+        # Set options for the BatchLauncher: simulation analysis options
         self.launcher.config.analysis.extraction.path = self.fit_res_path
         self.launcher.config.analysis.misc.path = self.fit_res_path # The base directory where all of the simulations will have a seperate directory with the 'misc' analysis output
         self.launcher.config.analysis.plotting.path = self.fit_plot_path # The base directory where all of the simulations will have a seperate directory with the plotting analysis output
@@ -90,9 +95,8 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.misc.images = True  # Make observed images
         self.launcher.config.analysis.misc.observation_filters = filter_names  # The filters for which to create the observations
         self.launcher.config.analysis.plotting.format = "png" # plot in PNG format so that an animation can be made from the fit SEDs
-        self.launcher.config.shared_input = True   # The input directories for the different simulations are shared
-        self.launcher.config.group_simulations = True # group multiple simulations into a single job (because a very large number of simulations will be scheduled)
-        self.launcher.config.remotes = self.config.remotes   # the remote hosts on which to run the simulations
+        self.launcher.config.analysis.timing_table_path = self.timing_table_path # The path to the timing table file
+        self.launcher.config.analysis.memory_table_path = self.memory_table_path # The path to the memory table file
 
     # -----------------------------------------------------------------
 

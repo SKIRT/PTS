@@ -694,6 +694,22 @@ class SkirtRemote(Remote):
                             if "sed" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif filename.endswith("_total.fits"):
                             if "image" in simulation.retrieve_types: copy_paths.append(filepath)
+                            elif "image-total" in simulation.retrieve_types: copy_paths.append(filepath)
+                        elif filename.endswith("_direct.fits"):
+                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
+                            elif "image-direct" in simulation.retrieve_types: copy_paths.append(filepath)
+                        elif filename.endswith("_transparent.fits"):
+                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
+                            elif "image-transparent" in simulation.retrieve_types: copy_paths.append(filepath)
+                        elif filename.endswith("_scattered.fits"):
+                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
+                            elif "image-scattered" in simulation.retrieve_types: copy_paths.append(filepath)
+                        elif filename.endswith("_dust.fits"):
+                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
+                            elif "image-dust" in simulation.retrieve_types: copy_paths.append(filepath)
+                        elif filename.endswith("_dustscattered.fits"):
+                            if "image" in simulation.retrieve_types: copy_paths.append(filepath)
+                            elif "image-dustscattered" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif filename.endswith("_ds_celltemps.dat"):
                             if "celltemp" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif "_log" in filename and filename.endswith(".txt"):

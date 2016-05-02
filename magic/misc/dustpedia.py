@@ -5,7 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.misc.dustpedia Contains the DustPedia class, which provides an interface to the DustPedia database.
+## \package pts.magic.misc.dustpedia Contains the DustPediaDatabase class,
+#  which provides an interface to the DustPedia database.
 
 # -----------------------------------------------------------------
 
@@ -39,7 +40,7 @@ user_link = "http://dustpedia.astro.noa.gr/Account/UserProfile"
 
 # -----------------------------------------------------------------
 
-class DustPedia(object):
+class DustPediaDatabase(object):
 
     """
     This class ...
@@ -303,6 +304,18 @@ class DustPedia(object):
         table = tables.new(data, names)
 
         return table
+
+    # -----------------------------------------------------------------
+
+    def get_sed(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 

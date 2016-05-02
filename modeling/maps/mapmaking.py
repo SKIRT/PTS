@@ -25,14 +25,15 @@ from ...magic.basics.mask import Mask
 from ...magic.core.image import Image
 from ...magic.core.frame import Frame
 from .component import MapsComponent
-from ...core.tools import filesystem, inspection, tables
+from ...core.tools import inspection, tables
+from ...core.tools import filesystem as fs
 from ..decomposition.decomposition import load_parameters
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
 # The path to the table containing the parameters from Cortese et. al 2008
-cortese_table_path = filesystem.join(inspection.pts_dat_dir("modeling"), "cortese.dat")
+cortese_table_path = fs.join(inspection.pts_dat_dir("modeling"), "cortese.dat")
 
 # -----------------------------------------------------------------
 
@@ -168,7 +169,7 @@ class MapMaker(MapsComponent):
         super(MapMaker, self).setup()
 
         # Determine the path to the parameters file
-        path = filesystem.join(self.components_path, "parameters.dat")
+        path = fs.join(self.components_path, "parameters.dat")
 
         # Load the structural parameters
         self.parameters = load_parameters(path)
@@ -230,7 +231,7 @@ class MapMaker(MapsComponent):
         log.info("Loading the disk image ...")
 
         # Determine the path to the disk image
-        path = filesystem.join(self.truncation_path, "disk.fits")
+        path = fs.join(self.truncation_path, "disk.fits")
 
         # Load the disk image
         self.disk = Frame.from_file(path)
@@ -247,7 +248,7 @@ class MapMaker(MapsComponent):
         log.info("Loading the bulge image ...")
 
         # Determine the path to the bulge image
-        path = filesystem.join(self.truncation_path, "bulge.fits")
+        path = fs.join(self.truncation_path, "bulge.fits")
 
         # Load the bulge image
         self.bulge = Frame.from_file(path)
@@ -266,10 +267,10 @@ class MapMaker(MapsComponent):
         log.info("Loading the " + image_name + " image ...")
 
         # Determine the full path to the image
-        path = filesystem.join(self.truncation_path, image_name + ".fits")
+        path = fs.join(self.truncation_path, image_name + ".fits")
 
         # Check whether the image is present
-        if not filesystem.is_file(path): raise IOError("Could not find the " + image_name + " image")
+        if not fs.is_file(path): raise IOError("Could not find the " + image_name + " image")
 
         # Open the image
         image = Image.from_file(path)
@@ -316,7 +317,7 @@ class MapMaker(MapsComponent):
             mask = self.cutoff_masks[name]
 
             # Determine the path to the FITS file
-            path = filesystem.join(self.maps_cutoff_path, name + ".fits")
+            path = fs.join(self.maps_cutoff_path, name + ".fits")
 
             # Save the mask as a FITS file
             Frame(mask.astype(float)).save(path)
@@ -430,16 +431,16 @@ class MapMaker(MapsComponent):
 
         # Save the images that are converted to solar units
 
-        halpa_path = filesystem.join(self.maps_solar_path, self.images["Halpha"].name + ".fits")
+        halpa_path = fs.join(self.maps_solar_path, self.images["Halpha"].name + ".fits")
         self.images["Halpha"].save(halpa_path)
 
-        mips_path = filesystem.join(self.maps_solar_path, self.images["24mu"].name + ".fits")
+        mips_path = fs.join(self.maps_solar_path, self.images["24mu"].name + ".fits")
         self.images["24mu"].save(mips_path)
 
-        pacs70_path = filesystem.join(self.maps_solar_path, self.images["70mu"].name + ".fits")
+        pacs70_path = fs.join(self.maps_solar_path, self.images["70mu"].name + ".fits")
         self.images["70mu"].save(pacs70_path)
 
-        pacs160_path = filesystem.join(self.maps_solar_path, self.images["160mu"].name + ".fits")
+        pacs160_path = fs.join(self.maps_solar_path, self.images["160mu"].name + ".fits")
         self.images["160mu"].save(pacs160_path)
 
     # -----------------------------------------------------------------
@@ -569,7 +570,7 @@ class MapMaker(MapsComponent):
         self.images["3.6mu"] *= conversion_factor
         self.images["3.6mu"].unit = "Jy"
 
-        i1_jy_path = filesystem.join(self.maps_intermediate_path, "i1_jy.fits")
+        i1_jy_path = fs.join(self.maps_intermediate_path, "i1_jy.fits")
         self.images["3.6mu"].save(i1_jy_path)
 
         # Subtract bulge
@@ -577,7 +578,7 @@ class MapMaker(MapsComponent):
         old_stars = self.images["3.6mu"].frames.primary - self.bulge
 
         bulge_residual = self.images["3.6mu"].frames.primary - self.disk
-        bulge_residual_path = filesystem.join(self.maps_intermediate_path, "bulge_residual.fits")
+        bulge_residual_path = fs.join(self.maps_intermediate_path, "bulge_residual.fits")
         bulge_residual.save(bulge_residual_path)
 
         # Set the old stars map zero for pixels with low signal-to-noise in the 3.6 micron image
@@ -632,7 +633,7 @@ class MapMaker(MapsComponent):
         mips_young_stars = self.get_mips_young_stars_map()
 
         # Save the mips_young_stars map
-        mips_young_path = filesystem.join(self.maps_intermediate_path, "24mu_young.fits")
+        mips_young_path = fs.join(self.maps_intermediate_path, "24mu_young.fits")
         mips_young_stars.save(mips_young_path)
 
         # Calculate ionizing stars map and ratio
@@ -790,7 +791,7 @@ class MapMaker(MapsComponent):
         fuv_converted.unit = Unit("W/m2")
 
         # Save
-        fuv_converted_path = filesystem.join(self.maps_intermediate_path, "FUV Wpm2.fits")
+        fuv_converted_path = fs.join(self.maps_intermediate_path, "FUV Wpm2.fits")
         fuv_converted.save(fuv_converted_path)
 
         # Get the TIR map in solar units
@@ -802,7 +803,7 @@ class MapMaker(MapsComponent):
         tir_map.unit = Unit("W/m2")
 
         # Save
-        tir_path = filesystem.join(self.maps_intermediate_path, "TIR.fits")
+        tir_path = fs.join(self.maps_intermediate_path, "TIR.fits")
         tir_map.save(tir_path)
 
         # CALCULATE TIR TO FUV RATIO
@@ -811,7 +812,7 @@ class MapMaker(MapsComponent):
         tir_to_fuv = np.log10(tir_map / fuv_converted.frames.primary)
 
         # Save TIR to FUV ratio map
-        tir_to_fuv_path = filesystem.join(self.maps_intermediate_path, "TIRtoFUV.fits")
+        tir_to_fuv_path = fs.join(self.maps_intermediate_path, "TIRtoFUV.fits")
         tir_to_fuv.save(tir_to_fuv_path)
 
         # Get the sSFR map
@@ -1011,25 +1012,25 @@ class MapMaker(MapsComponent):
         log.info("Writing the output maps ...")
 
         # Determine the path to the dust map
-        dust_path = filesystem.join(self.maps_path, "dust.fits")
+        dust_path = fs.join(self.maps_path, "dust.fits")
 
         # Save the dust map
         self.dust.save(dust_path)
 
         # Determine the path to the old stars map
-        old_stars_path = filesystem.join(self.maps_path, "old_stars.fits")
+        old_stars_path = fs.join(self.maps_path, "old_stars.fits")
 
         # Save the old stars map
         self.old_stars.save(old_stars_path)
 
         # Determine the path to the young stars map
-        young_stars_path = filesystem.join(self.maps_path, "young_stars.fits")
+        young_stars_path = fs.join(self.maps_path, "young_stars.fits")
 
         # Save the young stars map
         self.young_stars.save(young_stars_path)
 
         # Determine the path to the ionizing stars map
-        ionizing_stars_path = filesystem.join(self.maps_path, "ionizing_stars.fits")
+        ionizing_stars_path = fs.join(self.maps_path, "ionizing_stars.fits")
 
         # Save the ionizing stars map
         self.ionizing_stars.save(ionizing_stars_path)

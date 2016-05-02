@@ -19,7 +19,8 @@ from matplotlib import pyplot as plt
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
-from ...core.tools import tables, filesystem
+from ...core.tools import tables
+from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
 
@@ -264,7 +265,7 @@ class SEDFitter(FittingComponent):
             simulation_name = self.chi_squared["Simulation name"][i]
 
             # Determine the path to the corresponding SED plot file
-            path = filesystem.join(self.fit_plot_path, simulation_name, "sed.png")
+            path = fs.join(self.fit_plot_path, simulation_name, "sed.png")
 
             # Load the image (as a NumPy array)
             image = imageio.imread(path)
@@ -315,10 +316,10 @@ class SEDFitter(FittingComponent):
         simulation_name = self.chi_squared["Simulation name"][len(self.chi_squared)-1]
 
         # Determine the path to the simulation's ski file
-        ski_path = filesystem.join(self.fit_out_path, simulation_name, self.galaxy_name + ".ski")
+        ski_path = fs.join(self.fit_out_path, simulation_name, self.galaxy_name + ".ski")
 
         # Copy the ski file to the fit/best directory
-        filesystem.copy_file(ski_path, self.fit_best_path)
+        fs.copy_file(ski_path, self.fit_best_path)
 
         # Find the corresponding index in the parameter table
         index = tables.find_index(self.parameters, simulation_name, "Simulation name")
@@ -329,7 +330,7 @@ class SEDFitter(FittingComponent):
         self.best_dust_mass = self.parameters["Dust mass"][index]
 
         # Write a file with the best parameter values
-        path = filesystem.join(self.fit_best_path, "parameters.dat")
+        path = fs.join(self.fit_best_path, "parameters.dat")
         with open(path, 'w') as best_parameters:
             best_parameters.write("FUV young: " + str(self.best_fuv_young) + "\n")
             best_parameters.write("FUV ionizing: " + str(self.best_fuv_ionizing) + "\n")
@@ -354,7 +355,7 @@ class SEDFitter(FittingComponent):
             log.debug("Writing the probability distribution of the " + descriptions[parameter_name] + " ...")
 
             # Determine the path to the resulting table file
-            #path = filesystem.join(self.fit_prob_path, parameter_name.lower().replace(" ", "_") + ".dat")
+            path = fs.join(self.fit_prob_path, parameter_name + ".dat")
 
             # Write the table of probabilities for this parameter
             self.distributions[parameter_name].save(path)
@@ -382,7 +383,7 @@ class SEDFitter(FittingComponent):
             description = descriptions[parameter_name]
 
             # Create a plot file for the probability distribution
-            path = filesystem.join(self.fit_prob_path, parameter_name + ".pdf")
+            path = fs.join(self.fit_prob_path, parameter_name + ".pdf")
             distribution.plot(title="Probability of the " + description, path=path, logscale=True)
 
     # -----------------------------------------------------------------
@@ -462,7 +463,7 @@ class SEDFitter(FittingComponent):
         fig_c.get_yaxis().set_visible(False)
 
         # Save the figure
-        path = filesystem.join(self.fit_prob_path, "probabilities.pdf")
+        path = fs.join(self.fit_prob_path, "probabilities.pdf")
         fig.savefig(path)
 
         #if False:

@@ -350,13 +350,24 @@ class Remote(object):
         """
 
         # Initiate a remote interactive python session
-        self.execute("python", expect_eof=False, show_output=show_output)
+        #self.execute("python", expect_eof=False, show_output=show_output)
+
+        self.ssh.sendline("python")
+
+        self.ssh.expect("\r\n>>>")
 
         # Inject each line into the remote python prompt
-        for line in lines: self.execute(line, expect_eof=False, show_output=show_output)
+        #for line in lines: self.execute(line, expect_eof=False, show_output=show_output)
+
+        for line in lines:
+            self.ssh.sendline(line)
+            self.ssh.expect("\r\n>>>")
 
         # Close the remote python session
-        self.execute("exit()")
+        #self.execute("exit()")
+
+        self.ssh.sendline("exit()")
+        self.ssh.prompt()
 
     # -----------------------------------------------------------------
 

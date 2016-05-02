@@ -593,6 +593,18 @@ class RemoteSimulation(SkirtSimulation):
     # -----------------------------------------------------------------
 
     @property
+    def from_batch(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis.timing_table_path is not None or self.analysis.memory_table_path is not None
+
+    # -----------------------------------------------------------------
+
+    @property
     def from_scaling_test(self):
 
         """

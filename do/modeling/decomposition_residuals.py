@@ -21,7 +21,8 @@ from astropy.units import Unit
 from astropy.modeling.models import Gaussian2D
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time, filesystem
+from pts.core.tools import logging, time
+from pts.core.tools import filesystem as fs
 from pts.magic.core.frame import Frame
 from pts.modeling.decomposition.decomposition import load_parameters
 from pts.magic.core.source import Source
@@ -50,12 +51,12 @@ arguments = parser.parse_args()
 # -----------------------------------------------------------------
 
 # Set the modeling path
-if arguments.path is None: arguments.path = filesystem.cwd()
+if arguments.path is None: arguments.path = fs.cwd()
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = filesystem.join(arguments.path, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(arguments.path, time.unique_name("log") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"
@@ -66,9 +67,9 @@ log.start("Starting decomposition_residuals ...")
 
 # -----------------------------------------------------------------
 
-components_path = filesystem.join(arguments.path, "components")
-truncation_path = filesystem.join(arguments.path, "truncated")
-residuals_path = filesystem.join(arguments.path, "residuals")
+components_path = fs.join(arguments.path, "components")
+truncation_path = fs.join(arguments.path, "truncated")
+residuals_path = fs.join(arguments.path, "residuals")
 
 # -----------------------------------------------------------------
 
@@ -76,7 +77,7 @@ residuals_path = filesystem.join(arguments.path, "residuals")
 log.info("Loading the IRAC 3.6 micron image ...")
 
 # Determine the path to the truncated 3.6 micron image
-path = filesystem.join(truncation_path, "IRAC I1.fits")
+path = fs.join(truncation_path, "IRAC I1.fits")
 frame = Frame.from_file(path)
 
 # Convert the frame to Jy/pix
@@ -90,34 +91,34 @@ conversion_factor /= pixel_factor
 frame *= conversion_factor
 frame.unit = "Jy"
 
-frame.save(filesystem.join(residuals_path, "i1_jy.fits"))
+frame.save(fs.join(residuals_path, "i1_jy.fits"))
 
 # Inform the user
 log.info("Loading the bulge image ...")
 
 # Determine the path to the truncated bulge image
-bulge_path = filesystem.join(truncation_path, "bulge.fits")
+bulge_path = fs.join(truncation_path, "bulge.fits")
 bulge = Frame.from_file(bulge_path)
 
 # Inform the user
 log.info("Loading the disk image ...")
 
 # Determine the path to the truncated disk image
-disk_path = filesystem.join(truncation_path, "disk.fits")
+disk_path = fs.join(truncation_path, "disk.fits")
 disk = Frame.from_file(disk_path)
 
 # Inform the user
 log.info("Loading the model image ...")
 
 # Determine the path to the truncated model image
-model_path = filesystem.join(truncation_path, "model.fits")
+model_path = fs.join(truncation_path, "model.fits")
 model = Frame.from_file(model_path)
 
 # -----------------------------------------------------------------
 
 # Calculate the bulge residual frame
 bulge_residual = frame - bulge
-bulge_residual_path = filesystem.join(residuals_path, "bulge_residual.fits")
+bulge_residual_path = fs.join(residuals_path, "bulge_residual.fits")
 bulge_residual.save(bulge_residual_path)
 
 #bulge_residual2 = frame - (bulge * 1.3)
@@ -126,14 +127,14 @@ bulge_residual.save(bulge_residual_path)
 
 # Calculate the disk residual frame
 disk_residual = frame - disk
-disk_residual_path = filesystem.join(residuals_path, "disk_residual.fits")
+disk_residual_path = fs.join(residuals_path, "disk_residual.fits")
 disk_residual.save(disk_residual_path)
 
 # Calculate the model residual frame
 model_residual = frame - model
 #model_residual = frame - (bulge*1.3)
 model_residual = model_residual - disk
-model_residual_path = filesystem.join(residuals_path, "model_residual.fits")
+model_residual_path = fs.join(residuals_path, "model_residual.fits")
 model_residual.save(model_residual_path)
 
 # -----------------------------------------------------------------
@@ -146,7 +147,7 @@ fwhm_pix = (fwhm / frame.xy_average_pixelscale).to("pix").value
 sigma = fwhm_pix * statistics.fwhm_to_sigma
 
 # Get the center pixel of the galaxy
-parameters_path = filesystem.join(components_path, "parameters.dat")
+parameters_path = fs.join(components_path, "parameters.dat")
 parameters = load_parameters(parameters_path)
 center = parameters.center.to_pixel(frame.wcs)
 
@@ -174,7 +175,7 @@ evaluated_model = source.cutout.evaluate_model(model)
 
 all_residual = Frame(np.copy(model_residual))
 all_residual[source.y_slice, source.x_slice] -= evaluated_model
-all_residual.save(filesystem.join(residuals_path, "all_residual.fits"))
+all_residual.save(fs.join(residuals_path, "all_residual.fits"))
 
 model = Gaussian2D(amplitude=0.0087509425805, x_mean=center.x, y_mean=center.y, x_stddev=sigma, y_stddev=sigma)
 rel_model = fitting.shifted_model(model, -source.cutout.x_min, -source.cutout.y_min)
@@ -184,6 +185,6 @@ evaluated_model = source.cutout.evaluate_model(model)
 
 all_residual2 = Frame(np.copy(model_residual))
 all_residual2[source.y_slice, source.x_slice] -= evaluated_model
-all_residual2.save(filesystem.join(residuals_path, "all_residual2.fits"))
+all_residual2.save(fs.join(residuals_path, "all_residual2.fits"))
 
 # -----------------------------------------------------------------

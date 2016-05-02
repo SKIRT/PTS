@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ..core.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
+from ...core.launch.memory import MemoryTable
 
 # -----------------------------------------------------------------
 
@@ -72,6 +73,9 @@ class AnalysisComponent(ModelingComponent):
         # The path to the timing table
         self.timing_table_path = None
 
+        # The path to the memory table
+        self.memory_table_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -125,5 +129,11 @@ class AnalysisComponent(ModelingComponent):
 
         # Initialize the timing table
         timing_table = TimingTable(self.timing_table_path)
+
+        # Set the path to the memory table
+        self.memory_table_path = fs.join(self.analysis_path, "memory.dat")
+
+        # Initialize the memory table
+        memory_table = MemoryTable(self.memory_table_path)
 
 # -----------------------------------------------------------------

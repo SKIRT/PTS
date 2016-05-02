@@ -22,7 +22,8 @@ from astropy import constants
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
-from ...core.tools import inspection, tables, filesystem
+from ...core.tools import inspection, tables
+from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import SkiFile
 from ...core.basics.filter import Filter
 from ..basics.models import SersicModel, DeprojectionModel
@@ -37,7 +38,7 @@ from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-template_ski_path = filesystem.join(inspection.pts_dat_dir("modeling"), "ski", "template.ski")
+template_ski_path = fs.join(inspection.pts_dat_dir("modeling"), "ski", "template.ski")
 
 # -----------------------------------------------------------------
 
@@ -202,7 +203,7 @@ class InputInitializer(FittingComponent):
 
         # Reference coordinate system
         reference_image = "Pacs red"
-        reference_path = filesystem.join(self.truncation_path, reference_image + ".fits")
+        reference_path = fs.join(self.truncation_path, reference_image + ".fits")
         self.reference_wcs = CoordinateSystem.from_file(reference_path)
 
     # -----------------------------------------------------------------
@@ -233,7 +234,7 @@ class InputInitializer(FittingComponent):
         log.info("Loading the decomposition parameters ...")
 
         # Determine the path to the parameters file
-        path = filesystem.join(self.components_path, "parameters.dat")
+        path = fs.join(self.components_path, "parameters.dat")
 
         # Load the parameters
         self.parameters = load_parameters(path)
@@ -251,7 +252,7 @@ class InputInitializer(FittingComponent):
         log.info("Loading the observed fluxes table ...")
 
         # Determine the path to the fluxes table
-        fluxes_path = filesystem.join(self.phot_path, "fluxes.dat")
+        fluxes_path = fs.join(self.phot_path, "fluxes.dat")
 
         # Load the fluxes table
         self.fluxes = tables.from_file(fluxes_path)
@@ -617,7 +618,7 @@ class InputInitializer(FittingComponent):
         log.info("Configuring the dust grid ...")
 
         # Get the path to the disk region
-        path = filesystem.join(self.components_path, "disk.reg")
+        path = fs.join(self.components_path, "disk.reg")
         # Open the region
         region = SkyRegion.from_file(path)
         # Get ellipse in sky coordinates
@@ -752,7 +753,7 @@ class InputInitializer(FittingComponent):
         # -- The wavelength grid --
 
         # Determine the path to the wavelength grid file
-        grid_path = filesystem.join(self.fit_in_path, "wavelengths.txt")
+        grid_path = fs.join(self.fit_in_path, "wavelengths.txt")
 
         # Write the wavelength grid
         self.wavelength_grid.rename_column("Wavelength", str(len(
@@ -762,34 +763,34 @@ class InputInitializer(FittingComponent):
         # -- The old stars map --
 
         # Determine the path to the old stars map
-        old_stars_path = filesystem.join(self.maps_path, "old_stars.fits")
+        old_stars_path = fs.join(self.maps_path, "old_stars.fits")
 
         # Copy the map
-        filesystem.copy_file(old_stars_path, self.fit_in_path)
+        fs.copy_file(old_stars_path, self.fit_in_path)
 
         # -- The young stars map --
 
         # Determine the path to the young stars map
-        young_stars_path = filesystem.join(self.maps_path, "young_stars.fits")
+        young_stars_path = fs.join(self.maps_path, "young_stars.fits")
 
         # Copy the map
-        filesystem.copy_file(young_stars_path, self.fit_in_path)
+        fs.copy_file(young_stars_path, self.fit_in_path)
 
         # -- The ionizing stars map --
 
         # Determine the path to the ionizing stars map
-        ionizing_stars_path = filesystem.join(self.maps_path, "ionizing_stars.fits")
+        ionizing_stars_path = fs.join(self.maps_path, "ionizing_stars.fits")
 
         # Copy the map
-        filesystem.copy_file(ionizing_stars_path, self.fit_in_path)
+        fs.copy_file(ionizing_stars_path, self.fit_in_path)
 
         # -- The dust map --
 
         # Determine the path to the dust map
-        dust_path = filesystem.join(self.maps_path, "dust.fits")
+        dust_path = fs.join(self.maps_path, "dust.fits")
 
         # Copy the map
-        filesystem.copy_file(dust_path, self.fit_in_path)
+        fs.copy_file(dust_path, self.fit_in_path)
 
     # -----------------------------------------------------------------
 

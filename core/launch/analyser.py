@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..launch.basicanalyser import BasicAnalyser
+from ..launch.batchanalyser import BatchAnalyser
 from ..test.scalinganalyser import ScalingAnalyser
 from ...modeling.fitting.modelanalyser import FitModelAnalyser
 from ...modeling.analysis.bestmodelanalyser import BestModelAnalyser
@@ -47,6 +48,7 @@ class SimulationAnalyser(Configurable):
 
         # The lower-level analysers
         self.basic_analyser = BasicAnalyser()
+        self.batch_analyser = BatchAnalyser()
         self.scaling_analyser = ScalingAnalyser()
         self.fit_model_analyser = FitModelAnalyser()
         self.best_model_analyser = BestModelAnalyser()
@@ -66,6 +68,9 @@ class SimulationAnalyser(Configurable):
 
         # 2. Run the basic analysis
         self.analyse_basic()
+
+        # 3. Run the batch analysis
+        if self.simulation.from_batch: self.analyse_batch()
 
         # 3. Analyse the scaling, if the simulation is part of a scaling test
         if self.simulation.from_scaling_test: self.analyse_scaling()
@@ -130,6 +135,21 @@ class SimulationAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    def analyse_batch(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing the properties relevant for the batch of simulations ...")
+
+        # Run the batch analyser on the simulation
+        self.batch_analyser.run(self.simulation, self.basic_analyser.timeline_extractor, self.basic_analyser.memory_extractor)
+
+    # -----------------------------------------------------------------
+
     def analyse_scaling(self):
 
         """
@@ -177,7 +197,7 @@ class SimulationAnalyser(Configurable):
 
         # Run the fit model analyser
         self.fit_model_analyser.config.path = self.simulation.analysis.modeling_path
-        self.fit_model_analyser.run(self.simulation, self.basic_analyser.timeline_extractor, self.basic_analyser.flux_calculator)
+        self.fit_model_analyser.run(self.simulation, self.basic_analyser.flux_calculator)
 
     # -----------------------------------------------------------------
 
@@ -190,7 +210,7 @@ class SimulationAnalyser(Configurable):
 
         # Run the best model analyser
         self.best_model_analyser.config.path = self.simulation.analysis.modeling_path
-        self.best_model_analyser.run(self.simulation, self.basic_analyser.timeline_extractor)
+        self.best_model_analyser.run(self.simulation)
 
     # -----------------------------------------------------------------
 

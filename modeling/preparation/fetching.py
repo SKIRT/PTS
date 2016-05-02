@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.analysis.bestmodelanalyser Contains the BestModelAnalyser class.
+## \package pts.modeling.preparation.fetching Contains the DataFetcher class.
 
 # -----------------------------------------------------------------
 
@@ -13,15 +13,16 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .component import AnalysisComponent
+from .component import PreparationComponent
+from ...magic.misc.dustpedia import DustPediaDatabase
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-class BestModelAnalyser(AnalysisComponent):
-
+class DataFetcher(PreparationComponent):
+    
     """
-    This class ...
+    This class...
     """
 
     def __init__(self, config=None):
@@ -33,77 +34,69 @@ class BestModelAnalyser(AnalysisComponent):
         """
 
         # Call the constructor of the base class
-        super(AnalysisComponent, self).__init__(config)
+        super(DataFetcher, self).__init__(config)
 
         # -- Attributes --
 
-        # The simulation object
-        self.simulation = None
-
-        # The log file of the simulation
-        self.log_file = None
-
-        # The ski file corresponding to the simulation
-        self.ski = None
+        # The DustPedia database
+        self.database = DustPediaDatabase()
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation):
+    @classmethod
+    def from_arguments(cls, arguments):
 
         """
         This function ...
-        :param simulation:
+        :param arguments:
+        :return:
+        """
+
+        # Create a new DataFetcher instance
+        fetcher = cls()
+
+        # Return the data fetcher
+        return fetcher
+
+    # -----------------------------------------------------------------
+
+    def run(self):
+
+        """
+        This function ...
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(simulation)
+        self.setup()
 
-        # 2. Load the log file of the simulation
-        self.load_log_file()
+        # Get the galaxy info
+        self.fetch_galaxy_info()
 
-        # 6. Write
-        self.write()
+        # 2. Fetch the images
+        self.fetch_images()
 
-    # -----------------------------------------------------------------
-
-    def clear(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Clearing the best model analyser ...")
-
-        # Set the attributes to default values
-        self.simulation = None
-        self.log_file = None
-        self.ski = None
+        # 3. Fetch the SED
+        self.fetch_sed()
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation):
+    def setup(self):
 
         """
         This function ...
-        :param simulation:
         :return:
         """
 
         # Call the setup function of the base class
-        super(BestModelAnalyser, self).setup()
+        super(DataFetcher, self).setup()
 
-        # Make a local reference to the simulation object
-        self.simulation = simulation
-
-        # Load the ski file
-        self.ski = self.simulation.parameters()
+        # Login to the DustPedia database
+        self.database.login(self.config.database.username, self.config.database.password)
 
     # -----------------------------------------------------------------
 
-    def load_log_file(self):
+    def fetch_galaxy_info(self):
 
         """
         This function ...
@@ -111,14 +104,16 @@ class BestModelAnalyser(AnalysisComponent):
         """
 
         # Inform the user
-        log.info("Loading the simulation log file ...")
+        log.info("Fetching galaxy info ...")
 
-        # Get the log file produced by the simulation
-        self.log_file = self.simulation.log_file
+        # Get the info
+        info = self.database.get_galaxy_info(self.galaxy_name)
+
+        print(info)
 
     # -----------------------------------------------------------------
 
-    def write(self):
+    def fetch_images(self):
 
         """
         This function ...
@@ -126,6 +121,26 @@ class BestModelAnalyser(AnalysisComponent):
         """
 
         # Inform the user
-        log.info("Writing ...")
+        log.info("Fetching the images ...")
+
+        # Get the image names
+        image_names = self.database.get_image_names(self.galaxy_name)
+
+        print(image_names)
+
+    # -----------------------------------------------------------------
+
+    def fetch_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Fetching the SED ...")
+
+        # Get the SED
+        sed = self.database.get_sed(self.galaxy_name)
 
 # -----------------------------------------------------------------

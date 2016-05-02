@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..core.component import ModelingComponent
-from ...core.tools import filesystem
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -62,15 +62,15 @@ class MapsComponent(ModelingComponent):
         self.config.output_path = self.maps_path
 
         # Set the path to the maps/solar directory
-        self.maps_solar_path = filesystem.join(self.maps_path, "solar")
+        self.maps_solar_path = fs.join(self.maps_path, "solar")
 
         # Set the path to the maps/intermediate directory
-        self.maps_intermediate_path = filesystem.join(self.maps_path, "intermediate")
+        self.maps_intermediate_path = fs.join(self.maps_path, "intermediate")
 
         # Set the path to the maps/cutoff directory
-        self.maps_cutoff_path = filesystem.join(self.maps_path, "cutoff")
+        self.maps_cutoff_path = fs.join(self.maps_path, "cutoff")
 
         # Create the maps/solar and maps/intermediate directories
-        filesystem.create_directories([self.maps_solar_path, self.maps_intermediate_path, self.maps_cutoff_path])
+        fs.create_directories([self.maps_solar_path, self.maps_intermediate_path, self.maps_cutoff_path])
 
 # -----------------------------------------------------------------

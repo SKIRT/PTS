@@ -368,7 +368,10 @@ class BestModelLauncher(AnalysisComponent):
         else:
 
             # Use 4 cores per process
-            cores_per_process = 4
+            #cores_per_process = 4
+
+            # Use 10 cores per process
+            cores_per_process = 10
 
             # Get the amount of (currently) free cores on the remote host
             cores = int(self.remote.free_cores)
@@ -446,6 +449,10 @@ class BestModelLauncher(AnalysisComponent):
         self.analysis_options.misc.fluxes = True
         self.analysis_options.misc.images = True
         self.analysis_options.misc.observation_filters = filter_names
+
+        # Set the paths of the timing and memory table files
+        self.analysis_options.timing_table_path = self.timing_table_path
+        self.analysis_options.memory_table_path = self.memory_table_path
 
         # Set the modeling path
         self.analysis_options.modeling_path = self.config.path
@@ -572,5 +579,11 @@ class BestModelLauncher(AnalysisComponent):
         # Run the simulation
         simulation = self.remote.run(arguments, scheduling_options=self.scheduling_options,
                                      analysis_options=self.analysis_options, screen_output_path=screen_output_path)
+
+        # Set the retrieve types
+        simulation.retrieve_types = ["log", "sed", "image-total"]
+
+        # Save the simulation file
+        simulation.save()
 
 # -----------------------------------------------------------------

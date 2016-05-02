@@ -100,7 +100,7 @@ class SkiFile:
         # number of points directly from the tree) or a FileWavelengthGrid is used (in which case we raise an error)
         entry = self.tree.xpath("//wavelengthGrid/*[1]")[0]
         if entry.tag == 'FileWavelengthGrid':
-            raise ValueError("The number of wavelengths is not defined within the ski file. Call wavelengthsfile().")
+            raise ValueError("The number of wavelengths is not defined within the ski file. Call nwavelengthsfile().")
         else:
             return int(entry.get("points"))
 
@@ -109,6 +109,14 @@ class SkiFile:
         entry = self.tree.xpath("//FileWavelengthGrid")
         if entry: return entry[0].get("filename")
         else: return None
+
+    ## This function returns the number of wavelength points as defined in the wavelengths file
+    def nwavelengthsfile(self, input_path):
+        wavelengths_filename = self.wavelengthsfile()
+        wavelengths_path = os.path.join(input_path, wavelengths_filename)
+        with open(wavelengths_path, 'r') as f: first_line = f.readline()
+        nwavelengths = int(first_line.split("\n")[0])
+        return nwavelengths
 
     ## This function returns the number of photon packages per wavelength
     def packages(self):

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.launch.timing Contains the TimingTable class.
+## \package pts.core.launch.memory Contains the MemoryTable class.
 
 # -----------------------------------------------------------------
 
@@ -18,7 +18,7 @@ from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class TimingTable(object):
+class MemoryTable(object):
 
     """
     This class ...
@@ -30,7 +30,7 @@ class TimingTable(object):
         This function ...
         """
 
-        # Set the path of the timing table
+        # Set the path of the memory table
         self.path = path
 
         # If the file does not exist yet, create it
@@ -47,16 +47,13 @@ class TimingTable(object):
 
         # Create the table
         names = ["Simulation name", "Timestamp", "Host id", "Cluster name", "Cores", "Threads per core",
-                 "Processes", "Packages", "Total runtime", "Serial runtime", "Parallel runtime", "Runtime overhead"]
-        data = [[], [], [], [], [], [], [], [], [], [], [], []]
-        dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "float64", "float64", "float64", "float64"]
+                 "Processes", "Wavelengths", "Peak memory usage"]
+        data = [[], [], [], [], [], [], [], [], []]
+        dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "float64"]
         table = tables.new(data, names, dtypes=dtypes)
 
         # Set the column units
-        table["Total runtime"] = "s"  # runtimes are expressed in seconds
-        table["Serial runtime"] = "s"
-        table["Parallel runtime"] = "s"
-        table["Runtime overhead"] = "s"
+        table["Peak memory usage"] = "GB"  # memory usage is expressed in gigabytes
 
         # Write the (empty) table
         tables.write(table, self.path, format="ascii.ecsv")
@@ -71,16 +68,16 @@ class TimingTable(object):
         :return:
         """
 
-        # Load the timing table
-        timing_table = tables.from_file(path, format="ascii.ecsv")
+        # Load the memory table
+        memory_table = tables.from_file(path, format="ascii.ecsv")
 
         # Return the table
-        return timing_table
+        return memory_table
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, packages,
-                  total_runtime, serial_runtime, parallel_runtime, runtime_overhead):
+    def add_entry(self, name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths,
+                  peak_memory_usage):
 
         """
         This function ...
@@ -91,18 +88,15 @@ class TimingTable(object):
         :param cores:
         :param threads_per_core:
         :param processes:
-        :param packages:
-        :param total_runtime:
-        :param serial_runtime:
-        :param parallel_runtime:
-        :param runtime_overhead:
+        :param wavelengths:
+        :param peak_memory_usage:
         :return:
         """
 
         if cluster_name is None: cluster_name = "--"
 
-        # Open the timing file in 'append' mode
-        timing_file = open(self.path, 'a')
+        # Open the memory file in 'append' mode
+        memory_file = open(self.path, 'a')
 
         # Initialize a list to contain the values of the row
         row = []
@@ -115,11 +109,8 @@ class TimingTable(object):
         # "Cores"
         # "Hyperthreads per core"
         # "Processes"
-        # "Packages"
-        # "Total runtime"
-        # "Serial runtime"
-        # "Parallel runtime"
-        # "Runtime overhead"
+        # "Wavelengths"
+        # "Peak memory usage"
         row.append(name)
         row.append(timestamp)
         row.append(host_id)
@@ -127,16 +118,13 @@ class TimingTable(object):
         row.append(str(cores))
         row.append(str(threads_per_core))
         row.append(str(processes))
-        row.append(str(packages))
-        row.append(str(total_runtime))
-        row.append(str(serial_runtime))
-        row.append(str(parallel_runtime))
-        row.append(str(runtime_overhead))
+        row.append(str(wavelengths))
+        row.append(str(peak_memory_usage))
 
-        # Add the row to the timing file
-        timing_file.write(" ".join(row) + "\n")
+        # Add the row to the runtime file
+        memory_file.write(" ".join(row) + "\n")
 
         # Close the file
-        timing_file.close()
+        memory_file.close()
 
 # -----------------------------------------------------------------

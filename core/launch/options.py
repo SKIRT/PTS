@@ -156,6 +156,10 @@ class AnalysisOptions(Options):
         self.misc.images = False
         self.misc.observation_filters = None # The filters for which to recreate the observations
 
+        # Properties that are relevant for simulations launched as part of a batch (e.g. from an automatic launching procedure)
+        self.timing_table_path = None
+        self.memory_table_path = None
+
         # Properties relevant for simulations part of a scaling test
         self.scaling_run_name = None
         self.scaling_data_file = None
