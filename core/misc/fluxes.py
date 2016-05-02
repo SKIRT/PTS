@@ -142,7 +142,7 @@ class ObservedFluxCalculator(object):
             table["Flux"].unit = "Jy"
 
             # Load the simulated SED
-            sed = SED.from_file(sed_path)
+            sed = SED.from_skirt(sed_path)
 
             # Get the wavelengths and flux densities
             wavelengths = sed.wavelengths("micron", asarray=True)

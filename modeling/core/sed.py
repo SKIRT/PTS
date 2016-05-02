@@ -450,21 +450,31 @@ class SED(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, skiprows=0):
+    def from_skirt(cls, path, skiprows=0, contribution="total"):
 
         """
         This function ...
         :param path:
         :param skiprows:
+        :param contribution:
         :return:
         """
 
         # Create a new SED
         sed = cls()
 
-        # From SKIRT:
+        # SEDInstrument:
         # column 1: lambda (micron)
         # column 2: total flux; lambda*F_lambda (W/m2)
+
+        # From FullInstrument:
+        # column 1: lambda (micron)
+        # column 2: total flux; lambda*F_lambda (W/m2)
+        # column 3: direct stellar flux; lambda*F_lambda (W/m2)
+        # column 4: scattered stellar flux; lambda*F_lambda (W/m2)
+        # column 5: total dust emission flux; lambda*F_lambda (W/m2)
+        # column 6: dust emission scattered flux; lambda*F_lambda (W/m2)
+        # column 7: transparent flux; lambda*F_lambda (W/m2)
 
         from ..preparation import unitconversion
 
@@ -473,7 +483,16 @@ class SED(object):
         #sed.table.rename_column("col1", "Wavelength")
         #sed.table.rename_column("col2", "Flux")
 
-        wavelength_column, flux_column = np.loadtxt(path, dtype=float, unpack=True, skiprows=skiprows)
+        if contribution == "total": columns = (0,1)
+        elif contribution == "direct": columns = (0,2)
+        elif contribution == "scattered": columns = (0,3)
+        elif contribution == "dust": columns = (0,4)
+        elif contribution == "dustscattered": columns = (0,5)
+        elif contribution == "transparent": columns = (0,6)
+        else: raise ValueError("Wrong value for 'contribution': should be 'total', 'direct', 'scattered', 'dust', 'dustscattered' or 'transparent'")
+
+        wavelength_column, flux_column = np.loadtxt(path, dtype=float, unpack=True, skiprows=skiprows, usecols=columns)
+
         sed.table = tables.new([wavelength_column, flux_column], ["Wavelength", "Flux"])
         sed.table["Wavelength"].unit = Unit("micron")
 

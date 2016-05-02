@@ -27,7 +27,7 @@ from ..plot.wavemovie import makewavemovie
 from ..misc.fluxes import ObservedFluxCalculator
 from ..misc.images import ObservedImageMaker
 from ..tools.logging import log
-from ..tools import filesystem
+from ..tools import filesystem as fs
 from ..plot.sed import SEDPlotter
 from ...modeling.core.sed import SED, ObservedSED
 
@@ -210,7 +210,7 @@ class BasicAnalyser(Configurable):
         log.info("Extracting the progress information ...")
 
         # Determine the path to the progress file
-        path = filesystem.join(self.extraction_options.path, "progress.dat")
+        path = fs.join(self.extraction_options.path, "progress.dat")
 
         # Run the progress extractor
         self.progress_extractor.run(self.simulation, path)
@@ -228,7 +228,7 @@ class BasicAnalyser(Configurable):
         log.info("Extracting the timeline information ...")
 
         # Determine the path to the timeline file
-        path = filesystem.join(self.extraction_options.path, "timeline.dat")
+        path = fs.join(self.extraction_options.path, "timeline.dat")
 
         # Run the timeline extractor
         self.timeline_extractor.run(self.simulation, path)
@@ -246,7 +246,7 @@ class BasicAnalyser(Configurable):
         log.info("Extracting the memory information ...")
 
         # Determine the path to the memory file
-        path = filesystem.join(self.extraction_options.path, "memory.dat")
+        path = fs.join(self.extraction_options.path, "memory.dat")
 
         # Run the memory extractor
         self.memory_extractor.run(self.simulation, path)
@@ -272,25 +272,69 @@ class BasicAnalyser(Configurable):
             # Create a new SEDPlotter instance
             plotter = SEDPlotter(self.simulation.name)
 
+            # Get the simulation prefix
+            prefix = self.simulation.prefix()
+
             # Loop over the simulated SED files and add the SEDs to the SEDPlotter
             for sed_path in self.simulation.seddatpaths():
 
-                # Determine a label for this simulated SED
-                sed_label = filesystem.name(sed_path).split("_sed.dat")[0]
+                # Determine the name of the corresponding instrument
+                instr_name = instrument_name(sed_path, prefix)
 
                 # Load the SED
-                sed = SED.from_file(sed_path)
+                sed = SED.from_skirt(sed_path)
 
                 # Add the simulated SED to the plotter
-                plotter.add_modeled_sed(sed, sed_label)
+                plotter.add_modeled_sed(sed, instr_name)
 
             # Add the reference SED
             reference_sed = ObservedSED.from_file(self.plotting_options.reference_sed)
             plotter.add_observed_sed(reference_sed, "observation")
 
             # Determine the path to the plot file
-            path = filesystem.join(self.plotting_options.path, "sed." + self.plotting_options.format)
+            path = fs.join(self.plotting_options.path, "sed." + self.plotting_options.format)
             plotter.run(path)
+
+            # Get the axis limits
+            min_wavelength = plotter.min_wavelength
+            max_wavelength = plotter.max_wavelength
+            min_flux = plotter.min_flux
+            max_flux = plotter.max_flux
+
+            # Clear the SED plotter
+            plotter.clear()
+
+            # Check which SED files are produced by a FullInstrument (these files also contain the full SED of the various contributions)
+            for sed_path in self.simulation.seddatpaths():
+
+                # Determine the name of the corresponding instrument
+                instr_name = instrument_name(sed_path, prefix)
+
+                # Check how many columns the SED file contains
+                ncols = number_of_columns(sed_path)
+
+                # Check the type of the Instrument / SED
+                if ncols == 2: continue # SEDInstrument
+
+                for contribution in ["total", "direct", "scattered", "dust", "dustscattered", "transparent"]:
+
+                    # Load the SED contribution
+                    sed = SED.from_skirt(sed_path, contribution=contribution)
+
+                    # Add the SED to the plotter
+                    plotter.add_modeled_sed(sed, contribution, residuals=(contribution == "total"))
+
+                # Add the reference SED
+                #plotter.add_observed_sed(reference_sed, "observation")
+
+                # Determine the path to the plot file
+                path = fs.join(self.plotting_options.path, "sed_" + instr_name + "." + self.plotting_options.format)
+
+                # Plot
+                plotter.run(path, min_wavelength, max_wavelength, min_flux, max_flux)
+
+                # Clear the SED plotter
+                plotter.clear()
 
         # Use the simple plotseds function
         else: plotseds(self.simulation, output_path=self.plotting_options.path, format=self.plotting_options.format)
@@ -419,5 +463,38 @@ class BasicAnalyser(Configurable):
         # Create and run an ObservedImageMaker object
         self.image_maker = ObservedImageMaker()
         self.image_maker.run(self.simulation, output_path=self.misc_options.path, filter_names=self.misc_options.observation_filters)
+
+# -----------------------------------------------------------------
+
+def instrument_name(sed_path, prefix):
+
+    """
+    This function ...
+    :param sed_path:
+    :param prefix:
+    :return:
+    """
+
+    return fs.name(sed_path).split("_sed.dat")[0].split(prefix + "_")[1]
+
+# -----------------------------------------------------------------
+
+def number_of_columns(sed_path):
+
+    """
+    This function ...
+    :param sed_path:
+    :return:
+    """
+
+    with open(sed_path, 'r') as f:
+
+        ncols = 0
+        for line in f:
+
+            if "# column" not in line: break
+            else: ncols = int(line.split("column ")[1].split(": ")[0])
+
+    return ncols
 
 # -----------------------------------------------------------------

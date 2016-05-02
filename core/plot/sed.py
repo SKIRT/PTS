@@ -27,7 +27,7 @@ from ..tools.logging import log
 
 import matplotlib.gridspec as gridspec
 from scipy.interpolate import interp1d
-line_styles = ['-','--','-.',':']
+line_styles = ['-', '--', '-.', ':']
 
 filled_markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd'] * 6
 
@@ -67,6 +67,7 @@ class SEDPlotter(object):
 
         # Create ordered dictionaries for the model and observed SEDs (the order of adding SEDs is remembered)
         self.models = OrderedDict()
+        self.models_no_residuals = OrderedDict()
         self.observations = OrderedDict()
 
         # Keep track of the minimal and maximal wavelength and flux encountered during the plotting
@@ -74,6 +75,12 @@ class SEDPlotter(object):
         self._max_wavelength = None
         self._min_flux = None
         self._max_flux = None
+
+        # The definite axes limits
+        self.min_wavelength = None
+        self.max_wavelength = None
+        self.min_flux = None
+        self.max_flux = None
 
         # Store the figure and its axes as references
         self._figure = None
@@ -94,17 +101,20 @@ class SEDPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def add_modeled_sed(self, sed, label):
+    def add_modeled_sed(self, sed, label, residuals=True):
 
         """
         This function ...
         :param sed:
         :param label:
+        :param residuals: whether plotting the residual curve makes sense for this SED
+        (it does not when the SED is only for one component, or a contribution to the total SED)
         :return:
         """
 
-        # Add the SED to the list
-        self.models[label] = sed
+        # Add the SED to the appropriate dictionary
+        if residuals: self.models[label] = sed
+        else: self.models_no_residuals[label] = sed
 
     # -----------------------------------------------------------------
 
@@ -122,13 +132,23 @@ class SEDPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, output_path):
+    def run(self, output_path, min_wavelength=None, max_wavelength=None, min_flux=None, max_flux=None):
 
         """
         This function ...
         :param output_path:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param min_flux:
+        :param max_flux:
         :return:
         """
+
+        # Set the axis limits
+        self.min_wavelength = min_wavelength
+        self.max_wavelength = max_wavelength
+        self.min_flux = min_flux
+        self.max_flux = max_flux
 
         # Make the plot
         self.plot(output_path)
@@ -147,11 +167,16 @@ class SEDPlotter(object):
 
         # Set default values for all attributes
         self.models = OrderedDict()
+        self.models_no_residuals = OrderedDict()
         self.observations = OrderedDict()
         self._min_wavelength = None
         self._max_wavelength = None
         self._min_flux = None
         self._max_flux = None
+        self.min_wavelength = None
+        self.max_wavelength = None
+        self.min_flux = None
+        self.max_flux = None
         self._figure = None
         self._main_axis = None
         self._residual_axes = []
@@ -169,7 +194,7 @@ class SEDPlotter(object):
         # Inform the user
         log.info("Making the SED plot ...")
 
-        if len(self.models) == 0: self.plot_no_models(path)
+        if len(self.models) == 0 and len(self.models_no_residuals) == 0: self.plot_no_models(path)
         else: self.plot_with_models(path)
 
     # -----------------------------------------------------------------
@@ -380,8 +405,63 @@ class SEDPlotter(object):
         :return:
         """
 
-        if len(self.observations) == 1: self.plot_one_observation_with_models(path)
+        if len(self.observations) == 0: self.plot_only_models(path)
+        elif len(self.observations) == 1: self.plot_one_observation_with_models(path)
         else: self.plot_more_observations_with_models(path)
+
+    # -----------------------------------------------------------------
+
+    def plot_only_models(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # The size of the figure
+        figsize = (10, 6)
+
+        # Setup the figure
+        self._figure = plt.figure(figsize=figsize)
+        self._main_axis = self._figure.gca()
+
+        # Add model SEDs
+        model_labels = self.models.keys()
+        for j in range(len(model_labels)):
+
+            model_label = model_labels[j]
+
+            # Get fluxes, wavelengths and errors
+            fluxes = self.models[model_label].fluxes(unit="Jy", add_unit=False)
+            wavelengths = self.models[model_label].wavelengths(unit="micron", add_unit=False)
+            errors = self.models[model_label].errors(unit="Jy", add_unit=False) if self.models[
+                model_label].has_errors else None
+
+            # Plot the model SED as a line (with errors if present)
+            self.draw_model(self._main_axis, wavelengths, fluxes, line_styles[j], model_label, errors=errors)
+
+        if len(self.models_no_residuals) > 0:
+
+            line_colors_models_no_residuals = ["k", "r", "lawngreen", "blueviolet", "deepskyblue"]
+            line_styles_models_no_residuals = ["-"] * len(self.models_no_residuals)
+
+            # Add model SEDs in the models_no_residuals dictionary
+            model_labels_no_residuals = self.models_no_residuals.keys()
+            for j in range(len(model_labels_no_residuals)):
+
+                model_label = model_labels_no_residuals[j]
+
+                # Get fluxes, wavelengths and errors
+                fluxes = self.models_no_residuals[model_label].fluxes(unit="Jy", add_unit=False)
+                wavelengths = self.models_no_residuals[model_label].wavelengths(unit="micron", add_unit=False)
+                errors = self.models_no_residuals[model_label].errors(unit="Jy", add_unit=False) if self.models_no_residuals[model_label].has_errors else None
+
+                # Plot the model SED as a line (with errors if present)
+                self.draw_model(self._main_axis, wavelengths, fluxes, line_styles_models_no_residuals[j], model_label, errors=errors, linecolor=line_colors_models_no_residuals[j], adjust_extrema=False)
+
+        # Finish the plot
+        self.finish_plot(path)
 
     # -----------------------------------------------------------------
 
@@ -454,8 +534,13 @@ class SEDPlotter(object):
             error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
             ax2.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
 
-        # Residuals
+        # Model labels
         model_labels = self.models.keys()
+
+        line_styles_models = line_styles
+        line_colors_models = ['black'] * len(model_labels)
+
+        # Residuals
         for j in range(len(model_labels)):
 
             model_label = model_labels[j]
@@ -466,17 +551,16 @@ class SEDPlotter(object):
             f2 = interp1d(self.models[model_label].wavelengths(unit="micron", add_unit=False), model_fluxes, kind='cubic')
             residuals = -(fluxes - f2(wavelengths))/fluxes * 100.
 
-            ax2.plot(wavelengths, residuals, line_styles[j], color='black', label='model')
+            ax2.plot(wavelengths, residuals, line_styles_models[j], color=line_colors_models[j], label='model')
 
         # Add model SEDs
-        model_labels = self.models.keys()
         for j in range(len(model_labels)):
 
             # Get the current model label
             model_label = model_labels[j]
 
             log_model = np.log10(self.models[model_label].fluxes(unit="Jy", add_unit=False))
-            self._main_axis.plot(self.models[model_label].wavelengths(unit="micron", add_unit=False), log_model, line_styles[j], color='black', label=model_label)
+            self._main_axis.plot(self.models[model_label].wavelengths(unit="micron", add_unit=False), log_model, line_styles_models[j], color=line_colors_models[j], label=model_label)
 
             if self.models[model_label].has_errors:
 
@@ -496,6 +580,42 @@ class SEDPlotter(object):
 
                 self._main_axis.fill_between(self.models[model_label].wavelengths, log_bottom, log_top, where=log_top<=log_bottom, facecolor='cyan', edgecolor='cyan', interpolate=True, alpha=0.5)
                 self._main_axis.plot([], [], color='cyan', linewidth=10, label='spread')
+
+        if len(self.models_no_residuals) > 0:
+
+            line_colors_models_no_residuals = ["k", "r", "lawngreen", "blueviolet", "deepskyblue"]
+            line_styles_models_no_residuals = ["-"] * len(self.models_no_residuals)
+
+            # Add model SEDs from the models_no_residuals dictionary
+            model_labels_no_residuals = self.models_no_residuals.keys()
+            for j in range(len(model_labels_no_residuals)):
+
+                # Get the current model label
+                model_label = model_labels_no_residuals[j]
+
+                log_model = np.log10(self.models_no_residuals[model_label].fluxes(unit="Jy", add_unit=False))
+                self._main_axis.plot(self.models_no_residuals[model_label].wavelengths(unit="micron", add_unit=False), log_model,
+                                     line_styles_models_no_residuals[j], color=line_colors_models_no_residuals[j], label=model_label)
+
+                if self.models_no_residuals[model_label].has_errors:
+
+                    bottom = []
+                    top = []
+                    for j in range(len(self.models_no_residuals[model_label].errors)):
+                        value = self.models_no_residuals[model_label].fluxes[j]
+                        bottom.append(value + self.models_no_residuals[model_label].errors[j][0])
+                        top.append(value + self.models_no_residuals[model_label].errors[j][1])
+
+                    bottom = np.array(bottom)
+                    top = np.array(top)
+
+                    log_bottom = np.log10(bottom)
+                    log_top = np.log10(top)
+
+                    self._main_axis.fill_between(self.models_no_residuals[model_label].wavelengths, log_bottom, log_top,
+                                                 where=log_top <= log_bottom, facecolor='cyan', edgecolor='cyan',
+                                                 interpolate=True, alpha=0.5)
+                    self._main_axis.plot([], [], color='cyan', linewidth=10, label='spread')
 
         # Finish the plot
         self.finish_plot(path)
@@ -721,7 +841,7 @@ class SEDPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def draw_model(self, axis, wavelengths, fluxes, linestyle, label, errors=None):
+    def draw_model(self, axis, wavelengths, fluxes, linestyle, label, errors=None, linecolor='black', errorcolor='cyan', adjust_extrema=True):
 
         """
         This function ...
@@ -731,24 +851,29 @@ class SEDPlotter(object):
         :param linestyle:
         :param label:
         :param errors:
+        :param linecolor:
+        :param errorcolor:
+        :param adjust_extrema:
         :return:
         """
 
-        # Keep track of the minimal and maximal wavelength
-        min_flux_model = min(fluxes)
-        max_flux_model = max(fluxes)
-        if min_flux_model < self._min_flux: self._min_flux = min_flux_model
-        if max_flux_model > self._max_flux: self._max_flux = max_flux_model
+        if adjust_extrema:
 
-        # Keep track of the minimal and maximal wavelength
-        min_wavelength_model = min(wavelengths)
-        max_wavelength_model = max(wavelengths)
-        if min_wavelength_model < self._min_wavelength: self._min_wavelength = min_wavelength_model
-        if max_wavelength_model > self._max_wavelength: self._max_wavelength = max_wavelength_model
+            # Keep track of the minimal and maximal flux
+            min_flux_model = min(filter(None, fluxes)) # ignores zeros; see http://stackoverflow.com/questions/21084714/find-the-lowest-value-that-is-not-null-using-python
+            max_flux_model = max(filter(None, fluxes)) # idem.
+            if min_flux_model < self._min_flux or self._min_flux is None: self._min_flux = min_flux_model
+            if max_flux_model > self._max_flux or self._max_flux is None: self._max_flux = max_flux_model
+
+            # Keep track of the minimal and maximal wavelength
+            min_wavelength_model = min(wavelengths)
+            max_wavelength_model = max(wavelengths)
+            if min_wavelength_model < self._min_wavelength or self._min_wavelength is None: self._min_wavelength = min_wavelength_model
+            if max_wavelength_model > self._max_wavelength or self._max_wavelength is None: self._max_wavelength = max_wavelength_model
 
         # Plot the data points (as a line) on the axis
         log_model = np.log10(fluxes)
-        axis.plot(wavelengths, log_model, linestyle, color='black', label=label)
+        axis.plot(wavelengths, log_model, linestyle, color=linecolor, label=label)
 
         # Plot errors
         if errors is not None:
@@ -769,8 +894,8 @@ class SEDPlotter(object):
             log_bottom = np.log10(bottom)
             log_top = np.log10(top)
 
-            axis.fill_between(wavelengths, log_bottom, log_top, where=log_top<=log_bottom, facecolor='cyan', edgecolor='cyan', interpolate=True, alpha=0.5)
-            axis.plot([], [], color='cyan', linewidth=10, label='spread')
+            axis.fill_between(wavelengths, log_bottom, log_top, where=log_top<=log_bottom, facecolor=errorcolor, edgecolor=errorcolor, interpolate=True, alpha=0.5)
+            axis.plot([], [], color=errorcolor, linewidth=10, label='spread')
 
     # -----------------------------------------------------------------
 
@@ -781,6 +906,12 @@ class SEDPlotter(object):
         :param path:
         :return:
         """
+
+        # Axis limits are now definite
+        if self.min_flux is None: self.min_flux = self._min_flux
+        if self.max_flux is None: self.max_flux = self._max_flux
+        if self.min_wavelength is None: self.min_wavelength = self._min_wavelength
+        if self.max_wavelength is None: self.max_wavelength = self._max_wavelength
 
         # Format residual axes
         for res_axis in self._residual_axes:
@@ -808,11 +939,11 @@ class SEDPlotter(object):
         self._main_axis.grid('on')
 
         # Set flux axis limits
-        plot_min, plot_max = get_plot_flux_limits(self._min_flux, self._max_flux)
+        plot_min, plot_max = get_plot_flux_limits(self.min_flux, self.max_flux)
         self._main_axis.set_ylim((plot_min, plot_max))
 
         # Set wavelength axis limits
-        plot_min_wavelength, plot_max_wavelength = get_plot_wavelength_limits(self._min_wavelength, self._max_wavelength)
+        plot_min_wavelength, plot_max_wavelength = get_plot_wavelength_limits(self.min_wavelength, self.max_wavelength)
         self._main_axis.set_xlim(plot_min_wavelength, plot_max_wavelength)
 
         # Add the legend
