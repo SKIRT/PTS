@@ -182,8 +182,8 @@ class SkySubtractor(Configurable):
         """
 
         # Create a mask from the ellipse
-        annulus_outer_factor = 3.0
-        annulus_inner_factor = 1.0
+        annulus_outer_factor = self.config.annulus_outer_factor
+        annulus_inner_factor = self.config.annulus_inner_factor
         annulus_mask = Mask.from_shape(self.principal_ellipse * annulus_outer_factor, self.frame.xsize, self.frame.ysize).inverse() + \
                        Mask.from_shape(self.principal_ellipse * annulus_inner_factor, self.frame.xsize, self.frame.ysize)
 

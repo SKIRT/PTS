@@ -110,6 +110,10 @@ class ImagePreparer(Configurable):
         preparer.config.subtract_sky = True
         preparer.config.set_uncertainties = True
 
+        # Advanced options
+        if arguments.sky_annulus_inner is not None: preparer.config.sky_subtraction.annulus_inner_factor = arguments.sky_annulus_inner
+        if arguments.sky_annulus_outer is not None: preparer.config.sky_subtraction.annulus_outer_factor = arguments.sky_annulus_outer
+
         # Return the new instance
         return preparer
 
