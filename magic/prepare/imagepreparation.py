@@ -508,6 +508,9 @@ class ImagePreparer(Configurable):
         self.image.add_frame(self.sky_subtractor.phot_sky, "phot_sky")
         self.image.add_frame(self.sky_subtractor.phot_rms, "phot_rms")
 
+        # Add the mask that is used for the sky estimation
+        self.image.add_mask(self.sky_subtractor.mask, "sky")
+
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("sky_subtracted.fits")
 

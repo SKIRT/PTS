@@ -52,8 +52,8 @@ def new_align_and_rebin(frame, coordinate_system, reference_system, preserve_nan
 
     if preserve_nans:
 
-        newbad = scipy.ndimage.map_coordinates(bad_pixels, mapping, order=0, mode='constant', cval=np.nan)
-        data[newbad] = np.nan
+        newbad = scipy.ndimage.map_coordinates(bad_pixels.astype(float), mapping, order=0, mode='constant', cval=np.nan)
+        data[newbad > 0.5] = np.nan
 
     # Return the new frame
     return data
