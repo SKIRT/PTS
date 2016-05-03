@@ -76,6 +76,9 @@ class AnalysisComponent(ModelingComponent):
         # The path to the memory table
         self.memory_table_path = None
 
+        # The path to the reference image
+        self.reference_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -135,5 +138,9 @@ class AnalysisComponent(ModelingComponent):
 
         # Initialize the memory table
         memory_table = MemoryTable(self.memory_table_path)
+
+        # Set the path to the reference image
+        reference_image = "Pacs red"
+        self.reference_path = fs.join(self.truncation_path, reference_image + ".fits")
 
 # -----------------------------------------------------------------

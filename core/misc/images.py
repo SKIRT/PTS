@@ -18,8 +18,8 @@ from ..tools import filesystem as fs
 from ..basics.filter import Filter
 from ...magic.core.image import Image
 from ...magic.core.frame import Frame
+from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..tools.special import remote_filter_convolution
-from ..tools.special import test
 
 # -----------------------------------------------------------------
 
@@ -65,7 +65,7 @@ class ObservedImageMaker(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, output_path=None, filter_names=None, instrument_names=None, host_id=None):
+    def run(self, simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None, host_id=None):
 
         """
         This function ...
@@ -73,6 +73,7 @@ class ObservedImageMaker(object):
         :param output_path:
         :param filter_names:
         :param instrument_names:
+        :param wcs_path:
         :param host_id:
         :return:
         """
@@ -97,6 +98,9 @@ class ObservedImageMaker(object):
 
         # Make the observed images
         self.make_images(host_id)
+
+        # Set the WCS of the created images
+        if wcs_path is not None: self.set_wcs(wcs_path)
 
         # Write the results
         if output_path is not None: self.write(output_path)
@@ -185,17 +189,48 @@ class ObservedImageMaker(object):
                 for fltr in self.filters:
 
                     # Debugging
-                    log.debug("Making the observed image for the " + fltr.name + " filter ...")
+                    log.debug("Making the observed image for the " + fltr.description() + " filter ...")
 
                     # Calculate the observed image frame
                     data = fltr.convolve(self.wavelengths, fluxdensities)
                     frame = Frame(data)
 
                     # Add the observed image to the dictionary
-                    images[fltr.name] = frame
+                    images[fltr.description()] = frame
 
             # Add the dictionary of images of the current datacube to the complete images dictionary (with the datacube name as a key)
             self.images[datacube_name] = images
+
+    # -----------------------------------------------------------------
+
+    def set_wcs(self, wcs_path):
+
+        """
+        This function ...
+        :param wcs_path:
+        :return:
+        """
+
+        # TODO: allow multiple paths (in a dictionary) for the different datacubes (so that for certain instruments the WCS should not be set on the simulated images)
+
+        # Inform the user
+        log.info("Setting the WCS of the simulated images ...")
+
+        # Debugging
+        log.debug("Loading the coordinate system from '" + wcs_path + "' ...")
+
+        # Load the WCS
+        wcs = CoordinateSystem.from_file(wcs_path)
+
+        # Loop over the different images and set the WCS
+        for datacube_name in self.images:
+            for filter_name in self.images[datacube_name]:
+
+                # Debugging
+                log.debug("Setting the coordinate system of the " + filter_name + " image of the '" + datacube_name + "' instrument ...")
+
+                # Set the coordinate system for this frame
+                self.images[datacube_name][filter_name].wcs = wcs
 
     # -----------------------------------------------------------------
 

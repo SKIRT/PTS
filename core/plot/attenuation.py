@@ -132,7 +132,8 @@ class AttenuationPlotter(object):
         plt.ylabel('$A_\lambda/A_V$', fontsize=28)
         plt.xlabel('$\lambda/\mu$m', fontsize=28)
         plt.xlim(0.1, 2)
-        plt.ylim(0, 8)
+        #plt.ylim(0, 8)
+        plt.ylim(0, 1)
         plt.xscale('log')
         x = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 2]
         plt.xticks(x, x)

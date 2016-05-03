@@ -130,6 +130,7 @@ class SkirtRemoteLauncher(Configurable):
         launcher.config.analysis.misc.images = arguments.images
         launcher.config.analysis.misc.observation_filters = arguments.filters
         launcher.config.analysis.misc.observation_instruments = arguments.instruments
+        launcher.config.analysis.misc.images_wcs = arguments.wcs
 
         # Keep remote input and output
         launcher.config.keep = arguments.keep

@@ -194,6 +194,39 @@ class CoordinateSystem(wcs.WCS):
 
     # -----------------------------------------------------------------
 
+    def __eq__(self, other_wcs):
+
+        """
+        This function ...
+        :param other_wcs:
+        :return:
+        """
+
+        # Check whether the CRPIX is equal
+        if not self.wcs.crpix[0] == other_wcs.wcs.crpix[0]: return False
+        if not self.wcs.crpix[1] == other_wcs.wcs.crpix[1]: return False
+
+        # Check whether the pixel scale is equal
+        for element_self, element_other in zip(list(self.pixel_scale_matrix.flatten()), list(other_wcs.pixel_scale_matrix.flatten())):
+            #print(element_self, element_other)
+            if not element_self == element_other: return False
+
+        # Check whether the CRVAL is equal
+        if not self.wcs.crval[0] == other_wcs.wcs.crval[0]: return False
+        if not self.wcs.crval[1] == other_wcs.wcs.crval[1]: return False
+
+        # Check whether the number of axis is equal
+        if not self.naxis == other_wcs.naxis: return False
+
+        # Check whether the axis sizes are equal
+        if not self.naxis1 == other_wcs.naxis1: return False
+        if not self.naxis2 == other_wcs.naxis2: return False
+
+        # If all of the above tests succeeded, the coordinate systems may be considered equal
+        return True
+
+    # -----------------------------------------------------------------
+
     def to_pixel(self, shape):
 
         """

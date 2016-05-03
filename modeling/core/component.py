@@ -108,5 +108,6 @@ class ModelingComponent(Configurable):
             # Get the filter
             filter_id = entry["Instrument"] + "." + entry["Band"]
             filter_names.append(filter_id)
+        return filter_names
 
 # -----------------------------------------------------------------

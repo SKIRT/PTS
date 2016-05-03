@@ -82,13 +82,16 @@ class ResidualAnalyser(AnalysisComponent):
         self.load_simulated_images()
 
         # 3. Load the observed images
-        self.load_observations()
+        self.load_observed_images()
 
         # 4. Calculate the residual images
         self.calculate_residuals()
 
         # 5. Writing
         self.write()
+
+        # 6. Plotting
+        self.plot()
 
     # -----------------------------------------------------------------
 
@@ -138,6 +141,11 @@ class ResidualAnalyser(AnalysisComponent):
             # Ignore the H alpha image
             if "Halpha" in name: continue
 
+            # Check whether a simulated image exists for this band
+            if name not in self.simulated:
+                log.warning("The simulated version of the " + name + " image could not be found, skipping " + name + " data ...")
+                continue
+
             # Debugging
             log.debug("Loading the '" + name + "' image ...")
 
@@ -168,8 +176,29 @@ class ResidualAnalyser(AnalysisComponent):
         # Loop over the filter names
         for filter_name in filter_names:
 
-            # Calculate the residual image
-            residual = (self.simulated[filter_name] - self.observed[filter_name]) / self.observed[filter_name]
+            simulated = self.simulated[filter_name]
+            observed = self.observed[filter_name]
+
+            # Check whether the coordinate systems match
+            if simulated.wcs == observed.wcs:
+
+                # Debugging
+                log.debug("The coordinate system of the simulated and observed image for the " + filter_name + " filter matches")
+
+                # Calculate the residual image
+                residual = (simulated - observed) / observed
+
+            else:
+
+                # Debugging
+                log.debug("The coordinate system of the simulated and observed image for the " + filter_name + " does not match: rebinning the simulated image ...")
+
+                # Rebin the simulated image to the coordinate system of the observed image
+                simulated_rebinned = simulated.rebinned(observed.wcs)
+
+                # Calculate the residual image
+                residual = (simulated_rebinned - observed) / observed
+
             #residual.replace_infs(0.0)
 
             # Add the residual image to the dictionary
@@ -184,6 +213,9 @@ class ResidualAnalyser(AnalysisComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing ...")
+
         # Write the residual frames
         self.write_residuals()
 
@@ -196,13 +228,33 @@ class ResidualAnalyser(AnalysisComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the residual frames ...")
+
         # Loop over the residual frames
         for filter_name in self.residuals:
 
             # Determine the path for this residual image
             path = filesystem.join(self.analysis_residuals_path, filter_name + ".fits")
 
+            # Debugging
+            log.debug("Writing the residual frame for the " + filter_name + " band to '" + path + "' ...")
+
             # Write the image
             self.residuals[filter_name].save(path)
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        #self.plot_residuals()
 
 # -----------------------------------------------------------------

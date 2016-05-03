@@ -168,9 +168,7 @@ class BestModelLauncher(AnalysisComponent):
         self.best_path = fs.join(self.fit_path, "best")
 
         # Reference coordinate system
-        reference_image = "Pacs red"
-        reference_path = fs.join(self.truncation_path, reference_image + ".fits")
-        self.reference_wcs = CoordinateSystem.from_file(reference_path)
+        self.reference_wcs = CoordinateSystem.from_file(self.reference_path)
 
     # -----------------------------------------------------------------
 
@@ -451,6 +449,7 @@ class BestModelLauncher(AnalysisComponent):
         self.analysis_options.misc.observation_filters = filter_names
         self.analysis_options.misc.observation_instruments = ["earth"]
         self.analysis_options.misc.make_images_remote = ["nancy"]
+        self.analysis_options.misc.images_wcs = self.reference_path
 
         # Set the paths of the timing and memory table files
         self.analysis_options.timing_table_path = self.timing_table_path
