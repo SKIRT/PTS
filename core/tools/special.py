@@ -542,7 +542,8 @@ def remote_filter_convolution(host_id, datacube_path, wavelengths, filters):
 
     # Download
     local_downloaded_temp_path = fs.join(fs.home(), fs.name(remote_temp_path))
-    remote.download(remote_temp_path, fs.home(), compress=True, show_output=True)
+    fs.create_directory(local_downloaded_temp_path)
+    remote.download(remote_temp_path, local_downloaded_temp_path, compress=True, show_output=True)
 
     # Remove the temporary directory on the remote's filesystem
     remote.remove_directory(remote_temp_path)
@@ -559,6 +560,8 @@ def remote_filter_convolution(host_id, datacube_path, wavelengths, filters):
         # Determine the path to the resulting FITS file
         path = fs.join(local_downloaded_temp_path, fltr.name + ".fits")
 
+        #print(path)
+
         # Check whether the frame exists
         if not fs.is_file(path): raise RuntimeError("The image for filter " + fltr.name + " is missing")
 
@@ -567,6 +570,9 @@ def remote_filter_convolution(host_id, datacube_path, wavelengths, filters):
 
         # Add the frame to the dictionary
         frames[fltr.name] = frame
+
+    # Remove the downloaded temporary directory
+    fs.remove_directory(local_downloaded_temp_path)
 
     # Return the dictionary of frames
     return frames

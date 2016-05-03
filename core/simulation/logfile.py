@@ -142,7 +142,22 @@ class LogFile(object):
         :return:
         """
 
-        return float(self.contents["Message"][len(self.contents) - 1].split("Peak memory usage: ")[1].split(" GB")[0])
+        last_message = self.last_message
+
+        if "Peak memory usage" in last_message: return float(last_message.split("Peak memory usage: ")[1].split(" GB")[0])
+        else: raise RuntimeError("The log file was aborted before it could state the peak memory usage")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def last_message(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.contents["Message"][-1]
 
     # -----------------------------------------------------------------
 

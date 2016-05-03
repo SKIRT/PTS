@@ -14,11 +14,12 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
-from ..tools import filesystem
+from ..tools import filesystem as fs
 from ..basics.filter import Filter
 from ...magic.core.image import Image
 from ...magic.core.frame import Frame
 from ..tools.special import remote_filter_convolution
+from ..tools.special import test
 
 # -----------------------------------------------------------------
 
@@ -40,7 +41,10 @@ class ObservedImageMaker(object):
 
         # -- Attributes --
 
-        # The paths to the FITS files produced by SKIRT
+        # The simulation prefix
+        self.simulation_prefix = None
+
+        # The paths to the 'total' FITS files produced by SKIRT
         self.fits_paths = None
 
         # The wavelengths of the simulation
@@ -50,6 +54,9 @@ class ObservedImageMaker(object):
         self.filter_names = ["FUV", "NUV", "u", "g", "r", "i", "z", "H", "J", "Ks", "I1", "I2", "I3", "I4", "W1", "W2",
                              "W3", "W4", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250", "SPIRE 350", "SPIRE 500"]
 
+        # The instrument names
+        self.instrument_names = None
+
         # The filters for which the images should be created
         self.filters = None
 
@@ -58,13 +65,14 @@ class ObservedImageMaker(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, output_path=None, filter_names=None, host_id=None):
+    def run(self, simulation, output_path=None, filter_names=None, instrument_names=None, host_id=None):
 
         """
         This function ...
         :param simulation:
         :param output_path:
         :param filter_names:
+        :param instrument_names:
         :param host_id:
         :return:
         """
@@ -75,8 +83,14 @@ class ObservedImageMaker(object):
         # Get the list of wavelengths for the simulation
         self.wavelengths = simulation.wavelengths()
 
+        # Get the simulation prefix
+        self.simulation_prefix = simulation.prefix()
+
         # Set the filter names
         if filter_names is not None: self.filter_names = filter_names
+
+        # Set the instrument names
+        self.instrument_names = instrument_names
 
         # Create the filters
         self.create_filters()
@@ -130,8 +144,14 @@ class ObservedImageMaker(object):
         # Loop over the different simulated images
         for path in self.fits_paths:
 
+            # Get the name of the instrument
+            instr_name = instrument_name(path, self.simulation_prefix)
+
+            # If a list of instruments is defined an this instrument is not in this list, skip it
+            if self.instrument_names is not None and instr_name not in self.instrument_names: continue
+
             # Get the name of the datacube (as given by SKIRT)
-            datacube_name = filesystem.strip_extension(filesystem.name(path))
+            datacube_name = fs.strip_extension(fs.name(path))
 
             # Debugging
             log.debug("Making the observed images for " + datacube_name + ".fits ...")
@@ -162,17 +182,17 @@ class ObservedImageMaker(object):
                 # densities must be per wavelength instead of per frequency!
 
                 # Loop over the different filters
-                for filter in self.filters:
+                for fltr in self.filters:
 
                     # Debugging
-                    log.debug("Making the observed image for the " + filter.name + " filter ...")
+                    log.debug("Making the observed image for the " + fltr.name + " filter ...")
 
                     # Calculate the observed image frame
-                    data = filter.convolve(self.wavelengths, fluxdensities)
+                    data = fltr.convolve(self.wavelengths, fluxdensities)
                     frame = Frame(data)
 
                     # Add the observed image to the dictionary
-                    images[filter.name] = frame
+                    images[fltr.name] = frame
 
             # Add the dictionary of images of the current datacube to the complete images dictionary (with the datacube name as a key)
             self.images[datacube_name] = images
@@ -195,9 +215,22 @@ class ObservedImageMaker(object):
             for filter_name in self.images[datacube_name]:
 
                 # Determine the path to the output FITS file
-                path = filesystem.join(output_path, datacube_name + "__" + filter_name + ".fits")
+                path = fs.join(output_path, datacube_name + "__" + filter_name + ".fits")
 
                 # Save the image
                 self.images[datacube_name][filter_name].save(path)
+
+# -----------------------------------------------------------------
+
+def instrument_name(datacube_path, prefix):
+
+    """
+    This function ...
+    :param datacube_path:
+    :param prefix:
+    :return:
+    """
+
+    return fs.name(datacube_path).split("_total.fits")[0].split(prefix + "_")[1]
 
 # -----------------------------------------------------------------

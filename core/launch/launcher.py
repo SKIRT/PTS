@@ -116,6 +116,7 @@ class SkirtLauncher(Configurable):
         launcher.config.analysis.misc.fluxes = arguments.fluxes
         launcher.config.analysis.misc.images = arguments.images
         launcher.config.analysis.misc.observation_filters = arguments.filters
+        launcher.config.analysis.misc.observation_instruments = arguments.instruments
 
         # Return the new launcher
         return launcher

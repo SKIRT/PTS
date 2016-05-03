@@ -46,12 +46,18 @@ class ObservedFluxCalculator(object):
 
         # -- Attributes --
 
+        # The simulation prefix
+        self.simulation_prefix = None
+
         # The paths to the SED files produced by SKIRT
         self.sed_paths = None
 
         # Filter names
         self.filter_names = ["FUV", "NUV", "u", "g", "r", "i", "z", "H", "J", "Ks", "I1", "I2", "I3", "I4", "W1", "W2",
                              "W3", "W4", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250", "SPIRE 350", "SPIRE 500"]
+
+        # Instrument names
+        self.instrument_names = None
 
         # The filters for which the fluxes should be calculated
         self.filters = None
@@ -61,21 +67,28 @@ class ObservedFluxCalculator(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, output_path=None, filter_names=None):
+    def run(self, simulation, output_path=None, filter_names=None, instrument_names=None):
 
         """
         This function ...
         :param simulation:
         :param output_path:
         :param filter_names:
+        :param instrument_names:
         :return:
         """
 
         # Obtain the paths to the SED files created by the simulation
         self.sed_paths = simulation.seddatpaths()
 
+        # Get the simulation prefix
+        self.simulation_prefix = simulation.prefix()
+
         # Set the filter names
         if filter_names is not None: self.filter_names = filter_names
+
+        # Set the instrument names
+        self.instrument_names = instrument_names
 
         # Create the filters
         self.create_filters()
@@ -108,10 +121,10 @@ class ObservedFluxCalculator(object):
             log.debug("Constructing the " + filter_name + " filter ...")
 
             # Create the filter
-            filter = Filter.from_string(filter_name)
+            fltr = Filter.from_string(filter_name)
 
             # Add the filter to the list
-            self.filters.append(filter)
+            self.filters.append(fltr)
 
     # -----------------------------------------------------------------
 
@@ -127,6 +140,12 @@ class ObservedFluxCalculator(object):
 
         # Loop over the different SEDs
         for sed_path in self.sed_paths:
+
+            # Get the name of the instrument
+            instr_name = instrument_name(sed_path, self.simulation_prefix)
+
+            # If a list of instruments is defined an this instrument is not in this list, skip it
+            if self.instrument_names is not None and instr_name not in self.instrument_names: continue
 
             # Get the name of the SED
             sed_name = fs.name(sed_path).split("_sed")[0]
@@ -159,17 +178,17 @@ class ObservedFluxCalculator(object):
             fluxdensities = np.array(fluxdensities) # in W / (m2 * micron)
 
             # Loop over the different filters
-            for filter in self.filters:
+            for fltr in self.filters:
 
                 # Debugging
-                log.debug("Calculating the observed flux for the " + filter.name + " filter ...")
+                log.debug("Calculating the observed flux for the " + fltr.name + " filter ...")
 
                 # Calculate the flux: flux densities must be per wavelength instead of per frequency!
-                fluxdensity = float(filter.convolve(wavelengths, fluxdensities)) * Unit("W / (m2 * micron)")
-                fluxdensity_value = fluxdensity.to("Jy", equivalencies=spectral_density(filter.pivotwavelength() * Unit("micron"))).value # convert back to Jy
+                fluxdensity = float(fltr.convolve(wavelengths, fluxdensities)) * Unit("W / (m2 * micron)")
+                fluxdensity_value = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.pivotwavelength() * Unit("micron"))).value # convert back to Jy
 
                 # Add an entry to the flux table
-                table.add_row([filter.observatory, filter.instrument, filter.band, filter.pivotwavelength(), fluxdensity_value])
+                table.add_row([fltr.observatory, fltr.instrument, fltr.band, fltr.pivotwavelength(), fluxdensity_value])
 
             # Add the complete table to the dictionary (with the SKIRT SED name as key)
             self.tables[sed_name] = table
@@ -245,5 +264,18 @@ def spectral_factor_hz_to_meter(wavelength):
     # Calculate the conversion factor
     factor = (wavelength ** 2 / speed_of_light).to(conversion_factor_unit).value
     return 1./factor
+
+# -----------------------------------------------------------------
+
+def instrument_name(sed_path, prefix):
+
+    """
+    This function ...
+    :param sed_path:
+    :param prefix:
+    :return:
+    """
+
+    return fs.name(sed_path).split("_sed.dat")[0].split(prefix + "_")[1]
 
 # -----------------------------------------------------------------

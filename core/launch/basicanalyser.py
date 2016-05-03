@@ -430,7 +430,7 @@ class BasicAnalyser(Configurable):
         log.info("Making wave movies ...")
 
         # Make wave movies from the output images
-        makewavemovie(self.simulation, output_path=self.misc_options.path)
+        #makewavemovie(self.simulation, output_path=self.misc_options.path)
 
     # -----------------------------------------------------------------
 
@@ -446,7 +446,9 @@ class BasicAnalyser(Configurable):
 
         # Create and run a ObservedFluxCalculator object
         self.flux_calculator = ObservedFluxCalculator()
-        self.flux_calculator.run(self.simulation, output_path=self.misc_options.path, filter_names=self.misc_options.observation_filters)
+        self.flux_calculator.run(self.simulation, output_path=self.misc_options.path,
+                                 filter_names=self.misc_options.observation_filters,
+                                 instrument_names=self.misc_options.observation_instruments)
 
     # -----------------------------------------------------------------
 
@@ -462,7 +464,10 @@ class BasicAnalyser(Configurable):
 
         # Create and run an ObservedImageMaker object
         self.image_maker = ObservedImageMaker()
-        self.image_maker.run(self.simulation, output_path=self.misc_options.path, filter_names=self.misc_options.observation_filters, host_id=self.misc_options.make_images_remote)
+        self.image_maker.run(self.simulation, output_path=self.misc_options.path,
+                             filter_names=self.misc_options.observation_filters,
+                             instrument_names=self.misc_options.observation_instruments,
+                             host_id=self.misc_options.make_images_remote)
 
 # -----------------------------------------------------------------
 

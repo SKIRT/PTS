@@ -449,6 +449,8 @@ class BestModelLauncher(AnalysisComponent):
         self.analysis_options.misc.fluxes = True
         self.analysis_options.misc.images = True
         self.analysis_options.misc.observation_filters = filter_names
+        self.analysis_options.misc.observation_instruments = ["earth"]
+        self.analysis_options.misc.make_images_remote = ["nancy"]
 
         # Set the paths of the timing and memory table files
         self.analysis_options.timing_table_path = self.timing_table_path

@@ -443,7 +443,7 @@ class SEDPlotter(object):
 
         if len(self.models_no_residuals) > 0:
 
-            line_colors_models_no_residuals = ["k", "r", "lawngreen", "blueviolet", "deepskyblue"]
+            line_colors_models_no_residuals = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
             line_styles_models_no_residuals = ["-"] * len(self.models_no_residuals)
 
             # Add model SEDs in the models_no_residuals dictionary
@@ -583,7 +583,7 @@ class SEDPlotter(object):
 
         if len(self.models_no_residuals) > 0:
 
-            line_colors_models_no_residuals = ["k", "r", "lawngreen", "blueviolet", "deepskyblue"]
+            line_colors_models_no_residuals = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
             line_styles_models_no_residuals = ["-"] * len(self.models_no_residuals)
 
             # Add model SEDs from the models_no_residuals dictionary

@@ -155,6 +155,7 @@ class AnalysisOptions(Options):
         self.misc.fluxes = False
         self.misc.images = False
         self.misc.observation_filters = None # The filters for which to recreate the observations
+        self.misc.observation_instruments = None # The instrument for which to recreate the observations
         self.misc.make_images_remote = None  # Perform the calculation of the observed images on a remote machine (this is a memory and CPU intensive step)
 
         # Properties that are relevant for simulations launched as part of a batch (e.g. from an automatic launching procedure)

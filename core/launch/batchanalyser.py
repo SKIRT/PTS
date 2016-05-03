@@ -228,7 +228,15 @@ class BatchAnalyser(Configurable):
         processes = parallelization.processes
 
         # Get the peak memory usage
-        peak_memory_usage = self.log_file.peak_memory
+        peak_memory_usage = None
+        try: peak_memory_usage = self.log_file.peak_memory
+        except RuntimeError:
+            for log_file in self.simulation.logfiles():
+                try:
+                    peak_memory_usage = log_file.peak_memory
+                    break
+                except RuntimeError: pass
+        if peak_memory_usage is None: raise RuntimeError("All log files were aborted")
 
         # Get the number of wavelengths
         input_path = self.simulation.input_path
