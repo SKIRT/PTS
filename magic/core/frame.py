@@ -529,7 +529,7 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def downsampled(self, factor):
+    def downsampled(self, factor, order=3):
 
         """
         This function ...
@@ -537,7 +537,7 @@ class Frame(np.ndarray):
         """
 
         # Calculate the downsampled array
-        data = ndimage.interpolation.zoom(self, zoom=1.0/factor)
+        data = ndimage.interpolation.zoom(self, zoom=1.0/factor, order=order)
 
         new_xsize = data.shape[1]
         new_ysize = data.shape[0]
@@ -589,40 +589,73 @@ class Frame(np.ndarray):
 
         if integers:
 
-            # Create a new Frame
-            #frame = Frame.zeros_like(self)
+            # Check whether the upsampling factor is an integer or not
+            if int(factor) == factor:
 
-            #print("self.shape", self.shape)
+                data = ndimage.zoom(self, factor, order=0)
 
-            frame = self.downsampled(1./factor)
+                new_xsize = data.shape[1]
+                new_ysize = data.shape[0]
 
-            #print("frame.shape", frame.shape)
+                relative_center = Position(self.center.x / self.xsize, self.center.y / self.ysize)
 
-            #print("Checking indices ...")
-            indices = np.unique(self)
+                new_center = Position(relative_center.x * new_xsize, relative_center.y * new_ysize)
 
-            #print("indices:", indices)
+                new_wcs = self.wcs.copy()
+                # Change the center pixel position
+                new_wcs.wcs.crpix[0] = new_center.x
+                new_wcs.wcs.crpix[1] = new_center.y
 
-            # Loop over the indices
-            for index in list(indices):
+                # Change the number of pixels
+                new_wcs.naxis1 = new_xsize
+                new_wcs.naxis2 = new_ysize
 
-                #print(index)
+                new_wcs._naxis1 = new_wcs.naxis1
+                new_wcs._naxis2 = new_wcs.naxis2
 
-                index = int(index)
+                # Change the pixel scale
+                new_wcs.wcs.cdelt[0] *= float(self.xsize) / float(new_xsize)
+                new_wcs.wcs.cdelt[1] *= float(self.ysize) / float(new_ysize)
 
-                where = Mask(self == index)
+                return Frame(data, wcs=new_wcs, name=self.name, description=self.description, unit=self.unit, zero_point=self.zero_point, filter=self.filter, sky_subtracted=self.sky_subtracted, fwhm=self.fwhm)
 
-                # Rebin this mask
-                #data = transformations.new_align_and_rebin(self.masks[mask_name].astype(float), original_wcs, reference_wcs)
+            # Upsampling factor is not an integer
+            else:
 
-                # Calculate the downsampled array
-                data = ndimage.interpolation.zoom(where.astype(float), zoom=factor)
+                # Create a new Frame
+                #frame = Frame.zeros_like(self)
 
-                upsampled_where = data > 0.5
+                #print("self.shape", self.shape)
 
-                frame[upsampled_where] = index
+                frame = self.downsampled(1./factor)
 
-            return frame
+                #print("frame.shape", frame.shape)
+
+                #print("Checking indices ...")
+                indices = np.unique(self)
+
+                #print("indices:", indices)
+
+                # Loop over the indices
+                for index in list(indices):
+
+                    #print(index)
+
+                    index = int(index)
+
+                    where = Mask(self == index)
+
+                    # Rebin this mask
+                    #data = transformations.new_align_and_rebin(self.masks[mask_name].astype(float), original_wcs, reference_wcs)
+
+                    # Calculate the downsampled array
+                    data = ndimage.interpolation.zoom(where.astype(float), zoom=factor)
+
+                    upsampled_where = data > 0.5
+
+                    frame[upsampled_where] = index
+
+                return frame
 
         else: return self.downsampled(1./factor)
 
