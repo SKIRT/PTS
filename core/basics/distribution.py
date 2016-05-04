@@ -732,8 +732,8 @@ class Distribution(object):
 
         # Determine the x limits
         if x_limits is None:
-            x_min = 0.8 * self.min_value
-            x_max = 1.2 * self.max_value
+            x_min = self.min_value
+            x_max = self.max_value
         else:
             x_min = x_limits[0]
             x_max = x_limits[1]

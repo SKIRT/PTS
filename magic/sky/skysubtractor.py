@@ -17,6 +17,11 @@ import numpy as np
 from scipy import interpolate
 import matplotlib.pyplot as plt
 
+# Test
+# from sklearn.preprocessing import PolynomialFeatures
+# from sklearn.linear_model import LinearRegression
+# from sklearn.pipeline import Pipeline
+
 # Import astronomical modules
 from photutils.background import Background
 from astropy.modeling import models
@@ -79,13 +84,11 @@ class SkySubtractor(Configurable):
         # The estimated sky noise
         self.noise = None
 
-        # Photutils results
-        #self.phot_sky = None
-        #self.phot_rms = None
+        # Relevant for when estimation method is 'photutils'
+        self.phot_sky = None
+        self.phot_rms = None
 
         # Relevant for when estimation method is 'pts'
-        self.aperture_radius = None
-
         self.apertures_frame = None
         self.apertures_mean_frame = None
         self.apertures_noise_frame = None
@@ -156,12 +159,20 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Clearing the sky subtractor ...")
 
-        # Set all attributes to None
+        # Set default values for all attributes
         self.frame = None
+        self.sources_mask = None
+        self.extra_mask = None
         self.principal_ellipse = None
         self.saturation_region = None
         self.mask = None
         self.sky = None
+        self.noise = None
+        self.phot_sky = None
+        self.phot_rms = None
+        self.apertures_frame = None
+        self.apertures_mean_frame = None
+        self.apertures_noise_frame = None
 
     # -----------------------------------------------------------------
 
@@ -425,20 +436,93 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Estimating the sky and sky noise by using or own procedures ...")
 
-        # Get arrays of the coordinates of all pixels that are not masked
-        pixels_y, pixels_x = np.where(self.mask.inverse())
+        # Determine the aperture radius
+        aperture_radius = self.determine_aperture_radius()
 
-        # Get the number of pixels that are not masked (also the area of the frame not masked)
-        npixels = pixels_x.size
+        # Determine the number of apertures to use
+        napertures = self.determine_number_of_apertures(aperture_radius)
+
+        # Generate the apertures
+        aperture_centers, aperture_means, aperture_stddevs = self.generate_apertures(aperture_radius, napertures)
+
+        # Remove outliers
+        aperture_centers, aperture_means, aperture_stddevs = self.remove_aperture_outliers(aperture_centers, aperture_means, aperture_stddevs)
+
+
+        # Calculate the large-scale variation level
+        large_scale_variations_error = aperture_means.std()
+
+        # Calculate the mean pixel-by-pixel noise over all apertures
+        pixel_to_pixel_noise = np.mean(aperture_stddevs)
+
+
+
+        # Determine the median sky level
+        self.sky = np.median(aperture_means)
+
+        # Determine the noise by quadratically adding the large scale variation and the mean pixel-by-pixel noise
+        self.noise = np.sqrt(large_scale_variations_error**2 + pixel_to_pixel_noise**2)
+
+
+
+        # Debugging
+        log.debug("The estimated sky level is " + str(self.sky))
+        log.debug("The estimated sky noise level is " + str(self.noise))
+
+
+
+        self.apertures_frame = Frame.zeros_like(self.frame)
+        self.apertures_mean_frame = Frame.zeros_like(self.frame)
+        self.apertures_noise_frame = Frame.zeros_like(self.frame)
+
+        for i in range(len(aperture_centers)):
+
+            center = aperture_centers[i]
+
+            circle = Circle(center, aperture_radius)
+
+            mask = Mask.from_shape(circle, self.frame.xsize, self.frame.ysize)
+
+            self.apertures_frame[mask] = self.frame[mask]
+            self.apertures_mean_frame[mask] = aperture_means[i]
+            self.apertures_noise_frame[mask] = aperture_stddevs[i]
+
+        #self.try_to_fit_polynomial_or_interpolate(aperture_centers, aperture_means)
+        #self.try_to_interpolate_smart(aperture_centers, aperture_means)
+
+    # -----------------------------------------------------------------
+
+    def determine_aperture_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Determine the radius for the sky apertures
         fwhm_pix = self.frame.fwhm_pix
         radius = 4.0 * fwhm_pix
 
-        self.aperture_radius = radius
-
         # Debugging
         log.debug("Using sky apertures with a radius of " + str(radius) + " pixels")
+
+        # Return the aperture radius
+        return radius
+
+    # -----------------------------------------------------------------
+
+    def determine_number_of_apertures(self, radius):
+
+        """
+        This function ...
+        :param npixels:
+        :param radius:
+        :return:
+        """
+
+        npixels = np.sum(self.mask.inverse())
+
+        print("npixels=", npixels)
 
         # Assuming optimal hexagonal packing, get an estimate of the maximum number of circles of given radius
         # can fit in the area covered by the pixels that are not masked. This is obviously a significant overestimation
@@ -448,7 +532,7 @@ class SkySubtractor(Configurable):
         # which is approximately equal to 0.907
         # See: https://www.quora.com/How-many-3-75-inch-circles-will-fit-inside-a-17-inch-square
         coverable_area = 0.907 * npixels
-        circle_area = np.pi * radius**2
+        circle_area = np.pi * radius ** 2
         optimal_number_of_apertures = coverable_area / circle_area
 
         # Debugging
@@ -456,10 +540,31 @@ class SkySubtractor(Configurable):
                   "(assuming hexagonal packing) is " + str(optimal_number_of_apertures))
 
         # Determine the number of apertures that are going to be used, take a third of the upper limit
-        napertures = int(optimal_number_of_apertures / 3)
+        napertures = int(optimal_number_of_apertures / 3.)
 
         # Debugging
         log.debug("A total of " + str(napertures) + " are going to be used to estimate the sky ...")
+
+        # Return the number of apertures
+        return napertures
+
+    # -----------------------------------------------------------------
+
+    def generate_apertures(self, radius, napertures):
+
+        """
+        This function ...
+        :param radius:
+        :return:
+        """
+
+        circle_area = np.pi * radius ** 2
+
+        # Get arrays of the coordinates of all pixels that are not masked
+        pixels_y, pixels_x = np.where(self.mask.inverse())
+
+        # Get the number of pixels that are not masked (also the area of the frame not masked)
+        npixels = pixels_x.size
 
         # Create a mask that tags all pixels that have been covered by one of the apertures
         apertures_mask = Mask.empty_like(self.frame)
@@ -501,7 +606,8 @@ class SkySubtractor(Configurable):
 
             # If the overlap fraction is larger than 50% for this aperture, skip it
             if overlap_fraction >= 0.5:
-                log.debug("For this aperture, an overlap fraction of more than 50% was found with the sky mask, skipping ...")
+                log.debug(
+                    "For this aperture, an overlap fraction of more than 50% was found with the sky mask, skipping ...")
                 continue
 
             # Get a mask of the pixels that overlap with the apertures mask
@@ -514,7 +620,8 @@ class SkySubtractor(Configurable):
 
             # If the overlap fraction is larger than 10% for this aperture, skip it
             if overlap_fraction >= 0.1:
-                log.debug("For this aperture, an overlap fraction of more than 10% was found with other apertures, skipping ...")
+                log.debug(
+                    "For this aperture, an overlap fraction of more than 10% was found with other apertures, skipping ...")
 
             # Add the aperture area to the mask
             apertures_mask[source.y_slice, source.x_slice] += source.mask
@@ -522,16 +629,16 @@ class SkySubtractor(Configurable):
             # Calculate the mean sky value in this aperture
             masked_array_cutout = np.ma.MaskedArray(source.cutout, mask=sky_mask_cutout + source.background_mask)
 
-            #plotting.plot_box(masked_array_cutout)
+            # plotting.plot_box(masked_array_cutout)
 
             aperture_mean = np.ma.mean(masked_array_cutout)
             aperture_median = np.ma.median(masked_array_cutout)[0]
-            #aperture_median2 = np.median(masked_array_cutout.compressed()) # same result, but unnecessary compressed step
+            # aperture_median2 = np.median(masked_array_cutout.compressed()) # same result, but unnecessary compressed step
             aperture_stddev = np.std(masked_array_cutout)
 
-            #print("aperture mean:", aperture_mean)
-            #print("aperture median:", aperture_median, aperture_median2)
-            #print("aperture stddev:", aperture_std)
+            # print("aperture mean:", aperture_mean)
+            # print("aperture median:", aperture_median, aperture_median2)
+            # print("aperture stddev:", aperture_std)
 
             aperture_centers.append(center)
             aperture_means.append(aperture_mean)
@@ -547,6 +654,17 @@ class SkySubtractor(Configurable):
         aperture_means = np.array(aperture_means)
         aperture_stddevs = np.array(aperture_stddevs)
 
+        # Return the aperture properties
+        return aperture_centers, aperture_means, aperture_stddevs
+
+    # -----------------------------------------------------------------
+
+    def remove_aperture_outliers(self, aperture_centers, aperture_means, aperture_stddevs):
+
+        """
+        This function ...
+        :return:
+        """
 
         means_distribution = Distribution.from_values(aperture_means, bins=50)
         stddevs_distribution = Distribution.from_values(aperture_stddevs, bins=50)
@@ -565,50 +683,14 @@ class SkySubtractor(Configurable):
         aperture_stddevs = np.ma.MaskedArray(aperture_stddevs, clip_mask).compressed()
 
         means_distribution = Distribution.from_values(aperture_means, bins=50)
+
         stddevs_distribution = Distribution.from_values(aperture_stddevs, bins=50)
 
         means_distribution.plot("Aperture means after sigma-clipping")
         stddevs_distribution.plot("Aperture stddevs after sigma-clipping")
 
-        # Calculate the large-scale variation level
-        large_scale_variations_error = aperture_means.std()
-
-        # Calculate the mean pixel-by-pixel noise over all apertures
-        pixel_to_pixel_noise = np.mean(aperture_stddevs)
-
-
-
-        # Determine the median sky level
-        self.sky = np.median(aperture_means)
-
-        # Determine the noise by quadratically adding the large scale variation and the mean pixel-by-pixel noise
-        self.noise = np.sqrt(large_scale_variations_error**2 + pixel_to_pixel_noise**2)
-
-
-
-        # Debugging
-        log.debug("The estimated sky level is " + str(self.sky))
-        log.debug("The estimated sky noise level is " + str(self.noise))
-
-
-
-        self.apertures_frame = Frame.zeros_like(self.frame)
-        self.apertures_mean_frame = Frame.zeros_like(self.frame)
-        self.apertures_noise_frame = Frame.zeros_like(self.frame)
-
-        for i in range(len(aperture_centers)):
-
-            center = aperture_centers[i]
-
-            circle = Circle(center, self.aperture_radius)
-
-            mask = Mask.from_shape(circle, self.frame.xsize, self.frame.ysize)
-
-            self.apertures_frame[mask] = self.frame[mask]
-            self.apertures_mean_frame[mask] = aperture_means[i]
-            self.apertures_noise_frame[mask] = aperture_stddevs[i]
-
-        #self.try_to_fit_polynomial_or_interpolate(aperture_centers, aperture_means)
+        # Return the sigma-clipped aperture properties
+        return aperture_centers, aperture_means, aperture_stddevs
 
     # -----------------------------------------------------------------
 
@@ -652,6 +734,26 @@ class SkySubtractor(Configurable):
 
         # Set new sky frame
         self.sky = Frame(data)
+
+    # -----------------------------------------------------------------
+
+    def try_to_interpolate_smart(self, aperture_centers, aperture_means):
+
+        """
+        This function ...
+        :param aperture_centers:
+        :param aperture_means:
+        :return:
+        """
+
+        model = Pipeline([('poly', PolynomialFeatures(degree=3)), ('linear', LinearRegression(fit_intercept=False))])
+
+        # fit to an order-3 polynomial data
+        x = np.arange(5)
+
+        y = 3 - 2 * x + x ** 2 - x ** 3
+
+        model = model.fit(x[:, np.newaxis], y)
 
     # -----------------------------------------------------------------
 
