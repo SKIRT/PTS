@@ -65,7 +65,7 @@ class ObservedImageMaker(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None, host_id=None):
+    def run(self, simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None, unit=None, host_id=None):
 
         """
         This function ...
@@ -74,6 +74,7 @@ class ObservedImageMaker(object):
         :param filter_names:
         :param instrument_names:
         :param wcs_path:
+        :param unit:
         :param host_id:
         :return:
         """

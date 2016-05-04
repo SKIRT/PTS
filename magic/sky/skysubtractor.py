@@ -111,17 +111,17 @@ class SkySubtractor(Configurable):
         # 2. Create mask
         self.create_mask()
 
-        # 2. Perform sigma-clipping
+        # 2. Do an extra sigma-clipping step on the data
         if self.config.sigma_clip_mask: self.sigma_clip()
 
-        # 3. Estimate the sky
+        # 3. Estimate the sky (and sky noise)
         self.estimate()
 
-        # 4. If requested, subtract the sky
+        # 4. Subtract the sky
         self.subtract()
 
-        # Set zero outside
-        #self.set_zero_outside()
+        # 5. Set the frame to zero outside of the principal galaxy
+        if self.config.set_zero_outside: self.set_zero_outside()
 
     # -----------------------------------------------------------------
 

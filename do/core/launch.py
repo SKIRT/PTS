@@ -55,6 +55,7 @@ parser.add_argument("--images", action="store_true", help="add this option to ma
 parser.add_argument("--filters", parsing.string_list, help="the names of the filters for which to recreate the observations (seperated by commas)")
 parser.add_argument("--instruments", parsing.string_list, help="the names of the instruments for which to recreate the observations (seperated by commas)")
 parser.add_argument("--wcs", type=str, help="the path to the FITS file for which the WCS should be set as the WCS of the recreated observed images")
+parser.add_argument("--unit", type=str, help="the unit to which the recreated observed images should be converted")
 parser.add_argument("--debug", action="store_true", help="add this option to enable debug output")
 parser.add_argument('--report', action='store_true', help='write a report file')
 parser.add_argument("--keep", action="store_true", help="add this option to keep the remote input and output")

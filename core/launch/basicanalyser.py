@@ -467,6 +467,8 @@ class BasicAnalyser(Configurable):
         self.image_maker.run(self.simulation, output_path=self.misc_options.path,
                              filter_names=self.misc_options.observation_filters,
                              instrument_names=self.misc_options.observation_instruments,
+                             wcs_path=self.misc_options.images_wcs,
+                             unit=self.misc_options.images_unit,
                              host_id=self.misc_options.make_images_remote)
 
 # -----------------------------------------------------------------

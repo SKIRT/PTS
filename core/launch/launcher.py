@@ -118,6 +118,7 @@ class SkirtLauncher(Configurable):
         launcher.config.analysis.misc.observation_filters = arguments.filters
         launcher.config.analysis.misc.observation_instruments = arguments.instruments
         launcher.config.analysis.misc.images_wcs = arguments.wcs
+        launcher.config.analysis.misc.images_unit = arguments.unit
 
         # Return the new launcher
         return launcher

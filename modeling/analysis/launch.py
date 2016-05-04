@@ -450,6 +450,7 @@ class BestModelLauncher(AnalysisComponent):
         self.analysis_options.misc.observation_instruments = ["earth"]
         self.analysis_options.misc.make_images_remote = ["nancy"]
         self.analysis_options.misc.images_wcs = self.reference_path
+        self.analysis_options.misc.images_unit = "MJy/sr"
 
         # Set the paths of the timing and memory table files
         self.analysis_options.timing_table_path = self.timing_table_path
