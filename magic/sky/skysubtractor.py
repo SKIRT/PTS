@@ -239,152 +239,175 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        log.info("Estimating the sky by using " + self.config.estimation.method + " ...")
+        log.info("Estimating the sky ...")
 
-        # If the mean sky level should be used
-        if self.config.estimation.method == "mean":
+        # Estimate the sky by taking the mean value of all pixels that are not masked
+        if self.config.estimation.method == "mean": self.estimate_sky_mean()
 
-            # Create a frame filled with the mean value
-            self.sky = Frame(np.full(self.frame.shape, self.mean),
-                             wcs=self.frame.wcs,
-                             name="sky",
-                             description="estimated sky",
-                             unit=self.frame.unit,
-                             zero_point=self.frame.zero_point,
-                             filter=self.frame.filter,
-                             sky_subtracted=False,
-                             fwhm=self.frame.fwhm)
+        # Estimate the sky by taking the median value of all pixels that are not masked
+        elif self.config.estimation.method == "median": self.estimate_sky_median()
 
-        # If the median sky level should be used
-        elif self.config.estimation.method == "median":
+        # The sky should be estimated by fitting a polynomial function to the pixels
+        elif self.config.estimation.method == "polynomial": self.estimate_sky_polynomial()
 
-            # Create a frame filled with the median value
-            self.sky = Frame(np.full(self.frame.shape, self.median),
-                             wcs=self.frame.wcs,
-                             name="sky",
-                             description="estimated sky",
-                             unit=self.frame.unit,
-                             zero_point=self.frame.zero_point,
-                             filter=self.frame.filter,
-                             sky_subtracted=False,
-                             fwhm=self.frame.fwhm)
+        # Use photutils to estimate the sky and sky noise
+        elif self.config.estimation.method == "photutils": self.estimate_sky_photutils()
 
-        # If the sky should be estimated by using low-resolution interpolation
-        elif self.config.estimation.method == "low-res-interpolation":
+        # Use our own method to estimate the sky and sky noise
+        elif self.config.estimation.method == "pts": self.estimate_sky_pts()
 
-            # Estimate the sky
-            data = interpolation.low_res_interpolation(self.frame, self.config.estimation.downsample_factor, self.mask)
-
-            # Create sky map
-            self.sky = Frame(data,
-                             wcs=self.frame.wcs,
-                             name="sky",
-                             description="estimated sky",
-                             unit=self.frame.unit,
-                             zero_point=self.frame.zero_point,
-                             filter=self.frame.filter,
-                             sky_subtracted=False,
-                             fwhm=self.frame.fwhm)
-
-        # if the sky should be approximated by a polynomial function
-        elif self.config.estimation.method == "polynomial":
-
-            polynomial = fitting.fit_polynomial(self.frame, 3, mask=self.mask)
-
-            # Evaluate the polynomial
-            data = fitting.evaluate_model(polynomial, 0, self.frame.xsize, 0, self.frame.ysize)
-
-            plotting.plot_box(data, title="background")
-
-            # Create sky map
-            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-            self.sky = Frame(data,
-                             wcs=self.frame.wcs,
-                             name="sky",
-                             description="estimated sky",
-                             unit=self.frame.unit,
-                             zero_point=self.frame.zero_point,
-                             filter=self.frame.filter,
-                             sky_subtracted=False,
-                             fwhm=self.frame.fwhm)
-
-        elif self.config.estimation.method == "photutils":
-
-            #bkg = Background(self.frame, (20, 20), filter_shape=(3, 3), method='median', mask=self.mask)
-
-            #method = "sextractor" # default
-            method = "mean"
-
-            bkg = Background(self.frame, (20, 20), filter_shape=(3, 3), filter_threshold=None, mask=self.mask,
-                      method=method, backfunc=None, interp_order=3, sigclip_sigma=3.0, sigclip_iters=10)
-
-            plotting.plot_box(bkg.background, title="background")
-            plotting.plot_box(bkg.background_low_res, title="low-res background")
-            plotting.plot_box(bkg.background_rms, title="background rms")
-            plotting.plot_box(bkg.background_rms_low_res, title="low-res rms")
-
-            print("background median = ", bkg.background_median)
-            print("background rms median = ", bkg.background_rms_median)
-
-            # Create sky map
-            self.sky = Frame(bkg.background,
-                             wcs=self.frame.wcs,
-                             name="sky",
-                             description="estimated sky",
-                             unit=self.frame.unit,
-                             zero_point=self.frame.zero_point,
-                             filter=self.frame.filter,
-                             sky_subtracted=False,
-                             fwhm=self.frame.fwhm)
-
-        elif self.config.estimation.method == "hybrid":
-
-            bkg = Background(self.frame, (50, 50), filter_shape=(3, 3), filter_threshold=None, mask=self.mask,
-                      method="sextractor", backfunc=None, interp_order=3, sigclip_sigma=3.0, sigclip_iters=10)
-
-            # Masked background
-            masked_background = np.ma.masked_array(bkg.background, mask=self.mask)
-            #plotting.plot_box(masked_background, title="masked background")
-
-            mean_sky = np.ma.mean(masked_background)
-            median_sky = np.median(masked_background.compressed())
-
-            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-            self.phot_sky = Frame(bkg.background,
-                                   wcs=self.frame.wcs,
-                                   name="phot_sky",
-                                   description="photutils background",
-                                   unit=self.frame.unit,
-                                   zero_point=self.frame.zero_point,
-                                   filter=self.frame.filter,
-                                   sky_subtracted=False,
-                                   fwhm=self.frame.fwhm)
-
-            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-            self.phot_rms = Frame(bkg.background_rms,
-                                   wcs=self.frame.wcs,
-                                   name="phot_rms",
-                                   description="photutils rms",
-                                   unit=self.frame.unit,
-                                   zero_point=self.frame.zero_point,
-                                   filter=self.frame.filter,
-                                   sky_subtracted=False,
-                                   fwhm=self.frame.fwhm)
-
-            # Create sky map of median sky level
-            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-            self.sky = Frame(np.full(self.frame.shape, median_sky),
-                             wcs=self.frame.wcs,
-                             name="sky",
-                             description="estimated sky",
-                             unit=self.frame.unit,
-                             zero_point=self.frame.zero_point,
-                             filter=self.frame.filter,
-                             sky_subtracted=False,
-                             fwhm=self.frame.fwhm)
-
-        # Unkown estimation method
+        # Unkown sky estimation method
         else: raise ValueError("Unknown sky estimation method")
+
+    # -----------------------------------------------------------------
+
+    def estimate_sky_mean(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Estimating the sky by calculating the mean value of all non-masked pixels ...")
+
+        # Create a frame filled with the mean value
+        self.sky = Frame(np.full(self.frame.shape, self.mean),
+                         wcs=self.frame.wcs,
+                         name="sky",
+                         description="estimated sky",
+                         unit=self.frame.unit,
+                         zero_point=self.frame.zero_point,
+                         filter=self.frame.filter,
+                         sky_subtracted=False,
+                         fwhm=self.frame.fwhm)
+
+    # -----------------------------------------------------------------
+
+    def estimate_sky_median(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Estimating the sky by calculating the median value of all non-masked pixels ...")
+
+        # Create a frame filled with the median value
+        self.sky = Frame(np.full(self.frame.shape, self.median),
+                         wcs=self.frame.wcs,
+                         name="sky",
+                         description="estimated sky",
+                         unit=self.frame.unit,
+                         zero_point=self.frame.zero_point,
+                         filter=self.frame.filter,
+                         sky_subtracted=False,
+                         fwhm=self.frame.fwhm)
+
+    # -----------------------------------------------------------------
+
+    def estimate_sky_polynomial(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Estimating the sky by fitting a polynomial function to all non-masked pixels ...")
+
+        polynomial = fitting.fit_polynomial(self.frame, 3, mask=self.mask)
+
+        # Evaluate the polynomial
+        data = fitting.evaluate_model(polynomial, 0, self.frame.xsize, 0, self.frame.ysize)
+
+        plotting.plot_box(data, title="background")
+
+        # Create sky map
+        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+        self.sky = Frame(data,
+                         wcs=self.frame.wcs,
+                         name="sky",
+                         description="estimated sky",
+                         unit=self.frame.unit,
+                         zero_point=self.frame.zero_point,
+                         filter=self.frame.filter,
+                         sky_subtracted=False,
+                         fwhm=self.frame.fwhm)
+
+    # -----------------------------------------------------------------
+
+    def estimate_sky_photutils(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Estimating the sky and sky noise by using photutils ...")
+
+        bkg = Background(self.frame, (50, 50), filter_shape=(3, 3), filter_threshold=None, mask=self.mask,
+                  method="sextractor", backfunc=None, interp_order=3, sigclip_sigma=3.0, sigclip_iters=10)
+
+        # Masked background
+        masked_background = np.ma.masked_array(bkg.background, mask=self.mask)
+        #plotting.plot_box(masked_background, title="masked background")
+
+        mean_sky = np.ma.mean(masked_background)
+        median_sky = np.median(masked_background.compressed())
+
+        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+        self.phot_sky = Frame(bkg.background,
+                               wcs=self.frame.wcs,
+                               name="phot_sky",
+                               description="photutils background",
+                               unit=self.frame.unit,
+                               zero_point=self.frame.zero_point,
+                               filter=self.frame.filter,
+                               sky_subtracted=False,
+                               fwhm=self.frame.fwhm)
+
+        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+        self.phot_rms = Frame(bkg.background_rms,
+                               wcs=self.frame.wcs,
+                               name="phot_rms",
+                               description="photutils rms",
+                               unit=self.frame.unit,
+                               zero_point=self.frame.zero_point,
+                               filter=self.frame.filter,
+                               sky_subtracted=False,
+                               fwhm=self.frame.fwhm)
+
+        # Create sky map of median sky level
+        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
+        self.sky = Frame(np.full(self.frame.shape, median_sky),
+                         wcs=self.frame.wcs,
+                         name="sky",
+                         description="estimated sky",
+                         unit=self.frame.unit,
+                         zero_point=self.frame.zero_point,
+                         filter=self.frame.filter,
+                         sky_subtracted=False,
+                         fwhm=self.frame.fwhm)
+
+    # -----------------------------------------------------------------
+
+    def estimate_sky_pts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Estimating the sky and sky noise by using or own procedures ...")
+
+        # Get an array of the indices of all the pixels that are not masked
+        indices = np.where(not self.mask)
+
+        print(indices)
 
     # -----------------------------------------------------------------
 
