@@ -303,6 +303,18 @@ class Frame(np.ndarray):
     # -----------------------------------------------------------------
 
     @property
+    def fwhm_pix(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.fwhm / self.xy_average_pixelscale).to("pix").value if self.fwhm is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
     def header(self):
 
         """

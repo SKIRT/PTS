@@ -111,8 +111,8 @@ class ImagePreparer(Configurable):
         preparer.config.set_uncertainties = True
 
         # Advanced options
-        if arguments.sky_annulus_inner is not None: preparer.config.sky_subtraction.annulus_inner_factor = arguments.sky_annulus_inner
-        if arguments.sky_annulus_outer is not None: preparer.config.sky_subtraction.annulus_outer_factor = arguments.sky_annulus_outer
+        if arguments.sky_annulus_inner is not None: preparer.config.sky_subtraction.mask.annulus_inner_factor = arguments.sky_annulus_inner
+        if arguments.sky_annulus_outer is not None: preparer.config.sky_subtraction.mask.annulus_outer_factor = arguments.sky_annulus_outer
 
         # Return the new instance
         return preparer
@@ -479,15 +479,6 @@ class ImagePreparer(Configurable):
         # Inform the user
         log.info("Subtracting the sky ...")
 
-        # Write out the principal_sky_ellipse and saturation_region in sky coordinates
-        #principal_sky_region = SkyRegion()
-        #principal_sky_region.append(self.principal_ellipse_skycoord)
-        #principal_sky_region_path = self.full_output_path("principal_skycoord.reg")
-        #principal_sky_region.save(principal_sky_region_path)
-
-        #saturation_sky_region_path = self.full_output_path("saturation_skycoord.reg")
-        #self.extractor.star_extractor.saturation_region.save(saturation_sky_region_path)
-
         # Convert the principal ellipse in sky coordinates into pixel coordinates
         principal_ellipse = self.principal_ellipse_sky.to_pixel(self.image.wcs)
 
@@ -507,10 +498,10 @@ class ImagePreparer(Configurable):
         # Run the sky subtractor
         self.sky_subtractor.run(self.image.frames.primary, principal_ellipse, self.image.masks.sources, extra_mask, saturation_region)
 
-        # Add the sky map to the image
-        self.image.add_frame(self.sky_subtractor.sky, "sky")
-        self.image.add_frame(self.sky_subtractor.phot_sky, "phot_sky")
-        self.image.add_frame(self.sky_subtractor.phot_rms, "phot_rms")
+        # Add the sky frame to the image
+        self.image.add_frame(self.sky_subtractor.sky_frame, "sky")
+        #self.image.add_frame(self.sky_subtractor.phot_sky, "phot_sky")
+        #self.image.add_frame(self.sky_subtractor.phot_rms, "phot_rms")
 
         # Add the mask that is used for the sky estimation
         self.image.add_mask(self.sky_subtractor.mask, "sky")

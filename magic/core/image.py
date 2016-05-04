@@ -244,6 +244,22 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def fwhm_pix(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the FWHM in sky coordinates
+        fwhm = self.fwhm
+
+        # Convert into pixels
+        return (fwhm / self.xy_average_pixelscale).to("pix").value
+
+    # -----------------------------------------------------------------
+
+    @property
     def wcs(self):
 
         """

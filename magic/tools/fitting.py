@@ -82,11 +82,10 @@ def fit_polynomial(data, degree, mask=None, sigma_clip_background=False):
 
     """
     This function ...
-    :param box:
+    :param data:
     :param degree:
-    :param x_shift:
-    :param y_shift:
     :param mask:
+    :param sigma_clip_background:
     :return:
     """
 

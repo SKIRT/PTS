@@ -708,7 +708,7 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, add_smooth=True):
+    def plot(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, add_smooth=False):
 
         """
         This function ...
