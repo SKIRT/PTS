@@ -524,29 +524,13 @@ class ImagePreparer(Configurable):
         # Inform the user
         log.info("Calculating the uncertainties ...")
 
-        sky_mask = self.image.masks.sky
-
-        photutils_estimated_sky = np.ma.masked_array(np.asarray(self.image.frames.phot_sky), mask=sky_mask)
-        photutils_rms = np.ma.masked_array(np.asarray(self.image.frames.phot_rms), mask=sky_mask)
-
-        #plotting.plot_box(photutils_rms, title="masked rms")
-
-        # LARGE SCALE VARIATIONS = STANDARD DEVIATION OF ESTIMATED SKY PIXELS
-        large_scale_variations_error = photutils_estimated_sky.std()
-
-        # PIXEL TO PIXEL NOISE = MEAN OF RMS
-        pixel_to_pixel_noise = np.ma.mean(photutils_rms) # Mean pixel-by-pixel variations
-
         # Add all the errors quadratically: existing error map + large scale variations + pixel to pixel noise + calibration error
-        if "errors" in self.image.frames:
+        #if "errors" in self.image.frames:
+        #    self.image.frames.errors = np.sqrt(self.image.frames.errors**2 + self.sky_subtractor.noise**2 + self.image.frames.calibration_errors**2)
+        #else:
 
-            self.image.frames.errors = np.sqrt(self.image.frames.errors**2 + large_scale_variations_error**2 + \
-                                               + pixel_to_pixel_noise**2 + self.image.frames.calibration_errors**2)
-
-        else:
-
-            errors = np.sqrt(large_scale_variations_error**2 + pixel_to_pixel_noise**2 + self.image.frames.calibration_errors**2)
-            self.image.add_frame(errors, "errors")
+        errors = np.sqrt(self.sky_subtractor.noise**2 + self.image.frames.calibration_errors**2)
+        self.image.add_frame(errors, "errors")
 
         # Inform the user
         log.success("Uncertainties calculated")

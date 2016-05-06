@@ -304,15 +304,7 @@ class SkySubtractor(Configurable):
         log.info("Estimating the sky by calculating the mean value of all non-masked pixels ...")
 
         # Create a frame filled with the mean value
-        self.sky = Frame(np.full(self.frame.shape, self.mean),
-                         wcs=self.frame.wcs,
-                         name="sky",
-                         description="estimated sky",
-                         unit=self.frame.unit,
-                         zero_point=self.frame.zero_point,
-                         filter=self.frame.filter,
-                         sky_subtracted=False,
-                         fwhm=self.frame.fwhm)
+        self.sky = self.mean
 
     # -----------------------------------------------------------------
 
@@ -327,15 +319,7 @@ class SkySubtractor(Configurable):
         log.info("Estimating the sky by calculating the median value of all non-masked pixels ...")
 
         # Create a frame filled with the median value
-        self.sky = Frame(np.full(self.frame.shape, self.median),
-                         wcs=self.frame.wcs,
-                         name="sky",
-                         description="estimated sky",
-                         unit=self.frame.unit,
-                         zero_point=self.frame.zero_point,
-                         filter=self.frame.filter,
-                         sky_subtracted=False,
-                         fwhm=self.frame.fwhm)
+        self.sky = self.median
 
     # -----------------------------------------------------------------
 
@@ -354,7 +338,7 @@ class SkySubtractor(Configurable):
         # Evaluate the polynomial
         data = fitting.evaluate_model(polynomial, 0, self.frame.xsize, 0, self.frame.ysize)
 
-        plotting.plot_box(data, title="background")
+        #plotting.plot_box(data, title="estimated sky")
 
         # Create sky map
         # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
@@ -412,17 +396,8 @@ class SkySubtractor(Configurable):
                                sky_subtracted=False,
                                fwhm=self.frame.fwhm)
 
-        # Create sky map of median sky level
-        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-        self.sky = Frame(np.full(self.frame.shape, median_sky),
-                         wcs=self.frame.wcs,
-                         name="sky",
-                         description="estimated sky",
-                         unit=self.frame.unit,
-                         zero_point=self.frame.zero_point,
-                         filter=self.frame.filter,
-                         sky_subtracted=False,
-                         fwhm=self.frame.fwhm)
+        # Set sky level
+        self.sky = median_sky
 
     # -----------------------------------------------------------------
 
@@ -448,14 +423,11 @@ class SkySubtractor(Configurable):
         # Remove outliers
         aperture_centers, aperture_means, aperture_stddevs = self.remove_aperture_outliers(aperture_centers, aperture_means, aperture_stddevs)
 
-
         # Calculate the large-scale variation level
         large_scale_variations_error = aperture_means.std()
 
         # Calculate the mean pixel-by-pixel noise over all apertures
         pixel_to_pixel_noise = np.mean(aperture_stddevs)
-
-
 
         # Determine the median sky level
         self.sky = np.median(aperture_means)
@@ -463,30 +435,14 @@ class SkySubtractor(Configurable):
         # Determine the noise by quadratically adding the large scale variation and the mean pixel-by-pixel noise
         self.noise = np.sqrt(large_scale_variations_error**2 + pixel_to_pixel_noise**2)
 
-
-
         # Debugging
         log.debug("The estimated sky level is " + str(self.sky))
         log.debug("The estimated sky noise level is " + str(self.noise))
 
+        # Create aperture frames
+        self.create_aperture_frames(aperture_centers, aperture_means, aperture_stddevs, aperture_radius)
 
-
-        self.apertures_frame = Frame.zeros_like(self.frame)
-        self.apertures_mean_frame = Frame.zeros_like(self.frame)
-        self.apertures_noise_frame = Frame.zeros_like(self.frame)
-
-        for i in range(len(aperture_centers)):
-
-            center = aperture_centers[i]
-
-            circle = Circle(center, aperture_radius)
-
-            mask = Mask.from_shape(circle, self.frame.xsize, self.frame.ysize)
-
-            self.apertures_frame[mask] = self.frame[mask]
-            self.apertures_mean_frame[mask] = aperture_means[i]
-            self.apertures_noise_frame[mask] = aperture_stddevs[i]
-
+        # Fit polynomial
         #self.try_to_fit_polynomial_or_interpolate(aperture_centers, aperture_means)
         #self.try_to_interpolate_smart(aperture_centers, aperture_means)
 
@@ -694,6 +650,35 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    def create_aperture_frames(self, aperture_centers, aperture_means, aperture_stddevs, aperture_radius):
+
+        """
+        This function ...
+        :param aperture_centers:
+        :param aperture_means:
+        :param aperture_stddevs:
+        :param aperture_radius:
+        :return:
+        """
+
+        self.apertures_frame = Frame.zeros_like(self.frame)
+        self.apertures_mean_frame = Frame.zeros_like(self.frame)
+        self.apertures_noise_frame = Frame.zeros_like(self.frame)
+
+        for i in range(len(aperture_centers)):
+
+            center = aperture_centers[i]
+
+            circle = Circle(center, aperture_radius)
+
+            mask = Mask.from_shape(circle, self.frame.xsize, self.frame.ysize)
+
+            self.apertures_frame[mask] = self.frame[mask]
+            self.apertures_mean_frame[mask] = aperture_means[i]
+            self.apertures_noise_frame[mask] = aperture_stddevs[i]
+
+    # -----------------------------------------------------------------
+
     def try_to_fit_polynomial_or_interpolate(self, aperture_centers, aperture_means):
 
         """
@@ -718,14 +703,14 @@ class SkySubtractor(Configurable):
         # Evaluate the model
         data = polynomial(x_grid, y_grid)
 
+        self.sky = Frame(data)
+
         # plotting.plot_box(data)
 
         # -- Fit spline --
 
         f = interpolate.interp2d(x_values, y_values, aperture_means, kind='cubic')
 
-        # x_grid = np.arange(self.frame.xsize)
-        # y_grid = np.arange(self.frame.ysize)
 
         x_grid = np.array(range(self.frame.xsize))
         y_grid = np.array(range(self.frame.ysize))
@@ -733,7 +718,7 @@ class SkySubtractor(Configurable):
         data = f(x_grid, y_grid)
 
         # Set new sky frame
-        self.sky = Frame(data)
+        #self.sky = Frame(data)
 
     # -----------------------------------------------------------------
 
