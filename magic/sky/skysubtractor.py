@@ -16,6 +16,11 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from scipy import interpolate
 import matplotlib.pyplot as plt
+import matplotlib.mlab as mlab
+from matplotlib.figure import Figure
+
+from scipy.interpolate import CloughTocher2DInterpolator as intp
+from scipy.interpolate import SmoothBivariateSpline
 
 # Test
 # from sklearn.preprocessing import PolynomialFeatures
@@ -442,8 +447,13 @@ class SkySubtractor(Configurable):
         # Create aperture frames
         self.create_aperture_frames(aperture_centers, aperture_means, aperture_stddevs, aperture_radius)
 
-        # Fit polynomial
-        #self.try_to_fit_polynomial_or_interpolate(aperture_centers, aperture_means)
+        # Finishing step
+        if self.config.estimation.finishing_step is None: pass
+        elif self.config.estimation.finishing_step == "polynomial": self.fit_polynomial_to_apertures(aperture_centers, aperture_means)
+        elif self.config.estimation.finishing_step == "interpolation": self.interpolate_apertures(aperture_centers, aperture_means)
+        else: raise ValueError("Invalid finishing step")
+
+        #self.plot_interpolated(aperture_centers, aperture_means)
         #self.try_to_interpolate_smart(aperture_centers, aperture_means)
 
     # -----------------------------------------------------------------
@@ -625,8 +635,8 @@ class SkySubtractor(Configurable):
         means_distribution = Distribution.from_values(aperture_means, bins=50)
         stddevs_distribution = Distribution.from_values(aperture_stddevs, bins=50)
 
-        means_distribution.plot("Aperture means before sigma-clipping")
-        stddevs_distribution.plot("Aperture stddevs before sigma-clipping")
+        #means_distribution.plot("Aperture means before sigma-clipping")
+        #stddevs_distribution.plot("Aperture stddevs before sigma-clipping")
 
         clip_mask = stats.sigma_clip(aperture_stddevs, sigma=3.0, iters=None, copy=False).mask
 
@@ -639,11 +649,10 @@ class SkySubtractor(Configurable):
         aperture_stddevs = np.ma.MaskedArray(aperture_stddevs, clip_mask).compressed()
 
         means_distribution = Distribution.from_values(aperture_means, bins=50)
-
         stddevs_distribution = Distribution.from_values(aperture_stddevs, bins=50)
 
-        means_distribution.plot("Aperture means after sigma-clipping")
-        stddevs_distribution.plot("Aperture stddevs after sigma-clipping")
+        #means_distribution.plot("Aperture means after sigma-clipping")
+        #stddevs_distribution.plot("Aperture stddevs after sigma-clipping")
 
         # Return the sigma-clipped aperture properties
         return aperture_centers, aperture_means, aperture_stddevs
@@ -679,7 +688,7 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def try_to_fit_polynomial_or_interpolate(self, aperture_centers, aperture_means):
+    def fit_polynomial_to_apertures(self, aperture_centers, aperture_means):
 
         """
         This function ...
@@ -709,16 +718,147 @@ class SkySubtractor(Configurable):
 
         # -- Fit spline --
 
-        f = interpolate.interp2d(x_values, y_values, aperture_means, kind='cubic')
+        #f = interpolate.interp2d(x_values, y_values, aperture_means, kind='cubic')
 
 
-        x_grid = np.array(range(self.frame.xsize))
-        y_grid = np.array(range(self.frame.ysize))
+        #x_grid = np.array(range(self.frame.xsize))
+        #y_grid = np.array(range(self.frame.ysize))
 
-        data = f(x_grid, y_grid)
+        #data = f(x_grid, y_grid)
 
         # Set new sky frame
         #self.sky = Frame(data)
+
+    # -----------------------------------------------------------------
+
+    def interpolate_apertures(self, aperture_centers, aperture_means):
+
+        """
+        This function ...
+        :param aperture_centers:
+        :param aperture_means:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating between the mean values of each aperture to fill the sky frame ...")
+
+        x_values = np.array([center.x for center in aperture_centers])
+        y_values = np.array([center.y for center in aperture_centers])
+
+        x_ticks = np.arange(0, self.frame.xsize, 1)
+        y_ticks = np.arange(0, self.frame.ysize, 1)
+        z_grid = mlab.griddata(x_values, y_values, aperture_means, x_ticks, y_ticks)
+
+        # Set the sky frame
+        self.sky = Frame(z_grid)
+
+    # -----------------------------------------------------------------
+
+    def interpolate_apertures_try(self, aperture_centers, aperture_means):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return
+
+        x_values = np.array([center.x for center in aperture_centers])
+        y_values = np.array([center.y for center in aperture_centers])
+
+        #X, Y = np.meshgrid(x_values, y_values)
+
+        X = x_values
+        Y = y_values
+        Z = aperture_means
+
+        #print(X, Y, Z)
+        #print(len(X), len(Y), len(Z))
+
+        #C = intp((X, Y), Z)
+        x_space = np.linspace(0, self.frame.xsize, 1)
+        y_space = np.linspace(0, self.frame.ysize, 1)
+        xi, yi = np.meshgrid(x_space, y_space)
+        #zi = C(xi, yi)
+
+        #self.sky = Frame(zi)
+
+        from scipy.interpolate import LSQBivariateSpline
+
+        spline = SmoothBivariateSpline(X, Y, Z, kx=1, ky=1)
+        #spline = LSQBivariateSpline(X, Y, Z, X, Y)
+        #zi = spline(xi, yi)
+        #self.sky = Frame(zi)
+
+        from scipy.interpolate import griddata
+
+
+        #x_space = np.linspace(0.3*self.frame.xsize, 0.7*self.frame.xsize)
+        #y_space = np.linspace(0.3*self.frame.ysize, 0.7*self.frame.ysize)
+
+        x_space = np.array(range(int(0.3*self.frame.xsize), int(0.7*self.frame.xsize)))
+        y_space = np.array(range(int(0.3*self.frame.ysize), int(0.7*self.frame.ysize)))
+
+        znew = griddata((X, Y), Z, (x_space[None,:], y_space[:,None]), method='cubic')
+
+        plt.figure()
+        levels = np.linspace(min(Z), max(Z), 15)
+        plt.ylabel('Y', size=15)
+        plt.xlabel('X', size=15)
+        cmap = plt.cm.jet_r
+        cs = plt.contourf(x_space, y_space, znew, levels=levels, cmap=cmap)
+        cbar = plt.colorbar(cs)
+        cbar.set_label('Z', rotation=90, fontsize=15)  # gas fraction
+        plt.show()
+
+        self.sky = Frame.zeros_like(self.frame)
+        self.sky[int(0.3*self.frame.ysize):int(0.3*self.frame.ysize)+len(y_space), int(0.3*self.frame.xsize):int(0.3*self.frame.xsize)+len(x_space)] = znew
+
+        #self.sky = Frame(znew)
+
+    # -----------------------------------------------------------------
+
+    def plot_interpolated(self, aperture_centers, aperture_means):
+
+        """
+        This function ...
+        :param aperture_centers:
+        :param aperture_means:
+        :return:
+        """
+
+        x_values = np.array([center.x for center in aperture_centers])
+        y_values = np.array([center.y for center in aperture_centers])
+
+        x_ticks = np.arange(0, self.frame.xsize, 1)
+        y_ticks = np.arange(0, self.frame.ysize, 1)
+        z_grid = mlab.griddata(x_values, y_values, aperture_means, x_ticks, y_ticks)
+
+        print(z_grid.shape, self.frame.shape)
+
+        self.sky = Frame(z_grid)
+
+        from matplotlib.backends import backend_agg as agg
+        from matplotlib import cm
+
+        # plot
+        #fig = Figure()  # create the figure
+        fig = plt.figure()
+        agg.FigureCanvasAgg(fig)  # attach the rasterizer
+        ax = fig.add_subplot(1, 1, 1)  # make axes to plot on
+        ax.set_title("Interpolated Contour Plot of Experimental Data")
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+
+        cmap = cm.get_cmap("hot")  # get the "hot" color map
+        contourset = ax.contourf(x_ticks, y_ticks, z_grid, 10, cmap=cmap)
+
+        cbar = fig.colorbar(contourset)
+        cbar.set_ticks([0, 100])
+        fig.axes[-1].set_ylabel("Z")  # last axes instance is the colorbar
+
+        plt.show()
 
     # -----------------------------------------------------------------
 
