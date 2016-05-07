@@ -12,6 +12,10 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.units import Unit
+from astropy import constants
+
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
 from ..tools import filesystem as fs
@@ -20,6 +24,11 @@ from ...magic.core.image import Image
 from ...magic.core.frame import Frame
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..tools.special import remote_filter_convolution
+
+# -----------------------------------------------------------------
+
+# The speed of light
+speed_of_light = constants.c
 
 # -----------------------------------------------------------------
 
@@ -58,10 +67,13 @@ class ObservedImageMaker(object):
         self.instrument_names = None
 
         # The filters for which the images should be created
-        self.filters = None
+        self.filters = dict()
 
         # The dictionary containing the images for various SKIRT output datacubes
         self.images = dict()
+
+        # The reference WCS
+        self.wcs = None
 
     # -----------------------------------------------------------------
 
@@ -103,6 +115,9 @@ class ObservedImageMaker(object):
         # Set the WCS of the created images
         if wcs_path is not None: self.set_wcs(wcs_path)
 
+        # Convert the units (WCS has to be loaded!)
+        if unit is not None: self.convert_units(unit)
+
         # Write the results
         if output_path is not None: self.write(output_path)
 
@@ -118,9 +133,6 @@ class ObservedImageMaker(object):
         # Inform the user
         log.info("Constructing the filter objects ...")
 
-        # Initialize the list
-        self.filters = []
-
         # Loop over the different filter names
         for filter_name in self.filter_names:
 
@@ -131,7 +143,7 @@ class ObservedImageMaker(object):
             fltr = Filter.from_string(filter_name)
 
             # Add the filter to the list
-            self.filters.append(fltr)
+            self.filters[filter_name] = fltr
 
     # -----------------------------------------------------------------
 
@@ -179,15 +191,30 @@ class ObservedImageMaker(object):
             else:
 
                 # Load the simulated image
-                datacube = Image.from_file(path)
+                datacube = Image.from_file(path, always_call_first_primary=False)
+
+                # Convert the frames from neutral surface brightness to wavelength surface brightness
+                for l in range(self.wavelengths):
+
+                    # Get the wavelength
+                    wavelength = self.wavelengths[l]
+
+                    # Determine the name of the frame in the datacube
+                    frame_name = "frame" + str(l)
+
+                    # Divide this frame by the wavelength in micron
+                    datacube.frames[frame_name] /= wavelength
+
+                    # Set the new unit
+                    datacube.frames[frame_name].unit = "W / (m2 * arcsec2 * micron)"
 
                 # Convert the datacube to a numpy array where wavelength is the third dimension
                 fluxdensities = datacube.asarray()
 
-                # densities must be per wavelength instead of per frequency!
-
                 # Loop over the different filters
-                for fltr in self.filters:
+                for filter_name in self.filters:
+
+                    fltr = self.filters[filter_name]
 
                     # Debugging
                     log.debug("Making the observed image for the " + fltr.description() + " filter ...")
@@ -196,8 +223,11 @@ class ObservedImageMaker(object):
                     data = fltr.convolve(self.wavelengths, fluxdensities)
                     frame = Frame(data)
 
+                    # Set the unit of the frame
+                    frame.unit = "W/(m2 * arcsec2 * micron)"
+
                     # Add the observed image to the dictionary
-                    images[fltr.description()] = frame
+                    images[filter_name] = frame
 
             # Add the dictionary of images of the current datacube to the complete images dictionary (with the datacube name as a key)
             self.images[datacube_name] = images
@@ -221,7 +251,7 @@ class ObservedImageMaker(object):
         log.debug("Loading the coordinate system from '" + wcs_path + "' ...")
 
         # Load the WCS
-        wcs = CoordinateSystem.from_file(wcs_path)
+        self.wcs = CoordinateSystem.from_file(wcs_path)
 
         # Loop over the different images and set the WCS
         for datacube_name in self.images:
@@ -231,7 +261,53 @@ class ObservedImageMaker(object):
                 log.debug("Setting the coordinate system of the " + filter_name + " image of the '" + datacube_name + "' instrument ...")
 
                 # Set the coordinate system for this frame
-                self.images[datacube_name][filter_name].wcs = wcs
+                self.images[datacube_name][filter_name].wcs = self.wcs
+
+    # -----------------------------------------------------------------
+
+    def convert_units(self, unit):
+        """
+        This function ...
+        :param self:
+        :param unit:
+        :return:
+        """
+
+        # TODO: right now, this is just an implementation of the conversion from W / (m2 * arcsec2 * micron) to MJy/sr
+        # 1 Jy = 1e-26 * W / (m2 * Hz)
+
+        # Inform the user
+        log.info("Converting the units of the images to " + str(unit) + " ...")
+
+        # Get the pixelscale
+        #pixelscale = self.wcs.xy_average_pixelscale.to("arcsec/pix").value # in arcsec**2 / pixel
+
+        # Loop over the images
+        for datacube_name in self.images:
+            for filter_name in self.images[datacube_name]:
+
+                # Debugging
+                log.debug("Converting the unit of the " + filter_name + " image of the '" + datacube_name + "' instrument ...")
+
+                # Get the pivot wavelength of the filter
+                fltr = self.filters[filter_name]
+                pivot = fltr.pivotwavelength() * Unit("micron")
+
+                # Determine the conversion factor
+                conversion_factor = 1.0
+
+                # From surface brightness to flux density (no)
+                #conversion_factor *=
+
+                # From W / (m2 * arcsec2 * micron) to W / (m2 * arcsec2 * Hz)
+                conversion_factor *= (pivot ** 2 / speed_of_light).to("micron/Hz").value
+
+                # From W / (m2 * arcsec2 * Hz) to MJy / sr
+                conversion_factor *= Unit("W/(m2 * arcsec2 * Hz)") / Unit("MJy/sr")
+
+                # Convert
+                self.images[datacube_name][filter_name] *= conversion_factor
+                self.images[datacube_name][filter_name].unit = "MJy/sr"
 
     # -----------------------------------------------------------------
 

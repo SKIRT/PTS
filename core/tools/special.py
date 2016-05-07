@@ -484,38 +484,58 @@ def remote_filter_convolution(host_id, datacube_path, wavelengths, filters):
     script_file.write("# Inform the user\n")
     script_file.write("log.info('Loading the datacube ...')\n")
     script_file.write("\n")
+    script_file.write("# Load the wavelengths\n")
+    script_file.write("wavelengths = np.loadtxt('" + remote_wavelengths_path + "')\n")
+    script_file.write("\n")
     script_file.write("# Open the datacube as an Image\n")
     script_file.write("datacube = Image.from_file('" + remote_datacube_path + "')\n")
+    script_file.write("\n")
+    script_file.write("# Convert the frames from neutral surface brightness to wavelength surface brightness\n")
+    script_file.write("for l in range(wavelengths):\n")
+    script_file.write("\n")
+    script_file.write("    # Get the wavelength\n")
+    script_file.write("    wavelength = wavelengths[l]\n")
+    script_file.write("\n")
+    script_file.write("    # Determine the name of the frame in the datacube\n")
+    script_file.write("    frame_name = 'frame' + str(l)\n")
+    script_file.write("\n")
+    script_file.write("    # Divide this frame by the wavelength in micron\n")
+    script_file.write("    datacube.frames[frame_name] /= wavelength\n")
+    script_file.write("\n")
+    script_file.write("    # Set the new unit\n")
+    script_file.write("    datacube.frames[frame_name].unit = 'W / (m2 * arcsec2 * micron)'\n")
+    script_file.write("\n")
+    script_file.write("# Convert the datacube to a numpy array where wavelength is the third dimension\n")
     script_file.write("fluxdensities = datacube.asarray()\n")
     script_file.write("\n")
     script_file.write("# Inform the user\n")
     script_file.write("log.info('Loading the wavelengths ...')\n")
     script_file.write("\n")
-    script_file.write("# Load the wavelengths\n")
-    script_file.write("wavelengths = np.loadtxt('" + remote_wavelengths_path + "')\n")
-    script_file.write("\n")
+
     script_file.write("# Inform the user\n")
     script_file.write("log.info('Creating the filters ...')\n")
     script_file.write("\n")
-    script_file.write("filters = []\n")
+    script_file.write("filters = dict()\n")
     script_file.write("\n")
-    for fltr in filters:
+    for filter_name in filters:
+        fltr = filters[filter_name]
         script_file.write("# Inform the user\n")
         script_file.write("log.info('Creating the " + fltr.description() + " filter')\n")
         script_file.write("\n")
         script_file.write("fltr = Filter.from_string('" + fltr.description() + "')\n")
-        script_file.write("filters.append(fltr)\n")
+        script_file.write("filters['" + filter_name + "'] = fltr\n")
         script_file.write("\n")
     script_file.write("# Inform the user\n")
     script_file.write("log.info('Performing the filter convolutions ...')\n")
     script_file.write("\n")
     script_file.write("# Loop over the filters, perform the convolution\n")
-    script_file.write("for fltr in filters:\n")
+    script_file.write("for filter_name in filters:\n")
     script_file.write("\n")
     script_file.write("    log.info('Creating the ' + fltr.description() + ' image ...')\n")
+    script_file.write("    fltr = filters[filter_name]\n")
     script_file.write("    data = fltr.convolve(wavelengths, fluxdensities)\n")
     script_file.write("    frame = Frame(data)\n")
-    script_file.write("    path = fs.join('" + remote_temp_path + "', fltr.description() + '.fits')\n")
+    script_file.write("    path = fs.join('" + remote_temp_path + "', filter_name + '.fits')\n")
     script_file.write("    frame.save(path)\n")
 
     # Write to disk
@@ -555,21 +575,19 @@ def remote_filter_convolution(host_id, datacube_path, wavelengths, filters):
     frames = dict()
 
     # Loop over the filters, load the frame
-    for fltr in filters:
+    for filter_name in filters:
 
         # Determine the path to the resulting FITS file
-        path = fs.join(local_downloaded_temp_path, fltr.description() + ".fits")
-
-        #print(path)
+        path = fs.join(local_downloaded_temp_path, filter_name + ".fits")
 
         # Check whether the frame exists
-        if not fs.is_file(path): raise RuntimeError("The image for filter " + fltr.description() + " is missing")
+        if not fs.is_file(path): raise RuntimeError("The image for filter " + filters[filter_name].description() + " is missing")
 
         # Load the FITS file
         frame = Frame.from_file(path)
 
         # Add the frame to the dictionary
-        frames[fltr.description()] = frame
+        frames[filter_name] = frame
 
     # Remove the downloaded temporary directory
     fs.remove_directory(local_downloaded_temp_path)
