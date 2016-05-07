@@ -286,6 +286,94 @@ class SkiFile:
                 # Set the setting to true
                 element.set(setting_name, "true")
 
+    def set_write_convergence(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Set the 'writeConvergence' setting to true
+        dust_system.set("writeConvergence", "true")
+
+    def set_write_density(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Set the 'writeDensity' setting to true
+        dust_system.set("writeDensity", "true")
+
+    def set_write_depth_map(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Set the 'writeDepthMap' setting to true
+        dust_system.set("writeDepthMap", "true")
+
+    def set_write_quality(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Set the 'writeQuality' setting to true
+        dust_system.set("writeQuality", "true")
+
+    def set_write_cell_properties(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Set the 'writeCellProperties' setting to true
+        dust_system.set("writeCellProperties", "true")
+
+    def set_write_cells_crossed(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Set the 'writeCellsCrossed' setting to true
+        dust_system.set("writeCellsCrossed", "true")
+
+    def set_write_emissivity(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Set the 'writeEmissivity' setting to true
+        dust_system.set("writeEmissivity", "true")
+
+    def set_write_temperature(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Set the 'writeTemperature' setting to true
+        dust_system.set("writeTemperature", "true")
+
+    def set_write_isrf(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Set the 'writeISRF' setting to true
+        dust_system.set("writeISRF", "true")
+
+    def set_write_absorption(self):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Set the 'writeAbsorption' setting to true
+        dust_system.set("writeAbsorption", "true")
+
+    def set_write_grid(self):
+
+        # Get the dust grid
+        grid = self.get_dust_grid()
+
+        # Set the 'writeGrid' setting to true
+        grid.set("writeGrid", "true")
+
     def disable_all_dust_system_writing_options(self):
 
         # Get the dust system

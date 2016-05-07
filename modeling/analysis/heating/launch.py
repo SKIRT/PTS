@@ -168,7 +168,20 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         self.ski.setpackages(self.config.packages)
 
         # Enable all writing options for analysis
-        self.ski.enable_all_writing_options()
+        #self.ski.enable_all_writing_options()
+
+        # Set dust system writing options
+        self.ski.set_write_convergence()
+        self.ski.set_write_density()
+        #self.ski.set_write_depth_map()
+        #self.ski.set_write_quality()
+        self.ski.set_write_cell_properties()
+        #self.ski.set_write_cells_crossed()
+        #self.ski.set_write_emissivity()
+        #self.ski.set_write_temperature()
+        #self.ski.set_write_isrf()
+        self.ski.set_write_absorption()
+        self.ski.set_write_grid()
 
         # Loop over the different contributions, create seperate ski file instance
         for contribution in self.contributions:
@@ -329,6 +342,9 @@ def create_arguments(ski_path, input_path, output_path):
     # Parallelization settings
     arguments.parallel.threads = None
     arguments.parallel.processes = None
+
+    # Logging options
+    arguments.logging.verbose = True
 
     # Return the SKIRT arguments object
     return arguments
