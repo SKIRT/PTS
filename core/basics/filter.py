@@ -213,9 +213,9 @@ class Filter:
         pacs_blue_names = ["Pacs.blue", "PACS.BLUE", "PACS blue", "PACS BLUE", "Pacs 70mu", "Pacs 70um", "PACS 70mu", "PACS 70um", "PACS-70", "the PACS-70 band", "Pacs 70", "Pacs blue"]
         pacs_green_names = ["Pacs.green", "PACS.GREEN", "PACS green", "PACS GREEN", "Pacs 100mu", "Pacs 100um", "PACS 100mu", "PACS 100um", "PACS-100", "the PACS-100 band", "Pacs 100", "Pacs green"]
         pacs_red_names = ["Pacs.red", "PACS.RED", "PACS red", "PACS RED", "Pacs 160mu", "Pacs 160um", "PACS 160mu", "PACS 160um", "PACS-160", "the PACS-160 band", "Pacs 160", "Pacs red"]
-        spire_psw_names = ["SPIRE.PSW", "SPIRE PSW", "SPIRE 250mu", "SPIRE 250um", "SPIRE-250", "the SPIRE-250 band", "SPIRE.PSW_ext", "SPIRE 250"]
-        spire_pmw_names = ["SPIRE.PMW", "SPIRE PMW", "SPIRE 350mu", "SPIRE 350um", "SPIRE-350", "the SPIRE-250 band", "SPIRE.PMW_ext", "SPIRE 350"]
-        spire_plw_names = ["SPIRE.PLW", "SPIRE PLW", "SPIRE 500mu", "SPIRE 500um", "SPIRE-500", "the SPIRE-500 band", "SPIRE.PLW_ext", "SPIRE 500"]
+        spire_psw_names = ["SPIRE.PSW", "SPIRE PSW", "SPIRE 250mu", "SPIRE 250um", "SPIRE-250", "the SPIRE-250 band", "SPIRE.PSW_ext", "SPIRE 250", "SPIRE PSW_ext"]
+        spire_pmw_names = ["SPIRE.PMW", "SPIRE PMW", "SPIRE 350mu", "SPIRE 350um", "SPIRE-350", "the SPIRE-250 band", "SPIRE.PMW_ext", "SPIRE 350", "SPIRE PMW_ext"]
+        spire_plw_names = ["SPIRE.PLW", "SPIRE PLW", "SPIRE 500mu", "SPIRE 500um", "SPIRE-500", "the SPIRE-500 band", "SPIRE.PLW_ext", "SPIRE 500", "SPIRE PLW_ext"]
 
         # Generic filters
         johnson_u_names = ["Johnson U", "U"]
