@@ -180,7 +180,7 @@ class ObservedImageMaker(object):
             if host_id is not None:
 
                 # Upload the datacube, wavelength grid and filter properties, perform the convolution on the remote and get the resulting image frames back (as a dictionary where the keys are the filter names)
-                frames = remote_filter_convolution(host_id, path, self.wavelengths, self.filters)
+                frames = remote_filter_convolution(host_id, path, self.wavelengths, self.filters, keep_output=True)
 
                 # Add the resulting image frames to the dictionary
                 for filter_name in frames:
@@ -217,7 +217,7 @@ class ObservedImageMaker(object):
                     fltr = self.filters[filter_name]
 
                     # Debugging
-                    log.debug("Making the observed image for the " + fltr.description() + " filter ...")
+                    log.debug("Making the observed image for the " + str(fltr) + " filter ...")
 
                     # Calculate the observed image frame
                     data = fltr.convolve(self.wavelengths, fluxdensities)

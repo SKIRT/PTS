@@ -379,7 +379,7 @@ class Image(object):
         # Set unit, FWHM and filter description
         if self.unit is not None: header.set("SIGUNIT", str(self.unit), "Unit of the map")
         if self.fwhm is not None: header.set("FWHM", self.fwhm.to("arcsec").value, "[arcsec] FWHM of the PSF")
-        if self.filter is not None: header.set("FILTER", self.filter.description(), "Filter used for this observation")
+        if self.filter is not None: header.set("FILTER", str(self.filter), "Filter used for this observation")
 
         # Add origin description
         if origin is not None: header["ORIGIN"] = origin
@@ -521,11 +521,11 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @filter.setter
-    def filter(self, filter):
+    def filter(self, fltr):
 
         """
         This function ...
-        :param filter:
+        :param fltr:
         :return:
         """
 
@@ -533,10 +533,10 @@ class Image(object):
         for frame_name in self.frames:
 
             # Inform the user
-            log.debug("Setting the filter of the " + frame_name + " frame to " + filter.description() + " ...")
+            log.debug("Setting the filter of the " + frame_name + " frame to " + str(fltr) + " ...")
 
             # Set the filter for this frame
-            self.frames[frame_name].filter = filter
+            self.frames[frame_name].filter = fltr
 
     # -----------------------------------------------------------------
 

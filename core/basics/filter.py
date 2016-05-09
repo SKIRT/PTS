@@ -210,9 +210,9 @@ class Filter:
         mips_24_names = ["MIPS.24mu", "MIPS.24um", "MIPS.24", "MIPS 24mu", "MIPS 24um", "MIPS 24", "24mu", "24um", "MIPS-24", "the MIPS-24 band"]
         mips_70_names = ["MIPS.70mu", "MIPS.70um", "MIPS.70", "MIPS 70mu", "MIPS 70um", "MIPS 70", "MIPS-70", "the MIPS-70 band"]
         mips_160_names = ["MIPS.160mu", "MIPS.160um", "MIPS.160", "MIPS 160mu", "MIPS 160um", "MIPS 160", "MIPS-160", "the MIPS-160 band"]
-        pacs_blue_names = ["Pacs.blue", "PACS.BLUE", "PACS blue", "PACS BLUE", "Pacs 70mu", "Pacs 70um", "PACS 70mu", "PACS 70um", "PACS-70", "the PACS-70 band", "Pacs 70"]
-        pacs_green_names = ["Pacs.green", "PACS.GREEN", "PACS green", "PACS GREEN", "Pacs 100mu", "Pacs 100um", "PACS 100mu", "PACS 100um", "PACS-100", "the PACS-100 band", "Pacs 100"]
-        pacs_red_names = ["Pacs.red", "PACS.RED", "PACS red", "PACS RED", "Pacs 160mu", "Pacs 160um", "PACS 160mu", "PACS 160um", "PACS-160", "the PACS-160 band", "Pacs 160"]
+        pacs_blue_names = ["Pacs.blue", "PACS.BLUE", "PACS blue", "PACS BLUE", "Pacs 70mu", "Pacs 70um", "PACS 70mu", "PACS 70um", "PACS-70", "the PACS-70 band", "Pacs 70", "Pacs blue"]
+        pacs_green_names = ["Pacs.green", "PACS.GREEN", "PACS green", "PACS GREEN", "Pacs 100mu", "Pacs 100um", "PACS 100mu", "PACS 100um", "PACS-100", "the PACS-100 band", "Pacs 100", "Pacs green"]
+        pacs_red_names = ["Pacs.red", "PACS.RED", "PACS red", "PACS RED", "Pacs 160mu", "Pacs 160um", "PACS 160mu", "PACS 160um", "PACS-160", "the PACS-160 band", "Pacs 160", "Pacs red"]
         spire_psw_names = ["SPIRE.PSW", "SPIRE PSW", "SPIRE 250mu", "SPIRE 250um", "SPIRE-250", "the SPIRE-250 band", "SPIRE.PSW_ext", "SPIRE 250"]
         spire_pmw_names = ["SPIRE.PMW", "SPIRE PMW", "SPIRE 350mu", "SPIRE 350um", "SPIRE-350", "the SPIRE-250 band", "SPIRE.PMW_ext", "SPIRE 350"]
         spire_plw_names = ["SPIRE.PLW", "SPIRE PLW", "SPIRE 500mu", "SPIRE 500um", "SPIRE-500", "the SPIRE-500 band", "SPIRE.PLW_ext", "SPIRE 500"]
@@ -314,6 +314,9 @@ class Filter:
 
     @property
     def band(self): return self._FilterID.split("/")[1].split(".")[1]
+
+    ## This function returns the filter in string format ('instrument' 'band')
+    def __str__(self): return self.instrument + " " + self.band
 
     ## This function returns a unique identifier for the filter.
     def filterID(self):
@@ -427,10 +430,8 @@ class Filter:
         T = np.exp(np.interp(np.log(w), np.log(wb), _log(self._Transmission), left=0., right=0.))
 
         # perform the integration
-        if self._PhotonCounter:
-            return np.trapz(x=w, y=w * F * T) / self._IntegratedTransmission
-        else:
-            return np.trapz(x=w, y=F * T) / self._IntegratedTransmission
+        if self._PhotonCounter: return np.trapz(x=w, y=w * F * T)
+        else: return np.trapz(x=w, y=F * T)
 
 ## This private helper function returns the natural logarithm for positive values, and a large negative number
 # (but not infinity) for zero or negative values.

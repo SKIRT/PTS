@@ -403,7 +403,7 @@ def remote_filter_convolution_no_pts(host_id, datacube_path, wavelengths, filter
 
 # -----------------------------------------------------------------
 
-def remote_filter_convolution(host_id, datacube_path, wavelengths, filters):
+def remote_filter_convolution(host_id, datacube_path, wavelengths, filters, keep_output=False):
 
     """
     This function ...
@@ -411,6 +411,7 @@ def remote_filter_convolution(host_id, datacube_path, wavelengths, filters):
     :param datacube_path:
     :param wavelengths:
     :param filters:
+    :param keep_output:
     :return:
     """
 
@@ -484,14 +485,17 @@ def remote_filter_convolution(host_id, datacube_path, wavelengths, filters):
     script_file.write("# Inform the user\n")
     script_file.write("log.info('Loading the datacube ...')\n")
     script_file.write("\n")
-    script_file.write("# Load the wavelengths\n")
+    script_file.write("# Open the datacube as an Image\n")
+    script_file.write("datacube = Image.from_file('" + remote_datacube_path + "', always_call_first_primary=False)\n")
+    script_file.write("\n")
+    script_file.write("# Inform the user\n")
+    script_file.write("log.info('Loading the wavelengths ...')\n")
+    script_file.write("\n")
+    script_file.write("# Load the wavelengths from the text file\n")
     script_file.write("wavelengths = np.loadtxt('" + remote_wavelengths_path + "')\n")
     script_file.write("\n")
-    script_file.write("# Open the datacube as an Image\n")
-    script_file.write("datacube = Image.from_file('" + remote_datacube_path + "')\n")
-    script_file.write("\n")
     script_file.write("# Convert the frames from neutral surface brightness to wavelength surface brightness\n")
-    script_file.write("for l in range(wavelengths):\n")
+    script_file.write("for l in range(len(wavelengths)):\n")
     script_file.write("\n")
     script_file.write("    # Get the wavelength\n")
     script_file.write("    wavelength = wavelengths[l]\n")
@@ -509,10 +513,6 @@ def remote_filter_convolution(host_id, datacube_path, wavelengths, filters):
     script_file.write("fluxdensities = datacube.asarray()\n")
     script_file.write("\n")
     script_file.write("# Inform the user\n")
-    script_file.write("log.info('Loading the wavelengths ...')\n")
-    script_file.write("\n")
-
-    script_file.write("# Inform the user\n")
     script_file.write("log.info('Creating the filters ...')\n")
     script_file.write("\n")
     script_file.write("filters = dict()\n")
@@ -520,9 +520,9 @@ def remote_filter_convolution(host_id, datacube_path, wavelengths, filters):
     for filter_name in filters:
         fltr = filters[filter_name]
         script_file.write("# Inform the user\n")
-        script_file.write("log.info('Creating the " + fltr.description() + " filter')\n")
+        script_file.write("log.info('Creating the " + str(fltr) + " filter')\n")
         script_file.write("\n")
-        script_file.write("fltr = Filter.from_string('" + fltr.description() + "')\n")
+        script_file.write("fltr = Filter.from_string('" + str(fltr) + "')\n")
         script_file.write("filters['" + filter_name + "'] = fltr\n")
         script_file.write("\n")
     script_file.write("# Inform the user\n")
@@ -531,7 +531,7 @@ def remote_filter_convolution(host_id, datacube_path, wavelengths, filters):
     script_file.write("# Loop over the filters, perform the convolution\n")
     script_file.write("for filter_name in filters:\n")
     script_file.write("\n")
-    script_file.write("    log.info('Creating the ' + fltr.description() + ' image ...')\n")
+    script_file.write("    log.info('Creating the ' + str(fltr) + ' image ...')\n")
     script_file.write("    fltr = filters[filter_name]\n")
     script_file.write("    data = fltr.convolve(wavelengths, fluxdensities)\n")
     script_file.write("    frame = Frame(data)\n")
@@ -581,7 +581,7 @@ def remote_filter_convolution(host_id, datacube_path, wavelengths, filters):
         path = fs.join(local_downloaded_temp_path, filter_name + ".fits")
 
         # Check whether the frame exists
-        if not fs.is_file(path): raise RuntimeError("The image for filter " + filters[filter_name].description() + " is missing")
+        if not fs.is_file(path): raise RuntimeError("The image for filter " + str(filters[filter_name]) + " is missing")
 
         # Load the FITS file
         frame = Frame.from_file(path)
@@ -590,7 +590,7 @@ def remote_filter_convolution(host_id, datacube_path, wavelengths, filters):
         frames[filter_name] = frame
 
     # Remove the downloaded temporary directory
-    fs.remove_directory(local_downloaded_temp_path)
+    if not keep_output: fs.remove_directory(local_downloaded_temp_path)
 
     # Return the dictionary of frames
     return frames
