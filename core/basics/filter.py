@@ -205,7 +205,7 @@ class Filter:
         irac_i4_names = ["IRAC.I4", "IRAC I4", "IRAC 8.0", "IRAC 8.0um", "IRAC 8.0mu", "I4", "IRAC4", "IRAC-4", "the IRAC-4 band"]
         wise_w1_names = ["WISE.W1", "WISE W1", "W1", "WISE1", "WISE-1", "the WISE-1 band", "w1"]
         wise_w2_names = ["WISE.W2", "WISE W2", "W2", "WISE2", "WISE-2", "the WISE-2 band", "w2"]
-        wise_w3_names = ["WISE.W3", "wISE W3", "W3", "WISE3", "WISE-3", "the WISE-3 band", "w3"]
+        wise_w3_names = ["WISE.W3", "WISE W3", "W3", "WISE3", "WISE-3", "the WISE-3 band", "w3"]
         wise_w4_names = ["WISE.W4", "WISE W4", "W4", "WISE4", "WISE-4", "the WISE-4 band", "w4"]
         mips_24_names = ["MIPS.24mu", "MIPS.24um", "MIPS.24", "MIPS 24mu", "MIPS 24um", "MIPS 24", "24mu", "24um", "MIPS-24", "the MIPS-24 band"]
         mips_70_names = ["MIPS.70mu", "MIPS.70um", "MIPS.70", "MIPS 70mu", "MIPS 70um", "MIPS 70", "MIPS-70", "the MIPS-70 band"]
