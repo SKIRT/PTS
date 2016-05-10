@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.analysis.colours Contains the ColourAnalyser class
+## \package pts.modeling.analysis.colours.colours Contains the ColourAnalyser class
 
 # -----------------------------------------------------------------
 
@@ -16,15 +16,16 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from .component import AnalysisComponent
-from ...core.tools.logging import log
-from ...core.tools import filesystem as fs
-from ...magic.core.frame import Frame
-from ...magic.plot.imagegrid import ImageGridPlotter
+from .component import ColourAnalysisComponent
+from ....core.tools.logging import log
+from ....core.tools import filesystem as fs
+from ....magic.core.frame import Frame
+from ....magic.plot.imagegrid import ImageGridPlotter
+from ....core.basics.distribution import Distribution
 
 # -----------------------------------------------------------------
 
-class ColourAnalyser(AnalysisComponent):
+class ColourAnalyser(ColourAnalysisComponent):
     
     """
     This class...
@@ -56,6 +57,12 @@ class ColourAnalyser(AnalysisComponent):
         # The dictionaries that contain the observed and simulated colour maps
         self.observed_colours = dict()
         self.simulated_colours = dict()
+
+        # The residual colour maps
+        self.residual_colours = dict()
+
+        # The residual pixel value distributions
+        self.residual_distributions = dict()
 
     # -----------------------------------------------------------------
 
@@ -101,6 +108,9 @@ class ColourAnalyser(AnalysisComponent):
         # 4. Calculate the colour maps
         self.calculate_colours()
 
+        # 5. Calculate the residual colour maps
+        self.calculate_residuals()
+
         # 5. Writing
         self.write()
 
@@ -128,7 +138,7 @@ class ColourAnalyser(AnalysisComponent):
 
             # Check whether the image is present
             if not fs.is_file(path):
-                log.warning("Observed " + filter_name + " image is not present")
+                log.warning("Observed " + key + " micron image is not present")
                 continue
 
             # Load the image frame
@@ -159,7 +169,7 @@ class ColourAnalyser(AnalysisComponent):
 
             # Check whether the image is present
             if not fs.is_file(path):
-                log.warning("Simulated " + filter_name + " image is not present")
+                log.warning("Simulated " + key + " micron image is not present")
                 continue
 
             # Load the image frame
@@ -236,6 +246,9 @@ class ColourAnalyser(AnalysisComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Calculating the colour maps")
+
         # Loop over the different colours
         for colour_name in self.colour_names:
 
@@ -256,6 +269,9 @@ class ColourAnalyser(AnalysisComponent):
                 log.warning("Simulated " + self.filter_names[wavelength2] + " not present, " + colour_name + " can not be calculated")
                 continue
 
+            # Debugging
+            log.debug("Calculating the observed and simulated " + colour_name + " colour maps ...")
+
             # Calculate the colour maps
             observed_colour = np.log10(self.observed[wavelength1]/self.observed[wavelength2])
             simulated_colour = np.log10(self.simulated[wavelength1]/self.simulated[wavelength2])
@@ -263,6 +279,61 @@ class ColourAnalyser(AnalysisComponent):
             # Add the colour maps to the appropriate dictionary
             self.observed_colours[colour_name] = observed_colour
             self.simulated_colours[colour_name] = simulated_colour
+
+    # -----------------------------------------------------------------
+
+    def calculate_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating residuals between the observed and simulated colour maps ...")
+
+        # Loop over the different colours
+        for colour_name in self.observed_colours:
+
+            # Debugging
+            log.debug("Calculating residuals between the observed and simulated " + colour_name + " colour maps ...")
+
+            # Calculate the residual
+            residual = (self.observed_colours[colour_name] - self.simulated_colours[colour_name])/self.observed_colours[colour_name]
+
+            # Add the residual map to the dictionary
+            self.residual_colours[colour_name] = residual
+
+    # -----------------------------------------------------------------
+
+    def calculate_residual_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating distributions of residual pixel values ...")
+
+        # Loop over the different colours
+        for colour_name in self.observed_colours:
+
+            # Debugging
+            log.debug("Calculating the distribution for the pixels of the " + colour_name + " residual map ...")
+
+            # Get an 1D array of the valid pixel values
+            pixel_values = None
+
+            # Create the distribution
+            distribution = Distribution.from_values(pixel_values)
+
+            # Debugging
+            #log.debug("Median " + colour_name + " residual: " + str(np.nanmedian(np.abs(residual))))
+            #log.debug("Standard deviation of " + colour_name + " residual: " + str(np.nanstd(residual)))
+
+            # Add the distribution to the dictionary
+            self.residual_distributions[colour_name] = distribution
 
     # -----------------------------------------------------------------
 
@@ -276,29 +347,101 @@ class ColourAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Directories
-        observed_path = fs.join(self.analysis_colours_path, "observed")
-        simulated_path = fs.join(self.analysis_colours_path, "simulated")
-        fs.create_directory(observed_path)
-        fs.create_directory(simulated_path)
+        # Write the observed colour maps
+        self.write_observed_colours()
+
+        # Write the simulated colour maps
+        self.write_simulated_colours()
+
+        # Write the residual colour maps
+        self.write_residual_colours()
+
+        # Write the distributions of the residual pixel values
+        self.write_residual_distributions()
+
+    # -----------------------------------------------------------------
+
+    def write_observed_colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the observed colour maps ...")
 
         # Loop over the observed colour maps
         for colour_name in self.observed_colours:
 
             # Determine the path
-            path = fs.join(observed_path, colour_name.replace("/", "-") + ".fits")
+            path = fs.join(self.colours_observed_path, colour_name.replace("/", "-") + ".fits")
 
             # Save the image
             self.observed_colours[colour_name].save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_simulated_colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the simulated colour maps ...")
 
         # Loop over the simulated colour maps
         for colour_name in self.simulated_colours:
 
             # Determine the path
-            path = fs.join(simulated_path, colour_name.replace("/", "-") + ".fits")
+            path = fs.join(self.colours_simulated_path, colour_name.replace("/", "-") + ".fits")
 
             # Save the image
             self.simulated_colours[colour_name].save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_residual_colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the residual colour maps ...")
+
+        # Loop over the residual colour maps
+        for colour_name in self.residual_colours:
+
+            # Determine the path
+            path = fs.join(self.colours_residuals_path, colour_name.replace("/", "-") + ".fits")
+
+            # Save the image
+            self.residual_colours[colour_name].save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_residual_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the residual colour pixel distributions ...")
+
+        # Loop over the residual pixel distributions
+        for colour_name in self.residual_distributions:
+
+            # Determine the path
+            path = fs.join()
+
+            # Save the distribution data
+            self.residual_distributions[colour_name].save(path)
 
     # -----------------------------------------------------------------
 
@@ -311,6 +454,24 @@ class ColourAnalyser(AnalysisComponent):
 
         # Inform the user
         log.info("Plotting ...")
+
+        # Plot a grid with the observed, simulated and residual colour maps
+        self.plot_image_grid()
+
+        # Plot the distributions of the pixel values of the residual maps
+        self.plot_residual_distributions()
+
+    # -----------------------------------------------------------------
+
+    def plot_image_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting a grid with the observed, simulated and residual colour maps ...")
 
         # Create an ImageGridPlotter instance
         plotter = ImageGridPlotter(title="Colours")
@@ -327,5 +488,26 @@ class ColourAnalyser(AnalysisComponent):
 
         # Run the plotter
         plotter.run(path)
+
+    # -----------------------------------------------------------------
+
+    def plot_residual_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the pixel value distributions for the residual maps ...")
+
+        # Loop over the residual pixel distributions
+        for colour_name in self.residual_distributions:
+
+            # Determine the path
+            path = fs.join(self.colours_residuals_path, colour_name + ".pdf")
+
+            # Save the distribution data
+            self.residual_distributions[colour_name].plot(title="Distribution of residual pixel values for " + colour_name + " colour", path=path)
 
 # -----------------------------------------------------------------

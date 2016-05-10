@@ -14,9 +14,10 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
-from ...core.tools import filesystem
+from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.frame import Frame
+from ...magic.plot.imagegrid import ImageGridPlotter
 
 # -----------------------------------------------------------------
 
@@ -36,6 +37,8 @@ class ResidualAnalyser(AnalysisComponent):
 
         # Call the constructor of the base class
         super(ResidualAnalyser, self).__init__(config)
+
+        # -- Attributes --
 
         # The simulated images
         self.simulated = dict()
@@ -84,13 +87,16 @@ class ResidualAnalyser(AnalysisComponent):
         # 3. Load the observed images
         self.load_observed_images()
 
-        # 4. Calculate the residual images
+        # 4. Rebin the images to the same pixel grid
+        self.rebin()
+
+        # 5. Calculate the residual images
         self.calculate_residuals()
 
-        # 5. Writing
+        # 6. Writing
         self.write()
 
-        # 6. Plotting
+        # 7. Plotting
         self.plot()
 
     # -----------------------------------------------------------------
@@ -106,7 +112,7 @@ class ResidualAnalyser(AnalysisComponent):
         log.info("Loading the simulated images ...")
 
         # Loop over all FITS files found in the analysis/misc directory
-        for path, name in filesystem.files_in_path(self.analysis_misc_path, extension="fits", returns=["path", "name"], contains="__"):
+        for path, name in fs.files_in_path(self.analysis_misc_path, extension="fits", returns=["path", "name"], contains="__"):
 
             # Debugging
             log.debug("Loading the '" + name + "' image ...")
@@ -133,7 +139,7 @@ class ResidualAnalyser(AnalysisComponent):
         log.info("Loading the observed images ...")
 
         # Loop over all FITS files found in the 'truncated' directory
-        for path, name in filesystem.files_in_path(self.truncation_path, extension="fits", returns=["path", "name"]):
+        for path, name in fs.files_in_path(self.truncation_path, extension="fits", returns=["path", "name"]):
 
             # Ignore the bulge, disk and model images
             if name == "bulge" or name == "disk" or name == "model": continue
@@ -157,6 +163,18 @@ class ResidualAnalyser(AnalysisComponent):
 
             # Add the image frame to the dictionary
             self.observed[filter_name] = frame
+
+    # -----------------------------------------------------------------
+
+    def rebin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Rebinning the observed and simulated images to the same resolution ...")
 
     # -----------------------------------------------------------------
 
@@ -235,7 +253,7 @@ class ResidualAnalyser(AnalysisComponent):
         for filter_name in self.residuals:
 
             # Determine the path for this residual image
-            path = filesystem.join(self.analysis_residuals_path, filter_name + ".fits")
+            path = fs.join(self.analysis_residuals_path, filter_name + ".fits")
 
             # Debugging
             log.debug("Writing the residual frame for the " + filter_name + " band to '" + path + "' ...")
@@ -255,6 +273,39 @@ class ResidualAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Plotting ...")
 
-        #self.plot_residuals()
+        # Plot a grid with the observed, simulated and residual images
+        self.plot_image_grid()
+
+    # -----------------------------------------------------------------
+
+    def plot_image_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting a grid with the observed, simulated and residual images ...")
+
+        # Create an ImageGridPlotter instance
+        plotter = ImageGridPlotter(title="Image residuals")
+
+        # Get the filter names which appear in both the simulated and observed images
+        filter_names = list(set(self.simulated.keys() + self.observed.keys()))
+
+        # Loop over the filter names, add a row to the image grid plotter for each filter
+        for filter_name in filter_names:
+
+            observed = self.observed[filter_name]
+            simulated = self.simulated[filter_name]
+
+            plotter.add_row(observed, simulated, filter_name)
+
+        # Determine the path to the plot file
+        path = fs.join(self.analysis_residuals_path, "residuals.pdf")
+
+        # Run the plotter
+        plotter.run(path)
 
 # -----------------------------------------------------------------
