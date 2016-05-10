@@ -35,8 +35,6 @@ class TruncationComponent(ModelingComponent):
         # Call the constructor of the base class
         super(TruncationComponent, self).__init__(config)
 
-        # -- Attributes --
-
     # -----------------------------------------------------------------
 
     def setup(self):

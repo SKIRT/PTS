@@ -544,4 +544,21 @@ class SourceFinder(Configurable):
         # Write the catalog to file
         tables.write(self.catalog_builder.stellar_catalog, path)
 
+    # -----------------------------------------------------------------
+
+    def write_statistics(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing statistics to '" + path + "' ...")
+
+        # Open the file, write the info
+        with open(path, 'w') as statistics_file:
+            statistics_file.write("FWHM: " + str(self.fwhm) + "\n")
+
 # -----------------------------------------------------------------

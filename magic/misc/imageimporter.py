@@ -61,7 +61,7 @@ class ImageImporter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, path, bad_region_path=None, unit=None, fwhm=None):
+    def run(self, path, bad_region_path=None, unit=None, fwhm=None, find_error_frame=True):
 
         """
         This function ...
@@ -76,7 +76,7 @@ class ImageImporter(Configurable):
         self.setup(path, bad_region_path, unit, fwhm)
 
         # 2. Load the image
-        self.load_image()
+        self.load_image(find_error_frame)
 
         # 3. Set the mask
         self.set_mask()
@@ -128,7 +128,7 @@ class ImageImporter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def load_image(self):
+    def load_image(self, find_error_frame=True):
 
         """
         This function ...
@@ -142,7 +142,7 @@ class ImageImporter(Configurable):
         self.image = Image.from_file(self.image_path)
 
         # Load error frame
-        self.load_error_frame()
+        if find_error_frame: self.load_error_frame()
 
         # Set the image unit and FWHM
         if self.unit is not None: self.image.unit = self.unit
@@ -187,24 +187,6 @@ class ImageImporter(Configurable):
 
                 # Add the error frame
                 self.image.add_frame(error_frame, "errors")
-
-        # Still no errors frame
-        #if "errors" not in self.image.frames:
-
-            #log.warning("No error data found for " + self.image_name + ".fits, adding errors frame that is zero everywhere")
-
-            # Create a new errors frame (all zeros) and add it to the image
-            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-            #new_error_frame = Frame(np.zeros(self.image.shape),
-            #                        wcs=self.image.wcs,
-            #                        name="errors",
-            #                        description="the error map",
-            #                        unit=self.image.unit,
-            #                        zero_point=self.image.frames.primary.zero_point,
-            #                        filter=self.image.filter,
-            #                        sky_subtracted=False,
-            #                        fwhm=self.image.fwhm)
-            #self.image.add_frame(new_error_frame, "errors")
 
     # -----------------------------------------------------------------
 

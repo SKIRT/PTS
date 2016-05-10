@@ -26,7 +26,7 @@ from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-# TODO: also crop the FITS files to the bounding box of the disk ellipse
+# TODO: also crop the FITS files to the bounding box of the disk ellipse?
 
 # -----------------------------------------------------------------
 
@@ -101,7 +101,7 @@ class Truncator(TruncationComponent):
         # 4. Truncate the images
         self.truncate()
 
-        # 7. Writing
+        # 5. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -170,6 +170,9 @@ class Truncator(TruncationComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the region that describes the projected disk component ...")
 
         # Get the path to the disk region
         path = fs.join(self.components_path, "disk.reg")
@@ -255,21 +258,34 @@ class Truncator(TruncationComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the truncated images ...")
+
         # Loop over all images
         for image in self.images:
 
             # Determine the path to the truncated image
             truncated_path = fs.join(self.truncation_path, image.name + ".fits")
 
+            # Debugging
+            log.debug("Writing the truncated " + image.name + " image to '" + truncated_path + "' ...")
+
             # Save the image
             image.save(truncated_path)
 
-        # Write the bulge, disk and total model images
+        # Write the disk image
         disk_path = fs.join(self.truncation_path, "disk.fits")
+        log.debug("Writing the truncated disk image to '" + disk_path + "' ...")
         self.disk.save(disk_path)
+
+        # Write the bulge image
         bulge_path = fs.join(self.truncation_path, "bulge.fits")
+        log.debug("Writing the truncated bulge image to '" + bulge_path + "' ...")
         self.bulge.save(bulge_path)
+
+        # Write the model image
         model_path = fs.join(self.truncation_path, "model.fits")
+        log.debug("Writing the truncated model image to '" + model_path + "' ...")
         self.model.save(model_path)
 
 # -----------------------------------------------------------------
