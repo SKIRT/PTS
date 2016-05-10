@@ -13,17 +13,17 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import subprocess
-import rpy2
-import rpy2.robjects as ro
+from collections import defaultdict
 import numpy as np
 import matplotlib.pyplot as plt
+import rpy2.robjects as ro
 
 # Import the relevant PTS classes and modules
 from .component import DustHeatingAnalysisComponent
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
 from ....core.tools import tables, inspection
+from ....core.simulation.table import SkirtTable
 
 # -----------------------------------------------------------------
 
@@ -50,8 +50,11 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # The number of wavelengths
         self.number_of_wavelengths = None
 
+        # The table with the cell properties
+        self.cell_properties = None
+
         # The table with the absorbed luminosities
-        self.absorption_table = None
+        self.absorptions = None
 
     # -----------------------------------------------------------------
 
@@ -91,11 +94,14 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Load the cell properties
         self.load_cell_properties()
 
-        # Load the ISRF data
-        #self.load_isrf()
-
         # Load the absorption data
-        self.load_absorption()
+        #self.load_absorption()
+
+        #print(self.absorptions)
+
+
+
+        self.load_absorption_r()
 
     # -----------------------------------------------------------------
 
@@ -158,7 +164,165 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Determine the path to the cell properties file in heating/total
         properties_path = fs.join(self.output_paths["total"], self.galaxy_name + "_ds_cellprops.dat")
 
-        cell, x, y, z, J = np.loadtxt(isrf_path, usecols=column_indices, unpack=True)
+        # Load the properties table
+        self.cell_properties = SkirtTable.from_file(properties_path)
+
+    # -----------------------------------------------------------------
+
+    def load_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the absorption data ...")
+
+        # Bolometric absorbed luminosituy for all dust cells with nonzero absorption
+        # column 1: dust cell index
+        # column 2: x coordinate of cell center (pc)
+        # column 3: y coordinate of cell center (pc)
+        # column 4: z coordinate of cell center (pc)
+        # column 5: L_abs (W)
+
+        data = dict()
+
+        # Loop over the different contributions
+        for contribution in self.contributions:
+
+            # Debugging
+            log.debug("Loading the SKIRT absorption table for the simulation of the " + contribution + " stellar population ...")
+
+            # Determine the path to the output directory of the simulation
+            output_path = self.output_paths[contribution]
+
+            # Determine the path to the absorption data file
+            absorption_path = fs.join(output_path, self.galaxy_name + "_ds_abs.dat")
+
+            # Load the absorption table for this contribution
+            table = SkirtTable.from_file(absorption_path)
+
+            # Add the table
+            data[contribution] = table
+
+        # Create the absorption table which contains the information for the different contributions
+
+        # Debugging
+        log.info("Merging the individual absorption tables into one (this can take a while) ...")
+
+        current_rows = dict()
+        for contribution in self.contributions: current_rows[contribution] = 0
+
+        x_column = []
+        y_column = []
+        z_column = []
+        abs_columns = defaultdict(list)
+
+        # Loop over the cells
+        number_of_cells = len(self.cell_properties)
+        for index in range(number_of_cells):
+
+            # Debugging
+            log.debug("Cell " + str(index+1) + " of " + str(number_of_cells) + " (" + str((index+1)/number_of_cells*100.) + "%) ...")
+
+            x = None
+            y = None
+            z = None
+            abs = dict()
+
+            # Loop over the absorption tables of the different contributions, find the cell index
+            for contribution in self.contributions:
+
+                table = data[contribution]
+                current_row = current_rows[contribution]
+
+                if table["Dust cell index"][current_row] == index:
+
+                    x = table["X coordinate of cell center"][current_row]
+                    y = table["Y coordinate of cell center"][current_row]
+                    z = table["Z coordinate of cell center"][current_row]
+                    labs = table["L_abs"][current_row]
+                    abs[contribution] = labs
+
+                    # Use the next row to test against the next cell index
+                    current_rows[contribution] += 1
+
+            x_column.append(x)
+            y_column.append(y)
+            z_column.append(z)
+
+            for contribution in self.contributions:
+                abs_columns[contribution].append(abs[contribution] if contribution in abs else None)
+
+        # Initialize the column data and names
+        data = [x_column, y_column, z_column]
+        names = ["X coordinate", "Y coordinate", "Z coordinate"]
+        for contribution in self.contributions:
+            data.append(abs_columns[contribution])
+            names.append("Absorption for " + contribution + " stellar population")
+
+        # Create the final absorption table
+        self.absorptions = tables.new(data, names)
+
+    # -----------------------------------------------------------------
+
+    def load_absorption_in_r(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        properties_path = fs.join(self.output_paths["total"], self.galaxy_name + "_ds_cellprops.dat")
+        tot_path = fs.join(self.output_paths["total"], self.galaxy_name + "_ds_abs.dat")
+        old_path = fs.join(self.output_paths["old"], self.galaxy_name + "_ds_abs.dat")
+        young_path = fs.join(self.output_paths["young"], self.galaxy_name + "_ds_abs.dat")
+        ionizing_path = fs.join(self.output_paths["ionizing"], self.galaxy_name + "_ds_abs.dat")
+        self.merge_in_r(properties_path, tot_path, old_path, young_path, ionizing_path)
+
+
+
+    # -----------------------------------------------------------------
+
+    def merge_in_r(self, properties_path, tot_path, old_path, young_path, ionizing_path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        temp_path = fs.join(self.analysis_heating_path, "abs_temp.dat")
+
+        # Define the lines that have to be executed by R to merge the absorption data
+        lines = []
+        lines.append("library('dplyr')")
+        lines.append("props <- read.table('" + properties_path + "')")
+        lines.append("IDs <- c(0:(length(props[[1]]) - 1))")
+        lines.append("props <- mutate(props, ID=IDs)")
+
+        lines.append("tot <- read.table('" + tot_path + "')")
+        lines.append("old <- read.table('" + old_path + "')")
+        lines.append("yng <- read.table('" + young_path + "')")
+        lines.append("new <- read.table('" + ionizing_path + "')")
+
+        lines.append("propstot <- merge(props, tot, by.x = 'ID', by.y = 'V1')")
+        lines.append("print('Merged total properties...')")
+
+        lines.append("oldyng <- merge(old, yng, by.x = 'V1', by.y = 'V1')")
+        lines.append("oldyngnew <- merge(oldyng, new, by.x = 'V1', by.y = 'V1')")
+        lines.append("print('Merged component properties...')")
+
+        lines.append("final <- merge(propstot, oldyngnew, by.x = 'ID', by.y = 'V1')")
+        lines.append("names(final) <- c('ID', 'volume', 'density', 'massFraction', 'odepth', 'density_new', 'x', 'y', 'z', 'Ltot', 'Lold', 'Lyng', 'Lnew')")
+        lines.append("print('Final set created...')")
+
+        lines.append("write.table(final, '" + temp_path + "', row.names = F)")
+
+        # Execute all lines consecutively in R
+        for line in lines:
+            #print(line)
+            ro.r(line)
 
     # -----------------------------------------------------------------
 
@@ -238,53 +402,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
             #writeLabs('Labs_yng.dat', IDyng, Lyng)
             #writeLabs('Labs_new.dat', IDnew, Lnew)
 
-        def writeLabsTot(file, ID, x, y, z, Labs):
-
-            with open(file, 'w') as f:
-                f.write('# ID    x(pc)    y(pc)    z(pc)    Labs(W) \n')
-                for id, xco, yco, zco, L in zip(ID, x, y, z, Labs):
-                    f.write(
-                        str(id) + '   ' + str(xco) + '   ' + str(yco) + '   ' + str(zco) + '   ' + str(L) + '\n')
-
-        def writeLabs(file, ID, Labs):
-
-            with open(file, 'w') as f:
-                f.write('# ID    Labs(W) \n')
-                for id, L in zip(ID, Labs):
-                    f.write(str(id) + '   ' + str(L) + '\n')
-
-    # -----------------------------------------------------------------
-
-    def load_absorption(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # _ds_abs.dat
-
-        # Bolometric absorbed luminosituy for all dust cells with nonzero absorption
-        # column 1: dust cell index
-        # column 2: x coordinate of cell center (pc)
-        # column 3: y coordinate of cell center (pc)
-        # column 4: z coordinate of cell center (pc)
-        # column 5: L_abs (W)
-
-        # Loop over the different contributions
-        for contribution in self.contributions:
-
-            # Determine the path to the output directory of the simulation
-            output_path = self.output_paths[contribution]
-
-            # Determine the path to the ISFR data file
-            isrf_path = fs.join(output_path, self.galaxy_name + "_ds_abs.dat")
-
-            # Load the ISRF file
-            cell, x, y, labs = np.loadtxt(isrf_path, usecols=(0,1,2,3,4), unpack=True)
-
-
-
     # -----------------------------------------------------------------
 
     def integrate_over_wavelengths(self, jlambdas):
@@ -319,51 +436,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Return the list of luminosities
         return lum_cells
-
-    # -----------------------------------------------------------------
-
-    def merge(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the path to the PTS modeling/analysis directory
-        pts_modeling_analysis_path = fs.join(inspection.pts_package_dir, "modeling", "analysis")
-
-        # Determine the path to the R script that does the merge
-        #script_path = fs.join(pts_modeling_analysis_path, "merge_sets.R")
-        #subprocess.call(["Rscript", script_path])
-
-        # Define the lines that have to be executed by R to merge the absorption data
-        lines = []
-        lines.append("library('dplyr')")
-        lines.append("path = './")
-        lines.append("props < - read.table(paste0(path, 'M31_212isrf_new_ds_cellprops.dat'))")
-        lines.append("IDs < - c(0:(length(props[[1]]) - 1))")
-        lines.append("props < - mutate(props, ID=IDs)")
-
-        lines.append("tot < - read.table(paste0(path, 'Labs_tot.dat'))")
-        lines.append("old < - read.table(paste0(path, 'Labs_old.dat'))")
-        lines.append("yng < - read.table(paste0(path, 'Labs_yng.dat'))")
-        lines.append("new < - read.table(paste0(path, 'Labs_new.dat'))")
-
-        lines.append("propstot < - merge(props, tot, by.x = 'ID', by.y = 'V1')")
-        lines.append("print('Merged total properties...')")
-
-        lines.append("oldyng < - merge(old, yng, by.x = 'V1', by.y = 'V1')")
-        lines.append("oldyngnew < - merge(oldyng, new, by.x = 'V1', by.y = 'V1')")
-        lines.append("print('Merged component properties...')")
-
-        lines.append("final < - merge(propstot, oldyngnew, by.x = 'ID', by.y = 'V1')")
-        lines.append("names(final) < - c('ID', 'volume', 'density', 'massFraction', 'odepth', 'density_new', 'x', 'y', 'z', 'Ltot', 'Lold', 'Lyng', 'Lnew')")
-        lines.append("print('Final set created...')")
-
-        lines.append("write.table(final, paste0(path, 'total212Labs.dat'), row.names = F)")
-
-        # Execute all lines consecutively in R
-        for line in lines: ro.r(line)
 
     # -----------------------------------------------------------------
 

@@ -65,6 +65,9 @@ class BatchLauncher(Configurable):
         # The paths to the directories for placing the (screen/job) scripts (for manual inspection) for the different remote hosts
         self.script_paths = dict()
 
+        # The list of remote hosts for which the screen output should be saved remotely (for debugging)
+        self.save_screen_output = []
+
         # The simulations that have been retrieved
         self.simulations = []
 
@@ -415,8 +418,27 @@ class BatchLauncher(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Setting the local script path for remote host '" + host_id + "' to '" + path + "' ...")
+
         # Set the path to the script paths dictionary for the remote host
         self.script_paths[host_id] = path
+
+    # -----------------------------------------------------------------
+
+    def enable_screen_output(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Saving the screen output remotely will be enabled for remote host '" + host_id + "' ...")
+
+        # Add the ID of the host to the list
+        self.save_screen_output.append(host_id)
 
     # -----------------------------------------------------------------
 
@@ -483,12 +505,21 @@ class BatchLauncher(Configurable):
                 local_script_path = fs.join(self.script_paths[remote.host_id], time.unique_name() + ".sh")
             else: local_script_path = None
 
+            # Set a path for the screen output to be saved remotely (for debugging)
+            if remote.host_id in self.save_screen_output:
+                remote_skirt_dir_path = remote.skirt_dir
+                remote_skirt_run_debug_path = fs.join(remote_skirt_dir_path, "run-debug")
+                if not remote.is_directory(remote_skirt_run_debug_path): remote.create_directory(remote_skirt_run_debug_path)
+                screen_output_path = fs.join(remote_skirt_run_debug_path, time.unique_name("screen") + ".txt")
+            else: screen_output_path = None
+
             # Start the queue
-            screen_name = remote.start_queue(group_simulations=self.config.group_simulations, local_script_path=local_script_path)
+            screen_name = remote.start_queue(group_simulations=self.config.group_simulations, local_script_path=local_script_path, screen_output_path=screen_output_path)
 
             # Set the screen name for all of the simulation objects
             for simulation in simulations_remote:
                 simulation.screen_name = screen_name
+                simulation.remote_screen_output_path = screen_output_path
                 simulation.save()
 
             # Add the simulations of this remote to the total list of simulations

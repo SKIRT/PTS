@@ -388,7 +388,7 @@ def remote_filter_convolution_no_pts(host_id, datacube_path, wavelengths, filter
         integrated_transmissions[fltr.name] = fltr_integrated_transmission
 
         # Save the transmission data
-        path = fs.join(local_temp_path, "transmission__" + fltr.name + ".dat")
+        path = fs.join(local_temp_path, "transmission__" + str(fltr) + ".dat")
         np.savetxt(path, (fltr_wavelengths, fltr_transmission))
 
     #print(integrated_transmissions)

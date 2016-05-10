@@ -313,7 +313,7 @@ class Filter:
     def instrument(self): return self._FilterID.split("/")[1].split(".")[0]
 
     @property
-    def band(self): return self._FilterID.split("/")[1].split(".")[1]
+    def band(self): return self._FilterID.split("/")[1].split(".")[1].replace("_ext", "")
 
     ## This function returns the filter in string format ('instrument' 'band')
     def __str__(self): return self.instrument + " " + self.band

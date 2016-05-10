@@ -181,7 +181,7 @@ class ObservedFluxCalculator(object):
             for fltr in self.filters:
 
                 # Debugging
-                log.debug("Calculating the observed flux for the " + fltr.name + " filter ...")
+                log.debug("Calculating the observed flux for the " + str(fltr) + " filter ...")
 
                 # Calculate the flux: flux densities must be per wavelength instead of per frequency!
                 fluxdensity = float(fltr.convolve(wavelengths, fluxdensities)) * Unit("W / (m2 * micron)")

@@ -115,6 +115,9 @@ class DataInitializer(PreparationComponent):
         # Create a new DataInitializer instance
         initializer = cls()
 
+        # Set the modeling path
+        initializer.config.path = arguments.path
+
         # Return the data initializer
         return initializer
 
@@ -152,6 +155,7 @@ class DataInitializer(PreparationComponent):
         """
 
         # -- Children --
+
         self.add_child("importer", ImageImporter, self.config.importation)
         self.add_child("catalog_importer", CatalogImporter, self.config.catalogs)
         self.add_child("source_finder", SourceFinder, self.config.sources)

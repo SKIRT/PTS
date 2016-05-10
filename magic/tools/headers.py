@@ -192,8 +192,8 @@ def get_filter(name, header=None):
     # -- UV --
 
     # GALEX
-    if "fuv" in filterid: final_filter_name = "GALEX.FUV"
-    elif "nuv" in filterid: final_filter_name = "GALEX.NUV"
+    if "fuv" in filterid: final_filter_name = "GALEX FUV"
+    elif "nuv" in filterid: final_filter_name = "GALEX NUV"
 
     # TODO: support other UV instruments
 
@@ -202,18 +202,18 @@ def get_filter(name, header=None):
     # SDSS
     elif "sdss" in filterid:
 
-        if "-u" in filterid: final_filter_name = "SDSS.u"
-        elif "-g" in filterid: final_filter_name = "SDSS.g"
-        elif "-r" in filterid: final_filter_name = "SDSS.r"
-        elif "-i" in filterid: final_filter_name = "SDSS.i"
-        elif "-z" in filterid: final_filter_name = "SDSS.z"
+        if "-u" in filterid: final_filter_name = "SDSS u"
+        elif "-g" in filterid: final_filter_name = "SDSS g"
+        elif "-r" in filterid: final_filter_name = "SDSS r"
+        elif "-i" in filterid: final_filter_name = "SDSS i"
+        elif "-z" in filterid: final_filter_name = "SDSS z"
         else:
 
-            if "sdss u" in filterid: final_filter_name = "SDSS.u"
-            elif "sdss g" in filterid: final_filter_name = "SDSS.g"
-            elif "sdss r" in filterid: final_filter_name = "SDSS.r"
-            elif "sdss i" in filterid: final_filter_name = "SDSS.i"
-            elif "sdss z" in filterid: final_filter_name = "SDSS.z"
+            if "sdss u" in filterid: final_filter_name = "SDSS u"
+            elif "sdss g" in filterid: final_filter_name = "SDSS g"
+            elif "sdss r" in filterid: final_filter_name = "SDSS r"
+            elif "sdss i" in filterid: final_filter_name = "SDSS i"
+            elif "sdss z" in filterid: final_filter_name = "SDSS z"
             else: log.warning("Could not determine which SDSS filter was used for this image")
 
     # R band // not good; H alpha image was also identified as R band ...
@@ -226,34 +226,34 @@ def get_filter(name, header=None):
     # 2MASS filters
     elif "2mass" in filterid:
 
-        if "h" in filterid: final_filter_name = "2MASS.H"
-        elif "j" in filterid: final_filter_name = "2MASS.J"
-        elif "k" in filterid: final_filter_name = "2MASS.Ks"
+        if "h" in filterid: final_filter_name = "2MASS H"
+        elif "j" in filterid: final_filter_name = "2MASS J"
+        elif "k" in filterid: final_filter_name = "2MASS Ks"
         else: log.warning("Could not determine which 2MASS filter was used for this image")
 
     # IRAC filters
     elif "irac" in filterid:
 
-        if "3.6" in filterid or "i1" in filterid: final_filter_name = "IRAC.I1"
-        elif "4.5" in filterid or "i2" in filterid: final_filter_name = "IRAC.I2"
-        elif "5.8" in filterid or "i3" in filterid: final_filter_name = "IRAC.I3"
-        elif "8.0" in filterid or "i4" in filterid: final_filter_name = "IRAC.I4"
+        if "3.6" in filterid or "i1" in filterid: final_filter_name = "IRAC I1"
+        elif "4.5" in filterid or "i2" in filterid: final_filter_name = "IRAC I2"
+        elif "5.8" in filterid or "i3" in filterid: final_filter_name = "IRAC I3"
+        elif "8.0" in filterid or "i4" in filterid: final_filter_name = "IRAC I4"
         else:  # Look at the channel number
 
             if channel is not None:
 
-                if channel == 1: final_filter_name = "IRAC.I1"
-                elif channel == 2: final_filter_name = "IRAC.I2"
-                elif channel == 3: final_filter_name = "IRAC.I3"
-                elif channel == 4: final_filter_name = "IRAC.I4"
+                if channel == 1: final_filter_name = "IRAC I1"
+                elif channel == 2: final_filter_name = "IRAC I2"
+                elif channel == 3: final_filter_name = "IRAC I3"
+                elif channel == 4: final_filter_name = "IRAC I4"
                 else: log.warning("Could not determine which IRAC filter was used for this image")
 
             elif wavelength is not None:
 
-                if np.isclose(wavelength.to("micron").value, 3.6, rtol=0.05): final_filter_name = "IRAC.I1"
-                elif np.isclose(wavelength.to("micron").value, 4.5, rtol=0.05): final_filter_name = "IRAC.I2"
-                elif np.isclose(wavelength.to("micron").value, 5.8, rtol=0.05): final_filter_name = "IRAC.I3"
-                elif np.isclose(wavelength.to("micron").value, 8.0, rtol=0.05): final_filter_name = "IRAC.I4"
+                if np.isclose(wavelength.to("micron").value, 3.6, rtol=0.05): final_filter_name = "IRAC I1"
+                elif np.isclose(wavelength.to("micron").value, 4.5, rtol=0.05): final_filter_name = "IRAC I2"
+                elif np.isclose(wavelength.to("micron").value, 5.8, rtol=0.05): final_filter_name = "IRAC I3"
+                elif np.isclose(wavelength.to("micron").value, 8.0, rtol=0.05): final_filter_name = "IRAC I4"
                 else: log.warning("Could not determine which IRAC filter was used for this image")
 
             else: log.warning("Could not determine which IRAC filter was used for this image")
@@ -261,42 +261,42 @@ def get_filter(name, header=None):
     # WISE filters
     elif "wise" in filterid:
 
-        if "w1" in filterid: final_filter_name = "WISE.W1"
-        elif "w2" in filterid: final_filter_name = "WISE.W2"
-        elif "w3" in filterid: final_filter_name = "WISE.W3"
-        elif "w4" in filterid: final_filter_name = "WISE.W4"
+        if "w1" in filterid: final_filter_name = "WISE W1"
+        elif "w2" in filterid: final_filter_name = "WISE W2"
+        elif "w3" in filterid: final_filter_name = "WISE W3"
+        elif "w4" in filterid: final_filter_name = "WISE W4"
         else:
 
             if channel is not None:
 
-                if channel == 1: final_filter_name = "WISE.W1"
-                elif channel == 2: final_filter_name = "WISE.W2"
-                elif channel == 3: final_filter_name = "WISE.W3"
-                elif channel == 4: final_filter_name = "WISE.W4"
+                if channel == 1: final_filter_name = "WISE W1"
+                elif channel == 2: final_filter_name = "WISE W2"
+                elif channel == 3: final_filter_name = "WISE W3"
+                elif channel == 4: final_filter_name = "WISE W4"
                 else: log.warning("Could not determine which WISE filter was used for this image")
 
             elif wavelength is not None:
 
-                if np.isclose(wavelength.to("micron").value, 3.4, rtol=0.05): final_filter_name = "WISE.W1"
-                elif np.isclose(wavelength.to("micron").value, 4.6, rtol=0.05): final_filter_name = "WISE.W2"
-                elif np.isclose(wavelength.to("micron").value, 12., rtol=0.05): final_filter_name = "WISE.W3"
-                elif np.isclose(wavelength.to("micron").value, 22., rtol=0.05): final_filter_name = "WISE.W4"
+                if np.isclose(wavelength.to("micron").value, 3.4, rtol=0.05): final_filter_name = "WISE W1"
+                elif np.isclose(wavelength.to("micron").value, 4.6, rtol=0.05): final_filter_name = "WISE W2"
+                elif np.isclose(wavelength.to("micron").value, 12., rtol=0.05): final_filter_name = "WISE W3"
+                elif np.isclose(wavelength.to("micron").value, 22., rtol=0.05): final_filter_name = "WISE W4"
 
             else: log.warning("Could not determine which WISE filter was used for this image")
 
     # MIPS filters
     elif "mips" in filterid:
 
-        if "24" in filterid: final_filter_name = "MIPS.24"
-        elif "70" in filterid: final_filter_name = "MIPS.70"
-        elif "160" in filterid: final_filter_name = "MIPS.160"
+        if "24" in filterid: final_filter_name = "MIPS 24"
+        elif "70" in filterid: final_filter_name = "MIPS 70"
+        elif "160" in filterid: final_filter_name = "MIPS 160"
         else:
 
             if wavelength is not None:
 
-                if np.isclose(wavelength.to("micron").value, 24., rtol=0.05): final_filter_name = "MIPS.24"
-                elif np.isclose(wavelength.to("micron").value, 70., rtol=0.05): final_filter_name = "MIPS.70"
-                elif np.isclose(wavelength.to("micron").value, 160., rtol=0.05): final_filter_name = "MIPS.160"
+                if np.isclose(wavelength.to("micron").value, 24., rtol=0.05): final_filter_name = "MIPS 24"
+                elif np.isclose(wavelength.to("micron").value, 70., rtol=0.05): final_filter_name = "MIPS 70"
+                elif np.isclose(wavelength.to("micron").value, 160., rtol=0.05): final_filter_name = "MIPS 160"
                 else: log.warning("Could not determine which MIPS filter was used for this image")
 
             else: log.warning("Could not determine which MIPS filter was used for this image")
@@ -306,13 +306,13 @@ def get_filter(name, header=None):
 
         if wavelength is not None:
 
-            if np.isclose(wavelength.to("micron").value, 3.6, rtol=0.05): final_filter_name = "IRAC.I1"
-            elif np.isclose(wavelength.to("micron").value, 4.5, rtol=0.05): final_filter_name = "IRAC.I2"
-            elif np.isclose(wavelength.to("micron").value, 5.8, rtol=0.05): final_filter_name = "IRAC.I3"
-            elif np.isclose(wavelength.to("micron").value, 8.0, rtol=0.05): final_filter_name = "IRAC.I4"
-            elif np.isclose(wavelength.to("micron").value, 24., rtol=0.05): final_filter_name = "MIPS.24"
-            elif np.isclose(wavelength.to("micron").value, 70., rtol=0.05): final_filter_name = "MIPS.70"
-            elif np.isclose(wavelength.to("micron").value, 160., rtol=0.05): final_filter_name = "MIPS.160"
+            if np.isclose(wavelength.to("micron").value, 3.6, rtol=0.05): final_filter_name = "IRAC I1"
+            elif np.isclose(wavelength.to("micron").value, 4.5, rtol=0.05): final_filter_name = "IRAC I2"
+            elif np.isclose(wavelength.to("micron").value, 5.8, rtol=0.05): final_filter_name = "IRAC I3"
+            elif np.isclose(wavelength.to("micron").value, 8.0, rtol=0.05): final_filter_name = "IRAC I4"
+            elif np.isclose(wavelength.to("micron").value, 24., rtol=0.05): final_filter_name = "MIPS 24"
+            elif np.isclose(wavelength.to("micron").value, 70., rtol=0.05): final_filter_name = "MIPS 70"
+            elif np.isclose(wavelength.to("micron").value, 160., rtol=0.05): final_filter_name = "MIPS 160"
             else: log.warning("Could not determine which Spitzer filter was used for this image")
 
         else: log.warning("Could not determine which Spitzer filter was used for this image")
@@ -320,31 +320,31 @@ def get_filter(name, header=None):
     # PACS filters
     elif "pacs" in filterid:
 
-        if '70' in filterid or 'blue' in filterid: final_filter_name = "Pacs.blue"
-        elif '100' in filterid or 'green' in filterid: final_filter_name = "Pacs.green"
-        elif '160' in filterid or 'red' in filterid: final_filter_name = "Pacs.red"
+        if '70' in filterid or 'blue' in filterid: final_filter_name = "Pacs blue"
+        elif '100' in filterid or 'green' in filterid: final_filter_name = "Pacs green"
+        elif '160' in filterid or 'red' in filterid: final_filter_name = "Pacs red"
         else: log.warning("Could not determine which PACS filter was used for this image")
 
     # SPIRE filters
     elif "spire" in filterid:
 
-        if "psw" in filterid or "250" in filterid: final_filter_name = "SPIRE.PSW_ext"
-        elif "pmw" in filterid or "350" in filterid: final_filter_name = "SPIRE.PMW_ext"
-        elif "plw" in filterid or "500" in filterid: final_filter_name = "SPIRE.PLW_ext"
+        if "psw" in filterid or "250" in filterid: final_filter_name = "SPIRE PSW"
+        elif "pmw" in filterid or "350" in filterid: final_filter_name = "SPIRE PMW"
+        elif "plw" in filterid or "500" in filterid: final_filter_name = "SPIRE PLW"
         else:
 
             if channel is not None:
 
-                if channel == 1: final_filter_name = "SPIRE.PSW_ext"
-                elif channel == 2: final_filter_name = "SPIRE.PMW_ext"
-                elif channel == 3: final_filter_name = "SPIRE.PLW_ext"
+                if channel == 1: final_filter_name = "SPIRE PSW"
+                elif channel == 2: final_filter_name = "SPIRE PMW"
+                elif channel == 3: final_filter_name = "SPIRE PLW"
                 else: log.warning("Could not determine which SPIRE filter was used for this image")
 
             elif wavelength is not None:
 
-                if wavelength == 250: final_filter_name = "SPIRE.PSW_ext"
-                elif wavelength == 350: final_filter_name = "SPIRE.PMW_ext"
-                elif wavelength == 500: final_filter_name = "SPIRE.PLW_ext"
+                if wavelength == 250: final_filter_name = "SPIRE PSW"
+                elif wavelength == 350: final_filter_name = "SPIRE PMW"
+                elif wavelength == 500: final_filter_name = "SPIRE PLW"
                 else: log.warning("Could not determine which SPIRE filter was used for this image")
 
     # -- H alpha --
@@ -367,10 +367,11 @@ def get_filter(name, header=None):
 
     else:
 
-        # Inform the user
-        log.debug("Filter was identified as " + final_filter_name)
+        # Create the filter
+        filter = Filter.from_string(final_filter_name)
 
-        filter = Filter(final_filter_name)
+        # Inform the user
+        log.debug("Filter was identified as " + str(filter))
 
     # Create and return a Filter object
     return filter
