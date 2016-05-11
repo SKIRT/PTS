@@ -168,6 +168,9 @@ class DataPreparer(PreparationComponent):
         # A single image can be specified so the preparation is only run with that image
         preparer.config.single_image = arguments.image
 
+        # Make visualisations
+        preparer.config.visualise = arguments.visualise
+
         # Return the new instance
         return preparer
 
@@ -492,8 +495,19 @@ class DataPreparer(PreparationComponent):
 
             # -----------------------------------------------------------------
 
+            # Write out sky annuli frames
+            sky_path = fs.join(output_path, "sky")
+            if not fs.is_directory(sky_path): fs.create_directory(sky_path)
+            self.image_preparer.config.write_sky_annuli = True
+            self.image_preparer.config.sky_annuli_path = sky_path
+
+            # Set the visualisation path for the image preparer
+            visualisation_path = self.visualisation_path if self.config.visualise else None
+
+            # -----------------------------------------------------------------
+
             # Run the image preparation
-            self.image_preparer.run(image, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments)
+            self.image_preparer.run(image, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, visualisation_path)
 
             # -----------------------------------------------------------------
 

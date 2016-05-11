@@ -24,6 +24,8 @@ from ...magic.misc.imageimporter import ImageImporter
 from ...magic.catalog.importer import CatalogImporter
 from ...magic.core.image import Image
 from ...magic.core.frame import Frame
+from ...core.basics.animatedgif import AnimatedGif
+from ...core.tools import time
 
 # -----------------------------------------------------------------
 
@@ -117,6 +119,9 @@ class PreparationInitializer(PreparationComponent):
 
         # Set the modeling path
         initializer.config.path = arguments.path
+
+        # Make visualisations
+        initializer.config.visualise = arguments.visualise
 
         # Return the data initializer
         return initializer
@@ -291,11 +296,6 @@ class PreparationInitializer(PreparationComponent):
 
             # -----------------------------------------------------------------
 
-            # Remove frames other than the primary and errors frame
-            #for frame_name in image.frames:
-            #    if frame_name == "primary" or frame_name == "errors": continue
-            #    image.remove_frame(frame_name)
-
             # Remove all frames except for the primary frame
             image.remove_frames_except("primary")
 
@@ -396,8 +396,24 @@ class PreparationInitializer(PreparationComponent):
         if "IRAC" in image.name: self.source_finder.config.find_other_sources = False
         else: self.source_finder.config.find_other_sources = True
 
+        # Create an animation for the source finder
+        if self.config.visualise: animation = AnimatedGif()
+        else: animation = None
+
         # Run the source finder on this image
-        self.source_finder.run(image.frames.primary, self.galactic_catalog, self.stellar_catalog, bad_mask=bad_mask)
+        self.source_finder.run(image.frames.primary, self.galactic_catalog, self.stellar_catalog, bad_mask=bad_mask, animation=animation)
+
+        # Write the animation
+        if self.config.visualise:
+
+            # Determine the path to the animation
+            path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_sourcefinding") + ".gif")
+
+            # Debugging
+            log.debug("Writing animation of the source finding to '" + path + "' ...")
+
+            # Save the animation
+            animation.save(path)
 
         # Save the galaxy region
         galaxy_region = self.source_finder.galaxy_region

@@ -37,6 +37,9 @@ parser.add_argument("--steps", action="store_true", help="write the results of i
 # Configuration
 parser.add_argument("--config", type=str, help="the name of a configuration file")
 
+# Visualisation
+parser.add_argument("--visualise", action="store_true", help="make visualisations")
+
 # Parse the command line arguments
 arguments = parser.parse_args()
 

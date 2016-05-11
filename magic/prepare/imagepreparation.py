@@ -538,6 +538,21 @@ class ImagePreparer(Configurable):
         # Write intermediate result if requested
         if self.config.write_steps: self.write_intermediate_result("sky_subtracted.fits")
 
+        # Write sky annuli maps if requested
+        if self.config.write_sky_annuli:
+
+            # Write the apertures frame
+            apertures_frame_path = fs.join(self.config.sky_annuli_path, "apertures.fits")
+            self.sky_subtractor.apertures_frame.save(apertures_frame_path)
+
+            # Write the apertures mean frame
+            apertures_mean_path = fs.join(self.config.sky_annuli_path, "apertures_mean.fits")
+            self.sky_subtractor.apertures_mean_frame.save(apertures_mean_path)
+
+            # Write the apertures noise frame
+            apertures_noise_path = fs.join(self.config.sky_annuli_path, "apertures_noise.fits")
+            self.sky_subtractor.apertures_noise_frame.save(apertures_noise_path)
+
         # Write the animation
         if self.visualisation_path is not None:
 

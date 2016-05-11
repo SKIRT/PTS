@@ -96,6 +96,9 @@ parser.add_argument("--report", action='store_true', help="write a report file")
 parser.add_argument("--steps", action="store_true", help="write the results of intermediate steps")
 parser.add_argument("--config", type=str, help="the name of a configuration file")
 
+# Visualisation
+parser.add_argument("--visualise", action="store_true", help="make visualisations")
+
 # Parse the command line arguments
 arguments = parser.parse_args()
 
@@ -228,10 +231,14 @@ arguments.calibration = calibration_errors[image.name]
 
 # -----------------------------------------------------------------
 
+# If visualisation is enabled, set the visualisation path (=output path)
+if arguments.visualise: visualisation_path = arguments.output
+else: visualisation_path = None
+
 # Create an ImagePreparer instance
 preparer = ImagePreparer.from_arguments(arguments)
 
 # Run the image preparation
-preparer.run(image, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments)
+preparer.run(image, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, visualisation_path)
 
 # -----------------------------------------------------------------
