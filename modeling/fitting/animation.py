@@ -18,7 +18,8 @@ import imageio
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools.logging import log
-from ...core.tools import filesystem
+from ...core.tools import filesystem as fs
+from ...core.basics.animatedgif import AnimatedGif
 
 # -----------------------------------------------------------------
 
@@ -113,7 +114,7 @@ class FitAnimator(FittingComponent):
         log.info("Loading the SED plot files ...")
 
         # Find all PNG files within the the fit/plot directory
-        for path in filesystem.files_in_path(self.fit_plot_path, extension="png", recursive=True):
+        for path in fs.files_in_path(self.fit_plot_path, extension="png", recursive=True):
 
             # Load the image (as a NumPy array)
             image = imageio.imread(path)
@@ -130,7 +131,8 @@ class FitAnimator(FittingComponent):
         :return:
         """
 
-        pass
+        # Create the animated GIF instance
+        self.animation = AnimatedGif(self.frames)
 
     # -----------------------------------------------------------------
 
@@ -147,7 +149,7 @@ class FitAnimator(FittingComponent):
         # Determine the path to the animation file
         path = self.full_output_path("fitting.gif")
 
-        # Create and write the GIF file
-        imageio.mimwrite(path, self.frames)
+        # Save the animation as a GIF file
+        self.animation.save(path)
 
 # -----------------------------------------------------------------

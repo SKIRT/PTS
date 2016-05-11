@@ -426,7 +426,7 @@ class ImagePreparer(Configurable):
             kernel = Frame.from_file(self.config.convolution.kernel_path)
 
             # Set the kernel FWHM
-            kernel.fwhm = self.config.convolution.kernel_fwhm
+            if kernel.fwhm is None and self.config.convolution.kernel_fwhm is not None: kernel.fwhm = self.config.convolution.kernel_fwhm
 
             # Convolve the image (the primary and errors frame)
             self.image.convolve(kernel)

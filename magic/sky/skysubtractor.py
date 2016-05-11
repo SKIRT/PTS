@@ -80,6 +80,9 @@ class SkySubtractor(Configurable):
         # The region of saturated stars
         self.saturation_region = None
 
+        # The animation
+        self.animation = None
+
         # The output mask (combined input + bad mask + galaxy annulus mask + expanded saturation mask + sigma-clipping mask)
         self.mask = None
 
@@ -119,7 +122,7 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, principal_ellipse, sources_mask, extra_mask=None, saturation_region=None):
+    def run(self, frame, principal_ellipse, sources_mask, extra_mask=None, saturation_region=None, animation=None):
 
         """
         This function ...
@@ -132,7 +135,7 @@ class SkySubtractor(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup(frame, principal_ellipse, sources_mask, extra_mask, saturation_region)
+        self.setup(frame, principal_ellipse, sources_mask, extra_mask, saturation_region, animation)
 
         # 2. Create mask
         self.create_mask()
@@ -170,6 +173,7 @@ class SkySubtractor(Configurable):
         self.extra_mask = None
         self.principal_ellipse = None
         self.saturation_region = None
+        self.animation = None
         self.mask = None
         self.sky = None
         self.noise = None
@@ -181,7 +185,7 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, principal_ellipse, sources_mask, extra_mask=None, saturation_region=None):
+    def setup(self, frame, principal_ellipse, sources_mask, extra_mask=None, saturation_region=None, animation=None):
 
         """
         This function ...
@@ -190,6 +194,7 @@ class SkySubtractor(Configurable):
         :param sources_mask:
         :param extra_mask:
         :param saturation_region:
+        :param animation:
         :return:
         """
 
@@ -208,6 +213,9 @@ class SkySubtractor(Configurable):
 
         # Set the saturation_region
         self.saturation_region = saturation_region
+
+        # Make a reference to the animation
+        self.animation = animation
 
     # -----------------------------------------------------------------
 
@@ -481,14 +489,11 @@ class SkySubtractor(Configurable):
 
         """
         This function ...
-        :param npixels:
         :param radius:
         :return:
         """
 
         npixels = np.sum(self.mask.inverse())
-
-        print("npixels=", npixels)
 
         # Assuming optimal hexagonal packing, get an estimate of the maximum number of circles of given radius
         # can fit in the area covered by the pixels that are not masked. This is obviously a significant overestimation
@@ -509,7 +514,7 @@ class SkySubtractor(Configurable):
         napertures = int(optimal_number_of_apertures / 3.)
 
         # Debugging
-        log.debug("A total of " + str(napertures) + " are going to be used to estimate the sky ...")
+        log.debug("A total of " + str(napertures) + " apertures are going to be used to estimate the sky ...")
 
         # Return the number of apertures
         return napertures
@@ -521,6 +526,7 @@ class SkySubtractor(Configurable):
         """
         This function ...
         :param radius:
+        :param napertures:
         :return:
         """
 
@@ -591,6 +597,29 @@ class SkySubtractor(Configurable):
 
             # Add the aperture area to the mask
             apertures_mask[source.y_slice, source.x_slice] += source.mask
+
+            # Debugging
+            log.debug("Placed aperture " + str(current_napertures+1) + " of " + str(napertures) + " (" + str((current_napertures+1)/napertures*100.) + "%)")
+
+            if self.animation is not None:
+
+                import io
+                import imageio
+                #from PIL import Image
+                #import matplotlib.pyplot as plt
+
+                plt.figure()
+                plt.imshow(apertures_mask, origin="lower")
+                plt.title("Aperture mask")
+                buf = io.BytesIO()
+                plt.savefig(buf, format='png')
+                buf.seek(0)
+                #im = Image.open(buf)
+                #im.show()
+                im = imageio.imread(buf)
+                buf.close()
+
+                self.animation.add_frame(im)
 
             # Calculate the mean sky value in this aperture
             masked_array_cutout = np.ma.MaskedArray(source.cutout, mask=sky_mask_cutout + source.background_mask)
@@ -834,8 +863,6 @@ class SkySubtractor(Configurable):
         x_ticks = np.arange(0, self.frame.xsize, 1)
         y_ticks = np.arange(0, self.frame.ysize, 1)
         z_grid = mlab.griddata(x_values, y_values, aperture_means, x_ticks, y_ticks)
-
-        print(z_grid.shape, self.frame.shape)
 
         self.sky = Frame(z_grid)
 
