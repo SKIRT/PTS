@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.preparation.initialization Contains the DataInitializer class.
+## \package pts.modeling.preparation.initialization Contains the PreparationInitializer class.
 
 # -----------------------------------------------------------------
 
@@ -72,7 +72,7 @@ reference_image = "Pacs red"
 
 # -----------------------------------------------------------------
 
-class DataInitializer(PreparationComponent):
+class PreparationInitializer(PreparationComponent):
     
     """
     This class...
@@ -87,7 +87,7 @@ class DataInitializer(PreparationComponent):
         """
 
         # Call the constructor of the base class
-        super(DataInitializer, self).__init__(config)
+        super(PreparationInitializer, self).__init__(config)
 
         # -- Attributes --
 
@@ -112,7 +112,7 @@ class DataInitializer(PreparationComponent):
         :return:
         """
 
-        # Create a new DataInitializer instance
+        # Create a new PreparationInitializer instance
         initializer = cls()
 
         # Set the modeling path
@@ -163,7 +163,7 @@ class DataInitializer(PreparationComponent):
         # -- Setup of the base class --
 
         # Call the setup function of the base class
-        super(DataInitializer, self).setup()
+        super(PreparationInitializer, self).setup()
 
     # -----------------------------------------------------------------
 

@@ -231,7 +231,7 @@ class Filter:
         iras_100_names = ["IRAS 100", "IRAS 100", "IRAS.100um", "IRAS 100um", "IRAS.100mu", "IRAS 100mu"]
 
         # Ha
-        ha_names = ["Ha", "H alpha", "H-alpha", "H-a"]
+        ha_names = ["Ha", "H alpha", "H-alpha", "H-a", "Halpha"]
 
         # Select the right filter
         if name in galex_fuv_names: return cls("GALEX.FUV")

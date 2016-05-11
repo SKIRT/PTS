@@ -38,9 +38,6 @@ class PreparationComponent(ModelingComponent):
 
         # -- Attributes --
 
-        # The path to the info file
-        self.info_path = None
-
         # The names of the different images for the preparation components
         self.prep_names = dict()
 
@@ -68,11 +65,11 @@ class PreparationComponent(ModelingComponent):
         # Set the output path (= the preparation directory)
         self.config.output_path = self.prep_path
 
-        # Set the info path
-        self.info_path = fs.join(self.data_path, "info.dat")
+        # Determine the path to the preparation info table
+        info_path = fs.join(self.prep_path, "prep_info.dat")
 
-        # Load the info file
-        info = tables.from_file(self.info_path, format="ascii.ecsv")
+        # Load the info table
+        info = tables.from_file(info_path, format="ascii.ecsv")
 
         # Set the image names
         for i in range(len(info)):

@@ -361,20 +361,20 @@ def get_filter(name, header=None):
             upper = value + ten_percent
 
             # Create a custom filter around the wavelength
-            filter = Filter((lower, upper))
+            fltr = Filter((lower, upper))
 
-        else: filter = None
+        else: fltr = None
 
     else:
 
         # Create the filter
-        filter = Filter.from_string(final_filter_name)
+        fltr = Filter.from_string(final_filter_name)
 
         # Inform the user
-        log.debug("Filter was identified as " + str(filter))
+        log.debug("Filter was identified as " + str(fltr))
 
     # Create and return a Filter object
-    return filter
+    return fltr
 
 # -----------------------------------------------------------------
 

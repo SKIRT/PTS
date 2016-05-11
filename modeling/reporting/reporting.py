@@ -75,8 +75,8 @@ class Reporter(ReportingComponent):
         # 2. Make a report for the data
         self.report_data()
 
-        # 3. Make a report for the data initialization step
-        self.report_data_initialization()
+        # 3. Make a report for the preparation initialization step
+        self.report_preparation_initialization()
 
         # 4. Make a report for the data preparation step
         self.report_preparation()
@@ -189,7 +189,7 @@ class Reporter(ReportingComponent):
 
     # -----------------------------------------------------------------
 
-    def report_data_initialization(self):
+    def report_preparation_initialization(self):
 
         """
         This function ...
@@ -197,7 +197,7 @@ class Reporter(ReportingComponent):
         """
 
         # Inform the user
-        log.info("Making a report for the data initialization step ...")
+        log.info("Making a report for the preparation initialization step ...")
 
         # Initialize the columns of the table
         names_column = []
@@ -264,10 +264,10 @@ class Reporter(ReportingComponent):
         table = tables.new(data, names)
 
         # Debugging
-        log.debug("Writing the data initialization report to '" + self.data_initialization_report_path + "'...")
+        log.debug("Writing the preparation initialization report to '" + self.preparation_initialization_report_path + "'...")
 
         # Save the table
-        tables.write(table, self.data_initialization_report_path, format="ascii.ecsv")
+        tables.write(table, self.preparation_initialization_report_path, format="ascii.ecsv")
 
     # -----------------------------------------------------------------
 
