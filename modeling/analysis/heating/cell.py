@@ -24,6 +24,7 @@ from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
 from ....core.tools import tables, inspection
 from ....core.simulation.table import SkirtTable
+from ....core.basics.distribution import Distribution, Distribution2D
 
 # -----------------------------------------------------------------
 
@@ -55,6 +56,15 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # The table with the absorbed luminosities
         self.absorptions = None
+
+        # The heating fraction of the unevolved stellar population for each dust cell
+        self.heating_fractions = None
+
+        # The distribution of heating fractions
+        self.distribution = None
+
+        # The 2D distribution of heating fractions
+        self.radial_distribution = None
 
     # -----------------------------------------------------------------
 
@@ -88,20 +98,23 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # 1. Call the setup function
         self.setup()
 
-        # Load the wavelength grid
+        # 2. Load the wavelength grid
         self.load_wavelength_grid()
 
-        # Load the cell properties
+        # 3. Load the cell properties
         self.load_cell_properties()
 
-        # Load the absorption data
-        #self.load_absorption()
+        # 4. Load the absorption data
+        self.load_absorption()
 
-        #print(self.absorptions)
+        # 5. Calculate the heating fraction of the unevolved stellar population
+        self.calculate_heating_unevolved()
 
+        # 5. Calculate the distribution of the heating fraction of the unevolved stellar population
+        self.calculate_distribution()
 
-
-        self.load_absorption_r()
+        # 6. Calculate the distribution of the heating fraction of the unevolved stellar population as a function of radius
+        self.calculate_radial_distribution()
 
     # -----------------------------------------------------------------
 
@@ -170,6 +183,276 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     def load_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the absorption data ...")
+
+        # Header:
+        # Bolometric absorbed luminosity for all dust cells
+        # column 1: x coordinate of cell center (pc)
+        # column 2: y coordinate of cell center (pc)
+        # column 3: z coordinate of cell center (pc)
+        # column 4: Absorbed bolometric luminosity (W)
+
+        contribution_tables = dict()
+
+        # Loop over the different contributions
+        for contribution in self.contributions:
+
+            # Debugging
+            log.debug("Loading the SKIRT absorption table for the simulation of the " + contribution + " stellar population ...")
+
+            # Determine the path to the output directory of the simulation
+            output_path = self.output_paths[contribution]
+
+            # Determine the path to the absorption data file
+            absorption_path = fs.join(output_path, self.galaxy_name + "_ds_abs.dat")
+
+            # Load the absorption table for this contribution
+            table = SkirtTable.from_file(absorption_path)
+
+            # Add the table
+            contribution_tables[contribution] = table
+
+        do_checks = False
+        if do_checks:
+
+            # Debugging
+            log.debug("Checking whether the tables are consistent ...")
+
+            # Check whether the table lengths match
+            table_lengths = [len(table) for table in contribution_tables.values()]
+            if not all(table_lengths[0] == length for length in table_lengths): raise ValueError("Absorption tables have different sizes")
+
+            # Check whether the X coordinates of the cells match
+            if not tables.equal_columns([table["X coordinate of cell center"] for table in contribution_tables.values()]):
+                raise ValueError("Columns of X coordinates of cell centers do not match between the different contributions")
+
+            # Check whether the Y coordinates of the cells match
+            if not tables.equal_columns([table["Y coordinate of cell center"] for table in contribution_tables.values()]):
+                raise ValueError("Columns of Y coordinates of cell centers do not match between the different contributions")
+
+            # Check whether the Z coordinates of the cells match
+            if not tables.equal_columns([table["Z coordinate of cell center"] for table in contribution_tables.values()]):
+                raise ValueError("Columns of Z coordinates of cell centers do not match between the different contributions")
+
+        # Debugging
+        log.debug("Creating the absorption table ...")
+
+        # Create the columns for the absorption table
+        names = ["X coordinate of cell center", "Y coordinate of cell center", "Z coordinate of cell center"]
+        data = []
+        data.append(contribution_tables[contribution_tables.keys()[0]]["X coordinate of cell center"])
+        data.append(contribution_tables[contribution_tables.keys()[0]]["Y coordinate of cell center"])
+        data.append(contribution_tables[contribution_tables.keys()[0]]["Z coordinate of cell center"])
+
+        # Loop over the tables of the different contributions, add the absorption luminosity columns
+        for contribution in contribution_tables:
+
+            names.append("Absorbed bolometric luminosity of the " + contribution + " stellar population")
+            data.append(contribution_tables[contribution]["Absorbed bolometric luminosity"])
+
+        # Create the absorption table
+        self.absorptions = tables.new(data, names, copy=False)
+
+    # -----------------------------------------------------------------
+
+    def calculate_heating_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the heating fraction of the unevolved stellar population ...")
+
+        # SEBA:
+
+        #totISRFfile = "total212Labs.dat"
+        #Lsun = 3.846e26  # Watts
+
+        ## Total energy absorbed in the new component
+        ## Derived from ../../SKIRTrun/models/testHeating/MappingsHeating/plotSEDs.py
+        #Lnew = 176495776.676  # in Lsun
+
+        #print ''reading data... '
+        #input = np.loadtxt(path + totISRFfile, skiprows=1)
+        #ID = input[:, 0]
+        #volume = input[:, 1]
+        #density = input[:, 2]
+        #massFrac = input[:, 3]
+        #density_new = input[:, 5]
+        #x = input[:, 6]
+        #y = input[:, 7]
+        #tot = input[:, 9] / Lsun
+        #old = input[:, 10] / Lsun
+        #yng = input[:, 11] / Lsun
+        #new = input[:, 12] / Lsun
+
+        #energy_new = volume * density_new * Lnew
+        #F_abs_yng = (yng + new + energy_new) / (old + yng + new + energy_new)
+
+        absorptions_unevolved_diffuse = self.absorptions["Absorbed bolometric luminosity of the young stellar population"] + self.absorptions["Absorbed bolometric luminosity of the ionizing stellar population"]
+        #absorptions_ionizing_internal = None # TODO !!
+
+        absorptions_total = self.absorptions["Absorbed bolometric luminosity of the total stellar population"]
+        #absorptions_total = absorptions_unevolved_diffuse + absorptions_ionizing_internal + absorptions_evolved # TODO !!
+
+        # Calculate the heating fraction of the unevolved stellar population in each dust cell
+        self.heating_fractions = absorptions_unevolved_diffuse / absorptions_total
+
+    # -----------------------------------------------------------------
+
+    def calculate_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the distribution of heating fractions of the unevolved stellar population ...")
+
+        # Generate the distribution
+        self.distribution = Distribution.from_values(self.heating_fractions, bins=20, weights=self.cell_properties["Mass fraction"])
+
+    # -----------------------------------------------------------------
+
+    def calculate_radial_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the radial distribution of heating fractions of the unevolved stellar population ...")
+
+        # Calculate the radius for each dust cell
+        x_coords = self.absorptions["X coordinate of cell center"]
+        y_coords = self.absorptions["Y coordinate of cell center"]
+        radii = np.sqrt(x_coords**2 + y_coords**2)
+
+        # Generate the radial distribution
+        self.radial_distribution = Distribution2D.from_values(radii/1000., self.heating_fractions, weights=self.cell_properties["Mass fraction"])
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the distribution of heating fractions
+        self.write_distribution()
+
+        # Write the radial distribution of heating fractions
+        self.write_radial_distribution()
+
+    # -----------------------------------------------------------------
+
+    def write_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the distribution of heating fractions of the unevolved stellar population ...")
+
+        # Determine the path to the distribution file
+        path = fs.join(self.analysis_heating_path, "distribution.dat")
+
+        # Save the distribution
+        self.distribution.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_radial_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the radial distribution of heating fractions of the unevolved stellar population ...")
+
+        # Determine the path to the radial distribution file
+        path = fs.join(self.analysis_heating_path, "radial_distribution.dat")
+
+        # Save the radial distribution
+        self.radial_distribution.save(path)
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the distribution of heating fractions
+        self.plot_distribution()
+
+        # Plot the radial distribution of heating fractions
+        self.plot_radial_distribution()
+
+    # -----------------------------------------------------------------
+
+    def plot_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting a histogram of the distribution of heating fractions of the unevolved stellar population ...")
+
+        # Determine the path to the plot file
+        path = fs.join(self.analysis_heating_path, "distribution.pdf")
+
+        # Create the plot file
+        self.distribution.plot(title="Distribution of the heating fraction of the unevolved stellar population", path=path)
+
+    # -----------------------------------------------------------------
+
+    def plot_radial_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting a 2D histogram of the radial distribution of the heating fractions of the unevolved stellar population ...")
+
+        # Determine the path to the plot file
+        path = fs.join(self.analysis_heating_path, "radial_distribution.pdf")
+
+        # Create the plot file
+        self.radial_distribution.plot(title="Radial distribution of the heating fraction of the unevolved stellar population", path=path)
+
+    # -----------------------------------------------------------------
+
+    def load_absorption_old(self):
 
         """
         This function ...
@@ -280,8 +563,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         young_path = fs.join(self.output_paths["young"], self.galaxy_name + "_ds_abs.dat")
         ionizing_path = fs.join(self.output_paths["ionizing"], self.galaxy_name + "_ds_abs.dat")
         self.merge_in_r(properties_path, tot_path, old_path, young_path, ionizing_path)
-
-
 
     # -----------------------------------------------------------------
 
@@ -436,262 +717,5 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Return the list of luminosities
         return lum_cells
-
-    # -----------------------------------------------------------------
-
-    def plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    def seba(self):
-
-        outpath = "modelChecks/iteration5_J14/"
-        inpath = "SKIRTOutput/iteration5_J14/"
-        inSED = "M31_212full_i77.5_sed.dat"
-
-        Lsun = 3.846e26  # Watts
-
-        # load SEDs
-        input = np.loadtxt(inpath + inSED)
-        wavelengths = input[:, 0]
-
-        # Load the widths of the wavelength bins. Crucial for integration!
-        delta_wls = np.loadtxt("SKIRTOutput/iteration5_J14/M31_reference_wavelengths512.dat", usecols=(1,))
-
-        # only consider wavelengths longwards of 10 micron. For speed and memory
-        startwl = next(wl[0] for wl in enumerate(wavelengths) if wl[1] > 10.)
-        coldstartwl = next(wl[0] for wl in enumerate(wavelengths) if wl[1] > 100.)
-
-        # produce wavelength ranges for all, warm and cold dust.
-        dustwls = wavelengths[startwl:]
-        warmwls = wavelengths[startwl:coldstartwl - 1]
-        coldwls = wavelengths[coldstartwl:]
-        delta_wls = delta_wls[startwl:]
-
-        # Compute global heating fracions
-
-        flux_all = input[startwl:, 1]
-
-        input = np.loadtxt(inpath + inSED.replace('_i', '_old_i'))
-        flux_old = input[startwl:, 1]
-
-        input = np.loadtxt(inpath + inSED.replace('_i', '_young_i'))
-        flux_young = input[startwl:, 1]
-
-        Fold = 100. * (0.5 * flux_old + 0.5 * (flux_all - flux_young)) / flux_all
-        Fyoung = 100. * (0.5 * flux_young + 0.5 * (flux_all - flux_old)) / flux_all
-
-        Fold_alternative1 = 100. * flux_old / (flux_old + flux_young)
-        Fyoung_alternative1 = 100. * flux_young / (flux_old + flux_young)
-
-        Fold_alternative2 = 100. * flux_old / flux_all
-        Fyoung_alternative2 = 100. * flux_young / flux_all
-
-        Fold_alternative3 = 100. * np.sqrt(flux_old * (flux_all - flux_young)) / flux_all
-        Fyoung_alternative3 = 100. * np.sqrt(flux_young * (flux_all - flux_old)) / flux_all
-
-        Fold_alternative4 = 100. * (0.5 * flux_old + 0.5 * (flux_all - flux_young)) / (flux_old + flux_young)
-        Fyoung_alternative4 = 100. * (0.5 * flux_young + 0.5 * (flux_all - flux_old)) / (flux_old + flux_young)
-
-        JyToLsun = 1.e-26 * 4 * np.pi * (0.785e6 * 3.086e+16) ** 2 * 3.e14 / (dustwls ** 2) / Lsun  # in Lsun/micron
-
-        totFlux = 0
-        totFlux_young = 0
-        totFlux_old = 0
-        for i in range(len(flux_all) - 1):
-            totFlux += delta_wls[i] * flux_all[i] * JyToLsun[i]
-            totFlux_young += delta_wls[i] * flux_young[i] * JyToLsun[i]
-            totFlux_old += delta_wls[i] * flux_old[i] * JyToLsun[i]
-
-        print('Total heating from old stars: ', totFlux_old / totFlux)
-        print('Total heating from young stars: ', totFlux_young / totFlux)
-
-        plt.figure(figsize=(7, 5))
-        plt.ylabel('$F^\prime_{\lambda,\mathrm{unev.}}$ [$\%$]', fontsize=20)
-        plt.xlabel('$\lambda/\mu\mathrm{m}$', fontsize=20)
-        plt.xlim(10., 1.e3)
-        plt.ylim(0., 60.)
-        plt.xscale('log')
-        plt.tick_params(labelsize=20)
-        # plt.subplots_adjust(bottom=0.1)
-        # plt.plot(dustwls,Fold, 'r-', label="old stars")
-        plt.plot(dustwls, Fyoung, 'k-', label="Young SPs")
-        # plt.plot(dustwls,Fyoung_alternative1, 'r-', label="alt 1")
-        # plt.plot(dustwls,Fyoung_alternative2, 'g-', label="alt 2")
-        # plt.plot(dustwls,Fyoung_alternative3, 'c-', label="alt 3")
-        plt.plot(dustwls, Fyoung_alternative4, 'k-', label="alt 4")
-        plt.fill_between(dustwls, Fyoung, Fyoung_alternative4, color='grey', alpha='0.5')
-
-        plt.tight_layout()
-        # plt.legend(loc='upper left',numpoints=1,markerscale=1.5,fontsize=14)
-        plt.savefig(outpath + inSED.replace('sed.dat', 'heating.pdf'), format='pdf')
-
-        # plt.show()
-        plt.close()
-
-        # Make heating map
-        inCube = inSED.replace('sed.dat', 'total.fits')
-        makeHeatMap(inpath, outpath, inCube, startwl, dustwls, delta_wls)
-        # makeWarmHeatMap(inpath,outpath,inCube,startwl,coldstartwl-1, warmwls)
-        # makeColdHeatMap(inpath,outpath,inCube,coldstartwl, coldwls)
-
-# -----------------------------------------------------------------
-
-def makeHeatMap(inpath,outpath,inCube,startwl,dustwls, delta_wls):
-
-    cube = pyfits.open(inpath+inCube)
-    cube_all = cube[0].data[startwl:,0:,0:]
-    hdr_all  = cube[0].header
-
-    cube = pyfits.open(inpath+inCube.replace('_i','_old_i'))
-    cube_old = cube[0].data[startwl:,0:,0:]
-
-    cube = pyfits.open(inpath+inCube.replace('_i','_young_i'))
-    cube_young = cube[0].data[startwl:,0:,0:]
-
-
-    Fold   = 100. * (0.5*cube_old + 0.5*(cube_all-cube_young)) / cube_all
-    hdu = pyfits.PrimaryHDU( Fold,hdr_all)
-    hdu.writeto(outpath+"heatingFold.fits",clobber=True)
-
-    Fyoung = 100. * (0.5*cube_young + 0.5*(cube_all-cube_old)) / cube_all
-    hdu = pyfits.PrimaryHDU( Fyoung,hdr_all)
-    hdu.writeto(outpath+"heatingFyoung.fits",clobber=True)
-
-
-    pixelTot = integratePixelSEDs(cube_all,     dustwls, delta_wls)
-    pixelOld = integratePixelSEDs(cube_old,     dustwls, delta_wls)
-    pixelYoung = integratePixelSEDs(cube_young, dustwls, delta_wls)
-
-    # Get header with appropriate WCS info
-    im36 = pyfits.open("SKIRTinput/new3.6MJySr.fits")
-    hdr_wcs = im36[0].header
-
-    hdu = pyfits.PrimaryHDU(pixelTot,hdr_wcs)
-    hdu.writeto(outpath+"Ldust_tot.fits",clobber=True)
-
-    hdu = pyfits.PrimaryHDU(pixelOld,hdr_wcs)
-    hdu.writeto(outpath+"Ldust_old.fits",clobber=True)
-
-    hdu = pyfits.PrimaryHDU(pixelYoung,hdr_wcs)
-    hdu.writeto(outpath+"Ldust_young.fits",clobber=True)
-
-    hdu = pyfits.PrimaryHDU(pixelOld/pixelTot,hdr_wcs)
-    hdu.writeto(outpath+"heatingTotOld.fits",clobber=True)
-
-    hdu = pyfits.PrimaryHDU(pixelYoung/pixelTot,hdr_wcs)
-    hdu.writeto(outpath+"heatingTotYoung.fits",clobber=True)
-
-
-# OLD AND INCORRECT?
-#    tot_all = 100.* (dustwls[len(dustwls)-1] - dustwls[0])
-#
-#    tot_old   = integrateHeating(Fold,dustwls) / tot_all
-#    hdu = pyfits.PrimaryHDU(tot_old,hdr_wcs)
-#    hdu.writeto(outpath+"heatingTotOld.fits",clobber=True)
-#
-#    tot_young = integrateHeating(Fyoung,dustwls) / tot_all
-#    hdu = pyfits.PrimaryHDU(tot_young,hdr_wcs)
-#    hdu.writeto(outpath+"heatingTotYoung.fits",clobber=True)
-
-def makeWarmHeatMap(inpath,outpath,inCube,startwl,stopwl,warmwls):
-
-    cube = pyfits.open(inpath+inCube)
-    cube_all = cube[0].data[startwl:stopwl,0:,0:]
-    hdr_all  = cube[0].header
-
-    cube = pyfits.open(inpath+inCube.replace('_i','_old_i'))
-    cube_old = cube[0].data[startwl:stopwl,0:,0:]
-
-    cube = pyfits.open(inpath+inCube.replace('_i','_young_i'))
-    cube_young = cube[0].data[startwl:stopwl,0:,0:]
-
-    Fold   = 100. * (0.5*cube_old + 0.5*(cube_all-cube_young)) / cube_all
-    Fyoung = 100. * (0.5*cube_young + 0.5*(cube_all-cube_old)) / cube_all
-
-    tot_all = 100.* (warmwls[len(warmwls)-1] - warmwls[0])
-
-    # Get header with appropriate WCS info
-    im36 = pyfits.open("SKIRTinput/new3.6MJySr.fits")
-    hdr_wcs = im36[0].header
-
-    tot_old   = integrateHeating(Fold,warmwls) / tot_all
-    hdu = pyfits.PrimaryHDU(tot_old,hdr_wcs)
-    hdu.writeto(outpath+"heatingTotWarmOld.fits",clobber=True)
-
-    tot_young = integrateHeating(Fyoung,warmwls) / tot_all
-    hdu = pyfits.PrimaryHDU(tot_young,hdr_wcs)
-    hdu.writeto(outpath+"heatingTotWarmYoung.fits",clobber=True)
-
-def makeColdHeatMap(inpath,outpath,inCube,startwl,coldwls):
-
-    cube = pyfits.open(inpath+inCube)
-    cube_all = cube[0].data[startwl:,0:,0:]
-    hdr_all  = cube[0].header
-
-    cube = pyfits.open(inpath+inCube.replace('_i','_old_i'))
-    cube_old = cube[0].data[startwl:,0:,0:]
-
-    cube = pyfits.open(inpath+inCube.replace('_i','_young_i'))
-    cube_young = cube[0].data[startwl:,0:,0:]
-
-
-    Fold   = 100. * (0.5*cube_old + 0.5*(cube_all-cube_young)) / cube_all
-    Fyoung = 100. * (0.5*cube_young + 0.5*(cube_all-cube_old)) / cube_all
-
-    tot_all = 100.* (coldwls[len(coldwls)-1] - coldwls[0])
-
-    # Get header with appropriate WCS info
-    im36 = pyfits.open("SKIRTinput/new3.6MJySr.fits")
-    hdr_wcs = im36[0].header
-
-    tot_old   = integrateHeating(Fold,coldwls) / tot_all
-    hdu = pyfits.PrimaryHDU(tot_old,hdr_wcs)
-    hdu.writeto(outpath+"heatingTotColdOld.fits",clobber=True)
-
-    tot_young = integrateHeating(Fyoung,coldwls) / tot_all
-    hdu = pyfits.PrimaryHDU(tot_young,hdr_wcs)
-    hdu.writeto(outpath+"heatingTotColdYoung.fits",clobber=True)
-
-
-def integratePixelSEDs(cube, wls, dwls):
-
-
-    Lsun = 3.846e26 # Watts
-    MjySr_to_LsunMicron = 1.e6 * (36./206264.806247)**2 * 1.e-26 * 4*np.pi*(0.785e6*3.086e+16)**2 * 3.e14/(wls**2) / Lsun
-
-    xaxis = len(cube[0,0,0:])
-    yaxis = len(cube[0,0:,0])
-    zaxis = len(cube[0:,0,0])
-
-    slice = np.zeros((yaxis,xaxis))
-    for i in range(0,yaxis):
-        for j in range(0,xaxis):
-            sed = cube[0:,i,j]
-            slice[i,j] = np.sum(sed * MjySr_to_LsunMicron * dwls)
-
-    return slice
-
-
-def integrateHeating(cube,dustwls):
-
-    xaxis = len(cube[0,0,0:])
-    yaxis = len(cube[0,0:,0])
-    zaxis = len(cube[0:,0,0])
-
-    slice = np.zeros((yaxis,xaxis))
-    for i in range(0,yaxis):
-        for j in range(0,xaxis):
-            sed = cube[0:,i,j]
-            slice[i,j] = integrate.simps(sed,dustwls)
-
-    return slice
 
 # -----------------------------------------------------------------

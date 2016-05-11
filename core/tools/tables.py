@@ -119,6 +119,21 @@ def find_indices(table, key, column_name=None):
 
 # -----------------------------------------------------------------
 
+def equal_columns(columns):
+
+    """
+    This function ...
+    :param columns:
+    :return:
+    """
+
+    first_column = columns[0]
+    for column in columns[1:]:
+        if not np.array_equal(column, first_column): return False
+    return True
+
+# -----------------------------------------------------------------
+
 def write(table, path, format="ascii.commented_header"):
 
     """
@@ -161,7 +176,7 @@ def from_file(path, format="ascii.commented_header", fix_floats=False, fix_strin
 
 # -----------------------------------------------------------------
 
-def new(data, names, meta=None, dtypes=None):
+def new(data, names, meta=None, dtypes=None, copy=True):
 
     """
     This function ...
@@ -169,11 +184,12 @@ def new(data, names, meta=None, dtypes=None):
     :param names:
     :param meta:
     :param dtypes:
+    :param copy:
     :return:
     """
 
     # Create a new table from the data
-    table = Table(data, names=names, meta=meta, masked=True, dtype=dtypes)
+    table = Table(data, names=names, meta=meta, masked=True, dtype=dtypes, copy=copy)
 
     # Set mask for each column from None values
     for column_index in range(len(names)):
