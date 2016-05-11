@@ -86,16 +86,17 @@ class Distribution(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_values(cls, values, bins):
+    def from_values(cls, values, bins, weights=None):
 
         """
         This function ...
         :param values:
         :param bins:
+        :param weights:
         :return:
         """
 
-        counts, edges = np.histogram(values, bins=bins, density=True)
+        counts, edges = np.histogram(values, bins=bins, density=True, weights=weights)
 
         centers = []
         for i in range(len(edges) - 1): centers.append(0.5 * (edges[i] + edges[i + 1]))
@@ -990,5 +991,132 @@ def locate_basic_impl(xv, x, n):
         else: jl = jm
 
     return jl
+
+# -----------------------------------------------------------------
+
+class Distribution2D(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, rBins_F, FBins_r, xedges, yedges, Hmasked):
+
+        """
+        The constructor ...
+        """
+
+        self.rBins_F = rBins_F
+        self.FBins_r = FBins_r
+        self.xedges = xedges
+        self.yedges = yedges
+        self.Hmasked = Hmasked
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_values(cls, x, y, weights=None, nbins=50):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :param weights:
+        :param nbins:
+        :return:
+        """
+
+        rBins_F, FBins_r = getRadBins(x, y, 1, weights)
+        rBins_F[rBins_F > 25] = np.nan
+
+        # Estimate the 2D histogram
+        nbins = 200
+        H, xedges, yedges = np.histogram2d(x, y, bins=nbins, normed=True, weights=weights)
+
+        # H needs to be rotated and flipped
+        H = np.rot90(H)
+        H = np.flipud(H)
+
+        xedges = xedges
+        yedges = yedges
+
+        # Mask zeros
+        Hmasked = np.ma.masked_where(H == 0, H)  # Mask pixels with a value of zero
+
+        return cls(rBins_F, FBins_r, xedges, yedges, Hmasked)
+
+    # -----------------------------------------------------------------
+
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def plot(self, path=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Plot 2D histogram using pcolor
+
+        # Create a figure
+        fig = plt.figure()
+        ax = fig.gca()
+
+        ax.set_ylabel('$\mathcal{F}_\mathrm{unev.}^\mathrm{abs}$', fontsize=18)
+        ax.set_xlabel('R (kpc)', fontsize=18)
+        # ax.hexbin(r/1000.,F_abs_yng,gridsize=150,bins='log',cmap=plt.cm.autumn, mincnt=1,linewidths=0)
+        ax.pcolormesh(self.xedges, self.yedges, self.Hmasked)
+        ax.plot(self.rBins_F, self.FBins_r, 'k-', linewidth=2)
+        ax.plot(self.rBins_F, self.FBins_r, 'w-', linewidth=1)
+
+        ax.errorbar(1.7, 0.88, xerr=1.4, color='k')
+        ax.text(1.8, 0.90, 'Bulge', ha='center')
+        ax.errorbar(11., 0.88, xerr=2.75, color='k')
+        ax.text(11., 0.90, 'main SF ring', ha='center')
+        ax.errorbar(16., 0.88, xerr=1, color='k')
+        ax.text(15., 0.90, r'$2^\mathrm{nd}$ SF ring', ha='left')
+
+        ax.set_ylim(0.0, 1.0)
+
+        # Save the figure
+        ax.savefig(path, format='png', dpi=600)
+
+# -----------------------------------------------------------------
+
+def getRadBins(xarr, yarr, binstep, weights):
+
+    idx = np.argsort(xarr)
+    sortx = xarr[idx]
+    sorty = yarr[idx]
+    sortweights = weights[idx]
+
+    avx = np.array([])
+    avy = np.array([])
+
+    i = 0
+    counter = 0
+    while i*binstep < sortx[-1]:
+        n=0
+        sumy = 0
+        sumweight = 0
+        while sortx[counter] < (i+1)*binstep and counter < len(sortx)-1:
+            sumy += sorty[counter]*sortweights[counter]
+            sumweight += sortweights[counter]
+            n += 1
+            counter += 1
+        avx = np.append(avx,i*binstep+0.5)
+        avy = np.append(avy,sumy/sumweight)
+        i += 1
+    return avx, avy
 
 # -----------------------------------------------------------------
