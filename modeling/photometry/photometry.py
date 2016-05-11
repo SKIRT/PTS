@@ -339,7 +339,7 @@ class PhotoMeter(PhotometryComponent):
         path = self.full_output_path("differences.dat")
 
         # Save the differences table
-        tables.write(self.differences, path)
+        tables.write(self.differences, path, format="ascii.ecsv")
 
     # -----------------------------------------------------------------
 

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.initialize_data Initialize the data for the radiative transfer modeling pipeline.
+## \package pts.do.modeling.inspect_data Inspect the data before starting the radiative transfer modeling pipeline.
 
 # -----------------------------------------------------------------
 
@@ -111,6 +111,6 @@ table = tables.new(data, names)
 
 # Save the info table
 info_path = filesystem.join(data_path, "info.dat")
-tables.write(table, info_path)
+tables.write(table, info_path, format="ascii.ecsv")
 
 # -----------------------------------------------------------------

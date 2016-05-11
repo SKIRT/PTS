@@ -424,6 +424,9 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Estimating the sky and sky noise by using or own procedures ...")
 
+        # Check whether the FWHM is defined for the frame
+        if self.frame.fwhm is None: raise RuntimeError("The FWHM of the frame is not defined: sky apertures cannot be generated")
+
         # Determine the aperture radius
         aperture_radius = self.determine_aperture_radius()
 

@@ -128,25 +128,21 @@ class ObservedSED(object):
         # Create a new observed SED
         sed = cls()
 
-        # Open the SED table (does not work (anymore), does not see the values as floats but as strings!!)
-        #sed.table = tables.from_file(path, format="ascii.commented_header")
-        #sed.table["Wavelength"].unit = Unit("micron")
-        #sed.table["Flux"].unit = Unit("Jy")
-        #sed.table["Error-"].unit = Unit("Jy")
-        #sed.table["Error+"].unit = Unit("Jy")
 
-        names = ["Observatory", "Instrument", "Band", "Wavelength", "Flux", "Error-", "Error+"]
-        #dtypes = [str, str, str, float, float, float, float]
-        observatory_column, instrument_column, band_column, wavelength_column, flux_column, error_min_column, error_plus_column = np.loadtxt(path, unpack=True, dtype=str)
-        wavelength_column = wavelength_column.astype(float)
-        flux_column = flux_column.astype(float)
-        error_min_column = error_min_column.astype(float)
-        error_plus_column = error_plus_column.astype(float)
-        sed.table = tables.new([observatory_column, instrument_column, band_column, wavelength_column, flux_column, error_min_column, error_plus_column], names)
-        sed.table["Wavelength"].unit = "micron"
-        sed.table["Flux"].unit = "Jy"
-        sed.table["Error-"].unit = "Jy"
-        sed.table["Error+"].unit = "Jy"
+        #names = ["Observatory", "Instrument", "Band", "Wavelength", "Flux", "Error-", "Error+"]
+        #observatory_column, instrument_column, band_column, wavelength_column, flux_column, error_min_column, error_plus_column = np.loadtxt(path, unpack=True, dtype=str)
+        #wavelength_column = wavelength_column.astype(float)
+        #flux_column = flux_column.astype(float)
+        #error_min_column = error_min_column.astype(float)
+        #error_plus_column = error_plus_column.astype(float)
+        #sed.table = tables.new([observatory_column, instrument_column, band_column, wavelength_column, flux_column, error_min_column, error_plus_column], names)
+        #sed.table["Wavelength"].unit = "micron"
+        #sed.table["Flux"].unit = "Jy"
+        #sed.table["Error-"].unit = "Jy"
+        #sed.table["Error+"].unit = "Jy"
+
+        # New
+        sed.table = tables.from_file(path, format="ascii.ecsv")
 
         # Return the observed SED
         return sed
@@ -372,7 +368,7 @@ class ObservedSED(object):
         self.table.sort("Wavelength")
 
         # Write the observed SED
-        tables.write(self.table, path)
+        tables.write(self.table, path, format="ascii.ecsv")
 
 # -----------------------------------------------------------------
 
@@ -446,6 +442,26 @@ class SED(object):
         """
 
         return "Error-" in self.table.colnames and "Error+" in self.table.colnames
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Create a new SED
+        sed = cls()
+
+        # New
+        sed.table = tables.from_file(path, format="ascii.ecsv")
+
+        # Return the SED
+        return sed
 
     # -----------------------------------------------------------------
 
@@ -530,6 +546,6 @@ class SED(object):
         """
 
         # Write the SED table to file
-        tables.write(self.table, path)
+        tables.write(self.table, path, format="ascii.ecsv")
 
 # -----------------------------------------------------------------

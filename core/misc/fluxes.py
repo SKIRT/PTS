@@ -213,7 +213,7 @@ class ObservedFluxCalculator(object):
             path = fs.join(output_path, name + "_fluxes.dat")
 
             # Write out the flux table
-            tables.write(self.tables[name], path)
+            tables.write(self.tables[name], path, format="ascii.ecsv")
 
 # -----------------------------------------------------------------
 

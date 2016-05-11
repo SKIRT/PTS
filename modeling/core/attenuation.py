@@ -183,6 +183,6 @@ class AttenuationCurve(object):
         self.table.sort("Wavelength")
 
         # Write the attenuation data
-        tables.write(self.table, path)
+        tables.write(self.table, path, format="ascii.ecsv")
 
 # -----------------------------------------------------------------

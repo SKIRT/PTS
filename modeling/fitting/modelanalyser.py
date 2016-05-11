@@ -273,7 +273,7 @@ class FitModelAnalyser(FittingComponent):
         path = fs.join(self.fit_res_path, self.simulation.name, "differences.dat")
 
         # Save the differences table
-        tables.write(self.differences, path)
+        tables.write(self.differences, path, format="ascii.ecsv")
 
     # -----------------------------------------------------------------
 

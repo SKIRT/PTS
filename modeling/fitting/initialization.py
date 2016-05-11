@@ -255,7 +255,7 @@ class InputInitializer(FittingComponent):
         fluxes_path = fs.join(self.phot_path, "fluxes.dat")
 
         # Load the fluxes table
-        self.fluxes = tables.from_file(fluxes_path)
+        self.fluxes = tables.from_file(fluxes_path, format="ascii.ecsv")
 
     # -----------------------------------------------------------------
 

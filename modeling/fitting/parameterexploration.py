@@ -72,7 +72,7 @@ class ParameterExplorer(FittingComponent):
         # Get the names of the filters for which we have photometry
         filter_names = []
         fluxes_table_path = filesystem.join(self.phot_path, "fluxes.dat")
-        fluxes_table = tables.from_file(fluxes_table_path)
+        fluxes_table = tables.from_file(fluxes_table_path, format="ascii.ecsv")
         # Loop over the entries in the fluxes table, get the filter
         for entry in fluxes_table:
             # Get the filter

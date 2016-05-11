@@ -125,6 +125,8 @@ class DataPreparer(PreparationComponent):
         # Call the constructor of the base class
         super(DataPreparer, self).__init__(config)
 
+        # -- Attributes --
+
         # The paths to the initialized images
         self.paths = []
 
@@ -151,7 +153,7 @@ class DataPreparer(PreparationComponent):
         :return:
         """
 
-        # Create a new Modeler instance
+        # Create a new DataPreparer instance
         preparer = cls(arguments.config)
 
         # Whether to write the results of intermediate steps

@@ -72,7 +72,7 @@ class PreparationComponent(ModelingComponent):
         self.info_path = fs.join(self.data_path, "info.dat")
 
         # Load the info file
-        info = tables.from_file(self.info_path)
+        info = tables.from_file(self.info_path, format="ascii.ecsv")
 
         # Set the image names
         for i in range(len(info)):
