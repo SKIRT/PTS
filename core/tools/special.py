@@ -118,8 +118,10 @@ def remote_convolution(image, kernel_path, kernel_fwhm, host_id):
     script_file.write("kernel = Frame.from_file('" + remote_kernel_path + "')\n")
     script_file.write("\n")
     script_file.write("# Set the FWHM of the kernel\n")
-    script_file.write("fwhm = " + str(kernel_fwhm.to("arcsec").value) + " * Unit('arcsec')\n")
-    script_file.write("kernel.fwhm = fwhm\n")
+    if kernel_fwhm is not None:
+        script_file.write("fwhm = " + str(kernel_fwhm.to("arcsec").value) + " * Unit('arcsec')\n")
+    else: script_file.write("fwhm = None\n")
+    script_file.write("if kernel.fwhm is None and fwhm is not None: kernel.fwhm = fwhm\n")
     script_file.write("\n")
     #script_file.write("# Open the image\n")
     #script_file.write("image = Image.from_file(" + remote_image_path + ")\n")

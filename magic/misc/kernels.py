@@ -99,13 +99,16 @@ class AnianoKernels(object):
         # Load the kernel frame
         kernel = Frame.from_file(kernel_path)
 
-        # Get the FWHM of the kernel
-        if "Gauss" in to_instrument or "Moffet" in to_instrument: fwhm = float(to_instrument.split("_")[1]) * Unit("arcsec")
-        elif to_instrument in fwhms: fwhm = fwhms[to_instrument]
-        else: fwhm = None
+        # Get the FWHM of the kernel (should have been done already!)
+        if kernel.fwhm is None:
 
-        # Set the FWHM of the kernel
-        kernel.fwhm = fwhm
+            # Find the appropriate FWHM
+            if "Gauss" in to_instrument or "Moffet" in to_instrument: fwhm = float(to_instrument.split("_")[1]) * Unit("arcsec")
+            elif to_instrument in fwhms: fwhm = fwhms[to_instrument]
+            else: fwhm = None
+
+            # Set the FWHM of the kernel
+            kernel.fwhm = fwhm
 
         # Return the kernel
         return kernel
@@ -132,7 +135,20 @@ class AnianoKernels(object):
         kernel_file_path = filesystem.join(self.kernels_path, kernel_file_basename + ".fits")
 
         # Download the kernel if it is not present
-        if not filesystem.is_file(kernel_file_path): self.download_kernel(kernel_file_basename)
+        if not filesystem.is_file(kernel_file_path):
+
+            # Download the kernel
+            self.download_kernel(kernel_file_basename)
+
+            # Find the appropriate FWHM
+            if "Gauss" in to_instrument or "Moffet" in to_instrument: fwhm = float(to_instrument.split("_")[1]) * Unit("arcsec")
+            elif to_instrument in fwhms: fwhm = fwhms[to_instrument]
+            else: fwhm = None
+
+            # Set the FWHM of the kernel
+            kernel = Frame.from_file(kernel_file_path)
+            kernel.fwhm = fwhm
+            kernel.save(kernel_file_path)
 
         # Return the local kernel path
         return kernel_file_path

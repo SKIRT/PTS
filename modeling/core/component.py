@@ -48,6 +48,7 @@ class ModelingComponent(Configurable):
         self.components_path = None
         self.fit_path = None
         self.analysis_path = None
+        self.reports_path = None
 
         # PTS directories
         self.kernels_path = None
@@ -78,6 +79,7 @@ class ModelingComponent(Configurable):
         self.components_path = fs.join(self.config.path, "components")
         self.fit_path = fs.join(self.config.path, "fit")
         self.analysis_path = fs.join(self.config.path, "analysis")
+        self.reports_path = fs.join(self.config.path, "reports")
 
         # Determine the path to the kernels user directory
         self.kernels_path = fs.join(inspection.pts_user_dir, "kernels")
