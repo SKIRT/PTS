@@ -155,7 +155,8 @@ def from_file(path, format="ascii.commented_header", fix_floats=False, fix_strin
     This function ...
     :param path:
     :param format:
-    :param fix_float:
+    :param fix_floats:
+    :param fix_string_length:
     :return:
     """
 

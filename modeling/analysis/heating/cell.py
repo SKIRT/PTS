@@ -110,11 +110,17 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # 5. Calculate the heating fraction of the unevolved stellar population
         self.calculate_heating_unevolved()
 
-        # 5. Calculate the distribution of the heating fraction of the unevolved stellar population
+        # 6. Calculate the distribution of the heating fraction of the unevolved stellar population
         self.calculate_distribution()
 
-        # 6. Calculate the distribution of the heating fraction of the unevolved stellar population as a function of radius
+        # 7. Calculate the distribution of the heating fraction of the unevolved stellar population as a function of radius
         self.calculate_radial_distribution()
+
+        # 8. Writing
+        self.write()
+
+        # 9. Plotting
+        self.plot()
 
     # -----------------------------------------------------------------
 
