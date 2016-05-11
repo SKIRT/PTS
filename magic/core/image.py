@@ -977,10 +977,10 @@ class Image(object):
         wcs = CoordinateSystem(flattened_header)
 
         # Obtain the filter for this image
-        filter = headers.get_filter(self.name, self.original_header)
+        fltr = headers.get_filter(self.name, self.original_header)
 
         # Inform the user on the filter
-        if filter is not None: log.debug("The filter for this image is " + filter.filterID())
+        if fltr is not None: log.debug("The filter for this image is " + str(fltr))
         else: log.warning("Could not determine the filter for this image")
 
         # Obtain the units of this image
@@ -1040,7 +1040,7 @@ class Image(object):
                                   description=description,
                                   unit=unit,
                                   zero_point=zero_point,
-                                  filter=filter,
+                                  filter=fltr,
                                   sky_subtracted=subtracted,
                                   fwhm=fwhm)
                     self.add_frame(frame, name)
@@ -1091,7 +1091,7 @@ class Image(object):
                               description=description,
                               unit=unit,
                               zero_point=zero_point,
-                              filter=filter,
+                              filter=fltr,
                               sky_subtracted=sky_subtracted,
                               fwhm=fwhm)
                 # Add the primary image frame
@@ -1150,7 +1150,7 @@ class Image(object):
         :return:
         """
 
-        if isinstance(names, basestring): names = []
+        if isinstance(names, basestring): names = [names]
 
         # Loop over all frames
         for frame_name in list(self.frames.keys()):

@@ -47,9 +47,9 @@ fwhms = {"GALEX FUV": 4.48 * Unit("arcsec"),
          "Pacs blue": 5.67 * Unit("arcsec"),
          "Pacs green": 7.04 * Unit("arcsec"),
          "Pacs red": 11.18 * Unit("arcsec"),
-         "SPIRE PSW_ext": 18.15 * Unit("arcsec"),
-         "SPIRE PMW_ext": 24.88 * Unit("arcsec"),
-         "SPIRE PLW_ext": 36.09 * Unit("arcsec")}
+         "SPIRE PSW": 18.15 * Unit("arcsec"),
+         "SPIRE PMW": 24.88 * Unit("arcsec"),
+         "SPIRE PLW": 36.09 * Unit("arcsec")}
 
 # -----------------------------------------------------------------
 
@@ -318,7 +318,7 @@ class PreparationInitializer(PreparationComponent):
                 log.debug("Source finder output has been found for this image, skipping source finding step")
 
                 # Set the FWHM of the image from the output of the SourceFinder if it is undefined
-                if image.fwhmn is None: self.set_fwhm_from_source_finder(image, sources_output_path)
+                if image.fwhm is None: self.set_fwhm_from_source_finder(image, sources_output_path)
 
             # The source finding step has yet to be performed
             else:
