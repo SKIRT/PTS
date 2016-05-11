@@ -24,9 +24,6 @@ from pts.core.tools import logging, time, filesystem
 # Create the command-line parser
 parser = argparse.ArgumentParser()
 
-# Basic options
-parser.add_argument("path", type=str, nargs='?', help="the modeling path")
-
 # Logging options
 parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
 parser.add_argument("--report", action='store_true', help="write a report file")
@@ -40,7 +37,7 @@ arguments = parser.parse_args()
 # -----------------------------------------------------------------
 
 # Set the modeling path
-if arguments.path is None: arguments.path = filesystem.cwd()
+arguments.path = filesystem.cwd()
 
 # -----------------------------------------------------------------
 

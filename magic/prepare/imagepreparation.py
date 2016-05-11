@@ -28,6 +28,9 @@ from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from ...modeling.preparation import unitconversion
 from ...core.tools import special
+from ...core.basics.animatedgif import AnimatedGif
+from ...core.tools import filesystem as fs
+from ...core.tools import time
 
 # -----------------------------------------------------------------
 
@@ -67,6 +70,9 @@ class ImagePreparer(Configurable):
         # The principal ellipse and saturation region in sky coordinates
         self.principal_ellipse_sky = None
         self.saturation_region_sky = None
+
+        # The path to the directory where the visualisation output should be placed
+        self.visualisation_path = None
 
     # -----------------------------------------------------------------
 
@@ -119,7 +125,7 @@ class ImagePreparer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, image, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments):
+    def run(self, image, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, visualisation_path=None):
 
         """
         This function ...
@@ -131,11 +137,12 @@ class ImagePreparer(Configurable):
         :param galaxy_segments:
         :param star_segments:
         :param other_segments:
+        :param visualisation_path:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(image, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments)
+        self.setup(image, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, visualisation_path)
 
         # 2. Calculate the calibration uncertainties
         if self.config.calculate_calibration_uncertainties: self.calculate_calibration_uncertainties()
@@ -169,7 +176,7 @@ class ImagePreparer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, image, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments):
+    def setup(self, image, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, visualisation_path):
 
         """
         This function ...
@@ -181,6 +188,7 @@ class ImagePreparer(Configurable):
         :param galaxy_segments:
         :param star_segments:
         :param other_segments:
+        :param visualisation_path:
         :return:
         """
 
@@ -217,6 +225,9 @@ class ImagePreparer(Configurable):
         self.galaxy_segments = galaxy_segments
         self.star_segments = star_segments
         self.other_segments = other_segments
+
+        # Set the visualisation path
+        self.visualisation_path = visualisation_path
 
     # -----------------------------------------------------------------
 
@@ -320,9 +331,13 @@ class ImagePreparer(Configurable):
         # Inform the user
         log.info("Extracting the sources ...")
 
+        # Create an animation
+        if self.visualisation_path is not None: animation = AnimatedGif()
+        else: animation = None
+
         # Run the extractor
         self.extractor.run(self.image.frames.primary, self.galaxy_region, self.star_region, self.saturation_region,
-                           self.other_region, self.galaxy_segments, self.star_segments, self.other_segments)
+                           self.other_region, self.galaxy_segments, self.star_segments, self.other_segments, animation)
 
         # Add the sources mask to the image
         self.image.add_mask(self.extractor.mask, "sources")
@@ -335,6 +350,18 @@ class ImagePreparer(Configurable):
 
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("extracted.fits")
+
+        # Write the animation
+        if self.visualisation_path is not None:
+
+            # Determine the path to the animation
+            path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_sourceextraction") + ".gif")
+
+            # Debugging
+            log.debug("Writing animation of the source extraction to '" + path + "' ...")
+
+            # Save the animation
+            animation.save(path)
 
         # Inform the user
         log.success("Sources extracted")
@@ -495,19 +522,33 @@ class ImagePreparer(Configurable):
             else: extra_mask = self.image.masks.bad
         elif "padded" in self.image.masks: extra_mask = self.image.masks.padded # just use padded mask
 
+        # Create an animation
+        if self.visualisation_path is not None: animation = AnimatedGif()
+        else: animation = None
+
         # Run the sky subtractor
-        self.sky_subtractor.run(self.image.frames.primary, principal_ellipse, self.image.masks.sources, extra_mask, saturation_region)
+        self.sky_subtractor.run(self.image.frames.primary, principal_ellipse, self.image.masks.sources, extra_mask, saturation_region, animation)
 
         # Add the sky frame to the image
         self.image.add_frame(self.sky_subtractor.sky_frame, "sky")
-        #self.image.add_frame(self.sky_subtractor.phot_sky, "phot_sky")
-        #self.image.add_frame(self.sky_subtractor.phot_rms, "phot_rms")
 
         # Add the mask that is used for the sky estimation
         self.image.add_mask(self.sky_subtractor.mask, "sky")
 
-        # Write intermediate result
+        # Write intermediate result if requested
         if self.config.write_steps: self.write_intermediate_result("sky_subtracted.fits")
+
+        # Write the animation
+        if self.visualisation_path is not None:
+
+            # Determine the path to the animation
+            path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_skysubtraction") + ".gif")
+
+            # Debugging
+            log.debug("Writing animation of the sky subtraction to '" + path + "' ...")
+
+            # Save the animation
+            animation.save(path)
 
         # Inform the user
         log.success("Sky subtracted")
@@ -525,10 +566,9 @@ class ImagePreparer(Configurable):
         log.info("Calculating the uncertainties ...")
 
         # Add all the errors quadratically: existing error map + large scale variations + pixel to pixel noise + calibration error
-        #if "errors" in self.image.frames:
-        #    self.image.frames.errors = np.sqrt(self.image.frames.errors**2 + self.sky_subtractor.noise**2 + self.image.frames.calibration_errors**2)
-        #else:
+        #if "errors" in self.image.frames: self.image.frames.errors = np.sqrt(self.image.frames.errors**2 + self.sky_subtractor.noise**2 + self.image.frames.calibration_errors**2)
 
+        # Calculate the total error map
         errors = np.sqrt(self.sky_subtractor.noise**2 + self.image.frames.calibration_errors**2)
         self.image.add_frame(errors, "errors")
 

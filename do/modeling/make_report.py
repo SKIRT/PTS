@@ -28,7 +28,6 @@ parser = argparse.ArgumentParser()
 
 # Basic options
 parser.add_argument("step", type=str, help="the modeling step for which to create the report")
-parser.add_argument("path", type=str, nargs='?', help="the modeling path")
 
 # Logging
 parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
@@ -40,7 +39,7 @@ arguments = parser.parse_args()
 # -----------------------------------------------------------------
 
 # Set the modeling path
-if arguments.path is None: arguments.path = fs.cwd()
+arguments.path = fs.cwd()
 
 # -----------------------------------------------------------------
 

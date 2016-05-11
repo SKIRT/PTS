@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.modeling.preparation.fetching import DataFetcher
+from pts.modeling.data.fetching import DataFetcher
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 
@@ -24,9 +24,6 @@ from pts.core.tools import filesystem as fs
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
-
-# Basic options
-parser.add_argument("path", type=str, nargs='?', help="the modeling path")
 
 # Logging options
 parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
@@ -38,7 +35,7 @@ arguments = parser.parse_args()
 # -----------------------------------------------------------------
 
 # Set the modeling path
-if arguments.path is None: arguments.path = fs.cwd()
+arguments.path = fs.cwd()
 
 # -----------------------------------------------------------------
 

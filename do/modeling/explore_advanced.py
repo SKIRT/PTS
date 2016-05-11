@@ -24,9 +24,6 @@ from pts.core.tools import logging, time, parsing, filesystem
 # Create the command-line parser
 parser = argparse.ArgumentParser()
 
-# Basic
-parser.add_argument("path", type=str, nargs='?', help="the modeling path")
-
 # The number of simulations to launch in the batch
 parser.add_argument("--simulations", type=int, help="the number of simulations to launch in the batch")
 
@@ -49,7 +46,7 @@ arguments = parser.parse_args()
 # -----------------------------------------------------------------
 
 # Set the modeling path
-if arguments.path is None: arguments.path = filesystem.cwd()
+arguments.path = filesystem.cwd()
 
 # -----------------------------------------------------------------
 

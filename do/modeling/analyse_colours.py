@@ -16,16 +16,13 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.modeling.analysis.colours import ColourAnalyser
+from pts.modeling.analysis.colours.colours import ColourAnalyser
 from pts.core.tools import logging, time, parsing, filesystem
 
 # -----------------------------------------------------------------
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
-
-# Basic
-parser.add_argument("path", type=str, nargs='?', help="the modeling path")
 
 # Logging options
 parser.add_argument("--debug", action="store_true", help="add this option to enable debug output")
@@ -38,7 +35,7 @@ arguments = parser.parse_args()
 # -----------------------------------------------------------------
 
 # Set the modeling path
-if arguments.path is None: arguments.path = filesystem.cwd()
+arguments.path = filesystem.cwd()
 
 # -----------------------------------------------------------------
 

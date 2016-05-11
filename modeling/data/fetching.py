@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.preparation.fetching Contains the DataFetcher class.
+## \package pts.modeling.data.fetching Contains the DataFetcher class.
 
 # -----------------------------------------------------------------
 
@@ -13,13 +13,15 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .component import PreparationComponent
+from .component import DataComponent
 from ...magic.misc.dustpedia import DustPediaDatabase
 from ...core.tools.logging import log
+from ...magic.tools import catalogs
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
-class DataFetcher(PreparationComponent):
+class DataFetcher(DataComponent):
     
     """
     This class...
@@ -38,8 +40,20 @@ class DataFetcher(PreparationComponent):
 
         # -- Attributes --
 
+        # The NGC id of the galaxy
+        self.ngc_id = None
+
         # The DustPedia database
         self.database = DustPediaDatabase()
+
+        # The galaxy info
+        self.info = None
+
+        # The images
+        self.images = []
+
+        # The SED
+        self.sed = None
 
     # -----------------------------------------------------------------
 
@@ -54,6 +68,9 @@ class DataFetcher(PreparationComponent):
 
         # Create a new DataFetcher instance
         fetcher = cls()
+
+        # Set the modeling path
+        fetcher.config.path = arguments.path
 
         # Return the data fetcher
         return fetcher
@@ -79,6 +96,9 @@ class DataFetcher(PreparationComponent):
         # 3. Fetch the SED
         self.fetch_sed()
 
+        # 4. Writing
+        self.write()
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -94,6 +114,9 @@ class DataFetcher(PreparationComponent):
         # Login to the DustPedia database
         self.database.login(self.config.database.username, self.config.database.password)
 
+        # Determine the NGC id of the galaxy
+        self.ngc_id = catalogs.get_ngc_name(self.galaxy_name, delimiter="")
+
     # -----------------------------------------------------------------
 
     def fetch_galaxy_info(self):
@@ -107,9 +130,7 @@ class DataFetcher(PreparationComponent):
         log.info("Fetching galaxy info ...")
 
         # Get the info
-        info = self.database.get_galaxy_info(self.galaxy_name)
-
-        print(info)
+        self.info = self.database.get_galaxy_info(self.ngc_id)
 
     # -----------------------------------------------------------------
 
@@ -124,7 +145,7 @@ class DataFetcher(PreparationComponent):
         log.info("Fetching the images ...")
 
         # Get the image names
-        image_names = self.database.get_image_names(self.galaxy_name)
+        image_names = self.database.get_image_names(self.ngc_id)
 
         print(image_names)
 
@@ -141,6 +162,66 @@ class DataFetcher(PreparationComponent):
         log.info("Fetching the SED ...")
 
         # Get the SED
-        sed = self.database.get_sed(self.galaxy_name)
+        self.sed = self.database.get_sed(self.ngc_id)
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the galaxy info
+        self.write_info()
+
+        # Write the images
+        self.write_images()
+
+        # Write the SED
+        self.write_sed()
+
+    # -----------------------------------------------------------------
+
+    def write_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Infom the user
+        log.info("Writing the galaxy info ...")
+
+        # Write the galaxy info table
+        tables.write(self.info, self.galaxy_info_path, format="ascii.ecsv")
+
+    # -----------------------------------------------------------------
+
+    def write_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the galaxy images ...")
+
+    # -----------------------------------------------------------------
+
+    def write_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the SED ...")
 
 # -----------------------------------------------------------------

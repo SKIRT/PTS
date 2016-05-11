@@ -72,31 +72,34 @@ class Reporter(ReportingComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Make a report for the data initialization step
+        # 2. Make a report for the data
+        self.report_data()
+
+        # 3. Make a report for the data initialization step
         self.report_data_initialization()
 
-        # 3. Make a report for the data preparation step
+        # 4. Make a report for the data preparation step
         self.report_preparation()
 
-        # 4. Make a report for the decomposition step
+        # 5. Make a report for the decomposition step
         self.report_decomposition()
 
-        # 5. Make a report for the photometry step
+        # 6. Make a report for the photometry step
         self.report_photometry()
 
-        # 6. Make a report for the map making step
+        # 7. Make a report for the map making step
         self.report_map_making()
 
-        # 7. Make a report for the input initialization step
+        # 8. Make a report for the input initialization step
         self.report_input_initialization()
 
-        # 8. Make a report for the parameter exploration step
+        # 9. Make a report for the parameter exploration step
         self.report_exploration()
 
-        # 9. Make a report for the SED fitting step
+        # 10. Make a report for the SED fitting step
         self.report_fitting()
 
-        # 10. Make a report for the analysis step
+        # 11. Make a report for the analysis step
         self.report_analysis()
 
     # -----------------------------------------------------------------
@@ -110,6 +113,79 @@ class Reporter(ReportingComponent):
 
         # Call the setup function of the base class
         super(Reporter, self).setup()
+
+    # -----------------------------------------------------------------
+
+    def report_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making a report for the data ...")
+
+        # Initialize the columns of the table
+        names_column = []
+        paths_column = []
+        observatory_column = []
+        instrument_column = []
+        band_column = []
+        unit_column = []
+        pixelscale_column = []
+        has_errors_column = []
+        prep_names_column = []
+        names = ["Image name", "Image path", "Observatory", "Instrument", "Band", "Unit", "Pixelscale", "Has errors",
+                 "Preparation name"]
+
+        # Loop over all subdirectories of the data directory
+        for path, name in fs.directories_in_path(self.data_path, not_contains="bad", returns=["path", "name"]):
+
+            # Get the name of the observatory
+            # observatory = name
+
+            # Loop over all FITS files found in the current subdirectory
+            for image_path, image_name in fs.files_in_path(path, extension="fits", not_contains="_Error",
+                                                                   returns=["path", "name"]):
+
+                # Open the image
+                image = Image.from_file(image_path)
+
+                # Check if an error map is present (as one of the image frames or as a seperate FITS file)
+                has_errors = "errors" in image.frames or fs.is_file(fs.join(path, image_name + "_Error.fits"))
+
+                if image.filter is not None:
+                    observatory = image.filter.observatory
+                    instrument = image.filter.instrument
+                    band = image.filter.band
+                    prep_name = instrument + " " + band
+                else:
+                    observatory = None
+                    instrument = None
+                    band = None
+                    prep_name = image_name
+
+                names_column.append(image_name)
+                paths_column.append(image_path)
+                observatory_column.append(observatory)
+                instrument_column.append(instrument)
+                band_column.append(band)
+                unit_column.append(str(image.unit))
+                pixelscale_column.append(image.xy_average_pixelscale.to("arcsec/pix").value)
+                has_errors_column.append(has_errors)
+                prep_names_column.append(prep_name)
+
+        # Create the table
+        data = [names_column, paths_column, observatory_column, instrument_column, band_column, unit_column,
+                pixelscale_column, has_errors_column, prep_names_column]
+        table = tables.new(data, names)
+
+        # Debugging
+        log.debug("Writing the data report to '" + self.data_initialization_report_path + "'...")
+
+        # Save the table
+        tables.write(table, self.data_report_path, format="ascii.ecsv")
 
     # -----------------------------------------------------------------
 

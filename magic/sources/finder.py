@@ -57,6 +57,9 @@ class SourceFinder(Configurable):
         self.ignore_mask = None
         self.bad_mask = None
 
+        # The animation
+        self.animation = None
+
         # The output mask
         self.mask = None
 
@@ -255,7 +258,7 @@ class SourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, galactic_catalog, stellar_catalog, special_region=None, ignore_region=None, bad_mask=None):
+    def run(self, frame, galactic_catalog, stellar_catalog, special_region=None, ignore_region=None, bad_mask=None, animation=None):
 
         """
         This function ...
@@ -265,11 +268,12 @@ class SourceFinder(Configurable):
         :param special_region:
         :param ignore_region:
         :param bad_mask:
+        :param animation:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(frame, galactic_catalog, stellar_catalog, special_region, ignore_region, bad_mask)
+        self.setup(frame, galactic_catalog, stellar_catalog, special_region, ignore_region, bad_mask, animation)
 
         # 2. Find the galaxies
         self.find_galaxies()
@@ -295,30 +299,21 @@ class SourceFinder(Configurable):
         # Base class implementation removes the children
         super(SourceFinder, self).clear()
 
-        # The image frame
+        # Set default values for all attributes
         self.frame = None
-
-        # The WCS of the original input frame
         self.original_wcs = None
-
-        # The galactic and stellar catalog
         self.galactic_catalog = None
         self.stellar_catalog = None
-
-        # The mask covering pixels that should be ignored throughout the entire extraction procedure
         self.special_mask = None
         self.ignore_mask = None
         self.bad_mask = None
-
-        # The output mask
+        self.animation = None
         self.mask = None
-
-        # The name of the principal galaxy
         self.galaxy_name = None
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, galactic_catalog, stellar_catalog, special_region, ignore_region, bad_mask=None):
+    def setup(self, frame, galactic_catalog, stellar_catalog, special_region, ignore_region, bad_mask=None, animation=None):
 
         """
         This function ...
@@ -328,6 +323,7 @@ class SourceFinder(Configurable):
         :param special_region:
         :param ignore_region:
         :param bad_mask:
+        :param animation:
         :return:
         """
 
@@ -367,6 +363,9 @@ class SourceFinder(Configurable):
 
         # Set a reference to the mask of bad pixels
         self.bad_mask = bad_mask
+
+        # Make a reference to the animation
+        self.animation = animation
 
     # -----------------------------------------------------------------
 

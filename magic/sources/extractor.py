@@ -54,6 +54,9 @@ class SourceExtractor(Configurable):
         self.saturation_region = None
         self.other_region = None
 
+        # The animation
+        self.animation = None
+
         # Segmentation maps
         self.galaxy_segments = None
         self.star_segments = None
@@ -84,7 +87,7 @@ class SourceExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments):
+    def run(self, frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, animation=None):
 
         """
         This function ...
@@ -96,11 +99,12 @@ class SourceExtractor(Configurable):
         :param galaxy_segments:
         :param star_segments:
         :param other_segments:
+        :param animation:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments)
+        self.setup(frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, animation)
 
         # 2. Load the sources
         self.load_sources()
@@ -113,7 +117,7 @@ class SourceExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments):
+    def setup(self, frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, animation=None):
 
         """
         This function ...
@@ -124,6 +128,7 @@ class SourceExtractor(Configurable):
         :param other_region:
         :param star_segments:
         :param other_segments:
+        :param animation:
         :return:
         """
 
@@ -147,6 +152,9 @@ class SourceExtractor(Configurable):
         # Create a mask of the pixels that are NaNs
         self.nan_mask = Mask.is_nan(self.frame)
         self.frame[self.nan_mask] = 0.0
+
+        # Make a reference to the animation
+        self.animation = animation
 
     # -----------------------------------------------------------------
 

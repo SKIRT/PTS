@@ -17,7 +17,8 @@ import argparse
 
 # Import the relevant PTS classes and modules
 from pts.modeling.maps.mapmaking import MapMaker
-from pts.core.tools import logging, time, filesystem
+from pts.core.tools import logging, time
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -25,7 +26,6 @@ from pts.core.tools import logging, time, filesystem
 parser = argparse.ArgumentParser()
 
 # Basic options
-parser.add_argument("path", type=str, nargs='?', help="the modeling path")
 parser.add_argument("--map", type=str, help="the map to be made (dust, old, NIY, IY)")
 
 # Logging options
@@ -41,12 +41,12 @@ arguments = parser.parse_args()
 # -----------------------------------------------------------------
 
 # Set the modeling path
-if arguments.path is None: arguments.path = filesystem.cwd()
+arguments.path = fs.cwd()
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = filesystem.join(arguments.path, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(arguments.path, time.unique_name("log") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"

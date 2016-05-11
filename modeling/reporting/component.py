@@ -37,6 +37,9 @@ class ReportingComponent(ModelingComponent):
 
         # -- Attributes --
 
+        # The path to the data report
+        self.data_report_path = None
+
         # The path to the data initialization report
         self.data_initialization_report_path = None
 
@@ -80,6 +83,7 @@ class ReportingComponent(ModelingComponent):
         self.config.output_path = self.reports_path
 
         # Set the report paths
+        self.data_report_path = fs.join(self.reports_path, "data.txt")
         self.data_initialization_report_path = fs.join(self.reports_path, "data_initialization.txt")
         self.preparation_report_path = fs.join(self.reports_path, "preparation.txt")
         self.decomposition_report_path = fs.join(self.reports_path, "decomposition.txt")
