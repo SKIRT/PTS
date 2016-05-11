@@ -177,7 +177,7 @@ def from_file(path, format="ascii.commented_header", fix_floats=False, fix_strin
 
 # -----------------------------------------------------------------
 
-def new(data, names, meta=None, dtypes=None, copy=True):
+def new(data=None, names=None, meta=None, dtypes=None, copy=True):
 
     """
     This function ...
@@ -189,15 +189,18 @@ def new(data, names, meta=None, dtypes=None, copy=True):
     :return:
     """
 
-    # Create a new table from the data
-    table = Table(data, names=names, meta=meta, masked=True, dtype=dtypes, copy=copy)
+    if data is None: return Table()
+    else:
 
-    # Set mask for each column from None values
-    for column_index in range(len(names)):
-        table[names[column_index]].mask = [value is None for value in data[column_index]]
+        # Create a new table from the data
+        table = Table(data, names=names, meta=meta, masked=True, dtype=dtypes, copy=copy)
 
-    # Return the new table
-    return table
+        # Set mask for each column from None values
+        for column_index in range(len(names)):
+            table[names[column_index]].mask = [value is None for value in data[column_index]]
+
+        # Return the new table
+        return table
 
 # -----------------------------------------------------------------
 

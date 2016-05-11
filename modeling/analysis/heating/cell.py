@@ -251,20 +251,32 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.debug("Creating the absorption table ...")
 
         # Create the columns for the absorption table
-        names = ["X coordinate of cell center", "Y coordinate of cell center", "Z coordinate of cell center"]
-        data = []
-        data.append(contribution_tables[contribution_tables.keys()[0]]["X coordinate of cell center"])
-        data.append(contribution_tables[contribution_tables.keys()[0]]["Y coordinate of cell center"])
-        data.append(contribution_tables[contribution_tables.keys()[0]]["Z coordinate of cell center"])
+        #names = ["X coordinate of cell center", "Y coordinate of cell center", "Z coordinate of cell center"]
+        #data = []
+        #data.append(contribution_tables[contribution_tables.keys()[0]]["X coordinate of cell center"])
+        #data.append(contribution_tables[contribution_tables.keys()[0]]["Y coordinate of cell center"])
+        #data.append(contribution_tables[contribution_tables.keys()[0]]["Z coordinate of cell center"])
 
         # Loop over the tables of the different contributions, add the absorption luminosity columns
-        for contribution in contribution_tables:
+        #for contribution in contribution_tables:
 
-            names.append("Absorbed bolometric luminosity of the " + contribution + " stellar population")
-            data.append(contribution_tables[contribution]["Absorbed bolometric luminosity"])
+            #names.append("Absorbed bolometric luminosity of the " + contribution + " stellar population")
+            #data.append(contribution_tables[contribution]["Absorbed bolometric luminosity"])
 
         # Create the absorption table
-        self.absorptions = tables.new(data, names, copy=False)
+        #self.absorptions = tables.new(data, names, copy=False)
+
+        self.absorptions = tables.new()
+
+        x_coords = contribution_tables[contribution_tables.keys()[0]]["X coordinate of cell center"]
+        y_coords = contribution_tables[contribution_tables.keys()[0]]["Y coordinate of cell center"]
+        z_coords = contribution_tables[contribution_tables.keys()[0]]["Z coordinate of cell center"]
+        self.absorptions.add_columns([x_coords, y_coords, z_coords], copy=False)
+
+        for contribution in contribution_tables:
+
+            self.absorptions.add_columns([contribution_tables[contribution]["Absorbed bolometric luminosity"]], copy=False)
+            self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + contribution + " stellar population")
 
     # -----------------------------------------------------------------
 

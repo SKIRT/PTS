@@ -17,6 +17,7 @@ from ..core.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.tools import tables
 from ...core.launch.timing import TimingTable
+from ...core.launch.memory import MemoryTable
 
 # -----------------------------------------------------------------
 
@@ -74,6 +75,9 @@ class FittingComponent(ModelingComponent):
 
         # The path to the timing table
         self.timing_table_path = None
+
+        # The path to the memory table
+        self.memory_table_path = None
 
         # The path to the scripts directory
         self.fit_scripts_path = None
@@ -164,6 +168,12 @@ class FittingComponent(ModelingComponent):
 
         # Initialize the timing table
         timing_table = TimingTable(self.timing_table_path)
+
+        # Set the path to the memory table file
+        self.memory_table_path = fs.join(self.fit_path, "memory.dat")
+
+        # Initialize the memory table
+        memory_table = MemoryTable(self.memory_table_path)
 
         # Set the paths to the probability distribution tables
         for parameter_name in self.parameter_names:

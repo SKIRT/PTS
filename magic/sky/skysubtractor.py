@@ -13,6 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import io
+import imageio
 import numpy as np
 from scipy import interpolate
 import matplotlib.pyplot as plt
@@ -606,22 +608,14 @@ class SkySubtractor(Configurable):
 
             if self.animation is not None:
 
-                import io
-                import imageio
-                #from PIL import Image
-                #import matplotlib.pyplot as plt
-
                 plt.figure()
                 plt.imshow(apertures_mask, origin="lower")
                 plt.title("Aperture mask")
                 buf = io.BytesIO()
                 plt.savefig(buf, format='png')
                 buf.seek(0)
-                #im = Image.open(buf)
-                #im.show()
                 im = imageio.imread(buf)
                 buf.close()
-
                 self.animation.add_frame(im)
 
             # Calculate the mean sky value in this aperture

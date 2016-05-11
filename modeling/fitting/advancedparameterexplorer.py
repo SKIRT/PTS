@@ -12,14 +12,20 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import io
+import imageio
+
 # Import the relevant PTS classes and modules
 from .parameterexploration import ParameterExplorer
-from ...core.tools import tables
+from ...core.tools import tables, time
 from ...core.tools.logging import log
 from ...core.launch.options import SchedulingOptions
 from ...core.launch.parallelization import Parallelization
 from ...core.launch.runtime import RuntimeEstimator
 from ...core.basics.distribution import Distribution
+from ...core.basics.animatedgif import AnimatedGif
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -85,6 +91,9 @@ class AdvancedParameterExplorer(ParameterExplorer):
         if arguments.dust is not None:
             explorer.config.dust.min = arguments.dust[0]
             explorer.config.dust.max = arguments.dust[1]
+
+        # Make visualisations
+        explorer.config.visualise = arguments.visualise
 
         # Return the new instance
         return explorer
@@ -158,6 +167,16 @@ class AdvancedParameterExplorer(ParameterExplorer):
         # Inform the user
         log.info("Picking random parameter values based on the probability distributions ...")
 
+        # Create an animation
+        if self.config.visualise:
+            fuv_young_animation = AnimatedGif()
+            fuv_ionizing_animation = AnimatedGif()
+            dust_mass_animation = AnimatedGif()
+        else:
+            fuv_young_animation = None
+            fuv_ionizing_animation = None
+            dust_mass_animation = None
+
         # Debugging
         if log.is_debug() and False:
 
@@ -200,6 +219,48 @@ class AdvancedParameterExplorer(ParameterExplorer):
             # Add the combination of parameter values to the list
             combination = (young_luminosity, ionizing_luminosity, dust_mass)
             self.parameters.append(combination)
+
+            if fuv_young_animation is not None and len(self.parameters) > 20:
+
+                new_distribution = Distribution.from_values([combination[0] for combination in self.parameters])
+                buf = io.BytesIO()
+                new_distribution.plot(title="FUV luminosity of young stars", x_limits=[self.config.dust.min, self.config.dust.max], path=buf, format="png")
+                buf.seek(0)
+                im = imageio.imread(buf)
+                buf.close()
+                fuv_young_animation.add_frame(im)
+
+            if fuv_ionizing_animation is not None and len(self.parameters) > 20:
+
+                new_distribution = Distribution.from_values([combination[1] for combination in self.parameters])
+                buf = io.BytesIO()
+                new_distribution.plot(title="FUV luminosity of ionizing stars", x_limits=[self.config.dust.min, self.config.dust.max], path=buf, format="png")
+                buf.seek(0)
+                im = imageio.imread(buf)
+                buf.close()
+                fuv_ionizing_animation.add_frame(im)
+
+            if dust_mass_animation is not None and len(self.parameters) > 20:
+
+                new_distribution = Distribution.from_values([combination[2] for combination in self.parameters])
+                buf = io.BytesIO()
+                new_distribution.plot(title="Dust mass", x_limits=[self.config.dust.min, self.config.dust.max], path=buf, format="png")
+                buf.seek(0)
+                im = imageio.imread(buf)
+                buf.close()
+                dust_mass_animation.add_frame(im)
+
+        if fuv_young_animation is not None:
+            path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_fuvyoung") + ".gif")
+            fuv_young_animation.save(path)
+
+        if fuv_ionizing_animation is not None:
+            path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_fuvionizing") + ".gif")
+            fuv_ionizing_animation.save(path)
+
+        if dust_mass_animation is not None:
+            path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_dustmass") + ".gif")
+            dust_mass_animation.save(path)
 
     # -----------------------------------------------------------------
 

@@ -10,6 +10,7 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
+import warnings
 import numpy as np
 from scipy.stats import rv_continuous
 import matplotlib.pyplot as plt
@@ -86,7 +87,7 @@ class Distribution(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_values(cls, values, bins, weights=None):
+    def from_values(cls, values, bins=20, weights=None):
 
         """
         This function ...
@@ -157,8 +158,13 @@ class Distribution(object):
         :return:
         """
 
+        if self.name is None:
+            warnings.warn("Name of the parameter of the distribution is not defined")
+            name = "Parameter"
+        else: name = self.name
+
         data = [self.centers, self.counts]
-        names = [self.name, "Probability"]
+        names = [name, "Probability"]
         meta = {"mean": self.mean, "median": self.median, "percentile16": self.percentile_16, "percentile84": self.percentile_84}
 
         table = Table(data, names=names, meta=meta, masked=True)
@@ -709,7 +715,7 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, add_smooth=False):
+    def plot(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, add_smooth=False, format=None):
 
         """
         This function ...
@@ -719,6 +725,7 @@ class Distribution(object):
         :param x_limits:
         :param y_limits:
         :param add_smooth:
+        :param format:
         :return:
         """
 
@@ -792,7 +799,9 @@ class Distribution(object):
         plt.grid(alpha=0.8)
 
         if path is None: plt.show()
-        else: canvas.savefig(path)
+        else: canvas.savefig(path, format=format)
+
+        plt.close()
 
 # -----------------------------------------------------------------
 
@@ -1047,7 +1056,7 @@ class Distribution2D(object):
 
     # -----------------------------------------------------------------
 
-    def save(self):
+    def save(self, path):
 
         """
         This function ...
@@ -1058,10 +1067,11 @@ class Distribution2D(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, path=None):
+    def plot(self, title=None, path=None):
 
         """
         This function ...
+        :param title:
         :param path:
         :return:
         """
@@ -1074,22 +1084,28 @@ class Distribution2D(object):
 
         ax.set_ylabel('$\mathcal{F}_\mathrm{unev.}^\mathrm{abs}$', fontsize=18)
         ax.set_xlabel('R (kpc)', fontsize=18)
+
         # ax.hexbin(r/1000.,F_abs_yng,gridsize=150,bins='log',cmap=plt.cm.autumn, mincnt=1,linewidths=0)
+
         ax.pcolormesh(self.xedges, self.yedges, self.Hmasked)
-        ax.plot(self.rBins_F, self.FBins_r, 'k-', linewidth=2)
-        ax.plot(self.rBins_F, self.FBins_r, 'w-', linewidth=1)
+        #ax.plot(self.rBins_F, self.FBins_r, 'k-', linewidth=2)
+        #ax.plot(self.rBins_F, self.FBins_r, 'w-', linewidth=1)
 
-        ax.errorbar(1.7, 0.88, xerr=1.4, color='k')
-        ax.text(1.8, 0.90, 'Bulge', ha='center')
-        ax.errorbar(11., 0.88, xerr=2.75, color='k')
-        ax.text(11., 0.90, 'main SF ring', ha='center')
-        ax.errorbar(16., 0.88, xerr=1, color='k')
-        ax.text(15., 0.90, r'$2^\mathrm{nd}$ SF ring', ha='left')
+        #ax.errorbar(1.7, 0.88, xerr=1.4, color='k')
+        #ax.text(1.8, 0.90, 'Bulge', ha='center')
+        #ax.errorbar(11., 0.88, xerr=2.75, color='k')
+        #ax.text(11., 0.90, 'main SF ring', ha='center')
+        #ax.errorbar(16., 0.88, xerr=1, color='k')
+        #ax.text(15., 0.90, r'$2^\mathrm{nd}$ SF ring', ha='left')
 
-        ax.set_ylim(0.0, 1.0)
+        #ax.set_ylim(0.0, 1.0)
+
+        if title is not None: ax.set_title(title, color='red')
 
         # Save the figure
-        ax.savefig(path, format='png', dpi=600)
+        plt.savefig(path, format='png', dpi=600)
+
+        plt.close()
 
 # -----------------------------------------------------------------
 
