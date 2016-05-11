@@ -143,7 +143,7 @@ def remote_convolution(image, kernel_path, kernel_fwhm, host_id):
         script_file.write("log.info('Convolving the " + frame_name + " frame ...')\n")
         script_file.write("\n")
         script_file.write("# Do the convolution and save the result\n")
-        script_file.write("convolved = frame.convolved(kernel)\n")
+        script_file.write("convolved = frame.convolved(kernel, allow_huge=True)\n")
         script_file.write("convolved.save('" + remote_frame_path + "')\n") # overwrite the frame
         script_file.write("\n")
 

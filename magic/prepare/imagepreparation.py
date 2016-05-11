@@ -119,6 +119,7 @@ class ImagePreparer(Configurable):
         # Advanced options
         if arguments.sky_annulus_inner is not None: preparer.config.sky_subtraction.mask.annulus_inner_factor = arguments.sky_annulus_inner
         if arguments.sky_annulus_outer is not None: preparer.config.sky_subtraction.mask.annulus_outer_factor = arguments.sky_annulus_outer
+        if arguments.convolution_remote is not None: preparer.config.convolution.remote = arguments.convolution_remote
 
         # Return the new instance
         return preparer

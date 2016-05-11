@@ -402,11 +402,12 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def convolved(self, kernel):
+    def convolved(self, kernel, allow_huge=False):
 
         """
         This function ...
         :param kernel:
+        :param allow_huge:
         :return:
         """
 
@@ -427,7 +428,7 @@ class Frame(np.ndarray):
         nans_mask = np.isnan(self)
 
         # Do the convolution on this frame
-        data = convolve_fft(self, kernel, normalize_kernel=True, interpolate_nan=True)
+        data = convolve_fft(self, kernel, normalize_kernel=True, interpolate_nan=True, allow_huge=allow_huge)
 
         data[nans_mask] = float("nan")
 

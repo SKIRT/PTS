@@ -84,6 +84,7 @@ parser.add_argument("reference", type=str, help="the name/path of the reference 
 # Advanced options
 parser.add_argument("--sky_annulus_outer", type=float, help="the factor to which the ellipse describing the principal galaxy should be multiplied to represent the outer edge of the sky annulus")
 parser.add_argument("--sky_annulus_inner", type=float, help="the factor to which the ellipse describing the principal galaxy should be multiplied to represent the inner edge of the sky annulus")
+parser.add_argument("--convolution_remote", type=str, help="the name of the remote host to be used for the convolution step")
 
 # Input and output
 parser.add_argument("--input", type=str, help="the input path (output of find_sources step)")
@@ -234,6 +235,8 @@ arguments.calibration = calibration_errors[image.name]
 # If visualisation is enabled, set the visualisation path (=output path)
 if arguments.visualise: visualisation_path = arguments.output
 else: visualisation_path = None
+
+# -----------------------------------------------------------------
 
 # Create an ImagePreparer instance
 preparer = ImagePreparer.from_arguments(arguments)
