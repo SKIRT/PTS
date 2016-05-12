@@ -88,7 +88,7 @@ def main():
     fig_c.set_ylabel('$\mathcal{F}_\mathrm{unev.}^\mathrm{abs}$',fontsize=18)
     fig_c.set_xlabel('R (kpc)',fontsize=18)
     #fig_c.hexbin(r/1000.,F_abs_yng,gridsize=150,bins='log',cmap=plt.cm.autumn, mincnt=1,linewidths=0)
-    fig_c.pcolormesh(xedges,yedges,Hmasked)
+    fig_c.pcolormesh(xedges, yedges, Hmasked)
     fig_c.plot(rBins_F,FBins_r, 'k-',linewidth=2)
     fig_c.plot(rBins_F,FBins_r, 'w-',linewidth=1)
 

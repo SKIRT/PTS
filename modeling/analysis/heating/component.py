@@ -38,12 +38,14 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         # -- Attributes --
 
         # The different contributing components
-        self.contributions = ["total", "old", "young", "ionizing"]
+        self.contributions = ["total", "old", "young", "ionizing", "unevolved"]
         self.component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
                                 "young": "Young stars",
-                                "ionizing": "Ionizing stars"}
+                                "ionizing": "Ionizing stars",
+                                "unevolved": ["Young stars", "Ionizing stars"]}
 
-        # The paths to the analysis/heating/total, analysis/heating/old, analysis/heating/young and analysis/heating/ionizing directory
+        # The paths to the analysis/heating/total, analysis/heating/old, analysis/heating/young,
+        # analysis/heating/ionizing directory and analysis/heating/unevolved directory
         self.simulation_paths = dict()
         self.output_paths = dict()
         self.ski_paths = dict()

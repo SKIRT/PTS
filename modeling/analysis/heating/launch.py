@@ -94,6 +94,9 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         # 2. Load the ski file describing the best model
         self.load_ski()
 
+        # 3. Create the instrument
+        self.create_instrument()
+
         # 5. Adjust the ski files for the different contributors
         self.adjust_ski_files()
 
@@ -140,6 +143,19 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
 
         # Load the ski file
         self.ski = SkiFile(path)
+
+    # -----------------------------------------------------------------
+
+    def create_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create an SED instrument
+        azimuth = 0.0
+        self.instrument = SEDInstrument(self.parameters.distance, self.parameters.inclination, azimuth, self.parameters.disk.PA)
 
     # -----------------------------------------------------------------
 

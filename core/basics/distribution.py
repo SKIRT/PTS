@@ -1009,22 +1009,24 @@ class Distribution2D(object):
     This class ...
     """
 
-    def __init__(self, rBins_F, FBins_r, xedges, yedges, Hmasked):
+    def __init__(self, counts, x_edges, y_edges, rBins_F, FBins_r, x_name, y_name):
 
         """
         The constructor ...
         """
 
+        self.counts = counts
+        self.x_edges = x_edges
+        self.y_edges = y_edges
         self.rBins_F = rBins_F
         self.FBins_r = FBins_r
-        self.xedges = xedges
-        self.yedges = yedges
-        self.Hmasked = Hmasked
+        self.x_name = x_name
+        self.y_name = y_name
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_values(cls, x, y, weights=None, nbins=50):
+    def from_values(cls, x, y, weights=None, nbins=200, x_name=None, y_name=None):
 
         """
         This function ...
@@ -1032,27 +1034,31 @@ class Distribution2D(object):
         :param y:
         :param weights:
         :param nbins:
+        :param x_name:
+        :param y_name:
         :return:
         """
 
-        rBins_F, FBins_r = getRadBins(x, y, 1, weights)
-        rBins_F[rBins_F > 25] = np.nan
+        #rBins_F, FBins_r = getRadBins(x, y, 1, weights)
+        #rBins_F[rBins_F > 25] = np.nan
+
+        rBins_F = None
+        FBins_r = None
+
+        #print("rBins_F", rBins_F)
+        #print("FBins_r", FBins_r)
 
         # Estimate the 2D histogram
-        nbins = 200
         H, xedges, yedges = np.histogram2d(x, y, bins=nbins, normed=True, weights=weights)
 
         # H needs to be rotated and flipped
         H = np.rot90(H)
         H = np.flipud(H)
 
-        xedges = xedges
-        yedges = yedges
-
         # Mask zeros
         Hmasked = np.ma.masked_where(H == 0, H)  # Mask pixels with a value of zero
 
-        return cls(rBins_F, FBins_r, xedges, yedges, Hmasked)
+        return cls(Hmasked, xedges, yedges, rBins_F, FBins_r, x_name, y_name)
 
     # -----------------------------------------------------------------
 
@@ -1082,12 +1088,21 @@ class Distribution2D(object):
         fig = plt.figure()
         ax = fig.gca()
 
-        ax.set_ylabel('$\mathcal{F}_\mathrm{unev.}^\mathrm{abs}$', fontsize=18)
-        ax.set_xlabel('R (kpc)', fontsize=18)
+        #ax.set_ylabel('$\mathcal{F}_\mathrm{unev.}^\mathrm{abs}$', fontsize=18)
+        #ax.set_xlabel('R (kpc)', fontsize=18)
 
         # ax.hexbin(r/1000.,F_abs_yng,gridsize=150,bins='log',cmap=plt.cm.autumn, mincnt=1,linewidths=0)
 
-        ax.pcolormesh(self.xedges, self.yedges, self.Hmasked)
+        #print("x edges:", self.x_edges, self.x_edges.shape)
+        #print("y edges:", self.y_edges, self.y_edges.shape)
+        #print("counts:", self.counts, self.counts.shape)
+
+        #ax.pcolor(self.x_edges, self.y_edges, self.counts)
+
+        #ax.imshow(self.counts)
+
+        ax.pcolormesh(self.x_edges, self.y_edges, self.counts)
+
         #ax.plot(self.rBins_F, self.FBins_r, 'k-', linewidth=2)
         #ax.plot(self.rBins_F, self.FBins_r, 'w-', linewidth=1)
 
@@ -1098,9 +1113,13 @@ class Distribution2D(object):
         #ax.errorbar(16., 0.88, xerr=1, color='k')
         #ax.text(15., 0.90, r'$2^\mathrm{nd}$ SF ring', ha='left')
 
-        #ax.set_ylim(0.0, 1.0)
+        ax.set_ylim(0.0, 1.0)
 
         if title is not None: ax.set_title(title, color='red')
+
+        # Labels
+        if self.x_name is not None: ax.set_xlabel(self.x_name, color='red')
+        if self.y_name is not None: ax.set_ylabel(self.y_name, color='red')
 
         # Save the figure
         plt.savefig(path)

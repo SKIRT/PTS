@@ -45,6 +45,9 @@ irsa_names = {"SDSS u": "SDSS u",
 
 calibration_errors = {"GALEX FUV": "0.05 mag",
                       "GALEX NUV": "0.03 mag",
+                      "UVOT UVW2": "2.18%",
+                      "UVOT UVM2": "0.63%",
+                      "UVOT UVW1": "3.09%",
                       "SDSS u": "2%",
                       "SDSS g": "2%",
                       "SDSS r": "2%",
@@ -67,9 +70,9 @@ calibration_errors = {"GALEX FUV": "0.05 mag",
                       "MIPS 160mu": "5%",
                       "Pacs blue": "5%",
                       "Pacs red": "5%",
-                      "SPIRE PSW_ext": "4%",
-                      "SPIRE PMW_ext": "4%",
-                      "SPIRE PLW_ext": "4%"}
+                      "SPIRE PSW": "4%",
+                      "SPIRE PMW": "4%",
+                      "SPIRE PLW": "4%"}
 
 # -----------------------------------------------------------------
 
@@ -177,7 +180,7 @@ center_coordinate = image.coordinate_range[0]
 
 # Get the filter name
 if image.filter is None: raise RuntimeError("Filter not recognized!")
-filter_name = image.filter.name
+filter_name = str(image.filter)
 
 # -----------------------------------------------------------------
 
@@ -188,7 +191,7 @@ log.debug("Getting galactic extinction ...")
 table = IrsaDust.get_extinction_table(center_coordinate.to_astropy())
 
 # GALEX bands
-if "GALEX" in filter_name:
+if "GALEX" in filter_name or "UVOT" in filter_name:
 
     # Get the A(V) / E(B-V) ratio
     v_band_index = tables.find_index(table, "CTIO V")
@@ -200,7 +203,10 @@ if "GALEX" in filter_name:
     # Determine the factor
     if "NUV" in filter_name: factor = 8.0
     elif "FUV" in filter_name: factor = 7.9
-    else: raise ValueError("Unsure which GALEX band this is")
+    elif "W2" in filter_name: factor = 8.81867
+    elif "M2" in filter_name: factor = 9.28435
+    elif "W1" in filter_name: factor = 6.59213
+    else: raise ValueError("Unsure which GALEX or Swift UVOT band this is")
 
     # Calculate the attenuation
     attenuation = factor * attenuation_v / av_ebv_ratio
@@ -228,7 +234,7 @@ arguments.attenuation = attenuation
 # -----------------------------------------------------------------
 
 # Set the calibration error
-arguments.calibration = calibration_errors[image.name]
+arguments.calibration = calibration_errors[filter_name]
 
 # -----------------------------------------------------------------
 

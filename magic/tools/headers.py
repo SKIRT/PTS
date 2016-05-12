@@ -195,6 +195,14 @@ def get_filter(name, header=None):
     if "fuv" in filterid: final_filter_name = "GALEX FUV"
     elif "nuv" in filterid: final_filter_name = "GALEX NUV"
 
+    # SWIFT
+    elif "swift" in filterid or "uvot" in filterid:
+
+        if "w2" in filterid: final_filter_name = "SWIFT W2"
+        elif "m2" in filterid: final_filter_name = "SWIFT M2"
+        elif "w1" in filterid: final_filter_name = "SWIFT W1"
+        else: log.warning("Could not determine which SWIFT UVOT filter was used for this image")
+
     # TODO: support other UV instruments
 
     # -- Optical --

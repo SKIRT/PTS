@@ -213,6 +213,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Loop over the different contributions
         for contribution in self.contributions:
 
+            # Skip the simulation of the total unevolved (young + ionizing) stellar population
+            if contribution == "unevolved": continue
+
             # Debugging
             log.debug("Loading the SKIRT absorption table for the simulation of the " + contribution + " stellar population ...")
 
@@ -331,6 +334,19 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Calculate the heating fraction of the unevolved stellar population in each dust cell
         self.heating_fractions = absorptions_unevolved_diffuse / absorptions_total
 
+
+
+        self.mask = self.heating_fractions.mask  # is basically the same mask as self.zero_absorption because during the division (see calculate_heating_unevolved) Astropy sets invalid values as masked
+        # nan_inf_mask = np.isnan(self.heating_fractions) + np.isinf(self.heating_fractions) # no nans or infs because Astropy sets them as MaskedConstants during the division
+        greater_than_one_mask = self.heating_fractions > 1.0
+
+        # Debugging
+        log.debug(str(np.sum(greater_than_one_mask)) + " pixels have a heating fraction greater than unity")
+
+        self.mask += greater_than_one_mask
+        self.heating_fractions_compressed = np.ma.MaskedArray(self.heating_fractions, self.mask).compressed()
+        self.weights_compressed = np.ma.MaskedArray(self.cell_properties["Mass fraction"], self.mask).compressed()
+
     # -----------------------------------------------------------------
 
     def calculate_distribution(self):
@@ -343,21 +359,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Calculating the distribution of heating fractions of the unevolved stellar population ...")
 
-        mask = self.heating_fractions.mask # is basically the same mask as self.zero_absorption because during the division (see calculate_heating_unevolved) Astropy sets invalid values as masked
-        #nan_inf_mask = np.isnan(self.heating_fractions) + np.isinf(self.heating_fractions) # no nans or infs because Astropy sets them as MaskedConstants during the division
-        greater_than_one_mask = self.heating_fractions > 1.0
-
-        # Debugging
-        log.debug(str(np.sum(greater_than_one_mask)) + " pixels have a heating fraction greater than unity")
-
-        #mask += nan_inf_mask + greater_than_one_mask
-        mask += greater_than_one_mask
-
-        heating_fractions = np.ma.MaskedArray(self.heating_fractions, mask).compressed()
-        weights = np.ma.MaskedArray(self.cell_properties["Mass fraction"], mask).compressed()
-
         # Generate the distribution
-        self.distribution = Distribution.from_values(heating_fractions, bins=20, weights=weights)
+        self.distribution = Distribution.from_values(self.heating_fractions_compressed, bins=20, weights=self.weights_compressed)
 
     # -----------------------------------------------------------------
 
@@ -376,8 +379,10 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         y_coords = self.absorptions["Y coordinate of cell center"]
         radii = np.sqrt(x_coords**2 + y_coords**2)
 
+        radii_compressed = np.ma.MaskedArray(radii, self.mask).compressed()
+
         # Generate the radial distribution
-        self.radial_distribution = Distribution2D.from_values(radii/1000., self.heating_fractions, weights=self.cell_properties["Mass fraction"])
+        self.radial_distribution = Distribution2D.from_values(radii_compressed, self.heating_fractions_compressed, weights=self.weights_compressed, x_name="radius (pc)", y_name="Heating fraction of unevolved stars")
 
     # -----------------------------------------------------------------
 
@@ -451,6 +456,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Plot the radial distribution of heating fractions
         self.plot_radial_distribution()
 
+        # Plot a map of the heating fraction for a face-on view of the galaxy
+        self.plot_map()
+
     # -----------------------------------------------------------------
 
     def plot_distribution(self):
@@ -486,6 +494,32 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Create the plot file
         self.radial_distribution.plot(title="Radial distribution of the heating fraction of the unevolved stellar population", path=path)
+
+    # -----------------------------------------------------------------
+
+    def plot_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting a map of the heating fraction of the unevolved stellar population for a face-on view of the galaxy ...")
+
+        # Determine the path to the plot file
+        path = fs.join(self.analysis_heating_path, "map.pdf")
+
+        plt.figure()
+
+        x = np.ma.MaskedArray(self.absorptions["X coordinate of cell center"], mask=self.mask).compressed()
+        y = np.ma.MaskedArray(self.absorptions["Y coordinate of cell center"], mask=self.mask).compressed()
+        z = self.heating_fractions_compressed
+
+        plt.pcolormesh(x, y, z, cmap='RdBu', vmin=0.0, vmax=1.0)
+
+        plt.savefig(path)
+        plt.close()
 
     # -----------------------------------------------------------------
 
