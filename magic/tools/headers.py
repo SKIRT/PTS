@@ -214,7 +214,14 @@ def get_filter(name, header=None):
             elif "sdss r" in filterid: final_filter_name = "SDSS r"
             elif "sdss i" in filterid: final_filter_name = "SDSS i"
             elif "sdss z" in filterid: final_filter_name = "SDSS z"
-            else: log.warning("Could not determine which SDSS filter was used for this image")
+            else:
+
+                if "u" in name: final_filter_name = "SDSS u"
+                elif "g" in name: final_filter_name = "SDSS g"
+                elif "r" in name: final_filter_name = "SDSS r"
+                elif "i" in name: final_filter_name = "SDSS i"
+                elif "z" in name: final_filter_name = "SDSS z"
+                else: log.warning("Could not determine which SDSS filter was used for this image")
 
     # R band // not good; H alpha image was also identified as R band ...
     #elif "r" in filterid and "kpno" in filterid: return Filter("KPNO.Mosaic.R")
