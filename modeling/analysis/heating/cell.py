@@ -516,7 +516,29 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         y = np.ma.MaskedArray(self.absorptions["Y coordinate of cell center"], mask=self.mask).compressed()
         z = self.heating_fractions_compressed
 
-        plt.pcolormesh(x, y, z, cmap='RdBu', vmin=0.0, vmax=1.0)
+        #plt.pcolormesh(x, y, z, cmap='RdBu', vmin=0.0, vmax=1.0)
+
+        from matplotlib import mlab
+
+        x_ticks = x
+        y_ticks = y
+
+        z_grid = mlab.griddata(x, y, z, x, y)
+
+        from matplotlib.backends import backend_agg as agg
+        from matplotlib import cm
+
+        # plot
+        # fig = Figure()  # create the figure
+        fig = plt.figure()
+        agg.FigureCanvasAgg(fig)  # attach the rasterizer
+        ax = fig.add_subplot(1, 1, 1)  # make axes to plot on
+        ax.set_title("Interpolated Contour Plot of Experimental Data")
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+
+        cmap = cm.get_cmap("hot")  # get the "hot" color map
+        contourset = ax.contourf(x_ticks, y_ticks, z_grid, 10, cmap=cmap)
 
         plt.savefig(path)
         plt.close()

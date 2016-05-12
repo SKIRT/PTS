@@ -234,9 +234,9 @@ class Filter:
         ha_names = ["Ha", "H alpha", "H-alpha", "H-a", "Halpha"]
 
         # SWIFT UVOT filters
-        uvot_uvw2_names = ["UVOT W2", "UVW2", "W2", "Swift W2"]
-        uvot_uvm2_names = ["UVOT M2", "UVM2", "M2", "Swift M2"]
-        uvot_uvw1_names = ["UVOT W1", "UVW1", "W1", "Swift W1"]
+        uvot_uvw2_names = ["UVOT W2", "UVW2", "W2", "Swift W2", "SWIFT W2"]
+        uvot_uvm2_names = ["UVOT M2", "UVM2", "M2", "Swift M2", "SWIFT M2"]
+        uvot_uvw1_names = ["UVOT W1", "UVW1", "W1", "Swift W1", "SWIFT W1"]
 
         # Select the right filter
         if name in galex_fuv_names: return cls("GALEX.FUV")

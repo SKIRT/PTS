@@ -69,6 +69,12 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # 1. Call the setup function
         self.setup()
 
+        # Writing
+        self.write()
+
+        # Plotting
+        self.plot()
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -80,5 +86,43 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Call the setup function of the base class
         super(ProjectedDustHeatingAnalyser, self).setup()
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        self.plot_heating_maps()
+
+    # -----------------------------------------------------------------
+
+    def plot_heating_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting maps of the heating fraction by unevolved stars in different wavebands ...")
 
 # -----------------------------------------------------------------
