@@ -444,7 +444,8 @@ class ImagePreparer(Configurable):
             # Inform the user
             log.info("Convolution will be performed remotely on host '" + self.config.convolution.remote + "' ...")
 
-            # Determine the kernel FWHM
+            # Check whether the FWHM of the kernel is defined
+            kernel = Frame.from_file(self.config.convolution.kernel_path)
             if kernel.fwhm is not None:
                 kernel_fwhm = kernel.fwhm
             elif self.config.convolution.kernel_fwhm is not None:
