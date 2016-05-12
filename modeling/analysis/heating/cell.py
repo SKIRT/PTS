@@ -343,16 +343,15 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Calculating the distribution of heating fractions of the unevolved stellar population ...")
 
-        mask = self.heating_fractions.mask
-        nan_inf_mask = np.isnan(self.heating_fractions) + np.isinf(self.heating_fractions)
+        mask = self.heating_fractions.mask # is basically the same mask as self.zero_absorption because during the division (see calculate_heating_unevolved) Astropy sets invalid values as masked
+        #nan_inf_mask = np.isnan(self.heating_fractions) + np.isinf(self.heating_fractions) # no nans or infs because Astropy sets them as MaskedConstants during the division
         greater_than_one_mask = self.heating_fractions > 1.0
 
-        print("masked pixels in column mask", np.sum(mask))
-        print("masked pixels in nan_inf_mask", np.sum(nan_inf_mask))
-        print("masked pixels in greater_than_one_mask", np.sum(greater_than_one_mask))
-        print("masked pixels in zero_absorption mask", np.sum(self.zero_absorption))
+        # Debugging
+        log.debug(str(np.sum(greater_than_one_mask)) + " pixels have a heating fraction greater than unity")
 
-        mask += nan_inf_mask + greater_than_one_mask
+        #mask += nan_inf_mask + greater_than_one_mask
+        mask += greater_than_one_mask
 
         heating_fractions = np.ma.MaskedArray(self.heating_fractions, mask).compressed()
         weights = np.ma.MaskedArray(self.cell_properties["Mass fraction"], mask).compressed()

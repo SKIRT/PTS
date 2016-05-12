@@ -444,8 +444,15 @@ class ImagePreparer(Configurable):
             # Inform the user
             log.info("Convolution will be performed remotely on host '" + self.config.convolution.remote + "' ...")
 
+            # Determine the kernel FWHM
+            if kernel.fwhm is not None:
+                kernel_fwhm = kernel.fwhm
+            elif self.config.convolution.kernel_fwhm is not None:
+                kernel_fwhm = self.config.convolution.kernel_fwhm
+            else: raise RuntimeError("Kernel must either have its FWHM defined in the header or the kernel FWHM must be specified as a configuration option for the ImagePreparer")
+
             # Perform the remote convolution
-            special.remote_convolution(self.image, self.config.convolution.kernel_path, self.config.convolution.kernel_fwhm, self.config.convolution.remote)
+            special.remote_convolution(self.image, self.config.convolution.kernel_path, kernel_fwhm, self.config.convolution.remote)
 
         # The convolution is performed locally
         else:

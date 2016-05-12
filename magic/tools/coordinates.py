@@ -196,6 +196,8 @@ def ra_distance(declination, ra_a, ra_b):
 
     cos_ra_distance = np.sin(np.radians(declination))**2 + np.cos(np.radians(declination))**2 * np.cos(np.radians(ra_b-ra_a))
 
+    if cos_ra_distance > 1.0 and np.isclose(cos_ra_distance, 1.0): cos_ra_distance = 1.0 # Avoid crashes of np.arcos
+
     # Return ...
     return np.degrees(np.arccos(cos_ra_distance))
 
