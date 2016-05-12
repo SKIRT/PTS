@@ -1103,7 +1103,7 @@ class Distribution2D(object):
         if title is not None: ax.set_title(title, color='red')
 
         # Save the figure
-        plt.savefig(path, format='png', dpi=600)
+        plt.savefig(path)
 
         plt.close()
 

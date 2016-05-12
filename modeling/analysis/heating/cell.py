@@ -57,6 +57,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # The table with the absorbed luminosities
         self.absorptions = None
 
+        # The mask of cells for which the total absorbed luminosity is zero
+        self.zero_absorption = None
+
         # The heating fraction of the unevolved stellar population for each dust cell
         self.heating_fractions = None
 
@@ -278,6 +281,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
             self.absorptions.add_columns([contribution_tables[contribution]["Absorbed bolometric luminosity"]], copy=False)
             self.absorptions.rename_column("Absorbed bolometric luminosity", "Absorbed bolometric luminosity of the " + contribution + " stellar population")
 
+        # Create a mask of cells with zero absorption
+        self.zero_absorption = self.absorptions["Absorbed bolometric luminosity of the total stellar population"] == 0.
+
     # -----------------------------------------------------------------
 
     def calculate_heating_unevolved(self):
@@ -337,8 +343,22 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Calculating the distribution of heating fractions of the unevolved stellar population ...")
 
+        mask = self.heating_fractions.mask
+        nan_inf_mask = np.isnan(self.heating_fractions) + np.isinf(self.heating_fractions)
+        greater_than_one_mask = self.heating_fractions > 1.0
+
+        print("masked pixels in column mask", np.sum(mask))
+        print("masked pixels in nan_inf_mask", np.sum(nan_inf_mask))
+        print("masked pixels in greater_than_one_mask", np.sum(greater_than_one_mask))
+        print("masked pixels in zero_absorption mask", np.sum(self.zero_absorption))
+
+        mask += nan_inf_mask + greater_than_one_mask
+
+        heating_fractions = np.ma.MaskedArray(self.heating_fractions, mask).compressed()
+        weights = np.ma.MaskedArray(self.cell_properties["Mass fraction"], mask).compressed()
+
         # Generate the distribution
-        self.distribution = Distribution.from_values(self.heating_fractions, bins=20, weights=self.cell_properties["Mass fraction"])
+        self.distribution = Distribution.from_values(heating_fractions, bins=20, weights=weights)
 
     # -----------------------------------------------------------------
 

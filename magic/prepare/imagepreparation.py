@@ -439,13 +439,13 @@ class ImagePreparer(Configurable):
         log.info("Convolving the image with kernel " + self.config.convolution.kernel_path + " ...")
 
         # Check whether the convolution has to be performed remotely
-        if self.config.convolution.remote:
+        if self.config.convolution.remote is not None:
 
             # Inform the user
-            log.info("Convolution will be performed remotely on host nancy")
+            log.info("Convolution will be performed remotely on host '" + self.config.convolution.remote + "' ...")
 
             # Perform the remote convolution
-            special.remote_convolution(self.image, self.config.convolution.kernel_path, self.config.convolution.kernel_fwhm, "nancy")
+            special.remote_convolution(self.image, self.config.convolution.kernel_path, self.config.convolution.kernel_fwhm, self.config.convolution.remote)
 
         # The convolution is performed locally
         else:

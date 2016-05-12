@@ -576,8 +576,8 @@ class DataPreparer(PreparationComponent):
             self.image_preparer.config.convolve = True
 
         # Convolve the SDSS images remotely
-        if "SDSS" in image.name: self.image_preparer.config.convolution.remote = True
-        else: self.image_preparer.config.convolution.remote = False
+        if "SDSS" in image.name: self.image_preparer.config.convolution.remote = "nancy"
+        else: self.image_preparer.config.convolution.remote = None
 
         # Check whether the image has to be sky subtracted
         if image.frames.primary.sky_subtracted:
