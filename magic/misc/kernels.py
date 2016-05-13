@@ -198,7 +198,20 @@ class AnianoKernels(object):
         psf_file_path = filesystem.join(self.kernels_path, basename + ".fits")
 
         # Download the PSF file if it is not present
-        if not filesystem.is_file(psf_file_path): self.download_psf(basename)
+        if not filesystem.is_file(psf_file_path):
+
+            # Download the PSF
+            self.download_psf(basename)
+
+            # Get the FWHM of the PSF
+            if "Gauss" in instrument or "Moffet" in instrument: fwhm = float(instrument.split("_")[1]) * Unit("arcsec")
+            elif instrument in fwhms: fwhm = fwhms[instrument]
+            else: fwhm = None
+
+            # Set the FWHM of the PSF
+            psf = Frame.from_file(psf_file_path)
+            psf.fwhm = fwhm
+            psf.save(psf_file_path)
 
         # Return the local PSF path
         return psf_file_path

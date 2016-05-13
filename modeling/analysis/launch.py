@@ -35,6 +35,8 @@ from ...core.launch.parallelization import Parallelization
 from ..decomposition.decomposition import load_parameters
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...core.simulation.remote import SkirtRemote
+from ...core.simulation.wavelengthgrid import WavelengthGrid
+from ...magic.misc.kernels import AnianoKernels
 
 # -----------------------------------------------------------------
 
@@ -253,8 +255,8 @@ class BestModelLauncher(AnalysisComponent):
         for wavelength in base_grid:
             if wavelength > self.config.wavelengths.max_zoom: total_grid.append(wavelength)
 
-        # Create table for the wavelength grid
-        self.wavelength_grid = tables.new([total_grid], names=["Wavelength"])
+        # Create the wavelength grid
+        self.wavelength_grid = WavelengthGrid.from_wavelengths(total_grid)
 
     # -----------------------------------------------------------------
 
@@ -423,6 +425,14 @@ class BestModelLauncher(AnalysisComponent):
         # Get the names of the filters for which we have photometry
         filter_names = self.get_filter_names()
 
+        # Set the paths to the for each image (except for the SPIRE images)
+        kernel_paths = dict()
+        aniano = AnianoKernels()
+        pacs_red_psf_path = aniano.get_psf_path("PACS_160")
+        for filter_name in filter_names:
+            if "SPIRE" in filter_name: continue
+            kernel_paths[filter_name] = pacs_red_psf_path
+
         # Analysis options
         self.analysis_options = AnalysisOptions()
 
@@ -450,6 +460,7 @@ class BestModelLauncher(AnalysisComponent):
         self.analysis_options.misc.observation_instruments = ["earth"]
         self.analysis_options.misc.make_images_remote = ["nancy"]
         self.analysis_options.misc.images_wcs = self.reference_path
+        self.analysis_options.misc.images_kernels = kernel_paths
         self.analysis_options.misc.images_unit = "MJy/sr"
 
         # Set the paths of the timing and memory table files
@@ -504,9 +515,8 @@ class BestModelLauncher(AnalysisComponent):
         # Inform the user
         log.info("Writing the wavelength grid ...")
 
-        # Write the wavelength table
-        self.wavelength_grid.rename_column("Wavelength", str(len(self.wavelength_grid)))  # Trick to have the number of wavelengths in the first line (required for SKIRT)
-        tables.write(self.wavelength_grid, self.analysis_wavelengths_path, format="ascii")
+        # Write the wavelength grid
+        self.wavelength_grid.to_skirt_input(self.analysis_wavelengths_path)
 
     # -----------------------------------------------------------------
 

@@ -25,6 +25,7 @@ from ....core.tools.logging import log
 from ....core.tools import tables, inspection
 from ....core.simulation.table import SkirtTable
 from ....core.basics.distribution import Distribution, Distribution2D
+from ....core.simulation.wavelengthgrid import WavelengthGrid
 
 # -----------------------------------------------------------------
 
@@ -153,13 +154,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         wavelengths_path = fs.join(self.output_paths["total"], self.galaxy_name + "_wavelengths.dat")
 
         # Load the wavelength grid as a table
-        self.wavelength_grid = tables.from_file(wavelengths_path, format="ascii")
-
-        # Set the column names and units
-        self.wavelength_grid.rename_column("col1", "Wavelength")
-        self.wavelength_grid.rename_column("col2", "Delta")
-        self.wavelength_grid["Wavelength"].unit = "micron"
-        self.wavelength_grid["Delta"].unit = "micron"
+        self.wavelength_grid = WavelengthGrid.from_skirt_output(wavelengths_path)
 
         # Determine the number of wavelengths
         self.number_of_wavelengths = len(self.wavelength_grid)
@@ -791,8 +786,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # L = sum_lambda (j_lambda * d_lambda)
 
         # Get the wavelength deltas
-        deltas = self.wavelength_grid["Delta"]
-        deltas = tables.column_as_array(deltas, unit="m") # deltas in meter
+        deltas = self.wavelength_grid.deltas(asarray=True, unit="m") # deltas in meter
 
         # Loop over all dust cells
         for i in range(jlambdas[0].size):

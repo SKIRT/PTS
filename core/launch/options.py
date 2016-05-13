@@ -159,6 +159,7 @@ class AnalysisOptions(Options):
         self.misc.make_images_remote = None  # Perform the calculation of the observed images on a remote machine (this is a memory and CPU intensive step)
         self.misc.images_wcs = None  # the path to the FITS file from which the WCS should be set as the WCS of the simulated images
         self.misc.images_unit = None # the unit to which the simulated images should be converted (if None, the original unit is kept)
+        self.misc.images_kernels = None # the paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names)
 
         # Properties that are relevant for simulations launched as part of a batch (e.g. from an automatic launching procedure)
         self.timing_table_path = None

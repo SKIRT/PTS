@@ -23,7 +23,7 @@ from ..basics.filter import Filter
 from ...magic.core.image import Image
 from ...magic.core.frame import Frame
 from ...magic.basics.coordinatesystem import CoordinateSystem
-from ..tools.special import remote_filter_convolution
+from ..tools.special import remote_filter_convolution, remote_convolution_frame
 
 # -----------------------------------------------------------------
 
@@ -77,7 +77,7 @@ class ObservedImageMaker(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None, unit=None, host_id=None):
+    def run(self, simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None, kernel_paths=None, unit=None, host_id=None):
 
         """
         This function ...
@@ -86,6 +86,7 @@ class ObservedImageMaker(object):
         :param filter_names:
         :param instrument_names:
         :param wcs_path:
+        :param kernel_paths:
         :param unit:
         :param host_id:
         :return:
@@ -114,6 +115,13 @@ class ObservedImageMaker(object):
 
         # Set the WCS of the created images
         if wcs_path is not None: self.set_wcs(wcs_path)
+
+        # Convolve the image with a given convolution kernel
+        if kernel_paths is not None:
+
+            # Check whether the WCS for the image is defined. If not, show a warning and skip the convolution
+            if wcs_path is None: log.warning("WCS of the image is not defined, so convolution cannot be performed (the pixelscale is undefined)")
+            else: self.convolve(kernel_paths, host_id)
 
         # Convert the units (WCS has to be loaded!)
         if unit is not None: self.convert_units(unit)
@@ -262,6 +270,55 @@ class ObservedImageMaker(object):
 
                 # Set the coordinate system for this frame
                 self.images[datacube_name][filter_name].wcs = self.wcs
+
+    # -----------------------------------------------------------------
+
+    def convolve(self, kernel_paths, host_id=None):
+
+        """
+        This function ...
+        :param kernel_paths:
+        :param host_id:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Convolving the images ...")
+
+        # If the convolutions must be performed remotely
+        if host_id is not None:
+
+            # Loop over the images
+            for datacube_name in self.images:
+                for filter_name in self.images[datacube_name]:
+
+                    # Check if the name of the image filter is a key in the 'kernel_paths' dictionary. If not, don't convolve.
+                    if filter_name not in kernel_paths or kernel_paths[filter_name] is None: continue
+
+                    # Determine the kernel path for this image
+                    kernel_path = kernel_paths[filter_name]
+
+                    # Perform the remote convolution
+                    self.images[datacube_name][filter_name] = remote_convolution_frame(self.images[datacube_name][filter_name], kernel_path, host_id)
+
+        # The convolution is performed locally
+        else:
+
+            # Loop over the images
+            for datacube_name in self.images:
+                for filter_name in self.images[datacube_name]:
+
+                    # Check if the name of the image filter is a key in the 'kernel_paths' dictionary. If not, don't convolve.
+                    if filter_name not in kernel_paths or kernel_paths[filter_name] is None: continue
+
+                    # Load the kernel
+                    kernel = Frame.from_file(kernel_paths[filter_name])
+
+                    # Debugging
+                    log.debug("Convolving the '" + filter_name + "' image of the '" + datacube_name + "' instrument ...")
+
+                    # Convolve this image frame
+                    self.images[datacube_name][filter_name].convolve(kernel)
 
     # -----------------------------------------------------------------
 

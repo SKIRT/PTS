@@ -468,6 +468,7 @@ class BasicAnalyser(Configurable):
                              filter_names=self.misc_options.observation_filters,
                              instrument_names=self.misc_options.observation_instruments,
                              wcs_path=self.misc_options.images_wcs,
+                             kernel_paths=self.misc_options.images_kernels,
                              unit=self.misc_options.images_unit,
                              host_id=self.misc_options.make_images_remote)
 

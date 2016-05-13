@@ -34,12 +34,17 @@ def remote_convolution(image, kernel_path, kernel_fwhm, host_id):
     :param host_id:
     """
 
-    # Debugging
-    log.debug("Logging in to remote host ...")
+    # Check whether we are already connected to the specified remote host
+    if host_id in connected_remotes and connected_remotes[host_id] is not None:
+        remote = connected_remotes[host_id]
+    else:
 
-    # Create a remote instance for the specified host ID
-    remote = Remote()
-    remote.setup(host_id)
+        # Debugging
+        log.debug("Logging in to remote host ...")
+
+        # Create a remote instance for the specified host ID
+        remote = Remote()
+        remote.setup(host_id)
 
     # Debugging
     log.debug("Creating temporary directory remotely ...")
@@ -203,22 +208,27 @@ def remote_convolution(image, kernel_path, kernel_fwhm, host_id):
 
 # -----------------------------------------------------------------
 
-def remote_convolution2(frame, kernel, host_id):
+def remote_convolution_frame(frame, kernel_path, host_id):
 
     """
     This function ...
     :param frame:
-    :param kernel:
+    :param kernel_path:
     :param host_id:
     :return:
     """
 
-    # Debugging
-    log.debug("Logging in to remote host ...")
+    # Check whether we are already connected to the specified remote host
+    if host_id in connected_remotes and connected_remotes[host_id] is not None:
+        remote = connected_remotes[host_id]
+    else:
 
-    # Create a remote instance for the specified host ID
-    remote = Remote()
-    remote.setup(host_id)
+        # Debugging
+        log.debug("Logging in to remote host ...")
+
+        # Create a remote instance for the specified host ID
+        remote = Remote()
+        remote.setup(host_id)
 
     # Debugging
     log.debug("Creating temporary directory remotely ...")
@@ -243,11 +253,11 @@ def remote_convolution2(frame, kernel, host_id):
     frame.save(local_frame_path)
 
     # Debugging
-    log.debug("Writing the kernel to the temporary directory ...")
+    #log.debug("Writing the kernel to the temporary directory ...")
 
     # Write the kernel
-    local_kernel_path = fs.join(local_temp_path, "kernel.fits")
-    kernel.save(local_kernel_path)
+    #local_kernel_path = fs.join(local_temp_path, "kernel.fits")
+    #kernel.save(local_kernel_path)
 
     # Debugging
     log.debug("Uploading the frame to the remote directory ...")
@@ -257,11 +267,18 @@ def remote_convolution2(frame, kernel, host_id):
     remote.upload(local_frame_path, remote_temp_path, new_name=frame.name, compress=True, show_output=True)
 
     # Debugging
+    #log.debug("Uploading the kernel to the remote directory ...")
+
+    # Upload the kernel FITS file to the remote directory
+    #remote_kernel_path = fs.join(remote_temp_path, "kernel.fits")
+    #remote.upload(local_kernel_path, remote_temp_path, new_name="kernel.fits", compress=True, show_output=True)
+
+    # Debugging
     log.debug("Uploading the kernel to the remote directory ...")
 
     # Upload the kernel FITS file to the remote directory
     remote_kernel_path = fs.join(remote_temp_path, "kernel.fits")
-    remote.upload(local_kernel_path, remote_temp_path, new_name="kernel.fits", compress=True, show_output=True)
+    remote.upload(kernel_path, remote_temp_path, new_name="kernel.fits", compress=True, show_output=True)
 
     # Debugging
     log.debug("Creating a python script to perform the convolution remotely ...")
@@ -293,7 +310,7 @@ def remote_convolution2(frame, kernel, host_id):
     script_file.write("log.info('Convolving the frame ...')\n")
     script_file.write("\n")
     script_file.write("# Do the convolution and save the result\n")
-    script_file.write("convolved = frame.convolved(kernel)\n")
+    script_file.write("convolved = frame.convolved(kernel, allow_huge=True)\n")
     script_file.write("convolved.save('" + remote_frame_path + "')\n") # overwrite the frame
 
     # Write to disk

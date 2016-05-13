@@ -715,7 +715,7 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, add_smooth=False, format=None):
+    def plot(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, add_smooth=False, format=None, add_extrema=False):
 
         """
         This function ...
@@ -726,6 +726,7 @@ class Distribution(object):
         :param y_limits:
         :param add_smooth:
         :param format:
+        :param add_extrema:
         :return:
         """
 
@@ -768,11 +769,13 @@ class Distribution(object):
                 x_smooth, y_smooth = self.smooth_values(x_min=x_min, x_max=x_max)
                 sp1.plot(x_smooth, y_smooth, 'red', linewidth=1)
 
-        x, y = self.local_maxima
-        sp1.plot(x, y, 'g^')
+        if add_extrema:
 
-        x, y = self.local_minima
-        sp1.plot(x, y, 'rv')
+            x, y = self.local_maxima
+            sp1.plot(x, y, 'g^')
+
+            x, y = self.local_minima
+            sp1.plot(x, y, 'rv')
 
         sp1.axvline(self.mean, color="green", linestyle="dashed")
         sp1.axvline(self.median, color="purple", linestyle="dashed")

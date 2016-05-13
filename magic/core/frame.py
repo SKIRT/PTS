@@ -457,6 +457,24 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
+    def convolve(self, kernel, allow_huge=False):
+
+        """
+        This function ...
+        :param kernel:
+        :param allow_huge:
+        :return:
+        """
+
+        # Generate a convolved Frame
+        convolved = self.convolved(kernel, allow_huge)
+
+        # Replace the data and set the FWHM
+        self[:] = convolved
+        self.fwhm = convolved.fwhm
+
+    # -----------------------------------------------------------------
+
     def rebinned(self, reference_wcs):
 
         """
@@ -481,6 +499,26 @@ class Frame(np.ndarray):
                      filter=self.filter,
                      sky_subtracted=self.sky_subtracted,
                      fwhm=self.fwhm)
+
+    # -----------------------------------------------------------------
+
+    def rebin(self, reference_wcs):
+
+        """
+        This function ...
+        :param reference_wcs:
+        :return:
+        """
+
+        # Generate a rebinned Frame
+        rebinned = self.rebinned(reference_wcs)
+
+        # Resize the current frame in-place
+        self.resize(rebinned.shape, refcheck=False)
+
+        # Replace the data by the rebinned data and set the WCS
+        self[:] = rebinned
+        self.wcs = rebinned.wcs
 
     # -----------------------------------------------------------------
 
@@ -526,6 +564,29 @@ class Frame(np.ndarray):
                      filter=self.filter,
                      sky_subtracted=self.sky_subtracted,
                      fwhm=self.fwhm)
+
+    # -----------------------------------------------------------------
+
+    def crop(self, x_min, x_max, y_min, y_max):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :param y_min:
+        :param y_max:
+        :return:
+        """
+
+        # Generate a cropped Frame
+        cropped = self.cropped(x_min, x_max, y_min, y_max)
+
+        # Resize the current frame in-place
+        self.resize(cropped.shape, refcheck=False)
+
+        # Replace the data by the cropped data and set the WCS
+        self[:] = cropped
+        self.wcs = cropped.wcs
 
     # -----------------------------------------------------------------
 

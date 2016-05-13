@@ -25,6 +25,8 @@ from ....core.simulation.skifile import SkiFile
 from ....core.launch.batchlauncher import BatchLauncher
 from ....core.tools.logging import log
 from ....core.simulation.arguments import SkirtArguments
+from ...basics.instruments import SEDInstrument
+from ...decomposition.decomposition import load_parameters
 
 # -----------------------------------------------------------------
 
@@ -55,6 +57,12 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
 
         # The ski file corresponding to the best model
         self.ski = None
+
+        # The structural galaxy parameters
+        self.parameters = None
+
+        # The instrument to be used for the simulations
+        self.instrument = None
 
         # The ski files for the different contributions
         self.ski_files = dict()
@@ -94,11 +102,14 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         # 2. Load the ski file describing the best model
         self.load_ski()
 
-        # 3. Create the instrument
+        # 3. Load the structural parameters of the galaxy
+        self.load_parameters()
+
+        # 4. Create the instrument
         self.create_instrument()
 
-        # 5. Adjust the ski files for the different contributors
-        self.adjust_ski_files()
+        # 5. Create the ski files for the different contributors
+        self.create_ski_files()
 
         # 6. Writing
         self.write()
@@ -146,20 +157,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def create_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create an SED instrument
-        azimuth = 0.0
-        self.instrument = SEDInstrument(self.parameters.distance, self.parameters.inclination, azimuth, self.parameters.disk.PA)
-
-    # -----------------------------------------------------------------
-
-    def adjust_ski_files(self):
+    def load_parameters(self):
 
         """
         This function ...
@@ -167,10 +165,47 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         """
 
         # Inform the user
-        log.info("Adjusting the ski file parameters ...")
+        log.info("Loading the decomposition parameters ...")
+
+        # Determine the path to the parameters file
+        path = fs.join(self.components_path, "parameters.dat")
+
+        # Load the parameters
+        self.parameters = load_parameters(path)
+
+    # -----------------------------------------------------------------
+
+    def create_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the instrument ...")
+
+        # Create an SED instrument
+        azimuth = 0.0
+        self.instrument = SEDInstrument(self.parameters.distance, self.parameters.inclination, azimuth, self.parameters.disk.PA)
+
+    # -----------------------------------------------------------------
+
+    def create_ski_files(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the ski files for the different contributions ...")
 
         # Remove the existing instruments
         self.ski.remove_all_instruments()
+
+        # Add the SED instrument
+        self.ski.add_instrument("earth", self.instrument)
 
         # Parameters of the wavelength grid
         min_wavelength = self.config.wavelengths.min * Unit(self.config.wavelengths.unit)
@@ -182,9 +217,6 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
 
         # Set the number of photon packages
         self.ski.setpackages(self.config.packages)
-
-        # Enable all writing options for analysis
-        #self.ski.enable_all_writing_options()
 
         # Set dust system writing options
         self.ski.set_write_convergence()
@@ -211,6 +243,9 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
             # Remove other stellar components, except for the contribution of the total stellar population
             if contribution != "total": ski.remove_stellar_components_except(self.component_names[contribution])
 
+            # For the simulation with only the ionizing stellar component, also write out the stellar density
+            if contribution == "ionizing": ski.set_write_stellar_density()
+
             # Add the ski file instance to the dictionary
             self.ski_files[contribution] = ski
 
@@ -229,7 +264,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         # Copy the input maps (if necessary)
         self.copy_maps()
 
-        # Write the ski file
+        # Write the ski files
         self.write_ski_files()
 
     # -----------------------------------------------------------------

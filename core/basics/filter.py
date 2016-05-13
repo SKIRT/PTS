@@ -312,6 +312,30 @@ class Filter:
         else: raise ValueError("The band " +  self.name + " is not defined in SKIRT")
 
     @property
+    def aniano_name(self): # Returns the name as appearing in the Aniano kernel and psf FITS files
+
+        if self.name == "GALEX.FUV": return "GALEX_FUV"
+        elif self.name == "GALEX.NUV": return "GALEX_NUV"
+        elif self.name == "IRAC.I1": return "IRAC_3.6"
+        elif self.name == "IRAC.I2": return "IRAC_4.5"
+        elif self.name == "IRAC.I3": return "IRAC_5.8"
+        elif self.name == "IRAC.I4": return "IRAC_8.0"
+        elif self.name == "WISE.W1": return "WISE_FRAME_3.4"
+        elif self.name == "WISE.W2": return "WISE_FRAME_4.6"
+        elif self.name == "WISE.W3": return "WISE_FRAME_11.6"
+        elif self.name == "WISE.W4": return "WISE_FRAME_22.1"
+        elif self.name == "MIPS.24mu": return "MIPS_24"
+        elif self.name == "MIPS.70mu": return "MIPS_70"
+        elif self.name == "MIPS.160mu": return "MIPS_160"
+        elif self.name == "Pacs.blue": return "PACS_70"
+        elif self.name == "Pacs.green": return "PACS_100"
+        elif self.name == "Pacs.red": return "PACS_160"
+        elif self.name == "SPIRE.PSW_ext": return "SPIRE_250"
+        elif self.name == "SPIRE.PMW_ext": return "SPIRE_350"
+        elif self.name == "SPIRE.PLW_ext": return "SPIRE_500"
+        else: raise ValueError("The band " + self.name + " is not defined for the Aniano set of kernels")
+
+    @property
     def name(self): return self._FilterID.split("/")[1]
 
     @property

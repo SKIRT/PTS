@@ -286,93 +286,101 @@ class SkiFile:
                 # Set the setting to true
                 element.set(setting_name, "true")
 
-    def set_write_convergence(self):
+    def set_write_convergence(self, value=True):
 
         # Get the dust system
         dust_system = self.get_dust_system()
 
         # Set the 'writeConvergence' setting to true
-        dust_system.set("writeConvergence", "true")
+        dust_system.set("writeConvergence", str_from_bool(value))
 
-    def set_write_density(self):
+    def set_write_density(self, value=True):
 
         # Get the dust system
         dust_system = self.get_dust_system()
 
         # Set the 'writeDensity' setting to true
-        dust_system.set("writeDensity", "true")
+        dust_system.set("writeDensity", str_from_bool(value))
 
-    def set_write_depth_map(self):
+    def set_write_depth_map(self, value=True):
 
         # Get the dust system
         dust_system = self.get_dust_system()
 
         # Set the 'writeDepthMap' setting to true
-        dust_system.set("writeDepthMap", "true")
+        dust_system.set("writeDepthMap", str_from_bool(value))
 
-    def set_write_quality(self):
+    def set_write_quality(self, value=True):
 
         # Get the dust system
         dust_system = self.get_dust_system()
 
         # Set the 'writeQuality' setting to true
-        dust_system.set("writeQuality", "true")
+        dust_system.set("writeQuality", str_from_bool(value))
 
-    def set_write_cell_properties(self):
+    def set_write_cell_properties(self, value=True):
 
         # Get the dust system
         dust_system = self.get_dust_system()
 
         # Set the 'writeCellProperties' setting to true
-        dust_system.set("writeCellProperties", "true")
+        dust_system.set("writeCellProperties", str_from_bool(value))
 
-    def set_write_cells_crossed(self):
+    def set_write_stellar_density(self, value=True):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Set the 'writeStellarDensity' setting to true
+        dust_system.set("writeStellarDensity", str_from_bool(value))
+
+    def set_write_cells_crossed(self, value=True):
 
         # Get the dust system
         dust_system = self.get_dust_system()
 
         # Set the 'writeCellsCrossed' setting to true
-        dust_system.set("writeCellsCrossed", "true")
+        dust_system.set("writeCellsCrossed", str_from_bool(value))
 
-    def set_write_emissivity(self):
+    def set_write_emissivity(self, value=True):
 
         # Get the dust system
         dust_system = self.get_dust_system()
 
         # Set the 'writeEmissivity' setting to true
-        dust_system.set("writeEmissivity", "true")
+        dust_system.set("writeEmissivity", str_from_bool(value))
 
-    def set_write_temperature(self):
+    def set_write_temperature(self, value=True):
 
         # Get the dust system
         dust_system = self.get_dust_system()
 
         # Set the 'writeTemperature' setting to true
-        dust_system.set("writeTemperature", "true")
+        dust_system.set("writeTemperature", str_from_bool(value))
 
-    def set_write_isrf(self):
+    def set_write_isrf(self, value=True):
 
         # Get the dust system
         dust_system = self.get_dust_system()
 
         # Set the 'writeISRF' setting to true
-        dust_system.set("writeISRF", "true")
+        dust_system.set("writeISRF", str_from_bool(value))
 
-    def set_write_absorption(self):
+    def set_write_absorption(self, value=True):
 
         # Get the dust system
         dust_system = self.get_dust_system()
 
         # Set the 'writeAbsorption' setting to true
-        dust_system.set("writeAbsorption", "true")
+        dust_system.set("writeAbsorption", str_from_bool(value))
 
-    def set_write_grid(self):
+    def set_write_grid(self, value=True):
 
         # Get the dust grid
         grid = self.get_dust_grid()
 
         # Set the 'writeGrid' setting to true
-        grid.set("writeGrid", "true")
+        grid.set("writeGrid", str_from_bool(value))
 
     def disable_all_dust_system_writing_options(self):
 
@@ -845,8 +853,21 @@ class SkiFile:
         # Get the stellar component with the specified ID
         component = self.get_stellar_component(component_id)
 
+        # Get the previous item
+        previous = component.getprevious()
+
         # Get the parent
         parent = component.getparent()
+
+        # Check whether the previous item is a comment
+        if previous.tag is etree.Comment:
+
+            # If the comment states the component ID, remove it
+            if previous.text.strip() == component_id: parent.remove(previous)
+
+            # If the comment preceeding the component does not have the name of that component (it must by definition),
+            # something strange is going on ...
+            else: raise ValueError("Something is wrong with the ski file")
 
         # Remove the stellar component
         parent.remove(component)
@@ -857,8 +878,21 @@ class SkiFile:
         # Get the dust component with the specified ID
         component = self.get_dust_component(component_id)
 
+        # Get the previous item
+        previous = component.getprevious()
+
         # Get the parent
         parent = component.getparent()
+
+        # Check whether the previous item is a comment
+        if previous.tag is etree.Comment:
+
+            # If the comment states the component ID, remove it
+            if previous.text.strip() == component_id: parent.remove(previous)
+
+            # If the comment preceeding the component does not have the name of that component (it must by definition),
+            # something strange is going on ...
+            else: raise ValueError("Something is wrong with the ski file")
 
         # Remove the dust component
         parent.remove(component)

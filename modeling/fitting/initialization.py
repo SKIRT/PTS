@@ -35,6 +35,7 @@ from ..core.sun import Sun
 from ..core.mappings import Mappings
 from ...magic.tools import wavelengths
 from ...core.tools.logging import log
+from ...core.simulation.wavelengthgrid import WavelengthGrid
 
 # -----------------------------------------------------------------
 
@@ -153,7 +154,7 @@ class InputInitializer(FittingComponent):
         # 2. Load the template ski file
         self.load_template()
 
-        # 3. Load the structural parameters for the galaxy
+        # 3. Load the structural parameters of the galaxy
         self.load_parameters()
 
         # 4. Load the fluxes
@@ -302,7 +303,7 @@ class InputInitializer(FittingComponent):
             if wavelength > self.config.wavelengths.max_zoom: total_grid.append(wavelength)
 
         # Create table for the wavelength grid
-        self.wavelength_grid = tables.new([total_grid], names=["Wavelength"])
+        self.wavelength_grid = WavelengthGrid.from_wavelengths(total_grid)
 
     # -----------------------------------------------------------------
 
@@ -750,17 +751,50 @@ class InputInitializer(FittingComponent):
         # Inform the user
         log.info("Writing the input ...")
 
-        # -- The wavelength grid --
+        # Write the wavelength grid
+        self.write_wavelength_grid()
+
+        # Write the old stellar map
+        self.write_old_stars()
+
+        # Write the map of young stars
+        self.write_young_stars()
+
+        # Write the map of ionizing stars
+        self.write_ionizing_stars()
+
+        # Write the dust map
+        self.write_dust()
+
+    # -----------------------------------------------------------------
+
+    def write_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the wavelength grid ...")
 
         # Determine the path to the wavelength grid file
         grid_path = fs.join(self.fit_in_path, "wavelengths.txt")
 
         # Write the wavelength grid
-        self.wavelength_grid.rename_column("Wavelength", str(len(
-            self.wavelength_grid)))  # Trick to have the number of wavelengths in the first line (required for SKIRT)
-        tables.write(self.wavelength_grid, grid_path, format="ascii")
+        self.wavelength_grid.to_skirt_input(grid_path)
 
-        # -- The old stars map --
+    # -----------------------------------------------------------------
+
+    def write_old_stars(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Copying the map of old stars to the input directory ...")
 
         # Determine the path to the old stars map
         old_stars_path = fs.join(self.maps_path, "old_stars.fits")
@@ -768,7 +802,17 @@ class InputInitializer(FittingComponent):
         # Copy the map
         fs.copy_file(old_stars_path, self.fit_in_path)
 
-        # -- The young stars map --
+    # -----------------------------------------------------------------
+
+    def write_young_stars(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Copying the map of young stars to the input directory ...")
 
         # Determine the path to the young stars map
         young_stars_path = fs.join(self.maps_path, "young_stars.fits")
@@ -776,7 +820,14 @@ class InputInitializer(FittingComponent):
         # Copy the map
         fs.copy_file(young_stars_path, self.fit_in_path)
 
-        # -- The ionizing stars map --
+    # -----------------------------------------------------------------
+
+    def write_ionizing_stars(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Determine the path to the ionizing stars map
         ionizing_stars_path = fs.join(self.maps_path, "ionizing_stars.fits")
@@ -784,7 +835,14 @@ class InputInitializer(FittingComponent):
         # Copy the map
         fs.copy_file(ionizing_stars_path, self.fit_in_path)
 
-        # -- The dust map --
+    # -----------------------------------------------------------------
+
+    def write_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Determine the path to the dust map
         dust_path = fs.join(self.maps_path, "dust.fits")
