@@ -481,8 +481,12 @@ class CoordinateSystem(wcs.WCS):
 
         header = super(CoordinateSystem, self).to_header(relax, key)
 
-        header["NAXIS1"] = self._naxis1
-        header["NAXIS2"] = self._naxis2
+        #header["NAXIS1"] = self._naxis1
+        #header["NAXIS2"] = self._naxis2
+
+        # Add the cards to the beginning
+        header.insert(0, ("NAXIS2", self._naxis2))
+        header.insert(0, ("NAXIS1", self._naxis1))
 
         return header
 

@@ -376,6 +376,9 @@ class Image(object):
         if plane_index > 1:
             header["NAXIS"] = 3
             header["NAXIS3"] = plane_index
+        else: # only one plane
+            datacube = datacube[0]
+            header.remove("PLANE0")
 
         # Set unit, FWHM and filter description
         if self.unit is not None: header.set("SIGUNIT", str(self.unit), "Unit of the map")

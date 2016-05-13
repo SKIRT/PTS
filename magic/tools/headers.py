@@ -196,6 +196,9 @@ def get_filter(name, header=None):
     elif "nuv" in filterid: final_filter_name = "GALEX NUV"
 
     # SWIFT
+    elif "uw2" in filterid: final_filter_name = "SWIFT W2"
+    elif "um2" in filterid: final_filter_name = "SWIFT M2"
+    elif "uw1" in filterid: final_filter_name = "SWIFT W1"
     elif "swift" in filterid or "uvot" in filterid:
 
         if "w2" in filterid: final_filter_name = "SWIFT W2"
