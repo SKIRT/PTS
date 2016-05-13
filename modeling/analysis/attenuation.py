@@ -20,7 +20,7 @@ from .component import AnalysisComponent
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ..core.sed import SED
-from ..core.attenuation import AttenuationCurve
+from ..core.attenuation import AttenuationCurve, SMCAttenuationCurve, MilkyWayAttenuationCurve, CalzettiAttenuationCurve, BattistiAttenuationCurve
 from ...core.plot.attenuation import AttenuationPlotter
 
 # -----------------------------------------------------------------
@@ -64,6 +64,9 @@ class AttenuationAnalyser(AnalysisComponent):
         self.attenuation_diffuse = None
         self.attenuation_total = None
 
+        # The reference attenuation curves
+        self.references = dict()
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -102,10 +105,13 @@ class AttenuationAnalyser(AnalysisComponent):
         # 3. Calculate the attenuation curve
         self.calculate_attenuation()
 
-        # 4. Writing
+        # 4. Get the reference attenuation curves
+        self.get_references()
+
+        # 5. Writing
         self.write()
 
-        # 5. Plotting
+        # 6. Plotting
         self.plot()
 
     # -----------------------------------------------------------------
@@ -163,8 +169,12 @@ class AttenuationAnalyser(AnalysisComponent):
 
         # Calculate the attenuations of the diffuse dust component
         self.attenuation_diffuse = AttenuationCurve.from_seds(self.total_sed, self.transparent_sed)
+
         # Find the V-band attenuation for the diffuse dust component
         v_band_attenuation_diffuse = self.attenuation_diffuse.attenuation_at(v_band_wavelength)
+
+        # Normalize the attenuation curve to the V-band attenuation
+        self.attenuation_diffuse.normalize_at(v_band_wavelength)
 
         # SED of transparent + delta flux mappings
         #transparent_sfr_sed = self.transparent_sed + delta_flux_mappings
@@ -217,6 +227,24 @@ class AttenuationAnalyser(AnalysisComponent):
         # delta_flux_mappings = flux_mappings * (10 ** (atts_mappings / 2.5) - 1)  # additional flux from mappings attenuation
 
         pass
+
+    # -----------------------------------------------------------------
+
+    def get_references(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the reference attenuation curves ...")
+
+        # Load the Milky Way, SMC and Calzetti attenuation curves
+        self.references["Milky Way"] = MilkyWayAttenuationCurve()
+        self.references["SMC"] = SMCAttenuationCurve()
+        self.references["Calzetti"] = CalzettiAttenuationCurve()
+        self.references["Battisti"] = BattistiAttenuationCurve()
 
     # -----------------------------------------------------------------
 
@@ -274,6 +302,9 @@ class AttenuationAnalyser(AnalysisComponent):
 
         # Add the diffuse attenuation curve
         plotter.add_attenuation_curve(self.attenuation_diffuse, "diffuse")
+
+        # Add the reference attenuation curves
+        for name in self.references: plotter.add_attenuation_curve(self.references[name], name)
 
         # Determine the path to the diffuse attenuation plot file
         diffuse_path = fs.join(self.analysis_attenuation_path, "diffuse.pdf")

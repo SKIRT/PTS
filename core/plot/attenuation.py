@@ -21,6 +21,12 @@ from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
+line_styles = ['-', '--', '-.', ':']
+filled_markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd']
+pretty_colors = ["r", "dodgerblue", "purple", "darkorange", "lawngreen", "yellow", "darkblue", "teal", "darkgreen", "lightcoral", "crimson", "saddlebrown"]
+
+# -----------------------------------------------------------------
+
 class AttenuationPlotter(object):
     
     """
@@ -132,8 +138,8 @@ class AttenuationPlotter(object):
         plt.ylabel('$A_\lambda/A_V$', fontsize=28)
         plt.xlabel('$\lambda/\mu$m', fontsize=28)
         plt.xlim(0.1, 2)
-        #plt.ylim(0, 8)
-        plt.ylim(0, 1)
+        plt.ylim(0, 8)
+        #plt.ylim(0, 1)
         plt.xscale('log')
         x = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 2]
         plt.xticks(x, x)
@@ -150,6 +156,8 @@ class AttenuationPlotter(object):
         #plt.plot(modWls, n_atts_diff, 'k--', label="M31 diffuse", linewidth=2)
         #plt.plot(modWls, n_atts_mappings, 'k:', label="M31 SF regions", linewidth=2)
 
+        colors = iter(pretty_colors)
+
         for label in self.curves:
 
             curve = self.curves[label]
@@ -157,7 +165,8 @@ class AttenuationPlotter(object):
             wavelengths = curve.wavelengths(unit="micron", add_unit=False)
             attenuations = curve.attenuations()
 
-            plt.plot(wavelengths, attenuations, 'k--', label=label, linewidth=2)
+            # Plot the curve
+            plt.plot(wavelengths, attenuations, label=label, linewidth=2, color=next(colors))
 
         #plt.errorbar(wl_M31, n_atts_M31, yerr=err_att_M31, color='m', fmt='ko', markersize=8, label="M31- Dong+14")
         ## plt.plot(1./wl_MWRv5,n_atts_MWRv5, 'm-', label="MW Rv=5")

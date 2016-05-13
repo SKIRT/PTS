@@ -111,6 +111,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Plotting ...")
 
+        # Plot ...
         self.plot_heating_maps()
 
     # -----------------------------------------------------------------

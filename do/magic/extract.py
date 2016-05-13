@@ -129,7 +129,7 @@ other_region = Region.from_file(other_region_path) if filesystem.is_file(other_r
 
 # Load the image with segmentation maps
 segments_path = filesystem.join(input_path, "segments.fits")
-segments = Image.from_file(segments_path)
+segments = Image.from_file(segments_path, no_filter=True)
 
 # Get the segmentation maps
 galaxy_segments = segments.frames.galaxies if "galaxies" in segments.frames else None

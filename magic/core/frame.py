@@ -74,7 +74,7 @@ class Frame(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, index=0, name=None, description=None, plane=None, hdulist_index=0, fwhm=None):
+    def from_file(cls, path, index=0, name=None, description=None, plane=None, hdulist_index=0, no_filter=False):
 
         """
         This function ...
@@ -84,7 +84,7 @@ class Frame(np.ndarray):
         :param description:
         :param plane:
         :param hdulist_index:
-        :param fwhm:
+        :param no_filter:
         :return:
         """
 
@@ -125,8 +125,11 @@ class Frame(np.ndarray):
                 print("           - header pixelscale: (", header_pixelscale.x.to("arcsec/pix"), header_pixelscale.y.to("arcsec/pix"), ")")
                 print("           - actual pixelscale: (", pixelscale.x.to("arcsec/pix"), pixelscale.y.to("arcsec/pix"), ")")
 
-        # Obtain the filter for this image
-        filter = headers.get_filter(filesystem.name(path[:-5]), header)
+        if no_filter: fltr = None
+        else:
+
+            # Obtain the filter for this image
+            fltr = headers.get_filter(filesystem.name(path[:-5]), header)
 
         # Obtain the units of this image
         unit = headers.get_unit(header)
@@ -142,13 +145,21 @@ class Frame(np.ndarray):
 
         if nframes > 1:
 
-            # Get the description of this frame index
-            description = headers.get_frame_description(header, index)
-
             if plane is not None:
 
-                description = plane
-                index = headers.get_frame_index(header, plane)
+                for i in range(nframes):
+
+                    # Get name and description of frame
+                    name, description, plane_type = headers.get_frame_name_and_description(header, i, always_call_first_primary=False)
+
+                    if plane == name:
+                        index = i
+                        break
+
+                # If a break is not encountered, a matching plane name is not found
+                else: raise ValueError("Plane with name '" + plane + "' not found")
+
+            else: name, description, plane_type = headers.get_frame_name_and_description(header, index, always_call_first_primary=False)
 
             # Get the name from the file path
             if name is None: name = filesystem.name(path[:-5])
@@ -161,7 +172,7 @@ class Frame(np.ndarray):
                        description=description,
                        unit=unit,
                        zero_point=zero_point,
-                       filter=filter,
+                       filter=fltr,
                        sky_subtracted=sky_subtracted,
                        fwhm=fwhm)
 
@@ -181,7 +192,7 @@ class Frame(np.ndarray):
                        description=description,
                        unit=unit,
                        zero_point=zero_point,
-                       filter=filter,
+                       filter=fltr,
                        sky_subtracted=sky_subtracted,
                        fwhm=fwhm)
 

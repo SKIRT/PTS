@@ -625,7 +625,7 @@ def load_sources(path):
 
     # Load the image with segmentation maps
     segments_path = fs.join(path, "segments.fits")
-    segments = Image.from_file(segments_path)
+    segments = Image.from_file(segments_path, no_filter=True)
 
     # Get the different segmentation frames
     galaxy_segments = segments.frames.galaxies

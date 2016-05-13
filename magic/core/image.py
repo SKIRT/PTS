@@ -69,7 +69,7 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, name=None, always_call_first_primary=True, hdulist_index=0):
+    def from_file(cls, path, name=None, always_call_first_primary=True, hdulist_index=0, no_filter=False):
 
         """
         This function ...
@@ -77,6 +77,7 @@ class Image(object):
         :param name:
         :param always_call_first_primary:
         :param hdulist_index:
+        :param no_filter:
         :return:
         """
 
@@ -90,7 +91,7 @@ class Image(object):
         image.path = path
 
         # Load the image frames
-        image.load_frames(path, always_call_first_primary=always_call_first_primary, hdulist_index=hdulist_index)
+        image.load_frames(path, always_call_first_primary=always_call_first_primary, hdulist_index=hdulist_index, no_filter=no_filter)
 
         # Return the image
         return image
@@ -941,7 +942,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def load_frames(self, filename, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False, hdulist_index=0):
+    def load_frames(self, filename, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False, hdulist_index=0, no_filter=False):
 
         """
         This function ...
@@ -976,12 +977,16 @@ class Image(object):
         # Obtain the world coordinate system
         wcs = CoordinateSystem(flattened_header)
 
-        # Obtain the filter for this image
-        fltr = headers.get_filter(self.name, self.original_header)
+        # Set the filter
+        if no_filter: fltr = None
+        else:
 
-        # Inform the user on the filter
-        if fltr is not None: log.debug("The filter for this image is " + str(fltr))
-        else: log.warning("Could not determine the filter for this image")
+            # Obtain the filter for this image
+            fltr = headers.get_filter(self.name, self.original_header)
+
+            # Inform the user on the filter
+            if fltr is not None: log.debug("The filter for the '" + filename + "' image is " + str(fltr))
+            else: log.warning("Could not determine the filter for the image '" + filename + "'")
 
         # Obtain the units of this image
         unit = headers.get_unit(self.original_header)
