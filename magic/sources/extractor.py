@@ -287,7 +287,7 @@ class SourceExtractor(Configurable):
 
                 # Replace the source mask
                 segments_cutout = self.other_segments[source.y_slice, source.x_slice]
-                source.mask = Mask(segments_cutout == label)
+                source.mask = Mask(segments_cutout == label).fill_holes()
 
             # This is a shape drawn by the user and added to the other sources region
             else:
