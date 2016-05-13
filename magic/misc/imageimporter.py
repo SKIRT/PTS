@@ -78,8 +78,8 @@ class ImageImporter(Configurable):
         # 2. Load the image
         self.load_image(find_error_frame)
 
-        # 3. Set the mask
-        self.set_mask()
+        # 3. Set the mask of bad pixels
+        if "bad" not in self.image.masks: self.set_mask()
 
     # -----------------------------------------------------------------
 

@@ -22,6 +22,7 @@ from scipy.integrate import quad, simps
 
 # Import astronomical modules
 from astropy.table import Table
+from astropy.modeling import models, fitting
 
 # -----------------------------------------------------------------
 
@@ -389,6 +390,32 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
+    def fit_gaussian(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # TODO: this is not working, why ??
+
+        gaussian_init = models.Gaussian1D()
+        #fitter = fitting.SLSQPLSQFitter()
+        fitter = fitting.LevMarLSQFitter()
+
+        #print(self.centers)
+        #print(self.counts)
+
+        #plt.figure()
+        #plt.plot(self.centers, self.counts, 'ko')
+        #plt.show()
+
+        gaussian_fit = fitter(gaussian_init, self.centers, self.counts)
+
+        return gaussian_fit
+
+    # -----------------------------------------------------------------
+
     def smooth_values(self, x_min=None, x_max=None, npoints=200):
 
         """
@@ -715,7 +742,8 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, add_smooth=False, format=None, add_extrema=False):
+    def plot(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, add_smooth=False, format=None,
+             add_extrema=False, model=None):
 
         """
         This function ...
@@ -727,6 +755,7 @@ class Distribution(object):
         :param add_smooth:
         :param format:
         :param add_extrema:
+        :param model:
         :return:
         """
 
@@ -776,6 +805,10 @@ class Distribution(object):
 
             x, y = self.local_minima
             sp1.plot(x, y, 'rv')
+
+        if model is not None:
+
+            sp1.plot(self.centers, model(self.centers), label='Model')
 
         sp1.axvline(self.mean, color="green", linestyle="dashed")
         sp1.axvline(self.median, color="purple", linestyle="dashed")

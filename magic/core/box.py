@@ -22,6 +22,7 @@ from ..basics.vector import Position, Extent
 from ..basics.geometry import Rectangle
 from ..tools import cropping, fitting, interpolation, plotting
 from ...core.tools.logging import log
+from ...core.basics.distribution import Distribution
 
 # -----------------------------------------------------------------
 
@@ -623,6 +624,42 @@ class Box(np.ndarray):
                 data = interpolation.in_paint(data, mask)
 
             return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
+
+        # Use the 'PTS' method
+        elif method == "pts":
+
+            order = 3
+            try: polynomial = fitting.fit_polynomial(self, order, mask=mask)
+            except TypeError:
+                mask = mask.eroded(connectivity=2, iterations=1)
+                polynomial = fitting.fit_polynomial(self, order, mask=mask)
+
+            # Evaluate the polynomial
+            poly_data = fitting.evaluate_model(polynomial, 0, self.xsize, 0, self.ysize)
+
+            subtracted = self - poly_data
+
+            background_pixels = subtracted[mask.inverse()]
+
+            #distribution = Distribution.from_values(background_pixels)
+            #gaussian = distribution.fit_gaussian()
+            #center = gaussian.mean
+            #stddev = gaussian.stddev
+            #distribution.plot(model=gaussian)
+
+            center = np.mean(background_pixels)
+            stddev = np.std(background_pixels)
+
+            #print("amplitude", gaussian.amplitude)
+            #print("center", center)
+            #print("stddev", stddev)
+
+            # Generate random pixel values
+            random = np.random.normal(center, stddev, self.shape)
+
+            #plotting.plot_box(random)
+
+            return Box(random + poly_data, self.x_min, self.x_max, self.y_min, self.y_max)
 
         # Invalid option
         else: raise ValueError("Unknown interpolation method")
