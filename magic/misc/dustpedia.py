@@ -40,6 +40,9 @@ data_link = "http://dustpedia.astro.noa.gr/Data"
 # user
 user_link = "http://dustpedia.astro.noa.gr/Account/UserProfile"
 
+# print preview
+print_preview_link = "http://dustpedia.astro.noa.gr/Data/GalaxiesPrintView"
+
 # -----------------------------------------------------------------
 
 # The path to the dustpedia account file
@@ -118,6 +121,142 @@ class DustPediaDatabase(object):
 
         # Log out from the database
         self.logout()
+
+    # -----------------------------------------------------------------
+
+    def get_galaxy_names(self, parameters):
+
+        """
+        This function ...
+        :param parameters:
+        :return:
+        """
+
+        link = page_link_from_parameters(parameters)
+
+        r = self.session.get(link)
+        r = self.session.get(print_preview_link)
+
+        page_as_string = r.content
+
+        tree = html.fromstring(page_as_string)
+
+        tables = [e for e in tree.iter() if e.tag == 'table']
+        table = tables[-1]
+
+        table_rows = [e for e in table.iter() if e.tag == 'tr']
+        column_headings = [e.text_content() for e in table_rows[0].iter() if e.tag == 'th']
+
+        galaxy_names = []
+
+        for row in table_rows[1:]:
+
+            column_index = 0
+
+            for e in row.iter():
+
+                if e.tag != "td": continue
+
+                galaxy_info = e.text_content()
+
+                galaxy_name = galaxy_info.split("Name: ")[1].split(" \r\n")[0]
+                galaxy_names.append(galaxy_name)
+                break
+
+        return galaxy_names
+
+    # -----------------------------------------------------------------
+
+    def get_galaxies(self, parameters):
+
+        """
+        This function ...
+        :param parameters:
+        :return:
+        """
+
+        name_column = []
+        ra_column = []
+        dec_column = []
+        stage_column = []
+        type_column = []
+        v_column = []
+        d25_column = []
+        i_column = []
+
+        link = page_link_from_parameters(parameters)
+
+        r = self.session.get(link)
+        r = self.session.get(print_preview_link)
+
+        page_as_string = r.content
+
+        tree = html.fromstring(page_as_string)
+
+        page_tables = [e for e in tree.iter() if e.tag == 'table']
+        table = page_tables[-1]
+
+        table_rows = [e for e in table.iter() if e.tag == 'tr']
+        column_headings = [e.text_content() for e in table_rows[0].iter() if e.tag == 'th']
+
+        info_boxes = []
+
+        for row in table_rows[1:]:
+
+            column_index = 0
+
+            for e in row.iter():
+
+                if e.tag != "td": continue
+
+                galaxy_info = e.text_content()
+
+                #galaxy_name = galaxy_info.split("Name: ")[1].split(" \r\n")[0]
+                #galaxy_names.append(galaxy_name)
+                info_boxes.append(galaxy_info)
+                break
+
+        for box in info_boxes:
+
+            lines = box.split("\r\n")
+
+            name = None
+            ra = None
+            dec = None
+            stage = None
+            type = None
+            v = None
+            d25 = None
+            i = None
+
+            for line in lines:
+
+                if "Name" in line: name = line.split(": ")[1].strip()
+                elif "RA(2000)" in line: ra = float(line.split(": ")[1])
+                elif "DEC(2000)" in line: dec = float(line.split(": ")[1])
+                elif "Hubble Stage(T)" in line: stage = float(line.split(": ")[1])
+                elif "Hubble Type: Sab" in line: type = line.split(": ")[1].strip()
+                elif "V (km/s)" in line: v = float(line.split(": ")[1])
+                elif "D25 (arcmin)" in line: d25 = float(line.split(": ")[1])
+                elif "Inclination (deg.)" in line: i = float(line.split(": ")[1])
+
+            if "Hubble type" in parameters and type == parameters["Hubble type"]:
+
+                name_column.append(name)
+                ra_column.append(ra)
+                dec_column.append(dec)
+                stage_column.append(stage)
+                type_column.append(type)
+                v_column.append(v)
+                d25_column.append(d25)
+                i_column.append(i)
+
+        # Create the table
+        names = ["Name", "RA", "DEC", "Hubble stage", "Hubble type", "V", "D25", "Inclination"]
+        data = [name_column, ra_column, dec_column, stage_column, type_column, v_column, d25_column, i_column]
+        table = tables.new(data, names)
+
+        return table
 
     # -----------------------------------------------------------------
 
@@ -346,6 +485,44 @@ class DustPediaDatabase(object):
 
 # -----------------------------------------------------------------
 
+def page_link_from_parameters(parameters):
+
+    """
+    This function ...
+    :param parameters:
+    :return:
+    """
+
+    if "T" in parameters:
+        tlow = str(parameters["T"][0]) if parameters["T"][0] is not None else ""
+        thigh = str(parameters["T"][1]) if parameters["T"][1] is not None else ""
+    else:
+        tlow = thigh = ""
+
+    if "V" in parameters:
+        vlow = str(parameters["V"][0]) if parameters["V"][0] is not None else ""
+        vhigh = str(parameters["V"][1]) if parameters["V"][1] is not None else ""
+    else:
+        vlow = vhigh = ""
+
+    if "inclination" in parameters:
+        incllow = str(parameters["inclination"][0]) if parameters["inclination"][0] is not None else ""
+        inclhigh = str(parameters["inclination"][1]) if parameters["inclination"][1] is not None else ""
+    else:
+        incllow = inclhigh = ""
+
+    if "D25" in parameters:
+        d25low = str(parameters["D25"][0]) if parameters["D25"][0] is not None else ""
+        d25high = str(parameters["D25"][1]) if parameters["D25"][1] is not None else ""
+    else:
+        d25low = d25high = ""
+
+    return data_link + "?GalaxyName=&tLow=" + tlow + "&tHigh=" + thigh + "&vLow=" + vlow + \
+            "&vHigh=" + vhigh + "&inclLow=" + incllow + "&inclHigh=" + inclhigh + "&d25Low=" + d25low + \
+            "&d25High=" + d25high + "&SearchButton=Search"
+
+# -----------------------------------------------------------------
+
 def get_account():
 
     """
@@ -353,7 +530,7 @@ def get_account():
     :return:
     """
 
-    username, password = np.loadtxt("dustpedia.txt", dtype=str)
+    username, password = np.loadtxt(account_path, dtype=str)
     return username, password
 
 # -----------------------------------------------------------------

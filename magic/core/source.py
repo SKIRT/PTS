@@ -236,6 +236,30 @@ class Source(object):
     # -----------------------------------------------------------------
 
     @property
+    def xsize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cutout.xsize
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ysize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cutout.ysize
+
+    # -----------------------------------------------------------------
+
+    @property
     def x_min(self):
 
         """

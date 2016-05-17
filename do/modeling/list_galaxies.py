@@ -54,8 +54,26 @@ username, password = get_account()
 database = DustPediaDatabase()
 
 # Login with the user and password
-database.login(username, password)
+#database.login(username, password)
 
-#
+# EARLY TYPE SPIRALS: early-type (Sa–Sab) spiral galaxies
+
+parameters = {"D25": (5., None),
+              "Hubble type": "Sab"}
+
+# Hubble Stage (T)
+# V (km/s)
+# Inclination (deg.)
+# D25 (arcmin)
+
+
+table = database.get_galaxies(parameters)
+
+print(table)
+
+#for i in range(len(table)):
+#    hubble_type = table["Hubble Type"][i]
+#    if hubble_type == "Sab" or hubble_type == "Sa" or hubble_type == "Sb":
+#        print(table[i])
 
 # -----------------------------------------------------------------

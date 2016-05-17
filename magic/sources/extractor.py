@@ -328,6 +328,15 @@ class SourceExtractor(Configurable):
         nsources = len(self.sources)
         count = 0
 
+        if self.animation is not None:
+            principal_ellipse = self.principal_ellipse
+            principal_mask = principal_ellipse.to_mask(self.frame.xsize, self.frame.ysize)
+            animated = 0
+        else:
+            principal_ellipse = None
+            principal_mask = None
+            animated = None
+
         # Loop over all sources and remove them from the frame
         for source in self.sources:
 
@@ -352,8 +361,8 @@ class SourceExtractor(Configurable):
             # Adapt the mask
             self.mask[source.y_slice, source.x_slice] += source.mask
 
-            # Create a frame for the animation where it shows the removal of the current source
-            if self.animation is not None:
+            # Add frame to the animation
+            if self.animation is not None and principal_mask.masks(source.center) and animated <= 20:
 
                 # Create buffer and figure
                 buf = io.BytesIO()
@@ -363,59 +372,89 @@ class SourceExtractor(Configurable):
                 ax = fig.add_subplot(2, 3, 1)
 
                 # Plot the frame (before removal)
-                #norm = ImageNormalize(stretch=SqrtStretch())
                 norm = ImageNormalize(stretch=LogStretch())
                 norm_residual = ImageNormalize(stretch=LogStretch())
                 min_value = np.nanmin(self.frame)
                 max_value = 0.5*(np.nanmax(self.frame)+min_value)
 
-                print(min_value, max_value)
-
-                #ax = plt.gca()
                 ax.imshow(self.frame, origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
 
-                #plt.show()
-
-                r = plt_Rectangle((source.center.x, source.center.y), 2.0*source.radius.x, 2.0*source.radius.y, edgecolor="yellow", facecolor="none")
+                r = plt_Rectangle((source.x_min, source.y_min), source.xsize, source.ysize, edgecolor="yellow", facecolor="none", lw=5)
                 ax.add_patch(r)
+
+                ell = plt_Ellipse((principal_ellipse.center.x, principal_ellipse.center.y),
+                                  2.0 * principal_ellipse.radius.x, 2.0 * principal_ellipse.radius.y,
+                                  principal_ellipse.angle.to("deg").value, edgecolor="red", facecolor="none", lw=5)
+                ax.add_patch(ell)
+
+                ax.get_xaxis().set_visible(False)
+                ax.get_yaxis().set_visible(False)
 
                 # Add the second subplot
                 ax = fig.add_subplot(2, 3, 2)
 
-                # Plot the mask
-                ax.imshow(self.mask, origin="lower", cmap='Greys')
+                frame_xsize = self.frame.xsize
+                frame_ysize = self.frame.ysize
+
+                new_xmin = int(source.center.x - 0.1 * frame_xsize)
+                new_xmax = int(source.center.x + 0.1 * frame_xsize)
+                new_ymin = int(source.center.y - 0.1 * frame_ysize)
+                new_ymax = int(source.center.y + 0.1 * frame_ysize)
+
+                if new_xmin < 0: new_xmin = 0
+                if new_ymin < 0: new_ymin = 0
+                if new_xmax > frame_xsize: new_xmax = frame_xsize
+                if new_ymax > frame_ysize: new_ymax = frame_ysize
+
+                ax.imshow(self.frame[new_ymin:new_ymax, new_xmin:new_xmax], origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
+                r = plt_Rectangle((source.x_min-new_xmin, source.y_min-new_ymin), source.xsize, source.ysize, edgecolor="yellow", facecolor="none", lw=5)
+                ax.add_patch(r)
+                ax.get_xaxis().set_visible(False)
+                ax.get_yaxis().set_visible(False)
 
                 # Add the third subplot
                 ax = fig.add_subplot(2, 3, 3)
 
-                # Plot the source cutout
-                ax.imshow(source.cutout, origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
-
-                ell = plt_Ellipse((source.center.x-source.x_min, source.center.y-source.y_min), 2.0*source.radius.x, 2.0*source.radius.y, edgecolor="yellow", facecolor="none")
-                ax.add_patch(ell)
+                # Plot the mask
+                #ax.imshow(self.mask[new_ymin:new_ymax, new_xmin:new_xmax], origin="lower", cmap='Greys')
+                ax.imshow(self.mask, origin="lower", cmap="Greys")
+                ax.get_xaxis().set_visible(False)
+                ax.get_yaxis().set_visible(False)
 
                 # Add the fourth subplot
                 ax = fig.add_subplot(2, 3, 4)
+
+                # Plot the source cutout
+                #ax.imshow(source.cutout, origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
+                ax.imshow(np.ma.MaskedArray(source.cutout, mask=source.background_mask), origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
+                ax.get_xaxis().set_visible(False)
+                ax.get_yaxis().set_visible(False)
+
+                #ell = plt_Ellipse((source.center.x-source.x_min, source.center.y-source.y_min), 2.0*source.radius.x, 2.0*source.radius.y, edgecolor="yellow", facecolor="none", lw=5)
+                #ax.add_patch(ell)
+                ax.get_xaxis().set_visible(False)
+                ax.get_yaxis().set_visible(False)
+
+                # Add the fourth subplot
+                ax = fig.add_subplot(2, 3, 5)
 
                 # Plot the source background
                 #ax.imshow(np.ma.MaskedArray(source.cutout, mask=source.mask), origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
                 new_cutout = source.cutout.copy()
                 new_cutout[source.mask] = source.background[source.mask]
                 ax.imshow(new_cutout, origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
-                ell = plt_Ellipse((source.center.x-source.x_min, source.center.y-source.y_min), 2.0 * source.radius.x, 2.0 * source.radius.y, edgecolor="yellow", facecolor="none")
-                ax.add_patch(ell)
-
-                # Add the fifth subplot
-                ax = fig.add_subplot(2, 3, 5)
-
-                # Plot the estimated background behind the source
-                ax.imshow(np.ma.MaskedArray(source.background, mask=source.background_mask), origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
+                #ell = plt_Ellipse((source.center.x-source.x_min, source.center.y-source.y_min), 2.0 * source.radius.x, 2.0 * source.radius.y, edgecolor="yellow", facecolor="none", lw=5)
+                #ax.add_patch(ell)
+                ax.get_xaxis().set_visible(False)
+                ax.get_yaxis().set_visible(False)
 
                 # Add the sixth subplot
                 ax = fig.add_subplot(2, 3, 6)
 
                 # Plot the residual cutout (background removed)
                 ax.imshow(source.subtracted, origin="lower", interpolation="nearest", vmin=0.0, vmax=max_value, norm=norm_residual)
+                ax.get_xaxis().set_visible(False)
+                ax.get_yaxis().set_visible(False)
 
                 plt.tight_layout()
 
@@ -426,12 +465,12 @@ class SourceExtractor(Configurable):
                 buf.close()
                 self.animation.add_frame(im)
 
+                animated += 1
+
             # Replace the pixels by the background
             source.background.replace(self.frame, where=source.mask)
 
             count += 1
-
-            if count == 20: break
 
     # -----------------------------------------------------------------
 
