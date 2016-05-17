@@ -30,6 +30,9 @@ class AnimatedGif(object):
         # Set the frames
         self.frames = frames if frames is not None else []
 
+        # The number of frames per second
+        self.fps = 10
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -64,10 +67,11 @@ class AnimatedGif(object):
         """
         This function ...
         :param path:
+        :param fps:
         :return:
         """
 
         # Create and write the GIF file
-        imageio.mimwrite(path, self.frames)
+        imageio.mimwrite(path, self.frames, fps=self.fps)
 
 # -----------------------------------------------------------------

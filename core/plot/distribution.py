@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 from textwrap import wrap
-import seaborn as sns
+#import seaborn as sns
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
@@ -25,7 +25,7 @@ from ..tools.logging import log
 
 line_styles = ['-', '--', '-.', ':']
 filled_markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd']
-pretty_colors = ["r", "dodgerblue", "purple", "darkorange", "lawngreen", "yellow", "darkblue", "teal", "darkgreen", "lightcoral", "crimson", "saddlebrown"]
+pretty_colors = ["dodgerblue", "r", "purple", "darkorange", "lawngreen", "yellow", "darkblue", "teal", "darkgreen", "lightcoral", "crimson", "saddlebrown"]
 
 # -----------------------------------------------------------------
 

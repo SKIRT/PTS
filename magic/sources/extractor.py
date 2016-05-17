@@ -12,12 +12,26 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import io
+import imageio
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle as plt_Rectangle
+from matplotlib.patches import Ellipse as plt_Ellipse
+
+# Import astronomical modules
+import wcsaxes
+from astropy.visualization import SqrtStretch, LogStretch
+from astropy.visualization.mpl_normalize import ImageNormalize
+
 # Import the relevant PTS classes and modules
 from ..basics.mask import Mask
 from ..basics.geometry import Ellipse
 from ..core.source import Source
 from ...core.tools.logging import log
 from ...core.basics.configurable import Configurable
+from ..tools import plotting
 
 # -----------------------------------------------------------------
 
@@ -126,6 +140,7 @@ class SourceExtractor(Configurable):
         :param star_region:
         :param saturation_region:
         :param other_region:
+        :param galaxy_segments:
         :param star_segments:
         :param other_segments:
         :param animation:
@@ -310,9 +325,6 @@ class SourceExtractor(Configurable):
         # Inform the user
         log.info("Interpolating the frame over the masked pixels ...")
 
-        # Interpolate
-        #self.frame[:] = interpolation.inpaint_biharmonic(self.frame, self.mask)
-
         nsources = len(self.sources)
         count = 0
 
@@ -337,13 +349,89 @@ class SourceExtractor(Configurable):
                 count += 1
                 continue
 
-            # Replace the pixels by the background
-            source.background.replace(self.frame, where=source.mask)
-
             # Adapt the mask
             self.mask[source.y_slice, source.x_slice] += source.mask
 
+            # Create a frame for the animation where it shows the removal of the current source
+            if self.animation is not None:
+
+                # Create buffer and figure
+                buf = io.BytesIO()
+                fig = plt.figure(figsize=(15, 15))
+
+                # Add first subplot
+                ax = fig.add_subplot(2, 3, 1)
+
+                # Plot the frame (before removal)
+                #norm = ImageNormalize(stretch=SqrtStretch())
+                norm = ImageNormalize(stretch=LogStretch())
+                norm_residual = ImageNormalize(stretch=LogStretch())
+                min_value = np.nanmin(self.frame)
+                max_value = 0.5*(np.nanmax(self.frame)+min_value)
+
+                print(min_value, max_value)
+
+                #ax = plt.gca()
+                ax.imshow(self.frame, origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
+
+                #plt.show()
+
+                r = plt_Rectangle((source.center.x, source.center.y), 2.0*source.radius.x, 2.0*source.radius.y, edgecolor="yellow", facecolor="none")
+                ax.add_patch(r)
+
+                # Add the second subplot
+                ax = fig.add_subplot(2, 3, 2)
+
+                # Plot the mask
+                ax.imshow(self.mask, origin="lower", cmap='Greys')
+
+                # Add the third subplot
+                ax = fig.add_subplot(2, 3, 3)
+
+                # Plot the source cutout
+                ax.imshow(source.cutout, origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
+
+                ell = plt_Ellipse((source.center.x-source.x_min, source.center.y-source.y_min), 2.0*source.radius.x, 2.0*source.radius.y, edgecolor="yellow", facecolor="none")
+                ax.add_patch(ell)
+
+                # Add the fourth subplot
+                ax = fig.add_subplot(2, 3, 4)
+
+                # Plot the source background
+                #ax.imshow(np.ma.MaskedArray(source.cutout, mask=source.mask), origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
+                new_cutout = source.cutout.copy()
+                new_cutout[source.mask] = source.background[source.mask]
+                ax.imshow(new_cutout, origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
+                ell = plt_Ellipse((source.center.x-source.x_min, source.center.y-source.y_min), 2.0 * source.radius.x, 2.0 * source.radius.y, edgecolor="yellow", facecolor="none")
+                ax.add_patch(ell)
+
+                # Add the fifth subplot
+                ax = fig.add_subplot(2, 3, 5)
+
+                # Plot the estimated background behind the source
+                ax.imshow(np.ma.MaskedArray(source.background, mask=source.background_mask), origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
+
+                # Add the sixth subplot
+                ax = fig.add_subplot(2, 3, 6)
+
+                # Plot the residual cutout (background removed)
+                ax.imshow(source.subtracted, origin="lower", interpolation="nearest", vmin=0.0, vmax=max_value, norm=norm_residual)
+
+                plt.tight_layout()
+
+                plt.savefig(buf, format="png")
+                plt.close()
+                buf.seek(0)
+                im = imageio.imread(buf)
+                buf.close()
+                self.animation.add_frame(im)
+
+            # Replace the pixels by the background
+            source.background.replace(self.frame, where=source.mask)
+
             count += 1
+
+            if count == 20: break
 
     # -----------------------------------------------------------------
 

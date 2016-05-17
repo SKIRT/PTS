@@ -338,15 +338,19 @@ class ImagePreparer(Configurable):
         # Create an animation to show the result of this step
         if self.visualisation_path is not None:
 
+            # Create an animation to show the result of the source extraction step
+            max_frame_value = np.nanmax(self.image.frames.primary)
             animation = AnimatedGif()
             buf = io.BytesIO()
-            plotting.plot_box(self.image.frames.primary, path=buf, format="png")
+            plotting.plot_box(self.image.frames.primary, path=buf, format="png", vmin=0.0, vmax=max_frame_value)
             buf.seek(0)
             im = imageio.imread(buf)
             buf.close()
             animation.add_frame(im)
 
+            # Create an animation to show the progress of the SourceExtractor
             source_extractor_animation = AnimatedGif()
+            source_extractor_animation.fps = 1 # 1 frame per second because the frames are very distinct
         else:
             animation = None
             source_extractor_animation = None
@@ -359,15 +363,15 @@ class ImagePreparer(Configurable):
         if self.visualisation_path is not None:
 
             # Determine the path to the animation
-            path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_sourceextraction") + ".gif")
+            path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_sourceextraction") + ".avi")
 
             # Save the animation
             source_extractor_animation.save(path)
 
-            # --
+            # ----
 
             buf = io.BytesIO()
-            plotting.plot_box(self.image.frames.primary, path=buf, format="png")
+            plotting.plot_box(self.image.frames.primary, path=buf, format="png", vmin=0.0, vmax=max_frame_value)
             buf.seek(0)
             im = imageio.imread(buf)
             buf.close()
@@ -468,9 +472,10 @@ class ImagePreparer(Configurable):
         # Create an animation to show the result of this step
         if self.visualisation_path is not None:
 
+            max_frame_value = np.nanmax(self.image.frames.primary)
             animation = AnimatedGif()
             buf = io.BytesIO()
-            plotting.plot_box(self.image.frames.primary, path=buf, format="png")
+            plotting.plot_box(self.image.frames.primary, path=buf, format="png", vmin=0.0, vmax=max_frame_value)
             buf.seek(0)
             im = imageio.imread(buf)
             buf.close()
@@ -514,7 +519,7 @@ class ImagePreparer(Configurable):
         if self.visualisation_path is not None:
 
             buf = io.BytesIO()
-            plotting.plot_box(self.image.frames.primary, path=buf, format="png")
+            plotting.plot_box(self.image.frames.primary, path=buf, format="png", vmin=0.0, vmax=max_frame_value)
             buf.seek(0)
             im = imageio.imread(buf)
             buf.close()
@@ -574,14 +579,17 @@ class ImagePreparer(Configurable):
         # Create an animation to show the result of this step
         if self.visualisation_path is not None:
 
+            # Create an animation to show the result of the sky subtraction step
+            max_frame_value = np.nanmax(self.image.frames.primary)
             animation = AnimatedGif()
             buf = io.BytesIO()
-            plotting.plot_box(self.image.frames.primary, path=buf, format="png")
+            plotting.plot_box(self.image.frames.primary, path=buf, format="png", vmin=0.0, vmax=max_frame_value)
             buf.seek(0)
             im = imageio.imread(buf)
             buf.close()
             animation.add_frame(im)
 
+            # Create an animation to show the progress of the SkySubtractor
             skysubtractor_animation = AnimatedGif()
         else:
             animation = None
@@ -640,7 +648,7 @@ class ImagePreparer(Configurable):
             skysubtractor_animation.save(path)
 
             buf = io.BytesIO()
-            plotting.plot_box(self.image.frames.primary, path=buf, format="png")
+            plotting.plot_box(self.image.frames.primary, path=buf, format="png", vmin=0.0, vmax=max_frame_value)
             buf.seek(0)
             im = imageio.imread(buf)
             buf.close()

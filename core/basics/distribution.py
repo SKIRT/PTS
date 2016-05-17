@@ -20,7 +20,7 @@ from scipy.signal import argrelextrema
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.integrate import quad, simps
 from textwrap import wrap
-import seaborn as sns
+#import seaborn as sns
 
 # Import astronomical modules
 from astropy.table import Table

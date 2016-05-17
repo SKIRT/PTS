@@ -125,15 +125,13 @@ class AdvancedParameterExplorer(ParameterExplorer):
         self.load_distributions()
 
         # 4. Set the combinations of parameter values
-        #self.set_parameters()
+        self.set_parameters()
 
         # 5. Set the parallelization schemes for the different remote hosts
         self.set_parallelization()
 
         # 6. Estimate the runtimes for the different remote hosts
         self.estimate_runtimes()
-
-        exit()
 
         # 7. Launch the simulations for different parameter values
         self.simulate()

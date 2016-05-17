@@ -24,7 +24,7 @@ from photutils import CircularAperture
 
 # -----------------------------------------------------------------
 
-def plot_box(box, title=None, path=None, format=None):
+def plot_box(box, title=None, path=None, format=None, vmin=None, vmax=None):
 
     """
     This function ...
@@ -39,8 +39,8 @@ def plot_box(box, title=None, path=None, format=None):
     norm = ImageNormalize(stretch=SqrtStretch())
 
     # Determine the maximum value in the box and the mimimum value for plotting
-    vmax = np.nanmax(box)
-    vmin = np.nanmin(box) if vmax <= 0 else 0.0
+    if vmax is None: vmax = np.nanmax(box)
+    if vmin is None: vmin = np.nanmin(box) if vmax <= 0 else 0.0
 
     # Make the plot
     plt.figure(figsize=(6,6))

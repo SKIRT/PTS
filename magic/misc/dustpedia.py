@@ -14,6 +14,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 import requests
 from lxml import html
 
@@ -351,5 +352,8 @@ def get_account():
     This function ...
     :return:
     """
+
+    username, password = np.loadtxt("dustpedia.txt", dtype=str)
+    return username, password
 
 # -----------------------------------------------------------------
