@@ -39,6 +39,12 @@ pts_package_dir = os.path.join(pts_root_dir, "pts")
 # The path to the PTS user directory (PTS/user)
 pts_user_dir = os.path.join(pts_root_dir, "user")
 
+# The path to the PTS user/hosts directory
+pts_user_hosts_dir = os.path.join(pts_user_dir, "hosts")
+
+# The path to the PTS user/accounts directory
+pts_user_accounts_dir = os.path.join(pts_user_dir, "accounts")
+
 # The path to the PTS do directory containing launchable scripts (PTS/pts/do)
 pts_do_dir = os.path.join(pts_package_dir, "do")
 

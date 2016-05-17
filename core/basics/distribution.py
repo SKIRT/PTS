@@ -19,6 +19,8 @@ from scipy.interpolate import interp1d
 from scipy.signal import argrelextrema
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.integrate import quad, simps
+from textwrap import wrap
+import seaborn as sns
 
 # Import astronomical modules
 from astropy.table import Table
@@ -787,12 +789,12 @@ class Distribution(object):
 
         # Create a canvas to place the subgraphs
         canvas = plt.figure()
-        rect = canvas.patch
-        rect.set_facecolor('white')
+        #rect = canvas.patch
+        #rect.set_facecolor('white')
 
         sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
 
-        sp1.bar(self.edges[:-1], self.counts, linewidth=0, width=self.bin_width, alpha=0.75)
+        sp1.bar(self.edges[:-1], self.counts, linewidth=0, width=self.bin_width, alpha=0.5)
 
         # Determine the x limits
         if x_limits is None:
@@ -841,24 +843,24 @@ class Distribution(object):
         sp1.axvline(self.most_frequent, color="orange", linestyle="dashed")
 
         # Colorcode the tick tabs
-        sp1.tick_params(axis='x', colors='red')
-        sp1.tick_params(axis='y', colors='red')
+        #sp1.tick_params(axis='x', colors='red')
+        #sp1.tick_params(axis='y', colors='red')
 
         # Colorcode the spine of the graph
-        sp1.spines['bottom'].set_color('r')
-        sp1.spines['top'].set_color('r')
-        sp1.spines['left'].set_color('r')
-        sp1.spines['right'].set_color('r')
+        #sp1.spines['bottom'].set_color('r')
+        #sp1.spines['top'].set_color('r')
+        #sp1.spines['left'].set_color('r')
+        #sp1.spines['right'].set_color('r')
 
         # Put the title and labels
-        if title is not None: sp1.set_title(title, color='red')
-        sp1.set_xlabel('Values', color='red')
-        sp1.set_ylabel('Probability', color='red')
+        if title is not None: sp1.set_title("\n".join(wrap(title, 60)))
+        sp1.set_xlabel('Values')
+        sp1.set_ylabel('Probability')
 
         if logscale: sp1.set_yscale("log", nonposx='clip')
 
         plt.tight_layout()
-        plt.grid(alpha=0.8)
+        #plt.grid(alpha=0.8)
 
         if path is None: plt.show()
         else: canvas.savefig(path, format=format)

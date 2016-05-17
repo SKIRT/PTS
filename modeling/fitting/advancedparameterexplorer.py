@@ -125,7 +125,7 @@ class AdvancedParameterExplorer(ParameterExplorer):
         self.load_distributions()
 
         # 4. Set the combinations of parameter values
-        self.set_parameters()
+        #self.set_parameters()
 
         # 5. Set the parallelization schemes for the different remote hosts
         self.set_parallelization()
@@ -329,7 +329,7 @@ class AdvancedParameterExplorer(ParameterExplorer):
                 plotter.add_distribution(self.distributions["FUV young"], "Previous models")
                 plotter.add_distribution(new_distribution, "New models")
                 plotter.set_variable_name("FUV luminosity of young stars")
-                plotter.run(buf, format="png", min_value=self.config.young_stars.min, max_value=self.config.young_stars.max, min_count=0., max_count=1., logscale=True)
+                plotter.run(buf, format="png", min_value=self.config.young_stars.min, max_value=self.config.young_stars.max, max_count=1., logscale=True)
                 #new_distribution.plot(title="FUV luminosity of young stars",
                 #                      x_limits=[self.config.dust.min, self.config.dust.max], path=buf, format="png")
                 buf.seek(0)
@@ -347,7 +347,7 @@ class AdvancedParameterExplorer(ParameterExplorer):
                 plotter.add_distribution(self.distributions["FUV ionizing"], "Previous models")
                 plotter.add_distribution(new_distribution, "New models")
                 plotter.set_variable_name("FUV luminosity of ionizing stars")
-                plotter.run(buf, format="png", min_value=self.config.ionizing_stars.min, max_value=self.config.ionizing_stars.max, min_count=0., max_count=1., logscale=True)
+                plotter.run(buf, format="png", min_value=self.config.ionizing_stars.min, max_value=self.config.ionizing_stars.max, max_count=1., logscale=True)
                 #new_distribution.plot(title="FUV luminosity of ionizing stars",
                 #                      x_limits=[self.config.dust.min, self.config.dust.max], path=buf, format="png")
                 buf.seek(0)
@@ -365,7 +365,7 @@ class AdvancedParameterExplorer(ParameterExplorer):
                 plotter.add_distribution(self.distributions["Dust mass"], "Previous models")
                 plotter.add_distribution(new_distribution, "New models")
                 plotter.set_variable_name("Dust mass")
-                plotter.run(buf, format="png", min_value=self.config.dust.min, max_value=self.config.dust.max, min_count=0., max_count=1., logscale=True)
+                plotter.run(buf, format="png", min_value=self.config.dust.min, max_value=self.config.dust.max, max_count=1., logscale=True)
                 #new_distribution.plot(title="Dust mass", x_limits=[self.config.dust.min, self.config.dust.max],
                 #                      path=buf, format="png", other=self.distributions["Dust mass"])
                 buf.seek(0)

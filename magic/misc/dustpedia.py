@@ -22,7 +22,8 @@ from ...core.tools.logging import log
 from ...core.tools import tables
 from ..core.image import Image
 from ..core.frame import Frame
-from ...core.tools import filesystem
+from ...core.tools import filesystem as fs
+from ...core.tools import inspection
 
 # -----------------------------------------------------------------
 
@@ -37,6 +38,11 @@ data_link = "http://dustpedia.astro.noa.gr/Data"
 
 # user
 user_link = "http://dustpedia.astro.noa.gr/Account/UserProfile"
+
+# -----------------------------------------------------------------
+
+# The path to the dustpedia account file
+account_path = fs.join(inspection.pts_user_accounts_dir, "dustpedia.txt")
 
 # -----------------------------------------------------------------
 
@@ -217,7 +223,7 @@ class DustPediaDatabase(object):
                 get_link = link
                 break
 
-        local_path = filesystem.join(filesystem.home(), "test.fits")
+        local_path = fs.join(fs.home(), "test.fits")
 
         self.download_image(get_link, local_path)
 
@@ -225,7 +231,7 @@ class DustPediaDatabase(object):
         frame = Frame.from_file(local_path)
 
         # Remove the file
-        filesystem.remove_file(local_path)
+        fs.remove_file(local_path)
 
         # Return the image frame
         return frame
@@ -336,5 +342,14 @@ class DustPediaDatabase(object):
                 if chunk: # filter out keep-alive new chunks
                     f.write(chunk)
                     #f.flush() # commented by recommendation from J.F.Sebastian
+
+# -----------------------------------------------------------------
+
+def get_account():
+
+    """
+    This function ...
+    :return:
+    """
 
 # -----------------------------------------------------------------

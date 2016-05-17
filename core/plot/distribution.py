@@ -15,6 +15,8 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import matplotlib.pyplot as plt
 from collections import OrderedDict
+from textwrap import wrap
+import seaborn as sns
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
@@ -152,7 +154,7 @@ class DistributionPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, path, logscale=False, add_smooth=False, add_extrema=False, format=None):
+    def plot(self, path, logscale=False, add_smooth=False, add_extrema=False, format=None, add_statistics=True):
 
         """
         This function ...
@@ -161,6 +163,7 @@ class DistributionPlotter(object):
         :param add_smooth:
         :param add_extrema:
         :param format:
+        :param add_statistics:
         :return:
         """
 
@@ -214,6 +217,12 @@ class DistributionPlotter(object):
                 x, y = distribution.local_minima
                 plt.plot(x, y, 'rv')
 
+            if add_statistics:
+
+                plt.axvline(distribution.mean, color="green", linestyle="dashed")
+                plt.axvline(distribution.median, color="purple", linestyle="dashed")
+                plt.axvline(distribution.most_frequent, color="orange", linestyle="dashed")
+
         # Axis limits are now definite
         if self.min_value is None: self.min_value = self._min_value
         if self.max_value is None: self.max_value = self._max_value
@@ -229,6 +238,9 @@ class DistributionPlotter(object):
         # Set the axis labels
         if self.name is not None: axes.set_xlabel(self.name)
         axes.set_ylabel("Normalized count")
+
+        # Set the title
+        if self.title is not None: axes.set_title("\n".join(wrap(self.title, 60)))
 
         if logscale: axes.set_yscale("log", nonposx='clip')
 

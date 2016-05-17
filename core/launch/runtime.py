@@ -18,6 +18,7 @@ from .parallelization import Parallelization
 from ..basics.distribution import Distribution
 from ..tools import tables
 from .timing import TimingTable
+from ..plot.distribution import DistributionPlotter
 
 # -----------------------------------------------------------------
 
@@ -73,6 +74,8 @@ class RuntimeEstimator(object):
         # Get the list of runtimes for the specified host for the specified configuration of packages and parallelization
         previous_runtimes = self.previous_runtimes_for(host_id, packages, parallelization)
 
+        plotter = DistributionPlotter()
+
         # Check how many runtimes were found from previous simulations on the same host and with the same configuration
         if len(previous_runtimes) != 0:
 
@@ -83,8 +86,11 @@ class RuntimeEstimator(object):
             distribution = Distribution.from_values(previous_runtimes, bins=25)
 
             # If requested, plot the distribution
-            #if plot_path is not None: distribution.plot(title="Distribution of previously recorded runtimes", path=plot_path)
-            distribution.plot(title="Distribution of previously recorded runtimes")
+            if plot_path is not None:
+                title = "Distribution of previously recorded runtimes"
+                plotter.add_distribution(distribution, "Test")
+                plotter.set_title(title)
+                plotter.run(plot_path)
 
             # Return the most frequent (most probable) runtime, times the safety factor
             return distribution.most_frequent * fos
@@ -108,14 +114,12 @@ class RuntimeEstimator(object):
                 distribution = Distribution.from_values(estimated_runtimes, bins=25)
 
                 # If requested, plot the distribution
-                #if plot_path is not None: distribution.plot(title="Distribution of runtimes estimated based on "
-                #                                                  "simulations run on the specified remote host with "
-                #                                                  "the same number of photon packages, "
-                #                                                  "with various parallelization schemes", path=plot_path)
-                distribution.plot(title="Distribution of runtimes estimated based on "
-                                        "simulations run on the specified remote host with "
-                                        "the same number of photon packages, "
-                                        "with various parallelization schemes")
+                if plot_path is not None:
+                    title = "Distribution of runtimes estimated based on simulations run on the specified remote host with " \
+                             "the same number of photon packages, with various parallelization schemes"
+                    plotter.add_distribution(distribution, "Test")
+                    plotter.set_title(title)
+                    plotter.run(plot_path)
 
                 # Return the most probable runtime, times the safety factor
                 return distribution.most_frequent * fos
@@ -133,14 +137,14 @@ class RuntimeEstimator(object):
                 distribution = Distribution.from_values(estimated_runtimes, bins=25)
 
                 # If requested, plot the distribution
-                #if plot_path is not None: distribution.plot(title="Distribution of runtimes estimated based on "
-                #                                                  "simulations with the same number of photon packages "
-                #                                                  "on various hosts and with various parallelization "
-                #                                                  "schemes", path=plot_path)
-                distribution.plot(title="Distribution of runtimes estimated based on "
-                                        "simulations with the same number of photon packages "
-                                        "on various hosts and with various parallelization "
-                                        "schemes")
+                if plot_path is not None:
+                    title = "Distribution of runtimes estimated based on " \
+                              "simulations with the same number of photon packages " \
+                              "on various hosts and with various parallelization " \
+                              "schemes"
+                    plotter.add_distribution(distribution, "Test")
+                    plotter.set_title(title)
+                    plotter.run(plot_path)
 
                 # Return the most probable runtime, times the safety factor
                 return distribution.most_frequent * fos
