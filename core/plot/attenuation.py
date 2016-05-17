@@ -114,7 +114,7 @@ class AttenuationPlotter(object):
 
         # Set default values for all attributes
         self.title = None
-        self.curves = dict()
+        self.curves = OrderedDict()
         self.min_wavelength = None
         self.max_wavelength = None
         self.min_attenuation = None

@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import numpy as np
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
@@ -52,7 +51,7 @@ class ParameterExplorer(FittingComponent):
         self.ski = None
 
         # The parameter combinations
-        self.parameters = []
+        self.parameters = defaultdict(list)
 
         # The table with the parameter values for each simulation
         self.table = None
@@ -164,6 +163,18 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def number_of_models(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.parameters["FUV young"])
+
+    # -----------------------------------------------------------------
+
     def simulate(self):
 
         """
@@ -181,7 +192,12 @@ class ParameterExplorer(FittingComponent):
         fuv = Filter.from_string("FUV")
 
         # Loop over the different parameter combinations
-        for young_luminosity, ionizing_luminosity, dust_mass in self.parameters:
+        for i in range(self.number_of_models):
+
+            # Get the parameter values
+            young_luminosity = self.parameters["FUV young"][i]
+            ionizing_luminosity = self.parameters["FUV ionizing"][i]
+            dust_mass = self.parameters["Dust mass"][i]
 
             # Create a unique name for this combination of parameter values
             simulation_name = time.unique_name()

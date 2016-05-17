@@ -19,10 +19,11 @@ from matplotlib import pyplot as plt
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
-from ...core.tools import tables
+from ...core.tools import tables, time
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
+from ...core.basics.animatedgif import AnimatedGif
 
 # -----------------------------------------------------------------
 
@@ -65,6 +66,9 @@ class SEDFitter(FittingComponent):
         # The tables with the probability distributions for the different fit parameters
         self.distributions = dict()
 
+        # The animation
+        self.animation = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -81,6 +85,9 @@ class SEDFitter(FittingComponent):
 
         # Set the modeling path
         fitter.config.path = arguments.path
+
+        # Make visualisations
+        fitter.config.visualise = arguments.visualise
 
         # Return the new instance
         return fitter
@@ -107,7 +114,7 @@ class SEDFitter(FittingComponent):
         self.calculate_distributions()
 
         # 5. Make an animation of the fitting procedure
-        self.animate()
+        if self.config.visualise: self.animate()
 
         # 6. Writing
         self.write()
@@ -255,8 +262,8 @@ class SEDFitter(FittingComponent):
         # Inform the user
         log.info("Creating an animation of the SED fitting procedure ...")
 
-        # Initialize a list to contain the frames of the animation
-        frames = []
+        # Create an AnimatedGif instance
+        self.animation = AnimatedGif()
 
         # Loop over the entries of the chi squared table (sorted by decreasing chi squared)
         for i in range(len(self.chi_squared)):
@@ -270,14 +277,8 @@ class SEDFitter(FittingComponent):
             # Load the image (as a NumPy array)
             image = imageio.imread(path)
 
-            # Add the image to the list of frames
-            frames.append(image)
-
-        # Determine the path to the animation file
-        path = self.full_output_path("fitting.gif")
-
-        # Create and write the GIF file
-        imageio.mimwrite(path, frames)
+            # Add the image to the animation
+            self.animation.add_frame(image)
 
     # -----------------------------------------------------------------
 
@@ -299,6 +300,9 @@ class SEDFitter(FittingComponent):
 
         # Plot the probability distributions as histograms
         self.plot_distributions()
+
+        # Write the animated GIF
+        if self.config.visualise: self.write_animation()
 
     # -----------------------------------------------------------------
 
@@ -388,7 +392,7 @@ class SEDFitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_probabilities_old(self):
+    def write_animation(self):
 
         """
         This function ...
@@ -396,82 +400,22 @@ class SEDFitter(FittingComponent):
         """
 
         # Inform the user
-        log.info("Plotting the probability distributions ...")
+        log.info("Writing the animation ...")
 
-        fig = plt.figure(figsize=(10, 4))
+        # Determine the path to the new animation
+        path = fs.join(self.visualisation_path, time.unique_name("sedfitting") + ".gif")
 
-        dust_mass_scale = 1.0
-        fuv_young_scale = 1.0
-        fuv_ionizing_scale = 1.0
+        # Write the animation
+        self.animation.save(path)
 
-        locplot = [[0.07, 0.15, 0.305, 0.81], [0.375, 0.15, 0.305, 0.81], [0.68, 0.15, 0.305, 0.81]]
+# -----------------------------------------------------------------
 
-        best_dust_mass = self.best_dust_mass / dust_mass_scale
-        best_fuv_young = self.best_fuv_young / fuv_young_scale
-        best_fuv_ionizing = self.best_fuv_ionizing / fuv_ionizing_scale
-
-        dust_mass_50 = self.percentiles["Dust mass"][1]
-        fuv_young_50 = self.percentiles["FUV young"][1]
-        fuv_ionizing_50 = self.percentiles["FUV ionizing"][1]
-
-        # Get the values for the different parameters
-        dust_mass_values = self.probabilities["Dust mass"]["Dust mass"]
-        fuv_young_values = self.probabilities["FUV young"]["FUV young"]
-        fuv_ionizing_values = self.probabilities["FUV ionizing"]["FUV ionizing"]
-
-        # Get the associated probabilities
-        dust_mass_probs = self.probabilities["Dust mass"]["Probability"]
-        fuv_young_probs = self.probabilities["FUV young"]["Probability"]
-        fuv_ionizing_probs = self.probabilities["FUV ionizing"]["Probability"]
-
-        fig_a = plt.axes(locplot[0])
-        fig_a.set_ylabel('Probability', fontsize=18)
-        fig_a.set_xlabel('M$_\mathrm{dust}\, [10^7 M_\odot]$', fontsize=18)
-        #abcissa = np.array(params[0]) / MdustScale
-        abcissa = dust_mass_values / dust_mass_scale
-        width = 0.3e7
-        fig_a.bar(abcissa - 0.5 * width, dust_mass_probs, width=width, color='g', ec='k')
-        fig_a.plot([best_dust_mass, best_dust_mass], [0, 1], 'k--') # most probable value
-        fig_a.plot([dust_mass_50, dust_mass_50], [0, 1], 'r--') # median
-        #fig_a.set_xlim(2.5, 6.4)
-        #fig_a.set_ylim(0, 0.4)
-
-        fig_b = plt.axes(locplot[1])
-        fig_b.set_ylabel('Probability', fontsize=18)
-        fig_b.set_xlabel('$\lambda L_\lambda^{\mathrm{young}} \, [10^8 L_\odot]$', fontsize=18)
-        #abcissa = np.array(params[1]) / LyoungScale
-        abcissa = fuv_young_values / fuv_young_scale
-        width = 1.05e16
-        fig_b.bar(abcissa - 0.5 * width, fuv_young_probs, width=width, color='g', ec='k')
-        fig_b.plot([best_fuv_young, best_fuv_young], [0, 1], 'k--') # most probable value
-        fig_b.plot([fuv_young_50, fuv_young_50], [0, 1], 'r--') # median
-        #fig_b.set_xlim(6, 19.5)
-        #fig_b.set_ylim(0, 0.4)
-        fig_b.get_yaxis().set_visible(False)
-
-        fig_c = plt.axes(locplot[2])
-        fig_c.set_ylabel('Probability', fontsize=18)
-        fig_c.set_xlabel('$\lambda L_\lambda^{\mathrm{ion.}} \, [10^8 L_\odot]$', fontsize=18)
-        #abcissa = np.array(params[2]) / LionizingScale
-        abcissa = fuv_ionizing_values / fuv_ionizing_scale
-        width = 0.10e8
-        fig_c.bar(abcissa - 0.5 * width, fuv_ionizing_probs, width=width, color='g', ec='k')
-        fig_c.plot([best_fuv_ionizing, best_fuv_ionizing], [0, 1], 'k--')  # most probable value
-        fig_c.plot([fuv_ionizing_50, fuv_ionizing_50], [0, 1], 'r--') # median
-        #fig_c.set_xlim(0.001, 2.9)
-        #fig_c.set_ylim(0, 0.4)
-        fig_c.get_yaxis().set_visible(False)
-
-        # Save the figure
-        path = fs.join(self.fit_prob_path, "probabilities.pdf")
-        fig.savefig(path)
-
-        #if False:
-        #    "THIS DOES NOT WORK!"
-        #    "Need to interpolate somehow because the 3 parameter vectors have different lengths..."
-        #    fig = plt.figure(figsize=(10, 4))
-        #    plotContours(params1, MdustProb, FyoungProb, FionizedProb)
-        #    fig.savefig(outpath + "plotChi2Contours.pdf", format='pdf')
+#if False:
+#    "THIS DOES NOT WORK!"
+#    "Need to interpolate somehow because the 3 parameter vectors have different lengths..."
+#    fig = plt.figure(figsize=(10, 4))
+#    plotContours(params1, MdustProb, FyoungProb, FionizedProb)
+#    fig.savefig(outpath + "plotChi2Contours.pdf", format='pdf')
 
 # -----------------------------------------------------------------
 

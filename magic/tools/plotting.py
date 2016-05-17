@@ -24,11 +24,14 @@ from photutils import CircularAperture
 
 # -----------------------------------------------------------------
 
-def plot_box(box, title=None):
+def plot_box(box, title=None, path=None, format=None):
 
     """
     This function ...
     :param box:
+    :param title:
+    :param path:
+    :param format:
     :return:
     """
 
@@ -47,8 +50,10 @@ def plot_box(box, title=None):
 
     if title is not None: plt.title(title)
 
-    # Show the plot
-    plt.show()
+    if path is None: plt.show()
+    else: plt.savefig(path, format=format)
+
+    plt.close()
 
 # -----------------------------------------------------------------
 

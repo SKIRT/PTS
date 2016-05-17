@@ -58,7 +58,7 @@ class RuntimeEstimator(object):
 
     # -----------------------------------------------------------------
 
-    def runtime_for(self, host_id, packages, parallelization, fos=1.2):
+    def runtime_for(self, host_id, packages, parallelization, fos=1.2, plot_path=None):
 
         """
         This function ...
@@ -66,6 +66,7 @@ class RuntimeEstimator(object):
         :param packages:
         :param parallelization:
         :param fos: factor of safety
+        :param plot_path:
         :return:
         """
 
@@ -81,8 +82,9 @@ class RuntimeEstimator(object):
             # Create a probability distribution from the recorded runtimes
             distribution = Distribution.from_values(previous_runtimes, bins=25)
 
-            # Debugging plot
-            if log.is_debug(): distribution.plot(title="Distribution of previously recorded runtimes")
+            # If requested, plot the distribution
+            #if plot_path is not None: distribution.plot(title="Distribution of previously recorded runtimes", path=plot_path)
+            distribution.plot(title="Distribution of previously recorded runtimes")
 
             # Return the most frequent (most probable) runtime, times the safety factor
             return distribution.most_frequent * fos
@@ -105,8 +107,15 @@ class RuntimeEstimator(object):
                 # Create a probability distribution from the estimated runtimes
                 distribution = Distribution.from_values(estimated_runtimes, bins=25)
 
-                # Debugging plot
-                if log.is_debug(): distribution.plot(title="Distribution of runtimes estimated based on simulations run on the specified remote host with the same number of photon packages, with various parallelization schemes")
+                # If requested, plot the distribution
+                #if plot_path is not None: distribution.plot(title="Distribution of runtimes estimated based on "
+                #                                                  "simulations run on the specified remote host with "
+                #                                                  "the same number of photon packages, "
+                #                                                  "with various parallelization schemes", path=plot_path)
+                distribution.plot(title="Distribution of runtimes estimated based on "
+                                        "simulations run on the specified remote host with "
+                                        "the same number of photon packages, "
+                                        "with various parallelization schemes")
 
                 # Return the most probable runtime, times the safety factor
                 return distribution.most_frequent * fos
@@ -123,8 +132,15 @@ class RuntimeEstimator(object):
                 # Else, create the probability distribution of estimated runtimes
                 distribution = Distribution.from_values(estimated_runtimes, bins=25)
 
-                # Debugging plot
-                if log.is_debug(): distribution.plot(title="Distribution of runtimes estimated based on simulations with the same number of photon packages on various hosts and with various parallelization schemes")
+                # If requested, plot the distribution
+                #if plot_path is not None: distribution.plot(title="Distribution of runtimes estimated based on "
+                #                                                  "simulations with the same number of photon packages "
+                #                                                  "on various hosts and with various parallelization "
+                #                                                  "schemes", path=plot_path)
+                distribution.plot(title="Distribution of runtimes estimated based on "
+                                        "simulations with the same number of photon packages "
+                                        "on various hosts and with various parallelization "
+                                        "schemes")
 
                 # Return the most probable runtime, times the safety factor
                 return distribution.most_frequent * fos

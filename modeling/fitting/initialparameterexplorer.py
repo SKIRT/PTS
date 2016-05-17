@@ -141,9 +141,10 @@ class InitialParameterExplorer(ParameterExplorer):
                 # Loop over the different values of the dust mass
                 for dust_mass in self.dust_mass_range(dust_mass_guess):
 
-                    # Add the combination of parameter values to the list
-                    combination = (young_luminosity, ionizing_luminosity, dust_mass)
-                    self.parameters.append(combination)
+                    # Add the parameter values to the dictionary
+                    self.parameters["FUV young"].append(young_luminosity)
+                    self.parameters["FUV ionizing"].append(ionizing_luminosity)
+                    self.parameters["Dust mass"].append(dust_mass)
 
     # -----------------------------------------------------------------
 

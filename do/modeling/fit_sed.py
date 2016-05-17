@@ -29,6 +29,9 @@ parser.add_argument("--debug", action="store_true", help="add this option to ena
 parser.add_argument("--report", action='store_true', help='write a report file')
 parser.add_argument("--config", type=str, help="the name of a configuration file")
 
+# Visualisation
+parser.add_argument("--visualise", action="store_true", help="make visualisations")
+
 # Parse the command line arguments
 arguments = parser.parse_args()
 

@@ -593,11 +593,12 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def convolve(self, kernel):
+    def convolve(self, kernel, allow_huge=False):
 
         """
         This function ...
         :param kernel:
+        :param allow_huge:
         """
 
         # Loop over all currently selected frames
@@ -607,7 +608,7 @@ class Image(object):
             log.debug("Convolving the " + frame_name + " frame ...")
 
             # Convolve this frame
-            self.frames[frame_name] = self.frames[frame_name].convolved(kernel)
+            self.frames[frame_name] = self.frames[frame_name].convolved(kernel, allow_huge=allow_huge)
 
     # -----------------------------------------------------------------
 

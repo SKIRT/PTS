@@ -13,6 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import io
+import imageio
 import numpy as np
 
 # Import astronomical modules
@@ -31,6 +33,7 @@ from ...core.tools import special
 from ...core.basics.animatedgif import AnimatedGif
 from ...core.tools import filesystem as fs
 from ...core.tools import time
+from ..tools import plotting
 
 # -----------------------------------------------------------------
 
@@ -332,13 +335,49 @@ class ImagePreparer(Configurable):
         # Inform the user
         log.info("Extracting the sources ...")
 
-        # Create an animation
-        if self.visualisation_path is not None: animation = AnimatedGif()
-        else: animation = None
+        # Create an animation to show the result of this step
+        if self.visualisation_path is not None:
+
+            animation = AnimatedGif()
+            buf = io.BytesIO()
+            plotting.plot_box(self.image.frames.primary, path=buf, format="png")
+            buf.seek(0)
+            im = imageio.imread(buf)
+            buf.close()
+            animation.add_frame(im)
+
+            source_extractor_animation = AnimatedGif()
+        else:
+            animation = None
+            source_extractor_animation = None
 
         # Run the extractor
         self.extractor.run(self.image.frames.primary, self.galaxy_region, self.star_region, self.saturation_region,
-                           self.other_region, self.galaxy_segments, self.star_segments, self.other_segments, animation)
+                           self.other_region, self.galaxy_segments, self.star_segments, self.other_segments, source_extractor_animation)
+
+        # Write the animation
+        if self.visualisation_path is not None:
+
+            # Determine the path to the animation
+            path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_sourceextraction") + ".gif")
+
+            # Save the animation
+            source_extractor_animation.save(path)
+
+            # --
+
+            buf = io.BytesIO()
+            plotting.plot_box(self.image.frames.primary, path=buf, format="png")
+            buf.seek(0)
+            im = imageio.imread(buf)
+            buf.close()
+            animation.add_frame(im)
+
+            # Determine the path to the animation
+            path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_imagepreparation_extractsources") + ".gif")
+
+            # Save the animation
+            animation.save(path)
 
         # Add the sources mask to the image
         self.image.add_mask(self.extractor.mask, "sources")
@@ -351,18 +390,6 @@ class ImagePreparer(Configurable):
 
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("extracted.fits")
-
-        # Write the animation
-        if self.visualisation_path is not None:
-
-            # Determine the path to the animation
-            path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_sourceextraction") + ".gif")
-
-            # Debugging
-            log.debug("Writing animation of the source extraction to '" + path + "' ...")
-
-            # Save the animation
-            animation.save(path)
 
         # Inform the user
         log.success("Sources extracted")
@@ -438,6 +465,19 @@ class ImagePreparer(Configurable):
         # Inform the user
         log.info("Convolving the image with kernel " + self.config.convolution.kernel_path + " ...")
 
+        # Create an animation to show the result of this step
+        if self.visualisation_path is not None:
+
+            animation = AnimatedGif()
+            buf = io.BytesIO()
+            plotting.plot_box(self.image.frames.primary, path=buf, format="png")
+            buf.seek(0)
+            im = imageio.imread(buf)
+            buf.close()
+            animation.add_frame(im)
+
+        else: animation = None
+
         # Check whether the convolution has to be performed remotely
         if self.config.convolution.remote is not None:
 
@@ -465,10 +505,26 @@ class ImagePreparer(Configurable):
             if kernel.fwhm is None and self.config.convolution.kernel_fwhm is not None: kernel.fwhm = self.config.convolution.kernel_fwhm
 
             # Convolve the image (the primary and errors frame)
-            self.image.convolve(kernel)
+            self.image.convolve(kernel, allow_huge=True)
 
         # Save convolved frame
         if self.config.write_steps: self.write_intermediate_result("convolved.fits")
+
+        # Write the animation
+        if self.visualisation_path is not None:
+
+            buf = io.BytesIO()
+            plotting.plot_box(self.image.frames.primary, path=buf, format="png")
+            buf.seek(0)
+            im = imageio.imread(buf)
+            buf.close()
+            animation.add_frame(im)
+
+            # Determine the path to the animation
+            path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_imagepreparation_convolve") + ".gif")
+
+            # Save the animation
+            animation.save(path)
 
         # Inform the user
         log.success("Convolution finished")
@@ -515,6 +571,22 @@ class ImagePreparer(Configurable):
         # Inform the user
         log.info("Subtracting the sky ...")
 
+        # Create an animation to show the result of this step
+        if self.visualisation_path is not None:
+
+            animation = AnimatedGif()
+            buf = io.BytesIO()
+            plotting.plot_box(self.image.frames.primary, path=buf, format="png")
+            buf.seek(0)
+            im = imageio.imread(buf)
+            buf.close()
+            animation.add_frame(im)
+
+            skysubtractor_animation = AnimatedGif()
+        else:
+            animation = None
+            skysubtractor_animation = None
+
         # Convert the principal ellipse in sky coordinates into pixel coordinates
         principal_ellipse = self.principal_ellipse_sky.to_pixel(self.image.wcs)
 
@@ -531,12 +603,8 @@ class ImagePreparer(Configurable):
             else: extra_mask = self.image.masks.bad
         elif "padded" in self.image.masks: extra_mask = self.image.masks.padded # just use padded mask
 
-        # Create an animation
-        if self.visualisation_path is not None: animation = AnimatedGif()
-        else: animation = None
-
         # Run the sky subtractor
-        self.sky_subtractor.run(self.image.frames.primary, principal_ellipse, self.image.masks.sources, extra_mask, saturation_region, animation)
+        self.sky_subtractor.run(self.image.frames.primary, principal_ellipse, self.image.masks.sources, extra_mask, saturation_region, skysubtractor_animation)
 
         # Add the sky frame to the image
         self.image.add_frame(self.sky_subtractor.sky_frame, "sky")
@@ -568,8 +636,18 @@ class ImagePreparer(Configurable):
             # Determine the path to the animation
             path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_skysubtraction") + ".gif")
 
-            # Debugging
-            log.debug("Writing animation of the sky subtraction to '" + path + "' ...")
+            # Save the animation
+            skysubtractor_animation.save(path)
+
+            buf = io.BytesIO()
+            plotting.plot_box(self.image.frames.primary, path=buf, format="png")
+            buf.seek(0)
+            im = imageio.imread(buf)
+            buf.close()
+            animation.add_frame(im)
+
+            # Determine the path to the animation
+            path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_imagepreparation_subtractsky") + ".gif")
 
             # Save the animation
             animation.save(path)

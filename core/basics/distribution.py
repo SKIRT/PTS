@@ -567,6 +567,32 @@ class Distribution(object):
 
     # -----------------------------------------------------------------
 
+    def normalize(self, value=1.0, method="integral"):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # TODO: implement this function further
+
+        self.counts /= self.max_count
+
+    # -----------------------------------------------------------------
+
+    def normalized(self, value=1.0, method="integral"):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # TODO: implement this function
+
+        pass
+
+    # -----------------------------------------------------------------
+
     def plot_cumulative(self, title=None, path=None, logscale=False, x_limits=None, y_limits=None, npoints=200):
 
         """

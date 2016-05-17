@@ -15,6 +15,10 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import io
 import imageio
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from scipy.stats import gaussian_kde
 
 # Import the relevant PTS classes and modules
 from .parameterexploration import ParameterExplorer
@@ -26,6 +30,7 @@ from ...core.launch.runtime import RuntimeEstimator
 from ...core.basics.distribution import Distribution
 from ...core.basics.animatedgif import AnimatedGif
 from ...core.tools import filesystem as fs
+from ...core.plot.distribution import DistributionPlotter
 
 # -----------------------------------------------------------------
 
@@ -128,6 +133,8 @@ class AdvancedParameterExplorer(ParameterExplorer):
         # 6. Estimate the runtimes for the different remote hosts
         self.estimate_runtimes()
 
+        exit()
+
         # 7. Launch the simulations for different parameter values
         self.simulate()
 
@@ -152,6 +159,9 @@ class AdvancedParameterExplorer(ParameterExplorer):
             # Load the probability distribution
             distribution = Distribution.from_file(self.distribution_table_paths[parameter_name])
 
+            # Normalize the distribution
+            distribution.normalize(value=1.0, method="max")
+
             # Set the distribution
             self.distributions[parameter_name] = distribution
 
@@ -167,12 +177,14 @@ class AdvancedParameterExplorer(ParameterExplorer):
         # Inform the user
         log.info("Picking random parameter values based on the probability distributions ...")
 
-        # Create an animation
+        # Create animations
         if self.config.visualise:
+            points_animation = AnimatedGif()
             fuv_young_animation = AnimatedGif()
             fuv_ionizing_animation = AnimatedGif()
             dust_mass_animation = AnimatedGif()
         else:
+            points_animation = None
             fuv_young_animation = None
             fuv_ionizing_animation = None
             dust_mass_animation = None
@@ -202,7 +214,8 @@ class AdvancedParameterExplorer(ParameterExplorer):
             self.distributions["Dust mass"].plot_cumulative_smooth(x_limits=x_limits, title="Cumulative distribution of dust masses")
 
         # Draw parameters values for the specified number of simulations
-        for counter in range(self.config.simulations):
+        #for counter in range(self.config.simulations):
+        for counter in range(100):
 
             # Debugging
             log.debug("Calculating random parameter set " + str(counter+1) + " of " + str(self.config.simulations) + " ...")
@@ -216,48 +229,166 @@ class AdvancedParameterExplorer(ParameterExplorer):
             # Draw a random dust mass
             dust_mass = self.distributions["Dust mass"].random(self.config.dust.min, self.config.dust.max)
 
-            # Add the combination of parameter values to the list
-            combination = (young_luminosity, ionizing_luminosity, dust_mass)
-            self.parameters.append(combination)
+            # Add the parameter values to the dictionary
+            self.parameters["FUV young"].append(young_luminosity)
+            self.parameters["FUV ionizing"].append(ionizing_luminosity)
+            self.parameters["Dust mass"].append(dust_mass)
 
-            if fuv_young_animation is not None and len(self.parameters) > 20:
+            # Add a frame to the animation of parameter points
+            if points_animation is not None and self.number_of_models > 1:
 
-                new_distribution = Distribution.from_values([combination[0] for combination in self.parameters])
                 buf = io.BytesIO()
-                new_distribution.plot(title="FUV luminosity of young stars", x_limits=[self.config.dust.min, self.config.dust.max], path=buf, format="png")
+
+                fig = plt.figure(figsize=(15,15))
+
+                #ax = Axes3D(fig)
+
+                # Add first subplot
+                ax = fig.add_subplot(2, 2, 1, projection='3d')
+
+                ax.scatter(self.parameters["FUV young"], self.parameters["FUV ionizing"], self.parameters["Dust mass"])
+                ax.set_xlim([self.config.young_stars.min, self.config.young_stars.max])
+                ax.set_ylim([self.config.ionizing_stars.min, self.config.ionizing_stars.max])
+                ax.set_zlim([self.config.dust.min, self.config.dust.max])
+                ax.set_xlabel("FUV luminosity of young stars")
+                ax.set_ylabel("FUV luminosity of ionizing stars")
+                ax.set_zlabel("Dust mass")
+                # To draw projected points against the axis planes:
+                #ax.plot(self.parameters["FUV young"], self.parameters["Dust mass"], 'r+', zdir='y', zs=self.config.ionizing_stars.max)
+                #ax.plot(self.parameters["FUV ionizing"], self.parameters["Dust mass"], 'g+', zdir='x', zs=self.config.young_stars.min)
+                #ax.plot(self.parameters["FUV young"], self.parameters["FUV ionizing"], 'k+', zdir='z', zs=self.config.dust.min)
+
+                # Add second subplot
+                ax = fig.add_subplot(2, 2, 2)
+
+                # Density plot of FUV young vs. FUV ionizing
+                x = np.array(self.parameters["FUV young"])
+                y = np.array(self.parameters["FUV ionizing"])
+                xy = np.vstack([x, y])
+                z = gaussian_kde(xy)(xy)
+                # Sort the points by density, so that the densest points are plotted last
+                idx = z.argsort()
+                x, y, z = x[idx], y[idx], z[idx]
+                ax.scatter(x, y, c=z, s=100, edgecolor='')
+                ax.set_xlabel("FUV luminosity of young stars")
+                ax.set_ylabel("FUV luminosity of ionizing stars")
+                ax.set_xlim([self.config.young_stars.min, self.config.young_stars.max])
+                ax.set_ylim([self.config.ionizing_stars.min, self.config.ionizing_stars.max])
+
+                # Add third subplot
+                ax = fig.add_subplot(2, 2, 3)
+
+                # Density plot of FUV young vs. dust mass
+                x = np.array(self.parameters["FUV young"])
+                y = np.array(self.parameters["Dust mass"])
+                xy = np.vstack([x, y])
+                z = gaussian_kde(xy)(xy)
+                # Sort the points by density, so that the densest points are plotted last
+                idx = z.argsort()
+                x, y, z = x[idx], y[idx], z[idx]
+                ax.scatter(x, y, c=z, s=100, edgecolor='')
+                ax.set_xlabel("FUV luminosity of young stars")
+                ax.set_ylabel("Dust mass")
+                ax.set_xlim([self.config.young_stars.min, self.config.young_stars.max])
+                ax.set_ylim([self.config.dust.min, self.config.dust.max])
+
+                # Add fourth subplot
+                ax = fig.add_subplot(2, 2, 4)
+
+                # Density plot of FUV ionizing vs. dust mass
+                x = np.array(self.parameters["FUV ionizing"])
+                y = np.array(self.parameters["Dust mass"])
+                xy = np.vstack([x, y])
+                z = gaussian_kde(xy)(xy)
+                # Sort the points by density, so that the densest points are plotted last
+                idx = z.argsort()
+                x, y, z = x[idx], y[idx], z[idx]
+                ax.scatter(x, y, c=z, s=100, edgecolor='')
+                ax.set_xlabel("FUV luminosity of ionizing stars")
+                ax.set_ylabel("Dust mass")
+                ax.set_xlim([self.config.ionizing_stars.min, self.config.ionizing_stars.max])
+                ax.set_ylim([self.config.dust.min, self.config.dust.max])
+
+                plt.tight_layout()
+
+                plt.savefig(buf, format="png")
+                plt.close()
+                buf.seek(0)
+                im = imageio.imread(buf)
+                buf.close()
+                points_animation.add_frame(im)
+
+            plotter = DistributionPlotter()
+
+            # Add a frame to the animation of the distribution of the FUV luminosity of young starss
+            if fuv_young_animation is not None and self.number_of_models > 1:
+
+                new_distribution = Distribution.from_values(self.parameters["FUV young"])
+                new_distribution.normalize(1.0, method="max")
+                buf = io.BytesIO()
+                plotter.add_distribution(self.distributions["FUV young"], "Previous models")
+                plotter.add_distribution(new_distribution, "New models")
+                plotter.set_variable_name("FUV luminosity of young stars")
+                plotter.run(buf, format="png", min_value=self.config.young_stars.min, max_value=self.config.young_stars.max, min_count=0., max_count=1., logscale=True)
+                #new_distribution.plot(title="FUV luminosity of young stars",
+                #                      x_limits=[self.config.dust.min, self.config.dust.max], path=buf, format="png")
                 buf.seek(0)
                 im = imageio.imread(buf)
                 buf.close()
                 fuv_young_animation.add_frame(im)
 
-            if fuv_ionizing_animation is not None and len(self.parameters) > 20:
+            # Add a frame to the animation of the distribution of the FUV luminosity of ionizing stars
+            if fuv_ionizing_animation is not None and self.number_of_models > 1:
 
-                new_distribution = Distribution.from_values([combination[1] for combination in self.parameters])
+                new_distribution = Distribution.from_values(self.parameters["FUV ionizing"])
+                new_distribution.normalize(1.0, method="max")
                 buf = io.BytesIO()
-                new_distribution.plot(title="FUV luminosity of ionizing stars", x_limits=[self.config.dust.min, self.config.dust.max], path=buf, format="png")
+                plotter.clear()
+                plotter.add_distribution(self.distributions["FUV ionizing"], "Previous models")
+                plotter.add_distribution(new_distribution, "New models")
+                plotter.set_variable_name("FUV luminosity of ionizing stars")
+                plotter.run(buf, format="png", min_value=self.config.ionizing_stars.min, max_value=self.config.ionizing_stars.max, min_count=0., max_count=1., logscale=True)
+                #new_distribution.plot(title="FUV luminosity of ionizing stars",
+                #                      x_limits=[self.config.dust.min, self.config.dust.max], path=buf, format="png")
                 buf.seek(0)
                 im = imageio.imread(buf)
                 buf.close()
                 fuv_ionizing_animation.add_frame(im)
 
-            if dust_mass_animation is not None and len(self.parameters) > 20:
+            # Add a frame to the animation of the distribution of the dust mass
+            if dust_mass_animation is not None and self.number_of_models > 1:
 
-                new_distribution = Distribution.from_values([combination[2] for combination in self.parameters])
+                new_distribution = Distribution.from_values(self.parameters["Dust mass"])
+                new_distribution.normalize(1.0, method="max")
                 buf = io.BytesIO()
-                new_distribution.plot(title="Dust mass", x_limits=[self.config.dust.min, self.config.dust.max], path=buf, format="png")
+                plotter.clear()
+                plotter.add_distribution(self.distributions["Dust mass"], "Previous models")
+                plotter.add_distribution(new_distribution, "New models")
+                plotter.set_variable_name("Dust mass")
+                plotter.run(buf, format="png", min_value=self.config.dust.min, max_value=self.config.dust.max, min_count=0., max_count=1., logscale=True)
+                #new_distribution.plot(title="Dust mass", x_limits=[self.config.dust.min, self.config.dust.max],
+                #                      path=buf, format="png", other=self.distributions["Dust mass"])
                 buf.seek(0)
                 im = imageio.imread(buf)
                 buf.close()
                 dust_mass_animation.add_frame(im)
 
+        # Save the animation of the parameter values as points in a 3D plot
+        if points_animation is not None:
+            path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration") + ".gif")
+            points_animation.save(path)
+
+        # Save the animation of the distribution of values for the FUV luminosity of the young stars
         if fuv_young_animation is not None:
             path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_fuvyoung") + ".gif")
             fuv_young_animation.save(path)
 
+        # Save the animation of the distribution of values for the FUV luminosity of the ionizing stars
         if fuv_ionizing_animation is not None:
             path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_fuvionizing") + ".gif")
             fuv_ionizing_animation.save(path)
 
+        # Save the animation of the distribution of values for the dust mass
         if dust_mass_animation is not None:
             path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_dustmass") + ".gif")
             dust_mass_animation.save(path)
@@ -334,8 +465,12 @@ class AdvancedParameterExplorer(ParameterExplorer):
             # Get the parallelization scheme that we have defined for this remote host
             parallelization = self.launcher.parallelization_for_host(host_id)
 
+            # Visualisation of the distribution of estimated runtimes
+            if self.config.visualise: plot_path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_runtime_"+host_id) + ".pdf")
+            else: plot_path = None
+
             # Estimate the runtime for the current number of photon packages and the current remote host
-            runtime = estimator.runtime_for(host_id, current_packages, parallelization)
+            runtime = estimator.runtime_for(host_id, current_packages, parallelization, plot_path=plot_path)
 
             # Debugging
             log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
