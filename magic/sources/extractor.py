@@ -21,7 +21,7 @@ from matplotlib.patches import Rectangle as plt_Rectangle
 from matplotlib.patches import Ellipse as plt_Ellipse
 
 # Import astronomical modules
-import wcsaxes
+#import wcsaxes
 from astropy.visualization import SqrtStretch, LogStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 

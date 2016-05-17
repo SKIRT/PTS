@@ -134,7 +134,7 @@ class CoordinateSystem(wcs.WCS):
         x_pixelscale = abs(pixelscale.x.to("arcsec/pix"))
         y_pixelscale = abs(pixelscale.y.to("arcsec/pix"))
 
-        if not np.isclose(x_pixelscale.value, y_pixelscale.value, rtol=0.0005):
+        if not np.isclose(x_pixelscale.value, y_pixelscale.value, rtol=0.001):
             log.warning("Averaging the pixelscale over the x and y direction may not be a good approximation:")
             log.warning("  * x pixelscale (absolute value) = " + str(x_pixelscale))
             log.warning("  * y pixelscale (absolute value) = " + str(y_pixelscale))

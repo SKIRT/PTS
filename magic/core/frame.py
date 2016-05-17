@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import copy
 import numpy as np
 from scipy import ndimage
 
@@ -620,7 +621,8 @@ class Frame(np.ndarray):
         new_center = Position(relative_center.x * new_xsize, relative_center.y * new_ysize)
 
         # Make a copy of the current WCS
-        new_wcs = self.wcs.copy()
+        #new_wcs = self.wcs.copy() ## THIS IS NOT A REAL DEEP COPY!! THIS HAS CAUSED ME BUGS THAT GAVE ME HEADACHES
+        new_wcs = copy.deepcopy(self.wcs)
 
         # Change the center pixel position
         new_wcs.wcs.crpix[0] = new_center.x

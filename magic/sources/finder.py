@@ -48,6 +48,9 @@ class SourceFinder(Configurable):
         # The image frame
         self.frame = None
 
+        # The original WCS
+        self.original_wcs = None
+
         # The galactic and stellar catalog
         self.galactic_catalog = None
         self.stellar_catalog = None
@@ -214,7 +217,6 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        #if self.downsampled: self.galaxy_finder.segments.rebinned(self.original_wcs)
         if self.downsampled: return self.galaxy_finder.segments.upsampled(self.config.downsample_factor, integers=True) if self.galaxy_finder.segments is not None else None
         else: return self.galaxy_finder.segments
 
@@ -347,10 +349,6 @@ class SourceFinder(Configurable):
         if self.downsampled:
             self.frame = frame.downsampled(self.config.downsample_factor)
             self.original_wcs = frame.wcs
-            #from ..tools import plotting
-            #plotting.plot_box(self.frame)
-            #self.frame.save("test.fits")
-            #exit()
         else: self.frame = frame
 
         # Set the galactic and stellar catalog
