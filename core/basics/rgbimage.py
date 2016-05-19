@@ -14,6 +14,7 @@
 # Import standard modules
 import os
 import os.path
+import copy
 import types
 import numpy as np
 import astropy.io.fits as pyfits
@@ -525,5 +526,31 @@ class CubicSpline:
         result[mask2] = self.a2*xp3[mask2] + self.b2*xp2[mask2] + self.c2*x[mask2] + self.d2
         result[mask3] = self.a3*xp3[mask3] + self.b3*xp2[mask3] + self.c3*x[mask3] + self.d3
         return np.clip(result,0.,1.,out=result)
+
+# -----------------------------------------------------------------
+
+def invert_colors(image):
+
+    """
+    This function ...
+    :param image:
+    :return:
+    """
+
+    image[:, :, 0:3] = 255 - image[:, :, 0:3]
+
+# -----------------------------------------------------------------
+
+def inverted_colors(image):
+
+    """
+    This function ...
+    :param image:
+    :return:
+    """
+
+    image_copy = copy.deepcopy(image)
+    invert_colors(image_copy)
+    return image_copy
 
 # -----------------------------------------------------------------

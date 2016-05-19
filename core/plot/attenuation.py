@@ -52,6 +52,9 @@ class AttenuationPlotter(object):
         self.min_attenuation = None
         self.max_attenuation = None
 
+        # Properties
+        self.transparent = False
+
     # -----------------------------------------------------------------
 
     def set_title(self, title):
@@ -179,7 +182,7 @@ class AttenuationPlotter(object):
         log.debug("Saving the attenuation plot to " + path + " ...")
 
         # Save the figure
-        plt.savefig(path, bbox_inches='tight', pad_inches=0.25)
+        plt.savefig(path, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent)
         plt.close()
 
 # -----------------------------------------------------------------

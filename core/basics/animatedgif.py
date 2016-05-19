@@ -10,6 +10,7 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
+import copy
 import imageio
 
 # -----------------------------------------------------------------
@@ -73,5 +74,31 @@ class AnimatedGif(object):
 
         # Create and write the GIF file
         imageio.mimwrite(path, self.frames, fps=self.fps)
+
+# -----------------------------------------------------------------
+
+def invert_colors(animation):
+
+    """
+    This function ...
+    :param animation:
+    :return:
+    """
+
+    for frame in animation.frames: frame[:, :, 0:3] = 255 - frame[:, :, 0:3]
+
+# -----------------------------------------------------------------
+
+def inverted_colors(animation):
+
+    """
+    This function ...
+    :param animation:
+    :return:
+    """
+
+    animation_copy = copy.deepcopy(animation)
+    invert_colors(animation_copy)
+    return animation_copy
 
 # -----------------------------------------------------------------

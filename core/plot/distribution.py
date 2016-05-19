@@ -66,6 +66,9 @@ class DistributionPlotter(object):
         # Store the figure and its axes as references
         self._figure = None
 
+        # Properties
+        self.transparent = False
+
     # -----------------------------------------------------------------
 
     def set_title(self, title):
@@ -251,7 +254,7 @@ class DistributionPlotter(object):
         else: log.debug("Saving the distribution plot to " + str(path) + " ...")
 
         # Save the figure
-        plt.savefig(path, bbox_inches='tight', pad_inches=0.25, format=format)
+        plt.savefig(path, bbox_inches='tight', pad_inches=0.25, format=format, transparent=self.transparent)
         plt.close()
 
 # -----------------------------------------------------------------

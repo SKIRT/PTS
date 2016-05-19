@@ -87,6 +87,9 @@ class SEDPlotter(object):
         self._main_axis = None
         self._residual_axes = []
 
+        # Properties
+        self.transparent = False
+
     # -----------------------------------------------------------------
 
     def set_title(self, title):
@@ -966,7 +969,7 @@ class SEDPlotter(object):
         log.debug("Saving the SED plot to " + path + " ...")
 
         # Save the figure
-        plt.savefig(path, bbox_inches='tight', pad_inches=0.25)
+        plt.savefig(path, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent)
         plt.close()
 
 # -----------------------------------------------------------------
