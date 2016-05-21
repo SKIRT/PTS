@@ -18,6 +18,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.frame import Frame
 from ...magic.plot.imagegrid import ImageGridPlotter
+from ...magic.basics.skyregion import SkyRegion
 
 # -----------------------------------------------------------------
 
@@ -90,11 +91,14 @@ class ResidualAnalyser(AnalysisComponent):
         # 4. Rebin the images to the same pixel grid
         self.rebin()
 
+        # Load the truncation ellipse
+        self.load_truncation_ellipse()
+
         # 5. Calculate the residual images
-        self.calculate_residuals()
+        #self.calculate_residuals()
 
         # 6. Writing
-        self.write()
+        #self.write()
 
         # 7. Plotting
         self.plot()
@@ -176,6 +180,46 @@ class ResidualAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Rebinning the observed and simulated images to the same resolution ...")
 
+        # Loop over the filter names
+        for filter_name in self.filter_names:
+
+            simulated = self.simulated[filter_name]
+            observed = self.observed[filter_name]
+
+            # Check whether the coordinate systems of the observed and simulated image match
+            if simulated.wcs == observed.wcs:
+                # Debugging
+                log.debug("The coordinate system of the simulated and observed image for the " + filter_name + " filter matches")
+                continue
+
+            # Debugging
+            log.debug("The coordinate system of the simulated and observed image for the " + filter_name + " does not match: rebinning the simulated image ...")
+
+            # Rebin the simulated image to the coordinate system of the observed image
+            simulated_rebinned = simulated.rebinned(observed.wcs)
+
+            # Replace the simulated frame by the rebinned frame
+            self.simulated[filter_name] = simulated_rebinned
+
+    # -----------------------------------------------------------------
+
+    def load_truncation_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the ellipse region used for truncating the observed images ...")
+
+        # Determine the path
+        path = fs.join(self.truncation_path, "ellipse.reg")
+
+        # Get the ellipse
+        region = SkyRegion.from_file(path)
+        self.ellipse = region[0]
+
     # -----------------------------------------------------------------
 
     def calculate_residuals(self):
@@ -188,34 +232,14 @@ class ResidualAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Calculating the residual images ...")
 
-        # Get the filter names which appear in both the simulated and observed images
-        filter_names = list(set(self.simulated.keys() + self.observed.keys()))
-
         # Loop over the filter names
-        for filter_name in filter_names:
+        for filter_name in self.filter_names:
 
             simulated = self.simulated[filter_name]
             observed = self.observed[filter_name]
 
-            # Check whether the coordinate systems match
-            if simulated.wcs == observed.wcs:
-
-                # Debugging
-                log.debug("The coordinate system of the simulated and observed image for the " + filter_name + " filter matches")
-
-                # Calculate the residual image
-                residual = (simulated - observed) / observed
-
-            else:
-
-                # Debugging
-                log.debug("The coordinate system of the simulated and observed image for the " + filter_name + " does not match: rebinning the simulated image ...")
-
-                # Rebin the simulated image to the coordinate system of the observed image
-                simulated_rebinned = simulated.rebinned(observed.wcs)
-
-                # Calculate the residual image
-                residual = (simulated_rebinned - observed) / observed
+            # Calculate the residual image
+            residual = (simulated - observed) / observed
 
             #residual.replace_infs(0.0)
 
@@ -291,21 +315,47 @@ class ResidualAnalyser(AnalysisComponent):
         # Create an ImageGridPlotter instance
         plotter = ImageGridPlotter(title="Image residuals")
 
-        # Get the filter names which appear in both the simulated and observed images
-        filter_names = list(set(self.simulated.keys() + self.observed.keys()))
-
         # Loop over the filter names, add a row to the image grid plotter for each filter
-        for filter_name in filter_names:
+        for filter_name in self.filter_names_sorted:
 
             observed = self.observed[filter_name]
             simulated = self.simulated[filter_name]
 
             plotter.add_row(observed, simulated, filter_name)
 
+        # Set the bounding box for the plotter
+        plotter.set_bounding_box(self.ellipse.bounding_box)
+
         # Determine the path to the plot file
         path = fs.join(self.analysis_residuals_path, "residuals.pdf")
 
         # Run the plotter
         plotter.run(path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the filter names which appear in both the simulated and observed images
+        filter_names = list(set(self.simulated.keys() + self.observed.keys()))
+        return filter_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def filter_names_sorted(self):
+
+        """
+        This function returns a list of the filter names, sorted on wavelength
+        :return:
+        """
+
+        return sorted(self.filter_names, key=lambda key: self.observed[key].filter.pivotwavelength())
 
 # -----------------------------------------------------------------

@@ -533,6 +533,32 @@ class SkyEllipse(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def bounding_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        x_radius = self.radius.x if isinstance(self.radius, Extent) else self.radius
+        y_radius = self.radius.y if isinstance(self.radius, Extent) else self.radius
+
+        a_projected_x = x_radius * math.cos(self.angle.radian)
+        b_projected_x = y_radius * math.sin(self.angle.radian)
+        a_projected_y = x_radius * math.sin(self.angle.radian)
+        b_projected_y = y_radius * math.cos(self.angle.radian)
+
+        box_x_radius = max(abs(a_projected_x), abs(b_projected_x))
+        box_y_radius = max(abs(a_projected_y), abs(b_projected_y))
+
+        radius = Extent(box_x_radius, box_y_radius)
+
+        # Return the bounding box
+        return SkyRectangle(self.center, radius)
+
+    # -----------------------------------------------------------------
+
     def to_pixel(self, wcs):
 
         """
@@ -810,10 +836,11 @@ class SkyRectangle(object):
         center = self.center.to_pixel(wcs)
 
         pixelscale = wcs.xy_average_pixelscale
-        radius = (self.radius / pixelscale).to("pix").value
+        radius_x = (self.radius.x / pixelscale).to("pix").value
+        radius_y = (self.radius.y / pixelscale).to("pix").value
 
         # Return a new rectangle
-        return Rectangle(center, radius, self.angle, meta=self.meta)
+        return Rectangle(center, Extent(radius_x, radius_y), self.angle, meta=self.meta)
 
     # -----------------------------------------------------------------
 

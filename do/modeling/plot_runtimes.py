@@ -18,7 +18,8 @@ import argparse
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time, filesystem
+from pts.core.tools import logging, time
+from pts.core.tools import filesystem as fs
 from pts.core.basics.distribution import Distribution
 from pts.core.launch.timing import TimingTable
 
@@ -40,12 +41,12 @@ arguments = parser.parse_args()
 # -----------------------------------------------------------------
 
 # Set the modeling path
-if arguments.path is None: arguments.path = filesystem.cwd()
+if arguments.path is None: arguments.path = fs.cwd()
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = filesystem.join(arguments.path, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(arguments.path, time.unique_name("log") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"
@@ -57,7 +58,7 @@ log.start("Starting plot_runtimes ...")
 # -----------------------------------------------------------------
 
 # Determine the path to the timing table
-timing_table_path = filesystem.join(arguments.path, "fit", "timing.dat")
+timing_table_path = fs.join(arguments.path, "fit", "timing.dat")
 
 # Load the timing table
 timing_table = TimingTable.read(timing_table_path)

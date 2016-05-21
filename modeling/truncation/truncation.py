@@ -249,6 +249,9 @@ class Truncator(TruncationComponent):
         # Write the truncated images
         self.write_images()
 
+        # Write the truncation ellipse
+        self.write_ellipse()
+
     # -----------------------------------------------------------------
 
     def write_images(self):
@@ -287,5 +290,25 @@ class Truncator(TruncationComponent):
         model_path = fs.join(self.truncation_path, "model.fits")
         log.debug("Writing the truncated model image to '" + model_path + "' ...")
         self.model.save(model_path)
+
+    # -----------------------------------------------------------------
+
+    def write_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the truncation ellipse region ...")
+
+        # Determine the path to the region file
+        path = fs.join(self.truncation_path, "ellipse.reg")
+
+        # Write the ellipse region
+        region = SkyRegion()
+        region.append(self.disk_ellipse)
+        region.save(path)
 
 # -----------------------------------------------------------------

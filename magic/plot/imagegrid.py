@@ -5,11 +5,16 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.analysis.colours Contains the ColourAnalyser class
+## \package pts.magic.plot.imagegrid Contains the ImageGridPlotter class.
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
 # Import standard modules
+from scipy import ndimage
+import copy
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.axes_grid1 import AxesGrid
@@ -47,9 +52,16 @@ class ImageGridPlotter(object):
         # The names of the columns
         self.column_names = ["Observation", "Model", "Residual"]
 
+        # Box (SkyRectangle) where to cut off the maps
+        self.box = None
+
         self._figure = None
         self._grid = None
         self._plotted_rows = 0
+
+        # Properties
+        self.transparent = False
+        self.format = None
 
     # -----------------------------------------------------------------
 
@@ -62,6 +74,18 @@ class ImageGridPlotter(object):
         """
 
         self.title = title
+
+    # -----------------------------------------------------------------
+
+    def set_bounding_box(self, box):
+
+        """
+        This function ...
+        :param box:
+        :return:
+        """
+
+        self.box = box
 
     # -----------------------------------------------------------------
 
@@ -134,12 +158,19 @@ class ImageGridPlotter(object):
         :return:
         """
 
+        # Determine the wcs with the smallest pixelscale
+        reference_wcs = None
+        for label in self.rows:
+            if reference_wcs is None or reference_wcs.xy_average_pixelscale > self.rows[label][0].xy_average_pixelscale: reference_wcs = copy.deepcopy(self.rows[label][0].wcs)
+
         number_of_rows = len(self.rows)
-        axisratio = self.rows[self.rows.keys()[0]][0].xsize / self.rows[self.rows.keys()[0]][0].ysize
+        axisratio = float(self.rows[self.rows.keys()[0]][0].xsize) / float(self.rows[self.rows.keys()[0]][0].ysize)
+        #print("axisratio", axisratio)
 
         one_frame_x_size = 3.
         fig_x_size = 3. * one_frame_x_size
-        fig_y_size = number_of_rows * one_frame_x_size / axisratio
+        #fig_y_size = number_of_rows * one_frame_x_size / axisratio
+        fig_y_size = one_frame_x_size * number_of_rows * 0.7
 
         # Create a figure
         self._figure = plt.figure(figsize=(fig_x_size, fig_y_size))
@@ -147,48 +178,87 @@ class ImageGridPlotter(object):
 
         # Creat grid
         self._grid = AxesGrid(self._figure, 111,
-                        nrows_ncols=(len(self.rows), 3),
-                        axes_pad=0.02,
-                        label_mode="L",
-                        share_all=True,
-                        cbar_location="right",
-                        cbar_mode="single",
-                        cbar_size="0.5%",
-                        cbar_pad="0.5%",
-                        )  # cbar_mode="single"
+                                nrows_ncols=(len(self.rows), 3),
+                                axes_pad=0.02,
+                                label_mode="L",
+                                share_all=True,
+                                cbar_location="right",
+                                cbar_mode="single",
+                                cbar_size="0.5%",
+                                cbar_pad="0.5%",
+                                )  # cbar_mode="single"
 
         for cax in self._grid.cbar_axes:
             cax.toggle_label(False)
 
+        #rectangle_reference_wcs = self.box.to_pixel(reference_wcs)
+
+        data = OrderedDict()
+
+        greatest_shape = None
+        for label in self.rows:
+            wcs = self.rows[label][0].wcs
+
+            rectangle = self.box.to_pixel(wcs)
+
+            y_min = rectangle.lower_left.y
+            y_max = rectangle.upper_right.y
+            x_min = rectangle.lower_left.x
+            x_max = rectangle.upper_right.x
+
+            reference = self.rows[label][0][y_min:y_max, x_min:x_max]
+            model = self.rows[label][1][y_min:y_max, x_min:x_max]
+            data[label] = (reference, model)
+
+            print(label, "box height/width ratio:", float(reference.shape[0])/float(reference.shape[1]))
+
+            if greatest_shape is None or greatest_shape[0] < reference.shape[0]: greatest_shape = reference.shape
+
         # Loop over the rows
         for label in self.rows:
 
+            #wcs = self.rows[label][0].wcs
+
+            if data[label][0].shape == greatest_shape:
+                reference = data[label][0]
+                model = data[label][1]
+            else:
+                factor = float(greatest_shape[0]) / float(data[label][0].shape[0])
+                order = 0
+                reference = ndimage.zoom(data[label][0], factor, order=order)
+                model = ndimage.zoom(data[label][1], factor, order=order)
+
+            residual = (model - reference)/model
+
             # Plot the reference image
-            x0, x1, y0, y1, vmin, vmax = self.plot_frame(self.rows[label[0]], label, 0)
+            x0, x1, y0, y1, vmin, vmax = self.plot_frame(reference, label, 0)
 
             # Plot the model image
-            x0, x1, y0, y1, vmin, vmax = self.plot_frame(self.rows[label][1], label, 1, min_int=vmin, max_int=vmax)
+            x0, x1, y0, y1, vmin, vmax = self.plot_frame(model, label, 1, min_int=vmin, max_int=vmax)
 
             # Plot the residual image
-            x0, x1, y0, y1, vmin, vmax = self.plot_frame(self.rows[label][1] - self.rows[label][0], label, 2)
+            x0, x1, y0, y1, vmin, vmax = self.plot_frame(residual, label, 2)
 
             self._plotted_rows += 3
 
-        self._grid.axes_llc.set_xlim(x0, x1)
-        self._grid.axes_llc.set_ylim(y0, y1)
+        #self._grid.axes_llc.set_xlim(x0, x1)
+        #self._grid.axes_llc.set_ylim(y0, y1)
+
         self._grid.axes_llc.set_xticklabels([])
         self._grid.axes_llc.set_yticklabels([])
         self._grid.axes_llc.get_xaxis().set_ticks([])  # To remove ticks
         self._grid.axes_llc.get_yaxis().set_ticks([])  # To remove ticks
 
         # Add title if requested
-        if self.title is not None: self._figure.suptitle(self.title, fontsize=14, fontweight='bold')
+        #if self.title is not None: self._figure.suptitle(self.title, fontsize=12, fontweight='bold')
+
+        plt.tight_layout()
 
         # Debugging
         log.debug("Saving the SED plot to " + path + " ...")
 
         # Save the figure
-        plt.savefig(path, bbox_inches='tight', pad_inches=0.25)
+        plt.savefig(path, bbox_inches='tight', pad_inches=0.25, format=self.format, transparent=self.transparent)
         plt.close()
 
     # -----------------------------------------------------------------
@@ -197,6 +267,7 @@ class ImageGridPlotter(object):
 
         """
         This function ...
+        :param frame:
         :param column_index:
         :param row_label:
         :param borders:
@@ -208,8 +279,10 @@ class ImageGridPlotter(object):
         x0 = borders[0]
         y0 = borders[1]
 
-        x1 = frame.xsize
-        y1 = frame.ysize
+        #x1 = frame.xsize
+        #y1 = frame.ysize
+        x1 = frame.shape[1]
+        y1 = frame.shape[0]
 
         #if column_index == 0:
 
@@ -235,10 +308,12 @@ class ImageGridPlotter(object):
         if max_int == 0.: max_int = vmax
         else: vmax = max_int
 
+        #aspect = "auto"
+        aspect = "equal"
         if column_index != 2:
-            im = self._grid[grid_index].imshow(frame, cmap='nipy_spectral_r', vmin=vmin, vmax=vmax, interpolation='none', origin="lower", aspect='equal')  # 'gist_ncar_r'
+            im = self._grid[grid_index].imshow(frame, cmap='nipy_spectral_r', vmin=vmin, vmax=vmax, interpolation='none', origin="lower", aspect=aspect)  # 'gist_ncar_r'
         else:
-            im = self._grid[grid_index].imshow(frame, cmap=discrete_cmap(), vmin=0.001, vmax=1, interpolation='none', origin="lower", aspect='equal')
+            im = self._grid[grid_index].imshow(frame, cmap=discrete_cmap(), vmin=0.001, vmax=1, interpolation='none', origin="lower", aspect=aspect)
             cb = self._grid[grid_index].cax.colorbar(im)
 
             # cb.set_xticklabels(labelsize=1)
