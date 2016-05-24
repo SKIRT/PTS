@@ -22,6 +22,7 @@ from ....core.tools import filesystem as fs
 from ....magic.core.frame import Frame
 from ....magic.plot.imagegrid import ImageGridPlotter
 from ....core.basics.distribution import Distribution
+from ....magic.basics.skyregion import SkyRegion
 
 # -----------------------------------------------------------------
 
@@ -64,6 +65,9 @@ class ColourAnalyser(ColourAnalysisComponent):
         # The residual pixel value distributions
         self.residual_distributions = dict()
 
+        # The truncation ellipse
+        self.ellipse = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -105,16 +109,19 @@ class ColourAnalyser(ColourAnalysisComponent):
         # 4. Rebin the images to the same pixel grid
         self.rebin()
 
-        # 4. Calculate the colour maps
+        # 5. Load the truncation ellipse
+        self.load_truncation_ellipse()
+
+        # 6. Calculate the colour maps
         self.calculate_colours()
 
-        # 5. Calculate the residual colour maps
+        # 7. Calculate the residual colour maps
         self.calculate_residuals()
 
-        # 5. Writing
+        # 8. Writing
         self.write()
 
-        # 6. Plotting
+        # 9. Plotting
         self.plot()
 
     # -----------------------------------------------------------------
@@ -236,6 +243,25 @@ class ColourAnalyser(ColourAnalysisComponent):
 
                 # Rebin the image to the standardized coordinate system
                 self.simulated[key] = self.simulated[key].rebinned(target_wcs)
+
+    # -----------------------------------------------------------------
+
+    def load_truncation_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the ellipse region used for truncating the observed images ...")
+
+        # Determine the path
+        path = fs.join(self.truncation_path, "ellipse.reg")
+
+        # Get the ellipse
+        region = SkyRegion.from_file(path)
+        self.ellipse = region[0]
 
     # -----------------------------------------------------------------
 
@@ -481,7 +507,11 @@ class ColourAnalyser(ColourAnalysisComponent):
 
             observed_colour = self.observed_colours[colour_name]
             simulated_colour = self.simulated_colours[colour_name]
+
             plotter.add_row(observed_colour, simulated_colour, colour_name)
+
+        # Set the bounding box for the plotter
+        plotter.set_bounding_box(self.ellipse.bounding_box)
 
         # Determine the path to the plot file
         path = fs.join(self.analysis_colours_path, "colours.pdf")

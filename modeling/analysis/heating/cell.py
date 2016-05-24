@@ -46,6 +46,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Call the constructor of the base class
         super(CellDustHeatingAnalyser, self).__init__(config)
 
+        # -- Attributes --
+
         # The wavelength grid used for the simulations
         self.wavelength_grid = None
 

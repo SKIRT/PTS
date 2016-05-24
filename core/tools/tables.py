@@ -119,6 +119,33 @@ def find_indices(table, key, column_name=None):
 
 # -----------------------------------------------------------------
 
+def find_closest_index(table, value, column_name=None):
+
+    """
+    This function ...
+    :param table:
+    :param value:
+    :param column_name:
+    :return:
+    """
+
+    # Get first column name if none is given
+    if column_name is None: column_name = table.colnames[0]
+
+    closest_delta = float("inf")
+
+    # Loop over all entries in the column
+    for i in range(len(table)):
+
+        delta = table[column_name][i] - value
+
+        if delta < closest_delta: closest_delta = delta
+        else: return i
+
+    return None
+
+# -----------------------------------------------------------------
+
 def equal_columns(columns):
 
     """

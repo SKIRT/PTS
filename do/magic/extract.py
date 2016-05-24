@@ -23,7 +23,7 @@ from pts.magic.misc.imageimporter import ImageImporter
 from pts.magic.sources.extractor import SourceExtractor
 from pts.core.tools import configuration, logging, time
 from pts.core.tools import filesystem as fs
-from pts.core.basics.animatedgif import AnimatedGif
+from pts.core.basics.animation import Animation
 
 # -----------------------------------------------------------------
 
@@ -145,7 +145,7 @@ other_segments = segments.frames.other_sources if "other_sources" in segments.fr
 
 # If visualisation is enabled, set the visualisation path (=output path)
 if arguments.visualise:
-    animation = AnimatedGif()
+    animation = Animation()
     animation.fps = 1
 else: animation = None
 

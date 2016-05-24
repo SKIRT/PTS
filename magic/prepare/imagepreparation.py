@@ -30,10 +30,11 @@ from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from ...modeling.preparation import unitconversion
 from ...core.tools import special
-from ...core.basics.animatedgif import AnimatedGif
+from ...core.basics.animation import Animation
 from ...core.tools import filesystem as fs
 from ...core.tools import time
 from ..tools import plotting
+from ..animation.imageblink import ImageBlinkAnimation
 
 # -----------------------------------------------------------------
 
@@ -338,18 +339,12 @@ class ImagePreparer(Configurable):
         # Create an animation to show the result of this step
         if self.visualisation_path is not None:
 
-            # Create an animation to show the result of the source extraction step
-            max_frame_value = np.nanmax(self.image.frames.primary)
-            animation = AnimatedGif()
-            buf = io.BytesIO()
-            plotting.plot_box(self.image.frames.primary, path=buf, format="png", vmin=0.0, vmax=max_frame_value)
-            buf.seek(0)
-            im = imageio.imread(buf)
-            buf.close()
-            animation.add_frame(im)
+            # Create an animation
+            animation = ImageBlinkAnimation()
+            animation.add_image(self.image.frames.primary)
 
             # Create an animation to show the progress of the SourceExtractor
-            source_extractor_animation = AnimatedGif()
+            source_extractor_animation = Animation()
             source_extractor_animation.fps = 1 # 1 frame per second because the frames are very distinct
         else:
             animation = None
@@ -368,14 +363,8 @@ class ImagePreparer(Configurable):
             # Save the animation
             source_extractor_animation.save(path)
 
-            # ----
-
-            buf = io.BytesIO()
-            plotting.plot_box(self.image.frames.primary, path=buf, format="png", vmin=0.0, vmax=max_frame_value)
-            buf.seek(0)
-            im = imageio.imread(buf)
-            buf.close()
-            animation.add_frame(im)
+            # ...
+            animation.add_image(self.image.frames.primary)
 
             # Determine the path to the animation
             path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_imagepreparation_extractsources") + ".gif")
@@ -472,14 +461,9 @@ class ImagePreparer(Configurable):
         # Create an animation to show the result of this step
         if self.visualisation_path is not None:
 
-            max_frame_value = np.nanmax(self.image.frames.primary)
-            animation = AnimatedGif()
-            buf = io.BytesIO()
-            plotting.plot_box(self.image.frames.primary, path=buf, format="png", vmin=0.0, vmax=max_frame_value)
-            buf.seek(0)
-            im = imageio.imread(buf)
-            buf.close()
-            animation.add_frame(im)
+            # Create an animation
+            animation = ImageBlinkAnimation()
+            animation.add_image(self.image.frames.primary)
 
         else: animation = None
 
@@ -517,13 +501,7 @@ class ImagePreparer(Configurable):
 
         # Write the animation
         if self.visualisation_path is not None:
-
-            buf = io.BytesIO()
-            plotting.plot_box(self.image.frames.primary, path=buf, format="png", vmin=0.0, vmax=max_frame_value)
-            buf.seek(0)
-            im = imageio.imread(buf)
-            buf.close()
-            animation.add_frame(im)
+            animation.add_image(self.image.frames.primary)
 
             # Determine the path to the animation
             path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_imagepreparation_convolve") + ".gif")
@@ -580,17 +558,11 @@ class ImagePreparer(Configurable):
         if self.visualisation_path is not None:
 
             # Create an animation to show the result of the sky subtraction step
-            max_frame_value = np.nanmax(self.image.frames.primary)
-            animation = AnimatedGif()
-            buf = io.BytesIO()
-            plotting.plot_box(self.image.frames.primary, path=buf, format="png", vmin=0.0, vmax=max_frame_value)
-            buf.seek(0)
-            im = imageio.imread(buf)
-            buf.close()
-            animation.add_frame(im)
+            animation = ImageBlinkAnimation()
+            animation.add_image(self.image.frames.primary)
 
             # Create an animation to show the progress of the SkySubtractor
-            skysubtractor_animation = AnimatedGif()
+            skysubtractor_animation = Animation()
         else:
             animation = None
             skysubtractor_animation = None
@@ -647,12 +619,8 @@ class ImagePreparer(Configurable):
             # Save the animation
             skysubtractor_animation.save(path)
 
-            buf = io.BytesIO()
-            plotting.plot_box(self.image.frames.primary, path=buf, format="png", vmin=0.0, vmax=max_frame_value)
-            buf.seek(0)
-            im = imageio.imread(buf)
-            buf.close()
-            animation.add_frame(im)
+            # ...
+            animation.add_image(self.image.frames.primary)
 
             # Determine the path to the animation
             path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_imagepreparation_subtractsky") + ".gif")

@@ -23,7 +23,7 @@ from ...core.tools import tables, time
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
-from ...core.basics.animatedgif import AnimatedGif
+from ...core.basics.animation import Animation
 
 # -----------------------------------------------------------------
 
@@ -262,8 +262,8 @@ class SEDFitter(FittingComponent):
         # Inform the user
         log.info("Creating an animation of the SED fitting procedure ...")
 
-        # Create an AnimatedGif instance
-        self.animation = AnimatedGif()
+        # Create an Animation instance
+        self.animation = Animation()
 
         # Loop over the entries of the chi squared table (sorted by decreasing chi squared)
         for i in range(len(self.chi_squared)):

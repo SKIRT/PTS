@@ -50,6 +50,9 @@ class ResidualAnalyser(AnalysisComponent):
         # The residual images
         self.residuals = dict()
 
+        # The truncation ellipse
+        self.ellipse = None
+
     # -----------------------------------------------------------------
 
     @classmethod

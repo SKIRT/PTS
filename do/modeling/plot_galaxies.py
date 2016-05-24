@@ -5,8 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.list_galaxies List the galaxies in the DustPedia database that are eligible for the
-#  radiative transfer modeling.
+## \package pts.do.modeling.plot_galaxies Plot the positions of the galaxies in the DustPedia database
 
 # -----------------------------------------------------------------
 
@@ -53,30 +52,6 @@ local_table_path = fs.join(inspection.pts_dat_dir("modeling"), "s4g", "s4g_p4_ta
 
 # -----------------------------------------------------------------
 
-def get_galaxy_names_s4g():
-
-    """
-    This function ...
-    :return:
-    """
-
-    names = []
-
-    with open(local_table_path, 'r') as s4g_table:
-
-        for line in s4g_table:
-
-            splitted = line.split()
-
-            if len(splitted) < 2: continue
-
-            # Get the galaxy name and add it to the list
-            name = splitted[1]
-            names.append(name)
-
-    # Return the list of galaxy names
-    return names
-
 # -----------------------------------------------------------------
 
 # Get the account info
@@ -87,11 +62,6 @@ database = DustPediaDatabase()
 
 # Login with the user and password
 #database.login(username, password)
-
-# EARLY TYPE SPIRALS: early-type (Sa–Sab) spiral galaxies
-
-parameters = {"D25": (5., None),
-              "Hubble type": ["Sa", "Sab", "Sb"]}
 
 table = database.get_galaxies(parameters)
 

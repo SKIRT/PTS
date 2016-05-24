@@ -24,7 +24,7 @@ from ...magic.misc.imageimporter import ImageImporter
 from ...magic.catalog.importer import CatalogImporter
 from ...magic.core.image import Image
 from ...magic.core.frame import Frame
-from ...core.basics.animatedgif import AnimatedGif
+from ...core.basics.animation import Animation
 from ...core.tools import time
 
 # -----------------------------------------------------------------
@@ -397,7 +397,7 @@ class PreparationInitializer(PreparationComponent):
         else: self.source_finder.config.find_other_sources = True
 
         # Create an animation for the source finder
-        if self.config.visualise: animation = AnimatedGif()
+        if self.config.visualise: animation = Animation()
         else: animation = None
 
         # Run the source finder on this image

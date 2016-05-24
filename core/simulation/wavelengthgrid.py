@@ -158,6 +158,30 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
+    def closest_wavelength(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        return self.table["Wavelength"][self.closest_wavelength_index(wavelength)]
+
+    # -----------------------------------------------------------------
+
+    def closest_wavelength_index(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        return tables.find_closest_index(self.table, wavelength, column_name="Wavelength")
+
+    # -----------------------------------------------------------------
+
     def wavelengths(self, unit=None, asarray=False, add_unit=True):
 
         """

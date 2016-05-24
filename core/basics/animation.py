@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.basics.animatedgif Contains the AnimatedGif class.
+## \package pts.core.basics.animation Contains the Animation class.
 
 # -----------------------------------------------------------------
 
@@ -15,7 +15,7 @@ import imageio
 
 # -----------------------------------------------------------------
 
-class AnimatedGif(object):
+class Animation(object):
 
     """
     This class ...

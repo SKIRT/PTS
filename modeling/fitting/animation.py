@@ -19,7 +19,7 @@ import imageio
 from .component import FittingComponent
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
-from ...core.basics.animatedgif import AnimatedGif
+from ...core.basics.animation import Animation
 
 # -----------------------------------------------------------------
 
@@ -132,7 +132,7 @@ class FitAnimator(FittingComponent):
         """
 
         # Create the animated GIF instance
-        self.animation = AnimatedGif(self.frames)
+        self.animation = Animation(self.frames)
 
     # -----------------------------------------------------------------
 

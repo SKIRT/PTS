@@ -119,6 +119,7 @@ def main():
 
     # Make heating map
     inCube = inSED.replace('sed.dat','total.fits')
+
     makeHeatMap(inpath,outpath,inCube,startwl,dustwls,delta_wls)
     #makeWarmHeatMap(inpath,outpath,inCube,startwl,coldstartwl-1, warmwls)
     #makeColdHeatMap(inpath,outpath,inCube,coldstartwl, coldwls)

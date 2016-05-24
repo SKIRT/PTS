@@ -240,7 +240,7 @@ class DustPediaDatabase(object):
                 elif "D25 (arcmin)" in line: d25 = float(line.split(": ")[1])
                 elif "Inclination (deg.)" in line: i = float(line.split(": ")[1])
 
-            if "Hubble type" in parameters and type == parameters["Hubble type"]:
+            if add_hubble_type(type, parameters):
 
                 name_column.append(name)
                 ra_column.append(ra)
@@ -532,5 +532,23 @@ def get_account():
 
     username, password = np.loadtxt(account_path, dtype=str)
     return username, password
+
+# -----------------------------------------------------------------
+
+def add_hubble_type(hubble_type, parameters):
+
+    """
+    This function ...
+    :param hubble_type:
+    :param parameters:
+    :return:
+    """
+
+    if "Hubble type" in parameters:
+
+        if isinstance(parameters["Hubble type"], basestring): return hubble_type == parameters["Hubble type"]
+        else: return hubble_type in parameters["Hubble type"]
+
+    else: return True
 
 # -----------------------------------------------------------------

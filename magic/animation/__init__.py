@@ -9,11 +9,7 @@
 #  Package initialization file
 # -----------------------------------------------------------------
 
-## \package pts.modeling.plotting TO DO
+## \package pts.magic.animation TO DO
 #
 # This package ...
 #
-
-# -----------------------------------------------------------------
-
-# Import classes to make them available at the level of this subpackage
