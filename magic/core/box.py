@@ -631,8 +631,12 @@ class Box(np.ndarray):
             order = 3
             try: polynomial = fitting.fit_polynomial(self, order, mask=mask)
             except TypeError:
-                mask = mask.eroded(connectivity=2, iterations=1)
-                polynomial = fitting.fit_polynomial(self, order, mask=mask)
+                try:
+                    mask = mask.eroded(connectivity=2, iterations=1)
+                    polynomial = fitting.fit_polynomial(self, order, mask=mask)
+                except TypeError:
+                    log.warning("Cannot interpolate over this box ...")
+                    return self.copy()
 
             # Evaluate the polynomial
             poly_data = fitting.evaluate_model(polynomial, 0, self.xsize, 0, self.ysize)

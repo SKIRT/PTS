@@ -26,7 +26,7 @@ from astropy.units import Unit
 # Import the relevant PTS classes and modules
 from ..core.frame import Frame
 from ...core.tools import inspection
-from ...core.tools import fs as fs
+from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------

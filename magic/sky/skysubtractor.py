@@ -604,7 +604,7 @@ class SkySubtractor(Configurable):
             apertures_mask[source.y_slice, source.x_slice] += source.mask
 
             # Debugging
-            log.debug("Placed aperture " + str(current_napertures+1) + " of " + str(napertures) + " (" + str((current_napertures+1)/napertures*100.) + "%)")
+            log.debug("Placed aperture " + str(current_napertures+1) + " of " + str(napertures) + " ({0:.2f}%)".format((current_napertures+1)/napertures*100.))
 
             if self.animation is not None:
 

@@ -39,6 +39,9 @@ class ImageBlinkAnimation(Animation):
         # Maximum value of the frame
         self.max_frame_value = None
 
+        # Set the number of frames per second
+        self.fps = 2
+
     # -----------------------------------------------------------------
 
     def add_image(self, image):
@@ -50,8 +53,9 @@ class ImageBlinkAnimation(Animation):
         """
 
         # Create an animation to show the result of the source extraction step
-        if self.max_frame_value is None: max_frame_value = np.nanmax(image)
+        if self.max_frame_value is None: self.max_frame_value = np.nanmax(image)
 
+        # Make a plot of the image
         buf = io.BytesIO()
         plotting.plot_box(image, path=buf, format="png", vmin=0.0, vmax=self.max_frame_value)
         buf.seek(0)

@@ -231,6 +231,7 @@ class Filter:
         iras_100_names = ["IRAS 100", "IRAS 100", "IRAS.100um", "IRAS 100um", "IRAS.100mu", "IRAS 100mu"]
 
         # Ha
+        if name == "656_1": return cls(name)
         ha_names = ["Ha", "H alpha", "H-alpha", "H-a", "Halpha"]
 
         # SWIFT UVOT filters
