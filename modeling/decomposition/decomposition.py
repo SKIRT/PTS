@@ -23,7 +23,8 @@ from astropy.coordinates import Angle
 # Import the relevant PTS classes and modules
 from .component import DecompositionComponent
 from ...core.basics.map import Map
-from ...core.tools import inspection, filesystem
+from ...core.tools import inspection
+from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.simulation.skifile import SkiFile
 from ..preparation import unitconversion
@@ -40,6 +41,7 @@ from ...core.tools import tables
 from ..basics.models import SersicModel, ExponentialDiskModel
 from ..basics.instruments import SimpleInstrument
 from ...magic.misc.kernels import AnianoKernels
+from ..basics.projection import GalaxyProjection, FaceOnProjection, EdgeOnProjection
 
 # -----------------------------------------------------------------
 
@@ -47,17 +49,12 @@ from ...magic.misc.kernels import AnianoKernels
 s4g_decomposition_table_link = "http://www.oulu.fi/astronomy/S4G_PIPELINE4/s4g_p4_table8.dat"
 
 # Local table path
-local_table_path = filesystem.join(inspection.pts_dat_dir("modeling"), "s4g", "s4g_p4_table8.dat")
+local_table_path = fs.join(inspection.pts_dat_dir("modeling"), "s4g", "s4g_p4_table8.dat")
 
 # -----------------------------------------------------------------
 
 # The path to the template ski files directory
-template_path = filesystem.join(inspection.pts_dat_dir("modeling"), "ski")
-
-# -----------------------------------------------------------------
-
-# Reference image
-reference_image = "Pacs red"
+template_path = fs.join(inspection.pts_dat_dir("modeling"), "ski")
 
 # -----------------------------------------------------------------
 
@@ -106,10 +103,11 @@ class GalaxyDecomposer(DecompositionComponent):
         self.disk_image = None
         self.model_image = None
 
+        # The projection systems
+        self.projections = dict()
+
         # The instruments
-        self.earth = None
-        self.faceon = None
-        self.edgeon = None
+        self.instruments = dict()
 
         # The reference coordinate system
         self.reference_wcs = None
@@ -155,6 +153,9 @@ class GalaxyDecomposer(DecompositionComponent):
         # 3. Create the models
         self.create_models()
 
+        # 4. Create the projection system
+        self.create_projection()
+
         # 4. Create the instruments
         self.create_instruments()
 
@@ -190,10 +191,10 @@ class GalaxyDecomposer(DecompositionComponent):
         self.model_directory = self.full_output_path("model")
 
         # Create the bulge and disk directories
-        filesystem.create_directories([self.bulge_directory, self.disk_directory, self.model_directory])
+        fs.create_directories([self.bulge_directory, self.disk_directory, self.model_directory])
 
-        # Get the parameters describing the pixel grid of the prepared images
-        reference_path = filesystem.join(self.prep_path, reference_image, "result.fits")
+        # Get the coordinate system describing the pixel grid of the prepared images
+        reference_path = fs.join(self.prep_path, self.reference_image, "result.fits")
         self.reference_wcs = CoordinateSystem.from_file(reference_path)
 
         # Load the PSF
@@ -653,6 +654,29 @@ class GalaxyDecomposer(DecompositionComponent):
 
     # -----------------------------------------------------------------
 
+    def create_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the projection systems ...")
+
+        # Create the 'earth' projection system
+        azimuth = 0.0
+        self.projections["earth"] = GalaxyProjection.from_wcs(self.reference_wcs, self.parameters.center, self.parameters.distance,
+                                                              self.parameters.inclination, azimuth, self.parameters.disk.PA)
+
+        # Create the face-on projection system
+        self.projections["faceon"] = FaceOnProjection.from_wcs(self.reference_wcs, self.parameters.center, self.parameters.distance)
+
+        # Create the edge-on projection system
+        self.projections["edgeon"] = EdgeOnProjection.from_wcs(self.reference_wcs, self.parameters.center, self.parameters.distance)
+
+    # -----------------------------------------------------------------
+
     def create_instruments(self):
 
         """
@@ -660,40 +684,14 @@ class GalaxyDecomposer(DecompositionComponent):
         :return:
         """
 
-        # SKIRT:  incl.  azimuth PA
-        # XY-plane	0	 0	    90
-        # XZ-plane	90	 -90	0
-        # YZ-plane	90	 0	    0
+        # Inform the user
+        log.info("Creating the instruments ...")
 
-        # Determine the instrument properties
-        distance = self.parameters.distance
-        inclination = self.parameters.inclination
-        azimuth = 0.0
-        position_angle = self.parameters.disk.PA # SAME PA AS THE DISK, BUT TILT THE BULGE W.R.T. THE DISK
-        pixels_x = self.reference_wcs.xsize
-        pixels_y = self.reference_wcs.ysize
-        pixel_center = self.parameters.center.to_pixel(self.reference_wcs)
-        #center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5) # when not convolved ...
-        center = Position(0.5*pixels_x - pixel_center.x - 1, 0.5*pixels_y - pixel_center.y - 1) # when convolved ...
-        center_x = center.x * Unit("pix")
-        center_y = center.y * Unit("pix")
-        center_x = (center_x * self.reference_wcs.pixelscale.x.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
-        center_y = (center_y * self.reference_wcs.pixelscale.y.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
-        field_x_angular = self.reference_wcs.pixelscale.x.to("deg/pix") * pixels_x * Unit("pix")
-        field_y_angular = self.reference_wcs.pixelscale.y.to("deg/pix") * pixels_y * Unit("pix")
-        field_x_physical = (field_x_angular * distance).to("pc", equivalencies=dimensionless_angles())
-        field_y_physical = (field_y_angular * distance).to("pc", equivalencies=dimensionless_angles())
+        # Loop over the projection systems
+        for name in self.projections:
 
-        # Create the 'earth' instrument
-        self.earth = SimpleInstrument(distance, inclination, azimuth, position_angle, field_x_physical, field_y_physical, pixels_x, pixels_y, center_x, center_y)
-
-        # Create the face-on instrument
-        position_angle = Angle(90., "deg")
-        self.faceon = SimpleInstrument(distance, 0.0, 0.0, position_angle, field_x_physical, field_y_physical, pixels_x, pixels_y, center_x, center_y)
-
-        # Create the edge-on instrument
-        #azimuth = Angle(-90., "deg")
-        self.edgeon = SimpleInstrument(distance, 90.0, 0.0, 0.0, field_x_physical, field_y_physical, pixels_x, pixels_y, center_x, center_y)
+            # Create the instrument from the projection system
+            self.instruments[name] = SimpleInstrument.from_projection(self.projections[name])
 
     # -----------------------------------------------------------------
 
@@ -728,7 +726,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating ski file to simulate the bulge image ...")
 
         # Load the bulge ski file template
-        bulge_template_path = filesystem.join(template_path, "bulge.ski")
+        bulge_template_path = fs.join(template_path, "bulge.ski")
         ski = SkiFile(bulge_template_path)
 
         # Set the number of photon packages
@@ -766,19 +764,19 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Create the directory to simulate the bulge
         simple_bulge_directory = self.full_output_path("bulge_simple")
-        filesystem.create_directory(simple_bulge_directory)
+        fs.create_directory(simple_bulge_directory)
 
         # Determine the path to the ski file
-        ski_path = filesystem.join(simple_bulge_directory, "bulge.ski")
+        ski_path = fs.join(simple_bulge_directory, "bulge.ski")
 
         # Save the ski file to the new path
         ski.saveto(ski_path)
 
         # Determine the path to the simulation output directory
-        out_path = filesystem.join(simple_bulge_directory, "out")
+        out_path = fs.join(simple_bulge_directory, "out")
 
         # Create the output directory
-        filesystem.create_directory(out_path)
+        fs.create_directory(out_path)
 
         # Create a SkirtArguments object
         arguments = SkirtArguments()
@@ -795,10 +793,10 @@ class GalaxyDecomposer(DecompositionComponent):
         simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True)
 
         # Determine the path to the output FITS file
-        bulge_image_path = filesystem.join(out_path, "bulge_earth_total.fits")
+        bulge_image_path = fs.join(out_path, "bulge_earth_total.fits")
 
         # Check if the output contains the "bulge_earth_total.fits" file
-        if not filesystem.is_file(bulge_image_path):
+        if not fs.is_file(bulge_image_path):
             raise RuntimeError("Something went wrong with the simple bulge simulation: output FITS file missing")
 
     # -----------------------------------------------------------------
@@ -814,7 +812,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating ski file to simulate the bulge image ...")
 
         # Load the bulge ski file template
-        bulge_template_path = filesystem.join(template_path, "bulge.ski")
+        bulge_template_path = fs.join(template_path, "bulge.ski")
         ski = SkiFile(bulge_template_path)
 
         # Set the number of photon packages
@@ -827,21 +825,19 @@ class GalaxyDecomposer(DecompositionComponent):
         ski.remove_all_instruments()
 
         # Add the instruments
-        ski.add_instrument("earth", self.earth)
-        ski.add_instrument("faceon", self.faceon)
-        ski.add_instrument("edgeon", self.edgeon)
+        for name in self.instruments: ski.add_instrument(name, self.instruments[name])
 
         # Determine the path to the ski file
-        ski_path = filesystem.join(self.bulge_directory, "bulge.ski")
+        ski_path = fs.join(self.bulge_directory, "bulge.ski")
 
         # Save the ski file to the new path
         ski.saveto(ski_path)
 
         # Determine the path to the simulation output directory
-        out_path = filesystem.join(self.bulge_directory, "out")
+        out_path = fs.join(self.bulge_directory, "out")
 
         # Create the output directory
-        filesystem.create_directory(out_path)
+        fs.create_directory(out_path)
 
         # Create a SkirtArguments object
         arguments = SkirtArguments()
@@ -858,10 +854,10 @@ class GalaxyDecomposer(DecompositionComponent):
         simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True)
 
         # Determine the path to the output FITS file
-        bulge_image_path = filesystem.join(out_path, "bulge_earth_total.fits")
+        bulge_image_path = fs.join(out_path, "bulge_earth_total.fits")
 
         # Check if the output contains the "bulge_earth_total.fits" file
-        if not filesystem.is_file(bulge_image_path):
+        if not fs.is_file(bulge_image_path):
             raise RuntimeError("Something went wrong with the bulge simulation: output FITS file missing")
 
         # Open the bulge image
@@ -897,7 +893,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating ski file to simulate the disk image ...")
 
         # Load the disk ski file template
-        disk_template_path = filesystem.join(template_path, "disk.ski")
+        disk_template_path = fs.join(template_path, "disk.ski")
         ski = SkiFile(disk_template_path)
 
         # Set the number of photon packages
@@ -910,21 +906,19 @@ class GalaxyDecomposer(DecompositionComponent):
         ski.remove_all_instruments()
 
         # Add the instruments
-        ski.add_instrument("earth", self.earth)
-        ski.add_instrument("faceon", self.faceon)
-        ski.add_instrument("edgeon", self.edgeon)
+        for name in self.instruments: ski.add_instrument(name, self.instruments[name])
 
         # Determine the path to the ski file
-        ski_path = filesystem.join(self.disk_directory, "disk.ski")
+        ski_path = fs.join(self.disk_directory, "disk.ski")
 
         # Save the ski file to the new path
         ski.saveto(ski_path)
 
         # Determine the path to the simulation output directory
-        out_path = filesystem.join(self.disk_directory, "out")
+        out_path = fs.join(self.disk_directory, "out")
 
         # Create the output directory
-        filesystem.create_directory(out_path)
+        fs.create_directory(out_path)
 
         # Create a SkirtArguments object
         arguments = SkirtArguments()
@@ -941,10 +935,10 @@ class GalaxyDecomposer(DecompositionComponent):
         simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True)
 
         # Determine the path to the output FITS file
-        disk_image_path = filesystem.join(out_path, "disk_earth_total.fits")
+        disk_image_path = fs.join(out_path, "disk_earth_total.fits")
 
         # Check if the output contains the "disk_earth_total.fits" file
-        if not filesystem.is_file(disk_image_path):
+        if not fs.is_file(disk_image_path):
             raise RuntimeError("Something went wrong with the disk simulation: output FITS file missing")
 
         # Open the disk image
@@ -979,7 +973,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating ski file to simulate the bulge+disk model image ...")
 
         # Load the disk ski file template
-        disk_template_path = filesystem.join(template_path, "model.ski")
+        disk_template_path = fs.join(template_path, "model.ski")
         ski = SkiFile(disk_template_path)
 
         # Set the number of photon packages
@@ -997,21 +991,19 @@ class GalaxyDecomposer(DecompositionComponent):
         ski.remove_all_instruments()
 
         # Add the instruments
-        ski.add_instrument("earth", self.earth)
-        ski.add_instrument("faceon", self.faceon)
-        ski.add_instrument("edgeon", self.edgeon)
+        for name in self.instruments: ski.add_instrument(name, self.instruments[name])
 
         # Determine the path to the ski file
-        ski_path = filesystem.join(self.model_directory, "model.ski")
+        ski_path = fs.join(self.model_directory, "model.ski")
 
         # Save the ski file to the new path
         ski.saveto(ski_path)
 
         # Determine the path to the simulation output directory
-        out_path = filesystem.join(self.model_directory, "out")
+        out_path = fs.join(self.model_directory, "out")
 
         # Create the output directory
-        filesystem.create_directory(out_path)
+        fs.create_directory(out_path)
 
         # Create a SkirtArguments object
         arguments = SkirtArguments()
@@ -1028,10 +1020,10 @@ class GalaxyDecomposer(DecompositionComponent):
         simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True)
 
         # Determine the path to the output FITS file
-        model_image_path = filesystem.join(out_path, "model_earth_total.fits")
+        model_image_path = fs.join(out_path, "model_earth_total.fits")
 
         # Check if the output contains the "model_earth_total.fits" file
-        if not filesystem.is_file(model_image_path):
+        if not fs.is_file(model_image_path):
             raise RuntimeError("Something went wrong with the disk+bulge simulation: output FITS file missing")
 
         # Open the model image
@@ -1072,6 +1064,9 @@ class GalaxyDecomposer(DecompositionComponent):
         # Write out the parameters in a data file
         self.write_parameters()
 
+        # Write the projection systems
+        self.write_projections()
+
         # Write out the disk ellipse
         self.write_disk_ellipse()
 
@@ -1085,15 +1080,15 @@ class GalaxyDecomposer(DecompositionComponent):
         """
 
         # Determine the path to the bulge image and save it
-        final_bulge_path = filesystem.join(self.components_path, "bulge.fits")
+        final_bulge_path = fs.join(self.components_path, "bulge.fits")
         self.bulge_image.save(final_bulge_path)
 
         # Determine the path to the disk image and save it
-        final_disk_path = filesystem.join(self.components_path, "disk.fits")
+        final_disk_path = fs.join(self.components_path, "disk.fits")
         self.disk_image.save(final_disk_path)
 
         # Determine the path to the model image and save it
-        final_model_path = filesystem.join(self.components_path, "model.fits")
+        final_model_path = fs.join(self.components_path, "model.fits")
         self.model_image.save(final_model_path)
 
     # -----------------------------------------------------------------
@@ -1113,6 +1108,27 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Write the parameters to the specified location
         write_parameters(self.parameters, path)
+
+    # -----------------------------------------------------------------
+
+    def write_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the projection systems ...")
+
+        # Loop over the projection systems
+        for name in self.projections:
+
+            # Determine the path to the projection file
+            path = self.full_output_path(name + ".proj")
+
+            # Write the projection system
+            self.projections[name].save(path)
 
     # -----------------------------------------------------------------
 

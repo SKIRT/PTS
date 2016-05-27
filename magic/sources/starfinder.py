@@ -29,7 +29,8 @@ from ..core.source import Source
 from ..object.star import Star
 from ..tools import statistics, fitting
 from ...core.basics.configurable import Configurable
-from ...core.tools import tables, filesystem
+from ...core.tools import tables
+from ...core.tools import fs as fs
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
@@ -687,7 +688,7 @@ class StarFinder(Configurable):
             if star.has_saturation:
 
                 # Determine the path
-                path = filesystem.join(directory_path, "saturation_" + str(star.index) + ".fits")
+                path = fs.join(directory_path, "saturation_" + str(star.index) + ".fits")
 
                 # Save the saturation source as a FITS file
                 star.saturation.save(path, origin=self.name)
@@ -698,7 +699,7 @@ class StarFinder(Configurable):
             if star.has_model:
 
                 # Determine the path
-                path = filesystem.join(directory_path, "star-fitted_" + str(star.index) + ".fits")
+                path = fs.join(directory_path, "star-fitted_" + str(star.index) + ".fits")
 
                 # Create source
                 source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=shape)
@@ -714,7 +715,7 @@ class StarFinder(Configurable):
             elif star.has_source:
 
                 # Determine the path
-                path = filesystem.join(directory_path, "star-detected_" + str(star.index) + ".fits")
+                path = fs.join(directory_path, "star-detected_" + str(star.index) + ".fits")
 
                 # Create source
                 source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=shape)
@@ -730,7 +731,7 @@ class StarFinder(Configurable):
             else:
 
                 # Determine the path
-                path = filesystem.join(directory_path, "star-undetected_" + str(star.index) + ".fits")
+                path = fs.join(directory_path, "star-undetected_" + str(star.index) + ".fits")
 
                 # Create a source for the desired sigma level and outer factor
                 source = star.source_at_sigma_level(self.original_frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=True, shape=shape)

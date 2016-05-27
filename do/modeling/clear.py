@@ -16,7 +16,8 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time, filesystem
+from pts.core.tools import logging, time
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -35,12 +36,12 @@ arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
-modeling_path = filesystem.cwd()
+modeling_path = fs.cwd()
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = filesystem.join(modeling_path, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(modeling_path, time.unique_name("log") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"
@@ -51,21 +52,21 @@ log.start("Starting clear ...")
 
 # -----------------------------------------------------------------
 
-prep_path = filesystem.join(modeling_path, "prep")
-components_path = filesystem.join(modeling_path, "components")
-truncated_path = filesystem.join(modeling_path, "truncated")
-phot_path = filesystem.join(modeling_path, "phot")
-maps_path = filesystem.join(modeling_path, "maps")
-fit_path = filesystem.join(modeling_path, "fit")
-analysis_path = filesystem.join(modeling_path, "analysis")
+prep_path = fs.join(modeling_path, "prep")
+components_path = fs.join(modeling_path, "components")
+truncated_path = fs.join(modeling_path, "truncated")
+phot_path = fs.join(modeling_path, "phot")
+maps_path = fs.join(modeling_path, "maps")
+fit_path = fs.join(modeling_path, "fit")
+analysis_path = fs.join(modeling_path, "analysis")
 
-if arguments.step == "prep": filesystem.clear_directory(prep_path)
-elif arguments.step == "components": filesystem.clear_directory(components_path)
-elif arguments.step == "truncated": filesystem.clear_directory(truncated_path)
-elif arguments.step == "phot": filesystem.clear_directory(phot_path)
-elif arguments.step == "maps": filesystem.clear_directory(maps_path)
-elif arguments.step == "fit": filesystem.clear_directory(fit_path)
-elif arguments.step == "analysis": filesystem.clear_directory(analysis_path)
+if arguments.step == "prep": fs.clear_directory(prep_path)
+elif arguments.step == "components": fs.clear_directory(components_path)
+elif arguments.step == "truncated": fs.clear_directory(truncated_path)
+elif arguments.step == "phot": fs.clear_directory(phot_path)
+elif arguments.step == "maps": fs.clear_directory(maps_path)
+elif arguments.step == "fit": fs.clear_directory(fit_path)
+elif arguments.step == "analysis": fs.clear_directory(analysis_path)
 else: raise ValueError("Invalid modeling step")
 
 # -----------------------------------------------------------------

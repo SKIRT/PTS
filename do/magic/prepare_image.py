@@ -20,7 +20,8 @@ from astroquery.irsa_dust import IrsaDust
 
 # Import the relevant PTS classes and modules
 from pts.magic.prepare.imagepreparation import ImagePreparer
-from pts.core.tools import logging, time, filesystem, tables
+from pts.core.tools import logging, time, tables
+from pts.core.tools import filesystem as fs
 from pts.magic.core.image import Image
 from pts.magic.basics.region import Region
 
@@ -109,15 +110,15 @@ arguments = parser.parse_args()
 # -----------------------------------------------------------------
 
 # Determine the full input and output paths
-if arguments.output is None: arguments.output = filesystem.cwd()
-if arguments.input is None: arguments.input = filesystem.cwd()
-arguments.input = filesystem.absolute(arguments.input)
-arguments.output = filesystem.absolute(arguments.output)
+if arguments.output is None: arguments.output = fs.cwd()
+if arguments.input is None: arguments.input = fs.cwd()
+arguments.input = fs.absolute(arguments.input)
+arguments.output = fs.absolute(arguments.output)
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = filesystem.join(arguments.output, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(arguments.output, time.unique_name("log") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"
@@ -129,43 +130,43 @@ log.start("Starting prepare_image ...")
 # -----------------------------------------------------------------
 
 # Determine the path to the input image
-image_path = filesystem.absolute(arguments.image)
+image_path = fs.absolute(arguments.image)
 
 # Load the image
 image = Image.from_file(image_path)
 
 # Determine the absolute path to the reference image
-arguments.reference = filesystem.absolute(arguments.reference)
+arguments.reference = fs.absolute(arguments.reference)
 
 # Determine the absolute path to the convolution kernel
-arguments.kernel = filesystem.absolute(arguments.kernel)
+arguments.kernel = fs.absolute(arguments.kernel)
 
 # Determine the path to the galaxy region
-galaxy_region_path = filesystem.join(arguments.input, "galaxies.reg")
+galaxy_region_path = fs.join(arguments.input, "galaxies.reg")
 
 # Load the galaxy region
 galaxy_region = Region.from_file(galaxy_region_path)
 
 # Determine the path to the star region
-star_region_path = filesystem.join(arguments.input, "stars.reg")
+star_region_path = fs.join(arguments.input, "stars.reg")
 
 # Load the star region
 star_region = Region.from_file(star_region_path)
 
 # Determine the path to the saturation region
-saturation_region_path = filesystem.join(arguments.input, "saturation.reg")
+saturation_region_path = fs.join(arguments.input, "saturation.reg")
 
 # Load the saturation region
 saturation_region = Region.from_file(saturation_region_path)
 
 # Determine the path to the region of other sources
-other_region_path = filesystem.join(arguments.input, "other_sources.reg")
+other_region_path = fs.join(arguments.input, "other_sources.reg")
 
 # Load the region of other sources
 other_region = Region.from_file(other_region_path)
 
 # Load the image with segmentation maps
-segments_path = filesystem.join(arguments.input, "segments.fits")
+segments_path = fs.join(arguments.input, "segments.fits")
 segments = Image.from_file(segments_path, no_filter=True)
 
 # Get the segmentation maps

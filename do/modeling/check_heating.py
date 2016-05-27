@@ -255,7 +255,7 @@ def integratePixelSEDs(cube, wls, dwls):
     slice = np.zeros((yaxis,xaxis))
     for i in range(0,yaxis):
         for j in range(0,xaxis):
-            sed = cube[0:,i,j]
+            sed = cube[0:,i,j] # SED of pixel (i,j)
             slice[i,j] = np.sum(sed * MjySr_to_LsunMicron * dwls)
 
     return slice

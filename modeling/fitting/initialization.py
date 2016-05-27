@@ -36,6 +36,7 @@ from ..core.mappings import Mappings
 from ...magic.tools import wavelengths
 from ...core.tools.logging import log
 from ...core.simulation.wavelengthgrid import WavelengthGrid
+from ..basics.projection import GalaxyProjection
 
 # -----------------------------------------------------------------
 
@@ -70,6 +71,12 @@ class InputInitializer(FittingComponent):
 
         # The structural parameters
         self.parameters = None
+
+        # The projection system
+        self.projection = None
+
+        # The truncation ellipse
+        self.ellipse = None
 
         # The geometric bulge model
         self.bulge = None
@@ -157,6 +164,12 @@ class InputInitializer(FittingComponent):
         # 3. Load the structural parameters of the galaxy
         self.load_parameters()
 
+        # 4. Load the projection system
+        self.load_projection()
+
+        # 5. Load the truncation ellipse
+        self.load_truncation_ellipse()
+
         # 4. Load the fluxes
         self.load_fluxes()
 
@@ -203,8 +216,7 @@ class InputInitializer(FittingComponent):
         self.sun_i1 = sun.luminosity_for_filter_as_unit(self.i1)   # Get the luminosity of the Sun in the IRAC I1 band
 
         # Reference coordinate system
-        reference_image = "Pacs red"
-        reference_path = fs.join(self.truncation_path, reference_image + ".fits")
+        reference_path = fs.join(self.truncation_path, self.reference_image + ".fits")
         self.reference_wcs = CoordinateSystem.from_file(reference_path)
 
     # -----------------------------------------------------------------
@@ -239,6 +251,43 @@ class InputInitializer(FittingComponent):
 
         # Load the parameters
         self.parameters = load_parameters(path)
+
+    # -----------------------------------------------------------------
+
+    def load_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the projection system ...")
+
+        # Determine the path to the projection file
+        path = fs.join(self.components_path, "earth.proj")
+
+        # Load the projection system
+        self.projection = GalaxyProjection.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def load_truncation_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the ellipse region used for truncating the observed images ...")
+
+        # Determine the path
+        path = fs.join(self.truncation_path, "ellipse.reg")
+
+        # Get the ellipse
+        region = SkyRegion.from_file(path)
+        self.ellipse = region[0]
 
     # -----------------------------------------------------------------
 
@@ -368,8 +417,7 @@ class InputInitializer(FittingComponent):
         log.info("Creating the instrument ...")
 
         # Create an SED instrument
-        azimuth = 0.0
-        self.instrument = SEDInstrument(self.parameters.distance, self.parameters.inclination, azimuth, self.parameters.disk.PA)
+        self.instrument = SEDInstrument.from_projection(self.projection)
 
     # -----------------------------------------------------------------
 
@@ -402,7 +450,10 @@ class InputInitializer(FittingComponent):
         self.ski.set_transient_dust_emissivity()
 
         # Set the dust grid
-        self.set_dust_grid()
+        if self.config.dust_grid == "cartesian": self.set_cartesian_dust_grid()
+        elif self.config.dust_grid == "bintree": self.set_bintree_dust_grid()
+        elif self.config.dust_grid == "octtree": self.set_octtree_dust_grid()
+        else: raise ValueError("Invalid option for dust grid type")
 
         # Set all-cells dust library
         self.ski.set_allcells_dust_lib()
@@ -608,7 +659,7 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def set_dust_grid(self):
+    def set_cartesian_dust_grid(self):
 
         """
         This function ...
@@ -616,19 +667,13 @@ class InputInitializer(FittingComponent):
         """
 
         # Inform the user
-        log.info("Configuring the dust grid ...")
+        log.info("Configuring the cartesian dust grid ...")
 
-        # Get the path to the disk region
-        path = fs.join(self.components_path, "disk.reg")
-        # Open the region
-        region = SkyRegion.from_file(path)
-        # Get ellipse in sky coordinates
-        scale_factor = 0.82
-        disk_ellipse = region[0] * scale_factor
-
-        major_angular = disk_ellipse.major # major axis length of the sky ellipse
+        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
+        major_angular = self.ellipse.major  # major axis length of the sky ellipse
         radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
 
+        # Calculate the boundaries of the dust grid
         min_x = - radius_physical
         max_x = radius_physical
         min_y = - radius_physical
@@ -636,8 +681,92 @@ class InputInitializer(FittingComponent):
         min_z = -3. * Unit("kpc")
         max_z = 3. * Unit("kpc")
 
-        # Set the dust grid
-        self.ski.set_binary_tree_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z)
+        # Get the pixelscale in physical units
+        distance = self.parameters.distance
+        pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
+        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Calculate the number of bins in each direction
+        x_bins = (max_x-min_x).to("pc").value/pixelscale.to("pc").value
+        y_bins = (max_y-min_y).to("pc").value/pixelscale.to("pc").value
+        z_bins = (max_z-min_z).to("pc").value/pixelscale.to("pc").value
+
+        # Set the cartesian dust grid
+        self.ski.set_cartesian_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z, x_bins, y_bins, z_bins)
+
+    # -----------------------------------------------------------------
+
+    def set_bintree_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Configuring the bintree dust grid ...")
+
+        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
+        major_angular = self.ellipse.major # major axis length of the sky ellipse
+        radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Calculate the boundaries of the dust grid
+        min_x = - radius_physical
+        max_x = radius_physical
+        min_y = - radius_physical
+        max_y = radius_physical
+        min_z = -3. * Unit("kpc")
+        max_z = 3. * Unit("kpc")
+
+        # Get the pixelscale in physical units
+        distance = self.parameters.distance
+        pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
+        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
+        extent_x = (max_x - min_x).to("pc").value
+        smallest_scale = pixelscale.to("pc").value
+        level = min_level_for_smallest_scale_bintree(extent_x, smallest_scale)
+
+        # Set the bintree dust grid
+        self.ski.set_binary_tree_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z, max_level=level)
+
+    # -----------------------------------------------------------------
+
+    def set_octtree_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Configuring the octtree dust grid ...")
+
+        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
+        major_angular = self.ellipse.major  # major axis length of the sky ellipse
+        radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Calculate the boundaries of the dust grid
+        min_x = - radius_physical
+        max_x = radius_physical
+        min_y = - radius_physical
+        max_y = radius_physical
+        min_z = -3. * Unit("kpc")
+        max_z = 3. * Unit("kpc")
+
+        # Get the pixelscale in physical units
+        distance = self.parameters.distance
+        pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
+        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
+        extent_x = (max_x - min_x).to("pc").value
+        smallest_scale = pixelscale.to("pc").value
+        level = min_level_for_smallest_scale_octtree(extent_x, smallest_scale)
+
+        # Set the octtree dust grid
+        self.ski.set_octtree_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z, max_level=level)
 
     # -----------------------------------------------------------------
 
@@ -929,5 +1058,35 @@ def fluxdensity_to_luminosity(fluxdensity, wavelength, distance):
     #print(luminosity_, luminosity) # is OK!
 
     return luminosity
+
+# -----------------------------------------------------------------
+
+def min_level_for_smallest_scale_bintree(extent, smallest_scale):
+
+    """
+    This function ...
+    :param extent:
+    :param smallest_scale:
+    :return:
+    """
+
+    # Return the 2-base logarithm of the ratio of the total physical extent to the smallest physical scale,
+    # and round it up to the nearest integer
+    return int(math.ceil(math.log(extent/smallest_scale, 2)))
+
+# -----------------------------------------------------------------
+
+def min_level_for_smallest_scale_octtree(extent, smallest_scale):
+
+    """
+    This function ...
+    :param extent:
+    :param smallest_scale:
+    :return:
+    """
+
+    # Return the 4-base logarithm of the ratio of the total physical extent to the smallest physical scale,
+    # and round it up to the nearest integer
+    return int(math.ceil(math.log(extent/smallest_scale, 4)))
 
 # -----------------------------------------------------------------

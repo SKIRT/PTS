@@ -47,9 +47,9 @@ class TimingTable(object):
 
         # Create the table
         names = ["Simulation name", "Timestamp", "Host id", "Cluster name", "Cores", "Threads per core",
-                 "Processes", "Packages", "Total runtime", "Serial runtime", "Parallel runtime", "Runtime overhead"]
-        data = [[], [], [], [], [], [], [], [], [], [], [], []]
-        dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "float64", "float64", "float64", "float64"]
+                 "Processes", "Packages", "Self-absorption", "Total runtime", "Serial runtime", "Parallel runtime", "Runtime overhead"]
+        data = [[], [], [], [], [], [], [], [], [], [], [], [], []]
+        dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "bool", "float64", "float64", "float64", "float64"]
         table = tables.new(data, names, dtypes=dtypes)
 
         # Set the column units
@@ -80,7 +80,7 @@ class TimingTable(object):
     # -----------------------------------------------------------------
 
     def add_entry(self, name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, packages,
-                  total_runtime, serial_runtime, parallel_runtime, runtime_overhead):
+                  selfabsorption, total_runtime, serial_runtime, parallel_runtime, runtime_overhead):
 
         """
         This function ...
@@ -92,6 +92,7 @@ class TimingTable(object):
         :param threads_per_core:
         :param processes:
         :param packages:
+        :param selfabsorption:
         :param total_runtime:
         :param serial_runtime:
         :param parallel_runtime:
@@ -128,6 +129,7 @@ class TimingTable(object):
         row.append(str(threads_per_core))
         row.append(str(processes))
         row.append(str(packages))
+        row.append(str(selfabsorption))
         row.append(str(total_runtime))
         row.append(str(serial_runtime))
         row.append(str(parallel_runtime))

@@ -21,7 +21,8 @@ from matplotlib.widgets import Button
 from ..core.image import Image
 from ..core.source import Source
 from ...core.basics.configurable import Configurable
-from ...core.tools import filesystem, inspection
+from ...core.tools import inspection
+from ...core.tools import fs as fs
 
 # -----------------------------------------------------------------
 
@@ -54,7 +55,7 @@ class Collector(Configurable):
         self.collection_user_path = os.path.join(inspection.pts_user_dir, "magic", "collection")
 
         # Create the user collection directory
-        filesystem.create_directory(self.collection_user_path)
+        fs.create_directory(self.collection_user_path)
 
         self.yes_path = None
         self.no_path = None
@@ -133,7 +134,7 @@ class Collector(Configurable):
         mode_path = os.path.join(self.collection_user_path, self.config.mode)
 
         # Create the star collection and saturation collection directories
-        filesystem.create_directory(mode_path)
+        fs.create_directory(mode_path)
 
         # Determine the paths to the 'yes' and 'no' saturation collection directories
         self.yes_path = os.path.join(mode_path, "yes")
@@ -143,13 +144,13 @@ class Collector(Configurable):
         self.current_index_yes = -1
         self.current_index_no = -1
 
-        for path in filesystem.files_in_path(self.yes_path, extension="fits"):
+        for path in fs.files_in_path(self.yes_path, extension="fits"):
 
             name = os.path.basename(path)
             index = int(name.split(".fits")[0])
             if index > self.current_index_yes: self.current_index_yes = index
 
-        for path in filesystem.files_in_path(self.no_path, extension="fits"):
+        for path in fs.files_in_path(self.no_path, extension="fits"):
 
             name = os.path.basename(path)
             index = int(name.split(".fits")[0])
@@ -165,7 +166,7 @@ class Collector(Configurable):
         """
 
         # Get a list of the filepaths for every FITS file in the current working directory
-        file_paths = filesystem.files_in_path(os.getcwd(), extension="fits", contains=self.config.mode)
+        file_paths = fs.files_in_path(os.getcwd(), extension="fits", contains=self.config.mode)
 
         # Keep track of how many files have been processed
         self.number_of_files = len(file_paths)
@@ -306,7 +307,7 @@ class Collector(Configurable):
             plt.close()
 
             # Remove saved file
-            if self.last_path is not None: filesystem.remove_file(self.last_path)
+            if self.last_path is not None: fs.remove_file(self.last_path)
 
             self.processed -= 1
 

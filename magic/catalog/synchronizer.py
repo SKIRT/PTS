@@ -25,7 +25,8 @@ from ..basics.geometry import Rectangle
 from ..basics.catalogcoverage import CatalogCoverage
 from ..tools import catalogs
 from ...core.basics.configurable import Configurable
-from ...core.tools import inspection, tables, filesystem
+from ...core.tools import inspection, tables
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -140,7 +141,7 @@ class CatalogSynchronizer(Configurable):
         coverage = CatalogCoverage(self.galaxy_name)
 
         # Check if a directory exists for this galaxy
-        if filesystem.is_directory(self.galaxy_user_path):
+        if fs.is_directory(self.galaxy_user_path):
 
             # Add the coordinate box to the catalog coverage object
             if not coverage.covers(coordinate_box): coverage.add_box(coordinate_box)
@@ -153,7 +154,7 @@ class CatalogSynchronizer(Configurable):
         else:
 
             # Create a directory for this galaxy
-            filesystem.create_directory(self.galaxy_user_path)
+            fs.create_directory(self.galaxy_user_path)
 
             # Add the coordinate box to the catalog coverage object
             coverage.add_box(coordinate_box)
@@ -440,7 +441,7 @@ class CatalogSynchronizer(Configurable):
             # Create the directory to contain the catalogs for this galaxy
             if self.config.write:
 
-                filesystem.create_directory(self.galaxy_user_path)
+                fs.create_directory(self.galaxy_user_path)
 
                 coverage.add_box(coordinate_box)
 

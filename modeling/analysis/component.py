@@ -140,7 +140,6 @@ class AnalysisComponent(ModelingComponent):
         memory_table = MemoryTable(self.memory_table_path)
 
         # Set the path to the reference image
-        reference_image = "Pacs red"
-        self.reference_path = fs.join(self.truncation_path, reference_image + ".fits")
+        self.reference_path = fs.join(self.truncation_path, self.reference_image + ".fits")
 
 # -----------------------------------------------------------------

@@ -19,7 +19,7 @@ import numpy as np
 from ...magic.core.image import Image
 from .component import PhotometryComponent
 from .sedfetching import SEDFetcher
-from ...core.tools import filesystem
+from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ..core.sed import ObservedSED
 from ...core.basics.errorbar import ErrorBar
@@ -138,7 +138,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Loading the images ...")
 
         # Loop over all files found in the truncation directory
-        for path, name in filesystem.files_in_path(self.truncation_path, extension="fits", returns=["path", "name"]):
+        for path, name in fs.files_in_path(self.truncation_path, extension="fits", returns=["path", "name"]):
 
             # Skip the H alpha image
             if "Halpha" in name: continue

@@ -1,0 +1,283 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+## \package pts.modeling.basics.projection Contains the GalaxyProjection, FaceOnProjection and EdgeOnProjection classes.
+
+# -----------------------------------------------------------------
+
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
+
+# Import astronomical modules
+from astropy.coordinates import Angle
+from astropy.units import Unit, dimensionless_angles
+
+# Import the relevant PTS classes and modules
+from ...magic.basics.vector import Position
+
+# -----------------------------------------------------------------
+
+# SKIRT:  incl.  azimuth PA
+# XY-plane	0	 0	    90
+# XZ-plane	90	 -90	0
+# YZ-plane	90	 0	    0
+
+# -----------------------------------------------------------------
+
+class GalaxyProjection(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y):
+
+        """
+        This function ...
+        :param distance:
+        :param inclination:
+        :param azimuth:
+        :param position_angle:
+        :param pixels_x:
+        :param pixels_y:
+        :param center_x:
+        :param center_y:
+        :param field_x:
+        :param field_y:
+        """
+
+        self.distance = distance
+        self.inclination = inclination
+        self.azimuth = azimuth
+        self.position_angle = position_angle
+        self.pixels_x = pixels_x
+        self.pixels_y = pixels_y
+        self.center_x = center_x
+        self.center_y = center_y
+        self.field_x_physical = field_x
+        self.field_y_physical = field_y
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_wcs(cls, wcs, center, distance, inclination, azimuth, position_angle):
+
+        """
+        This function ...
+        :param wcs:
+        :param center:
+        :param distance:
+        :param inclination:
+        :param azimuth:
+        :param position_angle:
+        :return:
+        """
+
+        # PIXEL SIZE
+        pixels_x = wcs.xsize
+        pixels_y = wcs.ysize
+
+        # CENTER PIXEL
+        pixel_center = center.to_pixel(wcs)
+        # center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5) # when not convolved ...
+        center = Position(0.5 * pixels_x - pixel_center.x - 1, 0.5 * pixels_y - pixel_center.y - 1)  # when convolved ...
+        center_x = center.x * Unit("pix")
+        center_y = center.y * Unit("pix")
+        center_x = (center_x * wcs.pixelscale.x.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
+        center_y = (center_y * wcs.pixelscale.y.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
+
+        # FIELD OF VIEW
+        field_x_angular = wcs.pixelscale.x.to("deg/pix") * pixels_x * Unit("pix")
+        field_y_angular = wcs.pixelscale.y.to("deg/pix") * pixels_y * Unit("pix")
+        field_x_physical = (field_x_angular * distance).to("pc", equivalencies=dimensionless_angles())
+        field_y_physical = (field_y_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Create and return a new class instance
+        return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x_physical, field_y_physical)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        distance = None
+        inclination = None
+        azimuth = None
+        position_angle = None
+        pixels_x = None
+        pixels_y = None
+        center_x = None
+        center_y = None
+        field_x = None
+        field_y = None
+
+        # Read the projection file
+        with open(path, 'r') as projection_file:
+
+            # Loop over all lines in the file
+            for line in projection_file:
+
+                splitted = line.split(": ")
+
+                if splitted[0] == "Distance": distance = get_quantity(splitted[1])
+                elif splitted[0] == "Inclination": distance = get_angle(splitted[1])
+                elif splitted[0] == "Azimuth": azimuth = get_angle(splitted[1])
+                elif splitted[0] == "Position angle": position_angle = get_angle(splitted[1])
+                elif splitted[0] == "Pixels x": pixels_x = int(splitted[1])
+                elif splitted[0] == "Pixels y": pixels_y = int(splitted[1])
+                elif splitted[0] == "Center x": center_x = float(splitted[1])
+                elif splitted[0] == "Center y": center_y = float(splitted[1])
+                elif splitted[0] == "Field x": field_x = get_quantity(splitted[1])
+                elif splitted[0] == "Field y": field_y = get_quantity(splitted[1])
+
+        # Create and return a new class instance
+        return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+    # -----------------------------------------------------------------
+
+    def save(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Create the projection file
+        with open(path, 'w') as projection_file:
+
+            print("Distance:", str(self.distance), file=projection_file)
+            print("Inclination:", str(self.inclination), file=projection_file)
+            print("Azimuth:", str(self.azimuth), file=projection_file)
+            print("Position angle:", str(self.position_angle), file=projection_file)
+            print("Pixels x:", str(self.pixels_x), file=projection_file)
+            print("Pixels y:", str(self.pixels_y), file=projection_file)
+            print("Center x:", str(self.center_x), file=projection_file)
+            print("Center y:", str(self.center_y), file=projection_file)
+            print("Field x:", str(self.field_x_physical), file=projection_file)
+            print("Field y:", str(self.field_y_physical), file=projection_file)
+
+# -----------------------------------------------------------------
+
+class FaceOnProjection(GalaxyProjection):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y):
+
+        """
+        The constructor ...
+        """
+
+        # Call the constructor of the base class
+        super(FaceOnProjection, self).__init__(distance, 0.0, 0.0, 90., pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_wcs(cls, wcs, center, distance):
+
+        """
+        This function ...
+        :param wcs:
+        :param center:
+        :param distance:
+        :return:
+        """
+
+        # Call the function of the base class
+        super(FaceOnProjection, cls).from_wcs(wcs, center, distance, 0.0, 0.0, 90.)
+
+# -----------------------------------------------------------------
+
+class EdgeOnProjection(GalaxyProjection):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y):
+
+        """
+        The constructor ...
+        :param distance:
+        :param pixels_x:
+        :param pixels_y:
+        :param center_x:
+        :param center_y:
+        :param field_x:
+        :param field_y:
+        """
+
+        # Call the constructor of the base class
+        super(EdgeOnProjection, self).__init__(distance, 90., 0., 0., pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_wcs(cls, wcs, center, distance):
+
+        """
+        This function ...
+        :param wcs:
+        :param center:
+        :param distance:
+        :return:
+        """
+
+        # Call the function of the base class
+        super(EdgeOnProjection, cls).from_wcs(wcs, center, distance, 90., 0., 0.)
+
+# -----------------------------------------------------------------
+
+def get_quantity(entry, default_unit=None):
+
+    """
+    This function ...
+    :param entry:
+    :param default_unit:
+    :return:
+    """
+
+    splitted = entry.split()
+    value = float(splitted[0])
+    try: unit = splitted[1]
+    except IndexError: unit = default_unit
+
+    # Create a quantity object and return it
+    if unit is not None: value = value * Unit(unit)
+    return value
+
+# -----------------------------------------------------------------
+
+def get_angle(entry, default_unit=None):
+
+    """
+    This function ...
+    :param entry:
+    :param default_unit:
+    :return:
+    """
+
+    splitted = entry.split()
+    value = float(splitted[0])
+    try: unit = splitted[1]
+    except IndexError: unit = default_unit
+
+    # Create an Angle object and return it
+    if unit is not None: value = Angle(value, unit)
+    return value
+
+# -----------------------------------------------------------------

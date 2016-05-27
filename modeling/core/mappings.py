@@ -21,12 +21,13 @@ from astropy import constants
 
 # Import the relevant PTS classes and modules
 from ..core.sed import IntrinsicSED
-from ...core.tools import inspection, filesystem, tables
+from ...core.tools import inspection, tables
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
 # Determine the path to the Mappings SED directory
-mappings_path = filesystem.join(inspection.skirt_repo_dir, "dat", "SED", "Mappings")
+mappings_path = fs.join(inspection.skirt_repo_dir, "dat", "SED", "Mappings")
 
 # -----------------------------------------------------------------
 
@@ -187,10 +188,10 @@ class Mappings(object):
                 for k in range(Nlogp):
 
                     filename = "Mappings_" + Zrelnamev[i] + "_" + logCnamev[j] + "_" + logpnamev[k] + ".dat"
-                    path = filesystem.join(mappings_path, filename)
+                    path = fs.join(mappings_path, filename)
 
                     # Check whether the file exists
-                    if not filesystem.is_file(path): raise IOError("The file '" + path + "' does not exist")
+                    if not fs.is_file(path): raise IOError("The file '" + path + "' does not exist")
 
                     wavelengths, j0, j1 = np.loadtxt(path, unpack=True)
                     Zrel = _Zrelv[i]

@@ -18,7 +18,8 @@ import subprocess
 
 # Import the relevant PTS classes and modules
 from .arguments import SkirtArguments
-from ..tools import inspection, filesystem
+from ..tools import inspection
+from ..tools import fs as fs
 from ..tools.logging import log
 
 # -----------------------------------------------------------------
@@ -204,7 +205,7 @@ class SkirtExec:
         run_dir = os.path.join(root_dir, "run")
         repo_dir = os.path.join(root_dir, "git")
         release_dir = os.path.join(root_dir, "release")
-        filesystem.create_directories([run_dir, repo_dir, release_dir])
+        fs.create_directories([run_dir, repo_dir, release_dir])
 
         #  Clone the SKIRT repository
         if private: subprocess.call("git clone git@github.ugent.be:SKIRT/SKIRT.git git", cwd=root_dir)

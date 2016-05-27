@@ -25,13 +25,14 @@ from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ..core.frame import Frame
-from ...core.tools import inspection, filesystem
+from ...core.tools import inspection
+from ...core.tools import fs as fs
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
 # The path to the PTS kernels directory
-kernels_path = filesystem.join(inspection.pts_user_dir, "kernels")
+kernels_path = fs.join(inspection.pts_user_dir, "kernels")
 
 # -----------------------------------------------------------------
 
@@ -79,7 +80,7 @@ class AnianoKernels(object):
         """
 
         # The path to the directory where the Aniano kernels are saved (to be reused)
-        self.kernels_path = filesystem.join(kernels_path, "aniano")
+        self.kernels_path = fs.join(kernels_path, "aniano")
 
     # -----------------------------------------------------------------
 
@@ -132,10 +133,10 @@ class AnianoKernels(object):
         # Determine the path to the kernel file
         if high_res: kernel_file_basename = "Kernel_HiRes_" + from_psf_name + "_to_" + to_psf_name
         else: kernel_file_basename = "Kernel_LoRes_" + from_psf_name + "_to_" + to_psf_name
-        kernel_file_path = filesystem.join(self.kernels_path, kernel_file_basename + ".fits")
+        kernel_file_path = fs.join(self.kernels_path, kernel_file_basename + ".fits")
 
         # Download the kernel if it is not present
-        if not filesystem.is_file(kernel_file_path):
+        if not fs.is_file(kernel_file_path):
 
             # Download the kernel
             self.download_kernel(kernel_file_basename)
@@ -195,10 +196,10 @@ class AnianoKernels(object):
 
         # Determine the path to the PSF file
         basename = "PSF_" + psf_name
-        psf_file_path = filesystem.join(self.kernels_path, basename + ".fits")
+        psf_file_path = fs.join(self.kernels_path, basename + ".fits")
 
         # Download the PSF file if it is not present
-        if not filesystem.is_file(psf_file_path):
+        if not fs.is_file(psf_file_path):
 
             # Download the PSF
             self.download_psf(basename)
@@ -226,7 +227,7 @@ class AnianoKernels(object):
         :return:
         """
 
-        return filesystem.files_in_path(self.kernels_path, extension="fits", startswith="Kernel", returns="name")
+        return fs.files_in_path(self.kernels_path, extension="fits", startswith="Kernel", returns="name")
 
     # -----------------------------------------------------------------
 
@@ -238,7 +239,7 @@ class AnianoKernels(object):
         :return:
         """
 
-        return filesystem.files_in_path(self.kernels_path, extension="fits", startswith="PSF", returns="name")
+        return fs.files_in_path(self.kernels_path, extension="fits", startswith="PSF", returns="name")
 
     # -----------------------------------------------------------------
 
@@ -308,8 +309,8 @@ class AnianoKernels(object):
         link = aniano_kernels_highres_link if "HiRes" in kernel_basename else aniano_kernels_lowres_link
         kernel_link = link + kernel_gzname
 
-        gz_path = filesystem.join(self.kernels_path, kernel_gzname)
-        fits_path = filesystem.join(self.kernels_path, kernel_fitsname)
+        gz_path = fs.join(self.kernels_path, kernel_gzname)
+        fits_path = fs.join(self.kernels_path, kernel_fitsname)
 
         # Inform the user
         log.info("Downloading kernel " + kernel_basename + " from " + link + " ...")
@@ -326,7 +327,7 @@ class AnianoKernels(object):
                 shutil.copyfileobj(f_in, f_out)
 
         # Remove the fits.gz file
-        filesystem.remove_file(gz_path)
+        fs.remove_file(gz_path)
 
     # -----------------------------------------------------------------
 
@@ -344,8 +345,8 @@ class AnianoKernels(object):
         # Determine the link to the online PSF file
         psf_link = aniano_psf_files_link + psf_gzname
 
-        gz_path = filesystem.join(self.kernels_path, psf_gzname)
-        fits_path = filesystem.join(self.kernels_path, psf_fitsname)
+        gz_path = fs.join(self.kernels_path, psf_gzname)
+        fits_path = fs.join(self.kernels_path, psf_fitsname)
 
         # Inform the user
         log.info("Downloading PSF file " + psf_basename + " from " + aniano_psf_files_link + " ...")
@@ -362,7 +363,7 @@ class AnianoKernels(object):
                 shutil.copyfileobj(f_in, f_out)
 
         # Remove the fits.gz file
-        filesystem.remove_file(gz_path)
+        fs.remove_file(gz_path)
 
 # -----------------------------------------------------------------
 
@@ -384,6 +385,6 @@ class PypherKernels(object):
         """
 
         # The path to the directory where the generated Pypher kernels are saved (to be reused)
-        self.path = filesystem.join(kernels_path, "pypher")
+        self.path = fs.join(kernels_path, "pypher")
 
 # -----------------------------------------------------------------

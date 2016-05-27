@@ -20,7 +20,7 @@ from .component import ColourAnalysisComponent
 from ....core.tools.logging import log
 from ....core.tools import filesystem as fs
 from ....magic.core.frame import Frame
-from ....magic.plot.imagegrid import ImageGridPlotter
+from ....magic.plot.imagegrid import ResidualImageGridPlotter
 from ....core.basics.distribution import Distribution
 from ....magic.basics.skyregion import SkyRegion
 
@@ -499,8 +499,8 @@ class ColourAnalyser(ColourAnalysisComponent):
         # Inform the user
         log.info("Plotting a grid with the observed, simulated and residual colour maps ...")
 
-        # Create an ImageGridPlotter instance
-        plotter = ImageGridPlotter(title="Colours")
+        # Create the image grid plotter
+        plotter = ResidualImageGridPlotter(title="Colours")
 
         # Add the rows
         for colour_name in self.observed_colours:

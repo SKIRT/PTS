@@ -88,6 +88,7 @@ class SEDPlotter(object):
         self._residual_axes = []
 
         # Properties
+        self.format = None
         self.transparent = False
 
     # -----------------------------------------------------------------
@@ -966,10 +967,14 @@ class SEDPlotter(object):
         if self.title is not None: self._figure.suptitle(self.title, fontsize=14, fontweight='bold')
 
         # Debugging
-        log.debug("Saving the SED plot to " + path + " ...")
+        if type(path).__name__ == "BytesIO": log.debug("Saving the SED plot to a buffer ...")
+        elif path is None: log.debug("Showing the SED plot ...")
+        else: log.debug("Saving the SED plot to " + str(path) + " ...")
 
-        # Save the figure
-        plt.savefig(path, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent)
+        if path is not None:
+            # Save the figure
+            plt.savefig(path, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent, format=self.format)
+        else: plt.show()
         plt.close()
 
 # -----------------------------------------------------------------

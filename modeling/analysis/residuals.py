@@ -17,7 +17,7 @@ from .component import AnalysisComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.frame import Frame
-from ...magic.plot.imagegrid import ImageGridPlotter
+from ...magic.plot.imagegrid import ResidualImageGridPlotter
 from ...magic.basics.skyregion import SkyRegion
 
 # -----------------------------------------------------------------
@@ -315,8 +315,8 @@ class ResidualAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Plotting a grid with the observed, simulated and residual images ...")
 
-        # Create an ImageGridPlotter instance
-        plotter = ImageGridPlotter(title="Image residuals")
+        # Create the image grid plotter
+        plotter = ResidualImageGridPlotter(title="Image residuals")
 
         # Loop over the filter names, add a row to the image grid plotter for each filter
         for filter_name in self.filter_names_sorted:

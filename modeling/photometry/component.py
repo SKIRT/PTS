@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..core.component import ModelingComponent
-from ...core.tools import filesystem
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -56,6 +56,6 @@ class PhotometryComponent(ModelingComponent):
         self.config.output_path = self.phot_path
 
         # Set the path to the fluxes table
-        self.fluxes_path = filesystem.join(self.phot_path, "fluxes.dat")
+        self.fluxes_path = fs.join(self.phot_path, "fluxes.dat")
 
 # -----------------------------------------------------------------

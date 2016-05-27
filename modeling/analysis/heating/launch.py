@@ -25,8 +25,8 @@ from ....core.simulation.skifile import SkiFile
 from ....core.launch.batchlauncher import BatchLauncher
 from ....core.tools.logging import log
 from ....core.simulation.arguments import SkirtArguments
-from ...basics.instruments import SEDInstrument
-from ...decomposition.decomposition import load_parameters
+from ...basics.instruments import SimpleInstrument, FrameInstrument
+from ...basics.projection import GalaxyProjection
 
 # -----------------------------------------------------------------
 
@@ -58,11 +58,11 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         # The ski file corresponding to the best model
         self.ski = None
 
-        # The structural galaxy parameters
-        self.parameters = None
+        # The projection systems
+        self.projections = dict()
 
         # The instrument to be used for the simulations
-        self.instrument = None
+        self.instruments = dict()
 
         # The ski files for the different contributions
         self.ski_files = dict()
@@ -102,11 +102,11 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         # 2. Load the ski file describing the best model
         self.load_ski()
 
-        # 3. Load the structural parameters of the galaxy
-        self.load_parameters()
+        # 3. Load the projection systems
+        self.load_projections()
 
-        # 4. Create the instrument
-        self.create_instrument()
+        # 4. Create the instruments
+        self.create_instruments()
 
         # 5. Create the ski files for the different contributors
         self.create_ski_files()
@@ -157,7 +157,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def load_parameters(self):
+    def load_projections(self):
 
         """
         This function ...
@@ -165,17 +165,23 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         """
 
         # Inform the user
-        log.info("Loading the decomposition parameters ...")
+        log.info("Loading the projection systems ...")
 
-        # Determine the path to the parameters file
-        path = fs.join(self.components_path, "parameters.dat")
+        # Load the different projection systems
+        for name in ["earth", "faceon"]:
 
-        # Load the parameters
-        self.parameters = load_parameters(path)
+            # Determine the path to the projection file
+            path = fs.join(self.components_path, name + ".proj")
+
+            # Load the projection
+            projection = GalaxyProjection.from_file(path)
+
+            # Add the projection to the dictionary
+            self.projections[name] = projection
 
     # -----------------------------------------------------------------
 
-    def create_instrument(self):
+    def create_instruments(self):
 
         """
         This function ...
@@ -185,9 +191,11 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Creating the instrument ...")
 
-        # Create an SED instrument
-        azimuth = 0.0
-        self.instrument = SEDInstrument(self.parameters.distance, self.parameters.inclination, azimuth, self.parameters.disk.PA)
+        # Create a SimpleInstrument for the 'earth' projection
+        self.instruments["earth"] = SimpleInstrument.from_projection(self.projections["earth"])
+
+        # Create a FrameInstrument for the 'faceon' projection
+        self.instruments["faceon"] = FrameInstrument.from_projection(self.projections["faceon"])
 
     # -----------------------------------------------------------------
 
@@ -204,8 +212,8 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         # Remove the existing instruments
         self.ski.remove_all_instruments()
 
-        # Add the SED instrument
-        self.ski.add_instrument("earth", self.instrument)
+        # Add the instruments
+        for name in self.instruments: self.ski.add_instrument(self.instruments[name])
 
         # Parameters of the wavelength grid
         min_wavelength = self.config.wavelengths.min * Unit(self.config.wavelengths.unit)

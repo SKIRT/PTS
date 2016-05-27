@@ -17,7 +17,8 @@ from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
-from ...core.tools import filesystem, time, tables
+from ...core.tools import filesystem as fs
+from ...core.tools import time, tables
 from ...core.simulation.arguments import SkirtArguments
 from ...core.basics.filter import Filter
 from ...core.simulation.skifile import SkiFile
@@ -70,7 +71,7 @@ class ParameterExplorer(FittingComponent):
 
         # Get the names of the filters for which we have photometry
         filter_names = []
-        fluxes_table_path = filesystem.join(self.phot_path, "fluxes.dat")
+        fluxes_table_path = fs.join(self.phot_path, "fluxes.dat")
         #fluxes_table = tables.from_file(fluxes_table_path, format="ascii.ecsv")
         fluxes_table = tables.from_file(fluxes_table_path)
         # Loop over the entries in the fluxes table, get the filter
@@ -90,7 +91,7 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.plotting.path = self.fit_plot_path # The base directory where all of the simulations will have a seperate directory with the plotting analysis output
         self.launcher.config.analysis.extraction.timeline = True # extract the simulation timeline
         self.launcher.config.analysis.plotting.seds = True  # Plot the output SEDs
-        self.launcher.config.analysis.plotting.reference_sed = filesystem.join(self.phot_path, "fluxes.dat") # the path to the reference SED (for plotting the simulated SED against the reference points)
+        self.launcher.config.analysis.plotting.reference_sed = fs.join(self.phot_path, "fluxes.dat") # the path to the reference SED (for plotting the simulated SED against the reference points)
         self.launcher.config.analysis.misc.fluxes = True  # Calculate observed fluxes
         self.launcher.config.analysis.misc.images = True  # Make observed images
         self.launcher.config.analysis.misc.observation_filters = filter_names  # The filters for which to create the observations
@@ -184,8 +185,8 @@ class ParameterExplorer(FittingComponent):
 
         # Set the paths to the directories to contain the launch scripts (job scripts) for the different remote hosts
         for host_id in self.launcher.host_ids:
-            script_dir_path = filesystem.join(self.fit_scripts_path, host_id)
-            if not filesystem.is_directory(script_dir_path): filesystem.create_directory(script_dir_path)
+            script_dir_path = fs.join(self.fit_scripts_path, host_id)
+            if not fs.is_directory(script_dir_path): fs.create_directory(script_dir_path)
             self.launcher.set_script_path(host_id, script_dir_path)
 
         # Create a FUV filter object
@@ -208,17 +209,17 @@ class ParameterExplorer(FittingComponent):
             self.ski.set_dust_component_mass(0, dust_mass)
 
             # Determine the directory for this simulation
-            simulation_path = filesystem.join(self.fit_out_path, simulation_name)
+            simulation_path = fs.join(self.fit_out_path, simulation_name)
 
             # Create the simulation directory
-            filesystem.create_directory(simulation_path)
+            fs.create_directory(simulation_path)
 
             # Create an 'out' directory within the simulation directory
-            output_path = filesystem.join(simulation_path, "out")
-            filesystem.create_directory(output_path)
+            output_path = fs.join(simulation_path, "out")
+            fs.create_directory(output_path)
 
             # Put the ski file with adjusted parameters into the simulation directory
-            ski_path = filesystem.join(simulation_path, self.galaxy_name + ".ski")
+            ski_path = fs.join(simulation_path, self.galaxy_name + ".ski")
             self.ski.saveto(ski_path)
 
             # Create the SKIRT arguments object

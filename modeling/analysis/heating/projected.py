@@ -13,8 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import AxesGrid
 
 # Import the relevant PTS classes and modules
 from .component import DustHeatingAnalysisComponent
@@ -24,6 +24,7 @@ from ....core.tools import tables, inspection
 from ...core.sed import SED
 from ....core.simulation.wavelengthgrid import WavelengthGrid
 from ....magic.core.image import Image
+from ....magic.plot.imagegrid import StandardImageGridPlotter
 
 # -----------------------------------------------------------------
 
@@ -65,6 +66,11 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # The flux fractions
         self.fractions = None
         self.fraction_maps = dict()
+
+        # The TIR maps
+        self.total_tir_map = None
+        self.evolved_tir_map = None
+        self.unevolved_tir_map = None
 
     # -----------------------------------------------------------------
 
@@ -109,6 +115,9 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # 5. Calculate the heating fractions
         self.calculate_heating_fractions()
+
+        # 6. Calculate maps of the TIR luminosity
+        self.calculate_tir_maps()
 
         # 6. Writing
         self.write()
@@ -309,10 +318,10 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Calculating the heating fractions ...")
 
-        #
+        # Calculate the flux fractions of the evolved and unevolved stellar populations over the wavelength spectrum
         self.calculate_sed_heating_fractions()
 
-        #
+        # Calculate the flux fractions of the evolved and unevolved stellar population for selected wavelenghts in each pixel
         self.calculate_pixel_heating_fractions()
 
     # -----------------------------------------------------------------
@@ -323,6 +332,9 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Calculating the flux fractions over the wavelength spectrum ...")
 
         # ...
         all_wavelengths = self.wavelength_grid.wavelengths(asarray=True, unit="micron")
@@ -353,7 +365,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Inform the user
-        log.info("")
+        log.info("Calculating the flux fractions for selected wavelengths in each pixel ...")
 
         # The interesting wavelengths
         wavelengths = [12., 24., 70., 100., 250., 350., 500.]
@@ -381,6 +393,80 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def calculate_tir_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the TIR luminosity in each pixel ...")
+
+        # Calculate the TIR maps
+        self.calculate_total_tir_map()
+        self.calculate_unevolved_tir_map()
+        self.calculate_evolved_tir_map()
+
+    # -----------------------------------------------------------------
+
+    def calculate_total_tir_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the total TIR luminosity in each pixel ...")
+
+        cube = self.total_datacube.asarray()
+        wavelengths = self.wavelength_grid.wavelengths(asarray=True, unit="micron")
+        deltas = self.wavelength_grid.deltas(asarray=True, unit="micron")
+
+        # Calculate the map
+        self.total_tir_map = integrate_pixel_seds(cube, wavelengths, deltas)
+
+    # -----------------------------------------------------------------
+
+    def calculate_unevolved_tir_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the unevolved TIR luminosity in each pixel ...")
+
+        cube = self.unevolved_datacube.asarray()
+        wavelengths = self.wavelength_grid.wavelengths(asarray=True, unit="micron")
+        deltas = self.wavelength_grid.deltas(asarray=True, unit="micron")
+
+        # Calculate the map
+        self.unevolved_tir_map = integrate_pixel_seds(cube, wavelengths, deltas)
+
+    # -----------------------------------------------------------------
+
+    def calculate_evolved_tir_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the evolved TIR luminosity in each pixel ...")
+
+        cube = self.evolved_datacube.asarray()
+        wavelengths = self.wavelength_grid.wavelengths(asarray=True, unit="micron")
+        deltas = self.wavelength_grid.deltas(asarray=True, unit="micron")
+
+        # Calculate the map
+        self.evolved_tir_map = integrate_pixel_seds(cube, wavelengths, deltas)
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -393,6 +479,9 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Write the table with the flux fractions
         self.write_fractions()
+
+        # Write the TIR maps
+        self.write_tir_maps()
 
     # -----------------------------------------------------------------
 
@@ -411,6 +500,36 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Write the table
         tables.write(self.fractions, path, format="ascii.ecsv")
+
+    # -----------------------------------------------------------------
+
+    def write_tir_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the TIR maps ...")
+
+        # Determine the path to the total TIR map
+        path = fs.join(self.analysis_heating_path, "tir_total.fits")
+
+        # Write the total TIR map
+        self.total_tir_map.save(path)
+
+        # Determine the path to the unevolved TIR map
+        path = fs.join(self.analysis_heating_path, "tir_unevolved.fits")
+
+        # Write the unevolved TIR map
+        self.unevolved_tir_map.save(path)
+
+        # Determine the path to the evolved TIR map
+        path = fs.join(self.analysis_heating_path, "tir_evolved.fits")
+
+        # Write the evolved TIR map
+        self.evolved_tir_map.save(path)
 
     # -----------------------------------------------------------------
 
@@ -489,26 +608,34 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Plotting maps of the heating fraction by unevolved stars at specific wavelengths ...")
 
-        fig_x_size =
-        fig_y_sie =
+        # Create the image grid plotter
+        plotter = StandardImageGridPlotter()
 
-        # Create a figure
-        self._figure = plt.figure(figsize=(fig_x_size, fig_y_size))
-        self._figure.subplots_adjust(left=0.05, right=0.95)
+# -----------------------------------------------------------------
 
-        # Creat grid
-        self._grid = AxesGrid(self._figure, 111,
-                              nrows_ncols=(len(self.rows), 3),
-                              axes_pad=0.02,
-                              label_mode="L",
-                              share_all=True,
-                              cbar_location="right",
-                              cbar_mode="single",
-                              cbar_size="0.5%",
-                              cbar_pad="0.5%",
-                              )  # cbar_mode="single"
+def integrate_pixel_seds(cube, wls, dwls):
 
-        for cax in self._grid.cbar_axes:
-            cax.toggle_label(False)
+    """
+    This function ...
+    :param cube:
+    :param wls:
+    :param dwls:
+    :return:
+    """
+
+    Lsun = 3.846e26 # Watts
+    MjySr_to_LsunMicron = 1.e6 * (36./206264.806247)**2 * 1.e-26 * 4*np.pi*(0.785e6*3.086e+16)**2 * 3.e14/(wls**2) / Lsun
+
+    xaxis = len(cube[0,0,0:])
+    yaxis = len(cube[0,0:,0])
+    zaxis = len(cube[0:,0,0])
+
+    slice = np.zeros((yaxis,xaxis))
+    for i in range(0,yaxis):
+        for j in range(0,xaxis):
+            sed = cube[0:,i,j]
+            slice[i,j] = np.sum(sed * MjySr_to_LsunMicron * dwls)
+
+    return slice
 
 # -----------------------------------------------------------------

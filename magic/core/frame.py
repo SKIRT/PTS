@@ -29,7 +29,7 @@ from ..basics.geometry import Rectangle
 from ..basics.skygeometry import SkyCoordinate
 from ..basics.coordinatesystem import CoordinateSystem
 from ..tools import coordinates, cropping, transformations, interpolation, headers, fitting
-from ...core.tools import filesystem
+from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ..basics.mask import Mask
 
@@ -130,7 +130,7 @@ class Frame(np.ndarray):
         else:
 
             # Obtain the filter for this image
-            fltr = headers.get_filter(filesystem.name(path[:-5]), header)
+            fltr = headers.get_filter(fs.name(path[:-5]), header)
 
         # Obtain the units of this image
         unit = headers.get_unit(header)
@@ -163,7 +163,7 @@ class Frame(np.ndarray):
             else: name, description, plane_type = headers.get_frame_name_and_description(header, index, always_call_first_primary=False)
 
             # Get the name from the file path
-            if name is None: name = filesystem.name(path[:-5])
+            if name is None: name = fs.name(path[:-5])
 
             # Return the frame
             # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
@@ -183,7 +183,7 @@ class Frame(np.ndarray):
             if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
 
             # Get the name from the file path
-            if name is None: name = filesystem.name(path[:-5])
+            if name is None: name = fs.name(path[:-5])
 
             # Return the frame
             # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None

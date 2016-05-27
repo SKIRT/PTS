@@ -22,7 +22,7 @@ from ..simulation.remote import SkirtRemote
 from ..simulation.arguments import SkirtArguments
 from ..basics.configurable import Configurable
 from ..test.resources import ResourceEstimator
-from ..tools import filesystem
+from ..tools import filesystem as fs
 from ..tools.logging import log
 from .options import SchedulingOptions
 
@@ -196,35 +196,35 @@ class SkirtRemoteLauncher(Configurable):
         self.remote.setup(self.config.remote, self.config.cluster)
 
         # Set the paths
-        self.base_path = filesystem.directory_of(self.config.arguments.ski_pattern) if "/" in self.config.arguments.ski_pattern else filesystem.cwd()
-        self.input_path = filesystem.join(self.base_path, "in")
-        self.output_path = filesystem.join(self.base_path, "out")
-        self.extr_path = filesystem.join(self.base_path, "extr")
-        self.plot_path = filesystem.join(self.base_path, "plot")
-        self.misc_path = filesystem.join(self.base_path, "misc")
+        self.base_path = fs.directory_of(self.config.arguments.ski_pattern) if "/" in self.config.arguments.ski_pattern else fs.cwd()
+        self.input_path = fs.join(self.base_path, "in")
+        self.output_path = fs.join(self.base_path, "out")
+        self.extr_path = fs.join(self.base_path, "extr")
+        self.plot_path = fs.join(self.base_path, "plot")
+        self.misc_path = fs.join(self.base_path, "misc")
 
         # Check if an input directory exists
-        if not filesystem.is_directory(self.input_path): self.input_path = None
+        if not fs.is_directory(self.input_path): self.input_path = None
 
         # Set the paths for the simulation
         self.config.arguments.input_path = self.input_path
         self.config.arguments.output_path = self.output_path
 
         # Create the output directory if necessary
-        if not filesystem.is_directory(self.output_path): filesystem.create_directory(self.output_path, recursive=True)
+        if not fs.is_directory(self.output_path): fs.create_directory(self.output_path, recursive=True)
 
         # Create the extraction directory if necessary
         if self.config.extraction.progress or self.config.extraction.timeline or self.config.extraction.memory:
-            if not filesystem.is_directory(self.extr_path): filesystem.create_directory(self.extr_path, recursive=True)
+            if not fs.is_directory(self.extr_path): fs.create_directory(self.extr_path, recursive=True)
 
         # Create the plotting directory if necessary
         if self.config.plotting.seds or self.config.plotting.grids or self.config.plotting.progress \
             or self.config.plotting.timeline or self.config.plotting.memory:
-            if not filesystem.is_directory(self.plot_path): filesystem.create_directory(self.plot_path, recursive=True)
+            if not fs.is_directory(self.plot_path): fs.create_directory(self.plot_path, recursive=True)
 
         # Create the 'misc' directory if necessary
         if self.config.misc.fluxes or self.config.misc.images:
-            if not filesystem.is_directory(self.misc_path): filesystem.create_directory(self.misc_path, recursive=True)
+            if not fs.is_directory(self.misc_path): fs.create_directory(self.misc_path, recursive=True)
 
     # -----------------------------------------------------------------
 

@@ -19,7 +19,7 @@ from ..basics.host import find_host_ids, has_simulations
 from .analyser import SimulationAnalyser
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
-from ..tools import filesystem
+from ..tools import filesystem as fs
 from ..tools.logging import log
 
 # -----------------------------------------------------------------
@@ -236,7 +236,7 @@ class RemoteSynchronizer(Configurable):
                         tag = "[ X ]"
 
                         # Remove the simulation file
-                        filesystem.remove_file(path)
+                        fs.remove_file(path)
 
                     formatter = format.GREEN
 
@@ -249,7 +249,7 @@ class RemoteSynchronizer(Configurable):
                         tag = "[ X ]"
 
                         # Remove the simulation file
-                        filesystem.remove_file(path)
+                        fs.remove_file(path)
 
                     formatter = format.GREEN
 
@@ -281,7 +281,7 @@ class RemoteSynchronizer(Configurable):
                             remote.kill_job(simulation.id)
 
                             # Remove the simulation file
-                            filesystem.remove_file(path)
+                            fs.remove_file(path)
 
                             # Remove the remote input, output and simulation directory
                             if simulation.has_input: remote.remove_directory(simulation.remote_input_path)
@@ -304,7 +304,7 @@ class RemoteSynchronizer(Configurable):
                         tag = "[ X ]"
 
                         # Remove the simulation file
-                        filesystem.remove_file(path)
+                        fs.remove_file(path)
 
                         # Remove the remote input, output and simulation directory
                         if simulation.has_input: remote.remove_directory(simulation.remote_input_path)
@@ -322,7 +322,7 @@ class RemoteSynchronizer(Configurable):
                         tag = "[ X ]"
 
                         # Remove the simulation file
-                        filesystem.remove_file(path)
+                        fs.remove_file(path)
 
                         # Remove the remote input, output and simulation directory
                         if simulation.has_input: remote.remove_directory(simulation.remote_input_path)
@@ -340,7 +340,7 @@ class RemoteSynchronizer(Configurable):
                         tag = "[ X ]"
 
                         # Remove the simulation file
-                        filesystem.remove_file(path)
+                        fs.remove_file(path)
 
                         # Remove the remote input, output and simulation directory
                         if simulation.has_input: remote.remove_directory(simulation.remote_input_path)
@@ -363,7 +363,7 @@ class RemoteSynchronizer(Configurable):
                             remote.stop_job(simulation.id)
 
                             # Remove the simulation file
-                            filesystem.remove_file(path)
+                            fs.remove_file(path)
 
                             # Remove the remote input, output and simulation directory
                             if simulation.has_input: remote.remove_directory(simulation.remote_input_path)

@@ -190,6 +190,9 @@ class BatchAnalyser(Configurable):
         # Get the number of photon packages
         packages = self.ski.packages()
 
+        # Check whether dust self-absorption was enabled for the simulation
+        selfabsorption = self.ski.dustselfabsorption()
+
         # Get the serial, parallel runtime and runtime overhead (in seconds)
         serial_runtime = self.te.serial
         parallel_runtime = self.te.parallel
@@ -200,8 +203,8 @@ class BatchAnalyser(Configurable):
 
         # Add an entry to the timing table
         timing_table.add_entry(self.simulation.name, self.simulation.submitted_at, host_id, cluster_name, cores,
-                               hyperthreads, processes, packages, total_runtime, serial_runtime, parallel_runtime,
-                               runtime_overhead)
+                               hyperthreads, processes, packages, selfabsorption, total_runtime, serial_runtime,
+                               parallel_runtime, runtime_overhead)
 
     # -----------------------------------------------------------------
 

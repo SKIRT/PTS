@@ -20,7 +20,8 @@ from config import Sequence
 from ..basics.catalogcoverage import CatalogCoverage
 from ..tools import catalogs
 from ...core.basics.configurable import Configurable
-from ...core.tools import inspection, tables, filesystem
+from ...core.tools import inspection, tables
+from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
@@ -157,7 +158,7 @@ class CatalogImporter(Configurable):
         bounding_box = self.frame.bounding_box()
 
         # Loop over all directories within the catalogs directory (different galaxies)
-        for galaxy_path in filesystem.directories_in_path(self.catalogs_user_path):
+        for galaxy_path in fs.directories_in_path(self.catalogs_user_path):
 
             # Get the galaxy name
             galaxy_name = os.path.basename(galaxy_path)

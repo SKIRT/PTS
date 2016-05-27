@@ -19,7 +19,8 @@ import tempfile
 # Import the relevant PTS classes and modules
 from ..basics.remote import Remote
 from .jobscript import JobScript
-from ..tools import time, inspection, filesystem
+from ..tools import time, inspection
+from ..tools import filesystem as fs
 from .simulation import RemoteSimulation
 from ..tools.logging import log
 from ..launch.options import SchedulingOptions
@@ -82,22 +83,22 @@ class SkirtRemote(Remote):
         if self.skirt_path.startswith("~"):
 
             # Change the SKIRT path to the full, absolute path
-            self.skirt_path = filesystem.join(self.home_directory, self.skirt_path[2:])
+            self.skirt_path = fs.join(self.home_directory, self.skirt_path[2:])
 
         # Determine the path to the SKIRT directory
         self.skirt_dir = self.skirt_path.split("/release")[0]
 
         # Determine the path to the SKIRT repository directory ('git')
-        self.skirt_repo_dir = filesystem.join(self.skirt_dir, "git")
+        self.skirt_repo_dir = fs.join(self.skirt_dir, "git")
 
         # Determine the path to the SKIRT run directory
-        self.skirt_run_dir = filesystem.join(self.skirt_dir, "run")
+        self.skirt_run_dir = fs.join(self.skirt_dir, "run")
 
         # Determine the path to the local SKIRT run directory
-        self.local_skirt_host_run_dir = filesystem.join(inspection.skirt_run_dir, self.host.id)
+        self.local_skirt_host_run_dir = fs.join(inspection.skirt_run_dir, self.host.id)
 
         # Create the local SKIRT run directory for this host if it doesn't already exist
-        if not filesystem.is_directory(self.local_skirt_host_run_dir): filesystem.create_directory(self.local_skirt_host_run_dir, recursive=True)
+        if not fs.is_directory(self.local_skirt_host_run_dir): fs.create_directory(self.local_skirt_host_run_dir, recursive=True)
 
         # Give a warning if the remote SKIRT version is different from the local SKIRT version
         local_version = inspection.skirt_version().split("built on")[0]
@@ -127,7 +128,7 @@ class SkirtRemote(Remote):
 
         # Create the remote simulation directory
         remote_simulation_path = self.create_simulation_directory(arguments)
-        remote_simulation_name = filesystem.name(remote_simulation_path)
+        remote_simulation_name = fs.name(remote_simulation_path)
 
         # Set the name if none is given
         if name is None: name = remote_simulation_name
@@ -331,11 +332,11 @@ class SkirtRemote(Remote):
         """
 
         # Create a unique name for the simulation directory
-        skifile_name = filesystem.name(arguments.ski_pattern).split(".ski")[0]
+        skifile_name = fs.name(arguments.ski_pattern).split(".ski")[0]
         remote_simulation_name = time.unique_name(skifile_name, separator="__")
 
         # Determine the full path of the simulation directory on the remote system
-        remote_simulation_path = filesystem.join(self.skirt_run_dir, remote_simulation_name)
+        remote_simulation_path = fs.join(self.skirt_run_dir, remote_simulation_name)
 
         # Create the remote simulation directory
         self.create_directory(remote_simulation_path)
@@ -359,18 +360,18 @@ class SkirtRemote(Remote):
         if self.host.output_path is not None:
 
             # Get the name of the remote simulation directory and use use that name for the output directory
-            remote_simulation_name = filesystem.name(remote_simulation_path)
-            remote_output_path = filesystem.join(self.host.output_path, remote_simulation_name)
+            remote_simulation_name = fs.name(remote_simulation_path)
+            remote_output_path = fs.join(self.host.output_path, remote_simulation_name)
 
             # Expand the alias to the user's home directory
             remote_output_path = self.expand_user_path(remote_output_path)
 
             # If the remote output path is the same as the remote simulation path, use a folder called 'out' inside
             # the simulation directory instead for the output
-            if remote_output_path == remote_simulation_path: remote_output_path = filesystem.join(remote_output_path, "out")
+            if remote_output_path == remote_simulation_path: remote_output_path = fs.join(remote_output_path, "out")
 
         # If an output path is not specified by the user, place a directory called 'out' next to the simulation's 'in' directory
-        else: remote_output_path = filesystem.join(remote_simulation_path, "out")
+        else: remote_output_path = fs.join(remote_simulation_path, "out")
 
         # Change the parameters to accomodate for the fact that we are running remotely
         # but store the paths to the local output directory because we want to copy the
@@ -388,7 +389,7 @@ class SkirtRemote(Remote):
             if remote_input_path is None:
 
                 # Determine the full path to the input directory on the remote system
-                remote_input_path = filesystem.join(remote_simulation_path, "in")
+                remote_input_path = fs.join(remote_simulation_path, "in")
 
                 # Create the remote input directory
                 #self.create_directory(remote_input_path)
@@ -409,8 +410,8 @@ class SkirtRemote(Remote):
 
         # Set the remote ski file path
         local_ski_path = arguments.ski_pattern
-        ski_name = filesystem.name(local_ski_path)
-        remote_ski_path = filesystem.join(remote_simulation_path, ski_name)
+        ski_name = fs.name(local_ski_path)
+        remote_ski_path = fs.join(remote_simulation_path, ski_name)
         arguments.ski_pattern = remote_ski_path
 
         # Copy the input directory and the ski file to the remote host
@@ -439,7 +440,7 @@ class SkirtRemote(Remote):
         simulation = RemoteSimulation(local_ski_path, local_input_path, local_output_path)
 
         # Determine and set the simulation file path
-        simulation_file_path = filesystem.join(self.local_skirt_host_run_dir, str(simulation_id) + ".sim")
+        simulation_file_path = fs.join(self.local_skirt_host_run_dir, str(simulation_id) + ".sim")
 
         # Set the host ID and cluster name (if applicable)
         simulation.host_id = self.host_id
@@ -487,14 +488,14 @@ class SkirtRemote(Remote):
         local_jobscript_path = scheduling_options.local_jobscript_path
 
         # Create a job script next to the (local) simulation's ski file
-        jobscript_name = filesystem.name(local_jobscript_path)
+        jobscript_name = fs.name(local_jobscript_path)
         jobscript = JobScript(local_jobscript_path, arguments, self.host.clusters[self.host.cluster_name],
                               self.skirt_path, self.host.mpi_command, self.host.modules, walltime, nodes, ppn,
                               name=name, mail=mail, full_node=full_node, bind_to_cores=self.host.force_process_binding)
 
         # Copy the job script to the remote simulation directory
-        remote_simulation_path = filesystem.directory_of(arguments.ski_pattern) # NEW, to avoid having to pass this as an argument
-        remote_jobscript_path = filesystem.join(remote_simulation_path, jobscript_name)
+        remote_simulation_path = fs.directory_of(arguments.ski_pattern) # NEW, to avoid having to pass this as an argument
+        remote_jobscript_path = fs.join(remote_simulation_path, jobscript_name)
         self.upload(local_jobscript_path, remote_simulation_path)
 
         ## Swap clusters
@@ -547,7 +548,7 @@ class SkirtRemote(Remote):
 
         # Check the contents of the local run directory to see which simulation id's are currently in use
         current_ids = []
-        for name in filesystem.files_in_path(self.local_skirt_host_run_dir, extension="sim", returns="name"):
+        for name in fs.files_in_path(self.local_skirt_host_run_dir, extension="sim", returns="name"):
             # Get the simulation ID and add it to the list
             current_ids.append(int(name))
 
@@ -666,22 +667,22 @@ class SkirtRemote(Remote):
                     log.debug("Local output directory: " + simulation.output_path)
 
                     # Check whether the output directory exists; if not, create it
-                    if not filesystem.is_directory(simulation.output_path): filesystem.create_directory(simulation.output_path)
+                    if not fs.is_directory(simulation.output_path): fs.create_directory(simulation.output_path)
 
                     # Download the simulation output
                     self.download(simulation.remote_output_path, simulation.output_path)
 
-                # If retrieve file types are defined, download these files seperately to the local filesystem
+                # If retrieve file types are defined, download these files seperately to the local fs
                 else:
 
-                    # Create a list for the paths of the files that have to be copied to the local filesystem
+                    # Create a list for the paths of the files that have to be copied to the local fs
                     copy_paths = []
 
                     # Loop over the files that are present in the remoute output directory
                     for filename in self.files_in_path(simulation.remote_output_path):
 
                         # Determine the full path to the output file
-                        filepath = filesystem.join(simulation.remote_output_path, filename)
+                        filepath = fs.join(simulation.remote_output_path, filename)
 
                         # Loop over the different possible file types and add the filepath if the particular type is in the list of types to retrieve
                         if filename.endswith("_ds_isrf.dat"):
@@ -730,7 +731,7 @@ class SkirtRemote(Remote):
                     log.debug("Local output directory: " + simulation.output_path)
 
                     # Check whether the output directory exists; if not, create it
-                    if not filesystem.is_directory(simulation.output_path): filesystem.create_directory(simulation.output_path)
+                    if not fs.is_directory(simulation.output_path): fs.create_directory(simulation.output_path)
 
                     # Download the list of files to the local output directory
                     self.download(copy_paths, simulation.output_path)
@@ -808,7 +809,7 @@ class SkirtRemote(Remote):
         if not self.scheduler:
 
             # Search for simulation files in the local SKIRT run/host_id directory
-            for path in filesystem.files_in_path(self.local_skirt_host_run_dir, extension="sim", sort=int):
+            for path in fs.files_in_path(self.local_skirt_host_run_dir, extension="sim", sort=int):
 
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)
@@ -817,7 +818,7 @@ class SkirtRemote(Remote):
                 ski_name = simulation.prefix()
 
                 # The path to the simulation log file
-                remote_log_file_path = filesystem.join(simulation.remote_output_path, ski_name + "_log.txt")
+                remote_log_file_path = fs.join(simulation.remote_output_path, ski_name + "_log.txt")
 
                 # Check whether the simulation has already been analysed
                 if simulation.analysed: simulation_status = "analysed"
@@ -862,7 +863,7 @@ class SkirtRemote(Remote):
                     queue_status[jobid] = jobstatus
 
             # Search for files in the SKIRT run directory
-            for path, name in filesystem.files_in_path(self.local_skirt_host_run_dir, extension="sim", returns=["path", "name"]):
+            for path, name in fs.files_in_path(self.local_skirt_host_run_dir, extension="sim", returns=["path", "name"]):
 
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)
@@ -871,7 +872,7 @@ class SkirtRemote(Remote):
                 ski_name = simulation.prefix()
 
                 # The path to the simulation log file
-                remote_log_file_path = filesystem.join(simulation.remote_output_path, ski_name + "_log.txt")
+                remote_log_file_path = fs.join(simulation.remote_output_path, ski_name + "_log.txt")
 
                 # Get the job ID from the name of the simulation file
                 job_id = int(name)
@@ -1091,9 +1092,9 @@ class SkirtRemote(Remote):
         if options.local_jobscript_path is None:
 
             # Determine the jobscript path
-            #local_simulation_path = filesystem.directory_of(local_ski_path)
-            #local_jobscript_path = filesystem.join(local_simulation_path, "job.sh")
-            local_jobscript_path = filesystem.join(filesystem.home(), time.unique_name("job") + ".sh")
+            #local_simulation_path = fs.directory_of(local_ski_path)
+            #local_jobscript_path = fs.join(local_simulation_path, "job.sh")
+            local_jobscript_path = fs.join(fs.home(), time.unique_name("job") + ".sh")
 
             # Set the local jobscript path
             options.local_jobscript_path = local_jobscript_path

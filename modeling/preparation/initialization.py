@@ -70,10 +70,6 @@ halpha_flux = 7.8e40 * Unit("erg/s")
 
 # -----------------------------------------------------------------
 
-reference_image = "Pacs red"
-
-# -----------------------------------------------------------------
-
 class PreparationInitializer(PreparationComponent):
     
     """
@@ -183,7 +179,7 @@ class PreparationInitializer(PreparationComponent):
         log.info("Loading the reference image ...")
 
         # Get the path to the reference image
-        reference_path = self.original_paths[reference_image]
+        reference_path = self.original_paths[self.reference_image]
         self.reference = Frame.from_file(reference_path)
 
     # -----------------------------------------------------------------

@@ -21,7 +21,8 @@ from pts.magic.tools import interpolation
 from pts.magic.core.frame import Frame
 from pts.magic.basics.mask import Mask
 from pts.magic.basics.region import Region
-from pts.core.tools import logging, time, filesystem, parsing
+from pts.core.tools import logging, time, parsing
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -60,13 +61,13 @@ arguments = parser.parse_args()
 if arguments.input is not None:
 
     # Determine the full path to the input directory
-    input_path = filesystem.absolute(arguments.input)
+    input_path = fs.absolute(arguments.input)
 
     # Give an error if the input directory does not exist
-    if not filesystem.is_directory(input_path): raise argparse.ArgumentError(input_path, "The input directory does not exist")
+    if not fs.is_directory(input_path): raise argparse.ArgumentError(input_path, "The input directory does not exist")
 
 # If no input directory is given, assume the input is placed in the current working directory
-else: input_path = filesystem.cwd()
+else: input_path = fs.cwd()
 
 # -----------------------------------------------------------------
 
@@ -74,18 +75,18 @@ else: input_path = filesystem.cwd()
 if arguments.output is not None:
     
     # Determine the full path to the output directory
-    output_path = filesystem.absolute(arguments.output)
+    output_path = fs.absolute(arguments.output)
     
     # Create the directory if it does not yet exist
-    if not filesystem.is_directory(output_path): filesystem.create_directory(output_path)
+    if not fs.is_directory(output_path): fs.create_directory(output_path)
 
 # If no output directory is given, place the output in the current working directory
-else: output_path = filesystem.cwd()
+else: output_path = fs.cwd()
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = filesystem.join(output_path, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(output_path, time.unique_name("log") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"
@@ -100,7 +101,7 @@ log.start("Starting interpolate ...")
 log.info("Loading the image ...")
 
 # Determine the full path to the image
-image_path = filesystem.absolute(arguments.image)
+image_path = fs.absolute(arguments.image)
 
 # Import the image
 importer = ImageImporter()
@@ -118,7 +119,7 @@ header = importer.image.original_header
 log.info("Loading the region ...")
 
 # Load in the region
-region_path = filesystem.join(input_path, arguments.region)
+region_path = fs.join(input_path, arguments.region)
 region = Region.from_file(region_path, only=arguments.shapes, color=arguments.color, ignore_color=arguments.ignore_color)
 
 # Inform the user
@@ -149,13 +150,13 @@ new_frame[nans] = float("nan")
 log.info("Saving the result ...")
 
 # Save the result
-path = filesystem.join(output_path, arguments.image)
+path = fs.join(output_path, arguments.image)
 new_frame.save(path, header=header)
 
 # Write the mask
 if arguments.mask:
 
-    path = filesystem.join(output_path, "mask.fits")
+    path = fs.join(output_path, "mask.fits")
     new_frame[mask] = float('nan')
     new_frame.save(path, header=header)
 

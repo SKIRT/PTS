@@ -54,6 +54,9 @@ class ModelingComponent(Configurable):
         # PTS directories
         self.kernels_path = None
 
+        # Reference image
+        self.reference_image = "Pacs red"
+
     # -----------------------------------------------------------------
 
     def setup(self):

@@ -21,7 +21,8 @@ from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from ..core.frame import Frame
-from ...core.tools import inspection, filesystem
+from ...core.tools import inspection
+from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
@@ -58,7 +59,7 @@ class SExtractor(object):
         """
 
         # Create a temporary directory for the input and output of SExtractor
-        temp_path = filesystem.create_temporary_directory("sextractor")
+        temp_path = fs.create_temporary_directory("sextractor")
 
         # Copy the input files into the temporary directory
         self.copy_input(temp_path, frame, input_file_name)
@@ -70,7 +71,7 @@ class SExtractor(object):
         segments, catalog = self.read_output(temp_path)
 
         # Remove the temporary directory, if requested
-        if not keep: filesystem.remove_directory(temp_path)
+        if not keep: fs.remove_directory(temp_path)
 
         # Return the segmentation map and catalog
         return segments, catalog

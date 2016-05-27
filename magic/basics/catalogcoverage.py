@@ -19,7 +19,8 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from ..basics.vector import Position, Extent
 from ..basics.geometry import Rectangle
-from ...core.tools import tables, inspection, filesystem
+from ...core.tools import tables, inspection
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -46,7 +47,7 @@ class CatalogCoverage(object):
         # Load the 'ranges' table
         self.ranges_table_path = os.path.join(galaxy_path, "ranges.dat")
 
-        if filesystem.is_file(self.ranges_table_path):
+        if fs.is_file(self.ranges_table_path):
 
             self.table = tables.from_file(self.ranges_table_path)
 

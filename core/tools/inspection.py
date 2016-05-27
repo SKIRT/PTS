@@ -26,7 +26,7 @@ from distutils.spawn import find_executable
 from importlib import import_module
 
 # Import the relevant PTS classes and modules
-from . import filesystem
+from . import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -113,7 +113,7 @@ def pts_installation_is_conform():
     :return:
     """
 
-    pts_root_dir_name = filesystem.name(pts_root_dir)
+    pts_root_dir_name = fs.name(pts_root_dir)
     return pts_root_dir_name == "PTS"
 
 # -----------------------------------------------------------------
@@ -124,7 +124,7 @@ def skirt_installation_is_conform():
     This function ...
     """
 
-    skirt_root_dir_name = filesystem.name(skirt_root_dir)
+    skirt_root_dir_name = fs.name(skirt_root_dir)
     return skirt_root_dir_name == "SKIRT"
 
 # -----------------------------------------------------------------
@@ -144,7 +144,7 @@ def remote_host_ids():
     ids = []
 
     # Loop over the configuration files in the hosts directory
-    for name in filesystem.files_in_path(hosts_directory, extension="cfg", returns="name"):
+    for name in fs.files_in_path(hosts_directory, extension="cfg", returns="name"):
 
         # Skip the template configuration file
         if name == "template": continue
@@ -169,7 +169,7 @@ def simulations_files_for_host(host_id):
     host_run_dir = os.path.join(skirt_run_dir, host_id)
 
     # Return the list of simulation file paths corresponding to the specified host
-    return filesystem.files_in_path(host_run_dir, extension="sim")
+    return fs.files_in_path(host_run_dir, extension="sim")
 
 # -----------------------------------------------------------------
 

@@ -20,7 +20,8 @@ from .classification import Classifier
 from ...core.basics.configurable import Configurable
 from ..core.image import Image
 from ..core.source import Source
-from ...core.tools import filesystem, inspection
+from ...core.tools import inspection
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -125,7 +126,7 @@ class Verifier(Configurable):
         self.log.info("Starting the verification ...")
 
         # Get a list of the filepaths for every FITS file in the current working directory
-        file_paths = filesystem.files_in_path(os.getcwd(), extension="fits", contains=self.config.mode)
+        file_paths = fs.files_in_path(os.getcwd(), extension="fits", contains=self.config.mode)
 
         # Keep track of how many files have been processed
         self.number_of_files = len(file_paths)

@@ -22,7 +22,8 @@ from sklearn.externals import joblib
 from ...core.basics.configurable import Configurable
 from ..core.image import Image
 from ..core.source import Source
-from ...core.tools import filesystem, inspection
+from ...core.tools import inspection
+from ...core.tools import fs as fs
 
 # -----------------------------------------------------------------
 
@@ -51,7 +52,7 @@ class Classifier(Configurable):
         self.classification_user_path = os.path.join(inspection.pts_user_dir, "magic", "classification")
 
         # Create the user classification directory
-        filesystem.create_directory(self.classification_user_path)
+        fs.create_directory(self.classification_user_path)
 
         self.yes_path = None
         self.no_path = None
@@ -156,10 +157,10 @@ class Classifier(Configurable):
         self.log.info("Starting the classification procedure ...")
 
         # Get a list of the filepaths for every FITS file in the 'yes' directory
-        yes_paths = filesystem.files_in_path(self.yes_path, extension="fits")
+        yes_paths = fs.files_in_path(self.yes_path, extension="fits")
 
         # Get a list of the filepaths for every FITS file in the 'no' directory
-        no_paths = filesystem.files_in_path(self.no_path, extension="fits")
+        no_paths = fs.files_in_path(self.no_path, extension="fits")
 
         # Create a dictionary to contain all the file paths
         paths = {"yes": yes_paths, "no": no_paths}

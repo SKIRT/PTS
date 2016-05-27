@@ -1645,9 +1645,73 @@ class SkiFile:
         # Return the dust grid
         return get_unique_element(dust_system, "dustGrid")
 
+    ## This function sets a cartesian dust grid for the dust system
+    def set_cartesian_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, x_bins, y_bins, z_bins, mesh_type="linear", ratio=1., write_grid=True):
+
+        # Get the dust grid
+        grid = self.get_dust_grid()
+
+        # Get the parent
+        parent = grid.getparent()
+
+        # Remove the old grid element
+        parent.remove(grid)
+
+        # Create and add the new grid
+        attrs = {"minX": str_from_quantity(min_x), "maxX": str_from_quantity(max_x), "minY": str_from_quantity(min_y),
+                 "maxY": str_from_quantity(max_y), "minZ": str_from_quantity(min_z), "maxZ": str_from_quantity(max_z),
+                 "writeGrid": str_from_bool(write_grid)}
+        grid = parent.makeelement("CartesianDustGrid", attrs)
+        parent.append(grid)
+
+        # Create the X mesh
+        attrs = {"type": "MoveableMesh"}
+        x_mesh = grid.makeelement("meshX", attrs)
+        grid.append(x_mesh)
+        if mesh_type == "linear":
+            attrs = {"numBins": str(x_bins)}
+            x_mesh.append(x_mesh.makeelement("LinMesh", attrs))
+        elif mesh_type == "power":
+            attrs = {"numBins": str(x_bins), "ratio": str(ratio)}
+            x_mesh.append(x_mesh.makeelement("PowMesh", attrs))
+        elif mesh_type == "symmetric_power":
+            attrs = {"numBins": str(x_bins), "ratio": str(ratio)}
+            x_mesh.append(x_mesh.makeelement("SymPowMesh", attrs))
+        else: raise ValueError("Unrecognized mesh type")
+
+        # Create the Y mesh
+        attrs = {"type": "MoveableMesh"}
+        y_mesh = grid.makeelement("meshY", attrs)
+        grid.append(y_mesh)
+        if mesh_type == "linear":
+            attrs = {"numBins": str(y_bins)}
+            y_mesh.append(y_mesh.makeelement("LinMesh", attrs))
+        elif mesh_type == "power":
+            attrs = {"numBins": str(y_bins), "ratio": str(ratio)}
+            y_mesh.append(y_mesh.makeelement("PowMesh", attrs))
+        elif mesh_type == "symmetric_power":
+            attrs = {"numBins": str(z_bins), "ratio": str(ratio)}
+            y_mesh.append(y_mesh.makeelement("SymPowMesh", attrs))
+        else: raise ValueError("Unrecognized mesh type")
+
+        # Create the Z mesh
+        attrs = {"type": "MovableMesh"}
+        z_mesh = grid.makeelement("meshZ", attrs)
+        grid.append(z_mesh)
+        if mesh_type == "linear":
+            attrs = {"numBins": str(z_bins)}
+            z_mesh.append(z_mesh.makeelement("LinMesh", attrs))
+        elif mesh_type == "power":
+            attrs = {"numBins": str(z_bins), "ratio": str(ratio)}
+            y_mesh.append(z_mesh.makeelement("PowMesh", attrs))
+        elif mesh_type == "symmetric_power":
+            attrs = {"numBins": str(z_bins), "ratio": str(ratio)}
+            z_mesh.append(z_mesh.makeelement("SymPowMesh", attrs))
+        else: raise ValueError("Unrecognized mesh type")
+
     ## This function sets a binary tree dust grid for the dust system
-    def set_binary_tree_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, write_grid=True, min_level=15,
-                                  max_level=25, search_method="Neighbor", sample_count=100, max_optical_depth=0,
+    def set_binary_tree_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, write_grid=True, min_level=2,
+                                  max_level=10, search_method="Neighbor", sample_count=100, max_optical_depth=0,
                                   max_mass_fraction=1e-6, max_dens_disp_fraction=0, direction_method="Alternating",
                                   assigner="IdenticalAssigner"):
 
@@ -1689,8 +1753,8 @@ class SkiFile:
                  "maxZ": str(max_z), "writeGrid": str_from_bool(write_grid), "minLevel": str(min_level),
                  "maxLevel": str(max_level), "searchMethod": search_method, "sampleCount": sample_count,
                  "maxOpticalDepth": str(max_optical_depth), "maxMassFraction": str(max_mass_fraction),
-                 "maxDensDispFraction": str(max_dens_disp_fraction), "barycentric": str_from_bool(barycentric),
-                 "assigner": assigner}
+                 "maxDensDispFraction": str(max_dens_disp_fraction), "barycentric": str_from_bool(barycentric)}
+                 #"assigner": assigner}
         parent.append(parent.makeelement("OctTreeDustGrid", attrs))
 
     ## This function returns a list of the instruments in the ski file, or the 'instruments' element if as_list is False
@@ -1753,7 +1817,7 @@ class SkiFile:
     ## This function adds an instrument
     def add_instrument(self, name, instrument):
 
-        from ...modeling.basics.instruments import SEDInstrument, SimpleInstrument, FullInstrument
+        from ...modeling.basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument
 
         distance = instrument.distance
         inclination = instrument.inclination
@@ -1764,6 +1828,18 @@ class SkiFile:
 
             # Add the SED instrument to the ski file
             self.add_sed_instrument(name, distance, inclination, azimuth, position_angle)
+
+        elif isinstance(instrument, FrameInstrument):
+
+            field_x = instrument.field_x
+            field_y = instrument.field_y
+            pixels_x = instrument.pixels_x
+            pixels_y = instrument.pixels_y
+            center_x = instrument.center_x
+            center_y = instrument.center_y
+
+            # Add the simple instrument to the ski file
+            self.add_frame_instrument(name, distance, inclination, azimuth, position_angle, field_x, field_y, pixels_x, pixels_y, center_x, center_y)
 
         elif isinstance(instrument, SimpleInstrument):
 
@@ -1790,6 +1866,20 @@ class SkiFile:
             self.add_full_instrument(name, distance, inclination, azimuth, position_angle, field_x, field_y, pixels_x, pixels_y, center_x, center_y)
 
         else: raise ValueError("Instruments other than SimpleInstrument, SEDInstrument and FullInstrument are not yet supported")
+
+    ## This function adds a FrameInstrument to the instrument system
+    def add_frame_instrument(self, name, distance, inclination, azimuth, position_angle, field_x, field_y,
+                                  pixels_x, pixels_y, center_x, center_y):
+
+        # Get the 'instruments' element
+        instruments = self.get_instruments(as_list=False)
+
+        # Make and add the new FrameInstrument
+        attrs = {"instrumentName": name, "distance": str(distance), "inclination": str_from_angle(inclination),
+                 "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle),
+                 "fieldOfViewX": str(field_x), "fieldOfViewY": str(field_y), "pixelsX": str(pixels_x),
+                 "pixelsY": str(pixels_y), "centerX": str(center_x), "centerY": str(center_y)}
+        instruments.append(instruments.makeelement("FrameInstrument", attrs))
 
     ## This function adds a FullInstrument to the instrument system
     def add_full_instrument(self, name, distance, inclination, azimuth, position_angle, field_x, field_y,

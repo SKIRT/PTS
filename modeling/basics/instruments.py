@@ -36,6 +36,68 @@ class SEDInstrument(object):
         self.azimuth = azimuth
         self.position_angle = position_angle
 
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_projection(cls, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        return cls(projection.distance, projection.azimuth, projection.position_angle)
+
+# -----------------------------------------------------------------
+
+class FrameInstrument(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, distance, inclination, azimuth, position_angle, field_x, field_y, pixels_x, pixels_y, center_x, center_y):
+
+        """
+        This function ...
+        :param distance:
+        :param inclination:
+        :param azimuth:
+        :param position_angle:
+        :param field_x:
+        :param field_y:
+        :param pixels_x:
+        :param pixels_y:
+        :param center_x:
+        :param center_y:
+        """
+
+        self.distance = distance
+        self.inclination = inclination
+        self.azimuth = azimuth
+        self.position_angle = position_angle
+        self.field_x = field_x
+        self.field_y = field_y
+        self.pixels_x = pixels_x
+        self.pixels_y = pixels_y
+        self.center_x = center_x
+        self.center_y = center_y
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_projection(cls, projection):
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        return cls(projection.distance, projection.azimuth, projection.position_angle, projection.field_x_physical,
+                   projection.field_y_physical, projection.pixels_x, projection.pixels_y, projection.center_x,
+                   projection.center_y)
+
 # -----------------------------------------------------------------
 
 class SimpleInstrument(object):
@@ -72,6 +134,20 @@ class SimpleInstrument(object):
         self.center_x = center_x
         self.center_y = center_y
 
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_projection(cls, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        return cls(projection.distance, projection.azimuth, projection.position_angle, projection.field_x_physical,
+                   projection.field_y_physical, projection.pixels_x, projection.pixels_y, projection.center_x, projection.center_y)
+
 # -----------------------------------------------------------------
 
 class FullInstrument(object):
@@ -107,5 +183,20 @@ class FullInstrument(object):
         self.pixels_y = pixels_y
         self.center_x = center_x
         self.center_y = center_y
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_projection(cls, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        return cls(projection.distance, projection.azimuth, projection.position_angle, projection.field_x_physical,
+                   projection.field_y_physical, projection.pixels_x, projection.pixels_y, projection.center_x,
+                   projection.center_y)
 
 # -----------------------------------------------------------------

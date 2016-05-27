@@ -26,7 +26,8 @@ from ..core.frame import Frame
 from ..object.galaxy import Galaxy
 from ..basics.skygeometry import SkyEllipse
 from ...core.basics.configurable import Configurable
-from ...core.tools import tables, filesystem
+from ...core.tools import tables
+from ...core.tools import fs as fs
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
@@ -602,7 +603,7 @@ class GalaxyFinder(Configurable):
             if galaxy.principal:
 
                 # Save the cutout as a FITS file
-                path = filesystem.join(directory_path, "galaxy_principal_" + str(principals) + ".fits")
+                path = fs.join(directory_path, "galaxy_principal_" + str(principals) + ".fits")
                 galaxy.source.save(path, origin=self.name)
 
                 # Increment the counter of the number of principal galaxies (there should only be one, really...)
@@ -612,7 +613,7 @@ class GalaxyFinder(Configurable):
             elif galaxy.companion:
 
                 # Save the cutout as a FITS file
-                path = filesystem.join(directory_path, "galaxy_companion_" + str(companions) + ".fits")
+                path = fs.join(directory_path, "galaxy_companion_" + str(companions) + ".fits")
                 galaxy.source.save(path, origin=self.name)
 
                 # Increment the counter of the number of companion galaxies
@@ -622,7 +623,7 @@ class GalaxyFinder(Configurable):
             elif galaxy.has_source:
 
                 # Save the cutout as a FITS file
-                path = filesystem.join(directory_path, "galaxy_source_" + str(principals) + ".fits")
+                path = fs.join(directory_path, "galaxy_source_" + str(principals) + ".fits")
                 galaxy.source.save(path, origin=self.name)
 
                 # Increment the counter of the number of galaxies with a source
