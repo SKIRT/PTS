@@ -31,6 +31,10 @@ from ..tools import time
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..launch.options import SchedulingOptions
+from ..launch.batchlauncher import BatchLauncher
+from ..launch.timing import TimingTable
+from ..launch.memory import MemoryTable
+from ..launch.runtime import RuntimeEstimator
 
 # -----------------------------------------------------------------
 
@@ -593,6 +597,36 @@ class ScalingTest(Configurable):
 
         # Close the info file (information on specific simulations will be appended)
         infofile.close()
+
+    # -----------------------------------------------------------------
+
+    def create_timing_file(self):
+
+        """
+        This function creates the file to contain the timing information
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the timing table ...")
+
+        # Initialize the timing table
+        timing_table = TimingTable(path)
+
+    # -----------------------------------------------------------------
+
+    def create_memory_file(self):
+
+        """
+        This function creates the file to contain the memory information
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the memory table ...")
+
+        # Initialize the memory table
+        memory_table = MemoryTable(path)
 
     # -----------------------------------------------------------------
 

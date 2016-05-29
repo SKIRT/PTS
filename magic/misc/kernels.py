@@ -367,6 +367,105 @@ class AnianoKernels(object):
 
 # -----------------------------------------------------------------
 
+pacs_fwhms = [5.67 * Unit("arcsec"), 7.04 * Unit("arcsec"), 11.18 * Unit("arcsec")]
+spire_fwhms = [18.15 * Unit("arcsec"), 24.88 * Unit("arcsec"), 36.09 * Unit("arcsec")]
+
+# -----------------------------------------------------------------
+
+class HerschelKernels(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        This function ...
+        """
+
+        # The path to the directory where the Aniano kernels are saved (to be reused)
+        self.spire_path = fs.join(kernels_path, "herschel", "spire")
+        self.pacs_path = fs.join(kernels_path, "herschel", "pacs")
+
+    # -----------------------------------------------------------------
+
+    def get_spire_psf(self, band, one_arcsec=False):
+
+        """
+        This function ...
+        :param band:
+        :param one_arcsec:
+        :return:
+        """
+
+        if band == 1 or band == "PSW":
+
+            if one_arcsec: psf_path = fs.join(self.spire_path, "0x5000241aL_PSW_bgmod10_1arcsec.fits")
+            else: psf_path = fs.join(self.spire_path, "0x5000241aL_PSW_bgmod10_6arcsec.fits")
+            fwhm = spire_fwhms[0]
+
+        elif band == 2 or band == "PMW":
+
+            if one_arcsec: psf_path = fs.join(self.spire_path, "0x5000241aL_PMW_bgmod10_1arcsec.fits")
+            else: psf_path = fs.join(self.spire_path, "0x5000241aL_PMW_bgmod10_10arcsec.fits")
+            fwhm = spire_fwhms[1]
+
+        elif band == 3 or band == "PLW":
+
+            if one_arcsec: psf_path = fs.join(self.spire_path, "0x5000241aL_PLW_bgmod10_1arcsec.fits")
+            else: psf_path = fs.join(self.spire_path, "0x5000241aL_PLW_bgmod10_14arcsec.fits")
+            fwhm = spire_fwhms[2]
+
+        else: raise ValueError("Invalid option for 'band'")
+
+        # Load the PSF frame
+        psf = Frame.from_file(psf_path)
+
+        # Set the FWHM of the PSF
+        if psf.fwhm is None: psf.fwhm = fwhm
+
+        # Return the PSF frame
+        return psf
+
+    # -----------------------------------------------------------------
+
+    def get_pacs_psf(self, band):
+
+        """
+        This function ...
+        :param band:
+        :return:
+        """
+
+        if band == 1 or band == "70" or band == "70mu":
+
+            psf_path = fs.join()
+            fwhm = pacs_fwhms[0]
+
+        elif band == 2 or band == "100" or band == "100mu":
+
+            psf_path = fs.join()
+            fwhm = pacs_fwhms[1]
+
+        elif band == 3 or band == "160" or band == "160mu":
+
+            psf_path = fs.join()
+            fwhm = pacs_fwhms[2]
+
+        else: raise ValueError("Invalid option for 'band'")
+
+        # Load the PSF frame
+        psf = Frame.from_file(psf_path)
+
+        # Set the FWHM of the PSF
+        if psf.fwhm is None: psf.fwhm = fwhm
+
+        # Return the PSF frame
+        return psf
+
+# -----------------------------------------------------------------
+
 # Reference: http://pypher.readthedocs.org/en/latest/
 
 # -----------------------------------------------------------------

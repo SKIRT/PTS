@@ -54,6 +54,7 @@ class LogFile(object):
         self.contents = parse(path)
 
         # Cache properties to avoid repeated calculation
+        self._wavelengths = None
         self._stellar_packages = None
         self._dust_packages = None
         self._processes = None
@@ -207,6 +208,29 @@ class LogFile(object):
 
         # Invalid option
         else: raise ValueError("Phase must be either 'stellar' or 'dustem'")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the cached value if present
+        if self._wavelengths is not None: return self._wavelengths
+
+        # Loop over the log entries
+        for i in range(len(self.contents)):
+
+            # Search for the line stating the number of wavelengths
+            if "photon packages for each of" in self.contents["Message"][i]:
+
+                # Return the number of wavelengths
+                self._wavelengths = int(self.contents["Message"][i].split("for each of ")[1].split(" wavelengths")[0])
+                return self._wavelengths
 
     # -----------------------------------------------------------------
 

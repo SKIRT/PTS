@@ -187,6 +187,9 @@ class BatchAnalyser(Configurable):
         # Get the total runtime (in seconds)
         total_runtime = self.log_file.total_runtime
 
+        # Get the number of wavelengths
+        wavelengths = self.log_file.wavelengths
+
         # Get the number of photon packages
         packages = self.ski.packages()
 
@@ -194,17 +197,31 @@ class BatchAnalyser(Configurable):
         selfabsorption = self.ski.dustselfabsorption()
 
         # Get the serial, parallel runtime and runtime overhead (in seconds)
-        serial_runtime = self.te.serial
-        parallel_runtime = self.te.parallel
-        runtime_overhead = self.te.overhead
+        #serial_runtime = self.te.serial
+        #parallel_runtime = self.te.parallel
+        #runtime_overhead = self.te.overhead
+
+        # Get the different contributions to the simulation's runtime
+        setup_time = self.te.setup
+        stellar_time = self.te.stellar
+        spectra_time = self.te.spectra
+        dust_time = self.te.dust
+        writing_time = self.te.writing
+        waiting_time = self.te.waiting
+        communication_time = self.te.communication
+        intermediate_time = self.te.other
 
         # Open the timing table
         timing_table = TimingTable(self.timing_table_path)
 
         # Add an entry to the timing table
+        # Simulation name, Timestamp, Host id, Cluster name, Cores, Hyperthreads per core, Processes, Wavelengths,
+        # Packages, Self-absorption, Total runtime, Setup time, Stellar emission time, Spectra calculation time,
+        # Dust emission time, Writing time, Waiting time, Communication time, Intermediate time
         timing_table.add_entry(self.simulation.name, self.simulation.submitted_at, host_id, cluster_name, cores,
-                               hyperthreads, processes, packages, selfabsorption, total_runtime, serial_runtime,
-                               parallel_runtime, runtime_overhead)
+                               hyperthreads, processes, wavelengths, packages, selfabsorption, total_runtime, setup_time,
+                               stellar_time, spectra_time, dust_time, writing_time, waiting_time, communication_time,
+                               intermediate_time)
 
     # -----------------------------------------------------------------
 

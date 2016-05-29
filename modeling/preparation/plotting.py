@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ..core.component import ModelingComponent
 from ...core.tools.logging import log
+from ...core.tools import filesystem as fs
+from ...magic.core.frame import Frame
+from ...magic.plot.imagegrid import StandardImageGridPlotter
 
 # -----------------------------------------------------------------
 
@@ -35,6 +38,11 @@ class PreparationPlotter(ModelingComponent):
         # Call the constructor of the base class
         super(PreparationPlotter, self).__init__(config)
 
+        # -- Attributes --
+
+        # The dictionary of image frames
+        self.images = dict()
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -49,7 +57,8 @@ class PreparationPlotter(ModelingComponent):
         # Create a new PreparationPlotter instance
         plotter = cls()
 
-        # ...
+        # Set the modeling path
+        plotter.config.path = arguments.path
 
         # Return the plotter
         return plotter
@@ -66,9 +75,94 @@ class PreparationPlotter(ModelingComponent):
         # 1. Call the setup function
         self.setup()
 
+        # 2. Load the prepared images
+        self.load_images()
+
+        # 3. Make the plot
+        self.plot()
+
+    # -----------------------------------------------------------------
+
+    def setup(self):
+
+        """
+        This function ...
+        """
+
+        # Call the setup function of the base class
+        super(PreparationPlotter, self).setup()
+
+    # -----------------------------------------------------------------
+
+    def load_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the prepared images ...")
+
+        # Loop over all directories in the preparation directory
+        for directory_path, directory_name in fs.directories_in_path(self.prep_path, returns=["path", "name"]):
+
+            # Look for a file called 'result.fits'
+            image_path = fs.join(directory_path, "result.fits")
+            if not fs.is_file(image_path):
+                log.warning("Prepared image could not be found for " + directory_name)
+                continue
+
+            # Open the prepared image frame
+            frame = Frame.from_file(image_path)
+
+            # Set the image name
+            frame.name = directory_name
+
+            # Add the image to the dictionary
+            self.images[directory_name] = frame
+
     # -----------------------------------------------------------------
 
     def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the images ...")
+
+        # Create the image plotter
+        plotter = StandardImageGridPlotter()
+
+        # Add the images
+        for label in self.labels_sorted: plotter.add_image(self.images[label], label)
+
+        # Determine the path to the plot file
+        path = fs.join(self.prep_path, "preparation.pdf")
+
+        #plotter.colormap = "hot"
+
+        # Make the plot
+        plotter.run(path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def labels_sorted(self):
+
+        """
+        This function returns a list of the filter names, sorted on wavelength
+        :return:
+        """
+
+        return sorted(self.images.keys(), key=lambda key: self.images[key].filter.pivotwavelength())
+
+    # -----------------------------------------------------------------
+
+    def plot_test(self):
 
         """
         An example script where aplpy is used to plot FITS images with matplotlib :
