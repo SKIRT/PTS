@@ -73,6 +73,7 @@ class ScatterPlotter(object):
         self.color_map = "viridis"
         self.format = None
         self.transparent = False
+        self.density = True
 
     # -----------------------------------------------------------------
 
@@ -191,7 +192,8 @@ class ScatterPlotter(object):
         """
 
         # Make the plot
-        self.plot(output_path)
+        if self.density: self.plot_with_density(output_path)
+        else: self.plot_simple(output_path)
 
     # -----------------------------------------------------------------
 
@@ -207,7 +209,7 @@ class ScatterPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, path):
+    def plot_simple(self, path):
 
         """
         This function ...
@@ -218,7 +220,47 @@ class ScatterPlotter(object):
         # Inform the user
         log.info("Making the scatter plot ...")
 
-        # Plot the attenuation curves
+        # Create the figure
+        self._figure = plt.figure(figsize=(10, 10))
+
+        # Add first subplot
+        ax = self._figure.add_subplot(1, 1, 1, projection='3d')
+
+        ax.scatter(self.x, self.y, self.z)
+        ax.set_xlim(self.x_limits)
+        ax.set_ylim(self.y_limits)
+        ax.set_zlim(self.z_limits)
+        ax.set_xlabel(self.x_label)
+        ax.set_ylabel(self.y_label)
+        ax.set_zlabel(self.z_label)
+
+        # Set the title
+        if self.title is not None: plt.suptitle("\n".join(wrap(self.title, 60)))
+
+        plt.tight_layout()
+
+        # Debugging
+        if type(path).__name__ == "BytesIO": log.debug("Saving the scatter plot to a buffer ...")
+        else: log.debug("Saving the scatter plot to " + str(path) + " ...")
+
+        # Save the figure
+        plt.savefig(path, bbox_inches='tight', pad_inches=0.25, format=self.format, transparent=self.transparent)
+        plt.close()
+
+    # -----------------------------------------------------------------
+
+    def plot_with_density(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the scatter plot ...")
+
+        # Create the figure
         self._figure = plt.figure(figsize=(15, 15))
 
         # Add first subplot

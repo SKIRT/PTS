@@ -53,9 +53,6 @@ class AdvancedParameterExplorer(ParameterExplorer):
         # The probability distributions for the different fit parameters
         self.distributions = dict()
 
-        # A dictionary with the scheduling options for the different remote hosts
-        self.scheduling_options = dict()
-
     # -----------------------------------------------------------------
 
     @classmethod

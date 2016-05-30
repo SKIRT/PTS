@@ -47,7 +47,7 @@ class SEDInstrument(object):
         :return:
         """
 
-        return cls(projection.distance, projection.azimuth, projection.position_angle)
+        return cls(projection.distance, projection.inclination, projection.azimuth, projection.position_angle)
 
 # -----------------------------------------------------------------
 
@@ -94,9 +94,9 @@ class FrameInstrument(object):
         :return:
         """
 
-        return cls(projection.distance, projection.azimuth, projection.position_angle, projection.field_x_physical,
-                   projection.field_y_physical, projection.pixels_x, projection.pixels_y, projection.center_x,
-                   projection.center_y)
+        return cls(projection.distance, projection.inclination, projection.azimuth, projection.position_angle,
+                   projection.field_x_physical, projection.field_y_physical, projection.pixels_x, projection.pixels_y,
+                   projection.center_x, projection.center_y)
 
 # -----------------------------------------------------------------
 
@@ -195,8 +195,8 @@ class FullInstrument(object):
         :return:
         """
 
-        return cls(projection.distance, projection.azimuth, projection.position_angle, projection.field_x_physical,
-                   projection.field_y_physical, projection.pixels_x, projection.pixels_y, projection.center_x,
-                   projection.center_y)
+        return cls(projection.distance, projection.inclination, projection.azimuth, projection.position_angle,
+                   projection.field_x_physical, projection.field_y_physical, projection.pixels_x, projection.pixels_y,
+                   projection.center_x, projection.center_y)
 
 # -----------------------------------------------------------------

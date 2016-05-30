@@ -51,9 +51,9 @@ class GalaxyProjection(object):
         """
 
         self.distance = distance
-        self.inclination = inclination
-        self.azimuth = azimuth
-        self.position_angle = position_angle
+        self.inclination = Angle(inclination, "deg")
+        self.azimuth = Angle(azimuth, "deg")
+        self.position_angle = Angle(position_angle, "deg")
         self.pixels_x = pixels_x
         self.pixels_y = pixels_y
         self.center_x = center_x
@@ -114,13 +114,13 @@ class GalaxyProjection(object):
                 splitted = line.split(": ")
 
                 if splitted[0] == "Distance": distance = get_quantity(splitted[1])
-                elif splitted[0] == "Inclination": distance = get_angle(splitted[1])
+                elif splitted[0] == "Inclination": inclination = get_angle(splitted[1])
                 elif splitted[0] == "Azimuth": azimuth = get_angle(splitted[1])
                 elif splitted[0] == "Position angle": position_angle = get_angle(splitted[1])
                 elif splitted[0] == "Pixels x": pixels_x = int(splitted[1])
                 elif splitted[0] == "Pixels y": pixels_y = int(splitted[1])
-                elif splitted[0] == "Center x": center_x = float(splitted[1])
-                elif splitted[0] == "Center y": center_y = float(splitted[1])
+                elif splitted[0] == "Center x": center_x = get_quantity(splitted[1])
+                elif splitted[0] == "Center y": center_y = get_quantity(splitted[1])
                 elif splitted[0] == "Field x": field_x = get_quantity(splitted[1])
                 elif splitted[0] == "Field y": field_y = get_quantity(splitted[1])
 
@@ -141,9 +141,9 @@ class GalaxyProjection(object):
         with open(path, 'w') as projection_file:
 
             print("Distance:", str(self.distance), file=projection_file)
-            print("Inclination:", str(self.inclination), file=projection_file)
-            print("Azimuth:", str(self.azimuth), file=projection_file)
-            print("Position angle:", str(self.position_angle), file=projection_file)
+            print("Inclination:", str(self.inclination.to("deg").value) + " deg", file=projection_file)
+            print("Azimuth:", str(self.azimuth.to("deg").value) + " deg", file=projection_file)
+            print("Position angle:", str(self.position_angle.to("deg").value) + " deg", file=projection_file)
             print("Pixels x:", str(self.pixels_x), file=projection_file)
             print("Pixels y:", str(self.pixels_y), file=projection_file)
             print("Center x:", str(self.center_x), file=projection_file)
@@ -261,10 +261,17 @@ def get_angle(entry, default_unit=None):
     :return:
     """
 
-    splitted = entry.split()
-    value = float(splitted[0])
-    try: unit = splitted[1]
-    except IndexError: unit = default_unit
+    if "d" in entry and "m" in entry and "s" in entry: # dms format
+
+        value = float(entry.split("d")[0]) + float(entry.split("d")[1].split("m")[0])/60. + float(entry.split("m")[1].split("s")[0])/3600.
+        unit = "deg"
+
+    else:
+
+        splitted = entry.split()
+        value = float(splitted[0])
+        try: unit = splitted[1]
+        except IndexError: unit = default_unit
 
     # Create an Angle object and return it
     if unit is not None: value = Angle(value, unit)

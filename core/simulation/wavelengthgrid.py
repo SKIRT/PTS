@@ -35,9 +35,11 @@ class WavelengthGrid(object):
 
         # Attributes
         #self.table = Table(names=["Wavelength", "Delta"], dtype=('f8', 'f8'))
-        self.table = Table(names=["Wavelength"], dtype=('f8'))
-        self.table["Wavelength"].unit = Unit("micron")
+        #self.table = Table(names=["Wavelength"], dtype=['f8'])
+        #self.table["Wavelength"].unit = Unit("micron")
         #self.table["Delta"].unit = Unit("micron")
+
+        self.table = None
 
     # -----------------------------------------------------------------
 
@@ -86,7 +88,9 @@ class WavelengthGrid(object):
         grid = cls()
 
         # Add the wavelengths
+        grid.table = Table()
         grid.table["Wavelength"] = wavelengths
+        grid.table["Wavelength"].unit = "micron"
 
         # Return the new instance
         return grid

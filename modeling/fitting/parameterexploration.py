@@ -57,6 +57,9 @@ class ParameterExplorer(FittingComponent):
         # The table with the parameter values for each simulation
         self.table = None
 
+        # A dictionary with the scheduling options for the different remote hosts
+        self.scheduling_options = dict()
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -72,8 +75,7 @@ class ParameterExplorer(FittingComponent):
         # Get the names of the filters for which we have photometry
         filter_names = []
         fluxes_table_path = fs.join(self.phot_path, "fluxes.dat")
-        #fluxes_table = tables.from_file(fluxes_table_path, format="ascii.ecsv")
-        fluxes_table = tables.from_file(fluxes_table_path)
+        fluxes_table = tables.from_file(fluxes_table_path, format="ascii.ecsv")
         # Loop over the entries in the fluxes table, get the filter
         for entry in fluxes_table:
             # Get the filter

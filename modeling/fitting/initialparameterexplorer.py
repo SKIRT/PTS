@@ -18,6 +18,9 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from .parameterexploration import ParameterExplorer
 from ...core.tools.logging import log
+from ...magic.animation.scatter import ScatterAnimation
+from ...core.tools import filesystem as fs
+from ...core.tools import time
 
 # -----------------------------------------------------------------
 
@@ -56,7 +59,7 @@ class InitialParameterExplorer(ParameterExplorer):
         explorer.config.path = arguments.path
 
         # Set the remote host IDs
-        if arguments.remotes is not None: explorer.config.remotes = arguments.remotes
+        if arguments.remote is not None: explorer.config.remotes = arguments.remote
 
         # Set options for the young stellar population
         if arguments.young_nvalues is not None: explorer.config.young_stars.nvalues = arguments.young_nvalues
@@ -81,6 +84,9 @@ class InitialParameterExplorer(ParameterExplorer):
             explorer.config.dust.rel_max = arguments.dust_range[1]
         if arguments.dust_log: explorer.config.dust.scale = "log"
         else: explorer.config.dust.scale = "linear"
+
+        # Make visualisations
+        explorer.config.visualise = arguments.visualise
 
         # Return the new instance
         return explorer
@@ -132,19 +138,41 @@ class InitialParameterExplorer(ParameterExplorer):
         # Inform the user
         log.info("Determining every possible combination of parameter values ...")
 
+        # Determine the ranges
+        fuv_young_range = self.young_luminosity_range(young_luminosity_guess)
+        fuv_ionizing_range = self.ionizing_luminosity_range(ionizing_luminosity_guess)
+        dust_mass_range = self.dust_mass_range(dust_mass_guess)
+
+        # Make animation
+        if self.config.visualise:
+            animation = ScatterAnimation([fuv_young_range[0], fuv_young_range[-1]], [fuv_ionizing_range[0], fuv_ionizing_range[-1]], [dust_mass_range[0].to("Msun").value, dust_mass_range[-1].to("Msun").value])
+            animation.x_label = "FUV young"
+            animation.y_label = "FUV ionizing"
+            animation.z_label = "Dust mass"
+            animation.density = False
+        else: animation = None
+
         # Loop over the different values of the young stellar luminosity
-        for young_luminosity in self.young_luminosity_range(young_luminosity_guess):
+        for young_luminosity in fuv_young_range:
 
             # Loop over the different values of the ionizing stellar luminosity
-            for ionizing_luminosity in self.ionizing_luminosity_range(ionizing_luminosity_guess):
+            for ionizing_luminosity in fuv_ionizing_range:
 
                 # Loop over the different values of the dust mass
-                for dust_mass in self.dust_mass_range(dust_mass_guess):
+                for dust_mass in dust_mass_range:
 
                     # Add the parameter values to the dictionary
                     self.parameters["FUV young"].append(young_luminosity)
                     self.parameters["FUV ionizing"].append(ionizing_luminosity)
                     self.parameters["Dust mass"].append(dust_mass)
+
+                    # Add a point (and thus a frame) to the animation
+                    if animation is not None and self.number_of_models > 1: animation.add_point(young_luminosity, ionizing_luminosity, dust_mass.to("Msun").value)
+
+        # Save the animation
+        if animation is not None:
+            path = fs.join(self.visualisation_path, time.unique_name("initialparameterexploration") + ".gif")
+            animation.save(path)
 
     # -----------------------------------------------------------------
 
