@@ -20,7 +20,7 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from ..tools import serialization
-from ..tools import fs as fs
+from ..tools import filesystem as fs
 from .skifile import SkiFile
 from .logfile import LogFile
 from ..tools import archive as arch

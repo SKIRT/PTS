@@ -19,7 +19,7 @@ import subprocess
 # Import the relevant PTS classes and modules
 from .arguments import SkirtArguments
 from ..tools import inspection
-from ..tools import fs as fs
+from ..tools import filesystem as fs
 from ..tools.logging import log
 
 # -----------------------------------------------------------------

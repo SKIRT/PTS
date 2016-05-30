@@ -153,8 +153,8 @@ class GalaxyDecomposer(DecompositionComponent):
         # 3. Create the models
         self.create_models()
 
-        # 4. Create the projection system
-        self.create_projection()
+        # 4. Create the projection systems
+        self.create_projections()
 
         # 4. Create the instruments
         self.create_instruments()

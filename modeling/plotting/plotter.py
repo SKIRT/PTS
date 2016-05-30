@@ -80,7 +80,7 @@ class Plotter(PlottingComponent):
         if self.config.step == "data": self.plot_data()
 
         # 3. Make a plot of the preparation step
-        if self.config.step == "preparation": self.plot_preparation()
+        elif self.config.step == "preparation": self.plot_preparation()
 
         # 4. Make a plot of the decomposition step
         elif self.config.step == "decomposition": self.plot_decomposition()
@@ -114,6 +114,64 @@ class Plotter(PlottingComponent):
 
     # -----------------------------------------------------------------
 
+    def plot_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the images ...")
+
+        # The dictionary of image frames
+        images = dict()
+
+        # Loop over all subdirectories of the preparation directory
+        for directory_path, directory_name in fs.directories_in_path(self.prep_path, returns=["path", "name"]):
+
+            # Debugging
+            log.debug("Opening " + directory_name + " image ...")
+
+            # Look if an initialized image file is present
+            image_path = fs.join(directory_path, "initialized.fits")
+            if not fs.is_file(image_path):
+
+                log.warning("Initialized image could not be found for " + directory_name)
+                continue
+
+            # Open the prepared image frame
+            frame = Frame.from_file(image_path)
+
+            # Set the image name
+            frame.name = directory_name
+
+            # Add the image to the dictionary
+            images[directory_name] = frame
+
+        # Inform the user
+        log.info("Plotting the images ...")
+
+        # Create the image plotter
+        plotter = StandardImageGridPlotter()
+
+        # Sort the image labels based on wavelength
+        sorted_labels = sorted(images.keys(), key=lambda key: images[key].filter.pivotwavelength())
+
+        # Add the images
+        for label in sorted_labels: plotter.add_image(images[label], label)
+
+        # Determine the path to the plot file
+        path = fs.join(self.plot_path, "data.pdf")
+
+        # Set the plot title
+        plotter.set_title("Images")
+
+        # Make the plot
+        plotter.run(path)
+
+    # -----------------------------------------------------------------
+
     def plot_preparation(self):
 
         """
@@ -142,9 +200,6 @@ class Plotter(PlottingComponent):
             # Set the image name
             frame.name = directory_name
 
-            # Check whether the filter is defined
-            print(frame.name, frame.filter)
-
             # Add the image to the dictionary
             images[directory_name] = frame
 
@@ -154,15 +209,18 @@ class Plotter(PlottingComponent):
         # Create the image plotter
         plotter = StandardImageGridPlotter()
 
+        # Sort the image labels based on wavelength
         sorted_labels = sorted(images.keys(), key=lambda key: images[key].filter.pivotwavelength())
 
         # Add the images
         for label in sorted_labels: plotter.add_image(images[label], label)
 
         # Determine the path to the plot file
-        path = fs.join(self.prep_path, "preparation.pdf")
+        path = fs.join(self.plot_path, "preparation.pdf")
 
         # plotter.colormap = "hot"
+
+        plotter.vmin = 0.0
 
         plotter.set_title("Prepared images")
 

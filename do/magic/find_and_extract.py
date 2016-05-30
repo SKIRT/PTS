@@ -23,7 +23,7 @@ from pts.magic.catalog.importer import CatalogImporter
 from pts.magic.sources.extractor import SourceExtractor
 from pts.core.tools import configuration
 from pts.core.tools import logging, time
-from pts.core.tools import fs as fs
+from pts.core.tools import filesystem as fs
 from pts.magic.basics.region import Region
 
 # -----------------------------------------------------------------

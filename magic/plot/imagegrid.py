@@ -107,6 +107,8 @@ class StandardImageGridPlotter(ImageGridPlotter):
         self.ncols = 7
         self.width = 16
 
+        self.vmin = None
+
         self.colormap = "viridis"
 
     # -----------------------------------------------------------------
@@ -196,13 +198,13 @@ class StandardImageGridPlotter(ImageGridPlotter):
         #                      cbar_location="right",
         #                      cbar_mode="single",
         #                      cbar_size="0.5%",
-        #                      cbar_pad="0.5%",
-        #                      )  # cbar_mode="single"
+        #                      cbar_pad="0.5%")  # cbar_mode="single"
 
         gs = gridspec.GridSpec(nrows, self.ncols, wspace=0.0, hspace=0.0)
 
         # Loop over the images
         counter = 0
+        ax = None
         for label in self.images:
 
             row = int(counter / self.ncols)
@@ -225,6 +227,8 @@ class StandardImageGridPlotter(ImageGridPlotter):
             # ax = self._figure.add_axes([x_min, y_min, width, height])
 
             #ax = plt.subplot(subplotspec)
+            #shareax = ax if ax is not None else None
+            #ax = plt.subplot(subplotspec, projection=frame.wcs.to_astropy(), sharex=shareax, sharey=shareax)
             ax = plt.subplot(subplotspec, projection=frame.wcs.to_astropy())
 
             #lon = ax.coords[0]
@@ -236,7 +240,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
             # Determine the maximum value in the box and the mimimum value for plotting
             norm = ImageNormalize(stretch=LogStretch())
             #min_value = np.nanmin(frame)
-            min_value = 0.0
+            min_value = self.vmin if self.vmin is not None else np.nanmin(frame)
             max_value = 0.5 * (np.nanmax(frame) + min_value)
 
             #f1.show_colorscale(vmin=min_value, vmax=max_value, cmap="viridis")
@@ -268,7 +272,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
             # Plot
             frame[np.isnan(frame)] = 0.0
-            ax.imshow(frame, vmin=min_value, vmax=max_value, cmap=cmap, origin='lower', norm=norm, interpolation="nearest")
+            ax.imshow(frame, vmin=min_value, vmax=max_value, cmap=cmap, origin='lower', norm=norm, interpolation="nearest", aspect=1)
 
             # Add the label
             ax.text(0.95, 0.95, label, color='white', transform=ax.transAxes, fontsize=10, va="top", ha="right") # fontweight='bold'

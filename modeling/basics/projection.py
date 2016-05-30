@@ -77,27 +77,11 @@ class GalaxyProjection(object):
         :return:
         """
 
-        # PIXEL SIZE
-        pixels_x = wcs.xsize
-        pixels_y = wcs.ysize
-
-        # CENTER PIXEL
-        pixel_center = center.to_pixel(wcs)
-        # center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5) # when not convolved ...
-        center = Position(0.5 * pixels_x - pixel_center.x - 1, 0.5 * pixels_y - pixel_center.y - 1)  # when convolved ...
-        center_x = center.x * Unit("pix")
-        center_y = center.y * Unit("pix")
-        center_x = (center_x * wcs.pixelscale.x.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
-        center_y = (center_y * wcs.pixelscale.y.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
-
-        # FIELD OF VIEW
-        field_x_angular = wcs.pixelscale.x.to("deg/pix") * pixels_x * Unit("pix")
-        field_y_angular = wcs.pixelscale.y.to("deg/pix") * pixels_y * Unit("pix")
-        field_x_physical = (field_x_angular * distance).to("pc", equivalencies=dimensionless_angles())
-        field_y_physical = (field_y_angular * distance).to("pc", equivalencies=dimensionless_angles())
+        # Get derived properties
+        pixels_x, pixels_y, center_x, center_y, field_x, field_y = get_relevant_wcs_properties(wcs, center, distance)
 
         # Create and return a new class instance
-        return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x_physical, field_y_physical)
+        return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
 
     # -----------------------------------------------------------------
 
@@ -197,8 +181,11 @@ class FaceOnProjection(GalaxyProjection):
         :return:
         """
 
-        # Call the function of the base class
-        super(FaceOnProjection, cls).from_wcs(wcs, center, distance, 0.0, 0.0, 90.)
+        # Get derived properties
+        pixels_x, pixels_y, center_x, center_y, field_x, field_y = get_relevant_wcs_properties(wcs, center, distance)
+
+        # Call the constructor
+        return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
 
 # -----------------------------------------------------------------
 
@@ -237,8 +224,11 @@ class EdgeOnProjection(GalaxyProjection):
         :return:
         """
 
-        # Call the function of the base class
-        super(EdgeOnProjection, cls).from_wcs(wcs, center, distance, 90., 0., 0.)
+        # Get derived properties
+        pixels_x, pixels_y, center_x, center_y, field_x, field_y = get_relevant_wcs_properties(wcs, center, distance)
+
+        # Call the constructor
+        return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
 
 # -----------------------------------------------------------------
 
@@ -279,5 +269,39 @@ def get_angle(entry, default_unit=None):
     # Create an Angle object and return it
     if unit is not None: value = Angle(value, unit)
     return value
+
+# -----------------------------------------------------------------
+
+def get_relevant_wcs_properties(wcs, center, distance):
+
+    """
+    This function ...
+    :param wcs:
+    :param center:
+    :param distance:
+    :return:
+    """
+
+    # PIXEL SIZE
+    pixels_x = wcs.xsize
+    pixels_y = wcs.ysize
+
+    # CENTER PIXEL
+    pixel_center = center.to_pixel(wcs)
+    # center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5) # when not convolved ...
+    center = Position(0.5 * pixels_x - pixel_center.x - 1,
+                      0.5 * pixels_y - pixel_center.y - 1)  # when convolved ...
+    center_x = center.x * Unit("pix")
+    center_y = center.y * Unit("pix")
+    center_x = (center_x * wcs.pixelscale.x.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
+    center_y = (center_y * wcs.pixelscale.y.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
+
+    # FIELD OF VIEW
+    field_x_angular = wcs.pixelscale.x.to("deg/pix") * pixels_x * Unit("pix")
+    field_y_angular = wcs.pixelscale.y.to("deg/pix") * pixels_y * Unit("pix")
+    field_x_physical = (field_x_angular * distance).to("pc", equivalencies=dimensionless_angles())
+    field_y_physical = (field_y_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+    return pixels_x, pixels_y, center_x, center_y, field_x_physical, field_y_physical
 
 # -----------------------------------------------------------------

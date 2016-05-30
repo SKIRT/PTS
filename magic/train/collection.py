@@ -22,7 +22,7 @@ from ..core.image import Image
 from ..core.source import Source
 from ...core.basics.configurable import Configurable
 from ...core.tools import inspection
-from ...core.tools import fs as fs
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 

@@ -366,7 +366,7 @@ def get_filter(name, header=None):
                 else: log.warning("Could not determine which SPIRE filter was used for this image")
 
     # -- H alpha --
-    elif "alpha" in filterid or "6561" in filterid: final_filter_name = "656_1"
+    elif "alpha" in filterid or "6561" in filterid or "656_1" in filterid: final_filter_name = "656_1"
     elif "ha" in filterid and "kpno" in filterid: final_filter_name = "Halpha"
 
     if final_filter_name is None:

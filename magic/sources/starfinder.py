@@ -30,7 +30,7 @@ from ..object.star import Star
 from ..tools import statistics, fitting
 from ...core.basics.configurable import Configurable
 from ...core.tools import tables
-from ...core.tools import fs as fs
+from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
