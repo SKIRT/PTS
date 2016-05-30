@@ -98,7 +98,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def asarray(self):
+    def asarray(self, axis=3):
 
         """
         This function ...
@@ -109,7 +109,11 @@ class Image(object):
         frame_list = self.frames.as_list()
 
         # Stack the frames into a 3D numpy array
-        return np.dstack(frame_list)
+        if axis == 3: return np.dstack(frame_list)
+        elif axis == 2: return np.hstack(frame_list)
+        elif axis == 1: return np.vstack(frame_list)
+        elif axis == 0: return np.stack(frame_list)
+        else: raise ValueError("'axis' parameter should be integer 0-3")
 
     # -----------------------------------------------------------------
 

@@ -1,4 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
 from __future__ import absolute_import
+
 import subprocess
 import os
 import pickle
@@ -16,7 +24,7 @@ about = {}
 with open(os.path.join(base_dir, "__about__.py")) as f:
     exec(f.read(), about)
 
-class MagicViewer():
+class MagicViewer(object):
 
     """
     ZTV Class:
@@ -45,9 +53,9 @@ class MagicViewer():
 
         find_python_str = "`echo \`which pythonw\` \`which python\` | awk '{print $1}'`"
         if control_panels_module_path is None:
-            cmd = find_python_str + " -c 'from pts.magic.tv.ztv import ZTVMain ; ZTVMain(launch_listen_thread=True,"
+            cmd = find_python_str + " -c 'from pts.magic.view.ztv import ZTVMain ; ZTVMain(launch_listen_thread=True,"
         else:
-            cmd = (find_python_str + " -c 'from pts.magic.tv.ztv import ZTVMain ; import importlib ; " +
+            cmd = (find_python_str + " -c 'from pts.magic.view.ztv import ZTVMain ; import importlib ; " +
                    "control_panels_module = importlib.import_module(\"" + 
                    control_panels_module_path + "\") ; ZTVMain(launch_listen_thread=True, " +
                    "control_panels_to_load=control_panels_module.control_panels_to_load,")
@@ -97,10 +105,8 @@ class MagicViewer():
         """
         Load a numpy array into the image.
         """
-        if isinstance(image, np.ndarray):
-            self._send_to_ztv(('load-numpy-array', image))
-        else:
-            raise Error('Tried to send type {} instead of a numpy array'.format(type(image)))
+
+        self._send_to_ztv(('load-numpy-array', image))
 
     def _validate_fits_filename(self, filename):
         """
@@ -127,6 +133,32 @@ class MagicViewer():
         if self._validate_fits_filename(filename):
             self._send_to_ztv(('load-fits-file', filename))
 
+    # -----------------------------------------------------------------
+
+    def load_frame(self, frame):
+
+        """
+        Load a frame
+        :param frame:
+        :return:
+        """
+
+        self._load_numpy_array(frame)
+
+    # -----------------------------------------------------------------
+
+    def load_image(self, image):
+
+        """
+        Load an image
+        :param image:
+        :return:
+        """
+
+        self._load_numpy_array(image.asarray(axis=0))
+
+    # -----------------------------------------------------------------
+
     def load(self, input):
         """
         Load a new image, accepts:
@@ -138,14 +170,17 @@ class MagicViewer():
             self._load_numpy_array(input)
         elif isinstance(input, str) and self._validate_fits_filename(input):
             self._load_fits_file(input)
-        else:
-            raise Error("Unrecognized input to ZTV.load(): {}".format(input))
+        else: raise Error("Unrecognized input to ZTV.load() of type " + str(type(input)))
+
+    # -----------------------------------------------------------------
 
     def load_default_image(self):
         """
         Load the default nonsense image
         """
         self._send_to_ztv('load-default-image')
+
+    # -----------------------------------------------------------------
 
     def cmap(self, cmap=None):
         """

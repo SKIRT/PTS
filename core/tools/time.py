@@ -13,7 +13,20 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import time as _time
 from datetime import datetime
+
+# -----------------------------------------------------------------
+
+def wait(seconds):
+
+    """
+    This function ...
+    :param seconds:
+    :return:
+    """
+
+    _time.sleep(seconds)
 
 # -----------------------------------------------------------------
 

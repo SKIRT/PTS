@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+# -----------------------------------------------------------------
+
 from __future__ import absolute_import
 import wx
 from wx.lib.pubsub import pub
@@ -15,8 +24,10 @@ import numpy as np
 import sys
 from .ztv_lib import send_to_stream
 
+# -----------------------------------------------------------------
 
 class PlotPlotPanel(wx.Panel):
+
     def __init__(self, parent, dpi=None, **kwargs):
         wx.Panel.__init__(self, parent, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, **kwargs)
         self.ztv_frame = self.GetTopLevelParent()
@@ -26,14 +37,17 @@ class PlotPlotPanel(wx.Panel):
         self.Bind(wx.EVT_SIZE, self._onSize)
 
     def _onSize(self, event):
+
         self._SetSize()
 
     def _SetSize(self):
+
         pixels = tuple(self.GetClientSize())
         self.SetSize(pixels)
         self.canvas.SetSize(pixels)
         self.figure.set_size_inches(float(pixels[0])/self.figure.get_dpi(), float(pixels[1])/self.figure.get_dpi())
 
+# -----------------------------------------------------------------
 
 class PlotPanel(wx.Panel):
     def __init__(self, parent):
@@ -171,16 +185,16 @@ class PlotPanel(wx.Panel):
         if self.start_pt == self.end_pt:
             if self.ztv_frame.proc_image.ndim == 2:
                 positions = np.array([-0.5, 0.5])
-                im_values = np.array([self.ztv_frame.proc_image[self.start_pt.y, self.start_pt.x]] * 2)
+                im_values = np.array([self.ztv_frame.proc_image[int(self.start_pt.y), int(self.start_pt.x)]] * 2)
                 cur_im_num = 0
-                cur_im_value = self.ztv_frame.proc_image[self.start_pt.y, self.start_pt.x]
+                cur_im_value = self.ztv_frame.proc_image[int(self.start_pt.y), int(self.start_pt.x)]
             else:
                 positions = np.array([np.arange(-0.5, self.ztv_frame.proc_image.shape[0] - 1), 
                                       np.arange(0.5, self.ztv_frame.proc_image.shape[0])]).transpose().ravel()
-                im_values = np.array([self.ztv_frame.proc_image[:, self.start_pt.y, self.start_pt.x],
-                                      self.ztv_frame.proc_image[:, self.start_pt.y, self.start_pt.x]]).transpose().ravel()
+                im_values = np.array([self.ztv_frame.proc_image[:, int(self.start_pt.y), int(self.start_pt.x)],
+                                      self.ztv_frame.proc_image[:, int(self.start_pt.y), int(self.start_pt.x)]]).transpose().ravel()
                 cur_im_num = self.ztv_frame.cur_display_frame_num
-                cur_im_value = self.ztv_frame.proc_image[cur_im_num, self.start_pt.y, self.start_pt.x]
+                cur_im_value = self.ztv_frame.proc_image[cur_im_num, int(self.start_pt.y), int(self.start_pt.x)]
             self.plot_panel.axes.clear()
             self.line_plot = self.plot_panel.axes.plot(positions, im_values)
             self.plot_panel.axes.plot([cur_im_num], [cur_im_value], 'xm')
@@ -226,4 +240,5 @@ class PlotPanel(wx.Panel):
             else:
                 self.plot_panel.axes.clear()
                 self.plot_panel.figure.canvas.draw()
-        
+
+# -----------------------------------------------------------------

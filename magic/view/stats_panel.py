@@ -1,3 +1,5 @@
+
+
 from __future__ import absolute_import
 import wx
 from wx.lib.pubsub import pub
@@ -9,8 +11,10 @@ import sys
 from .ztv_wx_lib import set_textctrl_background_color, validate_textctrl_str, textctrl_output_only_background_color
 from .ztv_lib import send_to_stream
 
+# -----------------------------------------------------------------
 
 class StatsPanel(wx.Panel):
+
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize)
         self.ztv_frame = self.GetTopLevelParent()
@@ -224,25 +228,35 @@ class StatsPanel(wx.Panel):
         self.redraw_overplot_on_image()
         self.cursor_stats_box_x0, self.cursor_stats_box_y0 = event.xdata, event.ydata
 
+    # -----------------------------------------------------------------
+
     def on_motion(self, event):
         self.update_stats_box(self.cursor_stats_box_x0, self.cursor_stats_box_y0, event.xdata, event.ydata)
         self.redraw_overplot_on_image()
         self.update_stats()
 
+    # -----------------------------------------------------------------
+
     def on_button_release(self, event):
         self.redraw_overplot_on_image()
         self.update_stats()
+
+    # -----------------------------------------------------------------
 
     def set_cursor_to_stats_box_mode(self, event):
         self.ztv_frame.primary_image_panel.cursor_mode = 'Stats box'
         self.ztv_frame.stats_panel.select_panel()
         self.ztv_frame.stats_panel.highlight_panel()
 
+    # -----------------------------------------------------------------
+
     def queue_update_stats(self, msg=None):  
         """
         wrapper to call update_stats from CallAfter in order to make GUI as responsive as possible.
         """
         wx.CallAfter(self.update_stats, msg=None)
+
+    # -----------------------------------------------------------------
 
     def _set_stats_box_parameters(self, msg):
         """
@@ -261,6 +275,8 @@ class StatsPanel(wx.Panel):
             else:
                 self.remove_overplot_on_image()
         send_to_stream(sys.stdout, ('set-stats-box-parameters-done', True))
+
+    # -----------------------------------------------------------------
 
     def update_stats_box(self, x0=None, y0=None, x1=None, y1=None):
         if x0 is None:
@@ -283,17 +299,23 @@ class StatsPanel(wx.Panel):
         self.ztv_frame.primary_image_panel.figure.canvas.draw()
         self.update_stats()
 
+    # -----------------------------------------------------------------
+
     def remove_overplot_on_image(self):
         if self.stats_rect in self.ztv_frame.primary_image_panel.axes.patches:
             self.ztv_frame.primary_image_panel.axes.patches.remove(self.stats_rect)
         self.ztv_frame.primary_image_panel.figure.canvas.draw()
         self.hideshow_button.SetLabel(u"Show")
 
+    # -----------------------------------------------------------------
+
     def redraw_overplot_on_image(self):
         if self.stats_rect not in self.ztv_frame.primary_image_panel.axes.patches:
             self.ztv_frame.primary_image_panel.axes.add_patch(self.stats_rect)
         self.ztv_frame.primary_image_panel.figure.canvas.draw()
-        self.hideshow_button.SetLabel(u"Hide")        
+        self.hideshow_button.SetLabel(u"Hide")
+
+    # -----------------------------------------------------------------
 
     def on_hideshow_button(self, evt):
         if self.hideshow_button.GetLabel() == 'Hide':
@@ -301,14 +323,19 @@ class StatsPanel(wx.Panel):
         else:
             self.redraw_overplot_on_image()
 
+    # -----------------------------------------------------------------
+
     def get_x0y0x1y1_from_stats_rect(self):
         x0 = self.stats_rect.get_x()
         y0 = self.stats_rect.get_y()
         x1 = x0 + self.stats_rect.get_width()
         y1 = y0 + self.stats_rect.get_height()
         return x0,y0,x1,y1
-        
+
+    # -----------------------------------------------------------------
+
     def update_stats(self, msg=None):
+
         x0,y0,x1,y1 = self.get_x0y0x1y1_from_stats_rect()
         x0, y0 = int(np.round(x0)), int(np.round(y0))
         x1, y1 = int(np.round(x1)), int(np.round(y1))

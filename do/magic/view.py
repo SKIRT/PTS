@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.magic.view
+## \package pts.do.magic.view Open a FITS image with the magic viewer.
 
 # -----------------------------------------------------------------
 
@@ -15,13 +15,21 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import argparse
 
+from astropy.io import fits
+
 # Import the relevant PTS classes and modules
 from pts.magic.view import MagicViewer
+from pts.core.tools import time
+from pts.magic.core.frame import Frame
+from pts.magic.core.image import Image
 
 # -----------------------------------------------------------------
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
+
+# The filename
+parser.add_argument("filename", type=str, help="the name (or path) of the FITS file")
 
 # Parse the command line arguments
 arguments = parser.parse_args()
@@ -50,6 +58,20 @@ arguments = parser.parse_args()
 
 #viewer = MagicViewer(control_panels_module_path='control_panels')
 
-viewer = MagicViewer()
+viewer = MagicViewer(title="Magic viewer")
+
+# Load the frame
+#frame = Frame.from_file(arguments.filename)
+#viewer.load_frame(frame)
+
+image = Image.from_file(arguments.filename)
+viewer.load_image(image)
+
+viewer.control_panel('Color')
+viewer.cmap("hot")
+viewer.scaling('Log')
+
+
+time.wait(60)
 
 # -----------------------------------------------------------------

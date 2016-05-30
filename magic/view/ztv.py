@@ -68,7 +68,7 @@ class ColorMaps():
         return a selection of useful colormaps that is less overwhelming than ALL of them
         """
         return ['gray', 'bone', 'Blues_r', 'Greens_r', 'Oranges_r', 'RdPu_r', 'hot', 'gist_heat',
-                'rainbow', 'hsv', 'spectral', 'gnuplot', 'jet']
+                'rainbow', 'hsv', 'spectral', 'gnuplot', 'jet', 'viridis']
 
     def all_except_reversed(self):
         return [a for a in cm.datad if not a.endswith('_r')]
