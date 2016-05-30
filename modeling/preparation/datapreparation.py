@@ -70,9 +70,9 @@ aniano_names = {"GALEX FUV": "GALEX_FUV",
                 "MIPS 160mu": None,
                 "Pacs blue": "PACS_70",
                 "Pacs red": "PACS_160",
-                "SPIRE PSW_ext": None,
-                "SPIRE PMW_ext": None,
-                "SPIRE PLW_ext": None}
+                "SPIRE PSW": None,
+                "SPIRE PMW": None,
+                "SPIRE PLW": None}
 
 # -----------------------------------------------------------------
 
@@ -100,9 +100,9 @@ calibration_errors = {"GALEX FUV": "0.05 mag",
                       "MIPS 160mu": "5%", #
                       "Pacs blue": "5%",
                       "Pacs red": "5%",
-                      "SPIRE PSW_ext": "4%",
-                      "SPIRE PMW_ext": "4%",
-                      "SPIRE PLW_ext": "4%"}
+                      "SPIRE PSW": "4%",
+                      "SPIRE PMW": "4%",
+                      "SPIRE PLW": "4%"}
 
 # -----------------------------------------------------------------
 

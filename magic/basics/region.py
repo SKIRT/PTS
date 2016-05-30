@@ -104,8 +104,8 @@ class Region(list):
                 y_2 = shape.coord_list[3]
 
                 # Create the positions
-                position_1 = Position(x_1, y_1)
-                position_2 = Position(x_2, y_2)
+                position_1 = Coordinate(x_1, y_1)
+                position_2 = Coordinate(x_2, y_2)
 
                 # Create the line
                 line = Line(position_1, position_2, meta=meta)
@@ -120,7 +120,7 @@ class Region(list):
                 # Get the position of the center
                 x_center = shape.coord_list[0]
                 y_center = shape.coord_list[1]
-                center = Position(x_center, y_center)
+                center = Coordinate(x_center, y_center)
 
                 # Get the radius
                 radius = shape.coord_list[2]
@@ -138,7 +138,7 @@ class Region(list):
                 # Get the position of the center
                 x_center = shape.coord_list[0]
                 y_center = shape.coord_list[1]
-                center = Position(x_center, y_center)
+                center = Coordinate(x_center, y_center)
 
                 # Get the radius
                 x_radius = shape.coord_list[2]
@@ -161,7 +161,7 @@ class Region(list):
                 # Get the position of the center
                 x_center = shape.coord_list[0]
                 y_center = shape.coord_list[1]
-                center = Position(x_center, y_center)
+                center = Coordinate(x_center, y_center)
 
                 # Get the width and height
                 width = shape.coord_list[2]
@@ -197,7 +197,7 @@ class Region(list):
                     # Create a new Position
                     x = shape.coord_list[2*i]
                     y = shape.coord_list[2*i + 1]
-                    position = Position(x, y)
+                    position = Coordinate(x, y)
 
                     # Add the point to the polygon
                     polygon.add_point(position)

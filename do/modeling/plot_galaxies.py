@@ -43,14 +43,12 @@ level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting list_galaxies ...")
+log.start("Starting plot_galaxies ...")
 
 # -----------------------------------------------------------------
 
 # Local table path
 local_table_path = fs.join(inspection.pts_dat_dir("modeling"), "s4g", "s4g_p4_table8.dat")
-
-# -----------------------------------------------------------------
 
 # -----------------------------------------------------------------
 

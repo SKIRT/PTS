@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.plot_preparation Make plots from the image preparation step.
+## \package pts.do.modeling.plot_modeling Make plots for a particular radiative transfer modeling step.
 
 # -----------------------------------------------------------------
 
@@ -18,12 +18,15 @@ import argparse
 # Import the relevant PTS classes and modules
 from pts.core.tools import logging, parsing, time
 from pts.core.tools import filesystem as fs
-from pts.modeling.preparation.plotting import PreparationPlotter
+from pts.modeling.plotting.plotter import Plotter
 
 # -----------------------------------------------------------------
 
 # Create the command-line parser
 parser = argparse.ArgumentParser()
+
+# The modeling step
+parser.add_argument("step", type=str, help="the modeling step for which plots should be made")
 
 # Logging options
 parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
@@ -35,27 +38,28 @@ arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
-# Set the modeling path
+# Set the modeling path and the log path
 arguments.path = fs.cwd()
+log_path = fs.join(arguments.path, "log")
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(arguments.path, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(log_path, time.unique_name("log") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting plot_preparation ...")
+log.start("Starting plot_modeling ...")
 
 # -----------------------------------------------------------------
 
-# Create a PreparationPlotter instance
-plotter = PreparationPlotter.from_arguments(arguments)
+# Create a Plotter instance
+plotter = Plotter.from_arguments(arguments)
 
-# Run the plotting
+# Run the plotter
 plotter.run()
 
 # -----------------------------------------------------------------

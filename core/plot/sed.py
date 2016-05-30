@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import matplotlib.patches as patches
 from collections import OrderedDict
+from textwrap import wrap
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
@@ -964,7 +965,7 @@ class SEDPlotter(object):
         else: self._main_axis.legend(numpoints=1, loc="lower right", frameon=True, ncol=2, fontsize=11, shadow=False)
 
         # Add title if requested
-        if self.title is not None: self._figure.suptitle(self.title, fontsize=14, fontweight='bold')
+        if self.title is not None: self._figure.suptitle("\n".join(wrap(self.title, 60)))
 
         # Debugging
         if type(path).__name__ == "BytesIO": log.debug("Saving the SED plot to a buffer ...")

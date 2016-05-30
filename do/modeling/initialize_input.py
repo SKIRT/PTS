@@ -38,13 +38,14 @@ arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
-# Set the modeling path
+# Set the modeling path and the log path
 arguments.path = fs.cwd()
+log_path = fs.join(arguments.path, "log")
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(arguments.path, time.unique_name("initialization") + ".txt") if arguments.report else None
+logfile_path = fs.join(log_path, time.unique_name("initialization") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"

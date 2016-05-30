@@ -26,6 +26,7 @@ from matplotlib import cm
 from matplotlib.colors import LogNorm
 import pyfits
 from collections import OrderedDict
+from textwrap import wrap
 
 from astropy.io import fits
 from pyfits import PrimaryHDU, Header
@@ -64,7 +65,7 @@ class ImageGridPlotter(object):
 
         # Properties
         self.style = "dark" # "dark" or "light"
-        self.transparent = False
+        self.transparent = True
         self.format = None
 
     # -----------------------------------------------------------------
@@ -103,7 +104,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
         self.images = OrderedDict()
 
         # Properties
-        self.ncols = 8
+        self.ncols = 7
         self.width = 16
 
         self.colormap = "viridis"
@@ -185,19 +186,6 @@ class StandardImageGridPlotter(ImageGridPlotter):
             sp.tick_labels.hide()
             sp.axis_labels.hide()
 
-        # x, y, ?, ?
-        #plotloc = [[0.09, 0.825, 0.3, 0.115], [0.39, 0.825, 0.3, 0.115], [0.69, 0.825, 0.3, 0.115],
-        #           [0.09, 0.710, 0.3, 0.115], [0.39, 0.710, 0.3, 0.115], [0.69, 0.710, 0.3, 0.115],
-        #           [0.09, 0.595, 0.3, 0.115], [0.39, 0.595, 0.3, 0.115], [0.69, 0.595, 0.3, 0.115],
-        #           [0.09, 0.480, 0.3, 0.115], [0.39, 0.480, 0.3, 0.115], [0.69, 0.480, 0.3, 0.115],
-        #           [0.09, 0.365, 0.3, 0.115], [0.39, 0.365, 0.3, 0.115], [0.69, 0.365, 0.3, 0.115],
-        #           [0.09, 0.250, 0.3, 0.115], [0.39, 0.250, 0.3, 0.115], [0.69, 0.250, 0.3, 0.115],
-        #           [0.09, 0.135, 0.3, 0.115], [0.39, 0.135, 0.3, 0.115], [0.69, 0.135, 0.3, 0.115],
-        #           [0.09, 0.020, 0.3, 0.115]]
-
-        positions = []
-        positions = iter(positions)
-
         # Create grid
         #self._grid = AxesGrid(self._figure, 111,
         #                      nrows_ncols=(nrows, self.ncols),
@@ -224,8 +212,20 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
             #ax = self._grid[counter]
 
-            ax = plt.subplot(gs[row, col])
-            #ax = plt.subplot(gs[row, col], projection=frame.wcs.to_astropy())
+            subplotspec = gs[row, col]
+
+            #points = subplotspec.get_position(self._figure).get_points()
+            #print(points)
+            #x_min = points[0, 0]
+            #x_max = points[1, 0]
+            #y_min = points[0, 1]
+            #y_max = points[1, 1]
+            # width = x_max - x_min
+            # height = y_max - y_min
+            # ax = self._figure.add_axes([x_min, y_min, width, height])
+
+            #ax = plt.subplot(subplotspec)
+            ax = plt.subplot(subplotspec, projection=frame.wcs.to_astropy())
 
             #lon = ax.coords[0]
             #lat = ax.coords[1]
@@ -245,8 +245,8 @@ class StandardImageGridPlotter(ImageGridPlotter):
             #f1.tick_labels.set_xposition('top')
             #f1.tick_labels.show()
 
-            #ax.set_xticks([])
-            #ax.set_yticks([])
+            ax.set_xticks([])
+            ax.set_yticks([])
             ax.xaxis.set_ticklabels([])
             ax.yaxis.set_ticklabels([])
 
@@ -259,54 +259,94 @@ class StandardImageGridPlotter(ImageGridPlotter):
             ax.tick_params(axis='x', colors="white")
             ax.tick_params(axis='y', colors="white")
 
+            # Get the color map
             cmap = cm.get_cmap(self.colormap)
 
             # Set background color
             background_color = cmap(0.0)
             ax.set_axis_bgcolor(background_color)
 
-            #masked_array = np.ma.array(frame, mask=np.isnan(frame))
+            # Plot
+            frame[np.isnan(frame)] = 0.0
             ax.imshow(frame, vmin=min_value, vmax=max_value, cmap=cmap, origin='lower', norm=norm, interpolation="nearest")
 
+            # Add the label
             ax.text(0.95, 0.95, label, color='white', transform=ax.transAxes, fontsize=10, va="top", ha="right") # fontweight='bold'
 
             #ax.coords.grid(color='white')
 
             counter += 1
 
-        # Add a colourbar
-
-        #axisf3 = self._figure.add_axes(gs[row, col+1:])
-        axisf3 = plt.subplot(gs[row, col+1:])
-        cmapf3 = cm.get_cmap(self.colormap)
-        normf3 = mpl_colors.Normalize(vmin=0, vmax=1)
-        cbf3 = mpl_colorbar.ColorbarBase(axisf3, cmap=cmapf3, norm=normf3, orientation='horizontal')
-        cbf3.set_label('Flux (arbitrary units)')
-
-        #plt.tight_layout()
-
-        #self._figure.patch.set_facecolor('#3f3f3f')
-
-        #self._figure.canvas.draw()
-
-        #gs.tight_layout(self._figure, h_pad=0., w_pad=0.)
-
         all_axes = self._figure.get_axes()
         # show only the outside spines
         for ax in all_axes:
             for sp in ax.spines.values():
                 sp.set_visible(False)
-            if ax.is_first_row():
-                ax.spines['top'].set_visible(True)
-            if ax.is_last_row():
-                ax.spines['bottom'].set_visible(True)
-            if ax.is_first_col():
-                ax.spines['left'].set_visible(True)
-            if ax.is_last_col():
-                ax.spines['right'].set_visible(True)
+            #if ax.is_first_row():
+            #    ax.spines['top'].set_visible(True)
+            #if ax.is_last_row():
+            #    ax.spines['bottom'].set_visible(True)
+            #if ax.is_first_col():
+            #    ax.spines['left'].set_visible(True)
+            #if ax.is_last_col():
+            #    ax.spines['right'].set_visible(True)
 
-        if path is None: plt.show()
-        else: self._figure.savefig(path)
+        # Add a colourbar
+
+        #axisf3 = self._figure.add_axes(gs[row, col+1:])
+
+        subplotspec = gs[row, col+1:]
+        points = subplotspec.get_position(self._figure).get_points()
+        #print("colorbar points:", points)
+
+        x_min = points[0,0]
+        x_max = points[1,0]
+        y_min = points[0,1]
+        y_max = points[1,1]
+
+        #print((x_min, x_max), (y_min, y_max))
+
+        #points_flattened = points.flatten()
+        #print("colorbar:", points_flattened)
+
+        x_center = 0.5 * (x_min + x_max)
+        y_center = 0.5 * (y_min + y_max)
+
+        width = 0.9* (x_max - x_min)
+        height = 0.2 * (y_max - y_min)
+
+        x_min = x_center - 0.5 * width
+        x_max = x_center + 0.5 * width
+        y_min = y_center - 0.5 * height
+        y_max = y_center + 0.5 * height
+
+        #ax_cm = plt.subplot(points)
+
+        #ax_cm = plt.axes(points_flattened)
+
+        ax_cm = self._figure.add_axes([x_min, y_min, width, height])
+
+        cm_cm = cm.get_cmap(self.colormap)
+        norm_cm = mpl_colors.Normalize(vmin=0, vmax=1)
+        cb = mpl_colorbar.ColorbarBase(ax_cm, cmap=cm_cm, norm=norm_cm, orientation='horizontal')
+        cb.set_label('Flux (arbitrary units)')
+
+
+
+        # Set the title
+        if self.title is not None: self._figure.suptitle("\n".join(wrap(self.title, 60)))
+
+        #plt.tight_layout()
+
+        # Debugging
+        if type(path).__name__ == "BytesIO": log.debug("Saving the SED plot to a buffer ...")
+        elif path is None: log.debug("Showing the SED plot ...")
+        else: log.debug("Saving the SED plot to " + str(path) + " ...")
+
+        if path is not None:
+            # Save the figure
+            plt.savefig(path, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent, format=self.format)
+        else: plt.show()
         plt.close()
 
 # -----------------------------------------------------------------

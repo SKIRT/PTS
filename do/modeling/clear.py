@@ -36,12 +36,14 @@ arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+# Set the modeling path and the log path
+arguments.path = fs.cwd()
+log_path = fs.join(arguments.path, "log")
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(modeling_path, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(log_path, time.unique_name("log") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"
@@ -52,13 +54,13 @@ log.start("Starting clear ...")
 
 # -----------------------------------------------------------------
 
-prep_path = fs.join(modeling_path, "prep")
-components_path = fs.join(modeling_path, "components")
-truncated_path = fs.join(modeling_path, "truncated")
-phot_path = fs.join(modeling_path, "phot")
-maps_path = fs.join(modeling_path, "maps")
-fit_path = fs.join(modeling_path, "fit")
-analysis_path = fs.join(modeling_path, "analysis")
+prep_path = fs.join(arguments.path, "prep")
+components_path = fs.join(arguments.path, "components")
+truncated_path = fs.join(arguments.path, "truncated")
+phot_path = fs.join(arguments.path, "phot")
+maps_path = fs.join(arguments.path, "maps")
+fit_path = fs.join(arguments.path, "fit")
+analysis_path = fs.join(arguments.path, "analysis")
 
 if arguments.step == "prep": fs.clear_directory(prep_path)
 elif arguments.step == "components": fs.clear_directory(components_path)

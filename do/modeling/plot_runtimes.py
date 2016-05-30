@@ -28,9 +28,6 @@ from pts.core.launch.timing import TimingTable
 # Create the command-line parser
 parser = argparse.ArgumentParser()
 
-# Basic options
-parser.add_argument("path", type=str, nargs='?', help="the modeling path")
-
 # Logging options
 parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
 parser.add_argument("--report", action='store_true', help='write a report file')
@@ -40,13 +37,14 @@ arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
-# Set the modeling path
-if arguments.path is None: arguments.path = fs.cwd()
+# Set the modeling path and the log path
+arguments.path = fs.cwd()
+log_path = fs.join(arguments.path, "log")
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(arguments.path, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(log_path, time.unique_name("log") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"

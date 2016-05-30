@@ -50,6 +50,8 @@ class ModelingComponent(Configurable):
         self.analysis_path = None
         self.reports_path = None
         self.visualisation_path = None
+        self.plot_path = None
+        self.log_path = None
 
         # PTS directories
         self.kernels_path = None
@@ -85,6 +87,8 @@ class ModelingComponent(Configurable):
         self.analysis_path = fs.join(self.config.path, "analysis")
         self.reports_path = fs.join(self.config.path, "reports")
         self.visualisation_path = fs.join(self.config.path, "visualisation")
+        self.plot_path = fs.join(self.config.path, "plot")
+        self.log_path = fs.join(self.config.path, "log")
 
         # Determine the path to the kernels user directory
         self.kernels_path = fs.join(inspection.pts_user_dir, "kernels")
@@ -95,7 +99,7 @@ class ModelingComponent(Configurable):
             # Create the prep path if it does not exist yet
             fs.create_directories([self.prep_path, self.truncation_path, self.maps_path, self.phot_path,
                                    self.maps_path, self.components_path, self.fit_path, self.analysis_path,
-                                   self.reports_path, self.visualisation_path])
+                                   self.reports_path, self.visualisation_path, self.plot_path, self.log_path])
 
         # Exit with an error
         else: raise ValueError("The current working directory is not a radiative transfer modeling directory (the data directory is missing)")
