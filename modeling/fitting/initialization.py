@@ -686,10 +686,14 @@ class InputInitializer(FittingComponent):
         pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
         pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
 
+        # Because we (currently) can't position the grid exactly as the 2D pixels,
+        # take half of the pixel size to avoid too much interpolation
+        smallest_scale = 0.5 * pixelscale
+
         # Calculate the number of bins in each direction
-        x_bins = (max_x-min_x).to("pc").value/pixelscale.to("pc").value
-        y_bins = (max_y-min_y).to("pc").value/pixelscale.to("pc").value
-        z_bins = (max_z-min_z).to("pc").value/pixelscale.to("pc").value
+        x_bins = (max_x-min_x).to("pc").value / smallest_scale.to("pc").value
+        y_bins = (max_y-min_y).to("pc").value / smallest_scale.to("pc").value
+        z_bins = (max_z-min_z).to("pc").value / smallest_scale.to("pc").value
 
         # Set the cartesian dust grid
         self.ski.set_cartesian_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z, x_bins, y_bins, z_bins)
@@ -723,9 +727,13 @@ class InputInitializer(FittingComponent):
         pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
         pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
 
+        # Because we (currently) can't position the grid exactly as the 2D pixels (rotation etc.),
+        # take half of the pixel size to avoid too much interpolation
+        smallest_scale = 0.5 * pixelscale
+
         # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
         extent_x = (max_x - min_x).to("pc").value
-        smallest_scale = pixelscale.to("pc").value
+        smallest_scale = smallest_scale.to("pc").value
         level = min_level_for_smallest_scale_bintree(extent_x, smallest_scale)
 
         # Set the bintree dust grid
@@ -760,9 +768,13 @@ class InputInitializer(FittingComponent):
         pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
         pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
 
+        # Because we (currently) can't position the grid exactly as the 2D pixels (rotation etc.),
+        # take half of the pixel size to avoid too much interpolation
+        smallest_scale = 0.5 * pixelscale
+
         # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
         extent_x = (max_x - min_x).to("pc").value
-        smallest_scale = pixelscale.to("pc").value
+        smallest_scale = smallest_scale.to("pc").value
         level = min_level_for_smallest_scale_octtree(extent_x, smallest_scale)
 
         # Set the octtree dust grid

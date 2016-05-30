@@ -67,6 +67,8 @@ class ImageGridPlotter(object):
         self.style = "dark" # "dark" or "light"
         self.transparent = True
         self.format = None
+        self.colormap = "viridis"
+        self.vmin = None
 
     # -----------------------------------------------------------------
 
@@ -106,10 +108,6 @@ class StandardImageGridPlotter(ImageGridPlotter):
         # Properties
         self.ncols = 7
         self.width = 16
-
-        self.vmin = None
-
-        self.colormap = "viridis"
 
     # -----------------------------------------------------------------
 
@@ -336,7 +334,6 @@ class StandardImageGridPlotter(ImageGridPlotter):
         cb.set_label('Flux (arbitrary units)')
 
 
-
         # Set the title
         if self.title is not None: self._figure.suptitle("\n".join(wrap(self.title, 60)))
 
@@ -386,6 +383,8 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         self.box = None
 
         self._plotted_rows = 0
+
+        self.absolute = False
 
     # -----------------------------------------------------------------
 
@@ -508,23 +507,34 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         data = OrderedDict()
 
         greatest_shape = None
-        for label in self.rows:
-            wcs = self.rows[label][0].wcs
 
-            rectangle = self.box.to_pixel(wcs)
+        if self.box is not None:
 
-            y_min = rectangle.lower_left.y
-            y_max = rectangle.upper_right.y
-            x_min = rectangle.lower_left.x
-            x_max = rectangle.upper_right.x
+            for label in self.rows:
+                wcs = self.rows[label][0].wcs
 
-            reference = self.rows[label][0][y_min:y_max, x_min:x_max]
-            model = self.rows[label][1][y_min:y_max, x_min:x_max]
-            data[label] = (reference, model)
+                rectangle = self.box.to_pixel(wcs)
 
-            print(label, "box height/width ratio:", float(reference.shape[0])/float(reference.shape[1]))
+                y_min = rectangle.lower_left.y
+                y_max = rectangle.upper_right.y
+                x_min = rectangle.lower_left.x
+                x_max = rectangle.upper_right.x
 
-            if greatest_shape is None or greatest_shape[0] < reference.shape[0]: greatest_shape = reference.shape
+                reference = self.rows[label][0][y_min:y_max, x_min:x_max]
+                model = self.rows[label][1][y_min:y_max, x_min:x_max]
+                data[label] = (reference, model)
+
+                print(label, "box height/width ratio:", float(reference.shape[0])/float(reference.shape[1]))
+
+                if greatest_shape is None or greatest_shape[0] < reference.shape[0]: greatest_shape = reference.shape
+
+        else:
+
+            for label in self.rows:
+                reference = self.rows[label][0]
+                model = self.rows[label][1]
+                data[label] = (reference, model)
+                if greatest_shape is None or greatest_shape[0] < reference.shape[0]: greatest_shape = reference.shape
 
         # Loop over the rows
         for label in self.rows:
@@ -540,16 +550,17 @@ class ResidualImageGridPlotter(ImageGridPlotter):
                 reference = ndimage.zoom(data[label][0], factor, order=order)
                 model = ndimage.zoom(data[label][1], factor, order=order)
 
-            residual = (model - reference)/model
+            if self.absolute: residual = model - reference
+            else: residual = (model - reference)/model
 
             # Plot the reference image
             x0, x1, y0, y1, vmin, vmax = self.plot_frame(reference, label, 0)
 
             # Plot the model image
-            x0, x1, y0, y1, vmin, vmax = self.plot_frame(model, label, 1, min_int=vmin, max_int=vmax)
+            x0, x1, y0, y1, vmin, vmax = self.plot_frame(model, label, 1, vlimits=(vmin,vmax))
 
             # Plot the residual image
-            x0, x1, y0, y1, vmin, vmax = self.plot_frame(residual, label, 2)
+            x0, x1, y0, y1, vmin, vmax = self.plot_frame(residual, label, 2, vlimits=(vmin,vmax))
 
             self._plotted_rows += 3
 
@@ -575,7 +586,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def plot_frame(self, frame, row_label, column_index, borders=(0,0,0,0), min_int=0., max_int=0.):
+    def plot_frame(self, frame, row_label, column_index, borders=(0,0,0,0), vlimits=None):
 
         """
         This function ...
@@ -583,6 +594,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :param column_index:
         :param row_label:
         :param borders:
+        :param vlimits:
         :return:
         """
 
@@ -596,36 +608,50 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         x1 = frame.shape[1]
         y1 = frame.shape[0]
 
-        #if column_index == 0:
+        #vmax = np.max(frame)  # np.mean([np.max(data_ski),np.max(data_ref)])
+        #vmin = np.min(frame)  # np.mean([np.min(data_ski),np.min(data_ref)])
+        #if min_int == 0.: min_int = vmin
+        #else: vmin = min_int
+        #if max_int == 0.: max_int = vmax
+        #else: vmax = max_int
 
-        #    mod_data = fabs(data)
-        #    min_data = np.min(mod_data[np.nonzero(mod_data)])
-        #    for k in range(yaxis):
-        #        for i in range(xaxis):
-        #            if data[k, i] <= 0.: data[k, i] = min_data
+        if vlimits is None:
+            min_value = self.vmin if self.vmin is not None else np.nanmin(frame)
+            max_value = 0.5 * (np.nanmax(frame) + min_value)
+        else:
+            min_value = vlimits[0]
+            max_value = vlimits[1]
 
-        #if column_index == 2:
-
-        #    for k in range(yaxis):
-        #        for i in range(xaxis):
-        #            if np.isnan(data[k, i]) == True:
-        #                data[k, i] = 0.
-
-        vmax = np.max(frame)  # np.mean([np.max(data_ski),np.max(data_ref)])
-        vmin = np.min(frame)  # np.mean([np.min(data_ski),np.min(data_ref)])
-
-        if min_int == 0.: min_int = vmin
-        else: vmin = min_int
-
-        if max_int == 0.: max_int = vmax
-        else: vmax = max_int
-
-        #aspect = "auto"
         aspect = "equal"
         if column_index != 2:
-            im = self._grid[grid_index].imshow(frame, cmap='nipy_spectral_r', vmin=vmin, vmax=vmax, interpolation='none', origin="lower", aspect=aspect)  # 'gist_ncar_r'
+
+            # Get the color map
+            cmap = cm.get_cmap(self.colormap)
+
+            # Set background color
+            background_color = cmap(0.0)
+            self._grid[grid_index].set_axis_bgcolor(background_color)
+
+            # Plot
+            frame[np.isnan(frame)] = 0.0
+            norm = ImageNormalize(stretch=LogStretch())
+            im = self._grid[grid_index].imshow(frame, cmap=cmap, vmin=min_value, vmax=max_value, interpolation="nearest", origin="lower", aspect=aspect, norm=norm) # 'nipy_spectral_r', 'gist_ncar_r'
+
         else:
-            im = self._grid[grid_index].imshow(frame, cmap=discrete_cmap(), vmin=0.001, vmax=1, interpolation='none', origin="lower", aspect=aspect)
+
+            if self.absolute:
+                # Get the color map
+                cmap = cm.get_cmap(self.colormap)
+                norm = ImageNormalize(stretch=LogStretch())
+            else:
+                cmap = discrete_cmap()
+                min_value = 0.001
+                max_value = 1.
+                norm = None
+
+            print(min_value, max_value)
+
+            im = self._grid[grid_index].imshow(frame, cmap=cmap, vmin=min_value, vmax=max_value, interpolation="nearest", origin="lower", aspect=aspect, norm=norm)
             cb = self._grid[grid_index].cax.colorbar(im)
 
             # cb.set_xticklabels(labelsize=1)
@@ -635,7 +661,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
                 cax.axis[cax.orientation].set_label(' ')
                 # cax.axis[cax.orientation].set_fontsize(3)
                 cax.tick_params(labelsize=3)
-                cax.set_ylim(0, 1)
+                cax.set_ylim(min_value, max_value)
                 # cax.set_yticklabels([0, 0.5, 1])
 
         if column_index == 0:
@@ -645,7 +671,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         #    crea_scale_bar(grid[number+numb_of_grid],x0,x1,y0,y1,pix2sec)
         #    crea_scale_bar(grid[number+numb_of_grid],x0,x1,y0,y1,pix2sec)
 
-        return x0, x1, y0, y1, vmin, vmax
+        return x0, x1, y0, y1, min_value, max_value
 
 # -----------------------------------------------------------------
 
