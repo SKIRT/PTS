@@ -200,12 +200,43 @@ class ScatterPlotter(object):
     def clear(self):
 
         """
-        This function ...
+        This function clears everything
         :return:
         """
 
         # Inform the user
         log.info("Clearing the scatter plotter ...")
+
+    # -----------------------------------------------------------------
+
+    def clear_figure(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Clearing the scatter plotter figure ...")
+
+        # The axes labels
+        self.x_label = None
+        self.y_label = None
+        self.z_label = None
+
+        # The axes limits
+        self.x_limits = [None, None]
+        self.y_limits = [None, None]
+        self.z_limits = [None, None]
+
+        # Store the figure and its axes as references
+        self._figure = None
+
+        # Properties
+        self.color_map = "viridis"
+        self.format = None
+        self.transparent = False
+        self.density = True
 
     # -----------------------------------------------------------------
 
@@ -283,14 +314,17 @@ class ScatterPlotter(object):
         ax = self._figure.add_subplot(2, 2, 2)
 
         # Density plot of FUV young vs. FUV ionizing
-        x = np.array(self.x)
-        y = np.array(self.y)
-        xy = np.vstack([x, y])
-        z = gaussian_kde(xy)(xy)
-        # Sort the points by density, so that the densest points are plotted last
-        idx = z.argsort()
-        x, y, z = x[idx], y[idx], z[idx]
-        ax.scatter(x, y, c=z, s=100, edgecolor='', cmap=self.color_map)
+        if len(self.x) > 4:
+            x = np.array(self.x)
+            y = np.array(self.y)
+            xy = np.vstack([x, y])
+            z = gaussian_kde(xy)(xy)
+            # Sort the points by density, so that the densest points are plotted last
+            idx = z.argsort()
+            x, y, z = x[idx], y[idx], z[idx]
+            ax.scatter(x, y, c=z, s=100, edgecolor='', cmap=self.color_map)
+        else: ax.scatter([],[])
+
         ax.set_xlabel(self.x_label)
         ax.set_ylabel(self.y_label)
         ax.set_xlim(self.x_limits)
@@ -300,14 +334,17 @@ class ScatterPlotter(object):
         ax = self._figure.add_subplot(2, 2, 3)
 
         # Density plot of FUV young vs. dust mass
-        x = np.array(self.x)
-        y = np.array(self.z)
-        xy = np.vstack([x, y])
-        z = gaussian_kde(xy)(xy)
-        # Sort the points by density, so that the densest points are plotted last
-        idx = z.argsort()
-        x, y, z = x[idx], y[idx], z[idx]
-        ax.scatter(x, y, c=z, s=100, edgecolor='', cmap=self.color_map)
+        if len(self.x) > 4:
+            x = np.array(self.x)
+            y = np.array(self.z)
+            xy = np.vstack([x, y])
+            z = gaussian_kde(xy)(xy)
+            # Sort the points by density, so that the densest points are plotted last
+            idx = z.argsort()
+            x, y, z = x[idx], y[idx], z[idx]
+            ax.scatter(x, y, c=z, s=100, edgecolor='', cmap=self.color_map)
+        else: ax.scatter([],[])
+
         ax.set_xlabel(self.x_label)
         ax.set_ylabel(self.z_label)
         ax.set_xlim(self.x_limits)
@@ -317,14 +354,17 @@ class ScatterPlotter(object):
         ax = self._figure.add_subplot(2, 2, 4)
 
         # Density plot of FUV ionizing vs. dust mass
-        x = np.array(self.y)
-        y = np.array(self.z)
-        xy = np.vstack([x, y])
-        z = gaussian_kde(xy)(xy)
-        # Sort the points by density, so that the densest points are plotted last
-        idx = z.argsort()
-        x, y, z = x[idx], y[idx], z[idx]
-        ax.scatter(x, y, c=z, s=100, edgecolor='', cmap=self.color_map)
+        if len(self.x) > 4:
+            x = np.array(self.y)
+            y = np.array(self.z)
+            xy = np.vstack([x, y])
+            z = gaussian_kde(xy)(xy)
+            # Sort the points by density, so that the densest points are plotted last
+            idx = z.argsort()
+            x, y, z = x[idx], y[idx], z[idx]
+            ax.scatter(x, y, c=z, s=100, edgecolor='', cmap=self.color_map)
+        else: ax.scatter([],[])
+
         ax.set_xlabel(self.y_label)
         ax.set_ylabel(self.z_label)
         ax.set_xlim(self.y_limits)

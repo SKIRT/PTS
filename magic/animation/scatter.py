@@ -39,11 +39,6 @@ class ScatterAnimation(Animation):
         # Set the number of frames per second
         self.fps = 5
 
-        # Lists of scatter points
-        self.x = []
-        self.y = []
-        self.z = []
-
         # Properties
         self.x_limits = x_limits
         self.y_limits = y_limits
@@ -67,30 +62,30 @@ class ScatterAnimation(Animation):
         :return:
         """
 
-        self.x.append(x)
-        self.y.append(y)
-        self.z.append(z)
+        # Add a point to the plotter
+        self._plotter.add_point(x, y, z)
 
         buf = io.BytesIO()
 
-        data = (self.x, self.y, self.z)
-        plotter = ScatterPlotter(data=data)
-        plotter.set_x_limits(self.x_limits[0], self.x_limits[1])
-        plotter.set_y_limits(self.y_limits[0], self.y_limits[1])
-        plotter.set_z_limits(self.z_limits[0], self.z_limits[1])
-        if self.x_label is not None: plotter.set_x_label(self.x_label)
-        if self.y_label is not None: plotter.set_y_label(self.y_label)
-        if self.z_label is not None: plotter.set_z_label(self.z_label)
-        plotter.format = "png"
+        self._plotter.set_x_limits(self.x_limits[0], self.x_limits[1])
+        self._plotter.set_y_limits(self.y_limits[0], self.y_limits[1])
+        self._plotter.set_z_limits(self.z_limits[0], self.z_limits[1])
+        if self.x_label is not None: self._plotter.set_x_label(self.x_label)
+        if self.y_label is not None: self._plotter.set_y_label(self.y_label)
+        if self.z_label is not None: self._plotter.set_z_label(self.z_label)
+        self._plotter.format = "png"
 
-        plotter.density = self.density
+        self._plotter.density = self.density
 
         # Run the scatter plotter
-        plotter.run(buf)
+        self._plotter.run(buf)
 
         buf.seek(0)
         im = imageio.imread(buf)
         buf.close()
         self.add_frame(im)
 
-    # -----------------------------------------------------------------
+        # Clear the scatter plotter
+        self._plotter.clear_figure()
+
+# -----------------------------------------------------------------

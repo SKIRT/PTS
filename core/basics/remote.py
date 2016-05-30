@@ -193,7 +193,7 @@ class Remote(object):
         #if screen_output_path is not None: self.execute("script " + screen_output_path)
 
         # Create the screen session and execute the batch script
-        self.execute("screen -S " + name + " -L -d -m " + remote_script_path, output=False)
+        self.execute("screen -S " + name + " -L -d -m " + remote_script_path, output=False, show_output=log.is_debug())
 
         # Remove the remote shell script
         self.execute("rm " + remote_script_path, output=False)

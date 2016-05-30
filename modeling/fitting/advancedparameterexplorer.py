@@ -27,7 +27,7 @@ from ...core.basics.distribution import Distribution
 from ...core.basics.animation import Animation
 from ...core.tools import filesystem as fs
 from ...core.plot.distribution import DistributionPlotter
-from ...core.plot.scatter import ScatterPlotter
+from ...magic.animation.scatter import ScatterAnimation
 
 # -----------------------------------------------------------------
 
@@ -121,8 +121,6 @@ class AdvancedParameterExplorer(ParameterExplorer):
         # 4. Set the combinations of parameter values
         self.set_parameters()
 
-        exit()
-
         # 5. Set the parallelization schemes for the different remote hosts
         self.set_parallelization()
 
@@ -173,12 +171,15 @@ class AdvancedParameterExplorer(ParameterExplorer):
 
         # Create animations
         if self.config.visualise:
-            points_animation = Animation()
+            scatter_animation = ScatterAnimation([self.config.young_stars.min, self.config.young_stars.max], [self.config.ionizing_stars.min, self.config.ionizing_stars.max], [self.config.dust.min, self.config.dust.max])
+            scatter_animation.x_label = "FUV luminosity of young stars"
+            scatter_animation.y_label = "FUV luminosity of ionizing stars"
+            scatter_animation.z_label = "Dust mass"
             fuv_young_animation = Animation()
             fuv_ionizing_animation = Animation()
             dust_mass_animation = Animation()
         else:
-            points_animation = None
+            scatter_animation = None
             fuv_young_animation = None
             fuv_ionizing_animation = None
             dust_mass_animation = None
@@ -228,28 +229,8 @@ class AdvancedParameterExplorer(ParameterExplorer):
             self.parameters["FUV ionizing"].append(ionizing_luminosity)
             self.parameters["Dust mass"].append(dust_mass)
 
-            # Add a frame to the animation of parameter points
-            if points_animation is not None and self.number_of_models > 1:
-
-                buf = io.BytesIO()
-
-                data = (self.parameters["FUV young"], self.parameters["FUV ionizing"], self.parameters["Dust mass"])
-                plotter = ScatterPlotter(data=data)
-                plotter.set_x_limits(self.config.young_stars.min, self.config.young_stars.max)
-                plotter.set_y_limits(self.config.ionizing_stars.min, self.config.ionizing_stars.max)
-                plotter.set_z_limits(self.config.dust.min, self.config.dust.max)
-                plotter.set_x_label("FUV luminosity of young stars")
-                plotter.set_y_label("FUV luminosity of ionizing stars")
-                plotter.set_z_label("Dust mass")
-                plotter.format = "png"
-
-                # Run the scatter plotter
-                plotter.run(buf)
-
-                buf.seek(0)
-                im = imageio.imread(buf)
-                buf.close()
-                points_animation.add_frame(im)
+            # Add the point (and thus a frame) to the animation of parameter points
+            if scatter_animation is not None: scatter_animation.add_point(young_luminosity, ionizing_luminosity, dust_mass)
 
             plotter = DistributionPlotter()
 
@@ -307,9 +288,9 @@ class AdvancedParameterExplorer(ParameterExplorer):
                 dust_mass_animation.add_frame(im)
 
         # Save the animation of the parameter values as points in a 3D plot
-        if points_animation is not None:
+        if scatter_animation is not None:
             path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration") + ".gif")
-            points_animation.save(path)
+            scatter_animation.save(path)
 
         # Save the animation of the distribution of values for the FUV luminosity of the young stars
         if fuv_young_animation is not None:

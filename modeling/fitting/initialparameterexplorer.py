@@ -167,7 +167,7 @@ class InitialParameterExplorer(ParameterExplorer):
                     self.parameters["Dust mass"].append(dust_mass)
 
                     # Add a point (and thus a frame) to the animation
-                    if animation is not None and self.number_of_models > 1: animation.add_point(young_luminosity, ionizing_luminosity, dust_mass.to("Msun").value)
+                    if animation is not None: animation.add_point(young_luminosity, ionizing_luminosity, dust_mass.to("Msun").value)
 
         # Save the animation
         if animation is not None:
