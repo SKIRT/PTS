@@ -358,7 +358,7 @@ class ImagePreparer(Configurable):
         if self.visualisation_path is not None:
 
             # Determine the path to the animation
-            path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_sourceextraction") + ".avi")
+            path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_sourceextraction") + ".gif")
 
             # Save the animation
             source_extractor_animation.save(path)

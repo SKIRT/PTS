@@ -57,7 +57,7 @@ class ImageBlinkAnimation(Animation):
 
         # Make a plot of the image
         buf = io.BytesIO()
-        plotting.plot_box(image, path=buf, format="png", vmin=0.0, vmax=self.max_frame_value)
+        plotting.plot_box(image, path=buf, format="png", vmin=0.0, vmax=0.5*self.max_frame_value)
         buf.seek(0)
         im = imageio.imread(buf)
         buf.close()

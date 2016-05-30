@@ -24,7 +24,7 @@ from photutils import CircularAperture
 
 # -----------------------------------------------------------------
 
-def plot_box(box, title=None, path=None, format=None, vmin=None, vmax=None):
+def plot_box(box, title=None, path=None, format=None, vmin=None, vmax=None, norm="log"):
 
     """
     This function ...
@@ -36,15 +36,17 @@ def plot_box(box, title=None, path=None, format=None, vmin=None, vmax=None):
     """
 
     # Normalization
-    norm = ImageNormalize(stretch=SqrtStretch())
+    if norm == "log": norm = ImageNormalize(stretch=LogStretch())
+    elif norm == "sqrt": norm = ImageNormalize(stretch=SqrtStretch())
+    else: raise ValueError("Invalid option for 'norm'")
 
     # Determine the maximum value in the box and the mimimum value for plotting
     if vmax is None: vmax = np.nanmax(box)
     if vmin is None: vmin = np.nanmin(box) if vmax <= 0 else 0.0
 
     # Make the plot
-    plt.figure(figsize=(6,6))
-    plt.imshow(box, origin='center', interpolation='nearest', vmin=vmin, vmax=vmax, norm=norm)
+    plt.figure(figsize=(7,7))
+    plt.imshow(box, origin="lower", interpolation="nearest", vmin=vmin, vmax=vmax, norm=norm)
     plt.xlim(0, box.shape[1]-1)
     plt.ylim(0, box.shape[0]-1)
 
