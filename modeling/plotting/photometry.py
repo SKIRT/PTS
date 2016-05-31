@@ -47,21 +47,11 @@ class PhotometryPlotter(PlottingComponent):
         :return:
         """
 
+        # 1. Call the setup function
         self.setup()
 
+        # Plot
         self.plot()
-
-    # -----------------------------------------------------------------
-
-    def setup(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(PlottingComponent, self).setup()
 
     # -----------------------------------------------------------------
 

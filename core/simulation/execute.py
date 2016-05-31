@@ -128,7 +128,7 @@ class SkirtExec:
         # Run SKIRT with the specified parameters
         return self.run(arguments, wait, silent)
 
-    ## This function does the same as the execute function, but obtains its arguments from a SkirtParameters object
+    ## This function does the same as the execute function, but obtains its arguments from a SkirtArguments object
     def run(self, arguments, wait=True, silent=False):
 
         # Check whether MPI is present on this system if multiple processe are requested

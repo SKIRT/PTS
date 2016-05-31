@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.plotting.component Contains the PlottingComponent class
+## \package pts.modeling.plotting.maps Contains the MapsPlotter class
 
 # -----------------------------------------------------------------
 
@@ -16,6 +16,8 @@ from __future__ import absolute_import, division, print_function
 from .component import PlottingComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
+from ...magic.core.frame import Frame
+from ...magic.plot.imagegrid import StandardImageGridPlotter
 
 # -----------------------------------------------------------------
 
@@ -38,6 +40,9 @@ class MapsPlotter(PlottingComponent):
 
         # -- Attributes --
 
+        # The dictionary of image frames
+        self.images = dict()
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -47,8 +52,13 @@ class MapsPlotter(PlottingComponent):
         :return:
         """
 
+        # 1. Call the setup function
         self.setup()
 
+        # 2. Load the images
+        self.load_images()
+
+        # 3. Plot
         self.plot()
 
     # -----------------------------------------------------------------
@@ -68,7 +78,7 @@ class MapsPlotter(PlottingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot(self):
+    def load_images(self):
 
         """
         This function ...
@@ -78,10 +88,8 @@ class MapsPlotter(PlottingComponent):
         # Inform the user
         log.info("Loading the maps ...")
 
-        # The dictionary of image frames
-        images = dict()
-
         for name in ["dust", "ionizing_stars", "old_stars", "young_stars"]:
+
             # Determine the path to the image
             path = fs.join(self.maps_path, name + ".fits")
 
@@ -92,7 +100,16 @@ class MapsPlotter(PlottingComponent):
             image = Frame.from_file(path)
 
             # Add the image to the dictionary
-            images[name] = image
+            self.images[name] = image
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Inform the user
         log.info("Plotting ...")
@@ -101,10 +118,10 @@ class MapsPlotter(PlottingComponent):
         plotter = StandardImageGridPlotter()
 
         # Add the images
-        for label in images: plotter.add_image(images[label], label)
+        for label in self.images: plotter.add_image(self.images[label], label)
 
         # Determine the path to the plot file
-        path = fs.join(self.plot_path, "maps.pdf")
+        path = fs.join(self.plot_maps_path, "maps.pdf")
 
         plotter.colormap = "hot"
         plotter.vmin = 0.0

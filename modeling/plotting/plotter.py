@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from .component import PlottingComponent
 from ...core.tools.logging import log
-from ...core.tools import filesystem as fs
 from .data import DataPlotter
 from .preparation import PreparationPlotter
 from .decomposition import DecompositionPlotter
@@ -23,7 +22,6 @@ from .truncation import TruncationPlotter
 from .photometry import PhotometryPlotter
 from .fitting import FittingPlotter
 from .maps import MapsPlotter
-from ...magic.plot.imagegrid import StandardImageGridPlotter, ResidualImageGridPlotter
 
 # -----------------------------------------------------------------
 
@@ -45,8 +43,6 @@ class Plotter(PlottingComponent):
 
         # Call the constructor of the base class
         super(Plotter, self).__init__(config)
-
-        # -- Attributes --
 
     # -----------------------------------------------------------------
 
@@ -109,18 +105,6 @@ class Plotter(PlottingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(Plotter, self).setup()
-
-    # -----------------------------------------------------------------
-
     def plot_data(self):
 
         """
@@ -131,7 +115,10 @@ class Plotter(PlottingComponent):
         # Inform the user
         log.info("Plotting ...")
 
+        # Create the data plotter
         plotter = DataPlotter()
+
+        # Run the plotter
         plotter.run()
 
     # -----------------------------------------------------------------
@@ -146,7 +133,10 @@ class Plotter(PlottingComponent):
         # Inform the user
         log.info("Plotting ...")
 
+        # Create the preparation plotter
         plotter = PreparationPlotter()
+
+        # Run the plotter
         plotter.run()
 
     # -----------------------------------------------------------------
@@ -161,7 +151,10 @@ class Plotter(PlottingComponent):
         # Inform the user
         log.info("Plotting ...")
 
+        # Create the decomposition plotter
         plotter = DecompositionPlotter()
+
+        # Run the plotter
         plotter.run()
 
     # -----------------------------------------------------------------
@@ -176,7 +169,10 @@ class Plotter(PlottingComponent):
         # Inform the user
         log.info("Plotting ...")
 
+        # Create the truncation plotter
         plotter = TruncationPlotter()
+
+        # Run the plotter
         plotter.run()
 
     # -----------------------------------------------------------------
@@ -191,7 +187,10 @@ class Plotter(PlottingComponent):
         # Inform the user
         log.info("Plotting ...")
 
+        # Create the photometry plotter
         plotter = PhotometryPlotter()
+
+        # Run the plotter
         plotter.run()
 
     # -----------------------------------------------------------------
@@ -206,7 +205,10 @@ class Plotter(PlottingComponent):
         # Inform the user
         log.info("Plotting ...")
 
+        # Create the maps plotter
         plotter = MapsPlotter()
+
+        # Run the plotter
         plotter.run()
 
     # -----------------------------------------------------------------
@@ -221,7 +223,10 @@ class Plotter(PlottingComponent):
         # Inform the user
         log.info("Plotting ...")
 
+        # Create the fitting plotter
         plotter = FittingPlotter()
+
+        # Run the plotter
         plotter.run()
 
 # -----------------------------------------------------------------

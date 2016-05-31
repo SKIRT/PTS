@@ -43,6 +43,7 @@ class PlottingComponent(ModelingComponent):
         self.plot_decomposition_path = None
         self.plot_truncation_path = None
         self.plot_photometry_path = None
+        self.plot_maps_path = None
         self.plot_fitting_path = None
 
     # -----------------------------------------------------------------
@@ -75,11 +76,14 @@ class PlottingComponent(ModelingComponent):
         # Set the path to the plot/phot directory
         self.plot_photometry_path = fs.join(self.plot_path, "phot")
 
+        # Set the path to the plot/maps directory
+        self.plot_maps_path = fs.join(self.plot_path, "maps")
+
         # Set the path to the plot/fit directory
         self.plot_fitting_path = fs.join(self.plot_path, "fit")
 
         # Create the directories
         fs.create_directories([self.plot_data_path, self.plot_preparation_path, self.plot_decomposition_path,
-                               self.plot_truncation_path, self.plot_photometry_path, self.plot_fitting_path])
+                               self.plot_truncation_path, self.plot_photometry_path, self.plot_maps_path, self.plot_fitting_path])
 
 # -----------------------------------------------------------------

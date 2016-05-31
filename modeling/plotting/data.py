@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.plotting.data.plotter Contains the DataPlotter class
+## \package pts.modeling.plotting.data Contains the DataPlotter class
 
 # -----------------------------------------------------------------
 
@@ -16,6 +16,8 @@ from __future__ import absolute_import, division, print_function
 from .component import PlottingComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
+from ...magic.core.frame import Frame
+from ...magic.plot.imagegrid import StandardImageGridPlotter
 
 # -----------------------------------------------------------------
 
@@ -38,17 +40,8 @@ class DataPlotter(PlottingComponent):
 
         # -- Attributes --
 
-    # -----------------------------------------------------------------
-
-    def setup(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(DataPlotter, self).setup()
+        # The dictionary of image frames
+        self.images = dict()
 
     # -----------------------------------------------------------------
 
@@ -59,11 +52,26 @@ class DataPlotter(PlottingComponent):
         :return:
         """
 
+        # 1. Call the setup function
+        self.setup()
+
+        # 2. Load the images
+        self.load_images()
+
+        # 3. Plot
+        self.plot()
+
+    # -----------------------------------------------------------------
+
+    def load_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Inform the user
         log.info("Loading the images ...")
-
-        # The dictionary of image frames
-        images = dict()
 
         # Loop over all subdirectories of the preparation directory
         for directory_path, directory_name in fs.directories_in_path(self.prep_path, returns=["path", "name"]):
@@ -84,7 +92,16 @@ class DataPlotter(PlottingComponent):
             frame.name = directory_name
 
             # Add the image to the dictionary
-            images[directory_name] = frame
+            self.images[directory_name] = frame
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Inform the user
         log.info("Plotting the images ...")
@@ -93,13 +110,13 @@ class DataPlotter(PlottingComponent):
         plotter = StandardImageGridPlotter()
 
         # Sort the image labels based on wavelength
-        sorted_labels = sorted(images.keys(), key=lambda key: images[key].filter.pivotwavelength())
+        sorted_labels = sorted(self.images.keys(), key=lambda key: self.images[key].filter.pivotwavelength())
 
         # Add the images
-        for label in sorted_labels: plotter.add_image(images[label], label)
+        for label in sorted_labels: plotter.add_image(self.images[label], label)
 
         # Determine the path to the plot file
-        path = fs.join(self.plot_path, "data.pdf")
+        path = fs.join(self.plot_data_path, "data.pdf")
 
         # Set the plot title
         plotter.set_title("Images")

@@ -7,6 +7,7 @@
 
 from __future__ import absolute_import
 
+# Import standard modules
 import subprocess
 import os
 import pickle
@@ -14,6 +15,8 @@ import numpy as np
 from .ztv_lib import send_to_stream, StreamListener, StreamListenerTimeOut
 import importlib
 from codecs import open  # To use a consistent encoding
+
+# -----------------------------------------------------------------
 
 class Error(Exception):
     pass
@@ -23,6 +26,8 @@ base_dir = os.path.abspath(os.path.dirname(__file__))
 about = {}
 with open(os.path.join(base_dir, "__about__.py")) as f:
     exec(f.read(), about)
+
+# -----------------------------------------------------------------
 
 class MagicViewer(object):
 
@@ -47,9 +52,10 @@ class MagicViewer(object):
                  default_autoload_pattern=None):
 
         self.__version__ = about["__version__"]
-        # Note: prefer pythonw vs. python for launching in on OS X because in some cases
+
+        # Note: prefer pythonw over regular python for launching on OS X because in some cases
         # python will not connect correctly with Frameworks necessary for wxPython, while
-        # pythonw will.  But, pythonw not available on all systems.
+        # pythonw will. However, pythonw is not available on all systems.
 
         find_python_str = "`echo \`which pythonw\` \`which python\` | awk '{print $1}'`"
         if control_panels_module_path is None:
@@ -70,6 +76,19 @@ class MagicViewer(object):
         self.stream_listener = StreamListener(self._subproc.stdout)
         self.clim = self.minmax   # make an alias
 
+    # -----------------------------------------------------------------
+
+    def wait(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._subproc.wait()
+
+    # -----------------------------------------------------------------
+
     def close(self):
 
         """
@@ -77,6 +96,8 @@ class MagicViewer(object):
         """
 
         self._send_to_ztv('kill-ztv')
+
+    # -----------------------------------------------------------------
 
     def _request_return_value_from_ztv(self, request_message, expected_return_message_title=None, timeout=10.):
         """
@@ -98,8 +119,13 @@ class MagicViewer(object):
                 raise Error("Unrecognized return value from ztv ({}) " +
                             "in response to request: {}".format(x, request_message))
 
+    # -----------------------------------------------------------------
+
     def _send_to_ztv(self, msg):
+
         send_to_stream(self._subproc.stdin, msg)
+
+    # -----------------------------------------------------------------
 
     def _load_numpy_array(self, image):
         """
@@ -107,6 +133,8 @@ class MagicViewer(object):
         """
 
         self._send_to_ztv(('load-numpy-array', image))
+
+    # -----------------------------------------------------------------
 
     def _validate_fits_filename(self, filename):
         """
@@ -124,6 +152,8 @@ class MagicViewer(object):
         else:
             raise Error("_load_fits_file requires string input, not type: {}".format(type(filename)))
         return False
+
+    # -----------------------------------------------------------------
 
     def _load_fits_file(self, filename):
         """
@@ -198,14 +228,18 @@ class MagicViewer(object):
         returns the current (new) colormap
         """
         if isinstance(cmap, str):
-            self._send_to_ztv(('set-cmap', (cmap, False)))
+            self._send_to_ztv(('set-cmap', (False, cmap)))
         return self._request_return_value_from_ztv('get-cmap')
-          
+
+    # -----------------------------------------------------------------
+
     def cmaps_list(self):
         """
         returns the available color maps as a list of strings
         """
         return self._request_return_value_from_ztv('get-available-cmaps')
+
+    # -----------------------------------------------------------------
 
     def invert_cmap(self, state=None):
         """
@@ -217,6 +251,8 @@ class MagicViewer(object):
         if state is not None:
             self._send_to_ztv(('set-cmap-inverted', (state, False)))
         return self._request_return_value_from_ztv('get-is-cmap-inverted')
+
+    # -----------------------------------------------------------------
 
     def scaling(self, scaling=None):
         """
@@ -233,11 +269,15 @@ class MagicViewer(object):
             self._send_to_ztv(('set-scaling', (False, scaling)))
         return self._request_return_value_from_ztv('get-scaling')
 
+    # -----------------------------------------------------------------
+
     def scalings_list(self):
         """
         returns the available scalings as a list of strings
         """
         return self._request_return_value_from_ztv('get-available-scalings')
+
+    # -----------------------------------------------------------------
 
     def set_minmax_to_full_range(self):
         """
@@ -248,6 +288,8 @@ class MagicViewer(object):
         self._send_to_ztv('set-clim-to-minmax')
         return self._request_return_value_from_ztv('get-clim')
 
+    # -----------------------------------------------------------------
+
     def set_minmax_to_auto(self):
         """
         Set the min/max to the automatic setting
@@ -256,6 +298,8 @@ class MagicViewer(object):
         """
         self._send_to_ztv('set-clim-to-auto')
         return self._request_return_value_from_ztv('get-clim')
+
+    # -----------------------------------------------------------------
 
     def minmax(self, minval=None, maxval=None):
         """
@@ -271,14 +315,19 @@ class MagicViewer(object):
             self._send_to_ztv(('set-clim', (False, (minval, maxval))))
         return self._request_return_value_from_ztv('get-clim')
 
+    # -----------------------------------------------------------------
+
     def reset_zoom_and_center(self):
         """
         Reset pan to center of image
         Reset zoom to image just fitting in primary display frame
         """
         self._send_to_ztv('reset-zoom-and-center')
-  
+
+    # -----------------------------------------------------------------
+
     def zoom(self, zoom=None):
+
         """
         Set zoom factor
         
@@ -288,12 +337,16 @@ class MagicViewer(object):
             self._send_to_ztv(('set-zoom-factor', zoom))
         return self._request_return_value_from_ztv('get-zoom-factor')
 
+    # -----------------------------------------------------------------
+
     def xy_center(self, *args):
+
         """
         pan the image to place x,y at the center of the primary image frame
         
         returns the current (new) x/y center of the primary image frame
         """
+
         if len(args) > 0:
             if len(args) == 1:
                 x,y = args[0]
@@ -302,15 +355,21 @@ class MagicViewer(object):
             self._send_to_ztv(('set-xy-center', (x, y)))
         return self._request_return_value_from_ztv('get-xy-center')
 
+    # -----------------------------------------------------------------
+
     def add_activemq(self, server=None, port=61613, destination=None):
+
         """
         TODO: write docstring
         """
+
         if server is None:
             raise Error('Must specify a server address in server keyword, e.g.  "myserver.mywebsite.com"')
         if destination is None:
             raise Error('Must specify a message queue to follow in destination keyword')
         self._send_to_ztv(('add-activemq-instance', (server, port, destination)))
+
+    # -----------------------------------------------------------------
 
     def frame_number(self, n=None, relative=False):
         """
@@ -328,7 +387,9 @@ class MagicViewer(object):
                 flag = 'absolute'
             self._send_to_ztv(('set-cur-display-frame-num', (n, flag)))
         return self._request_return_value_from_ztv('get-cur-display-frame-num')
-        
+
+    # -----------------------------------------------------------------
+
     def sky_frame(self, filename=None):
         """
         Set sky frame to filename and turn on sky subtraction
@@ -343,7 +404,9 @@ class MagicViewer(object):
         elif filename is not None:
             self._send_to_ztv(('set-sky-subtraction-filename', filename))
         return self._request_return_value_from_ztv('get-sky-subtraction-status-and-filename')
-        
+
+    # -----------------------------------------------------------------
+
     def flat_frame(self, filename=None):
         """
         Set flat frame to filename and turn on flat field division
@@ -358,7 +421,9 @@ class MagicViewer(object):
         elif filename is not None:
             self._send_to_ztv(('set-flat-division-filename', filename))
         return self._request_return_value_from_ztv('get-flat-division-status-and-filename')
-        
+
+    # -----------------------------------------------------------------
+
     def autoload_filename_pattern(self, filename=None):
         """
         Set filename pattern for autoload to filename and turn on auto-load
@@ -374,6 +439,8 @@ class MagicViewer(object):
             self._send_to_ztv(('set-autoload-filename-pattern', filename))
         return self._request_return_value_from_ztv('get-autoload-status-and-filename-pattern')
 
+    # -----------------------------------------------------------------
+
     def autoload_pause_seconds(self, seconds=None):
         """
         Set pause time in seconds (will adjust to nearest available value)
@@ -382,6 +449,8 @@ class MagicViewer(object):
         if seconds is not None:
             self._send_to_ztv(('set-autoload-pausetime', seconds))
         return self._request_return_value_from_ztv('get-autoload-pausetime')
+
+    # -----------------------------------------------------------------
 
     def slice_plot(self, pts=None, show_overplot=True):
         """
@@ -399,8 +468,11 @@ class MagicViewer(object):
         else:
             self._send_to_ztv('hide-plot-panel-overplot')
         return self._request_return_value_from_ztv('get-slice-plot-coords')
-        
+
+    # -----------------------------------------------------------------
+
     def stats_box(self, xrange=None, yrange=None, show_overplot=None):
+
         """
         box: of form [[x0, y0], [x1, y1]]
         show_overplot:  If True, then show the over-plotted box
@@ -412,6 +484,8 @@ class MagicViewer(object):
                                                                           'show_overplot':show_overplot}))
         waiting = self._request_return_value_from_ztv('set-stats-box-parameters-done')
         return self._request_return_value_from_ztv('get-stats-box-info')
+
+    # -----------------------------------------------------------------
 
     def aperture_phot(self, xclick=None, yclick=None, radius=None, inner_sky_radius=None, outer_sky_radius=None,
                       show_overplot=None):
@@ -434,9 +508,12 @@ class MagicViewer(object):
         waiting = self._request_return_value_from_ztv('set-aperture-phot-parameters-done')
         return self._request_return_value_from_ztv('get-aperture-phot-info')
 
+    # -----------------------------------------------------------------
+
     def control_panel(self, name):
         """
         Switch to the control panel `name`.  `name` is matched against the names shown in the gui tabs, except case insenstive. 
         """
         self._send_to_ztv(('switch-to-control-panel', name))
-        
+
+# -----------------------------------------------------------------

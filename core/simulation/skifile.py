@@ -670,6 +670,13 @@ class SkiFile:
 
         return self.get_unique_base_element("dustSystem")
 
+    ## This function removes the complete dust system
+    def remove_dust_system(self):
+
+        dust_system = self.get_dust_system()
+        parent = dust_system.getparent()
+        parent.getparent().remove(parent)
+
     ## This function returns the list of stellar components
     def get_stellar_components(self, include_comments=False):
 
@@ -1757,11 +1764,23 @@ class SkiFile:
                  #"assigner": assigner}
         parent.append(parent.makeelement("OctTreeDustGrid", attrs))
 
+    ## This function returns the instrument system
+    def get_instrument_system(self):
+
+        return self.get_unique_base_element("instrumentSystem")
+
+    ## This funcion removes the complete instrument system
+    def remove_instrument_system(self):
+
+        instrument_system = self.get_instrument_system()
+        parent = instrument_system.getparent()
+        parent.getparent().remove(parent)
+
     ## This function returns a list of the instruments in the ski file, or the 'instruments' element if as_list is False
     def get_instruments(self, as_list=True):
 
         # Get the instrument system
-        instrument_system = self.get_unique_base_element("instrumentSystem")
+        instrument_system = self.get_instrument_system()
 
         # Get the 'instruments' element
         instruments_parents = instrument_system.xpath("instruments")

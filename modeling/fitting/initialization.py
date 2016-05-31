@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import copy
 import numpy as np
 
 # Import astronomical modules
@@ -37,6 +38,8 @@ from ...magic.tools import wavelengths
 from ...core.tools.logging import log
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ..basics.projection import GalaxyProjection
+from ...core.simulation.execute import SkirtExec
+from ...core.simulation.arguments import SkirtArguments
 
 # -----------------------------------------------------------------
 
@@ -191,8 +194,11 @@ class InputInitializer(FittingComponent):
         # 10. Calculate the weight factor to give to each band
         self.calculate_weights()
 
-        # 11. Writing
+        # 12. Writing
         self.write()
+
+        # 11. Generate the dust grid data files
+        self.generate_dust_grid()
 
     # -----------------------------------------------------------------
 
@@ -862,6 +868,10 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -1021,6 +1031,47 @@ class InputInitializer(FittingComponent):
 
         # Write the table with weights
         tables.write(self.weights, self.weights_table_path, format="ascii.ecsv")
+
+    # -----------------------------------------------------------------
+
+    def generate_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Running a simulation just to generate the dust grid data files ...")
+
+        # Create a copy of the ski file
+        ski = copy.deepcopy(self.ski)
+
+        # Remove the instrument system
+        ski.remove_instrument_system()
+
+        # Set the number of photon packages to zero
+        ski.setpackages(0)
+
+        # Disable all writing options, except the one for writing the dust grid
+        ski.disable_all_writing_options()
+        ski.set_write_grid()
+
+        # Save the ski file to the fit/grid directory
+        ski_path = fs.join(self.fit_grid_path, self.galaxy_name + ".ski")
+        ski.saveto(ski_path)
+
+        # Create the local SKIRT execution context
+        skirt = SkirtExec()
+
+        # Create the SKIRT arguments object
+        arguments = SkirtArguments()
+        arguments.ski_pattern = ski_path
+        arguments.input_path = self.fit_in_path
+        arguments.output_path = self.fit_grid_path
+
+        # Run SKIRT to generate the dust grid data files
+        skirt.run(arguments)
 
 # -----------------------------------------------------------------
 

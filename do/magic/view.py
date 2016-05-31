@@ -58,20 +58,22 @@ arguments = parser.parse_args()
 
 #viewer = MagicViewer(control_panels_module_path='control_panels')
 
+
+# Load the image first
+image = Image.from_file(arguments.filename)
+
+# Create the viewer
 viewer = MagicViewer(title="Magic viewer")
 
-# Load the frame
-#frame = Frame.from_file(arguments.filename)
-#viewer.load_frame(frame)
-
-image = Image.from_file(arguments.filename)
+# Load the image into the viewer
 viewer.load_image(image)
 
+# Set options
 viewer.control_panel('Color')
 viewer.cmap("hot")
 viewer.scaling('Log')
 
-
-time.wait(60)
+# Wait for the GUI to be closed
+viewer.wait()
 
 # -----------------------------------------------------------------

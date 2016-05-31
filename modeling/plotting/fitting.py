@@ -26,6 +26,8 @@ from ...core.tools import tables
 from ...core.basics.filter import Filter
 from ..core.transmission import TransmissionCurve
 from ...core.plot.transmission import TransmissionPlotter
+from ...core.plot.grids import plotgrids
+from ...core.simulation.simulation import SkirtSimulation
 
 # -----------------------------------------------------------------
 
@@ -181,6 +183,14 @@ class FittingPlotter(PlottingComponent):
 
         # Inform the user
         log.info("Plotting the dust grid ...")
+
+        # Create a SkirtSimulation instance for the grid generating simulation
+        fit_grid_path = fs.join(self.fit_path, "grid")
+        ski_path = fs.join(fit_grid_path, self.galaxy_name + ".ski")
+        simulation = SkirtSimulation(ski_path=ski_path, outpath=fit_grid_path)
+
+        # Plot the grid
+        plotgrids(simulation, output_path=self.plot_fitting_path)
 
     # -----------------------------------------------------------------
 

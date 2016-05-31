@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.plotting.component Contains the PlottingComponent class
+## \package pts.modeling.plotting.truncation Contains the TruncationPlotter class
 
 # -----------------------------------------------------------------
 
@@ -16,6 +16,8 @@ from __future__ import absolute_import, division, print_function
 from ..core.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
+from ...magic.core.frame import Frame
+from ...magic.plot.imagegrid import StandardImageGridPlotter
 
 # -----------------------------------------------------------------
 
@@ -38,6 +40,9 @@ class TruncationPlotter(ModelingComponent):
 
         # -- Attributes --
 
+        # The image frames
+        self.images = dict()
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -47,25 +52,18 @@ class TruncationPlotter(ModelingComponent):
         :return:
         """
 
+        # 1. Call the setup function
         self.setup()
 
+        # 2. Load the images
+        self.load_images()
+
+        # 3. Plot
         self.plot()
 
     # -----------------------------------------------------------------
 
-    def setup(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(TruncationPlotter, self).setup()
-
-    # -----------------------------------------------------------------
-
-    def plot(self):
+    def load_images(self):
 
         """
         This function ...
@@ -74,9 +72,6 @@ class TruncationPlotter(ModelingComponent):
 
         # Inform the user
         log.info("Loading the truncated images ...")
-
-        # The dictionary of image frames
-        images = dict()
 
         # Loop over all files found in the truncation directory
         for path, name in fs.files_in_path(self.truncation_path, extension="fits", returns=["path", "name"]):
@@ -91,7 +86,16 @@ class TruncationPlotter(ModelingComponent):
             image = Frame.from_file(path)
 
             # Add the image to the dictionary
-            images[name] = image
+            self.images[name] = image
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Inform the user
         log.info("Plotting the images ...")
@@ -100,11 +104,10 @@ class TruncationPlotter(ModelingComponent):
         plotter = StandardImageGridPlotter()
 
         # Sort the image labels based on wavelength
-        sorted_labels = sorted(images.keys(), key=(
-        lambda key: images[key].filter.pivotwavelength() if images[key].filter is not None else None))
+        sorted_labels = sorted(self.images.keys(), key=(lambda key: self.images[key].filter.pivotwavelength() if self.images[key].filter is not None else None))
 
         # Add the images
-        for label in sorted_labels: plotter.add_image(images[label], label)
+        for label in sorted_labels: plotter.add_image(self.images[label], label)
 
         # Determine the path to the plot file
         path = fs.join(self.plot_path, "truncation.pdf")
