@@ -37,6 +37,14 @@ class PlottingComponent(ModelingComponent):
 
         # -- Attributes --
 
+        # Plotting subdirectories
+        self.plot_data_path = None
+        self.plot_preparation_path = None
+        self.plot_decomposition_path = None
+        self.plot_truncation_path = None
+        self.plot_photometry_path = None
+        self.plot_fitting_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -51,5 +59,27 @@ class PlottingComponent(ModelingComponent):
 
         # Set the output path
         self.config.output_path = self.plot_path
+
+        # Set the path to the plot/data directory
+        self.plot_data_path = fs.join(self.plot_path, "data")
+
+        # Set the path to the plot/prep directory
+        self.plot_preparation_path = fs.join(self.plot_path, "prep")
+
+        # Set the path to the plot/components directory
+        self.plot_decomposition_path = fs.join(self.plot_path, "components")
+
+        # Set the path to the plot/trunc directory
+        self.plot_truncation_path = fs.join(self.plot_path, "trunc")
+
+        # Set the path to the plot/phot directory
+        self.plot_photometry_path = fs.join(self.plot_path, "phot")
+
+        # Set the path to the plot/fit directory
+        self.plot_fitting_path = fs.join(self.plot_path, "fit")
+
+        # Create the directories
+        fs.create_directories([self.plot_data_path, self.plot_preparation_path, self.plot_decomposition_path,
+                               self.plot_truncation_path, self.plot_photometry_path, self.plot_fitting_path])
 
 # -----------------------------------------------------------------

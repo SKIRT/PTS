@@ -155,7 +155,7 @@ class TimingTable(object):
         # "Communication time"
         # "Intermediate time"
         row.append(name)
-        row.append(timestamp)
+        row.append('"' + timestamp + '"')
         row.append(host_id)
         row.append(cluster_name)
         row.append(str(cores))

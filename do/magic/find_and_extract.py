@@ -25,6 +25,7 @@ from pts.core.tools import configuration
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.magic.basics.region import Region
+from pts.magic.view import MagicViewer
 
 # -----------------------------------------------------------------
 
@@ -191,6 +192,11 @@ saturation_region = finder.saturation_region
 saturation_region_path = fs.join(output_path, "saturation.reg")
 saturation_region.save(saturation_region_path)
 
+# Save the other sources region
+other_region = finder.other_region
+other_region_path = fs.join(output_path, "other_sources.reg")
+other_region.save(other_region_path)
+
 # -----------------------------------------------------------------
 
 # Create an image with the segmentation maps
@@ -225,11 +231,7 @@ if arguments.interactive:
     # Import the star and saturation regions which have been adjusted by the user
     star_region = Region.from_file(star_region_path)
     saturation_region = Region.from_file(saturation_region_path)
-
-else:
-
-    star_region = finder.star_region
-    saturation_region = finder.saturation_region
+    other_region = Region.from_file(other_region_path)
 
 # -----------------------------------------------------------------
 

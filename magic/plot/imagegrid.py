@@ -333,7 +333,6 @@ class StandardImageGridPlotter(ImageGridPlotter):
         cb = mpl_colorbar.ColorbarBase(ax_cm, cmap=cm_cm, norm=norm_cm, orientation='horizontal')
         cb.set_label('Flux (arbitrary units)')
 
-
         # Set the title
         if self.title is not None: self._figure.suptitle("\n".join(wrap(self.title, 60)))
 

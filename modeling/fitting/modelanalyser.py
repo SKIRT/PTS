@@ -76,9 +76,6 @@ class FitModelAnalyser(FittingComponent):
         # 1. Call the setup function
         self.setup(simulation, flux_calculator)
 
-        # 2. Load the log file of the simulation
-        self.load_log_file()
-
         # 3. Load the observed SED
         self.load_observed_sed()
 

@@ -113,7 +113,7 @@ class AttenuationPlotter(object):
         """
 
         # Inform the user
-        log.info("Clearing the SED plotter ...")
+        log.info("Clearing the attenuation plotter ...")
 
         # Set default values for all attributes
         self.title = None
@@ -122,6 +122,7 @@ class AttenuationPlotter(object):
         self.max_wavelength = None
         self.min_attenuation = None
         self.max_attenuation = None
+        self.transparent = False
 
     # -----------------------------------------------------------------
 

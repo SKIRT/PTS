@@ -128,7 +128,7 @@ class LogFile(object):
             # Look for the message that indicates the start of the simulation
             if "Finished simulation" in message:
 
-                seconds = float(message.split(" in ")[1].split(" s (")[0])
+                seconds = float(message.split(" in ")[1].split(" s")[0])
                 return seconds
 
         return None

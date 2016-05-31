@@ -10,6 +10,7 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
+import numpy as np
 import copy
 
 # Import astronomical modules
@@ -135,7 +136,21 @@ class WavelengthGrid(object):
         :return:
         """
 
-        return NotImplementedError("Not implemented yet")
+        # Create a new class instance
+        grid = cls()
+
+        wavelengths = np.loadtxt(path, unpack=True, skiprows=1)
+
+        # Create the table
+        table = Table()
+        table["Wavelength"] = wavelengths
+        table["Wavelength"].unit = "micron"
+
+        # Set the table
+        grid.table = table
+
+        # Return the new instance
+        return grid
 
     # -----------------------------------------------------------------
 
@@ -147,6 +162,30 @@ class WavelengthGrid(object):
         """
 
         return len(self.table)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.min(self.table["Wavelength"])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.max(self.table["Wavelength"])
 
     # -----------------------------------------------------------------
 
