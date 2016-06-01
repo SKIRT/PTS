@@ -528,6 +528,68 @@ class SkiFile:
         # extract the number from the first result, assuming units of K
         return float(results[0].split()[0])
 
+    ## This function returns whether the ski file describes a oligochromatic simulation
+    def oligochromatic(self):
+        elems = self.tree.xpath("//OligoMonteCarloSimulation")
+        return len(elems) > 0
+
+    ## This function returns whether the ski file describes a panchromatic simulation
+    def panchromatic(self):
+        elems = self.tree.xpath("//PanMonteCarloSimulation")
+        return len(elems) > 0
+
+    ## This function converts the ski file to a ski file that describes an oligochromatic simulation
+    def to_oligochromatic(self, wavelengths):
+
+        if self.oligochromatic(): warnings.warn("The simulation is already oligochromatic")
+        else:
+
+            simulation = self.tree.xpath("//PanMonteCarloSimulation")[0]
+            simulation.tag = "OligoMonteCarloSimulation"
+
+            # Remove the old wavelength grid
+            wavelength_grid = self.get_wavelength_grid()
+            parent = wavelength_grid.getparent()
+            parent.set("type", "OligoWavelengthGrid")
+            parent.remove(wavelength_grid)
+
+            # Make the oligochromatic wavelength grid
+            attrs = {"wavelengths": ", ".join(map(str_from_quantity, wavelengths))}
+            parent.append(parent.makeelement("OligoWavelengthGrid", attrs))
+
+            components = self.get_stellar_components()
+            for component in components:
+
+                component.tag = "OligoStellarComp"
+                component.set("luminosities", "1")
+
+                for child in component.getchildren():
+                    if child.tag == "sed" or child.tag == "normalization": component.remove(child)
+
+            dust_system = self.get_dust_system()
+            parent = dust_system.getparent()
+            parent.set("type", "OligoDustSystem")
+            dust_system.tag = "OligoDustSystem"
+
+            dust_system.attrib.pop("writeAbsorption")
+            dust_system.attrib.pop("writeISRF")
+            dust_system.attrib.pop("writeTemperature")
+            dust_system.attrib.pop("writeEmissivity")
+            dust_system.attrib.pop("selfAbsorption")
+            dust_system.attrib.pop("emissionBoost")
+
+            for child in dust_system.getchildren():
+                if child.tag == "dustEmissivity" or child.tag == "dustLib": dust_system.remove(child)
+
+    ## This function converts the ski file to a ski file that describes a panchromatic simulation
+    def to_panchromatic(self):
+
+        if self.panchromatic(): warnings.warn("The simulation is already panchromatic")
+        else:
+
+            simulation = self.tree.xpath("//OligoMonteCarloSimulation")[0]
+            simulation.tag = "PanMonteCarloSimulation"
+
     # ---------- Updating information ---------------------------------
 
     ## This function applies an XSLT transform to the ski file if an XPath condition evaluates to true.

@@ -263,11 +263,21 @@ class BatchAnalyser(Configurable):
         input_path = self.simulation.input_path
         wavelengths = self.ski.nwavelengthsfile(input_path)
 
+        # Get the number of dust cells
+        dust_cells = self.log_file.dustcells()
+
+        # Check whether dust self-absorption was enabled for the simulation
+        selfabsorption = self.ski.dustselfabsorption()
+
+        # Check whether transient heating was enabled for the simulation
+        transient_heating = self.ski.transientheating()
+
         # Open the memory table
         memory_table = MemoryTable(self.memory_table_path)
 
         # Add an entry to the memory table
         memory_table.add_entry(self.simulation.name, self.simulation.submitted_at, host_id, cluster_name, cores,
-                               hyperthreads, processes, wavelengths, peak_memory_usage)
+                               hyperthreads, processes, wavelengths, dust_cells, selfabsorption, transient_heating,
+                               peak_memory_usage)
 
 # -----------------------------------------------------------------

@@ -47,9 +47,9 @@ class MemoryTable(object):
 
         # Create the table
         names = ["Simulation name", "Timestamp", "Host id", "Cluster name", "Cores", "Threads per core",
-                 "Processes", "Wavelengths", "Peak memory usage"]
-        data = [[], [], [], [], [], [], [], [], []]
-        dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "float64"]
+                 "Processes", "Wavelengths", "Dust cells", "Self-absorption", "Transient heating", "Peak memory usage"]
+        data = [[], [], [], [], [], [], [], [], [], [], [], []]
+        dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "int64", "bool", "bool", "float64"]
         table = tables.new(data, names, dtypes=dtypes)
 
         # Set the column units
@@ -77,7 +77,7 @@ class MemoryTable(object):
     # -----------------------------------------------------------------
 
     def add_entry(self, name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths,
-                  peak_memory_usage):
+                  dust_cells, selfabsorption, transient_heating, peak_memory_usage):
 
         """
         This function ...
@@ -89,6 +89,9 @@ class MemoryTable(object):
         :param threads_per_core:
         :param processes:
         :param wavelengths:
+        :param dust_cells:
+        :param selfabsorption:
+        :param transient_heating:
         :param peak_memory_usage:
         :return:
         """
@@ -119,6 +122,9 @@ class MemoryTable(object):
         row.append(str(threads_per_core))
         row.append(str(processes))
         row.append(str(wavelengths))
+        row.append(str(dust_cells))
+        row.append(str(selfabsorption))
+        row.append(str(transient_heating))
         row.append(str(peak_memory_usage))
 
         # Add the row to the runtime file

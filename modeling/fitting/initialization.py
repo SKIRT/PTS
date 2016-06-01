@@ -1049,6 +1049,9 @@ class InputInitializer(FittingComponent):
         # Create a copy of the ski file
         ski = copy.deepcopy(self.ski)
 
+        # Convert to oligochromatic simulation
+        ski.to_oligochromatic([1. * Unit("micron")])
+
         # Remove the instrument system
         ski.remove_instrument_system()
 
