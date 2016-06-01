@@ -28,6 +28,7 @@ from ..core.transmission import TransmissionCurve
 from ...core.plot.transmission import TransmissionPlotter
 from ...core.plot.grids import plotgrids
 from ...core.simulation.simulation import SkirtSimulation
+from ...core.simulation.logfile import LogFile
 
 # -----------------------------------------------------------------
 
@@ -56,6 +57,9 @@ class FittingPlotter(PlottingComponent):
         # The transmission curves
         self.transmission_curves = dict()
 
+        # The distribution of dust cells per level
+        self.cell_distribution = None
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -73,6 +77,9 @@ class FittingPlotter(PlottingComponent):
 
         # 3. Load the transmission curves
         self.load_transmission_curves()
+
+        # 4. Load the dust cell tree data
+        self.load_dust_cell_tree()
 
         # Plot
         self.plot()
@@ -126,6 +133,28 @@ class FittingPlotter(PlottingComponent):
 
     # -----------------------------------------------------------------
 
+    def load_dust_cell_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the dust cell tree information ...")
+
+        # Determine the path to the log file of the dust grid generating simulation
+        fit_grid_path = fs.join(self.fit_path, "grid")
+        log_file_path = fs.join(fit_grid_path, self.galaxy_name + "_log.txt")
+
+        # Open the log file
+        log_file = LogFile(log_file_path)
+
+        # Get the distribution of cells per level of the tree
+        self.cell_distribution = log_file.tree_leaf_distribution
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -133,13 +162,16 @@ class FittingPlotter(PlottingComponent):
         :return:
         """
 
-        # Plot
+        # Plot the wavelength grid used for the fitting
         self.plot_wavelengths()
 
-        # Plot
+        # Plot the dust grid
         self.plot_dust_grid()
 
-        # Plot
+        # Plot the distribution of dust cells for the different tree levels
+        self.plot_dust_cell_distribution()
+
+        # Plot the distributions of the runtimes on different remote systems
         self.plot_runtimes()
 
     # -----------------------------------------------------------------
@@ -191,6 +223,25 @@ class FittingPlotter(PlottingComponent):
 
         # Plot the grid
         plotgrids(simulation, output_path=self.plot_fitting_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_cell_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the dust cell distribution ...")
+
+        # Set plot title and path
+        title = "Dust cells in each tree level"
+        path = fs.join(self.plot_fitting_path, "cells_tree.pdf")
+
+        # Make the plot
+        self.cell_distribution.plot(title=title, path=path)
 
     # -----------------------------------------------------------------
 
