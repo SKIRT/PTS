@@ -199,6 +199,9 @@ class BatchAnalyser(Configurable):
         # Check whether dust self-absorption was enabled for the simulation
         selfabsorption = self.ski.dustselfabsorption()
 
+        # Check whether transient heating was enabled for the simulation
+        transient_heating = self.ski.transientheating()
+
         # Get the different contributions to the simulation's runtime
         setup_time = self.te.setup
         stellar_time = self.te.stellar
@@ -217,9 +220,9 @@ class BatchAnalyser(Configurable):
         # Packages, cells, Self-absorption, Total runtime, Setup time, Stellar emission time, Spectra calculation time,
         # Dust emission time, Writing time, Waiting time, Communication time, Intermediate time
         timing_table.add_entry(self.simulation.name, self.simulation.submitted_at, host_id, cluster_name, cores,
-                               hyperthreads, processes, wavelengths, packages, cells, selfabsorption, total_runtime,
-                               setup_time, stellar_time, spectra_time, dust_time, writing_time, waiting_time,
-                               communication_time, intermediate_time)
+                               hyperthreads, processes, wavelengths, packages, cells, selfabsorption, transient_heating,
+                               total_runtime, setup_time, stellar_time, spectra_time, dust_time, writing_time,
+                               waiting_time, communication_time, intermediate_time)
 
     # -----------------------------------------------------------------
 

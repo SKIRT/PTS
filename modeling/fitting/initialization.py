@@ -738,13 +738,16 @@ class InputInitializer(FittingComponent):
         # take half of the pixel size to avoid too much interpolation
         smallest_scale = 0.5 * pixelscale
 
+        # Set a minimum level for the tree
+        min_level = 9
+
         # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
         extent_x = (max_x - min_x).to("pc").value
         smallest_scale = smallest_scale.to("pc").value
-        level = min_level_for_smallest_scale_bintree(extent_x, smallest_scale)
+        max_level = min_level_for_smallest_scale_bintree(extent_x, smallest_scale)
 
         # Set the bintree dust grid
-        self.ski.set_binary_tree_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z, max_level=level)
+        self.ski.set_binary_tree_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z, min_level=min_level, max_level=max_level)
 
     # -----------------------------------------------------------------
 
@@ -779,13 +782,16 @@ class InputInitializer(FittingComponent):
         # take half of the pixel size to avoid too much interpolation
         smallest_scale = 0.5 * pixelscale
 
+        # Set a minimum level for the octree
+        min_level = 3
+
         # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
         extent_x = (max_x - min_x).to("pc").value
         smallest_scale = smallest_scale.to("pc").value
-        level = min_level_for_smallest_scale_octtree(extent_x, smallest_scale)
+        max_level = min_level_for_smallest_scale_octtree(extent_x, smallest_scale)
 
         # Set the octtree dust grid
-        self.ski.set_octtree_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z, max_level=level)
+        self.ski.set_octtree_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z, min_level=min_level, max_level=max_level)
 
     # -----------------------------------------------------------------
 
@@ -865,10 +871,6 @@ class InputInitializer(FittingComponent):
         for filter in mir_bands: self.weights.add_row([filter.instrument, filter.band, mir_weight])
         for filter in fir_bands: self.weights.add_row([filter.instrument, filter.band, fir_weight])
         for filter in submm_bands: self.weights.add_row([filter.instrument, filter.band, submm_weight])
-
-    # -----------------------------------------------------------------
-
-
 
     # -----------------------------------------------------------------
 
@@ -1134,9 +1136,10 @@ def min_level_for_smallest_scale_bintree(extent, smallest_scale):
     :return:
     """
 
-    # Return the 2-base logarithm of the ratio of the total physical extent to the smallest physical scale,
-    # and round it up to the nearest integer
-    return int(math.ceil(math.log(extent/smallest_scale, 2)))
+    ratio = extent / smallest_scale
+    octtree_level = int(math.ceil(math.log(ratio, 2)))
+    level = int(3 * octtree_level)
+    return level
 
 # -----------------------------------------------------------------
 
@@ -1149,8 +1152,8 @@ def min_level_for_smallest_scale_octtree(extent, smallest_scale):
     :return:
     """
 
-    # Return the 4-base logarithm of the ratio of the total physical extent to the smallest physical scale,
-    # and round it up to the nearest integer
-    return int(math.ceil(math.log(extent/smallest_scale, 4)))
+    ratio = extent / smallest_scale
+    octtree_level = int(math.ceil(math.log(ratio, 2)))
+    return octtree_level
 
 # -----------------------------------------------------------------
