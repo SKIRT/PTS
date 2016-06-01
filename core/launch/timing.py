@@ -58,11 +58,11 @@ class TimingTable(object):
 
         # Create the table
         names = ["Simulation name", "Timestamp", "Host id", "Cluster name", "Cores", "Threads per core",
-                 "Processes", "Wavelengths", "Packages", "Self-absorption", "Total runtime", "Setup time",
+                 "Processes", "Wavelengths", "Packages", "Dust cells", "Self-absorption", "Total runtime", "Setup time",
                  "Stellar emission time", "Spectra calculation time", "Dust emission time", "Writing time",
                  "Waiting time", "Communication time", "Intermediate time"]
         data = [[] for _ in names]
-        dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "int64", "bool", "float64",
+        dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "int64", "int64", "bool", "float64",
                   "float64", "float64", "float64", "float64", "float64", "float64", "float64", "float64"]
         table = tables.new(data, names, dtypes=dtypes)
 
@@ -98,9 +98,9 @@ class TimingTable(object):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths, packages,
-                  selfabsorption, total_runtime, setup_time, stellar_time, spectra_time, dust_time, writing_time,
-                  waiting_time, communication_time, intermediate_time):
+    def add_entry(self, name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths,
+                  packages, cells, selfabsorption, total_runtime, setup_time, stellar_time, spectra_time, dust_time,
+                  writing_time, waiting_time, communication_time, intermediate_time):
 
         """
         This function ...
@@ -113,6 +113,7 @@ class TimingTable(object):
         :param processes:
         :param wavelengths:
         :param packages:
+        :param cells:
         :param selfabsorption:
         :param total_runtime:
         :param setup_time:
@@ -144,6 +145,7 @@ class TimingTable(object):
         # "Processes"
         # "Wavelengths"
         # "Packages"
+        # "Cells"
         # "Self-absorption"
         # "Total runtime"
         # "Setup time"
@@ -163,6 +165,7 @@ class TimingTable(object):
         row.append(str(processes))
         row.append(str(wavelengths))
         row.append(str(packages))
+        row.append(str(cells))
         row.append(str(selfabsorption))
         row.append(str(total_runtime))
         row.append(str(setup_time))

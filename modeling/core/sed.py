@@ -22,6 +22,7 @@ from astropy.table import Table
 # Import the relevant PTS classes and modules
 from ...core.tools import tables
 from ...core.basics.errorbar import ErrorBar
+from ...core.basics.filter import Filter
 
 # -----------------------------------------------------------------
 
@@ -182,6 +183,34 @@ class ObservedSED(object):
         """
 
         return tables.column_as_list(self.table["Band"])
+
+    # -----------------------------------------------------------------
+
+    def filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        filters = []
+
+        # Loop over all entries
+        for i in range(len(self.table)):
+
+            # Get the instrument and band
+            instrument = self.table["Instrument"][i]
+            band = self.table["Band"][i]
+
+            # Create the filter
+            fltr = Filter.from_instrument_and_band(instrument, band)
+
+            # Add the filter to the list
+            filters.append(fltr)
+
+        # Return the list of filters
+        return filters
 
     # -----------------------------------------------------------------
 

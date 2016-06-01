@@ -240,10 +240,10 @@ class ResourceEstimator(object):
         packages = self.ski_file.packages()
 
         # Calculate the rate of photon packages launched per second
-        rate = self.log_file.packages("stellar") / self.extractor.stellar
+        rate = self.log_file.stellar_packages / self.extractor.stellar
 
         # Calculate the rate of photon packages launched per second without recording absorption
-        rate_noabsorption = self.log_file.packages("dustem") / self.extractor.dustem
+        rate_noabsorption = self.log_file.dust_packages / self.extractor.dustem
 
         # Estimate the walltime for the stellar emission phase
         stellar_walltime = packages / rate

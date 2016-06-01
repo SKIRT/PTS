@@ -301,6 +301,9 @@ class BestModelLauncher(AnalysisComponent):
         # Enable all writing options for analysis
         #self.ski.enable_all_writing_options()
 
+        # Write out the dust grid data
+        self.ski.set_write_grid()
+
     # -----------------------------------------------------------------
 
     def set_parallelization(self):

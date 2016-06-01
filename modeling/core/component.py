@@ -118,9 +118,11 @@ class ModelingComponent(Configurable):
         fluxes_table = tables.from_file(fluxes_table_path, format="ascii.ecsv")
         # Loop over the entries in the fluxes table, get the filter
         for entry in fluxes_table:
+
             # Get the filter
             filter_id = entry["Instrument"] + "." + entry["Band"]
             filter_names.append(filter_id)
+
         return filter_names
 
 # -----------------------------------------------------------------

@@ -193,13 +193,11 @@ class BatchAnalyser(Configurable):
         # Get the number of photon packages
         packages = self.ski.packages()
 
+        # Get the number of dust cells
+        cells = self.log_file.dustcells()
+
         # Check whether dust self-absorption was enabled for the simulation
         selfabsorption = self.ski.dustselfabsorption()
-
-        # Get the serial, parallel runtime and runtime overhead (in seconds)
-        #serial_runtime = self.te.serial
-        #parallel_runtime = self.te.parallel
-        #runtime_overhead = self.te.overhead
 
         # Get the different contributions to the simulation's runtime
         setup_time = self.te.setup
@@ -216,12 +214,12 @@ class BatchAnalyser(Configurable):
 
         # Add an entry to the timing table
         # Simulation name, Timestamp, Host id, Cluster name, Cores, Hyperthreads per core, Processes, Wavelengths,
-        # Packages, Self-absorption, Total runtime, Setup time, Stellar emission time, Spectra calculation time,
+        # Packages, cells, Self-absorption, Total runtime, Setup time, Stellar emission time, Spectra calculation time,
         # Dust emission time, Writing time, Waiting time, Communication time, Intermediate time
         timing_table.add_entry(self.simulation.name, self.simulation.submitted_at, host_id, cluster_name, cores,
-                               hyperthreads, processes, wavelengths, packages, selfabsorption, total_runtime, setup_time,
-                               stellar_time, spectra_time, dust_time, writing_time, waiting_time, communication_time,
-                               intermediate_time)
+                               hyperthreads, processes, wavelengths, packages, cells, selfabsorption, total_runtime,
+                               setup_time, stellar_time, spectra_time, dust_time, writing_time, waiting_time,
+                               communication_time, intermediate_time)
 
     # -----------------------------------------------------------------
 

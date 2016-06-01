@@ -13,14 +13,14 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import os
-
 # Import astronomical modules
 from astropy.table import Table
+from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ..tools import time
+from ..tools import filesystem as fs
+from ..basics.distribution import Distribution
 
 # -----------------------------------------------------------------
 
@@ -41,7 +41,7 @@ class LogFile(object):
         self.path = path
 
         # Determine the name of the log file
-        name = os.path.basename(self.path)
+        name = fs.name(self.path)
 
         # Determine the simulation prefix
         self.prefix = name.split("_")[0]
@@ -54,15 +54,12 @@ class LogFile(object):
         self.contents = parse(path)
 
         # Cache properties to avoid repeated calculation
-        self._wavelengths = None
         self._stellar_packages = None
         self._dust_packages = None
-        self._processes = None
-        self._threads = None
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def host(self):
 
         """
@@ -85,7 +82,7 @@ class LogFile(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def t_0(self):
 
         """
@@ -98,7 +95,7 @@ class LogFile(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def t_last(self):
 
         """
@@ -111,7 +108,7 @@ class LogFile(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def total_runtime(self):
 
         """
@@ -135,7 +132,7 @@ class LogFile(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def peak_memory(self):
 
         """
@@ -150,7 +147,7 @@ class LogFile(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def last_message(self):
 
         """
@@ -162,65 +159,180 @@ class LogFile(object):
 
     # -----------------------------------------------------------------
 
-    def packages(self, phase):
+    @lazyproperty
+    def stellar_packages(self):
 
         """
         This function ...
-        :param phase: must be "stellar" or "dustem"
         :return:
         """
 
-        # Stellar emission phase
-        if phase == "stellar":
+        # Loop over the log entries
+        for i in range(len(self.contents)):
 
-            # Return the cached value if present
-            if self._stellar_packages is not None: return self._stellar_packages
+            # Skip entries corresponding to other phases
+            if not self.contents["Phase"][i] == "stellar": continue
 
-            # Loop over the log entries
-            for i in range(len(self.contents)):
+            # Search for the line stating the number of photon packages
+            if "photon packages for each of" in self.contents["Message"][i]:
 
-                # Skip entries corresponding to other phases
-                if not self.contents["Phase"][i] == "stellar": continue
+                # Return the number of stellar photon packages
+                stellar_packages = int(self.contents["Message"][i].split("(")[1].split(" photon")[0])
+                return stellar_packages
 
-                # Search for the line stating the number of photon packages
-                if "photon packages for each of" in self.contents["Message"][i]:
-                    # Return the number of stellar photon packages
-                    self._stellar_packages = int(self.contents["Message"][i].split("(")[1].split(" photon")[0])
-                    return self._stellar_packages
+        # If the number of stellar photon packages could not be determined, return None
+        return None
 
-        # Dust emission phase
-        elif phase == "dustem":
+    # -----------------------------------------------------------------
 
-            # Return the cached value if present
-            if self._stellar_packages is not None: return self._stellar_packages
+    @lazyproperty
+    def dust_packages(self):
 
-            # Loop over the log entries in reversed order
-            for i in reversed(range(len(self.contents))):
+        """
+        This function ...
+        :return:
+        """
 
-                # Skip entries not corresponding to the dust emission phase
-                if not self.contents["Phase"][i] == "dust": continue
+        # Loop over the log entries in reversed order
+        for i in reversed(range(len(self.contents))):
 
-                # Search for the line stating the number of photon packages
-                if "photon packages for each of" in self.contents["Message"][i]:
-                    # Return the number of dust emission photon packages
-                    self._dust_packages = int(self.contents["Message"][i].split("(")[1].split(" photon")[0])
-                    return self._dust_packages
+            # Skip entries not corresponding to the dust emission phase
+            if not self.contents["Phase"][i] == "dust": continue
 
-        # Invalid option
-        else: raise ValueError("Phase must be either 'stellar' or 'dustem'")
+            # Search for the line stating the number of photon packages
+            if "photon packages for each of" in self.contents["Message"][i]:
+
+                # Return the number of dust emission photon packages
+                dust_packages = int(self.contents["Message"][i].split("(")[1].split(" photon")[0])
+                return dust_packages
+
+        # If the number of dust photon packages could not be determined, return None
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the log entries
+        for i in range(len(self.contents)):
+
+            # Search for the line stating the total number of leafs in the tree
+            if "Total number of leaves" in self.contents["Message"][i]:
+
+                # Return the number of leaves
+                leaves = int(self.contents["Message"][i].split(": ")[1])
+                return leaves
+
+        # If the number of nodes could not be determined, return None
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def tree_nodes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the log entries
+        for i in range(len(self.contents)):
+
+            # Search for the line stating the total number of nodes in the tree
+            if "Total number of nodes" in self.contents["Message"][i]:
+
+                # Return the number of nodes
+                nodes = int(self.contents["Message"][i].split(": ")[1])
+                return nodes
+
+        # If the number of nodes could not be determined, return None
+        return None
 
     # -----------------------------------------------------------------
 
     @property
+    def tree_leaf_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Keep track of the levels and corresponding number of cells
+        levels = []
+        counts = []
+
+        # Current search level
+        level = None
+
+        # Loop over the log entries
+        for i in range(len(self.contents)):
+
+            # Triggered
+            if "Number of leaf cells of each level" in self.contents["Message"][i]: level = 0
+
+            # Get the number of cells at this level
+            elif level is not None:
+
+                level_string = "Level " + str(level)
+
+                # Check whether this level exists
+                if level_string in self.contents["Message"][i]:
+
+                    # Get the number of cells for this level
+                    cells = int(self.contents["Message"][i].split(level_string + ": ")[1].split(" cells")[0])
+
+                    # Add entries to the appropriate lists
+                    levels.append(level)
+                    counts.append(cells)
+
+                    level += 1
+
+                # This level does not exist anymore in the tree, return the result as a distribution
+                else: return Distribution.from_probabilities(counts, levels)
+
+        # If the tree leaf distribution could not be determined, return None
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def tree_levels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        level = None
+
+        # Loop over the log entries
+        for i in range(len(self.contents)):
+
+            if "Starting subdivision of level" in self.contents["Message"][i]:
+                level = int(self.contents["Message"][i].split("of level ")[1].split("...")[0])
+
+            elif "Construction of the tree finished" in self.contents["Message"][i]: return level
+
+        # If the number of tree levels could not be determined, return None
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def wavelengths(self):
 
         """
         This function ...
         :return:
         """
-
-        # Return the cached value if present
-        if self._wavelengths is not None: return self._wavelengths
 
         # Loop over the log entries
         for i in range(len(self.contents)):
@@ -229,21 +341,21 @@ class LogFile(object):
             if "photon packages for each of" in self.contents["Message"][i]:
 
                 # Return the number of wavelengths
-                self._wavelengths = int(self.contents["Message"][i].split("for each of ")[1].split(" wavelengths")[0])
-                return self._wavelengths
+                wavelengths = int(self.contents["Message"][i].split("for each of ")[1].split(" wavelengths")[0])
+                return wavelengths
+
+        # If the number of wavelengths is not found, return None
+        return None
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def processes(self):
 
         """
         This function ...
         :return:
         """
-
-        # Return the cached value if present
-        if self._processes is not None: return self._processes
 
         # Loop over all the log file entries
         for i in range(len(self.contents)):
@@ -255,17 +367,16 @@ class LogFile(object):
             if "Starting simulation" in message:
 
                 if "with" in message:
-                    self._processes = int(message.split(' with ')[1].split()[0])
-                    return self._processes
-                else:
-                    return 1
+                    processes = int(message.split(' with ')[1].split()[0])
+                    return processes
+                else: return 1
 
         # We should not get here
         raise ValueError("The number of processes could not be determined from the log file")
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def threads(self):
 
         """
@@ -276,9 +387,6 @@ class LogFile(object):
         # Indicate
         triggered = False
         max_thread_index = 0
-
-        # Return the cached value if present
-        if self._threads is not None: return self._threads
 
         # Loop over all the log file entries
         for i in range(len(self.contents)):
@@ -296,8 +404,8 @@ class LogFile(object):
             # index, return the number of threads
             elif triggered:
 
-                self._threads = max_thread_index + 1
-                return self._threads
+                threads = max_thread_index + 1
+                return threads
 
             # If none of the above, we are still in the part before the setup of the Random class
 

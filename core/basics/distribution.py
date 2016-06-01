@@ -70,6 +70,9 @@ class Distribution(object):
         :return:
         """
 
+        if isinstance(probabilities, list): probabilities = np.array(probabilities)
+        if isinstance(values, list): values = np.array(values)
+
         # Calculate the mean value (weigh each value by its probability and calculate the normalized sum)
         mean = np.sum(values * probabilities) / np.sum(probabilities)
 

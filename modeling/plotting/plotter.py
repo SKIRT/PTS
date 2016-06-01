@@ -21,6 +21,7 @@ from .decomposition import DecompositionPlotter
 from .truncation import TruncationPlotter
 from .photometry import PhotometryPlotter
 from .fitting import FittingPlotter
+from .analysis import AnalysisPlotter
 from .maps import MapsPlotter
 
 # -----------------------------------------------------------------
@@ -79,26 +80,29 @@ class Plotter(PlottingComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Make a plot of the data
+        # 2. Make plots of the data
         if self.config.step == "data": self.plot_data()
 
-        # 3. Make a plot of the preparation step
+        # 3. Make plots of the preparation step
         elif self.config.step == "preparation": self.plot_preparation()
 
-        # 4. Make a plot of the decomposition step
+        # 4. Make plots of the decomposition step
         elif self.config.step == "decomposition": self.plot_decomposition()
 
-        # 5. Make a plot of the truncation step
+        # 5. Make plots of the truncation step
         elif self.config.step == "truncation": self.plot_truncation()
 
-        # 6. Make a plot of the photometry step
+        # 6. Make plots of the photometry step
         elif self.config.step == "photometry": self.plot_photometry()
 
-        # 7. Make a plot of the map making step
+        # 7. Make plots of the map making step
         elif self.config.step == "maps": self.plot_maps()
 
-        # 8. Make a plot of the fitting step
+        # 8. Make plots of the fitting step
         elif self.config.step == "fit": self.plot_fit()
+
+        # 9. Make plots of the analysis step
+        elif self.config.step == "analysis": self.plot_analysis()
 
         # Invalid modelling step
         else: raise ValueError("Invalid modelling step")
@@ -117,6 +121,7 @@ class Plotter(PlottingComponent):
 
         # Create the data plotter
         plotter = DataPlotter()
+        plotter.config.path = self.config.path
 
         # Run the plotter
         plotter.run()
@@ -135,6 +140,7 @@ class Plotter(PlottingComponent):
 
         # Create the preparation plotter
         plotter = PreparationPlotter()
+        plotter.config.path = self.config.path
 
         # Run the plotter
         plotter.run()
@@ -153,6 +159,7 @@ class Plotter(PlottingComponent):
 
         # Create the decomposition plotter
         plotter = DecompositionPlotter()
+        plotter.config.path = self.config.path
 
         # Run the plotter
         plotter.run()
@@ -171,6 +178,7 @@ class Plotter(PlottingComponent):
 
         # Create the truncation plotter
         plotter = TruncationPlotter()
+        plotter.config.path = self.config.path
 
         # Run the plotter
         plotter.run()
@@ -189,6 +197,7 @@ class Plotter(PlottingComponent):
 
         # Create the photometry plotter
         plotter = PhotometryPlotter()
+        plotter.config.path = self.config.path
 
         # Run the plotter
         plotter.run()
@@ -207,6 +216,7 @@ class Plotter(PlottingComponent):
 
         # Create the maps plotter
         plotter = MapsPlotter()
+        plotter.config.path = self.config.path
 
         # Run the plotter
         plotter.run()
@@ -225,6 +235,26 @@ class Plotter(PlottingComponent):
 
         # Create the fitting plotter
         plotter = FittingPlotter()
+        plotter.config.path = self.config.path
+
+        # Run the plotter
+        plotter.run()
+
+    # -----------------------------------------------------------------
+
+    def plot_analysis(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Create the analysis plotter
+        plotter = AnalysisPlotter()
+        plotter.config.path = self.config.path
 
         # Run the plotter
         plotter.run()
