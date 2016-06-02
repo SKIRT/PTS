@@ -462,8 +462,6 @@ class BasicAnalyser(Configurable):
         # Inform the user
         log.info("Making the observed images (this may take a while) ...")
 
-        print("confi", self.misc_options.make_images_remote)
-
         # Create and run an ObservedImageMaker object
         self.image_maker = ObservedImageMaker()
         self.image_maker.run(self.simulation, output_path=self.misc_options.path,
