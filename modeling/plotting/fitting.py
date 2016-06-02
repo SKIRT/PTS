@@ -84,7 +84,7 @@ class FittingPlotter(PlottingComponent):
         # 4. Load the dust cell tree data
         self.load_dust_cell_tree()
 
-        # 5. Load the timing table
+        # 5. Load the runtimes
         self.load_runtimes()
 
         # Plot

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.analysis.launch Contains the BestModelLauncher class
+## \package pts.modeling.analysis.launch Contains the BestModelLauncher class.
 
 # -----------------------------------------------------------------
 
@@ -562,9 +562,16 @@ class BestModelLauncher(AnalysisComponent):
         if not self.remote.is_directory(remote_skirt_run_debug_path): self.remote.create_directory(remote_skirt_run_debug_path)
         screen_output_path = fs.join(remote_skirt_run_debug_path, time.unique_name("screen") + ".txt")
 
+        # Save the script file for manual inspection
+        host_id = self.config.remote
+        scripts_host_path = fs.join(self.analysis_scripts_path, host_id)
+        if not fs.is_directory(scripts_host_path): fs.create_directory(scripts_host_path)
+        local_script_path = fs.join(scripts_host_path, time.unique_name() + ".sh")
+
         # Run the simulation
         simulation = self.remote.run(arguments, scheduling_options=self.scheduling_options,
-                                     analysis_options=self.analysis_options, screen_output_path=screen_output_path)
+                                     analysis_options=self.analysis_options, screen_output_path=screen_output_path,
+                                     local_script_path=local_script_path)
 
         # Set the retrieve types
         simulation.retrieve_types = ["log", "sed", "image-total"]

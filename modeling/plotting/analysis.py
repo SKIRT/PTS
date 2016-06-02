@@ -60,6 +60,9 @@ class AnalysisPlotter(PlottingComponent):
         # The distribution of dust cells per level
         self.cell_distribution = None
 
+        # The runtimes
+        self.runtimes = None
+
         # The SEDs of the different stellar contributions (total, old, young, ionizing)
         self.seds = OrderedDict()
 
@@ -87,10 +90,13 @@ class AnalysisPlotter(PlottingComponent):
         # 4. Load the dust cell tree data
         self.load_dust_cell_tree()
 
-        # 4. Load the SEDs
+        # 5. Load the runtimes
+        self.load_runtimes()
+
+        # 6. Load the SEDs
         self.load_seds()
 
-        # Plot
+        # 7. Plot
         self.plot()
 
     # -----------------------------------------------------------------
@@ -101,6 +107,9 @@ class AnalysisPlotter(PlottingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the wavelength grid ...")
 
         # Determine the path to the wavelength grid file
         path = fs.join(self.analysis_path, "in", "wavelengths.txt")
@@ -116,6 +125,9 @@ class AnalysisPlotter(PlottingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the transmission curves ...")
 
         # Determine the path to the fluxes table
         fluxes_path = fs.join(self.phot_path, "fluxes.dat")
@@ -156,6 +168,50 @@ class AnalysisPlotter(PlottingComponent):
 
         # Get the distribution of cells per level of the tree
         self.cell_distribution = log_file.tree_leaf_distribution
+
+    # -----------------------------------------------------------------
+
+    def load_runtimes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the runtimes ...")
+
+        # Determine the path to the timing table
+        timing_table_path = fs.join(self.analysis_path, "timing.dat")
+
+        # Load the timing table
+        timing_table = TimingTable.read(timing_table_path)
+
+        # Keep a list of all the runtimes recorded for a certain remote host
+        self.runtimes = defaultdict(lambda: defaultdict(list))
+
+        # Loop over the entries in the timing table
+        for i in range(len(timing_table)):
+
+            # Get the ID of the host and the cluster name for this particular simulation
+            host_id = timing_table["Host id"][i]
+            cluster_name = timing_table["Cluster name"][i]
+
+            # Get the parallelization properties for this particular simulation
+            cores = timing_table["Cores"][i]
+            threads_per_core = timing_table["Threads per core"][i]
+            processes = timing_table["Processes"][i]
+
+            # Get the number of photon packages (per wavelength) used for this simulation
+            packages = timing_table["Packages"][i]
+
+            # Get the total runtime
+            runtime = timing_table["Total runtime"][i]
+
+            parallelization = (cores, threads_per_core, processes)
+
+            # Add the runtime
+            self.runtimes[host_id][packages, parallelization].append(runtime)
 
     # -----------------------------------------------------------------
 
@@ -209,6 +265,9 @@ class AnalysisPlotter(PlottingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Plotting ...")
 
         # Plot the wavelength grid
         self.plot_wavelengths()
@@ -306,48 +365,16 @@ class AnalysisPlotter(PlottingComponent):
         # Inform the user
         log.info("Plotting the runtimes ...")
 
-        # Determine the path to the timing table
-        timing_table_path = fs.join(self.analysis_path, "timing.dat")
-
-        # Load the timing table
-        timing_table = TimingTable.read(timing_table_path)
-
-        # Keep a list of all the runtimes recorded for a certain remote host
-        runtimes_for_hosts = defaultdict(lambda: defaultdict(list))
-
-        # Loop over the entries in the timing table
-        for i in range(len(timing_table)):
-
-            # Get the ID of the host and the cluster name for this particular simulation
-            host_id = timing_table["Host id"][i]
-            cluster_name = timing_table["Cluster name"][i]
-
-            # Get the parallelization properties for this particular simulation
-            cores = timing_table["Cores"][i]
-            threads_per_core = timing_table["Threads per core"][i]
-            processes = timing_table["Processes"][i]
-
-            # Get the number of photon packages (per wavelength) used for this simulation
-            packages = timing_table["Packages"][i]
-
-            # Get the total runtime
-            runtime = timing_table["Total runtime"][i]
-
-            parallelization = (cores, threads_per_core, processes)
-
-            runtimes_for_hosts[host_id][packages, parallelization].append(runtime)
-
-        # -----------------------------------------------------------------
-
         bins = 15
 
         # Loop over the different remote hosts
-        for host_id in runtimes_for_hosts:
+        for host_id in self.runtimes:
 
             # Loop over the different configurations (packages, parallelization)
-            for packages, parallelization in runtimes_for_hosts[host_id]:
+            for packages, parallelization in self.runtimes[host_id]:
 
-                runtimes = runtimes_for_hosts[host_id][packages, parallelization]
+                # Get the runtimes
+                runtimes = self.runtimes[host_id][packages, parallelization]
 
                 distribution = Distribution.from_values(runtimes, bins)
 
