@@ -13,16 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import io
-import imageio
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle as plt_Rectangle
-from matplotlib.patches import Ellipse as plt_Ellipse
 
 # Import astronomical modules
-from astropy.visualization import SqrtStretch, LogStretch
-from astropy.visualization.mpl_normalize import ImageNormalize
+from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ..basics.mask import Mask
@@ -31,6 +25,7 @@ from ..core.source import Source
 from ...core.tools.logging import log
 from ...core.basics.configurable import Configurable
 from ..tools import plotting
+from ..tools import masks
 
 # -----------------------------------------------------------------
 
@@ -57,6 +52,10 @@ class SourceExtractor(Configurable):
 
         # The output path
         self.output_path = None
+
+        # The original minimum and maximum value
+        self.minimum_value = None
+        self.maximum_value = None
 
         # The mask of nans
         self.nan_mask = None
@@ -125,12 +124,16 @@ class SourceExtractor(Configurable):
         # 3. Remove the sources
         self.remove_sources()
 
+        # 4. Fix extreme values that showed up during the interpolation steps
+        self.fix_extreme_values()
+
         # 4. Set nans back into the frame
         self.set_nans()
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, animation=None):
+    def setup(self, frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments,
+              other_segments, animation=None):
 
         """
         This function ...
@@ -163,6 +166,10 @@ class SourceExtractor(Configurable):
         # Initialize the mask
         self.mask = Mask.empty_like(self.frame)
 
+        # Remember the minimum and maximum value
+        self.minimum_value = np.nanmin(frame)
+        self.maximum_value = np.nanmax(frame)
+
         # Create a mask of the pixels that are NaNs
         self.nan_mask = Mask.is_nan(self.frame)
         self.frame[self.nan_mask] = 0.0
@@ -178,6 +185,9 @@ class SourceExtractor(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the sources ...")
 
         # Load the galaxy sources
         self.load_galaxy_sources()
@@ -196,6 +206,9 @@ class SourceExtractor(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the galaxy sources ...")
 
         # Loop over the shapes in the galaxy region
         for shape in self.galaxy_region:
@@ -223,6 +236,9 @@ class SourceExtractor(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the star sources ...")
 
         # Loop over all stars in the region
         for shape in self.star_region:
@@ -288,6 +304,9 @@ class SourceExtractor(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the other sources ...")
+
         # Loop over the shapes in the other sources region
         for shape in self.other_region:
 
@@ -327,14 +346,10 @@ class SourceExtractor(Configurable):
         nsources = len(self.sources)
         count = 0
 
+        # Set principal ellipse and mask for the animation
         if self.animation is not None:
-            principal_ellipse = self.principal_ellipse
-            principal_mask = principal_ellipse.to_mask(self.frame.xsize, self.frame.ysize)
-            animated = 0
-        else:
-            principal_ellipse = None
-            principal_mask = None
-            animated = None
+            self.animation.principal_ellipse = self.principal_ellipse
+            self.animation.mask = self.mask
 
         # Loop over all sources and remove them from the frame
         for source in self.sources:
@@ -342,9 +357,16 @@ class SourceExtractor(Configurable):
             # Debugging
             log.debug("Estimating background and replacing the frame pixels of source " + str(count+1) + " of " + str(nsources) + " ...")
 
+            # Check whether the source is in front of the principal galaxy
+            #foreground = self.principal_mask.masks(source.center)
+            foreground = masks.overlap(self.principal_mask[source.y_slice, source.x_slice], source.mask)
+
+            # Disable sigma-clipping for estimating background when the source is foreground to the principal galaxy (to avoid clipping the galaxy's gradient)
+            sigma_clip = self.config.sigma_clip if not foreground else False
+
             # Estimate the background
             try:
-                source.estimate_background(self.config.interpolation_method, sigma_clip=self.config.sigma_clip)
+                source.estimate_background(self.config.interpolation_method, sigma_clip=sigma_clip)
             except ValueError: # ValueError: zero-size array to reduction operation minimum which has no identity
                 # in: limits = (np.min(known_points), np.max(known_points)) [inpaint_biharmonic]
                 count += 1
@@ -361,115 +383,34 @@ class SourceExtractor(Configurable):
             self.mask[source.y_slice, source.x_slice] += source.mask
 
             # Add frame to the animation
-            if self.animation is not None and principal_mask.masks(source.center) and animated <= 20:
-
-                # Create buffer and figure
-                buf = io.BytesIO()
-                fig = plt.figure(figsize=(15, 15))
-
-                # Add first subplot
-                ax = fig.add_subplot(2, 3, 1)
-
-                # Plot the frame (before removal)
-                norm = ImageNormalize(stretch=LogStretch())
-                norm_residual = ImageNormalize(stretch=LogStretch())
-                min_value = np.nanmin(self.frame)
-                max_value = 0.5*(np.nanmax(self.frame)+min_value)
-
-                ax.imshow(self.frame, origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
-
-                r = plt_Rectangle((source.x_min, source.y_min), source.xsize, source.ysize, edgecolor="yellow", facecolor="none", lw=5)
-                ax.add_patch(r)
-
-                ell = plt_Ellipse((principal_ellipse.center.x, principal_ellipse.center.y),
-                                  2.0 * principal_ellipse.radius.x, 2.0 * principal_ellipse.radius.y,
-                                  principal_ellipse.angle.to("deg").value, edgecolor="red", facecolor="none", lw=5)
-                ax.add_patch(ell)
-
-                ax.get_xaxis().set_visible(False)
-                ax.get_yaxis().set_visible(False)
-
-                # Add the second subplot
-                ax = fig.add_subplot(2, 3, 2)
-
-                frame_xsize = self.frame.xsize
-                frame_ysize = self.frame.ysize
-
-                new_xmin = int(source.center.x - 0.1 * frame_xsize)
-                new_xmax = int(source.center.x + 0.1 * frame_xsize)
-                new_ymin = int(source.center.y - 0.1 * frame_ysize)
-                new_ymax = int(source.center.y + 0.1 * frame_ysize)
-
-                if new_xmin < 0: new_xmin = 0
-                if new_ymin < 0: new_ymin = 0
-                if new_xmax > frame_xsize: new_xmax = frame_xsize
-                if new_ymax > frame_ysize: new_ymax = frame_ysize
-
-                ax.imshow(self.frame[new_ymin:new_ymax, new_xmin:new_xmax], origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
-                r = plt_Rectangle((source.x_min-new_xmin, source.y_min-new_ymin), source.xsize, source.ysize, edgecolor="yellow", facecolor="none", lw=5)
-                ax.add_patch(r)
-                ax.get_xaxis().set_visible(False)
-                ax.get_yaxis().set_visible(False)
-
-                # Add the third subplot
-                ax = fig.add_subplot(2, 3, 3)
-
-                # Plot the mask
-                #ax.imshow(self.mask[new_ymin:new_ymax, new_xmin:new_xmax], origin="lower", cmap='Greys')
-                ax.imshow(self.mask, origin="lower", cmap="Greys")
-                ax.get_xaxis().set_visible(False)
-                ax.get_yaxis().set_visible(False)
-
-                # Add the fourth subplot
-                ax = fig.add_subplot(2, 3, 4)
-
-                # Plot the source cutout
-                #ax.imshow(source.cutout, origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
-                ax.imshow(np.ma.MaskedArray(source.cutout, mask=source.background_mask), origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
-                ax.get_xaxis().set_visible(False)
-                ax.get_yaxis().set_visible(False)
-
-                #ell = plt_Ellipse((source.center.x-source.x_min, source.center.y-source.y_min), 2.0*source.radius.x, 2.0*source.radius.y, edgecolor="yellow", facecolor="none", lw=5)
-                #ax.add_patch(ell)
-                ax.get_xaxis().set_visible(False)
-                ax.get_yaxis().set_visible(False)
-
-                # Add the fourth subplot
-                ax = fig.add_subplot(2, 3, 5)
-
-                # Plot the source background
-                #ax.imshow(np.ma.MaskedArray(source.cutout, mask=source.mask), origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
-                new_cutout = source.cutout.copy()
-                new_cutout[source.mask] = source.background[source.mask]
-                ax.imshow(new_cutout, origin="lower", interpolation="nearest", vmin=min_value, vmax=max_value, norm=norm)
-                #ell = plt_Ellipse((source.center.x-source.x_min, source.center.y-source.y_min), 2.0 * source.radius.x, 2.0 * source.radius.y, edgecolor="yellow", facecolor="none", lw=5)
-                #ax.add_patch(ell)
-                ax.get_xaxis().set_visible(False)
-                ax.get_yaxis().set_visible(False)
-
-                # Add the sixth subplot
-                ax = fig.add_subplot(2, 3, 6)
-
-                # Plot the residual cutout (background removed)
-                ax.imshow(source.subtracted, origin="lower", interpolation="nearest", vmin=0.0, vmax=max_value, norm=norm_residual)
-                ax.get_xaxis().set_visible(False)
-                ax.get_yaxis().set_visible(False)
-
-                plt.tight_layout()
-
-                plt.savefig(buf, format="png")
-                plt.close()
-                buf.seek(0)
-                im = imageio.imread(buf)
-                buf.close()
-                self.animation.add_frame(im)
-
-                animated += 1
+            if self.animation is not None and self.principal_mask.masks(source.center) and self.animation.nframes <= 20:
+                self.animation.add_source(source)
 
             # Replace the pixels by the background
             source.background.replace(self.frame, where=source.mask)
 
+            if not sigma_clip:
+                # source.plot()
+
+                plotting.plot_removal(source.cutout, source.mask, source.background,
+                                      self.frame[source.y_slice, source.x_slice])
+
             count += 1
+
+    # -----------------------------------------------------------------
+
+    def fix_extreme_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Fixing extreme values that were introduced during the interpolation steps ...")
+
+        self.frame[self.frame < self.minimum_value] = self.minimum_value
+        self.frame[self.frame > self.maximum_value] = self.maximum_value
 
     # -----------------------------------------------------------------
 
@@ -480,12 +421,15 @@ class SourceExtractor(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Setting original NaN-pixels back to NaN ...")
+
         # Set the NaN pixels to zero in the frame
         self.frame[self.nan_mask] = float("nan")
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def principal_ellipse(self):
 
         """
@@ -507,5 +451,17 @@ class SourceExtractor(Configurable):
 
         # Return the largest shape in the galaxy region
         return largest_shape
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def principal_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.principal_ellipse.to_mask(self.frame.xsize, self.frame.ysize)
 
 # -----------------------------------------------------------------

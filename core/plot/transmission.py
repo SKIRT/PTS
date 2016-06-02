@@ -62,6 +62,7 @@ class TransmissionPlotter(object):
         self._figure = None
 
         # Properties
+        self.size = (17,4)
         self.colormap = "rainbow"  # or "nipy_spectral"
         self.format = None
         self.transparent = False
@@ -166,7 +167,8 @@ class TransmissionPlotter(object):
         # Inform the user
         log.info("Plotting the transmission plot ...")
 
-        self._figure = plt.figure(figsize=(17, 5))
+        # Create the figure
+        self._figure = plt.figure(figsize=self.size)
         plt.ylabel('$T_\lambda$', fontsize=28)
         plt.xlabel('$\lambda/\mu$m', fontsize=28)
 

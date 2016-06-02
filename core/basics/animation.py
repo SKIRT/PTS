@@ -75,6 +75,18 @@ class Animation(object):
         # Create and write the GIF file
         imageio.mimwrite(path, self.frames, fps=self.fps)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def nframes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.frames)
+
 # -----------------------------------------------------------------
 
 def invert_colors(animation):

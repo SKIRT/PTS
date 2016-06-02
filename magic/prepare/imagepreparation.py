@@ -35,6 +35,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import time
 from ..tools import plotting
 from ..animation.imageblink import ImageBlinkAnimation
+from ..animation.sourceextraction import SourceExtractionAnimation
 
 # -----------------------------------------------------------------
 
@@ -344,8 +345,7 @@ class ImagePreparer(Configurable):
             animation.add_image(self.image.frames.primary)
 
             # Create an animation to show the progress of the SourceExtractor
-            source_extractor_animation = Animation()
-            source_extractor_animation.fps = 1 # 1 frame per second because the frames are very distinct
+            source_extractor_animation = SourceExtractionAnimation(self.image.frames.primary)
         else:
             animation = None
             source_extractor_animation = None

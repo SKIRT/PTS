@@ -60,6 +60,9 @@ class FittingPlotter(PlottingComponent):
         # The distribution of dust cells per level
         self.cell_distribution = None
 
+        # The runtimes
+        self.runtimes = None
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -81,6 +84,9 @@ class FittingPlotter(PlottingComponent):
         # 4. Load the dust cell tree data
         self.load_dust_cell_tree()
 
+        # 5. Load the timing table
+        self.load_runtimes()
+
         # Plot
         self.plot()
 
@@ -92,6 +98,9 @@ class FittingPlotter(PlottingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the wavelength grid used for the fitting ...")
 
         # Determine the path to the wavelength grid file
         path = fs.join(self.fit_path, "in", "wavelengths.txt")
@@ -107,6 +116,9 @@ class FittingPlotter(PlottingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the transmission curves for the observation filters ...")
 
         # Determine the path to the fluxes table
         fluxes_path = fs.join(self.phot_path, "fluxes.dat")
@@ -155,6 +167,51 @@ class FittingPlotter(PlottingComponent):
 
     # -----------------------------------------------------------------
 
+    def load_runtimes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the runtimes ...")
+
+        # Determine the path to the timing table
+        timing_table_path = fs.join(self.fit_path, "timing.dat")
+
+        try:
+            # Load the timing table
+            timing_table = TimingTable.read(timing_table_path)
+        except ValueError: return # ValueError: Column Timestamp failed to convert
+
+        # Keep a list of all the runtimes recorded for a certain remote host
+        self.runtimes = defaultdict(lambda: defaultdict(list))
+
+        # Loop over the entries in the timing table
+        for i in range(len(timing_table)):
+            # Get the ID of the host and the cluster name for this particular simulation
+            host_id = timing_table["Host id"][i]
+            cluster_name = timing_table["Cluster name"][i]
+
+            # Get the parallelization properties for this particular simulation
+            cores = timing_table["Cores"][i]
+            threads_per_core = timing_table["Threads per core"][i]
+            processes = timing_table["Processes"][i]
+
+            # Get the number of photon packages (per wavelength) used for this simulation
+            packages = timing_table["Packages"][i]
+
+            # Get the total runtime
+            runtime = timing_table["Total runtime"][i]
+
+            parallelization = (cores, threads_per_core, processes)
+
+            # Add the runtime to the list of runtimes
+            self.runtimes[host_id][packages, parallelization].append(runtime)
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -172,7 +229,7 @@ class FittingPlotter(PlottingComponent):
         self.plot_dust_cell_distribution()
 
         # Plot the distributions of the runtimes on different remote systems
-        self.plot_runtimes()
+        if self.runtimes is not None: self.plot_runtimes()
 
     # -----------------------------------------------------------------
 
@@ -222,7 +279,7 @@ class FittingPlotter(PlottingComponent):
         simulation = SkirtSimulation(ski_path=ski_path, outpath=fit_grid_path)
 
         # Plot the grid
-        plotgrids(simulation, output_path=self.plot_fitting_path)
+        plotgrids(simulation, output_path=self.plot_fitting_path, silent=True)
 
     # -----------------------------------------------------------------
 
@@ -255,50 +312,17 @@ class FittingPlotter(PlottingComponent):
         # Inform the user
         log.info("Plotting the runtimes ...")
 
-        # Determine the path to the timing table
-        timing_table_path = fs.join(self.fit_path, "timing.dat")
-
-        # Load the timing table
-        timing_table = TimingTable.read(timing_table_path)
-
-        # Keep a list of all the runtimes recorded for a certain remote host
-        runtimes_for_hosts = defaultdict(lambda: defaultdict(list))
-
-        # Loop over the entries in the timing table
-        for i in range(len(timing_table)):
-
-            # Get the ID of the host and the cluster name for this particular simulation
-            host_id = timing_table["Host id"][i]
-            cluster_name = timing_table["Cluster name"][i]
-
-            # Get the parallelization properties for this particular simulation
-            cores = timing_table["Cores"][i]
-            threads_per_core = timing_table["Threads per core"][i]
-            processes = timing_table["Processes"][i]
-
-            # Get the number of photon packages (per wavelength) used for this simulation
-            packages = timing_table["Packages"][i]
-
-            # Get the total runtime
-            runtime = timing_table["Total runtime"][i]
-
-            parallelization = (cores, threads_per_core, processes)
-
-            runtimes_for_hosts[host_id][packages, parallelization].append(runtime)
-
-        # -----------------------------------------------------------------
-
-        bins = 25
+        bins = 15
 
         # Loop over the different remote hosts
-        for host_id in runtimes_for_hosts:
+        for host_id in self.runtimes:
 
             # Loop over the different configurations (packages, parallelization)
-            for packages, parallelization in runtimes_for_hosts[host_id]:
+            for packages, parallelization in self.runtimes[host_id]:
 
-                runtimes = runtimes_for_hosts[host_id][packages, parallelization]
+                runtimes = self.runtimes[host_id][packages, parallelization]
 
-                distribution = Distribution.from_values(runtimes, 15)
+                distribution = Distribution.from_values(runtimes, bins)
 
                 path = fs.join(self.plot_fitting_path, "runtimes_" + host_id + "_" + str(parallelization) + "_" + str(packages) + ".pdf")
                 title = host_id + " " + str(parallelization) + " " + str(packages)

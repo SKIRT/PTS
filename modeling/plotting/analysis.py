@@ -273,7 +273,7 @@ class AnalysisPlotter(PlottingComponent):
         simulation = SkirtSimulation(ski_path=ski_path, outpath=analysis_out_path)
 
         # Plot the grid
-        plotgrids(simulation, output_path=self.plot_analysis_path)
+        plotgrids(simulation, output_path=self.plot_analysis_path, silent=True)
 
     # -----------------------------------------------------------------
 

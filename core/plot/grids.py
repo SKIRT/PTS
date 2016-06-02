@@ -39,7 +39,7 @@ from ..tools import archive as arch
 # - simulation: the SkirtSimulation object representing the simulation to be handled
 # - figsize: the horizontal and vertical size of the output figure in inch (!); default is 8 x 8 inch
 #
-def plotgrids(simulation, figsize=(8,8), output_path=None):
+def plotgrids(simulation, figsize=(8,8), output_path=None, silent=False):
     for gridfile in simulation.gridxxdatpaths():
         plotfile = gridfile[:-4] + ".pdf"
 
@@ -136,6 +136,6 @@ def plotgrids(simulation, figsize=(8,8), output_path=None):
         # save the figure
         fig.showPage()
         fig.save()
-        print("Created PDF grid plot file " + plotfile)
+        if not silent: print("Created PDF grid plot file " + plotfile)
 
 # -----------------------------------------------------------------

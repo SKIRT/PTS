@@ -61,12 +61,14 @@ arguments = parser.parse_args()
 
 # Load the image first
 image = Image.from_file(arguments.filename)
+#frame = Frame.from_file(arguments.filename)
 
 # Create the viewer
 viewer = MagicViewer(title="Magic viewer")
 
 # Load the image into the viewer
 viewer.load_image(image)
+#viewer.load_frame(frame)
 
 # Set options
 viewer.control_panel('Color')

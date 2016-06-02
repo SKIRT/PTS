@@ -23,6 +23,7 @@ from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..basics.host import Host
 from .parallelization import Parallelization
+from .analyser import SimulationAnalyser
 
 # -----------------------------------------------------------------
 
@@ -70,6 +71,9 @@ class BatchLauncher(Configurable):
 
         # The simulations that have been retrieved
         self.simulations = []
+
+        # Create a SimulationAnalyser instance
+        self.analyser = SimulationAnalyser()
 
     # -----------------------------------------------------------------
 

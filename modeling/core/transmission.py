@@ -161,7 +161,7 @@ class TransmissionCurve(object):
 
             max_transmission = np.max(self.table["Transmission"])
             factor = value / max_transmission
-            self.table["Transmission"] * factor
+            self.table["Transmission"] *= factor
 
         elif method == "integral": raise NotImplementedError("Not implemented yet")
         else: raise ValueError("Invalid option for 'method'")

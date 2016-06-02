@@ -259,9 +259,11 @@ class StatsPanel(wx.Panel):
     # -----------------------------------------------------------------
 
     def _set_stats_box_parameters(self, msg):
+
         """
         wrapper to update_stats_box to receive messages & translate them correctly
         """
+
         x0,x1,y0,y1 = [None]*4
         if msg['xrange'] is not None:
             x0,x1 = msg['xrange']
@@ -279,6 +281,7 @@ class StatsPanel(wx.Panel):
     # -----------------------------------------------------------------
 
     def update_stats_box(self, x0=None, y0=None, x1=None, y1=None):
+
         if x0 is None:
             x0 = self.stats_rect.get_x()
         if y0 is None:
@@ -302,6 +305,7 @@ class StatsPanel(wx.Panel):
     # -----------------------------------------------------------------
 
     def remove_overplot_on_image(self):
+
         if self.stats_rect in self.ztv_frame.primary_image_panel.axes.patches:
             self.ztv_frame.primary_image_panel.axes.patches.remove(self.stats_rect)
         self.ztv_frame.primary_image_panel.figure.canvas.draw()
@@ -310,6 +314,7 @@ class StatsPanel(wx.Panel):
     # -----------------------------------------------------------------
 
     def redraw_overplot_on_image(self):
+
         if self.stats_rect not in self.ztv_frame.primary_image_panel.axes.patches:
             self.ztv_frame.primary_image_panel.axes.add_patch(self.stats_rect)
         self.ztv_frame.primary_image_panel.figure.canvas.draw()
@@ -359,28 +364,43 @@ class StatsPanel(wx.Panel):
         self.npix_textctrl.SetValue(str(x_npix * y_npix))
 
         stats_data = self.ztv_frame.display_image[y0:y1+1, x0:x1+1]
+
         finite_mask = np.isfinite(stats_data)
-        if finite_mask.max() is np.True_:
+
+        #if finite_mask.max() is np.True_:
+        #if np.sum(finite_mask) > 1:
+        if True:
             stats_data_mean = stats_data[finite_mask].mean()
             stats_data_median = np.median(stats_data[finite_mask])
             stats_data_std = stats_data[finite_mask].std()
             robust_mean, robust_median, robust_std = sigma_clipped_stats(stats_data[finite_mask])
         else:
+            sys.stderr.write("\n\n here!")
             stats_data_mean = np.nan
             stats_data_median = np.nan
             stats_data_std = np.inf
             robust_mean, robust_median, robust_std = np.nan, np.nan, np.inf
-        self.stats_info = {'xrange':[x0,x1], 'yrange':[y0,y1],
-                           'mean':stats_data_mean, 'median':stats_data_median, 'std':stats_data_std, 
-                           'min':stats_data.min(), 'max':stats_data.max()} # want min/max to reflect any Inf/NaN
+
+        robust_mean = float(robust_mean)
+        robust_median = float(robust_median)
+        robust_std = float(robust_std)
+
+        #sys.stderr.write("\n\n" + str(stats_data_mean) + " " + str(stats_data_median) + " " + str(stats_data_std) + " " + str(robust_mean) + " " + str(robust_median) + " " + str(robust_std))
+
+        self.stats_info = {'xrange': [x0,x1], 'yrange': [y0,y1],
+                           'mean': float(stats_data_mean), 'median': float(stats_data_median), 'std': float(stats_data_std),
+                           'min': float(stats_data.min()), 'max': float(stats_data.max())} # want min/max to reflect any Inf/NaN
         self.mean_textctrl.SetValue("{:0.4g}".format(self.stats_info['mean']))
         self.median_textctrl.SetValue("{:0.4g}".format(self.stats_info['median']))
         self.stdev_textctrl.SetValue("{:0.4g}".format(self.stats_info['std']))
         self.stats_info['robust-mean'] = robust_mean
         self.stats_info['robust-median'] = robust_median
         self.stats_info['robust-std'] = robust_std
-        self.robust_mean_textctrl.SetValue("{:0.4g}".format(robust_mean)) 
+        self.robust_mean_textctrl.SetValue("{:0.4g}".format(robust_mean))
         self.robust_stdev_textctrl.SetValue("{:0.4g}".format(robust_std))
+
+        #sys.stderr.write("\n\n" + str(self.stats_info["min"]) + " " + str(self.stats_info["max"]))
+
         self.minval_textctrl.SetValue("{:0.4g}".format(self.stats_info['min']))
         self.maxval_textctrl.SetValue("{:0.4g}".format(self.stats_info['max']))
         wmin = np.where(stats_data == stats_data.min())

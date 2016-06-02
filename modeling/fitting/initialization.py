@@ -746,8 +746,11 @@ class InputInitializer(FittingComponent):
         smallest_scale = smallest_scale.to("pc").value
         max_level = min_level_for_smallest_scale_bintree(extent_x, smallest_scale)
 
+        # Set the maximum mass fraction
+        max_mass_fraction = 0.5e-6
+
         # Set the bintree dust grid
-        self.ski.set_binary_tree_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z, min_level=min_level, max_level=max_level)
+        self.ski.set_binary_tree_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z, min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
 
     # -----------------------------------------------------------------
 
@@ -1058,9 +1061,10 @@ class InputInitializer(FittingComponent):
         # Set the number of photon packages to zero
         ski.setpackages(0)
 
-        # Disable all writing options, except the one for writing the dust grid
+        # Disable all writing options, except the one for writing the dust grid and cell properties
         ski.disable_all_writing_options()
         ski.set_write_grid()
+        ski.set_write_cell_properties()
 
         # Save the ski file to the fit/grid directory
         ski_path = fs.join(self.fit_grid_path, self.galaxy_name + ".ski")
@@ -1076,6 +1080,25 @@ class InputInitializer(FittingComponent):
         arguments.output_path = self.fit_grid_path
 
         # Run SKIRT to generate the dust grid data files
+        skirt.run(arguments)
+
+        # Determine the path to the cell properties file
+        cellprops_path = fs.join(self.fit_grid_path, self.galaxy_name + "_ds_cellprops.dat")
+
+        # Get the optical depth for which 90% of the cells have a smaller value
+        optical_depth = None
+        for line in reversed(open(cellprops_path).readlines()):
+            if "of the cells have optical depth smaller than" in line:
+                optical_depth = float(line.split("than: ")[1])
+                break
+
+        # Set the maximal optical depth
+        ski.set_binary_tree_max_optical_depth(optical_depth)
+
+        # Save the ski file
+        ski.save()
+
+        # Run SKIRT again
         skirt.run(arguments)
 
 # -----------------------------------------------------------------

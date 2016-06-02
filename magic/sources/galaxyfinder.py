@@ -339,8 +339,8 @@ class GalaxyFinder(Configurable):
             if self.special_mask is not None: galaxy.special = self.special_mask.masks(pixel_position)
             if self.ignore_mask is not None: galaxy.ignore = self.ignore_mask.masks(pixel_position)
 
-            # If the input mask masks this star's position, skip it (don't add it to the list of stars)
-            if self.bad_mask is not None and self.bad_mask.masks(pixel_position): continue
+            # If the input mask masks this galaxy's position, skip it (don't add it to the list of galaxies)
+            if self.bad_mask is not None and self.bad_mask.masks(pixel_position) and not galaxy.principal: continue
 
             # Add the new galaxy to the list
             self.galaxies.append(galaxy)

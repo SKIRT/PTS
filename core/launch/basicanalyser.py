@@ -352,7 +352,7 @@ class BasicAnalyser(Configurable):
         log.info("Plotting grids ...")
 
         # Plot the dust grid for the simulation
-        plotgrids(self.simulation, output_path=self.plotting_options.path)
+        plotgrids(self.simulation, output_path=self.plotting_options.path, silent=True)
 
     # -----------------------------------------------------------------
 
@@ -461,6 +461,8 @@ class BasicAnalyser(Configurable):
 
         # Inform the user
         log.info("Making the observed images (this may take a while) ...")
+
+        print("confi", self.misc_options.make_images_remote)
 
         # Create and run an ObservedImageMaker object
         self.image_maker = ObservedImageMaker()

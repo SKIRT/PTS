@@ -100,6 +100,7 @@ class MagicViewer(object):
     # -----------------------------------------------------------------
 
     def _request_return_value_from_ztv(self, request_message, expected_return_message_title=None, timeout=10.):
+
         """
         routine to request info from ztv by sending message and receiving response
         """
@@ -173,7 +174,7 @@ class MagicViewer(object):
         :return:
         """
 
-        self._load_numpy_array(frame)
+        self._load_numpy_array(np.array(frame))
 
     # -----------------------------------------------------------------
 

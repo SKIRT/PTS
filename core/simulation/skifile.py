@@ -73,6 +73,9 @@ class SkiFile:
         outfile.write(etree.tostring(self.tree, encoding="UTF-8", xml_declaration=True, pretty_print=True))
         outfile.close()
 
+        # Update the ski file path
+        self.path = filepath
+
     ## This function saves the ski file to the original path
     def save(self): self.saveto(self.path)
 
@@ -1801,6 +1804,28 @@ class SkiFile:
                  "maxDensDispFraction": str(max_dens_disp_fraction), "directionMethod": direction_method}
                  #"assigner": assigner}
         parent.append(parent.makeelement("BinTreeDustGrid", attrs))
+
+    ## This function sets the maximal optical depth
+    def set_binary_tree_max_optical_depth(self, value):
+
+        # Get the dust grid
+        grid = self.get_dust_grid()
+
+        if grid.tag != "BinTreeDustGrid": raise ValueError("The ski file does not specify a binary tree dust grid")
+
+        # Set the optical depth
+        grid.set("maxOpticalDepth", str(value))
+
+    ## This function sets the maximal mass fraction
+    def set_binary_tree_max_mass_fraction(self, value):
+
+        # Get the dust grid
+        grid = self.get_dust_grid()
+
+        if grid.tag != "BinTreeDustGrid": raise ValueError("The ski file does not specify a binary tree dust grid")
+
+        # Set the max mass fraction
+        grid.set("maxMassFraction", str(value))
 
     ## This function sets an octtree dust grid for the dust system
     def set_octtree_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, write_grid=True, min_level=2,

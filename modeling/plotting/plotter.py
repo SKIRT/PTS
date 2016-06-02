@@ -117,7 +117,7 @@ class Plotter(PlottingComponent):
         """
 
         # Inform the user
-        log.info("Plotting ...")
+        log.info("Making plots of the data ...")
 
         # Create the data plotter
         plotter = DataPlotter()
@@ -136,7 +136,7 @@ class Plotter(PlottingComponent):
         """
 
         # Inform the user
-        log.info("Plotting ...")
+        log.info("Making plots of the preparation step ...")
 
         # Create the preparation plotter
         plotter = PreparationPlotter()
@@ -155,7 +155,7 @@ class Plotter(PlottingComponent):
         """
 
         # Inform the user
-        log.info("Plotting ...")
+        log.info("Making plots of the decomposition step ...")
 
         # Create the decomposition plotter
         plotter = DecompositionPlotter()
@@ -174,7 +174,7 @@ class Plotter(PlottingComponent):
         """
 
         # Inform the user
-        log.info("Plotting ...")
+        log.info("Making plots of the truncation step ...")
 
         # Create the truncation plotter
         plotter = TruncationPlotter()
@@ -193,7 +193,7 @@ class Plotter(PlottingComponent):
         """
 
         # Inform the user
-        log.info("Plotting ...")
+        log.info("Making plots of the photometry step ...")
 
         # Create the photometry plotter
         plotter = PhotometryPlotter()
@@ -212,7 +212,7 @@ class Plotter(PlottingComponent):
         """
 
         # Inform the user
-        log.info("Plotting ...")
+        log.info("Making plots of the map making step ...")
 
         # Create the maps plotter
         plotter = MapsPlotter()
@@ -231,7 +231,7 @@ class Plotter(PlottingComponent):
         """
 
         # Inform the user
-        log.info("Plotting ...")
+        log.info("Making plots of the fitting step ...")
 
         # Create the fitting plotter
         plotter = FittingPlotter()
@@ -250,7 +250,7 @@ class Plotter(PlottingComponent):
         """
 
         # Inform the user
-        log.info("Plotting ...")
+        log.info("Making plots of the analysis step ...")
 
         # Create the analysis plotter
         plotter = AnalysisPlotter()
