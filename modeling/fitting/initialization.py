@@ -108,6 +108,9 @@ class InputInitializer(FittingComponent):
         # Coordinate system
         self.reference_wcs = None
 
+        # The ski files for simulating the contributions of the various stellar components
+        self.ski_contributions = dict()
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -192,13 +195,16 @@ class InputInitializer(FittingComponent):
         # 9. Adjust the ski file
         self.adjust_ski()
 
-        # 10. Calculate the weight factor to give to each band
+        # 10. Adjust the ski files for simulating the contributions of the various stellar components
+        self.adjust_ski_contributions()
+
+        # 11. Calculate the weight factor to give to each band
         self.calculate_weights()
 
         # 12. Writing
         self.write()
 
-        # 11. Generate the dust grid data files
+        # 13. Generate the dust grid data files
         self.generate_dust_grid()
 
     # -----------------------------------------------------------------
@@ -811,6 +817,34 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def adjust_ski_contributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adjusting ski files for simulating the contribution of the various stellar components ...")
+
+        # Loop over the different contributions, create seperate ski file instance
+        contributions = ["old", "young", "ionizing"]
+        component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
+                           "young": "Young stars",
+                           "ionizing": "Ionizing stars"}
+        for contribution in contributions:
+
+            # Create a copy of the ski file instance
+            ski = self.ski.copy()
+
+            # Remove other stellar components
+            ski.remove_stellar_components_except(component_names[contribution])
+
+            # Add the ski file to the dictionary
+            self.ski_contributions[contribution] = ski
+
+    # -----------------------------------------------------------------
+
     def calculate_weights(self):
 
         """
@@ -905,6 +939,9 @@ class InputInitializer(FittingComponent):
 
         # Write the ski file
         self.write_ski_file()
+
+        # Write the ski files for simulating the contributions of the various stellar components
+        self.write_ski_files_contributions()
 
         # Write the weights table
         self.write_weights()
@@ -1034,6 +1071,31 @@ class InputInitializer(FittingComponent):
 
         # Save the ski file to the specified location
         self.ski.saveto(self.fit_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def write_ski_files_contributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the ski files for simulating the contribution of the various stellar components ...")
+
+        # Loop over the ski files
+        for contribution in self.ski_contributions:
+
+            # Create the directory for this contribution
+            contribution_path = fs.join(self.fit_contributions_path, contribution)
+            fs.create_directory(contribution_path)
+
+            # Determine the path to the ski file
+            ski_path = fs.join(contribution_path, self.galaxy_name + ".ski")
+
+            # Write the ski file
+            self.ski_contributions[contribution].saveto(ski_path)
 
     # -----------------------------------------------------------------
 

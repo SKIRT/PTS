@@ -13,6 +13,7 @@
 
 # Import standard modules
 import os.path
+import copy
 from datetime import datetime
 from lxml import etree
 from numpy import arctan
@@ -78,6 +79,12 @@ class SkiFile:
 
     ## This function saves the ski file to the original path
     def save(self): self.saveto(self.path)
+
+    ## This function returns a copy (a deep copy) of this ski file
+    def copy(self):
+        ski = copy.deepcopy(self)
+        ski.path = None # set the path to None so this copy won't be involuntarily saved over the original file
+        return ski
 
     # ---------- Retrieving information -------------------------------
 

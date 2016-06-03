@@ -241,6 +241,9 @@ class ParameterExplorer(FittingComponent):
             # Add an entry to the parameter table
             self.table.add_row([simulation_name, young_luminosity, ionizing_luminosity, dust_mass])
 
+        # Add simulations to the queue to calculate the contribution of the various stellar components
+        self.add_contribution_simulations()
+
         # Run the launcher, schedules the simulations
         simulations = self.launcher.run()
 
@@ -252,6 +255,45 @@ class ParameterExplorer(FittingComponent):
 
             # Save the simulation object
             simulation.save()
+
+    # -----------------------------------------------------------------
+
+    def add_contribution_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding simulations to check the contribution of the various stellar components ...")
+
+        # Loop over the contributions
+        contributions = ["old", "young", "ionizing"]
+        for contribution in contributions:
+
+            # Simulation name
+            simulation_name = contribution
+
+            # Create the SkirtArguments instance
+            arguments = SkirtArguments()
+
+            # Set the ski file path
+            ski_path = fs.join(self.fit_contributions_path, contribution, self.galaxy_name + ".ski")
+            arguments.ski_pattern = ski_path
+            arguments.single = True
+            arguments.recursive = False
+            arguments.relative = False
+            arguments.parallel.threads = None
+            arguments.parallel.processes = None
+            arguments.input_path = self.fit_in_path
+            arguments.output_path = fs.join(self.fit_contributions_path, contribution)
+
+            # Add the arguments object
+            self.launcher.add_to_queue(arguments, simulation_name)
+
+            # Set scheduling options if necessary
+            for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
 
     # -----------------------------------------------------------------
 

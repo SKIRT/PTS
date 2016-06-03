@@ -85,6 +85,9 @@ class FittingComponent(ModelingComponent):
         # The path to the scripts directory
         self.fit_scripts_path = None
 
+        # The path to the contributions directory
+        self.fit_contributions_path = None
+
         # The paths to the probability distribution tables
         self.distribution_table_paths = dict()
 
@@ -132,6 +135,12 @@ class FittingComponent(ModelingComponent):
 
         # Create the fit/scripts directory
         if not fs.is_directory(self.fit_scripts_path): fs.create_directory(self.fit_scripts_path)
+
+        # Set the path to the fit/contributions directory
+        self.fit_contributions_path = fs.join(self.fit_path, "contributions")
+
+        # Create the fit/contributions directory
+        if not fs.is_directory(self.fit_contributions_path): fs.create_directory(self.fit_contributions_path)
 
         # Set the path to the parameter file
         self.parameter_table_path = fs.join(self.fit_path, "parameters.dat")

@@ -24,6 +24,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
 from ...core.basics.animation import Animation
+from ...core.simulation.skifile import SkiFile
 
 # -----------------------------------------------------------------
 
@@ -295,6 +296,9 @@ class SEDFitter(FittingComponent):
         # Write the ski file of the best simulation
         self.write_best()
 
+        # Write the ski files for calculating the contribution of the various stellar components
+        self.write_best_contributions()
+
         # Write the probability distributions in table format
         self.write_distributions()
 
@@ -339,6 +343,46 @@ class SEDFitter(FittingComponent):
             best_parameters.write("FUV young: " + str(self.best_fuv_young) + "\n")
             best_parameters.write("FUV ionizing: " + str(self.best_fuv_ionizing) + "\n")
             best_parameters.write("Dust mass: " + str(self.best_dust_mass) + "\n")
+
+    # -----------------------------------------------------------------
+
+    def write_best_contributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the best model parameters to the ski files for calculating the various stellar contributions ...")
+
+        # Get the simulation name of the last entry in the chi squared table (the lowest chi squared value)
+        simulation_name = self.chi_squared["Simulation name"][len(self.chi_squared) - 1]
+
+        # Determine the path to the simulation's ski file
+        ski_path = fs.join(self.fit_out_path, simulation_name, self.galaxy_name + ".ski")
+
+        # Open the ski file
+        ski = SkiFile(ski_path)
+
+        # Loop over the contributions
+        contributions = ["old", "young", "ionizing"]
+        component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
+                           "young": "Young stars",
+                           "ionizing": "Ionizing stars"}
+        for contribution in contributions:
+
+            # Create a copy of the ski file instance
+            ski = ski.copy()
+
+            # Remove other stellar components
+            ski.remove_stellar_components_except(component_names[contribution])
+
+            # Determine the path to the ski file
+            ski_path = fs.join(self.fit_contributions_path, contribution, self.galaxy_name + ".ski")
+
+            # Save the ski file
+            ski.saveto(ski_path)
 
     # -----------------------------------------------------------------
 
