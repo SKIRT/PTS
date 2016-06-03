@@ -201,11 +201,11 @@ class InputInitializer(FittingComponent):
         # 11. Calculate the weight factor to give to each band
         self.calculate_weights()
 
-        # 12. Writing
-        self.write()
-
-        # 13. Generate the dust grid data files
+        # 12. Generate the dust grid data files
         self.generate_dust_grid()
+
+        # 13. Writing
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -365,8 +365,8 @@ class InputInitializer(FittingComponent):
             if wavelength > self.config.wavelengths.max_zoom: total_grid.append(wavelength)
 
         # Add the central wavelengths of the filters used for normalizing the stellar components
-        bisect.insort(self.i1.centerwavelength())
-        bisect.insort(self.fuv.centerwavelength())
+        bisect.insort(total_grid, self.i1.centerwavelength())
+        bisect.insort(total_grid, self.fuv.centerwavelength())
 
         # Create table for the wavelength grid
         self.wavelength_grid = WavelengthGrid.from_wavelengths(total_grid)
@@ -1125,7 +1125,7 @@ class InputInitializer(FittingComponent):
         log.info("Running a simulation just to generate the dust grid data files ...")
 
         # Create a copy of the ski file
-        ski = copy.deepcopy(self.ski)
+        ski = self.ski.copy()
 
         # Convert to oligochromatic simulation
         ski.to_oligochromatic([1. * Unit("micron")])
@@ -1175,6 +1175,9 @@ class InputInitializer(FittingComponent):
 
         # Run SKIRT again
         skirt.run(arguments)
+
+        # Set the max optical depth also for the main ski file
+        self.ski.set_binary_tree_max_optical_depth(optical_depth)
 
 # -----------------------------------------------------------------
 
