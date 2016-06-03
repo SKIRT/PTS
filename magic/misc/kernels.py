@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.basics.kernels Contains the AnianoKernels class.
+## \package pts.magic.misc.kernels Contains the AnianoKernels class.
 
 # -----------------------------------------------------------------
 

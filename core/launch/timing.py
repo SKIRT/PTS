@@ -59,11 +59,12 @@ class TimingTable(object):
         # Create the table
         names = ["Simulation name", "Timestamp", "Host id", "Cluster name", "Cores", "Threads per core",
                  "Processes", "Wavelengths", "Packages", "Dust cells", "Self-absorption", "Transient heating",
-                 "Total runtime", "Setup time", "Stellar emission time", "Spectra calculation time",
+                 "Data-parallel", "Total runtime", "Setup time", "Stellar emission time", "Spectra calculation time",
                  "Dust emission time", "Writing time", "Waiting time", "Communication time", "Intermediate time"]
         data = [[] for _ in names]
         dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "int64", "int64", "bool", "bool",
-                  "float64", "float64", "float64", "float64", "float64", "float64", "float64", "float64", "float64"]
+                  "bool", "float64", "float64", "float64", "float64", "float64", "float64", "float64", "float64",
+                  "float64"]
         table = tables.new(data, names, dtypes=dtypes)
 
         # Set the column units
@@ -99,8 +100,9 @@ class TimingTable(object):
     # -----------------------------------------------------------------
 
     def add_entry(self, name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths,
-                  packages, cells, selfabsorption, transient_heating, total_runtime, setup_time, stellar_time, spectra_time, dust_time,
-                  writing_time, waiting_time, communication_time, intermediate_time):
+                  packages, cells, selfabsorption, transient_heating, data_parallel, total_runtime, setup_time,
+                  stellar_time, spectra_time, dust_time, writing_time, waiting_time, communication_time,
+                  intermediate_time):
 
         """
         This function ...
@@ -116,6 +118,7 @@ class TimingTable(object):
         :param cells:
         :param selfabsorption:
         :param transient_heating:
+        :param data_parallel:
         :param total_runtime:
         :param setup_time:
         :param stellar_time:
@@ -149,6 +152,7 @@ class TimingTable(object):
         # "Cells"
         # "Self-absorption"
         # "Transient heating"
+        # "Data-parallel"
         # "Total runtime"
         # "Setup time"
         # "Stellar emission time"
@@ -170,6 +174,7 @@ class TimingTable(object):
         row.append(str(cells))
         row.append(str(selfabsorption))
         row.append(str(transient_heating))
+        row.append(str(data_parallel))
         row.append(str(total_runtime))
         row.append(str(setup_time))
         row.append(str(stellar_time))

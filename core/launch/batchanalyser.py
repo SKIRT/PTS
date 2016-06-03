@@ -194,13 +194,16 @@ class BatchAnalyser(Configurable):
         packages = self.ski.packages()
 
         # Get the number of dust cells
-        cells = self.log_file.dustcells()
+        cells = self.log_file.dust_cells
 
         # Check whether dust self-absorption was enabled for the simulation
         selfabsorption = self.ski.dustselfabsorption()
 
         # Check whether transient heating was enabled for the simulation
         transient_heating = self.ski.transientheating()
+
+        # Check whether data parallelization was enabled for the simulation
+        data_parallel = self.ski.dataparallel()
 
         # Get the different contributions to the simulation's runtime
         setup_time = self.te.setup
@@ -221,8 +224,8 @@ class BatchAnalyser(Configurable):
         # Dust emission time, Writing time, Waiting time, Communication time, Intermediate time
         timing_table.add_entry(self.simulation.name, self.simulation.submitted_at, host_id, cluster_name, cores,
                                hyperthreads, processes, wavelengths, packages, cells, selfabsorption, transient_heating,
-                               total_runtime, setup_time, stellar_time, spectra_time, dust_time, writing_time,
-                               waiting_time, communication_time, intermediate_time)
+                               data_parallel, total_runtime, setup_time, stellar_time, spectra_time, dust_time,
+                               writing_time, waiting_time, communication_time, intermediate_time)
 
     # -----------------------------------------------------------------
 
@@ -264,7 +267,7 @@ class BatchAnalyser(Configurable):
         wavelengths = self.ski.nwavelengthsfile(input_path)
 
         # Get the number of dust cells
-        dust_cells = self.log_file.dustcells()
+        dust_cells = self.log_file.dust_cells
 
         # Check whether dust self-absorption was enabled for the simulation
         selfabsorption = self.ski.dustselfabsorption()
@@ -272,12 +275,15 @@ class BatchAnalyser(Configurable):
         # Check whether transient heating was enabled for the simulation
         transient_heating = self.ski.transientheating()
 
+        # Check whether data parallelization was enabled for the simulation
+        data_parallel = self.ski.dataparallel()
+
         # Open the memory table
         memory_table = MemoryTable(self.memory_table_path)
 
         # Add an entry to the memory table
         memory_table.add_entry(self.simulation.name, self.simulation.submitted_at, host_id, cluster_name, cores,
                                hyperthreads, processes, wavelengths, dust_cells, selfabsorption, transient_heating,
-                               peak_memory_usage)
+                               data_parallel, peak_memory_usage)
 
 # -----------------------------------------------------------------

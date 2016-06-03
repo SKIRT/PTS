@@ -47,9 +47,10 @@ class MemoryTable(object):
 
         # Create the table
         names = ["Simulation name", "Timestamp", "Host id", "Cluster name", "Cores", "Threads per core",
-                 "Processes", "Wavelengths", "Dust cells", "Self-absorption", "Transient heating", "Peak memory usage"]
-        data = [[], [], [], [], [], [], [], [], [], [], [], []]
-        dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "int64", "bool", "bool", "float64"]
+                 "Processes", "Wavelengths", "Dust cells", "Self-absorption", "Transient heating", "Data-parallel",
+                 "Peak memory usage"]
+        data = [[] for _ in names]
+        dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "int64", "bool", "bool", "bool", "float64"]
         table = tables.new(data, names, dtypes=dtypes)
 
         # Set the column units
@@ -77,7 +78,7 @@ class MemoryTable(object):
     # -----------------------------------------------------------------
 
     def add_entry(self, name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths,
-                  dust_cells, selfabsorption, transient_heating, peak_memory_usage):
+                  dust_cells, selfabsorption, transient_heating, data_parallel, peak_memory_usage):
 
         """
         This function ...
@@ -92,6 +93,7 @@ class MemoryTable(object):
         :param dust_cells:
         :param selfabsorption:
         :param transient_heating:
+        :param data_parallel:
         :param peak_memory_usage:
         :return:
         """
@@ -113,6 +115,10 @@ class MemoryTable(object):
         # "Hyperthreads per core"
         # "Processes"
         # "Wavelengths"
+        # "Dust cells"
+        # "Self-absorption"
+        # "Transient heating"
+        # "Data-parallel"
         # "Peak memory usage"
         row.append(name)
         row.append(timestamp)
@@ -125,6 +131,7 @@ class MemoryTable(object):
         row.append(str(dust_cells))
         row.append(str(selfabsorption))
         row.append(str(transient_heating))
+        row.append(str(data_parallel))
         row.append(str(peak_memory_usage))
 
         # Add the row to the runtime file

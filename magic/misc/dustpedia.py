@@ -278,7 +278,7 @@ class DustPediaDatabase(object):
         table = tables[-1]
 
         table_rows = [ e for e in table.iter() if e.tag == 'tr']
-        column_headings =[ e.text_content() for e in table_rows[0].iter() if e.tag == 'th']
+        column_headings = [ e.text_content() for e in table_rows[0].iter() if e.tag == 'th']
 
         galaxy_info = None
         image_links = []

@@ -448,8 +448,6 @@ def remote_filter_convolution(host_id, datacube_path, wavelengths, filters, keep
     :return:
     """
 
-    print(host_id)
-
     # Check whether we are already connected to the specified remote host
     if host_id in connected_remotes and connected_remotes[host_id] is not None:
         remote = connected_remotes[host_id]

@@ -228,7 +228,7 @@ class SkiFile:
 
     ## This function returns whether transient heating is enabled
     def transientheating(self):
-        return len(self.tree.xpath("//TransientDustEmissivity"))
+        return len(self.tree.xpath("//TransientDustEmissivity")) > 0
 
     ## This function returns whether dust emission is enabled
     def dustemission(self):
@@ -249,6 +249,10 @@ class SkiFile:
             return (pandustsystem.attrib["selfAbsorption"] == "true")
         except:
             return False
+
+    ## This function returns whether data parallelization is enabled
+    def dataparallel(self):
+        return False # Not merged into the main SKIRT version yet
 
     def enable_selfabsorption(self):
 

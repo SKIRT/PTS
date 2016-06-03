@@ -29,6 +29,7 @@ from ...core.plot.transmission import TransmissionPlotter
 from ...core.plot.grids import plotgrids
 from ...core.simulation.simulation import SkirtSimulation
 from ...core.simulation.logfile import LogFile
+from ...core.simulation.skifile import SkiFile
 
 # -----------------------------------------------------------------
 
@@ -50,6 +51,9 @@ class FittingPlotter(PlottingComponent):
         super(FittingPlotter, self).__init__(config)
 
         # -- Attributes --
+
+        # The ski file
+        self.ski = None
 
         # The wavelength grid
         self.wavelength_grid = None
@@ -75,6 +79,9 @@ class FittingPlotter(PlottingComponent):
         # 1. Call the setup function
         self.setup()
 
+        # 2. Load the ski file
+        self.load_ski_file()
+
         # 2. Load the wavelength grid
         self.load_wavelength_grid()
 
@@ -89,6 +96,24 @@ class FittingPlotter(PlottingComponent):
 
         # Plot
         self.plot()
+
+    # -----------------------------------------------------------------
+
+    def load_ski_file(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the ski file ...")
+
+        # Determine the path to the initialized ski file
+        path = fs.join(self.fit_path, self.galaxy_name + ".ski")
+
+        # Load the ski file
+        self.ski = SkiFile(path)
 
     # -----------------------------------------------------------------
 
@@ -219,6 +244,9 @@ class FittingPlotter(PlottingComponent):
         :return:
         """
 
+        # Plot the model components
+        self.plot_components()
+
         # Plot the wavelength grid used for the fitting
         self.plot_wavelengths()
 
@@ -230,6 +258,52 @@ class FittingPlotter(PlottingComponent):
 
         # Plot the distributions of the runtimes on different remote systems
         if self.runtimes is not None: self.plot_runtimes()
+
+    # -----------------------------------------------------------------
+
+    def plot_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the model components ...")
+
+
+        for component_id in self.ski.get_stellar_component_ids():
+
+            props = self.ski.get_stellar_component_properties(component_id)
+            print(component_id, props)
+
+        for component_id in self.ski.get_dust_component_ids():
+
+            props = self.ski.get_dust_component_properties(component_id)
+            print(component_id, props)
+
+        exit()
+
+        import matplotlib.pyplot as plt
+        from matplotlib.patches import Ellipse
+
+
+        #ells = [Ellipse(xy=rnd.rand(2) * 10, width=rnd.rand(), height=rnd.rand(), angle=rnd.rand() * 360)
+        #        for i in range(NUM)]
+
+        # Create the figure
+        fig = plt.figure()
+        ax = fig.add_subplot(111, aspect='equal')
+        for e in ells:
+            ax.add_artist(e)
+            e.set_clip_box(ax.bbox)
+            e.set_alpha(rnd.rand())
+            e.set_facecolor(rnd.rand(3))
+
+        #ax.set_xlim(0, 10)
+        #ax.set_ylim(0, 10)
+
+        plt.savefig()
 
     # -----------------------------------------------------------------
 

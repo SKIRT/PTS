@@ -54,7 +54,7 @@ class ImagePreparer(Configurable):
         """
 
         # Call the constructor of the base class
-        super(ImagePreparer, self).__init__(config, "modeling")
+        super(ImagePreparer, self).__init__(config, "magic")
 
         # -- Attributes --
 

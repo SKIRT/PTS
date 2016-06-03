@@ -547,7 +547,8 @@ class InputInitializer(FittingComponent):
         disk_metallicity = 0.02
 
         # Get the scale height
-        scale_height = 521. * Unit("pc") # first models
+        #scale_height = 521. * Unit("pc") # first models
+        scale_height = self.parameters.disk.hr / 8.26 # De Geyter et al. 2014
 
         # Get the 3.6 micron flux density with the bulge subtracted
         i1_index = tables.find_index(self.fluxes, "I1", "Band")
@@ -584,7 +585,8 @@ class InputInitializer(FittingComponent):
         young_metallicity = 0.02
 
         # Get the scale height
-        scale_height = 150 * Unit("pc") # first models
+        #scale_height = 150 * Unit("pc") # first models
+        scale_height = 100. * Unit("pc") # M51
 
         # Get the FUV flux density
         fuv_index = tables.find_index(self.fluxes, "FUV", "Band")
@@ -622,7 +624,8 @@ class InputInitializer(FittingComponent):
         ionizing_covering_factor = 0.2
 
         # Get the scale height
-        scale_height = 150 * Unit("pc") # first models
+        #scale_height = 150 * Unit("pc") # first models
+        scale_height = 100. * Unit("pc") # M51
 
         # Convert the SFR into a FUV luminosity
         sfr = 1.0 # The star formation rate
@@ -649,8 +652,9 @@ class InputInitializer(FittingComponent):
         # Inform the user
         log.info("Configuring the dust component ...")
 
-        scale_height = 260.5 * Unit("pc") # first models
-        dust_mass = 2.e7 * Unit("Msun") # first models
+        #scale_height = 260.5 * Unit("pc") # first models
+        scale_height = 200. * Unit("pc") # M51
+        dust_mass = 1.5e7 * Unit("Msun")
 
         hydrocarbon_pops = 25
         enstatite_pops = 25
@@ -829,10 +833,10 @@ class InputInitializer(FittingComponent):
             band = self.fluxes["Band"][i]
 
             # Construct filter
-            filter = Filter.from_instrument_and_band(instrument, band)
+            fltr = Filter.from_instrument_and_band(instrument, band)
 
             # Get the central wavelength
-            wavelength = filter.centerwavelength() * Unit("micron")
+            wavelength = fltr.centerwavelength() * Unit("micron")
 
             # Get a string identifying which portion of the wavelength spectrum this wavelength belongs to
             spectrum = wavelengths.name_in_spectrum(wavelength)
@@ -840,15 +844,15 @@ class InputInitializer(FittingComponent):
             #print(band, wavelength, spectrum)
 
             # Determine to which group
-            if spectrum[0] == "UV": uv_bands.append(filter)
-            elif spectrum[0] == "Optical": optical_bands.append(filter)
-            elif spectrum[0] == "Optical/IR": optical_bands.append(filter)
+            if spectrum[0] == "UV": uv_bands.append(fltr)
+            elif spectrum[0] == "Optical": optical_bands.append(fltr)
+            elif spectrum[0] == "Optical/IR": optical_bands.append(fltr)
             elif spectrum[0] == "IR":
-                if spectrum[1] == "NIR": nir_bands.append(filter)
-                elif spectrum[1] == "MIR": mir_bands.append(filter)
-                elif spectrum[1] == "FIR": fir_bands.append(filter)
+                if spectrum[1] == "NIR": nir_bands.append(fltr)
+                elif spectrum[1] == "MIR": mir_bands.append(fltr)
+                elif spectrum[1] == "FIR": fir_bands.append(fltr)
                 else: raise RuntimeError("Unknown IR range")
-            elif spectrum[0] == "Submm": submm_bands.append(filter)
+            elif spectrum[0] == "Submm": submm_bands.append(fltr)
             else: raise RuntimeError("Unknown wavelength range")
 
         # Determine the weight for each group of filters
@@ -868,12 +872,12 @@ class InputInitializer(FittingComponent):
         #print("Submm", len(submm_bands), submm_weight)
 
         # Loop over the bands in each group and set the weight in the weights table
-        for filter in uv_bands: self.weights.add_row([filter.instrument, filter.band, uv_weight])
-        for filter in optical_bands: self.weights.add_row([filter.instrument, filter.band, optical_weight])
-        for filter in nir_bands: self.weights.add_row([filter.instrument, filter.band, nir_weight])
-        for filter in mir_bands: self.weights.add_row([filter.instrument, filter.band, mir_weight])
-        for filter in fir_bands: self.weights.add_row([filter.instrument, filter.band, fir_weight])
-        for filter in submm_bands: self.weights.add_row([filter.instrument, filter.band, submm_weight])
+        for fltr in uv_bands: self.weights.add_row([fltr.instrument, fltr.band, uv_weight])
+        for fltr in optical_bands: self.weights.add_row([fltr.instrument, fltr.band, optical_weight])
+        for fltr in nir_bands: self.weights.add_row([fltr.instrument, fltr.band, nir_weight])
+        for fltr in mir_bands: self.weights.add_row([fltr.instrument, fltr.band, mir_weight])
+        for fltr in fir_bands: self.weights.add_row([fltr.instrument, fltr.band, fir_weight])
+        for fltr in submm_bands: self.weights.add_row([fltr.instrument, fltr.band, submm_weight])
 
     # -----------------------------------------------------------------
 

@@ -24,6 +24,7 @@ from pts.core.tools import logging, time, tables
 from pts.core.tools import filesystem as fs
 from pts.magic.core.image import Image
 from pts.magic.basics.region import Region
+from pts.magic.misc.calibration import CalibrationError
 
 # -----------------------------------------------------------------
 
@@ -41,39 +42,6 @@ irsa_names = {"SDSS u": "SDSS u",
               "IRAC I4": "IRAC-4",
               "WISE W1": "WISE-1",
               "WISE W2": "WISE-2"}
-
-# -----------------------------------------------------------------
-
-calibration_errors = {"GALEX FUV": "0.05 mag",
-                      "GALEX NUV": "0.03 mag",
-                      "UVOT UVW2": "2.18%",
-                      "UVOT UVM2": "0.63%",
-                      "UVOT UVW1": "3.09%",
-                      "SDSS u": "2%",
-                      "SDSS g": "2%",
-                      "SDSS r": "2%",
-                      "Mosaic Halpha": "5%",
-                      "SDSS i": "2%",
-                      "SDSS z": "2%",
-                      "2MASS J": "0.03 mag",
-                      "2MASS H": "0.03 mag",
-                      "2MASS Ks": "0.03 mag",
-                      "WISE W1": "2.4%",
-                      "IRAC I1": "1.8%",
-                      "IRAC I2": "1.9%",
-                      "WISE W2": "2.8%",
-                      "IRAC I3": "2.0%",
-                      "IRAC I4": "2.1%",
-                      "WISE W3": "4.5%",
-                      "WISE W4": "5.7%",
-                      "MIPS 24mu": "4%",
-                      "MIPS 70mu": "5%", # ref: Absolute_Calibration_and_Characterization_of_the_Multiband_Imaging_Photometer_for_Spitzer._II._70_micron_Imaging
-                      "MIPS 160mu": "5%",
-                      "Pacs blue": "5%",
-                      "Pacs red": "5%",
-                      "SPIRE PSW": "4%",
-                      "SPIRE PMW": "4%",
-                      "SPIRE PLW": "4%"}
 
 # -----------------------------------------------------------------
 
@@ -234,8 +202,8 @@ arguments.attenuation = attenuation
 
 # -----------------------------------------------------------------
 
-# Set the calibration error
-arguments.calibration = calibration_errors[filter_name]
+# Get the calibration error
+arguments.calibration = CalibrationError.from_filter(image.filter)
 
 # -----------------------------------------------------------------
 
