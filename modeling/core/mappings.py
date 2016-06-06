@@ -17,7 +17,6 @@ import numpy as np
 
 # Import astronomical modules
 from astropy.units import Unit
-from astropy import constants
 
 # Import the relevant PTS classes and modules
 from ..core.sed import IntrinsicSED
@@ -142,8 +141,8 @@ class Mappings(object):
         wavelength_column = lambdav
         luminosity_column = jv * sfr
 
+        # Create the SED
         self.sed = IntrinsicSED()
-
         self.sed.table = tables.new([wavelength_column, luminosity_column], ["Wavelength", "Luminosity"])
         self.sed.table["Wavelength"].unit = Unit("micron")
         self.sed.table["Luminosity"].unit = Unit("W/micron")
@@ -228,20 +227,9 @@ class Mappings(object):
 
 # -----------------------------------------------------------------
 
-#import numpy as np
 def find_nearest(array, value):
     idx = (np.abs(array-value)).argmin()
     return array[idx]
-
-#array = np.random.random(10)
-#print(array)
-# [ 0.21069679  0.61290182  0.63425412  0.84635244  0.91599191  0.00213826
-#   0.17104965  0.56874386  0.57319379  0.28719469]
-
-#value = 0.5
-
-#print(find_nearest(array, value))
-# 0.568743859261
 
 # -----------------------------------------------------------------
 

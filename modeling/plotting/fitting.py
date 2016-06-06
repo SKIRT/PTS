@@ -32,7 +32,7 @@ from ...core.simulation.simulation import SkirtSimulation
 from ...core.simulation.logfile import LogFile
 from ...core.simulation.skifile import SkiFile
 from ..core.emissionlines import EmissionLines
-from ..core.sed import MappingsSED, BruzualCharlotSED, ZubkoSED
+from ..core.sed import load_example_mappings_sed, load_example_bruzualcharlot_sed, load_example_zubko_sed
 from ..core.sed import SED, ObservedSED
 from ...magic.plot.imagegrid import ResidualImageGridPlotter
 from ...magic.core.frame import Frame
@@ -547,15 +547,15 @@ class FittingPlotter(PlottingComponent):
         plotter.add_wavelength_grid(self.wavelength_grid, "fitting simulations")
 
         # Add MAPPINGS SFR SED
-        mappings_sed = MappingsSED()
+        mappings_sed = load_example_mappings_sed()
         plotter.add_sed(mappings_sed, "MAPPINGS")
 
         # Add Bruzual-Charlot stellar SED
-        bc_sed = BruzualCharlotSED()
+        bc_sed = load_example_bruzualcharlot_sed()
         plotter.add_sed(bc_sed, "Bruzual-Charlot")
 
         # Add Zubko dust emission SED
-        zubko_sed = ZubkoSED()
+        zubko_sed = load_example_zubko_sed()
         plotter.add_sed(zubko_sed, "Zubko")
 
         # Add emission lines

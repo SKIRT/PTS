@@ -138,8 +138,8 @@ class SkirtArguments(object):
             for dirpath, dirnames, filenames in dirlist:
                 for filename in fnmatch.filter(filenames, name):
 
-                    inp = os.path.join(dirpath, self.input_path)  if (self.relative) else self.input_path
-                    out = os.path.join(dirpath, self.output_path) if (self.relative) else self.output_path
+                    inp = os.path.join(dirpath, self.input_path) if (self.relative and self.input_path is not None) else self.input_path
+                    out = os.path.join(dirpath, self.output_path) if (self.relative and self.output_path is not None) else self.output_path
 
                     # Create the simulation and add it to the list
                     simulations.append(SkirtSimulation(filename, inpath=inp, outpath=out))

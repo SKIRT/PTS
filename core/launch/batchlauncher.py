@@ -142,6 +142,30 @@ class BatchLauncher(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def in_queue(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.queue)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def in_extra_queue(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.extra_queue)
+
+    # -----------------------------------------------------------------
+
+    @property
     def host_ids(self):
 
         """
@@ -579,7 +603,8 @@ class BatchLauncher(Configurable):
                 # If the input directory is shared between the different simulations
                 if self.config.shared_input and remote_input_path is None: remote_input_path = simulation.remote_input_path
 
-                # Set the parallelization properties for the simulation (this is actually already done by SkirtRemote in the add_to_queue function)
+                # Set the parallelization properties for the simulation
+                # (this is actually already done by SkirtRemote in the add_to_queue function)
                 simulation.parallelization = parallellization
 
                 # Set the analysis options for the simulation
@@ -587,6 +612,40 @@ class BatchLauncher(Configurable):
 
                 # Save the simulation object
                 simulation.save()
+
+            # Add the arguments in the extra queue
+            if self.in_extra_queue > 0 and remote.host_id == self.config.extra_remote:
+
+                for _ in range(self.in_extra_queue):
+
+                    # Get the last item from the extra queue
+                    arguments, analysis_options, name, share_input = self.extra_queue.pop()
+
+                    # Set the parallelization
+                    arguments.parallel.processes = processes
+                    arguments.parallel.threads = threads
+
+                    # Set the remote input path
+                    if share_input and self.config.shared_input: remote_in_path = remote_input_path
+                    else: remote_in_path = None
+
+                    # Queue the simulation
+                    simulation = remote.add_to_queue(arguments, name=name, remote_input_path=remote_in_path)
+                    simulations_remote.append(simulation)
+
+                    # Set parallelization
+                    simulation.parallelization = parallellization
+
+                    # Set the analysis options for the simulation
+                    simulation.analysis = analysis_options
+
+                    # Remove remote files
+                    simulation.remove_remote_input = not self.config.keep and not share_input
+                    simulation.remove_remote_output = not self.config.keep
+                    simulation.remove_remote_simulation_directory = not self.config.keep and not share_input
+
+                    # Save the simulation object
+                    simulation.save()
 
             # Set a path for the script file to be saved to locally (for manual inspection)
             if remote.host_id in self.script_paths:

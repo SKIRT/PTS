@@ -98,6 +98,9 @@ class FittingComponent(ModelingComponent):
         # The paths to the probability distribution tables
         self.distribution_table_paths = dict()
 
+        # The path to the reference image
+        self.reference_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -212,5 +215,8 @@ class FittingComponent(ModelingComponent):
 
             # Set the path
             self.distribution_table_paths[parameter_name] = path
+
+        # Set the path to the reference image
+        self.reference_path = fs.join(self.truncation_path, self.reference_image + ".fits")
 
 # -----------------------------------------------------------------

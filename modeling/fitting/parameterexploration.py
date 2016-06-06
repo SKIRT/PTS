@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from collections import defaultdict
 
+# Import astronomical modules
+from astropy.units import Unit
+
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools import filesystem as fs
@@ -26,6 +29,7 @@ from ...core.launch.batchlauncher import BatchLauncher
 from ...core.tools.logging import log
 from ...core.launch.parallelization import Parallelization
 from ...core.launch.options import AnalysisOptions
+from ...magic.misc.kernels import AnianoKernels
 
 # -----------------------------------------------------------------
 
@@ -45,6 +49,9 @@ class ParameterExplorer(FittingComponent):
 
         # Call the constructor of the base class
         super(ParameterExplorer, self).__init__(config)
+
+        # The names of the filters for which we have photometry
+        self.filter_names = []
 
         # The SKIRT batch launcher
         self.launcher = BatchLauncher()
@@ -74,14 +81,13 @@ class ParameterExplorer(FittingComponent):
         super(ParameterExplorer, self).setup()
 
         # Get the names of the filters for which we have photometry
-        filter_names = []
         fluxes_table_path = fs.join(self.phot_path, "fluxes.dat")
         fluxes_table = tables.from_file(fluxes_table_path, format="ascii.ecsv")
         # Loop over the entries in the fluxes table, get the filter
         for entry in fluxes_table:
             # Get the filter
             filter_id = entry["Instrument"] + "." + entry["Band"]
-            filter_names.append(filter_id)
+            self.filter_names.append(filter_id)
 
         # Set options for the BatchLauncher: basic options
         self.launcher.config.shared_input = True  # The input directories for the different simulations are shared
@@ -97,10 +103,13 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.plotting.reference_sed = fs.join(self.phot_path, "fluxes.dat") # the path to the reference SED (for plotting the simulated SED against the reference points)
         self.launcher.config.analysis.misc.fluxes = True  # Calculate observed fluxes
         #self.launcher.config.analysis.misc.images = True  # Make observed images
-        self.launcher.config.analysis.misc.observation_filters = filter_names  # The filters for which to create the observations
+        self.launcher.config.analysis.misc.observation_filters = self.filter_names  # The filters for which to create the observations
         self.launcher.config.analysis.plotting.format = "png" # plot in PNG format so that an animation can be made from the fit SEDs
         self.launcher.config.analysis.timing_table_path = self.timing_table_path # The path to the timing table file
         self.launcher.config.analysis.memory_table_path = self.memory_table_path # The path to the memory table file
+
+        # Set remote for the 'extra' simulations
+        self.launcher.config.extra_remote = "nancy"
 
     # -----------------------------------------------------------------
 
@@ -210,8 +219,10 @@ class ParameterExplorer(FittingComponent):
             simulation_name = time.unique_name()
 
             # Change the parameter values in the ski file
-            self.ski.set_stellar_component_luminosity("Young stars", young_luminosity, fuv)
-            self.ski.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv)
+            #self.ski.set_stellar_component_luminosity("Young stars", young_luminosity, fuv)
+            #self.ski.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv)
+            self.ski.set_stellar_component_luminosity("Young stars", young_luminosity, fuv.centerwavelength() * Unit("micron"))
+            self.ski.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv.centerwavelength() * Unit("micron"))
             self.ski.set_dust_component_mass(0, dust_mass)
 
             # Determine the directory for this simulation
@@ -297,14 +308,14 @@ class ParameterExplorer(FittingComponent):
             arguments.output_path = fs.join(self.fit_best_path, contribution)
 
             # Create the AnalysisOptions instance
-            analysis_options = AnalysisOptions()
-
+            #analysis_options = AnalysisOptions()
 
             # Add the arguments object
-            self.launcher.add_to_extra_queue(arguments, analysis_options, simulation_name)
+            #self.launcher.add_to_extra_queue(arguments, analysis_options, simulation_name, share_input=True)
+            self.launcher.add_to_extra_queue(arguments, name=simulation_name, share_input=True)
 
             # Set scheduling options if necessary
-            for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
+            #for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
 
     # -----------------------------------------------------------------
 
@@ -345,20 +356,28 @@ class ParameterExplorer(FittingComponent):
         analysis_options.plotting.seds = True
         analysis_options.plotting.reference_sed = fs.join(self.phot_path, "fluxes.dat")
 
+        # Set the paths to the for each image (except for the SPIRE images)
+        kernel_paths = dict()
+        aniano = AnianoKernels()
+        pacs_red_psf_path = aniano.get_psf_path("PACS_160")
+        for filter_name in self.filter_names:
+            if "SPIRE" in filter_name: continue
+            kernel_paths[filter_name] = pacs_red_psf_path
+
         # Set misc options
         analysis_options.misc.path = output_path
         analysis_options.misc.images = True
-        analysis_options.misc.observation_filters =
-        analysis_options.misc.make_images_remote =
-        analysis_options.misc.images_wcs =
-        analysis_options.misc.images_unit =
-        analysis_options.misc.images_kernels =
+        analysis_options.misc.observation_filters = self.filter_names
+        analysis_options.misc.make_images_remote = "nancy"
+        analysis_options.misc.images_wcs = self.reference_path
+        analysis_options.misc.images_unit = "MJy/sr"
+        analysis_options.misc.images_kernels = kernel_paths
 
         # Add the arguments object
-        self.launcher.add_to_extra_queue(arguments, analysis_options, "images")
+        self.launcher.add_to_extra_queue(arguments, analysis_options, "images", share_input=True)
 
         # Set scheduling options if necessary
-        for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, "images", self.scheduling_options[host_id])
+        #for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, "images", self.scheduling_options[host_id])
 
     # -----------------------------------------------------------------
 
