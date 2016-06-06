@@ -345,7 +345,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
             self.launcher.set_script_path(host_id, script_dir_path)
 
         # Set the paths to the screen output directories (for debugging) for remotes without a scheduling system for jobs
-        for host_id in self.launcher.scheduler_host_ids: self.launcher.enable_screen_output(host_id)
+        for host_id in self.launcher.no_scheduler_host_ids: self.launcher.enable_screen_output(host_id)
 
         # Loop over the contributions
         for contribution in self.ski_paths:

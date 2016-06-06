@@ -84,7 +84,7 @@ class CalibrationError(object):
             value = float(calibration_error.split(" mag")[0])
             unit = "mag"
         elif "%" in calibration_error:
-            value = float(calibration_error.split("%"))
+            value = float(calibration_error.split("%")[0])
             unit = "%"
         else: raise ValueError("An error occured")
 

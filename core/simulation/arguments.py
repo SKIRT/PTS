@@ -20,6 +20,7 @@ import fnmatch
 # Import the relevant PTS classes and modules
 from .simulation import SkirtSimulation
 from ..basics.map import Map
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -77,6 +78,37 @@ class SkirtArguments(object):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def single(cls, ski_path, input_path, output_path, processes=None, threads=None):
+
+        """
+        This function ...
+        :param ski_path:
+        :param input_path:
+        :param output_path:
+        :param processes:
+        :param threads:
+        :return:
+        """
+
+        # Create a SkirtArguments instance
+        arguments = cls()
+
+        # Set the options
+        arguments.ski_pattern = ski_path
+        arguments.single = True
+        arguments.recursive = False
+        arguments.relative = False
+        arguments.parallel.processes = processes
+        arguments.parallel.threads = threads
+        arguments.input_path = input_path
+        arguments.output_path = output_path
+
+        # Return the new instance
+        return arguments
+
+    # -----------------------------------------------------------------
+
     def simulations(self):
 
         """
@@ -92,8 +124,7 @@ class SkirtArguments(object):
         for skifile in pattern:
 
             # Determine the directory path and the actual file descriptor
-            root, name = os.path.split(skifile)
-            root = os.path.realpath(root)
+            root, name = fs.directory_and_name(skifile)
 
             # Construct the 'dirlist' variable; this is a list of 3-tuples (dirpath, dirnames, filenames)
             if self.recursive: dirlist = os.walk(root)

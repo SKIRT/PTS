@@ -138,6 +138,21 @@ def directory_of(path):
 
 # -----------------------------------------------------------------
 
+def directory_and_name(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    root, name = os.path.split(path)
+    root = os.path.realpath(root)
+
+    return root, name
+
+# -----------------------------------------------------------------
+
 def name(path):
 
     """

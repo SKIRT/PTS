@@ -1088,7 +1088,7 @@ class InputInitializer(FittingComponent):
         for contribution in self.ski_contributions:
 
             # Create the directory for this contribution
-            contribution_path = fs.join(self.fit_contributions_path, contribution)
+            contribution_path = fs.join(self.fit_best_path, contribution)
             fs.create_directory(contribution_path)
 
             # Determine the path to the ski file

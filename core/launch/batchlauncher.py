@@ -52,6 +52,9 @@ class BatchLauncher(Configurable):
         # The queue
         self.queue = []
 
+        # The extra queue
+        self.extra_queue = []
+
         # The scheduling options for (some of) the simulations and (some of) the remote hosts. This is a nested
         # dictionary where the first key represents the remote host ID and the next key represents the name of the
         # simulation (see 'name' parameter of 'add_to_queue')
@@ -120,6 +123,21 @@ class BatchLauncher(Configurable):
 
         # Set the scheduling options for the specified host and for the specified simulation
         self.scheduling_options[host_id][name] = options
+
+    # -----------------------------------------------------------------
+
+    def add_to_extra_queue(self, arguments, analysis_options=None, name=None, share_input=False):
+
+        """
+        This function ...
+        :param arguments:
+        :param analysis_options:
+        :param name:
+        :return:
+        """
+
+        # Add the SkirtArguments and AnalysisOptions object to the queue
+        self.extra_queue.append((arguments, analysis_options, name, share_input))
 
     # -----------------------------------------------------------------
 
@@ -236,6 +254,69 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def no_scheduler_host_ids(self):
+
+        """
+        This function returns just the IDS of the hosts which DON'T use a scheduling system.
+        :return:
+        """
+
+        # If the setup has not been called yet
+        if len(self.remotes) == 0:
+
+            # Initialize a list to contain the host IDs
+            host_ids = []
+
+            # Loop over the IDs of all the hosts used by the BatchLauncher
+            for host_id in self.host_ids:
+
+                # Create Host instance
+                host = Host(host_id)
+
+                # If it's not a scheduler, add it to the list
+                if not host.scheduler: host_ids.append(host_id)
+
+            # Return the list of hosts which don't use a scheduling system
+            return host_ids
+
+        # If the setup has already been called
+        else: return [remote.host_id for remote in self.remotes if not remote.scheduler]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def no_scheduler_hosts(self):
+
+        """
+        This function is similar to 'no_scheduler_host_ids' but returns the Host objects instead of just the IDs of these
+        hosts.
+        :return:
+        """
+
+        # If the setup has not been called yet
+        if len(self.remotes) == 0:
+
+            # Initialize a list to contain the hosts
+            hosts = []
+
+            # Loop over the IDs of all the hosts used by the BatchLauncher
+            for id in self.host_ids:
+
+                # Create a Host instance
+                host = Host(id)
+
+                # If it's a not scheulder, add it to the list
+                if not host.scheduler: hosts.append(host)
+
+            # Return the list of hosts
+            return hosts
+
+        # If the setup has already been called
+        else: return [remote.host for remote in self.remotes if not remote.scheduler]
+
+    # -----------------------------------------------------------------
+
     def set_parallelization_for_host(self, host_id, parallelization):
 
         """
@@ -307,6 +388,9 @@ class BatchLauncher(Configurable):
 
         # Clear the queue
         self.queue = []
+
+        # Clear the extra queue
+        self.extra_queue = []
 
         # Clear the scheduling options
         self.scheduling_options = defaultdict(dict())

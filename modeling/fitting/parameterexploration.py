@@ -25,6 +25,7 @@ from ...core.simulation.skifile import SkiFile
 from ...core.launch.batchlauncher import BatchLauncher
 from ...core.tools.logging import log
 from ...core.launch.parallelization import Parallelization
+from ...core.launch.options import AnalysisOptions
 
 # -----------------------------------------------------------------
 
@@ -95,7 +96,7 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.plotting.seds = True  # Plot the output SEDs
         self.launcher.config.analysis.plotting.reference_sed = fs.join(self.phot_path, "fluxes.dat") # the path to the reference SED (for plotting the simulated SED against the reference points)
         self.launcher.config.analysis.misc.fluxes = True  # Calculate observed fluxes
-        self.launcher.config.analysis.misc.images = True  # Make observed images
+        #self.launcher.config.analysis.misc.images = True  # Make observed images
         self.launcher.config.analysis.misc.observation_filters = filter_names  # The filters for which to create the observations
         self.launcher.config.analysis.plotting.format = "png" # plot in PNG format so that an animation can be made from the fit SEDs
         self.launcher.config.analysis.timing_table_path = self.timing_table_path # The path to the timing table file
@@ -191,6 +192,9 @@ class ParameterExplorer(FittingComponent):
             if not fs.is_directory(script_dir_path): fs.create_directory(script_dir_path)
             self.launcher.set_script_path(host_id, script_dir_path)
 
+        # Set the paths to the screen output directories (for debugging) for remotes without a scheduling system for jobs
+        for host_id in self.launcher.no_scheduler_host_ids: self.launcher.enable_screen_output(host_id)
+
         # Create a FUV filter object
         fuv = Filter.from_string("FUV")
 
@@ -241,8 +245,11 @@ class ParameterExplorer(FittingComponent):
             # Add an entry to the parameter table
             self.table.add_row([simulation_name, young_luminosity, ionizing_luminosity, dust_mass])
 
-        # Add simulations to the queue to calculate the contribution of the various stellar components
+        # Add simulations to the extra queue to calculate the contribution of the various stellar components
         self.add_contribution_simulations()
+
+        # Add simulation to the extra queue to create simulated images
+        self.add_images_simulation()
 
         # Run the launcher, schedules the simulations
         simulations = self.launcher.run()
@@ -279,7 +286,7 @@ class ParameterExplorer(FittingComponent):
             arguments = SkirtArguments()
 
             # Set the ski file path
-            ski_path = fs.join(self.fit_contributions_path, contribution, self.galaxy_name + ".ski")
+            ski_path = fs.join(self.fit_best_path, contribution, self.galaxy_name + ".ski")
             arguments.ski_pattern = ski_path
             arguments.single = True
             arguments.recursive = False
@@ -287,13 +294,41 @@ class ParameterExplorer(FittingComponent):
             arguments.parallel.threads = None
             arguments.parallel.processes = None
             arguments.input_path = self.fit_in_path
-            arguments.output_path = fs.join(self.fit_contributions_path, contribution)
+            arguments.output_path = fs.join(self.fit_best_path, contribution)
+
+            # Create the AnalysisOptions instance
+
 
             # Add the arguments object
-            self.launcher.add_to_queue(arguments, simulation_name)
+            self.launcher.add_to_extra_queue(arguments, simulation_name)
 
             # Set scheduling options if necessary
             for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
+
+    # -----------------------------------------------------------------
+
+    def add_images_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding simulation to generate simulated images ...")
+
+        # Set the ski file path
+        ski_path = fs.join(self.fit_best_path, "images", self.galaxy_name + ".ski")
+
+        # Set the input and output path
+        input_path = self.fit_in_path
+        output_path = fs.join(self.fit_best_path, "images")
+
+        # Create the SkirtArguments instance
+        arguments = SkirtArguments.single(ski_path, input_path, output_path)
+
+        # Create the AnalysisOptions instance
+
 
     # -----------------------------------------------------------------
 
