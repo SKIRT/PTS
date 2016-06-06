@@ -21,6 +21,10 @@ from ...core.launch.memory import MemoryTable
 
 # -----------------------------------------------------------------
 
+contributions = ["old", "young", "ionizing"]
+
+# -----------------------------------------------------------------
+
 class FittingComponent(ModelingComponent):
     
     """
@@ -85,6 +89,12 @@ class FittingComponent(ModelingComponent):
         # The path to the scripts directory
         self.fit_scripts_path = None
 
+        # The paths of the directories of the simulations that calculate the contributions of the various stellar populations
+        self.fit_best_contribution_paths = dict()
+
+        # The path of the directory to generate simulated images for the best model
+        self.fit_best_images_path = None
+
         # The paths to the probability distribution tables
         self.distribution_table_paths = dict()
 
@@ -132,6 +142,16 @@ class FittingComponent(ModelingComponent):
 
         # Create the fit/scripts directory
         if not fs.is_directory(self.fit_scripts_path): fs.create_directory(self.fit_scripts_path)
+
+        # Set and create the paths to the fit/best/ contribution directories
+        for contribution in contributions:
+
+            path = fs.join(self.fit_best_path, contribution)
+            fs.create_directory(path)
+            self.fit_best_contribution_paths[contribution] = path
+
+        # Set the path to the fit/best/images directory
+
 
         # Set the path to the parameter file
         self.parameter_table_path = fs.join(self.fit_path, "parameters.dat")

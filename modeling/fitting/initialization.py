@@ -1109,8 +1109,9 @@ class InputInitializer(FittingComponent):
         # Inform the user
         log.info("Writing the ski file for creating simulated images ...")
 
-        # Determine the path to the ski file
-        ski_path = fs.join()
+        # Create the directory
+        images_path = fs.join(self.fit_best_path, "images")
+        fs.create_directory(images_path)
 
     # -----------------------------------------------------------------
 

@@ -389,11 +389,11 @@ class SourceExtractor(Configurable):
             # Replace the pixels by the background
             source.background.replace(self.frame, where=source.mask)
 
-            if not sigma_clip:
-                # source.plot()
+            #if not sigma_clip:
+            #    # source.plot()
 
-                plotting.plot_removal(source.cutout, source.mask, source.background,
-                                      self.frame[source.y_slice, source.x_slice])
+            #    plotting.plot_removal(source.cutout, source.mask, source.background,
+            #                          self.frame[source.y_slice, source.x_slice])
 
             count += 1
 
