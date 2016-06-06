@@ -248,7 +248,7 @@ class ImagePreparer(Configurable):
         log.info("Calculating the calibration uncertainties ...")
 
         # Add the calibration uncertainty defined in (AB) magnitude
-        if "mag" in self.config.uncertainties.calibration_error:
+        if self.config.uncertainties.calibration_error.magnitude:
 
             # -----------------------------------------------------------------
 
@@ -261,7 +261,7 @@ class ImagePreparer(Configurable):
             # -----------------------------------------------------------------
 
             # The calibration uncertainty in AB magnitude
-            mag_error = float(self.config.uncertainties.calibration_error.split("mag")[0])
+            mag_error = self.config.uncertainties.calibration_error.value
 
             # a = image[mag] - mag_error
             a = ab_frame - mag_error
@@ -310,10 +310,10 @@ class ImagePreparer(Configurable):
             # -----------------------------------------------------------------
 
         # The calibration uncertainty is expressed in a percentage (from the flux values)
-        elif "%" in self.config.uncertainties.calibration_error:
+        elif self.config.uncertainties.calibration_error.percentage:
 
             # Calculate calibration errors with percentage
-            fraction = float(self.config.uncertainties.calibration_error.split("%")[0]) * 0.01
+            fraction = self.config.uncertainties.calibration_error.value * 0.01
             calibration_frame = self.image.frames.primary * fraction
 
         # Unrecognized calibration error (not a magnitude, not a percentage)

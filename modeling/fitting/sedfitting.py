@@ -379,7 +379,7 @@ class SEDFitter(FittingComponent):
             ski.remove_stellar_components_except(component_names[contribution])
 
             # Determine the path to the ski file
-            ski_path = fs.join(self.fit_contributions_path, contribution, self.galaxy_name + ".ski")
+            ski_path = fs.join(self.fit_best_path, contribution, self.galaxy_name + ".ski")
 
             # Save the ski file
             ski.saveto(ski_path)

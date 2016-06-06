@@ -126,5 +126,31 @@ class CalibrationError(object):
         # Return the calibration error
         return cls.from_filter_name(filter_name)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def magnitude(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.unit == "mag": return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    @property
+    def percentage(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.unit == "%": return True
+        else: return False
+
 # -----------------------------------------------------------------
 

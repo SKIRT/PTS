@@ -1099,6 +1099,21 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def write_ski_file_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the ski file for creating simulated images ...")
+
+        # Determine the path to the ski file
+        ski_path = fs.join()
+
+    # -----------------------------------------------------------------
+
     def write_weights(self):
 
         """
