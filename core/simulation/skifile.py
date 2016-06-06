@@ -1200,6 +1200,15 @@ class SkiFile:
         # Get the wavelength grid
         return self.get_unique_base_element("wavelengthGrid")
 
+    ## This function sets the number of wavelength points
+    def set_nwavelengths(self, value):
+
+        # Get the wavelength grid
+        grid = self.get_wavelength_grid()
+
+        # Set the number of points
+        grid.set("points", str(value))
+
     ## This function sets the wavelength grid to a file
     def set_file_wavelength_grid(self, filename):
 

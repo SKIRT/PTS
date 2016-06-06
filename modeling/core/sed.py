@@ -172,6 +172,78 @@ class ObservedSED(object):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_caapr(cls, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a new observed SED
+        sed = cls()
+
+        # Load the table
+        caapr_table = tables.from_file(path, format="csv")
+
+        observatory_column = []
+        instrument_column = []
+        band_column = []
+        wavelength_column = []
+        flux_column = []
+        fluxerrmin_column = []
+        fluxerrmax_column = []
+
+        fluxes = dict()
+        errors = dict()
+
+        # Loop over the columns of the table
+        for colname in caapr_table.colnames:
+            if colname == "name": continue
+            if "ERR" in colname:
+                instrument_band = colname.split("_ERR")[0]
+                error = caapr_table[colname][0]
+                errors[instrument_band] = error
+            else:
+                instrument_band = colname
+                flux = caapr_table[colname][0]
+                fluxes[instrument_band] = flux
+
+        for instrument_band in fluxes:
+
+            if not instrument_band in errors: raise ValueError("No error for " + instrument_band)
+
+            flux = fluxes[instrument_band]
+            error = errors[instrument_band]
+
+            instrument = instrument_band.split("_")[0]
+            band = instrument_band.split("_")[1]
+
+            fltr = Filter.from_instrument_and_band(instrument, band)
+            wavelength = fltr.pivotwavelength()
+            observatory = fltr.observatory
+
+            observatory_column.append(observatory)
+            instrument_column.append(instrument)
+            band_column.append(band)
+            wavelength_column.append(wavelength)
+            flux_column.append(flux)
+            fluxerrmin_column.append(-error)
+            fluxerrmax_column.append(error)
+
+        data = [observatory_column, instrument_column, band_column, wavelength_column, flux_column, fluxerrmin_column, fluxerrmax_column]
+        names = ["Observatory", "Instrument", "Band", "Wavelength", "Flux", "Error-", "Error+"]
+        sed.table = tables.new(data, names)
+        sed.table["Wavelength"].unit = "micron"
+        sed.table["Flux"].unit = "Jy"
+        sed.table["Error-"].unit = "Jy"
+        sed.table["Error+"].unit = "Jy"
+
+        # Return the SED
+        return sed
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, filter, flux, error):
 
         """

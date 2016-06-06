@@ -37,6 +37,7 @@ from ..core.sed import SED, ObservedSED
 from ...magic.plot.imagegrid import ResidualImageGridPlotter
 from ...magic.core.frame import Frame
 from ...core.plot.sed import SEDPlotter
+from ...magic.basics.skyregion import SkyRegion
 
 # -----------------------------------------------------------------
 
@@ -240,6 +241,7 @@ class FittingPlotter(PlottingComponent):
 
         # Loop over the entries in the timing table
         for i in range(len(timing_table)):
+
             # Get the ID of the host and the cluster name for this particular simulation
             host_id = timing_table["Host id"][i]
             cluster_name = timing_table["Cluster name"][i]
@@ -281,11 +283,14 @@ class FittingPlotter(PlottingComponent):
         # Determine the path to the SED file from the 'images' simulation
         sed_path = fs.join(images_path, self.galaxy_name + "_earth_sed.dat")
 
-        # Load the SED
-        sed = SED.from_skirt(sed_path)
+        # Load the SED if the file exists
+        if fs.is_file(sed_path):
 
-        # Add the total SED to the dictionary of SEDs
-        self.seds["total"] = sed
+            # Load the SED
+            sed = SED.from_skirt(sed_path)
+
+            # Add the total SED to the dictionary of SEDs
+            self.seds["total"] = sed
 
         # Add the SEDs of the simulations with the individual stellar populations
         contributions = ["old", "young", "ionizing"]
@@ -296,6 +301,9 @@ class FittingPlotter(PlottingComponent):
 
             # Determine the path to the SED file
             sed_path = fs.join(out_path, self.galaxy_name + "_earth_sed.dat")
+
+            # Skip if the file does not exist
+            if not fs.is_file(sed_path): continue
 
             # Load the SED
             sed = SED.from_skirt(sed_path)
@@ -424,10 +432,10 @@ class FittingPlotter(PlottingComponent):
         if self.runtimes is not None: self.plot_runtimes()
 
         # Plot the SEDs
-        self.plot_seds()
+        if len(self.seds) > 0: self.plot_seds()
 
         # Plot the images
-        self.plot_images()
+        if len(self.simulated_images) > 0: self.plot_images()
 
     # -----------------------------------------------------------------
 
@@ -662,7 +670,7 @@ class FittingPlotter(PlottingComponent):
         plotter.add_observed_sed(self.observed_sed, "observation")
 
         # Determine the path to the SED plot file
-        path = fs.join(self.plot_analysis_path, "sed_contributions.pdf")
+        path = fs.join(self.plot_fitting_path, "sed_contributions.pdf")
 
         # Run the plotter
         plotter.run(path)
@@ -679,21 +687,30 @@ class FittingPlotter(PlottingComponent):
         # Inform the user
         log.info("Plotting a grid with the observed, simulated and residual images ...")
 
+        # Get the ellipse
+        path = fs.join(self.truncation_path, "ellipse.reg")
+        region = SkyRegion.from_file(path)
+        ellipse = region[0]
+
         # Create the image grid plotter
         plotter = ResidualImageGridPlotter(title="Image residuals")
 
+        # Create list of filter names sorted by increasing wavelength
+        sorted_filter_names = sorted(self.observed_images.keys(), key=lambda key: self.observed[key].filter.pivotwavelength())
+
         # Loop over the filter names, add a row to the image grid plotter for each filter
-        for filter_name in self.filter_names_sorted:
-            observed = self.observed[filter_name]
-            simulated = self.simulated[filter_name]
+        for filter_name in sorted_filter_names:
+
+            observed = self.observed_images[filter_name]
+            simulated = self.simulated_images[filter_name]
 
             plotter.add_row(observed, simulated, filter_name)
 
         # Set the bounding box for the plotter
-        plotter.set_bounding_box(self.ellipse.bounding_box)
+        plotter.set_bounding_box(ellipse.bounding_box)
 
         # Determine the path to the plot file
-        path = fs.join(self.analysis_residuals_path, "residuals.pdf")
+        path = fs.join(self.plot_fitting_path, "images.pdf")
 
         # Run the plotter
         plotter.run(path)

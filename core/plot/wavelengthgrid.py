@@ -237,11 +237,11 @@ class WavelengthGridPlotter(object):
             t.set_bbox(dict(color='w', alpha=0.5, edgecolor='w'))
 
             # Plot a vertical line for each grid point
-            for w in grid: plt.vlines(w, 1, 4, color='b', lw=0.2, alpha=0.2)
+            for w in wavelengths: plt.vlines(w, 1, 4, color='b', lw=0.2, alpha=0.2)
 
             # Plot the deltas
             plt.subplot2grid((4, 1), (3, 0), rowspan=1)
-            plt.plot(grid[1:], np.log10(grid[1:]) - np.log10(grid[:-1]), 'm-', lw=0.6)
+            plt.plot(wavelengths[1:], np.log10(wavelengths[1:]) - np.log10(wavelengths[:-1]), 'm-', lw=0.6)
             plt.xlim(0.019, 2050)
             plt.xscale('log')
             plt.gca().xaxis.set_major_formatter(FormatStrFormatter("%g"))
@@ -256,12 +256,11 @@ class WavelengthGridPlotter(object):
         index = 0
 
         # Loop over the emission lines
-        for label in self.emission_lines:
+        for line in self.emission_lines:
 
             # Get center wavelength and label
-            emission_line = self.emission_lines[label]
-            center = emission_line.center
-            label = emission_line.label
+            center = line.center
+            label = line.label
 
             if len(label) > 0:
 

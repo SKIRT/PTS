@@ -101,6 +101,9 @@ class MappingsPlayground(object):
         # Load the template ski file
         self.ski = SkiFile(ski_path)
 
+        # Set the number of wavelengths
+        self.ski.set_nwavelengths(1000)
+
     # -----------------------------------------------------------------
 
     def vary_pressure(self, min_logp, max_logp, sfr, met, logc, fpdr, nvalues=3, path=None):
