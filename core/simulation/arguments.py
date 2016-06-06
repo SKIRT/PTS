@@ -79,7 +79,7 @@ class SkirtArguments(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def single(cls, ski_path, input_path, output_path, processes=None, threads=None):
+    def single(cls, ski_path, input_path, output_path, processes=None, threads=None, verbose=False, memory=False):
 
         """
         This function ...
@@ -88,6 +88,8 @@ class SkirtArguments(object):
         :param output_path:
         :param processes:
         :param threads:
+        :param verbose:
+        :param memory:
         :return:
         """
 
@@ -103,6 +105,8 @@ class SkirtArguments(object):
         arguments.parallel.threads = threads
         arguments.input_path = input_path
         arguments.output_path = output_path
+        arguments.logging.verbose = verbose
+        arguments.logging.memory = memory
 
         # Return the new instance
         return arguments

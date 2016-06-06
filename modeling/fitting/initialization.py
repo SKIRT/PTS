@@ -32,7 +32,7 @@ from ..basics.models import SersicModel, DeprojectionModel
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..decomposition.decomposition import load_parameters
 from ...magic.basics.skyregion import SkyRegion
-from ..basics.instruments import SEDInstrument
+from ..basics.instruments import SEDInstrument, FrameInstrument
 from ..core.sun import Sun
 from ..core.mappings import Mappings
 from ...magic.tools import wavelengths
@@ -111,6 +111,9 @@ class InputInitializer(FittingComponent):
         # The ski files for simulating the contributions of the various stellar components
         self.ski_contributions = dict()
 
+        # The ski file for generating simulated images
+        self.ski_images = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -177,34 +180,37 @@ class InputInitializer(FittingComponent):
         # 5. Load the truncation ellipse
         self.load_truncation_ellipse()
 
-        # 4. Load the fluxes
+        # 6. Load the fluxes
         self.load_fluxes()
 
-        # 5. Create the wavelength grid
+        # 7. Create the wavelength grid
         self.create_wavelength_grid()
 
-        # 6. Create the bulge model
+        # 8. Create the bulge model
         self.create_bulge_model()
 
-        # 7. Create the deprojection model
+        # 9. Create the deprojection model
         self.create_deprojection_model()
 
-        # 8. Create the instrument
+        # 10. Create the instrument
         self.create_instrument()
 
-        # 9. Adjust the ski file
+        # 11. Adjust the ski file
         self.adjust_ski()
 
-        # 10. Adjust the ski files for simulating the contributions of the various stellar components
+        # 12. Adjust the ski files for simulating the contributions of the various stellar components
         self.adjust_ski_contributions()
 
-        # 11. Calculate the weight factor to give to each band
+        # 13. Adjust the ski file for generating simulated images
+        self.adjust_ski_images()
+
+        # 14. Calculate the weight factor to give to each band
         self.calculate_weights()
 
-        # 12. Generate the dust grid data files
+        # 15. Generate the dust grid data files
         self.generate_dust_grid()
 
-        # 13. Writing
+        # 16. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -845,6 +851,33 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def adjust_ski_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adjusting ski files for generating simulated images ...")
+
+        # Create a copy of the ski file instance
+        self.ski_images = self.ski.copy()
+
+        # Remove all instruments
+        self.ski_images.remove_all_instruments()
+
+        # Create frame instrument to generate datacube
+        frame_instrument = FrameInstrument.from_projection(self.projection)
+
+        # Add the frame instrument
+        self.ski_images.add_instrument("earth", frame_instrument)
+
+        # Add the SED instrument
+        self.ski_images.add_instrument("earth", self.instrument)
+
+    # -----------------------------------------------------------------
+
     def calculate_weights(self):
 
         """
@@ -942,6 +975,9 @@ class InputInitializer(FittingComponent):
 
         # Write the ski files for simulating the contributions of the various stellar components
         self.write_ski_files_contributions()
+
+        # Write the ski file for generating simulated images
+        self.write_ski_file_images()
 
         # Write the weights table
         self.write_weights()

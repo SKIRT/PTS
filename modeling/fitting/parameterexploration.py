@@ -297,10 +297,11 @@ class ParameterExplorer(FittingComponent):
             arguments.output_path = fs.join(self.fit_best_path, contribution)
 
             # Create the AnalysisOptions instance
+            analysis_options = AnalysisOptions()
 
 
             # Add the arguments object
-            self.launcher.add_to_extra_queue(arguments, simulation_name)
+            self.launcher.add_to_extra_queue(arguments, analysis_options, simulation_name)
 
             # Set scheduling options if necessary
             for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
@@ -325,10 +326,39 @@ class ParameterExplorer(FittingComponent):
         output_path = fs.join(self.fit_best_path, "images")
 
         # Create the SkirtArguments instance
-        arguments = SkirtArguments.single(ski_path, input_path, output_path)
+        arguments = SkirtArguments.single(ski_path, input_path, output_path, verbose=True, memory=True)
 
         # Create the AnalysisOptions instance
+        analysis_options = AnalysisOptions()
 
+        # Set extraction options
+        analysis_options.extraction.path = output_path
+        analysis_options.extraction.progress = True
+        analysis_options.extraction.timeline = True
+        analysis_options.extraction.memory = True
+
+        # Set plotting options
+        analysis_options.plotting.path = output_path
+        analysis_options.plotting.progress = True
+        analysis_options.plotting.timeline = True
+        analysis_options.plotting.memory = True
+        analysis_options.plotting.seds = True
+        analysis_options.plotting.reference_sed = fs.join(self.phot_path, "fluxes.dat")
+
+        # Set misc options
+        analysis_options.misc.path = output_path
+        analysis_options.misc.images = True
+        analysis_options.misc.observation_filters =
+        analysis_options.misc.make_images_remote =
+        analysis_options.misc.images_wcs =
+        analysis_options.misc.images_unit =
+        analysis_options.misc.images_kernels =
+
+        # Add the arguments object
+        self.launcher.add_to_extra_queue(arguments, analysis_options, "images")
+
+        # Set scheduling options if necessary
+        for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, "images", self.scheduling_options[host_id])
 
     # -----------------------------------------------------------------
 
