@@ -208,6 +208,7 @@ class InputInitializer(FittingComponent):
         self.calculate_weights()
 
         # 15. Generate the dust grid data files
+        self.write_input()
         self.generate_dust_grid()
 
         # 16. Writing
@@ -968,7 +969,7 @@ class InputInitializer(FittingComponent):
         log.info("Writing ...")
 
         # Write the input
-        self.write_input()
+        #self.write_input() # is now called before generate_dust_grid() for obvious reasons
 
         # Write the ski file
         self.write_ski_file()
