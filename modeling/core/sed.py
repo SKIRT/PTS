@@ -21,6 +21,8 @@ from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from ...core.tools import tables
+from ...core.tools import inspection
+from ...core.tools import filesystem as fs
 from ...core.basics.errorbar import ErrorBar
 from ...core.basics.filter import Filter
 
@@ -576,5 +578,93 @@ class SED(object):
 
         # Write the SED table to file
         tables.write(self.table, path, format="ascii.ecsv")
+
+# -----------------------------------------------------------------
+
+seds_path = fs.join(inspection.pts_dat_dir("modeling"), "seds")
+
+# -----------------------------------------------------------------
+
+class MappingsSED(SED):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        """
+
+        # Call the constructor of the base class
+        super(MappingsSED, self).__init__()
+
+        # Determine the path to the SED file
+        sed_path = fs.join(seds_path, "mapsed.dat")
+
+        # Get the data
+        wavelength_column, flux_column = np.loadtxt(sed_path, usecols=(0, 1), unpack=True)
+
+        # Set the columns
+        self.table = tables.new([wavelength_column, flux_column], ["Wavelength", "Flux"])
+        self.table["Wavelength"].unit = "micron"
+        self.table["Flux"].unit = "W/m2" # = lambda * F_Lambda !
+
+# -----------------------------------------------------------------
+
+class BruzualCharlotSED(SED):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        """
+
+        # Call the constructor of the base class
+        super(BruzualCharlotSED, self).__init__()
+
+        # Determine the path to the SED file
+        sed_path = fs.join(seds_path, "bcsed.dat")
+
+        # Get the data
+        wavelength_column, flux_column = np.loadtxt(sed_path, usecols=(0, 1), unpack=True)
+
+        # Set the columns
+        self.table = tables.new([wavelength_column, flux_column], ["Wavelength", "Flux"])
+        self.table["Wavelength"].unit = "micron"
+        self.table["Flux"].unit = "W/m2" # = lambda * F_lambda !
+
+# -----------------------------------------------------------------
+
+class ZubkoSED(SED):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        """
+
+        # Call the constructor of the base class
+        super(ZubkoSED, self).__init__()
+
+        # Determine the path to the SED file
+        sed_path = fs.join(seds_path, "zubkosed.dat")
+
+        # Get the data
+        wavelength_column, flux_column = np.loadtxt(sed_path, usecols=(0, 2), unpack=True)
+
+        # Set the columns
+        self.table = tables.new([wavelength_column, flux_column], ["Wavelength", "Flux"])
+        self.table["Wavelength"].unit = "micron"
+        self.table["Flux"].unit = "W/m2" # = lambda * F_lambda
 
 # -----------------------------------------------------------------

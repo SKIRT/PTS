@@ -76,6 +76,18 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nwavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.table)
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_wavelengths(cls, wavelengths):
 

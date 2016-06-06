@@ -16,6 +16,8 @@ from __future__ import absolute_import, division, print_function
 from .component import PlottingComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
+from ...magic.core.frame import Frame
+from ...magic.plot.imagegrid import StandardImageGridPlotter
 
 # -----------------------------------------------------------------
 
@@ -38,6 +40,9 @@ class PreparationPlotter(PlottingComponent):
 
         # -- Attributes --
 
+        # The dictionary of prepared image frames
+        self.images = dict()
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -47,25 +52,18 @@ class PreparationPlotter(PlottingComponent):
         :return:
         """
 
+        # 1. Call the setup function
         self.setup()
 
+        # 2. Load the prepared images
+        self.load_images()
+
+        # 3. Plot
         self.plot()
 
     # -----------------------------------------------------------------
 
-    def setup(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(PlottingComponent, self).setup()
-
-    # -----------------------------------------------------------------
-
-    def plot(self):
+    def load_images(self):
 
         """
         This function ...
@@ -74,9 +72,6 @@ class PreparationPlotter(PlottingComponent):
 
         # Inform the user
         log.info("Loading the prepared images ...")
-
-        # The dictionary of image frames
-        images = dict()
 
         # Loop over all directories in the preparation directory
         for directory_path, directory_name in fs.directories_in_path(self.prep_path, returns=["path", "name"]):
@@ -94,7 +89,16 @@ class PreparationPlotter(PlottingComponent):
             frame.name = directory_name
 
             # Add the image to the dictionary
-            images[directory_name] = frame
+            self.images[directory_name] = frame
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Inform the user
         log.info("Plotting the images ...")
@@ -103,10 +107,10 @@ class PreparationPlotter(PlottingComponent):
         plotter = StandardImageGridPlotter()
 
         # Sort the image labels based on wavelength
-        sorted_labels = sorted(images.keys(), key=lambda key: images[key].filter.pivotwavelength())
+        sorted_labels = sorted(self.images.keys(), key=lambda key: self.images[key].filter.pivotwavelength())
 
         # Add the images
-        for label in sorted_labels: plotter.add_image(images[label], label)
+        for label in sorted_labels: plotter.add_image(self.images[label], label)
 
         # Determine the path to the plot file
         path = fs.join(self.plot_path, "preparation.pdf")

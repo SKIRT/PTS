@@ -1087,12 +1087,8 @@ class InputInitializer(FittingComponent):
         # Loop over the ski files
         for contribution in self.ski_contributions:
 
-            # Create the directory for this contribution
-            contribution_path = fs.join(self.fit_best_path, contribution)
-            fs.create_directory(contribution_path)
-
             # Determine the path to the ski file
-            ski_path = fs.join(contribution_path, self.galaxy_name + ".ski")
+            ski_path = fs.join(self.fit_best_contribution_paths[contribution], self.galaxy_name + ".ski")
 
             # Write the ski file
             self.ski_contributions[contribution].saveto(ski_path)
@@ -1109,9 +1105,11 @@ class InputInitializer(FittingComponent):
         # Inform the user
         log.info("Writing the ski file for creating simulated images ...")
 
-        # Create the directory
-        images_path = fs.join(self.fit_best_path, "images")
-        fs.create_directory(images_path)
+        # Determine the path to the ski file
+        ski_path = fs.join(self.fit_best_images_path, self.galaxy_name + ".ski")
+
+        # Write the ski file
+        self.ski_images.saveto(ski_path)
 
     # -----------------------------------------------------------------
 

@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 # Import the relevant PTS classes and modules
 from .component import PlottingComponent
@@ -26,10 +26,17 @@ from ...core.tools import tables
 from ...core.basics.filter import Filter
 from ..core.transmission import TransmissionCurve
 from ...core.plot.transmission import TransmissionPlotter
+from ...core.plot.wavelengthgrid import WavelengthGridPlotter
 from ...core.plot.grids import plotgrids
 from ...core.simulation.simulation import SkirtSimulation
 from ...core.simulation.logfile import LogFile
 from ...core.simulation.skifile import SkiFile
+from ..core.emissionlines import EmissionLines
+from ..core.sed import MappingsSED, BruzualCharlotSED, ZubkoSED
+from ..core.sed import SED, ObservedSED
+from ...magic.plot.imagegrid import ResidualImageGridPlotter
+from ...magic.core.frame import Frame
+from ...core.plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------
 
@@ -67,6 +74,18 @@ class FittingPlotter(PlottingComponent):
         # The runtimes
         self.runtimes = None
 
+        # The SEDs of the different stellar contributions (total, old, young, ionizing)
+        self.seds = OrderedDict()
+
+        # The observed SED
+        self.observed_sed = None
+
+        # The simulated images
+        self.simulated_images = dict()
+
+        # The observed imags
+        self.observed_images = dict()
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -82,19 +101,25 @@ class FittingPlotter(PlottingComponent):
         # 2. Load the ski file
         self.load_ski_file()
 
-        # 2. Load the wavelength grid
+        # 3. Load the wavelength grid
         self.load_wavelength_grid()
 
-        # 3. Load the transmission curves
+        # 4. Load the transmission curves
         self.load_transmission_curves()
 
-        # 4. Load the dust cell tree data
+        # 5. Load the dust cell tree data
         self.load_dust_cell_tree()
 
-        # 5. Load the runtimes
+        # 6. Load the runtimes
         self.load_runtimes()
 
-        # Plot
+        # 7. Load the SEDs for the various contribution
+        self.load_seds()
+
+        # 8. Load the simulated images
+        self.load_images()
+
+        # 9. Plot
         self.plot()
 
     # -----------------------------------------------------------------
@@ -237,6 +262,145 @@ class FittingPlotter(PlottingComponent):
 
     # -----------------------------------------------------------------
 
+    def load_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the SEDs ...")
+
+        # Determine the path to the fit/best directory
+        fit_best_path = fs.join(self.fit_path, "best")
+
+        # Determine the path to the fit/best/images directory
+        images_path = fs.join(fit_best_path, "images")
+
+        # Determine the path to the SED file from the 'images' simulation
+        sed_path = fs.join(images_path, self.galaxy_name + "_earth_sed.dat")
+
+        # Load the SED
+        sed = SED.from_skirt(sed_path)
+
+        # Add the total SED to the dictionary of SEDs
+        self.seds["total"] = sed
+
+        # Add the SEDs of the simulations with the individual stellar populations
+        contributions = ["old", "young", "ionizing"]
+        for contribution in contributions:
+
+            # Determine the output path for this simulation
+            out_path = fs.join(fit_best_path, contribution)
+
+            # Determine the path to the SED file
+            sed_path = fs.join(out_path, self.galaxy_name + "_earth_sed.dat")
+
+            # Load the SED
+            sed = SED.from_skirt(sed_path)
+
+            # Add the SED to the dictionary of SEDs
+            self.seds[contribution] = sed
+
+        # Determine the path to the observed SED
+        observed_sed_path = fs.join(self.phot_path, "fluxes.dat")
+
+        # Load the observed SED
+        self.observed_sed = ObservedSED.from_file(observed_sed_path)
+
+    # -----------------------------------------------------------------
+
+    def load_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the images ...")
+
+        # Load simulated images
+        self.load_simulated_images()
+
+        # Load observed images
+        self.load_observed_images()
+
+    # -----------------------------------------------------------------
+
+    def load_simulated_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the simulated images ...")
+
+        # Determine the path to the fit/best directory
+        fit_best_path = fs.join(self.fit_path, "best")
+
+        # Determine the path to the fit/best/images directory
+        out_path = fs.join(fit_best_path, "images")
+
+        # Loop over all FITS files found in the fit/best/images directory
+        for path, name in fs.files_in_path(out_path, extension="fits", returns=["path", "name"], contains="__"):
+
+            # Debugging
+            log.debug("Loading the '" + name + "' image ...")
+
+            # Get the filter name
+            filter_name = name.split("__")[1]
+
+            # Open the image
+            frame = Frame.from_file(path)
+
+            # Add the image frame to the dictionary
+            self.simulated_images[filter_name] = frame
+
+    # -----------------------------------------------------------------
+
+    def load_observed_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the observed images ...")
+
+        # Loop over all FITS files found in the 'truncated' directory
+        for path, name in fs.files_in_path(self.truncation_path, extension="fits", returns=["path", "name"]):
+
+            # Ignore the bulge, disk and model images
+            if name == "bulge" or name == "disk" or name == "model": continue
+
+            # Ignore the H alpha image
+            if "Halpha" in name: continue
+
+            # Check whether a simulated image exists for this band
+            if name not in self.simulated_images:
+                log.warning(
+                    "The simulated version of the " + name + " image could not be found, skipping " + name + " data ...")
+                continue
+
+            # Debugging
+            log.debug("Loading the '" + name + "' image ...")
+
+            # The filter name is the image name
+            filter_name = name
+
+            # Open the image
+            frame = Frame.from_file(path)
+
+            # Add the image frame to the dictionary
+            self.observed_images[filter_name] = frame
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -245,7 +409,7 @@ class FittingPlotter(PlottingComponent):
         """
 
         # Plot the model components
-        self.plot_components()
+        #self.plot_components()
 
         # Plot the wavelength grid used for the fitting
         self.plot_wavelengths()
@@ -258,6 +422,12 @@ class FittingPlotter(PlottingComponent):
 
         # Plot the distributions of the runtimes on different remote systems
         if self.runtimes is not None: self.plot_runtimes()
+
+        # Plot the SEDs
+        self.plot_seds()
+
+        # Plot the images
+        self.plot_images()
 
     # -----------------------------------------------------------------
 
@@ -317,6 +487,24 @@ class FittingPlotter(PlottingComponent):
         # Inform the user
         log.info("Plotting the wavelength grid ...")
 
+        # Plot the wavelength grid with the observation filters
+        self.plot_wavelengths_filters()
+
+        # Plot the wavelengths with the SEDs of stars and dust
+        self.plot_wavelengths_seds()
+
+    # -----------------------------------------------------------------
+
+    def plot_wavelengths_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the wavelengths with")
+
         # Create the transmission plotter
         plotter = TransmissionPlotter()
 
@@ -330,10 +518,55 @@ class FittingPlotter(PlottingComponent):
         for wavelength in self.wavelength_grid.wavelengths(): plotter.add_wavelength(wavelength)
 
         # Determine the path to the plot file
-        path = fs.join(self.plot_fitting_path, "wavelengths.pdf")
+        path = fs.join(self.plot_fitting_path, "wavelengths_filters.pdf")
 
         # Run the plotter
-        plotter.run(path, min_wavelength=self.wavelength_grid.min_wavelength, max_wavelength=self.wavelength_grid.max_wavelength, min_transmission=0.0, max_transmission=1.05)
+        plotter.run(path, min_wavelength=self.wavelength_grid.min_wavelength,
+                    max_wavelength=self.wavelength_grid.max_wavelength, min_transmission=0.0, max_transmission=1.05)
+
+    # -----------------------------------------------------------------
+
+    def plot_wavelengths_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the wavelengths with SEDs of stars and dust ...")
+
+        # Create the wavelength grid plotter
+        plotter = WavelengthGridPlotter()
+
+        # Set title
+        plotter.title = "Wavelengths used for fitting"
+        plotter.transparent = True
+
+        # Add the wavelength grid
+        plotter.add_wavelength_grid(self.wavelength_grid, "fitting simulations")
+
+        # Add MAPPINGS SFR SED
+        mappings_sed = MappingsSED()
+        plotter.add_sed(mappings_sed, "MAPPINGS")
+
+        # Add Bruzual-Charlot stellar SED
+        bc_sed = BruzualCharlotSED()
+        plotter.add_sed(bc_sed, "Bruzual-Charlot")
+
+        # Add Zubko dust emission SED
+        zubko_sed = ZubkoSED()
+        plotter.add_sed(zubko_sed, "Zubko")
+
+        # Add emission lines
+        emission_lines = EmissionLines()
+        for line in emission_lines: plotter.add_emission_line(line)
+
+        # Determine the path to the plot file
+        path = fs.join(self.plot_fitting_path, "wavelengths_seds.pdf")
+
+        # Run the plotter
+        plotter.run(path, min_wavelength=self.wavelength_grid.min_wavelength, max_wavelength=self.wavelength_grid.max_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -403,5 +636,66 @@ class FittingPlotter(PlottingComponent):
 
                 # Plot the distribution
                 distribution.plot(title=title, path=path)
+
+    # -----------------------------------------------------------------
+
+    def plot_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting SEDs of various contributions ...")
+
+        # Create the SEDPlotter object
+        plotter = SEDPlotter(self.galaxy_name)
+
+        # Loop over the simulated SEDs of the various stellar contributions
+        for label in self.seds:
+
+            # Add the simulated SED to the plotter
+            plotter.add_modeled_sed(self.seds[label], label)
+
+        # Add the observed SED to the plotter
+        plotter.add_observed_sed(self.observed_sed, "observation")
+
+        # Determine the path to the SED plot file
+        path = fs.join(self.plot_analysis_path, "sed_contributions.pdf")
+
+        # Run the plotter
+        plotter.run(path)
+
+    # -----------------------------------------------------------------
+
+    def plot_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting a grid with the observed, simulated and residual images ...")
+
+        # Create the image grid plotter
+        plotter = ResidualImageGridPlotter(title="Image residuals")
+
+        # Loop over the filter names, add a row to the image grid plotter for each filter
+        for filter_name in self.filter_names_sorted:
+            observed = self.observed[filter_name]
+            simulated = self.simulated[filter_name]
+
+            plotter.add_row(observed, simulated, filter_name)
+
+        # Set the bounding box for the plotter
+        plotter.set_bounding_box(self.ellipse.bounding_box)
+
+        # Determine the path to the plot file
+        path = fs.join(self.analysis_residuals_path, "residuals.pdf")
+
+        # Run the plotter
+        plotter.run(path)
 
 # -----------------------------------------------------------------

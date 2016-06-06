@@ -13,8 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import io
-import imageio
 import numpy as np
 
 # Import astronomical modules

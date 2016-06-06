@@ -32,7 +32,28 @@ papers_path = fs.join(inspection.pts_user_dir, "papers")
 
 # -----------------------------------------------------------------
 
-class Papers(object):
+class Paper(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, title, authors, journal, date, bibcode, path):
+
+        """
+        This function ...
+        """
+
+        self.title = title
+        self.authors = authors
+        self.journal = journal
+        self.date = date
+        self.bibcode = bibcode
+        self.path = path
+
+# -----------------------------------------------------------------
+
+class PapersDatabase(object):
 
     """
     This class ...
@@ -216,3 +237,27 @@ class Papers(object):
 
 # -----------------------------------------------------------------
 
+def add_paper(label, url):
+
+    """
+    This function ...
+    :param label:
+    :param url:
+    :return:
+    """
+
+    pass
+
+# -----------------------------------------------------------------
+
+def remove_paper(label):
+
+    """
+    This function ...
+    :param label:
+    :return:
+    """
+
+    pass
+
+# -----------------------------------------------------------------

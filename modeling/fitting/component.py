@@ -151,7 +151,10 @@ class FittingComponent(ModelingComponent):
             self.fit_best_contribution_paths[contribution] = path
 
         # Set the path to the fit/best/images directory
+        self.fit_best_images_path = fs.join(self.fit_best_path, "images")
 
+        # Create the fit/best/images directory
+        fs.create_directory(self.fit_best_images_path)
 
         # Set the path to the parameter file
         self.parameter_table_path = fs.join(self.fit_path, "parameters.dat")

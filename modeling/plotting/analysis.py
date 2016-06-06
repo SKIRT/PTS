@@ -394,6 +394,9 @@ class AnalysisPlotter(PlottingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Plotting SEDs of various contributions ...")
+
         # Create the SEDPlotter object
         plotter = SEDPlotter(self.galaxy_name)
 
