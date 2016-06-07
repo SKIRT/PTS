@@ -89,6 +89,9 @@ class FittingComponent(ModelingComponent):
         # The path to the scripts directory
         self.fit_scripts_path = None
 
+        # The path to the geometries directory
+        self.fit_geometries_path = None
+
         # The paths of the directories of the simulations that calculate the contributions of the various stellar populations
         self.fit_best_contribution_paths = dict()
 
@@ -145,6 +148,12 @@ class FittingComponent(ModelingComponent):
 
         # Create the fit/scripts directory
         if not fs.is_directory(self.fit_scripts_path): fs.create_directory(self.fit_scripts_path)
+
+        # Set the path to the fit/geometries directory
+        self.fit_geometries_path = fs.join(self.fit_path, "geometries")
+
+        # Creaete the fit/geometries directory
+        if not fs.is_directory(self.fit_geometries_path): fs.create_directory(self.fit_geometries_path)
 
         # Set and create the paths to the fit/best/ contribution directories
         for contribution in contributions:

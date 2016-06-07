@@ -41,6 +41,7 @@ from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ..basics.projection import GalaxyProjection
 from ...core.simulation.execute import SkirtExec
 from ...core.simulation.arguments import SkirtArguments
+from ..core.emissionlines import EmissionLines
 
 # -----------------------------------------------------------------
 
@@ -70,8 +71,9 @@ class InputInitializer(FittingComponent):
         # The ski file
         self.ski = None
 
-        # The wavelength grid
-        self.wavelength_grid = None
+        # The wavelength grids
+        self.lowres_wavelength_grid = None
+        self.highres_wavelength_grid = None
 
         # The structural parameters
         self.parameters = None
@@ -87,6 +89,7 @@ class InputInitializer(FittingComponent):
 
         # The deprojection model
         self.deprojection = None
+        self.deprojections = dict()
 
         # The instrument
         self.instrument = None
@@ -337,7 +340,25 @@ class InputInitializer(FittingComponent):
         """
 
         # Inform the user
-        log.info("Creating the wavelength grid ...")
+        log.info("Creating the wavelength grids ...")
+
+        # Create the low-resolution wavelength grid
+        self.create_low_res_wavelength_grid()
+
+        # Create the high-resolution wavelength grid
+        self.create_high_res_wavelength_grid()
+
+    # -----------------------------------------------------------------
+
+    def create_low_res_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the low-resolution wavelength grid ...")
 
         # Verify the grid parameters
         if self.config.wavelengths.npoints < 2: raise ValueError("the number of points in the low-resolution grid should be at least 2")
@@ -375,8 +396,26 @@ class InputInitializer(FittingComponent):
         bisect.insort(total_grid, self.i1.centerwavelength())
         bisect.insort(total_grid, self.fuv.centerwavelength())
 
-        # Create table for the wavelength grid
-        self.wavelength_grid = WavelengthGrid.from_wavelengths(total_grid)
+        # Create table for the low-resolution wavelength grid
+        self.lowres_wavelength_grid = WavelengthGrid.from_wavelengths(total_grid)
+
+    # -----------------------------------------------------------------
+
+    def create_high_res_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the high-resolution wavelength grid ...")
+
+        # Emission lines instance
+        lines = EmissionLines()
+
+        # Create the high-resolution wavelength grid
+        self.highres_wavelength_grid = lines.create_wavelength_grid()
 
     # -----------------------------------------------------------------
 
@@ -465,7 +504,7 @@ class InputInitializer(FittingComponent):
         self.ski.setpackages(self.config.packages)
 
         # Set the name of the wavelength grid file
-        self.ski.set_file_wavelength_grid("wavelengths.txt")
+        self.ski.set_file_wavelength_grid("wavelengths_lowres.txt")
 
         # Set the stellar and dust components
         self.set_components()
@@ -580,9 +619,13 @@ class InputInitializer(FittingComponent):
         #luminosity = luminosity.to(self.sun_i1).value
 
         # Set the parameters of the evolved stellar component
-        self.deprojection.filename = "old_stars.fits"
-        self.deprojection.scale_height = scale_height
-        self.ski.set_stellar_component_geometry("Evolved stellar disk", self.deprojection)
+        deprojection = self.deprojection.copy()
+        deprojection.filename = "old_stars.fits"
+        deprojection.scale_height = scale_height
+        self.deprojections["Old stars"] = deprojection
+
+        # Adjust the ski file
+        self.ski.set_stellar_component_geometry("Evolved stellar disk", deprojection)
         self.ski.set_stellar_component_sed("Evolved stellar disk", disk_template, disk_age, disk_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1) # normalization by band
         self.ski.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1.centerwavelength() * Unit("micron"))
@@ -619,9 +662,13 @@ class InputInitializer(FittingComponent):
         #luminosity = luminosity.to(self.sun_fuv).value
 
         # Set the parameters of the young stellar component
-        self.deprojection.filename = "young_stars.fits"
-        self.deprojection.scale_height = scale_height
-        self.ski.set_stellar_component_geometry("Young stars", self.deprojection)
+        deprojection = self.deprojection.copy()
+        deprojection.filename = "young_stars.fits"
+        deprojection.scale_height = scale_height
+        self.deprojections["Young stars"] = deprojection
+
+        # Adjust the ski file
+        self.ski.set_stellar_component_geometry("Young stars", deprojection)
         self.ski.set_stellar_component_sed("Young stars", young_template, young_age, young_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Young stars", luminosity, self.fuv) # normalization by band
         self.ski.set_stellar_component_luminosity("Young stars", luminosity, self.fuv.centerwavelength() * Unit("micron"))
@@ -655,9 +702,13 @@ class InputInitializer(FittingComponent):
         #luminosity = luminosity.to(self.sun_fuv).value
 
         # Set the parameters of the ionizing stellar component
-        self.deprojection.filename = "ionizing_stars.fits"
-        self.deprojection.scale_height = scale_height
-        self.ski.set_stellar_component_geometry("Ionizing stars", self.deprojection)
+        deprojection = self.deprojection.copy()
+        deprojection.filename = "ionizing_stars.fits"
+        deprojection.scale_height = scale_height
+        self.deprojections["Ionizing stars"] = deprojection
+
+        # Adjust the ski file
+        self.ski.set_stellar_component_geometry("Ionizing stars", deprojection)
         self.ski.set_stellar_component_mappingssed("Ionizing stars", ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor) # SED
         #self.ski.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv) # normalization by band
         self.ski.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv.centerwavelength() * Unit("micron"))
@@ -683,9 +734,13 @@ class InputInitializer(FittingComponent):
         forsterite_pops = 25
 
         # Set the parameters of the dust component
-        self.deprojection.filename = "dust.fits"
-        self.deprojection.scale_height = scale_height
-        self.ski.set_dust_component_geometry(0, self.deprojection)
+        deprojection = self.deprojection.copy()
+        deprojection.filename = "dust.fits"
+        deprojection.scale_height = scale_height
+        self.deprojections["Dust"] = deprojection
+
+        # Adjust the ski file
+        self.ski.set_dust_component_geometry(0, deprojection)
         self.ski.set_dust_component_themis_mix(0, hydrocarbon_pops, enstatite_pops, forsterite_pops) # dust mix
         self.ski.set_dust_component_mass(0, dust_mass) # dust mass
 
@@ -983,6 +1038,9 @@ class InputInitializer(FittingComponent):
         # Write the weights table
         self.write_weights()
 
+        # Write the geometries
+        self.write_geometries()
+
     # -----------------------------------------------------------------
 
     def write_input(self):
@@ -996,7 +1054,7 @@ class InputInitializer(FittingComponent):
         log.info("Writing the input ...")
 
         # Write the wavelength grid
-        self.write_wavelength_grid()
+        self.write_wavelength_grids()
 
         # Write the old stellar map
         self.write_old_stars()
@@ -1012,7 +1070,7 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def write_wavelength_grid(self):
+    def write_wavelength_grids(self):
 
         """
         This function ...
@@ -1020,13 +1078,15 @@ class InputInitializer(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing the wavelength grid ...")
+        log.info("Writing the low-resolution and high-resolution wavelength grids ...")
 
-        # Determine the path to the wavelength grid file
-        grid_path = fs.join(self.fit_in_path, "wavelengths.txt")
+        # Write the low-resolution wavelength grid
+        grid_path = fs.join(self.fit_in_path, "wavelengths_lowres.txt")
+        self.lowres_wavelength_grid.to_skirt_input(grid_path)
 
-        # Write the wavelength grid
-        self.wavelength_grid.to_skirt_input(grid_path)
+        # Write the high-resolution wavelength grid
+        grid_path = fs.join(self.fit_in_path, "wavelengths_highres.txt")
+        self.highres_wavelength_grid.to_skirt_input(grid_path)
 
     # -----------------------------------------------------------------
 
@@ -1162,6 +1222,29 @@ class InputInitializer(FittingComponent):
 
         # Write the table with weights
         tables.write(self.weights, self.weights_table_path, format="ascii.ecsv")
+
+    # -----------------------------------------------------------------
+
+    def write_geometries(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the Sersic model for the bulge and the deprojection model for the other components ...")
+
+        # Write the bulge model
+        bulge_path = fs.join(self.fit_geometries_path, "bulge.mod")
+        self.bulge.save(bulge_path)
+
+        # Write the deprojection models
+        for label in self.deprojections:
+
+            # Save the deprojection model
+            path = fs.join(self.fit_geometries_path, label + ".mod")
+            self.deprojections[label].save(path)
 
     # -----------------------------------------------------------------
 

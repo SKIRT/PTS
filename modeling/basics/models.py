@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.basics.models Contains the SersicModel and ExponentialDiskModel classes.
+## \package pts.modeling.basics.models Contains the SersicModel, ExponentialDiskModel and DeprojectionModel classes.
 
 # -----------------------------------------------------------------
 
@@ -14,10 +14,33 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import copy
 
 # Import astronomical modules
 from astropy.coordinates import Angle
 from astropy.units import Unit
+
+# Import the relevant PTS classes and modules
+from ...core.tools import parsing
+
+# -----------------------------------------------------------------
+
+def load_model(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Get the first line of the file
+    with open(path, 'r') as f: first_line = f.readline()
+
+    # Create the appropriate model
+    if "SersicModel" in first_line: return SersicModel.from_file(path)
+    elif "ExponentialDiskModel" in first_line: return ExponentialDiskModel.from_file(path)
+    elif "DeprojectionModel" in first_line: return DeprojectionModel.from_file(path)
+    else: raise ValueError("Unrecognized model file")
 
 # -----------------------------------------------------------------
 
@@ -64,6 +87,72 @@ class SersicModel(object):
 
         # Create a new Sersic model and return it
         return cls(effective_radius, index, flattening, tilt)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        effective_radius = None
+        index = None
+        flattening = None
+        tilt = None
+
+        # Read the parameter file
+        with open(path, 'r') as model_file:
+
+            # Loop over all lines in the file
+            for line in model_file:
+
+                # Split the line
+                splitted = line.split(": ")
+                splitted[1] = splitted[1].split("\n")[0]
+
+                if splitted[0] == "Type":
+                    if splitted[1] != "SersicModel": raise ValueError("Model not of type SersicModel but '" + splitted[1] + "'")
+                elif splitted[0] == "Effective radius": effective_radius = parsing.get_quantity(splitted[1])
+                elif splitted[0] == "Index": index = float(splitted[1])
+                elif splitted[0] == "Flattening": flattening = float(splitted[1])
+                elif splitted[0] == "Tilt": tilt = parsing.get_angle(splitted[1])
+
+        # Creaete the SersicModel and return it
+        return cls(effective_radius, index, flattening, tilt)
+
+    # -----------------------------------------------------------------
+
+    def save(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Open the file and write the properties of this model
+        with open(path, 'w') as model_file:
+
+            print("Type:", "SersicModel", file=model_file)
+            print("Effective radius:", str(self.effective_radius), file=model_file)
+            print("Index:", str(self.index), file=model_file)
+            print("Flattening:", str(self.flattening), file=model_file)
+            print("Tilt:", str(self.tilt.to("deg").value) + " deg", file=model_file)
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
 
 # -----------------------------------------------------------------
 
@@ -118,6 +207,79 @@ class ExponentialDiskModel(object):
         # Create a new exponential disk model and return it
         return cls(radial_scale, axial_scale, tilt=tilt)
 
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        radial_scale = None
+        axial_scale = None
+        radial_truncation = None
+        axial_truncation = None
+        inner_radius = None
+        tilt = None
+
+        # Read the parameter file
+        with open(path, 'r') as model_file:
+
+            # Loop over all lines in the file
+            for line in model_file:
+
+                # Split the line
+                splitted = line.split(": ")
+                splitted[1] = splitted[1].split("\n")[0]
+
+                if splitted[0] == "Type":
+                    if splitted[1] != "ExponentialDiskModel": raise ValueError("Model not of type ExponentialDiskModel but '" + splitted[1] + "'")
+                elif splitted[0] == "Radial scale": radial_scale = parsing.get_quantity(splitted[1])
+                elif splitted[0] == "Axial scale": axial_scale = parsing.get_quantity(splitted[1])
+                elif splitted[0] == "Radial truncation": radial_truncation = parsing.get_quantity(splitted[1])
+                elif splitted[0] == "Axial truncation": axial_truncation = parsing.get_quantity(splitted[1])
+                elif splitted[0] == "Inner radius": inner_radius = parsing.get_quantity(splitted[1])
+                elif splitted[0] == "Tilt": tilt = parsing.get_angle(splitted[1])
+
+        # Create the ExponentialDiskModel and return it
+        return cls(radial_scale, axial_scale, radial_truncation, axial_truncation, inner_radius, tilt)
+
+    # -----------------------------------------------------------------
+
+    def save(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Open the file and write the properties of this model
+        with open(path, 'w') as model_file:
+
+            print("Type:", "ExponentialDiskModel", file=model_file)
+            print("Radial scale:", str(self.radial_scale), file=model_file)
+            print("Axial scale:", str(self.axial_scale), file=model_file)
+            print("Radial truncation:", str(self.radial_truncation), file=model_file)
+            print("Axial truncation:", str(self.axial_truncation), file=model_file)
+            print("Inner radius:", str(self.inner_radius), file=model_file)
+            print("Tilt:", str(self.tilt.to("deg").value) + " deg", file=model_file)
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return copy.deepcopy(self)
+
 # -----------------------------------------------------------------
 
 class DeprojectionModel(object):
@@ -146,6 +308,87 @@ class DeprojectionModel(object):
         self.x_center = x_center
         self.y_center = y_center
         self.scale_height = scale_height
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        filename = None
+        pixelscale = None
+        position_angle = None
+        inclination = None
+        x_size = None
+        y_size = None
+        x_center = None
+        y_center = None
+        scale_height = None
+
+        # Read the parameter file
+        with open(path, 'r') as model_file:
+
+            # Loop over all lines in the file
+            for line in model_file:
+
+                # Split the line
+                splitted = line.split(": ")
+                splitted[1] = splitted[1].split("\n")[0]
+
+                if splitted[0] == "Type":
+                    if splitted[1] != "DeprojectionModel": raise ValueError("Model not of type DeprojectionModel but '" + splitted[1] + "'")
+                elif splitted[0] == "Filename": filename = splitted[1]
+                elif splitted[0] == "Pixelscale": pixelscale = parsing.get_quantity(splitted[1])
+                elif splitted[0] == "Position angle": position_angle = parsing.get_angle(splitted[1])
+                elif splitted[0] == "Inclination": inclination = parsing.get_angle(splitted[1])
+                elif splitted[0] == "Number of x pixels": x_size = int(splitted[1])
+                elif splitted[0] == "Number of y pixels": y_size = int(splitted[1])
+                elif splitted[0] == "Center x pixel": x_center = float(splitted[1])
+                elif splitted[0] == "Center y pixel": y_center = float(splitted[1])
+                elif splitted[0] == "Scale height": scale_height = parsing.get_quantity(splitted[1])
+
+        # Create the DeprojectionModel and return it
+        return cls(filename, pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height)
+
+    # -----------------------------------------------------------------
+
+    def save(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Open the file and write the properties of this model
+        with open(path, 'w') as model_file:
+
+            print("Type:", "DeprojectionModel", file=model_file)
+            print("Filename:", self.filename, file=model_file)
+            print("Pixelscale:", str(self.pixelscale), file=model_file)
+            print("Position angle:", str(self.position_angle.to("deg").value) + " deg", file=model_file)
+            print("Inclination:", str(self.inclination.to("deg").value) + " deg", file=model_file)
+            print("Number of x pixels:", str(self.x_size), file=model_file)
+            print("Number of y pixels:", str(self.y_size), file=model_file)
+            print("Center x pixel:", str(self.x_center), file=model_file)
+            print("Center y pixel:", str(self.y_center), file=model_file)
+            print("Scale height:", str(self.scale_height), file=model_file)
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
 
 # -----------------------------------------------------------------
 

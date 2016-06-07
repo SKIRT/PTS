@@ -1014,25 +1014,17 @@ class SkiFile:
         # Get the stellar component
         stellar_component = self.get_stellar_component(component_id)
 
-        properties = dict()
+        # Get the properties
+        return get_properties(stellar_component)
 
-        def add_properties(element, dictionary):
-            for key, value in element.items(): properties[key] = value
+    ## This function returns all properties of the stellar component with the specified id
+    def get_dust_component_properties(self, component_id):
 
-        def add_children(element, dictionary):
+        # Get the dust component
+        dust_component = self.get_dust_component(component_id)
 
-            dictionary["children"] = dict()
-            for child in element.getchildren():
-
-                dictionary["children"][child.tag] = dict()
-
-                add_properties(child, dictionary["children"][child.tag])
-                add_children(child, dictionary["children"][child.tag])
-
-        add_properties(stellar_component, properties)
-        add_children(stellar_component, properties)
-
-        return properties
+        # Get the properties
+        return get_properties(dust_component)
 
     ## This functions returns the normalization of the stellar component with the specified id
     def get_stellar_component_normalization(self, component_id):
@@ -2339,5 +2331,45 @@ def str_from_quantity(quantity, unit=None):
 
 def str_from_bool(boolean):
     return str(boolean).lower()
+
+# -----------------------------------------------------------------
+
+def add_properties(element, dictionary):
+    for key, value in element.items(): dictionary[key] = value
+
+# -----------------------------------------------------------------
+
+def add_children(element, dictionary):
+
+    """
+    This function ...
+    :param element:
+    :param dictionary:
+    :return:
+    """
+
+    dictionary["children"] = dict()
+
+    for child in element.getchildren():
+
+        dictionary["children"][child.tag] = dict()
+
+        add_properties(child, dictionary["children"][child.tag])
+        add_children(child, dictionary["children"][child.tag])
+
+# -----------------------------------------------------------------
+
+def get_properties(element):
+
+    """
+    This function ...
+    :param element:
+    :return:
+    """
+
+    properties = dict()
+    add_properties(element, properties)
+    add_children(element, properties)
+    return properties
 
 # -----------------------------------------------------------------

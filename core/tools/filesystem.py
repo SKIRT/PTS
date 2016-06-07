@@ -114,6 +114,21 @@ def has_file(directory, filename):
 
 # -----------------------------------------------------------------
 
+def is_empty(directory, ignore_hidden=True):
+
+    """
+    This function ...
+    :param directory:
+    :param ignore_hidden:
+    :return:
+    """
+
+    items = os.listdir(directory)
+    if ignore_hidden: items = [item for item in items if not item.startswith(".")]
+    return len(items) == 0
+
+# -----------------------------------------------------------------
+
 def is_directory(path):
 
     """

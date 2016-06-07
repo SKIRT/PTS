@@ -268,6 +268,9 @@ class ParameterExplorer(FittingComponent):
         # Loop over the scheduled simulations
         for simulation in simulations:
 
+            # Skip simulations for which analysis options are not defined (the contribution simulations)
+            if simulation.analysis is None: continue
+
             # Add the path to the modeling directory to the simulation object
             simulation.analysis.modeling_path = self.config.path
 

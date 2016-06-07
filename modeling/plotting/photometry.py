@@ -16,6 +16,8 @@ from __future__ import absolute_import, division, print_function
 from .component import PlottingComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
+from ..core.sed import ObservedSED
+from ...core.plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------
 
@@ -38,6 +40,9 @@ class PhotometryPlotter(PlottingComponent):
 
         # -- Attributes --
 
+        # The SEDs
+        self.seds = dict()
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -50,8 +55,50 @@ class PhotometryPlotter(PlottingComponent):
         # 1. Call the setup function
         self.setup()
 
-        # Plot
+        # 2. Load the SEDs
+        self.load_seds()
+
+        # 2. Load the aperture data
+        #self.load_apertures()
+
+        # 3. Plot
         self.plot()
+
+    # -----------------------------------------------------------------
+
+    def load_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the SEDs ...")
+
+        # Load the 'DustPedia' observed SED
+        dustpedia_path = fs.join(self.data_path, "fluxes.dat")
+        dustpedia_sed = ObservedSED.from_file(dustpedia_path)
+
+        # Load the PTS observed SED
+        pts_sed_path = fs.join(self.phot_path, "fluxes.dat")
+        pts_sed = ObservedSED.from_file(pts_sed_path)
+
+        # Add the SEDs
+        self.seds["DustPedia"] = dustpedia_sed
+        self.seds["PTS"] = pts_sed
+
+    # -----------------------------------------------------------------
+
+    def load_apertures(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the apertures ...")
 
     # -----------------------------------------------------------------
 
@@ -62,6 +109,34 @@ class PhotometryPlotter(PlottingComponent):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the SEDs
+        self.plot_seds()
+
+    # -----------------------------------------------------------------
+
+    def plot_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the SEDs ...")
+
+        # Create the SED plotter
+        plotter = SEDPlotter()
+
+        # Add the SEDs
+        for label in self.seds: plotter.add_observed_sed(self.seds[label], label)
+
+        # Determine the path to the plot file
+        path = fs.join(self.plot_photometry_path, "seds.pdf")
+
+        # Run the plotter
+        plotter.run(path)
 
 # -----------------------------------------------------------------

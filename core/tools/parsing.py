@@ -12,6 +12,10 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.coordinates import Angle
+from astropy.units import Unit
+
 # Import standard modules
 import argparse
 
@@ -142,5 +146,45 @@ def simulation_ids(string):
 
     # Return the dictionary with ID's of simulations that should be deleted
     return delete
+
+# -----------------------------------------------------------------
+
+def get_quantity(entry, default_unit=None):
+
+    """
+    This function ...
+    :param entry:
+    :param default_unit:
+    :return:
+    """
+
+    splitted = entry.split()
+    value = float(splitted[0])
+    try: unit = splitted[1]
+    except IndexError: unit = default_unit
+
+    # Create a quantity object and return it
+    if unit is not None: value = value * Unit(unit)
+    return value
+
+# -----------------------------------------------------------------
+
+def get_angle(entry, default_unit=None):
+
+    """
+    This function ...
+    :param entry:
+    :param default_unit:
+    :return:
+    """
+
+    splitted = entry.split()
+    value = float(splitted[0])
+    try: unit = splitted[1]
+    except IndexError: unit = default_unit
+
+    # Create an Angle object and return it
+    if unit is not None: value = Angle(value, unit)
+    return value
 
 # -----------------------------------------------------------------

@@ -22,8 +22,6 @@ from ...core.tools.logging import log
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.basics.distribution import Distribution
 from ...core.launch.timing import TimingTable
-from ...core.tools import tables
-from ...core.basics.filter import Filter
 from ..core.transmission import TransmissionCurve
 from ...core.plot.transmission import TransmissionPlotter
 from ...core.plot.wavelengthgrid import WavelengthGridPlotter
@@ -38,6 +36,8 @@ from ...magic.plot.imagegrid import ResidualImageGridPlotter
 from ...magic.core.frame import Frame
 from ...core.plot.sed import SEDPlotter
 from ...magic.basics.skyregion import SkyRegion
+from ..basics.models import load_model
+from ..misc.geometryplotter import GeometryPlotter
 
 # -----------------------------------------------------------------
 
@@ -63,8 +63,9 @@ class FittingPlotter(PlottingComponent):
         # The ski file
         self.ski = None
 
-        # The wavelength grid
-        self.wavelength_grid = None
+        # The wavelength grids
+        self.lowres_wavelength_grid = None
+        self.highres_wavelength_grid = None
 
         # The transmission curves
         self.transmission_curves = dict()
@@ -87,6 +88,9 @@ class FittingPlotter(PlottingComponent):
         # The observed imags
         self.observed_images = dict()
 
+        # The geometries
+        self.geometries = dict()
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -102,11 +106,11 @@ class FittingPlotter(PlottingComponent):
         # 2. Load the ski file
         self.load_ski_file()
 
-        # 3. Load the wavelength grid
-        self.load_wavelength_grid()
+        # 3. Load the wavelength grids
+        self.load_wavelength_grids()
 
         # 4. Load the transmission curves
-        self.load_transmission_curves()
+        #self.load_transmission_curves()
 
         # 5. Load the dust cell tree data
         self.load_dust_cell_tree()
@@ -115,12 +119,15 @@ class FittingPlotter(PlottingComponent):
         self.load_runtimes()
 
         # 7. Load the SEDs for the various contribution
-        self.load_seds()
+        #self.load_seds()
 
         # 8. Load the simulated images
         self.load_images()
 
-        # 9. Plot
+        # 9. Load the geometries
+        self.load_geometries()
+
+        # 10. Plot
         self.plot()
 
     # -----------------------------------------------------------------
@@ -143,7 +150,7 @@ class FittingPlotter(PlottingComponent):
 
     # -----------------------------------------------------------------
 
-    def load_wavelength_grid(self):
+    def load_wavelength_grids(self):
 
         """
         This function ...
@@ -151,13 +158,49 @@ class FittingPlotter(PlottingComponent):
         """
 
         # Inform the user
-        log.info("Loading the wavelength grid used for the fitting ...")
+        log.info("Loading the wavelength grids used for the fitting ...")
+
+        # Load the low-resolution wavelength grid
+        self.load_low_res_wavelength_grid()
+
+        # Load the high-resolution wavelength grid
+        self.load_high_res_wavelength_grid()
+
+    # -----------------------------------------------------------------
+
+    def load_low_res_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the low-resolution wavelength grid ...")
 
         # Determine the path to the wavelength grid file
-        path = fs.join(self.fit_path, "in", "wavelengths.txt")
+        path = fs.join(self.fit_path, "in", "wavelengths_lowres.txt")
 
         # Load the wavelength grid
-        self.wavelength_grid = WavelengthGrid.from_skirt_input(path)
+        self.lowres_wavelength_grid = WavelengthGrid.from_skirt_input(path)
+
+    # -----------------------------------------------------------------
+
+    def load_high_res_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the high-resolution wavelength grid ...")
+
+        # Determine the path to the wavelength grid file
+        path = fs.join(self.fit_path, "in", "wavelengths_highres.txt")
+
+        # Load the wavelength grid
+        self.highres_wavelength_grid = WavelengthGrid.from_skirt_input(path)
 
     # -----------------------------------------------------------------
 
@@ -174,16 +217,9 @@ class FittingPlotter(PlottingComponent):
         # Determine the path to the fluxes table
         fluxes_path = fs.join(self.phot_path, "fluxes.dat")
 
-        # Load the fluxes table
-        fluxes = tables.from_file(fluxes_path, format="ascii.ecsv")
-
-        for i in range(len(fluxes)):
-
-            instrument = fluxes["Instrument"][i]
-            band = fluxes["Band"][i]
-
-            # Constructor filter
-            fltr = Filter.from_instrument_and_band(instrument, band)
+        # Load the observed SED
+        sed = ObservedSED.from_file(fluxes_path)
+        for fltr in sed.filters():
 
             # Create the transmission curve
             transmission = TransmissionCurve.from_filter(fltr)
@@ -409,15 +445,36 @@ class FittingPlotter(PlottingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot(self):
+    def load_geometries(self):
 
         """
         This function ...
         :return:
         """
 
-        # Plot the model components
-        #self.plot_components()
+        # Inform the user
+        log.info("Loading the geometries ...")
+
+        # Determine the path to the fit/geometries directory
+        geometries_path = fs.join(self.fit_path, "geometries")
+
+        # Load all geometries in the directory
+        for path, name in fs.files_in_path(geometries_path, extension="mod", returns=["path", "name"]):
+
+            # Load the geometry
+            model = load_model(path)
+
+            # Add the geometry
+            self.geometries[name] = model
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Plot the wavelength grid used for the fitting
         self.plot_wavelengths()
@@ -426,7 +483,7 @@ class FittingPlotter(PlottingComponent):
         self.plot_dust_grid()
 
         # Plot the distribution of dust cells for the different tree levels
-        self.plot_dust_cell_distribution()
+        if self.cell_distribution is not None: self.plot_dust_cell_distribution()
 
         # Plot the distributions of the runtimes on different remote systems
         if self.runtimes is not None: self.plot_runtimes()
@@ -437,51 +494,8 @@ class FittingPlotter(PlottingComponent):
         # Plot the images
         if len(self.simulated_images) > 0: self.plot_images()
 
-    # -----------------------------------------------------------------
-
-    def plot_components(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting the model components ...")
-
-
-        for component_id in self.ski.get_stellar_component_ids():
-
-            props = self.ski.get_stellar_component_properties(component_id)
-            print(component_id, props)
-
-        for component_id in self.ski.get_dust_component_ids():
-
-            props = self.ski.get_dust_component_properties(component_id)
-            print(component_id, props)
-
-        exit()
-
-        import matplotlib.pyplot as plt
-        from matplotlib.patches import Ellipse
-
-
-        #ells = [Ellipse(xy=rnd.rand(2) * 10, width=rnd.rand(), height=rnd.rand(), angle=rnd.rand() * 360)
-        #        for i in range(NUM)]
-
-        # Create the figure
-        fig = plt.figure()
-        ax = fig.add_subplot(111, aspect='equal')
-        for e in ells:
-            ax.add_artist(e)
-            e.set_clip_box(ax.bbox)
-            e.set_alpha(rnd.rand())
-            e.set_facecolor(rnd.rand(3))
-
-        #ax.set_xlim(0, 10)
-        #ax.set_ylim(0, 10)
-
-        plt.savefig()
+        # Plot the geometries
+        if len(self.geometries) > 0: self.plot_geometries()
 
     # -----------------------------------------------------------------
 
@@ -523,14 +537,14 @@ class FittingPlotter(PlottingComponent):
         for label in self.transmission_curves: plotter.add_transmission_curve(self.transmission_curves[label], label)
 
         # Add the wavelength points
-        for wavelength in self.wavelength_grid.wavelengths(): plotter.add_wavelength(wavelength)
+        for wavelength in self.lowres_wavelength_grid.wavelengths(): plotter.add_wavelength(wavelength)
 
         # Determine the path to the plot file
         path = fs.join(self.plot_fitting_path, "wavelengths_filters.pdf")
 
         # Run the plotter
-        plotter.run(path, min_wavelength=self.wavelength_grid.min_wavelength,
-                    max_wavelength=self.wavelength_grid.max_wavelength, min_transmission=0.0, max_transmission=1.05)
+        plotter.run(path, min_wavelength=self.lowres_wavelength_grid.min_wavelength,
+                    max_wavelength=self.lowres_wavelength_grid.max_wavelength, min_transmission=0.0, max_transmission=1.05)
 
     # -----------------------------------------------------------------
 
@@ -552,7 +566,7 @@ class FittingPlotter(PlottingComponent):
         plotter.transparent = True
 
         # Add the wavelength grid
-        plotter.add_wavelength_grid(self.wavelength_grid, "fitting simulations")
+        plotter.add_wavelength_grid(self.lowres_wavelength_grid, "fitting simulations")
 
         # Add MAPPINGS SFR SED
         mappings_sed = load_example_mappings_sed()
@@ -574,7 +588,7 @@ class FittingPlotter(PlottingComponent):
         path = fs.join(self.plot_fitting_path, "wavelengths_seds.pdf")
 
         # Run the plotter
-        plotter.run(path, min_wavelength=self.wavelength_grid.min_wavelength, max_wavelength=self.wavelength_grid.max_wavelength)
+        plotter.run(path, min_wavelength=self.lowres_wavelength_grid.min_wavelength, max_wavelength=self.lowres_wavelength_grid.max_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -711,6 +725,30 @@ class FittingPlotter(PlottingComponent):
 
         # Determine the path to the plot file
         path = fs.join(self.plot_fitting_path, "images.pdf")
+
+        # Run the plotter
+        plotter.run(path)
+
+    # -----------------------------------------------------------------
+
+    def plot_geometries(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the geometries of the model ...")
+
+        # Create the geometry plotter
+        plotter = GeometryPlotter()
+
+        # Add the geometries
+        for label in self.geometries: plotter.add_geometry(self.geometries[label], label)
+
+        # Determine the path to the plot file
+        path = fs.join(self.plot_fitting_path, "geometries.pdf")
 
         # Run the plotter
         plotter.run(path)

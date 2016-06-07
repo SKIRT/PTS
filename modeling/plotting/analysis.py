@@ -101,6 +101,26 @@ class AnalysisPlotter(PlottingComponent):
 
     # -----------------------------------------------------------------
 
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Clearing ...")
+
+        # Set default values for all attributes
+        self.wavelength_grid = None
+        self.transmission_curves = dict()
+        self.cell_distribution = None
+        self.runtimes = None
+        self.seds = OrderedDict()
+        self.observed_sed = None
+
+    # -----------------------------------------------------------------
+
     def load_wavelength_grid(self):
 
         """
@@ -115,7 +135,7 @@ class AnalysisPlotter(PlottingComponent):
         path = fs.join(self.analysis_path, "in", "wavelengths.txt")
 
         # Load the wavelength grid
-        self.wavelength_grid = WavelengthGrid.from_skirt_input(path)
+        if fs.is_file(path): self.wavelength_grid = WavelengthGrid.from_skirt_input(path)
 
     # -----------------------------------------------------------------
 
@@ -163,6 +183,9 @@ class AnalysisPlotter(PlottingComponent):
         analysis_out_path = fs.join(self.analysis_path, "out")
         log_file_path = fs.join(analysis_out_path, self.galaxy_name + "_log.txt")
 
+        # Break when the log file is not (yet) present
+        if not fs.is_file(log_file_path): return
+
         # Open the log file
         log_file = LogFile(log_file_path)
 
@@ -183,6 +206,9 @@ class AnalysisPlotter(PlottingComponent):
 
         # Determine the path to the timing table
         timing_table_path = fs.join(self.analysis_path, "timing.dat")
+
+        # Break if the timing table is not (yet) present
+        if not fs.is_file(timing_table_path): return
 
         # Load the timing table
         timing_table = TimingTable.read(timing_table_path)
@@ -231,10 +257,10 @@ class AnalysisPlotter(PlottingComponent):
         # Load the SED of the simulation with the total stellar population
         total_out_path = fs.join(analysis_heating_path, "total", "out")
         total_sed_path = fs.join(total_out_path, self.galaxy_name + "_earth_sed.dat")
-        total_sed = SED.from_skirt(total_sed_path)
-
-        # Add the SED to the dictionary of SEDs
-        self.seds["total"] = total_sed
+        if fs.is_file(total_sed_path):
+            # Add the SED to the dictionary of SEDs
+            total_sed = SED.from_skirt(total_sed_path)
+            self.seds["total"] = total_sed
 
         # Add the SEDs of the simulations with the individual stellar populations
         for contribution in ["old", "young", "ionizing"]:
@@ -245,11 +271,17 @@ class AnalysisPlotter(PlottingComponent):
             # Determine the path to the SED file
             sed_path = fs.join(out_path, self.galaxy_name + "_earth_sed.dat")
 
+            # Skip if the file is not (yet) present
+            if not fs.is_file(sed_path): continue
+
             # Load the SED
             sed = SED.from_skirt(sed_path)
 
             # Add the SED to the dictionary of SEDs
             self.seds[contribution] = sed
+
+        # Break if no simulated SEDs were found
+        if len(self.seds) == 0: return
 
         # Determine the path to the observed SED
         observed_sed_path = fs.join(self.phot_path, "fluxes.dat")
@@ -270,19 +302,19 @@ class AnalysisPlotter(PlottingComponent):
         log.info("Plotting ...")
 
         # Plot the wavelength grid
-        self.plot_wavelengths()
+        if self.wavelength_grid is not None: self.plot_wavelengths()
 
         # Plot the dust grid
         self.plot_dust_grid()
 
         # Plot the distribution of dust cells for the different tree levels
-        self.plot_dust_cell_distribution()
+        if self.cell_distribution is not None: self.plot_dust_cell_distribution()
 
         # Plot the distributions of the runtimes on different remote systems
-        self.plot_runtimes()
+        if self.runtimes is not None: self.plot_runtimes()
 
         # Plot the SED of the various stellar contributions
-        self.plot_sed_contributions()
+        if self.observed_sed is not None: self.plot_sed_contributions()
 
     # -----------------------------------------------------------------
 
@@ -329,6 +361,7 @@ class AnalysisPlotter(PlottingComponent):
         # Create a SkirtSimulation instance for the best model simulation
         analysis_out_path = fs.join(self.analysis_path, "out")
         ski_path = fs.join(self.analysis_path, self.galaxy_name + ".ski")
+        if not fs.is_directory(analysis_out_path) or fs.is_empty(analysis_out_path): return # if the output path is non-existent or empty, break
         simulation = SkirtSimulation(ski_path=ski_path, outpath=analysis_out_path)
 
         # Plot the grid

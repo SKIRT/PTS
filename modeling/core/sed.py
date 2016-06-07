@@ -186,6 +186,22 @@ class ObservedSED(object):
         # Load the table
         caapr_table = tables.from_file(path, format="csv")
 
+        fluxes = dict()
+        errors = dict()
+
+        # Loop over the columns of the table
+        for colname in caapr_table.colnames:
+
+            if colname == "name": continue
+            if "ERR" in colname:
+                instrument_band = colname.split("_ERR")[0]
+                error = abs(caapr_table[colname][0])
+                if not np.isnan(error): errors[instrument_band] = error
+            else:
+                instrument_band = colname
+                flux = caapr_table[colname][0]
+                if not np.isnan(flux): fluxes[instrument_band] = flux
+
         observatory_column = []
         instrument_column = []
         band_column = []
@@ -193,21 +209,6 @@ class ObservedSED(object):
         flux_column = []
         fluxerrmin_column = []
         fluxerrmax_column = []
-
-        fluxes = dict()
-        errors = dict()
-
-        # Loop over the columns of the table
-        for colname in caapr_table.colnames:
-            if colname == "name": continue
-            if "ERR" in colname:
-                instrument_band = colname.split("_ERR")[0]
-                error = caapr_table[colname][0]
-                errors[instrument_band] = error
-            else:
-                instrument_band = colname
-                flux = caapr_table[colname][0]
-                fluxes[instrument_band] = flux
 
         for instrument_band in fluxes:
 
@@ -219,10 +220,16 @@ class ObservedSED(object):
             instrument = instrument_band.split("_")[0]
             band = instrument_band.split("_")[1]
 
-            fltr = Filter.from_instrument_and_band(instrument, band)
-            wavelength = fltr.pivotwavelength()
-            observatory = fltr.observatory
+            # Create filter
+            fltr = Filter.from_string(instrument + " " + band)
 
+            # Get filter properties
+            observatory = fltr.observatory
+            instrument = fltr.instrument
+            band = fltr.band
+            wavelength = fltr.pivotwavelength()
+
+            # Add entry to the columns
             observatory_column.append(observatory)
             instrument_column.append(instrument)
             band_column.append(band)
@@ -231,6 +238,7 @@ class ObservedSED(object):
             fluxerrmin_column.append(-error)
             fluxerrmax_column.append(error)
 
+        # Create the SED table
         data = [observatory_column, instrument_column, band_column, wavelength_column, flux_column, fluxerrmin_column, fluxerrmax_column]
         names = ["Observatory", "Instrument", "Band", "Wavelength", "Flux", "Error-", "Error+"]
         sed.table = tables.new(data, names)
