@@ -42,6 +42,7 @@ from ..basics.projection import GalaxyProjection
 from ...core.simulation.execute import SkirtExec
 from ...core.simulation.arguments import SkirtArguments
 from ..core.emissionlines import EmissionLines
+from ..core.sed import ObservedSED
 
 # -----------------------------------------------------------------
 
@@ -101,8 +102,8 @@ class InputInitializer(FittingComponent):
         # The table of weights for each band
         self.weights = None
 
-        # The fluxes table
-        self.fluxes = None
+        # The observed SED
+        self.observed_sed = None
 
         # Filters
         self.i1 = None
@@ -187,8 +188,8 @@ class InputInitializer(FittingComponent):
         # 5. Load the truncation ellipse
         self.load_truncation_ellipse()
 
-        # 6. Load the fluxes
-        self.load_fluxes()
+        # 6. Load the observed SED
+        self.load_observed_sed()
 
         # 7. Create the wavelength grid
         self.create_wavelength_grid()
@@ -321,7 +322,7 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def load_fluxes(self):
+    def load_observed_sed(self):
 
         """
         This function ...
@@ -329,13 +330,13 @@ class InputInitializer(FittingComponent):
         """
 
         # Inform the user
-        log.info("Loading the observed fluxes table ...")
+        log.info("Loading the observed SED ...")
 
-        # Determine the path to the fluxes table
-        fluxes_path = fs.join(self.phot_path, "fluxes.dat")
+        # Determine the path to the SED
+        sed_path = fs.join(self.phot_path, "fluxes.dat")
 
-        # Load the fluxes table
-        self.fluxes = tables.from_file(fluxes_path, format="ascii.ecsv")
+        # Load the SED
+        self.observed_sed = ObservedSED.from_file(sed_path)
 
     # -----------------------------------------------------------------
 
@@ -798,8 +799,8 @@ class InputInitializer(FittingComponent):
         scale_height = self.parameters.disk.hr / 8.26 # De Geyter et al. 2014
 
         # Get the 3.6 micron flux density with the bulge subtracted
-        i1_index = tables.find_index(self.fluxes, "I1", "Band")
-        fluxdensity = self.fluxes["Flux"][i1_index]*Unit("Jy") - self.parameters.bulge.fluxdensity
+        i1_index = tables.find_index(self.observed_sed.table, "I1", "Band")
+        fluxdensity = self.observed_sed.table["Flux"][i1_index] * Unit("Jy") - self.parameters.bulge.fluxdensity
 
         # Convert the flux density into a spectral luminosity
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength() * Unit("micron"), self.parameters.distance)
@@ -841,8 +842,8 @@ class InputInitializer(FittingComponent):
         scale_height = 100. * Unit("pc") # M51
 
         # Get the FUV flux density
-        fuv_index = tables.find_index(self.fluxes, "FUV", "Band")
-        fluxdensity = 5. * self.fluxes["Flux"][fuv_index] * Unit("Jy")
+        fuv_index = tables.find_index(self.observed_sed.table, "FUV", "Band")
+        fluxdensity = 2. * self.observed_sed.table["Flux"][fuv_index] * Unit("Jy")
 
         # Convert the flux density into a spectral luminosity
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv.pivotwavelength() * Unit("micron"), self.parameters.distance)
@@ -1139,10 +1140,10 @@ class InputInitializer(FittingComponent):
         number_of_groups = 6
 
         # Loop over the entries in the observed fluxes table
-        for i in range(len(self.fluxes)):
+        for i in range(len(self.observed_sed.table)):
 
-            instrument = self.fluxes["Instrument"][i]
-            band = self.fluxes["Band"][i]
+            instrument = self.observed_sed.table["Instrument"][i]
+            band = self.observed_sed.table["Band"][i]
 
             # Construct filter
             fltr = Filter.from_instrument_and_band(instrument, band)
@@ -1166,7 +1167,7 @@ class InputInitializer(FittingComponent):
             else: raise RuntimeError("Unknown wavelength range")
 
         # Determine the weight for each group of filters
-        number_of_data_points = len(self.fluxes)
+        number_of_data_points = len(self.observed_sed.table)
         uv_weight = 1. / (len(uv_bands) * number_of_groups) * number_of_data_points
         optical_weight = 1. / (len(optical_bands) * number_of_groups) * number_of_data_points
         nir_weight = 1. / (len(nir_bands) * number_of_groups) * number_of_data_points
