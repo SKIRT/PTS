@@ -125,13 +125,13 @@ star_region = Region.from_file(star_region_path)
 saturation_region_path = fs.join(arguments.input, "saturation.reg")
 
 # Load the saturation region
-saturation_region = Region.from_file(saturation_region_path)
+saturation_region = Region.from_file(saturation_region_path) if fs.is_file(saturation_region_path) else None
 
 # Determine the path to the region of other sources
 other_region_path = fs.join(arguments.input, "other_sources.reg")
 
 # Load the region of other sources
-other_region = Region.from_file(other_region_path)
+other_region = Region.from_file(other_region_path) if fs.is_file(other_region_path) else None
 
 # Load the image with segmentation maps
 segments_path = fs.join(arguments.input, "segments.fits")

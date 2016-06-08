@@ -9,6 +9,9 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
+import copy
+
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
@@ -70,6 +73,8 @@ class BinaryTreeDustGrid(object):
         :return:
         """
 
+
+
     # -----------------------------------------------------------------
 
     def save(self, path):
@@ -79,6 +84,28 @@ class BinaryTreeDustGrid(object):
         :param path:
         :return:
         """
+
+        # Open the file and write the properties of this model
+        with open(path, 'w') as grid_file:
+
+            print("Min x:", str(self.min_x), file=grid_file)
+            print("Max x:", str(self.max_x), file=grid_file)
+            print("Min y:", str(self.min_y), file=grid_file)
+            print("Max y:", str(self.max_x), file=grid_file)
+            print("Min z:", str(self.min_z), file=grid_file)
+            print("Max z:", str(self.max_z), file=grid_file)
+            print("")
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
 
 # -----------------------------------------------------------------
 
