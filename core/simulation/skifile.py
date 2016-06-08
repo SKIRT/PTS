@@ -1729,6 +1729,35 @@ class SkiFile:
         # Return the dust grid
         return get_unique_element(dust_system, "dustGrid")
 
+    ## This function sets the dust grid
+    def set_dust_grid(self, grid):
+
+        from ...modeling.basics.grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid
+
+        if isinstance(grid, CartesianDustGrid):
+
+            # Set cartesian dust grid
+            self.set_cartesian_dust_grid(grid.min_x, grid.max_x, grid.min_y, grid.max_y, grid.min_z, grid.max_z,
+                                         grid.x_bins, grid.y_bins, grid.mesh_type, grid.ratio, grid.write)
+
+        elif isinstance(grid, BinaryTreeDustGrid):
+
+            # Set binary tree dust grid
+            self.set_binary_tree_dust_grid(grid.min_x, grid.max_x, grid.min_y, grid.max_y, grid.min_z, grid.max_z,
+                                           grid.write, grid.min_level, grid.max_level, grid.search_method,
+                                           grid.sample_count, grid.max_optical_depth, grid.max_mass_fraction,
+                                           grid.max_dens_disp_fraction, grid.direction_method)
+
+        elif isinstance(grid, OctTreeDustGrid):
+
+            # Set octtree dust grid
+            self.set_octtree_dust_grid(grid.min_x, grid.max_x, grid.min_y, grid.max_y, grid.min_z, grid.max_z,
+                                       grid.write, grid.min_level, grid.max_level, grid.search_method,
+                                       grid.sample_count, grid.max_optical_depth, grid.max_mass_fraction,
+                                       grid.max_dens_disp_fraction, grid.barycentric)
+
+        else: raise ValueError("Invalid grid type")
+
     ## This function sets a cartesian dust grid for the dust system
     def set_cartesian_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, x_bins, y_bins, z_bins, mesh_type="linear", ratio=1., write_grid=True):
 

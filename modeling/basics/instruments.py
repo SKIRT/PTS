@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.basics.instruments Contains the SimpleInstrument class.
+## \package pts.modeling.basics.instruments Contains the SEDInstrument, FrameInstrument SimpleInstrument and FullInstruemnt classes.
 
 # -----------------------------------------------------------------
 

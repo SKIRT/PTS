@@ -134,10 +134,10 @@ class GeometryPlotter(object):
                 major = 0.3 * (geometry.pixelscale * geometry.x_size).to("pc").value
                 angle = 0.0
 
-            if self._min_x is None or major > abs(self._min_x): self._min_x = - major
-            if self._max_x is None or major > self._max_x: self._max_x = major
-            if self._min_y is None or minor > abs(self._min_y): self._min_y = - minor
-            if self._max_y is None or minor > self._max_y: self._max_y = minor
+            if self._min_x is None or 0.5*major > abs(self._min_x): self._min_x = - 0.5*major
+            if self._max_x is None or 0.5*major > self._max_x: self._max_x = 0.5*major
+            if self._min_y is None or 0.5*minor > abs(self._min_y): self._min_y = - 0.5*minor
+            if self._max_y is None or 0.5*minor > self._max_y: self._max_y = 0.5*minor
 
             # Create the patch
             color = next(colors)
@@ -165,15 +165,11 @@ class GeometryPlotter(object):
 
         for label in self.patches:
 
-            #ax.add_artist(self.patches[label])
-
             ax.add_patch(self.patches[label])
 
-            #e.set_clip_box(ax.bbox)
-            #e.set_alpha(rnd.rand())
-            #e.set_facecolor(rnd.rand(3))
+            # TODO: add text for label
 
-        plt.grid('on')
+        #plt.grid('on')
 
         ax.set_xlim(self._min_x, self._max_x)
         ax.set_ylim(self._min_y, self._max_y)

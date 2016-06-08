@@ -68,6 +68,10 @@ class FittingComponent(ModelingComponent):
         # The path to the fit/grid directory
         self.fit_grid_path = None
 
+        # The paths to the fit/grid/lowres and fit/grid/highres directories
+        self.fit_grid_lowres_path = None
+        self.fit_grid_highres_path = None
+
         # The path to the ski file
         self.fit_ski_path = None
 
@@ -142,6 +146,13 @@ class FittingComponent(ModelingComponent):
 
         # Create the fit/in, fit/out, fit/res, fit/plot, fit/best, fit/prob and fit/grid directories
         fs.create_directories([self.fit_in_path, self.fit_out_path, self.fit_res_path, self.fit_plot_path, self.fit_best_path, self.fit_prob_path, self.fit_grid_path])
+
+        # Set the paths to the fit/grid/lowres and fit/grid/highres directories
+        self.fit_grid_lowres_path = fs.join(self.fit_grid_path, "low-res")
+        self.fit_grid_highres_path = fs.join(self.fit_grid_path, "high-res")
+
+        # Create the fit/grid/lowres and fit/grid/highres directories
+        fs.create_directories([self.fit_grid_lowres_path, self.fit_grid_highres_path])
 
         # Set the path to the fit/scripts directory
         self.fit_scripts_path = fs.join(self.fit_path, "scripts")

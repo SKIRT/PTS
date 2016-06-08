@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
-import copy
 import bisect
 import numpy as np
 
@@ -33,6 +32,7 @@ from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..decomposition.decomposition import load_parameters
 from ...magic.basics.skyregion import SkyRegion
 from ..basics.instruments import SEDInstrument, FrameInstrument
+from ..basics.grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid
 from ..core.sun import Sun
 from ..core.mappings import Mappings
 from ...magic.tools import wavelengths
@@ -93,6 +93,10 @@ class InputInitializer(FittingComponent):
 
         # The instrument
         self.instrument = None
+
+        # The dust grids
+        self.lowres_dust_grid = None
+        self.highres_dust_grid = None
 
         # The table of weights for each band
         self.weights = None
@@ -198,23 +202,26 @@ class InputInitializer(FittingComponent):
         # 10. Create the instrument
         self.create_instrument()
 
-        # 11. Adjust the ski file
+        # 11. Create the dust grids
+        self.create_grids()
+
+        # 12. Adjust the ski file
         self.adjust_ski()
 
-        # 12. Adjust the ski files for simulating the contributions of the various stellar components
+        # 13. Adjust the ski files for simulating the contributions of the various stellar components
         self.adjust_ski_contributions()
 
-        # 13. Adjust the ski file for generating simulated images
+        # 14. Adjust the ski file for generating simulated images
         self.adjust_ski_images()
 
-        # 14. Calculate the weight factor to give to each band
+        # 15. Generate the grids
+        self.write_input()
+        self.generate_grids()
+
+        # 16. Calculate the weight factor to give to each band
         self.calculate_weights()
 
-        # 15. Generate the dust grid data files
-        self.write_input()
-        self.generate_dust_grid()
-
-        # 16. Writing
+        # 17. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -484,6 +491,191 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def create_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the grids ...")
+
+        # Create the low-resolution grid
+        self.create_low_res_grid()
+
+        # Create the high-resolution grid
+        self.create_high_res_grid()
+
+    # -----------------------------------------------------------------
+
+    def create_low_res_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the low-resolution dust grid ...")
+
+        # Set the dust grid
+        if self.config.dust_grid == "cartesian": self.lowres_dust_grid = self.create_cartesian_dust_grid(10.)
+        elif self.config.dust_grid == "bintree": self.lowres_dust_grid = self.set_bintree_dust_grid(10., 6, 1e-5)
+        elif self.config.dust_grid == "octtree": self.lowres_dust_grid = self.set_octtree_dust_grid(10., 6, 1e-5)
+        else: raise ValueError("Invalid option for dust grid type")
+
+    # -----------------------------------------------------------------
+
+    def create_high_res_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the high-resolution dust grid ...")
+
+        # Set the dust grid
+        if self.config.dust_grid == "cartesian": self.highres_dust_grid = self.create_cartesian_dust_grid(1.)
+        elif self.config.dust_grid == "bintree": self.highres_dust_grid = self.set_bintree_dust_grid(0.5, 9, 0.5e-6)
+        elif self.config.dust_grid == "octtree": self.highres_dust_grid = self.set_octtree_dust_grid(0.5, 9, 0.5e-6)
+        else: raise ValueError("Invalid option for dust grid type")
+
+    # -----------------------------------------------------------------
+
+    def create_cartesian_dust_grid(self, smallest_cell_pixels):
+
+        """
+        This function ...
+        :param smallest_cell_pixels:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Configuring the cartesian dust grid ...")
+
+        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
+        major_angular = self.ellipse.major  # major axis length of the sky ellipse
+        radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Calculate the boundaries of the dust grid
+        min_x = - radius_physical
+        max_x = radius_physical
+        min_y = - radius_physical
+        max_y = radius_physical
+        min_z = -3. * Unit("kpc")
+        max_z = 3. * Unit("kpc")
+
+        # Get the pixelscale in physical units
+        distance = self.parameters.distance
+        pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
+        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Because we (currently) can't position the grid exactly as the 2D pixels,
+        # take half of the pixel size to avoid too much interpolation
+        # smallest_scale = 0.5 * pixelscale
+        smallest_scale = smallest_cell_pixels * pixelscale  # limit the number of cells
+
+        # Calculate the number of bins in each direction
+        x_bins = int(math.ceil((max_x - min_x).to("pc").value / smallest_scale.to("pc").value))
+        y_bins = int(math.ceil((max_y - min_y).to("pc").value / smallest_scale.to("pc").value))
+        z_bins = int(math.ceil((max_z - min_z).to("pc").value / smallest_scale.to("pc").value))
+
+        # Create and return the dust grid
+        return CartesianDustGrid(min_x, max_x, min_y, max_y, min_z, max_z, x_bins, y_bins, z_bins)
+
+    # -----------------------------------------------------------------
+
+    def create_bintree_dust_grid(self, smallest_cell_pixels, min_level, max_mass_fraction):
+
+        """
+        This function ...
+        :param smallest_cell_pixels:
+        :param min_level:
+        :param max_mass_fraction:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Configuring the bintree dust grid ...")
+
+        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
+        major_angular = self.ellipse.major  # major axis length of the sky ellipse
+        radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Calculate the boundaries of the dust grid
+        min_x = - radius_physical
+        max_x = radius_physical
+        min_y = - radius_physical
+        max_y = radius_physical
+        min_z = -3. * Unit("kpc")
+        max_z = 3. * Unit("kpc")
+
+        # Get the pixelscale in physical units
+        distance = self.parameters.distance
+        pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
+        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Because we (currently) can't position the grid exactly as the 2D pixels (rotation etc.),
+        # take half of the pixel size to avoid too much interpolation
+        smallest_scale = smallest_cell_pixels * pixelscale
+
+        # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
+        extent_x = (max_x - min_x).to("pc").value
+        smallest_scale = smallest_scale.to("pc").value
+        max_level = min_level_for_smallest_scale_bintree(extent_x, smallest_scale)
+
+        # Create the dust grid
+        return BinaryTreeDustGrid(min_x, max_x, min_y, max_y, min_z, max_z, min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
+
+    # -----------------------------------------------------------------
+
+    def create_octtree_dust_grid(self, smallest_cell_pixels, max_mass_fraction):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Configuring the octtree dust grid ...")
+
+        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
+        major_angular = self.ellipse.major  # major axis length of the sky ellipse
+        radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Calculate the boundaries of the dust grid
+        min_x = - radius_physical
+        max_x = radius_physical
+        min_y = - radius_physical
+        max_y = radius_physical
+        min_z = -3. * Unit("kpc")
+        max_z = 3. * Unit("kpc")
+
+        # Get the pixelscale in physical units
+        distance = self.parameters.distance
+        pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
+        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Because we (currently) can't position the grid exactly as the 2D pixels (rotation etc.),
+        # take half of the pixel size to avoid too much interpolation
+        smallest_scale = smallest_cell_pixels * pixelscale
+
+        # Set a minimum level for the octree
+        min_level = 3
+
+        # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
+        extent_x = (max_x - min_x).to("pc").value
+        smallest_scale = smallest_scale.to("pc").value
+        max_level = min_level_for_smallest_scale_octtree(extent_x, smallest_scale)
+
+        # Create the dust grid and return it
+        return OctTreeDustGrid(min_x, max_x, min_y, max_y, min_z, max_z, min_level=min_level, max_level=max_level)
+
+    # -----------------------------------------------------------------
+
     def adjust_ski(self):
 
         """
@@ -513,10 +705,7 @@ class InputInitializer(FittingComponent):
         self.ski.set_transient_dust_emissivity()
 
         # Set the dust grid
-        if self.config.dust_grid == "cartesian": self.set_cartesian_dust_grid()
-        elif self.config.dust_grid == "bintree": self.set_bintree_dust_grid()
-        elif self.config.dust_grid == "octtree": self.set_octtree_dust_grid()
-        else: raise ValueError("Invalid option for dust grid type")
+        self.ski.set_dust_grid(self.lowres_dust_grid)
 
         # Set all-cells dust library
         self.ski.set_allcells_dust_lib()
@@ -746,139 +935,6 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def set_cartesian_dust_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Configuring the cartesian dust grid ...")
-
-        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
-        major_angular = self.ellipse.major  # major axis length of the sky ellipse
-        radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
-
-        # Calculate the boundaries of the dust grid
-        min_x = - radius_physical
-        max_x = radius_physical
-        min_y = - radius_physical
-        max_y = radius_physical
-        min_z = -3. * Unit("kpc")
-        max_z = 3. * Unit("kpc")
-
-        # Get the pixelscale in physical units
-        distance = self.parameters.distance
-        pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
-        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
-
-        # Because we (currently) can't position the grid exactly as the 2D pixels,
-        # take half of the pixel size to avoid too much interpolation
-        #smallest_scale = 0.5 * pixelscale
-        smallest_scale = pixelscale # limit the number of cells
-
-        # Calculate the number of bins in each direction
-        x_bins = int(math.ceil((max_x-min_x).to("pc").value / smallest_scale.to("pc").value))
-        y_bins = int(math.ceil((max_y-min_y).to("pc").value / smallest_scale.to("pc").value))
-        z_bins = int(math.ceil((max_z-min_z).to("pc").value / smallest_scale.to("pc").value))
-
-        # Set the cartesian dust grid
-        self.ski.set_cartesian_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z, x_bins, y_bins, z_bins)
-
-    # -----------------------------------------------------------------
-
-    def set_bintree_dust_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Configuring the bintree dust grid ...")
-
-        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
-        major_angular = self.ellipse.major # major axis length of the sky ellipse
-        radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
-
-        # Calculate the boundaries of the dust grid
-        min_x = - radius_physical
-        max_x = radius_physical
-        min_y = - radius_physical
-        max_y = radius_physical
-        min_z = -3. * Unit("kpc")
-        max_z = 3. * Unit("kpc")
-
-        # Get the pixelscale in physical units
-        distance = self.parameters.distance
-        pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
-        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
-
-        # Because we (currently) can't position the grid exactly as the 2D pixels (rotation etc.),
-        # take half of the pixel size to avoid too much interpolation
-        smallest_scale = 0.5 * pixelscale
-
-        # Set a minimum level for the tree
-        min_level = 9
-
-        # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
-        extent_x = (max_x - min_x).to("pc").value
-        smallest_scale = smallest_scale.to("pc").value
-        max_level = min_level_for_smallest_scale_bintree(extent_x, smallest_scale)
-
-        # Set the maximum mass fraction
-        max_mass_fraction = 0.5e-6
-
-        # Set the bintree dust grid
-        self.ski.set_binary_tree_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z, min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
-
-    # -----------------------------------------------------------------
-
-    def set_octtree_dust_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Configuring the octtree dust grid ...")
-
-        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
-        major_angular = self.ellipse.major  # major axis length of the sky ellipse
-        radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
-
-        # Calculate the boundaries of the dust grid
-        min_x = - radius_physical
-        max_x = radius_physical
-        min_y = - radius_physical
-        max_y = radius_physical
-        min_z = -3. * Unit("kpc")
-        max_z = 3. * Unit("kpc")
-
-        # Get the pixelscale in physical units
-        distance = self.parameters.distance
-        pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
-        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
-
-        # Because we (currently) can't position the grid exactly as the 2D pixels (rotation etc.),
-        # take half of the pixel size to avoid too much interpolation
-        smallest_scale = 0.5 * pixelscale
-
-        # Set a minimum level for the octree
-        min_level = 3
-
-        # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
-        extent_x = (max_x - min_x).to("pc").value
-        smallest_scale = smallest_scale.to("pc").value
-        max_level = min_level_for_smallest_scale_octtree(extent_x, smallest_scale)
-
-        # Set the octtree dust grid
-        self.ski.set_octtree_dust_grid(min_x, max_x, min_y, max_y, min_z, max_z, min_level=min_level, max_level=max_level)
-
-    # -----------------------------------------------------------------
-
     def adjust_ski_contributions(self):
 
         """
@@ -934,6 +990,130 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def generate_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Generating the dust grid data ...")
+
+        # Generate the low-resolution dust grid data
+        self.generate_low_res_grid()
+
+        # Generate the high-resolution dust grid data
+        self.generate_high_res_grid()
+
+    # -----------------------------------------------------------------
+
+    def generate_low_res_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Generating the low-resolution grid data ...")
+
+        # Generate the grid
+        optical_depth = self.generate_grid(self.lowres_dust_grid, self.fit_grid_lowres_path)
+
+        # Debugging
+        log.debug("For the low-resolution dust grid, 90% of the cells have an optical depth smaller than " + str(optical_depth))
+
+    # -----------------------------------------------------------------
+
+    def generate_high_res_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Determining ideal optical depth criterion ...")
+
+        # Calculate the optical depth (at 90% percentile) for the current grid parameters
+        optical_depth = self.generate_grid(self.highres_dust_grid, self.fit_grid_highres_path)
+
+        # Adapt the maximal optical depth criterion
+        self.highres_dust_grid.max_optical_depth = optical_depth
+
+        # Inform the user
+        log.info("Generating the high-resolution grid data ...")
+
+        # Rerun the simulation
+        optical_depth = self.generate_grid(self.highres_dust_grid, self.fit_grid_highres_path)
+
+        # Debugging
+        log.debug("For the high-resolution grid, 90% of the cells have an optical depth smaller than " + str(optical_depth))
+
+    # -----------------------------------------------------------------
+
+    def generate_grid(self, grid, output_path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Running a simulation just to generate the dust grid data files ...")
+
+        # Create a copy of the ski file
+        ski = self.ski.copy()
+
+        # Set the dust grid
+        ski.set_dust_grid(grid)
+
+        # Convert to oligochromatic simulation
+        ski.to_oligochromatic([1. * Unit("micron")])
+
+        # Remove the instrument system
+        ski.remove_instrument_system()
+
+        # Set the number of photon packages to zero
+        ski.setpackages(0)
+
+        # Disable all writing options, except the one for writing the dust grid and cell properties
+        ski.disable_all_writing_options()
+        ski.set_write_grid()
+        ski.set_write_cell_properties()
+
+        # Write the ski file
+        ski_path = fs.join(output_path, self.galaxy_name + ".ski")
+        ski.saveto(ski_path)
+
+        # Create the local SKIRT execution context
+        skirt = SkirtExec()
+
+        # Create the SKIRT arguments object
+        arguments = SkirtArguments()
+        arguments.ski_pattern = ski_path
+        arguments.input_path = self.fit_in_path
+        arguments.output_path = self.fit_grid_highres_path
+
+        # Run SKIRT to generate the dust grid data files
+        skirt.run(arguments)
+
+        # Determine the path to the cell properties file
+        cellprops_path = fs.join(self.fit_grid_highres_path, self.galaxy_name + "_ds_cellprops.dat")
+
+        # Get the optical depth for which 90% of the cells have a smaller value
+        optical_depth = None
+        for line in reversed(open(cellprops_path).readlines()):
+            if "of the cells have optical depth smaller than" in line:
+                optical_depth = float(line.split("than: ")[1])
+                break
+
+        # Return the optical depth
+        return optical_depth
+
+    # -----------------------------------------------------------------
+
     def calculate_weights(self):
 
         """
@@ -972,8 +1152,6 @@ class InputInitializer(FittingComponent):
 
             # Get a string identifying which portion of the wavelength spectrum this wavelength belongs to
             spectrum = wavelengths.name_in_spectrum(wavelength)
-
-            #print(band, wavelength, spectrum)
 
             # Determine to which group
             if spectrum[0] == "UV": uv_bands.append(fltr)
@@ -1024,7 +1202,7 @@ class InputInitializer(FittingComponent):
         log.info("Writing ...")
 
         # Write the input
-        #self.write_input() # is now called before generate_dust_grid() for obvious reasons
+        #self.write_input() # is now called before create_grids() because this function needs to run some simulations locally
 
         # Write the ski file
         self.write_ski_file()
@@ -1040,6 +1218,9 @@ class InputInitializer(FittingComponent):
 
         # Write the geometries
         self.write_geometries()
+
+        # Write the dust grid objects
+        self.write_dust_grids()
 
     # -----------------------------------------------------------------
 
@@ -1248,7 +1429,7 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def generate_dust_grid(self):
+    def write_dust_grids(self):
 
         """
         This function ...
@@ -1256,62 +1437,15 @@ class InputInitializer(FittingComponent):
         """
 
         # Inform the user
-        log.info("Running a simulation just to generate the dust grid data files ...")
+        log.info("Writing the dust grids ...")
 
-        # Create a copy of the ski file
-        ski = self.ski.copy()
+        # Write the low-resolution dust grid
+        path = fs.join(self.fit_grid_lowres_path, "lowres.grid")
+        self.lowres_dust_grid.save(path)
 
-        # Convert to oligochromatic simulation
-        ski.to_oligochromatic([1. * Unit("micron")])
-
-        # Remove the instrument system
-        ski.remove_instrument_system()
-
-        # Set the number of photon packages to zero
-        ski.setpackages(0)
-
-        # Disable all writing options, except the one for writing the dust grid and cell properties
-        ski.disable_all_writing_options()
-        ski.set_write_grid()
-        ski.set_write_cell_properties()
-
-        # Save the ski file to the fit/grid directory
-        ski_path = fs.join(self.fit_grid_path, self.galaxy_name + ".ski")
-        ski.saveto(ski_path)
-
-        # Create the local SKIRT execution context
-        skirt = SkirtExec()
-
-        # Create the SKIRT arguments object
-        arguments = SkirtArguments()
-        arguments.ski_pattern = ski_path
-        arguments.input_path = self.fit_in_path
-        arguments.output_path = self.fit_grid_path
-
-        # Run SKIRT to generate the dust grid data files
-        skirt.run(arguments)
-
-        # Determine the path to the cell properties file
-        cellprops_path = fs.join(self.fit_grid_path, self.galaxy_name + "_ds_cellprops.dat")
-
-        # Get the optical depth for which 90% of the cells have a smaller value
-        optical_depth = None
-        for line in reversed(open(cellprops_path).readlines()):
-            if "of the cells have optical depth smaller than" in line:
-                optical_depth = float(line.split("than: ")[1])
-                break
-
-        # Set the maximal optical depth
-        ski.set_binary_tree_max_optical_depth(optical_depth)
-
-        # Save the ski file
-        ski.save()
-
-        # Run SKIRT again
-        skirt.run(arguments)
-
-        # Set the max optical depth also for the main ski file
-        self.ski.set_binary_tree_max_optical_depth(optical_depth)
+        # Write the high-resolution dust grid
+        path = fs.join(self.fit_grid_highres_path, "highres.grid")
+        self.highres_dust_grid.save(path)
 
 # -----------------------------------------------------------------
 
