@@ -94,6 +94,7 @@ class BinaryTreeDustGrid(object):
             print("Max y:", str(self.max_x), file=grid_file)
             print("Min z:", str(self.min_z), file=grid_file)
             print("Max z:", str(self.max_z), file=grid_file)
+            print("Write:", str(self.write), file=grid_file)
             print("")
 
     # -----------------------------------------------------------------
