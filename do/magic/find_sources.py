@@ -50,6 +50,7 @@ parser.add_argument("--synchronize", action="store_true", help="synchronize with
 parser.add_argument("--filecatalog", action="store_true", help="use file catalogs")
 parser.add_argument("--interpolation_method", type=str, help="the interpolation method to use")
 parser.add_argument("--downsample", type=float, help="specify the degree of downsampling (no downsampling if not specified)")
+parser.add_argument("--no_saturation", action="store_true", help="don't look for saturated stars")
 
 # Input regions
 parser.add_argument("--ignore", type=str, help="the name of the file specifying regions to ignore")

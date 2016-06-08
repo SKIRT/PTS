@@ -258,31 +258,33 @@ class SourceExtractor(Configurable):
             # Check whether the star is a foreground star
             #if self.principal_mask.masks(shape.center): foreground = True
 
-            # Add the saturation sources
-            # Loop over the shapes in the saturation region
-            for j in range(len(self.saturation_region)):
+            if self.saturation_region is not None:
 
-                saturation_shape = self.saturation_region[j]
+                # Add the saturation sources
+                # Loop over the shapes in the saturation region
+                for j in range(len(self.saturation_region)):
 
-                if "text" not in saturation_shape.meta: continue
+                    saturation_shape = self.saturation_region[j]
 
-                saturation_index = int(saturation_shape.meta["text"])
+                    if "text" not in saturation_shape.meta: continue
 
-                if index != saturation_index: continue
-                else:
-                    # Remove the saturation shape from the region
-                    saturation_shape = self.saturation_region.pop(j)
+                    saturation_index = int(saturation_shape.meta["text"])
 
-                    # Create saturation source
-                    saturation_source = Source.from_shape(self.frame, saturation_shape, self.config.source_outer_factor)
+                    if index != saturation_index: continue
+                    else:
+                        # Remove the saturation shape from the region
+                        saturation_shape = self.saturation_region.pop(j)
 
-                    # Replace the saturation mask
-                    segments_cutout = self.star_segments[saturation_source.y_slice, saturation_source.x_slice]
-                    saturation_mask = Mask(segments_cutout == index)
-                    saturation_source.mask = saturation_mask.fill_holes()
+                        # Create saturation source
+                        saturation_source = Source.from_shape(self.frame, saturation_shape, self.config.source_outer_factor)
 
-                    # Break the loop
-                    break
+                        # Replace the saturation mask
+                        segments_cutout = self.star_segments[saturation_source.y_slice, saturation_source.x_slice]
+                        saturation_mask = Mask(segments_cutout == index)
+                        saturation_source.mask = saturation_mask.fill_holes()
+
+                        # Break the loop
+                        break
 
             if saturation_source is not None:
 
