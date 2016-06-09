@@ -156,7 +156,7 @@ class FittingPlotter(PlottingComponent):
         path = fs.join(self.fit_path, self.galaxy_name + ".ski")
 
         # Load the ski file
-        self.ski = SkiFile(path)
+        if fs.is_file(path): self.ski = SkiFile(path)
 
     # -----------------------------------------------------------------
 
@@ -192,7 +192,7 @@ class FittingPlotter(PlottingComponent):
         path = fs.join(self.fit_path, "in", "wavelengths_lowres.txt")
 
         # Load the wavelength grid
-        self.lowres_wavelength_grid = WavelengthGrid.from_skirt_input(path)
+        if fs.is_file(path): self.lowres_wavelength_grid = WavelengthGrid.from_skirt_input(path)
 
     # -----------------------------------------------------------------
 
@@ -210,7 +210,7 @@ class FittingPlotter(PlottingComponent):
         path = fs.join(self.fit_path, "in", "wavelengths_highres.txt")
 
         # Load the wavelength grid
-        self.highres_wavelength_grid = WavelengthGrid.from_skirt_input(path)
+        if fs.is_file(path): self.highres_wavelength_grid = WavelengthGrid.from_skirt_input(path)
 
     # -----------------------------------------------------------------
 
@@ -271,6 +271,9 @@ class FittingPlotter(PlottingComponent):
         fit_grid_lowres_path = fs.join(self.fit_path, "grid", "low-res")
         log_file_path = fs.join(fit_grid_lowres_path, self.galaxy_name + "_log.txt")
 
+        # If the log file does not exist, break
+        if not fs.is_file(log_file_path): return
+
         # Open the log file
         log_file = LogFile(log_file_path)
 
@@ -289,6 +292,9 @@ class FittingPlotter(PlottingComponent):
         # Determine the path to the log file of the dust grid generating simulation
         fit_grid_highres_path = fs.join(self.fit_path, "grid", "high-res")
         log_file_path = fs.join(fit_grid_highres_path, self.galaxy_name + "_log.txt")
+
+        # If the log file does not exist, break
+        if not fs.is_file(log_file_path): return
 
         # Open the log file
         log_file = LogFile(log_file_path)
@@ -567,7 +573,7 @@ class FittingPlotter(PlottingComponent):
         self.plot_dust_grids()
 
         # Plot the distribution of dust cells for the different tree levels
-        if self.cell_distribution is not None: self.plot_dust_cell_distribution()
+        self.plot_dust_cell_distribution()
 
         # Plot the distributions of the runtimes on different remote systems
         if self.runtimes is not None: self.plot_runtimes()
@@ -742,10 +748,10 @@ class FittingPlotter(PlottingComponent):
         log.info("Plotting the dust cell distribution ...")
 
         # Plot low-resolution dust cell distribution
-        self.plot_low_res_dust_cell_distribution()
+        if self.cell_distribution_lowres is not None: self.plot_low_res_dust_cell_distribution()
 
         # Plot high-resolution dust cell distribution
-        self.plot_high_res_dust_cell_distribution()
+        if self.cell_distribution_highres is not None: self.plot_high_res_dust_cell_distribution()
 
     # -----------------------------------------------------------------
 

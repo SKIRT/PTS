@@ -522,8 +522,8 @@ class InputInitializer(FittingComponent):
 
         # Set the dust grid
         if self.config.dust_grid == "cartesian": self.lowres_dust_grid = self.create_cartesian_dust_grid(10.)
-        elif self.config.dust_grid == "bintree": self.lowres_dust_grid = self.set_bintree_dust_grid(10., 6, 1e-5)
-        elif self.config.dust_grid == "octtree": self.lowres_dust_grid = self.set_octtree_dust_grid(10., 6, 1e-5)
+        elif self.config.dust_grid == "bintree": self.lowres_dust_grid = self.create_binary_tree_dust_grid(10., 6, 1e-5)
+        elif self.config.dust_grid == "octtree": self.lowres_dust_grid = self.create_octtree_dust_grid(10., 2, 1e-5)
         else: raise ValueError("Invalid option for dust grid type")
 
     # -----------------------------------------------------------------
@@ -540,8 +540,8 @@ class InputInitializer(FittingComponent):
 
         # Set the dust grid
         if self.config.dust_grid == "cartesian": self.highres_dust_grid = self.create_cartesian_dust_grid(1.)
-        elif self.config.dust_grid == "bintree": self.highres_dust_grid = self.set_bintree_dust_grid(0.5, 9, 0.5e-6)
-        elif self.config.dust_grid == "octtree": self.highres_dust_grid = self.set_octtree_dust_grid(0.5, 9, 0.5e-6)
+        elif self.config.dust_grid == "bintree": self.highres_dust_grid = self.create_binary_tree_dust_grid(0.5, 9, 0.5e-6)
+        elif self.config.dust_grid == "octtree": self.highres_dust_grid = self.create_octtree_dust_grid(0.5, 3, 0.5e-6)
         else: raise ValueError("Invalid option for dust grid type")
 
     # -----------------------------------------------------------------
@@ -589,7 +589,7 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def create_bintree_dust_grid(self, smallest_cell_pixels, min_level, max_mass_fraction):
+    def create_binary_tree_dust_grid(self, smallest_cell_pixels, min_level, max_mass_fraction):
 
         """
         This function ...
@@ -633,7 +633,7 @@ class InputInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def create_octtree_dust_grid(self, smallest_cell_pixels, max_mass_fraction):
+    def create_octtree_dust_grid(self, smallest_cell_pixels, min_level, max_mass_fraction):
 
         """
         This function ...
@@ -664,16 +664,13 @@ class InputInitializer(FittingComponent):
         # take half of the pixel size to avoid too much interpolation
         smallest_scale = smallest_cell_pixels * pixelscale
 
-        # Set a minimum level for the octree
-        min_level = 3
-
         # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
         extent_x = (max_x - min_x).to("pc").value
         smallest_scale = smallest_scale.to("pc").value
         max_level = min_level_for_smallest_scale_octtree(extent_x, smallest_scale)
 
         # Create the dust grid and return it
-        return OctTreeDustGrid(min_x, max_x, min_y, max_y, min_z, max_z, min_level=min_level, max_level=max_level)
+        return OctTreeDustGrid(min_x, max_x, min_y, max_y, min_z, max_z, min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
 
     # -----------------------------------------------------------------
 
@@ -886,7 +883,7 @@ class InputInitializer(FittingComponent):
         scale_height = 100. * Unit("pc") # M51
 
         # Convert the SFR into a FUV luminosity
-        sfr = 1.5 # The star formation rate
+        sfr = 0.8 # The star formation rate # see Perez-Gonzalez 2006 (mentions Devereux et al 1995)
         mappings = Mappings(ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor, sfr)
         luminosity = mappings.luminosity_for_filter(self.fuv)
         #luminosity = luminosity.to(self.sun_fuv).value
@@ -1095,13 +1092,13 @@ class InputInitializer(FittingComponent):
         arguments = SkirtArguments()
         arguments.ski_pattern = ski_path
         arguments.input_path = self.fit_in_path
-        arguments.output_path = self.fit_grid_highres_path
+        arguments.output_path = output_path
 
         # Run SKIRT to generate the dust grid data files
         skirt.run(arguments)
 
         # Determine the path to the cell properties file
-        cellprops_path = fs.join(self.fit_grid_highres_path, self.galaxy_name + "_ds_cellprops.dat")
+        cellprops_path = fs.join(output_path, self.galaxy_name + "_ds_cellprops.dat")
 
         # Get the optical depth for which 90% of the cells have a smaller value
         optical_depth = None
