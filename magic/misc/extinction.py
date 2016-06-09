@@ -17,7 +17,14 @@ from astroquery.irsa_dust import IrsaDust
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
+from ...core.tools import filesystem as fs
+from ...core.tools import inspection
 from ...core.tools import tables
+
+# -----------------------------------------------------------------
+
+# The path to the PTS kernels directory
+kernels_path = fs.join(inspection.pts_user_dir, "extinction")
 
 # -----------------------------------------------------------------
 
@@ -44,27 +51,29 @@ class GalacticExtinction(object):
     This class ...
     """
 
-    def __init__(self, coordinate):
+    def __init__(self, coordinate_or_galaxy):
 
         """
         This function ...
+        :param coordinate_or_galaxy:
         :return:
         """
 
+        if isinstance(coordinate_or_galaxy, basestring): query = coordinate_or_galaxy
+        else: query = coordinate_or_galaxy.to_astropy()
+
         # Get the extinction table from IRSA
-        self.table = IrsaDust.get_extinction_table(coordinate.to_astropy())
+        self.table = IrsaDust.get_extinction_table(query)
 
     # -----------------------------------------------------------------
 
-    def extinction_for_filter(self, fltr):
+    def extinction_for_filter_name(self, filter_name):
 
         """
         This function ...
-        :param fltr:
+        :param filter_name:
         :return:
         """
-
-        filter_name = str(fltr)
 
         # GALEX bands
         if "GALEX" in filter_name or "UVOT" in filter_name:
@@ -106,5 +115,44 @@ class GalacticExtinction(object):
 
         # Return the galactic attenuation coefficient
         return attenuation
+
+    # -----------------------------------------------------------------
+
+    def extinction_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        filter_name = str(fltr)
+        return self.extinction_for_filter_name(filter_name)
+
+    # -----------------------------------------------------------------
+
+    def correct_sed_for_extinction(self, sed):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all entries
+        for i in range(len(sed.table)):
+
+            # Get the filter name
+            instrument = sed.table["Instrument"][i]
+            band = sed.table["Band"][i]
+            filter_name = instrument + " " + band
+
+            # Get the extinction
+            extinction = self.extinction_for_filter_name(filter_name)
+
+            # Correct the flux value (and error) for galactic extinction
+            correction_factor = 10 ** (0.4 * extinction)
+            sed.table["Flux"][i] *= correction_factor
+            sed.table["Error-"][i] *= correction_factor
+            sed.table["Error+"][i] *= correction_factor
 
 # -----------------------------------------------------------------
