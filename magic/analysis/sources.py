@@ -620,7 +620,7 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
 
             kernel_radius = new_radius - mask_radius
 
-            print("dilation kernel radius:", kernel_radius)
+            if special: log.debug("dilation disk radius:", kernel_radius)
 
             source.mask = source.mask.disk_dilation(radius=kernel_radius)
 

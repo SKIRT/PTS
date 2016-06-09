@@ -657,7 +657,7 @@ class Source(object):
             rel_y_max = original_y_max - new_source.cutout.y_min
 
             # Replace source's mask by found center segment mask
-            new_source.mask[rel_y_min:rel_y_max, rel_x_min:rel_x_max] = mask
+            new_source.mask[rel_y_min:rel_y_max, rel_x_min:rel_x_max] = self.mask
 
         # Return the zoomed-out source
         return new_source
