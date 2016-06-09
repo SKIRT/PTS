@@ -24,6 +24,7 @@ from photutils import detect_sources
 # Import the relevant PTS classes and modules
 from .vector import Position
 from ...core.tools.logging import log
+from ..tools import headers
 
 # -----------------------------------------------------------------
 
@@ -54,12 +55,13 @@ class Mask(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, index=0):
+    def from_file(cls, path, index=0, plane=None):
 
         """
         This function ...
         :param path:
         :param index:
+        :param plane:
         :return:
         """
 
@@ -82,6 +84,18 @@ class Mask(np.ndarray):
             if header['NAXIS'] == 3: nframes = header['NAXIS3']
 
         if nframes > 1:
+
+            if plane is not None:
+
+                for i in range(nframes):
+                    # Get name and description of frame
+                    name, description, plane_type = headers.get_frame_name_and_description(header, i, always_call_first_primary=False)
+                    if plane == name:
+                        index = i
+                        break
+
+                # If a break is not encountered, a matching plane name is not found
+                else: raise ValueError("Plane with name '" + plane + "' not found")
 
             mask = cls(hdu.data[index])
 

@@ -39,7 +39,8 @@ from astropy import stats
 from ..core.frame import Frame
 from ..basics.mask import Mask
 from ..core.source import Source
-from ..basics.region import Coordinate, Circle
+from ..basics.geometry import Coordinate, Circle
+from ..basics.region import Region
 from ..basics.vector import Position, Extent
 from ..tools import plotting, statistics, fitting, plotting
 from ...core.basics.configurable import Configurable
@@ -84,6 +85,10 @@ class SkySubtractor(Configurable):
 
         # The animation
         self.animation = None
+
+        # The annulus ellipses
+        self.inner_ellipse = None
+        self.outer_ellipse = None
 
         # The output mask (combined input + bad mask + galaxy annulus mask + expanded saturation mask + sigma-clipping mask)
         self.mask = None
@@ -139,22 +144,25 @@ class SkySubtractor(Configurable):
         # 1. Call the setup function
         self.setup(frame, principal_ellipse, sources_mask, extra_mask, saturation_region, animation)
 
-        # 2. Create mask
+        # 2. Create the annulus
+        self.create_annulus()
+
+        # 3. Create mask
         self.create_mask()
 
-        # 2. Do an extra sigma-clipping step on the data
+        # 4. Do an extra sigma-clipping step on the data
         if self.config.sigma_clip_mask: self.sigma_clip()
 
-        # 3. Estimate the sky (and sky noise)
+        # 5. Estimate the sky (and sky noise)
         self.estimate()
 
-        # 4. Subtract the sky
+        # 6. Subtract the sky
         self.subtract()
 
-        # 5. Set the frame to zero outside of the principal galaxy
+        # 7. Set the frame to zero outside of the principal galaxy
         if self.config.set_zero_outside: self.set_zero_outside()
 
-        # 6. Eliminate negative values from the frame, set them to zero
+        # 8. Eliminate negative values from the frame, set them to zero
         if self.config.eliminate_negatives: self.eliminate_negatives()
 
     # -----------------------------------------------------------------
@@ -221,6 +229,24 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    def create_annulus(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the annulus ellipses ...")
+
+        # Create the sky annulus
+        annulus_outer_factor = self.config.mask.annulus_outer_factor
+        annulus_inner_factor = self.config.mask.annulus_inner_factor
+        self.inner_ellipse = self.principal_ellipse * annulus_inner_factor
+        self.outer_ellipse = self.principal_ellipse * annulus_outer_factor
+
+    # -----------------------------------------------------------------
+
     def create_mask(self):
 
         """
@@ -228,11 +254,12 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        # Create a mask from the ellipse
-        annulus_outer_factor = self.config.mask.annulus_outer_factor
-        annulus_inner_factor = self.config.mask.annulus_inner_factor
-        annulus_mask = Mask.from_shape(self.principal_ellipse * annulus_outer_factor, self.frame.xsize, self.frame.ysize).inverse() + \
-                       Mask.from_shape(self.principal_ellipse * annulus_inner_factor, self.frame.xsize, self.frame.ysize)
+        # Inform the user
+        log.info("Creating the sky mask ...")
+
+        # Create a mask for all the pixels outside of the annulus
+        annulus_mask = Mask.from_shape(self.outer_ellipse, self.frame.xsize, self.frame.ysize).inverse() + \
+                       Mask.from_shape(self.inner_ellipse, self.frame.xsize, self.frame.ysize)
 
         # Set the mask, make a copy of the input mask initially
         self.mask = self.sources_mask + annulus_mask
@@ -988,6 +1015,22 @@ class SkySubtractor(Configurable):
         # Save the figure
         plt.savefig(self.config.writing.histogram_path, bbox_inches='tight', pad_inches=0.25)
         plt.close()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def annulus_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the region and return it
+        region = Region()
+        region.append(self.inner_ellipse)
+        region.append(self.outer_ellipse)
+        return region
 
     # -----------------------------------------------------------------
 
