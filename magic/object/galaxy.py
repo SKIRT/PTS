@@ -189,6 +189,21 @@ class Galaxy(SkyObject):
 
     # -----------------------------------------------------------------
 
+    def source_from_shape(self, frame, shape, outer_factor):
+
+        """
+        This function ...
+        :param frame:
+        :param shape:
+        :param outer_factor:
+        :return:
+        """
+
+        # Create the source
+        self.source = Source.from_shape(frame, shape, outer_factor)
+
+    # -----------------------------------------------------------------
+
     def source_from_parameters(self, frame, outer_factor, expansion_factor=1.0):
 
         """

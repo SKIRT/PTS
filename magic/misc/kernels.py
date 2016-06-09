@@ -66,6 +66,36 @@ fwhms = {"GALEX_FUV": 4.48 * Unit("arcsec"),
 
 # -----------------------------------------------------------------
 
+aniano_names = {"GALEX FUV": "GALEX_FUV",
+                "GALEX NUV": "GALEX_NUV",
+                "SDSS u": "BiGauss_02.0",  # FWHM is actually variable
+                "SDSS g": "BiGauss_02.0",  # FWHM is actually variable
+                "SDSS r": "BiGauss_02.0",  # FWHM is actually variable
+                "Mosaic Halpha": "Gauss_03.0",
+                "SDSS i": "BiGauss_02.0",  # FWHM is actually variable
+                "SDSS z": "BiGauss_02.0",  # FWHM is actually variable
+                "2MASS J": "Gauss_03.5",
+                "2MASS H": "Gauss_03.0",
+                "2MASS Ks": "Gauss_03.5",
+                "WISE W1": "WISE_FRAME_3.4",
+                "IRAC I1": "IRAC_3.6",
+                "IRAC I2": "IRAC_4.5",
+                "WISE W2": "WISE_FRAME_4.6",
+                "IRAC I3": "IRAC_5.8",
+                "IRAC I4": "IRAC_8.0",
+                "WISE W3": "WISE_FRAME_11.6",
+                "WISE W4": "WISE_FRAME_22.1",
+                "MIPS 24mu": "MIPS_24",
+                "MIPS 70mu": None,
+                "MIPS 160mu": None,
+                "Pacs blue": "PACS_70",
+                "Pacs red": "PACS_160",
+                "SPIRE PSW": None,
+                "SPIRE PMW": None,
+                "SPIRE PLW": None}
+
+# -----------------------------------------------------------------
+
 class AnianoKernels(object):
 
     """

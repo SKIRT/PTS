@@ -149,6 +149,18 @@ def simulation_ids(string):
 
 # -----------------------------------------------------------------
 
+def get_boolean(entry):
+
+    """
+    This function ...
+    :param entry:
+    :return:
+    """
+
+    return entry == "True"
+
+# -----------------------------------------------------------------
+
 def get_quantity(entry, default_unit=None):
 
     """

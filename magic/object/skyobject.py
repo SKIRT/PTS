@@ -165,7 +165,6 @@ class SkyObject(object):
 
         # Find a source
         self.source = sources.find_source(frame, ellipse, config, self.track_record, special=self.special)
-        #self.source = sources.find_source(frame, ellipse, config, self.track_record, special=True)
 
     # -----------------------------------------------------------------
 

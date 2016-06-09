@@ -187,6 +187,21 @@ class Star(SkyObject):
 
     # -----------------------------------------------------------------
 
+    def source_from_shape(self, frame, shape, outer_factor):
+
+        """
+        This function ...
+        :param frame:
+        :param shape:
+        :param outer_factor:
+        :return:
+        """
+
+        # Create the source
+        self.source = Source.from_shape(frame, shape, outer_factor)
+
+    # -----------------------------------------------------------------
+
     def source_at_sigma_level(self, frame, default_fwhm, sigma_level, outer_factor, use_default_fwhm=False, shape=None):
 
         """

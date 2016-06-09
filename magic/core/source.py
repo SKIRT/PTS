@@ -42,7 +42,7 @@ class Source(object):
     This class...
     """
 
-    def __init__(self, center, radius, angle, factor, cutout, mask, background=None, removed=None, peak=None):
+    def __init__(self, center, radius, angle, factor, cutout, mask, background=None, removed=None, peak=None, shape=None):
 
         """
         The constructor ...
@@ -58,6 +58,7 @@ class Source(object):
         self.background = background
         self.removed = removed
         self.peak = peak
+        self.shape = shape
 
         # The elliptical contour
         self.contour = Ellipse(self.center, self.radius, self.angle)
@@ -86,6 +87,9 @@ class Source(object):
 
         # Set the source mask
         source.mask = mask
+
+        # Set the source shape
+        source.shape = shape
 
         # Return the source
         return source
@@ -127,7 +131,7 @@ class Source(object):
         peak = None
 
         # Create and return a new Source instance
-        return cls(center, radius, angle, factor, cutout, mask, background, removed, peak)
+        return cls(center, radius, angle, factor, cutout, mask, background, removed, peak, rectangle)
 
     # -----------------------------------------------------------------
 
@@ -167,7 +171,7 @@ class Source(object):
         peak = None
 
         # Create and return a new Source instance
-        return cls(center, radius, angle, factor, cutout, mask, background, removed, peak)
+        return cls(center, radius, angle, factor, cutout, mask, background, removed, peak, ellipse)
 
     # -----------------------------------------------------------------
 

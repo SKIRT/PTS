@@ -46,6 +46,7 @@ parser.add_argument("-i", "--input", type=str, help="the name of the input direc
 parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
 
 # Advanced options
+parser.add_argument("--principal_region", type=str, help="the path to a region file with a contour of the principal galaxy (in sky coordinates!)")
 parser.add_argument("--synchronize", action="store_true", help="synchronize with DustPedia catalog")
 parser.add_argument("--filecatalog", action="store_true", help="use file catalogs")
 parser.add_argument("--interpolation_method", type=str, help="the interpolation method to use")
@@ -213,5 +214,11 @@ segments.add_frame(finder.other_segments, "other_sources")
 # Save the FITS file with the segmentation maps
 path = fs.join(output_path, "segments.fits")
 segments.save(path)
+
+# -----------------------------------------------------------------
+
+# Write statistics file
+statistics_path = fs.join(output_path, "statistics.dat")
+finder.write_statistics(statistics_path)
 
 # -----------------------------------------------------------------

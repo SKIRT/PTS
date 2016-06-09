@@ -12,97 +12,19 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astroquery.irsa_dust import IrsaDust
-
 # Import the relevant PTS classes and modules
 from ...magic.core.image import Image
 from ...magic.core.frame import Frame
 from ...magic.basics.region import Region
 from .component import PreparationComponent
 from ...magic.prepare.imagepreparation import ImagePreparer
-from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.tools import regions
-from ...magic.misc.kernels import AnianoKernels
-
-# -----------------------------------------------------------------
-
-irsa_names = {"SDSS u": "SDSS u",
-              "SDSS g": "SDSS g",
-              "SDSS r": "SDSS r",
-              "SDSS i": "SDSS i",
-              "SDSS z": "SDSS z",
-              "2MASS J": "2MASS J",
-              "2MASS H": "2MASS H",
-              "2MASS Ks": "2MASS Ks",
-              "IRAC I1": "IRAC-1",
-              "IRAC I2": "IRAC-2",
-              "IRAC I3": "IRAC-3",
-              "IRAC I4": "IRAC-4",
-              "WISE W1": "WISE-1",
-              "WISE W2": "WISE-2"}
-
-# -----------------------------------------------------------------
-
-aniano_names = {"GALEX FUV": "GALEX_FUV",
-                "GALEX NUV": "GALEX_NUV",
-                "SDSS u": "BiGauss_02.0",
-                "SDSS g": "BiGauss_02.0",
-                "SDSS r": "BiGauss_02.0",
-                "Mosaic Halpha": "Gauss_03.0",
-                "SDSS i": "BiGauss_02.0",
-                "SDSS z": "BiGauss_02.0",
-                "2MASS J": "Gauss_03.5",
-                "2MASS H": "Gauss_03.0",
-                "2MASS Ks": "Gauss_03.5",
-                "WISE W1": "WISE_FRAME_3.4",
-                "IRAC I1": "IRAC_3.6",
-                "IRAC I2": "IRAC_4.5",
-                "WISE W2": "WISE_FRAME_4.6",
-                "IRAC I3": "IRAC_5.8",
-                "IRAC I4": "IRAC_8.0",
-                "WISE W3": "WISE_FRAME_11.6",
-                "WISE W4": "WISE_FRAME_22.1",
-                "MIPS 24mu": "MIPS_24",
-                "MIPS 70mu": None,
-                "MIPS 160mu": None,
-                "Pacs blue": "PACS_70",
-                "Pacs red": "PACS_160",
-                "SPIRE PSW": None,
-                "SPIRE PMW": None,
-                "SPIRE PLW": None}
-
-# -----------------------------------------------------------------
-
-calibration_errors = {"GALEX FUV": "0.05 mag",
-                      "GALEX NUV": "0.03 mag",
-                      "SDSS u": "2%",
-                      "SDSS g": "2%",
-                      "SDSS r": "2%",
-                      "Mosaic Halpha": "5%",
-                      "SDSS i": "2%",
-                      "SDSS z": "2%",
-                      "2MASS J": "0.03 mag",
-                      "2MASS H": "0.03 mag",
-                      "2MASS Ks": "0.03 mag",
-                      "WISE W1": "2.4%",
-                      "IRAC I1": "1.8%",
-                      "IRAC I2": "1.9%",
-                      "WISE W2": "2.8%",
-                      "IRAC I3": "2.0%",
-                      "IRAC I4": "2.1%",
-                      "WISE W3": "4.5%",
-                      "WISE W4": "5.7%",
-                      "MIPS 24mu": "4%",
-                      "MIPS 70mu": "5%", # ref: Absolute_Calibration_and_Characterization_of_the_Multiband_Imaging_Photometer_for_Spitzer._II._70_micron_Imaging
-                      "MIPS 160mu": "5%", #
-                      "Pacs blue": "5%",
-                      "Pacs red": "5%",
-                      "SPIRE PSW": "4%",
-                      "SPIRE PMW": "4%",
-                      "SPIRE PLW": "4%"}
+from ...magic.misc.kernels import AnianoKernels, aniano_names
+from ...magic.misc.calibration import CalibrationError
+from ...magic.misc.extinction import GalacticExtinction
+from ...core.basics.filter import Filter
 
 # -----------------------------------------------------------------
 
@@ -283,57 +205,20 @@ class DataPreparer(PreparationComponent):
         # Inform the user
         log.info("Getting the galactic extinction values for the different images ...")
 
-        # Download the extinction table
-        #table = IrsaDust.get_extinction_table(self.galaxy_name) ## STOPPED WORKING (WHY?)
-        table = IrsaDust.get_extinction_table(self.center_coordinate.to_astropy())
+        # Create the galactic extinction calculator
+        extinction = GalacticExtinction(self.center_coordinate)
 
         # Loop over all image paths
         for image_path in self.paths:
 
-            # Get the image name
-            name = fs.name(fs.directory_of(image_path))
+            # Get the filter name
+            filter_name = fs.name(fs.directory_of(image_path))
 
-            # Debugging
-            log.debug("Getting galactic extinction for " + name + " ...")
+            # Create a filter instance
+            fltr = Filter.from_string(filter_name)
 
-            # GALEX bands
-            if "GALEX" in name:
-
-                # Get the A(V) / E(B-V) ratio
-                v_band_index = tables.find_index(table, "CTIO V")
-                av_ebv_ratio = table["A_over_E_B_V_SandF"][v_band_index]
-
-                # Get the attenuation of the V band A(V)
-                attenuation_v = table["A_SandF"][v_band_index]
-
-                # Determine the factor
-                if "NUV" in name: factor = 8.0
-                elif "FUV" in name: factor = 7.9
-                else: raise ValueError("Unsure which GALEX band this is")
-
-                # Calculate the attenuation
-                attenuation = factor * attenuation_v / av_ebv_ratio
-
-                # Set the attenuation
-                self.attenuations[name] = attenuation
-
-            # Fill in the Ha attenuation manually
-            elif "Halpha" in name: self.attenuations[name] = 0.174
-
-            # Other bands for which attenuation is listed by IRSA
-            elif name in irsa_names:
-
-                irsa_name = irsa_names[name]
-
-                # Find the index of the corresponding table entry
-                index = tables.find_index(table, irsa_name)
-
-                # Get the attenuation and add it to the dictionary
-                attenuation = table["A_SandF"][index]
-                self.attenuations[name] = attenuation
-
-            # All other bands: set attenuation to zero
-            else: self.attenuations[name] = 0.0
+            # Get the exintinction
+            self.attenuations[filter_name] = extinction.extinction_for_filter(fltr)
 
     # -----------------------------------------------------------------
 
@@ -586,7 +471,7 @@ class DataPreparer(PreparationComponent):
         else: self.image_preparer.config.subtract_sky = True # Has yet to be sky subtracted
 
         # Set the calibration error
-        self.image_preparer.config.uncertainties.calibration_error = calibration_errors[image.name]
+        self.image_preparer.config.uncertainties.calibration_error = CalibrationError.from_filter(image.filter)
 
         # Set the output directory
         self.image_preparer.config.output_path = output_path

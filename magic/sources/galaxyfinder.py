@@ -19,6 +19,7 @@ from astropy.coordinates import Angle
 # Import the relevant PTS classes and modules
 from ..basics.mask import Mask
 from ..basics.region import Region
+from ..basics.skyregion import SkyRegion
 from ..basics.vector import Extent
 from ..basics.geometry import Coordinate, Ellipse
 from ..basics.skygeometry import SkyCoordinate
@@ -253,26 +254,39 @@ class GalaxyFinder(Configurable):
             # If this sky object should be ignored, skip it
             if galaxy.ignore: continue
 
-            # If requested, use the galaxy extents obtained from the catalog to create the source
-            if self.config.detection.use_d25 and galaxy.has_extent:
+            # If the galaxy is the principal galaxy and a region file is
+            if galaxy.principal and self.config.principal_region is not None:
 
+                # Load the principal galaxy region file
+                region = SkyRegion.from_file(self.config.principal_region)
+                shape = region[0].to_pixel(self.frame.wcs)
+
+                # Create a source for the galaxy from the shape in the region file
                 outer_factor = self.config.detection.background_outer_factor
-                expansion_factor = self.config.detection.d25_expansion_factor
-                galaxy.source_from_parameters(self.frame, outer_factor, expansion_factor)
+                galaxy.source_from_shape(self.frame, shape, outer_factor)
 
             else:
 
-                # Find a source
-                try: galaxy.find_source(self.frame, self.config.detection)
-                except Exception as e:
-                    #import traceback
-                    log.error("Error when finding source")
-                    print(type(e))
-                    print(e)
-                    #traceback.print_exc()
-                    if self.config.plot_track_record_if_exception:
-                        if galaxy.has_track_record: galaxy.track_record.plot()
-                        else: log.warning("Track record is not enabled")
+                # If requested, use the galaxy extents obtained from the catalog to create the source
+                if self.config.detection.use_d25 and galaxy.has_extent:
+
+                    outer_factor = self.config.detection.background_outer_factor
+                    expansion_factor = self.config.detection.d25_expansion_factor
+                    galaxy.source_from_parameters(self.frame, outer_factor, expansion_factor)
+
+                else:
+
+                    # Find a source
+                    try: galaxy.find_source(self.frame, self.config.detection)
+                    except Exception as e:
+                        #import traceback
+                        log.error("Error when finding source")
+                        print(type(e))
+                        print(e)
+                        #traceback.print_exc()
+                        if self.config.plot_track_record_if_exception:
+                            if galaxy.has_track_record: galaxy.track_record.plot()
+                            else: log.warning("Track record is not enabled")
 
             # If a source was not found for the principal or companion galaxies, force it
             outer_factor = self.config.detection.background_outer_factor
@@ -369,6 +383,18 @@ class GalaxyFinder(Configurable):
 
             # If the galaxy does not have a source, continue
             if galaxy.has_source: galaxy.find_contour(self.frame, self.config.apertures)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def principal_shape(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.principal.shape
 
     # -----------------------------------------------------------------
 
