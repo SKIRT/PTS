@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
 import numpy as np
 from scipy import ndimage
 import copy
@@ -586,32 +587,42 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         # -- Dilation --
 
         # Dilate the mask if requested
-        if config.dilate:
+        #if config.dilate:
+        if False:
 
             if special: log.debug("dilating the mask")
 
-            original_x_min = source.cutout.x_min
-            original_y_min = source.cutout.y_min
-            original_x_max = source.cutout.x_max
-            original_y_max = source.cutout.y_max
-
-            source = source.zoom_out(1.5, frame)
-
-            source.mask = Mask(np.zeros(source.cutout.shape))
-
-            rel_x_min = original_x_min - source.cutout.x_min
-            rel_y_min = original_y_min - source.cutout.y_min
-            rel_x_max = original_x_max - source.cutout.x_min
-            rel_y_max = original_y_max - source.cutout.y_min
-
-            # Replace source's mask by found center segment mask
-            source.mask[rel_y_min:rel_y_max, rel_x_min:rel_x_max] = mask
+            source = source.zoom_out(1.5, frame, keep_original_mask=True)
 
             if special: source.plot(title="zoomed-out source before mask dilation")
 
             # Dilate the mask
             source.mask = source.mask.disk_dilation(radius=10, iterations=expansion_level)
             #mask = mask.dilated(connectivity=config.connectivity, iterations=config.iterations)
+
+        if config.dilate:
+
+            if special: log.debug("dilating the mask")
+
+            source = source.zoom_out(config.dilation_factor, frame, keep_original_mask=True)
+
+            mask_area = np.sum(source.mask)
+            area_dilation_factor = config.dilation_factor ** 2.
+            new_area = mask_area * area_dilation_factor
+
+            ## Circular mask approximation
+
+            #ellipse = find_contour(source.mask.astype(float), source.mask)
+            #radius = ellipse.radius.norm
+
+            mask_radius = math.sqrt(mask_area / math.pi)
+            new_radius = math.sqrt(new_area / math.pi)
+
+            kernel_radius = new_radius - mask_radius
+
+            print("dilation kernel radius:", kernel_radius)
+
+            source.mask = source.mask.disk_dilation(radius=kernel_radius)
 
         # Show a plot for debugging
         if config.debug.dilated or special: plotting.plot_box(np.ma.masked_array(source.cutout, mask=source.mask), title="Dilated mask")
