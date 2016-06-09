@@ -193,9 +193,6 @@ class DataFetcher(DataComponent):
         # Write the galaxy info
         self.write_info()
 
-        # Write the images
-        self.write_images()
-
         # Write the SED
         self.write_sed()
 
@@ -213,18 +210,6 @@ class DataFetcher(DataComponent):
 
         # Write the galaxy info table
         tables.write(self.info, self.galaxy_info_path, format="ascii.ecsv")
-
-    # -----------------------------------------------------------------
-
-    def write_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the galaxy images ...")
 
     # -----------------------------------------------------------------
 

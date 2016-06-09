@@ -39,9 +39,11 @@ from ..tools import archive as arch
 # - simulation: the SkirtSimulation object representing the simulation to be handled
 # - figsize: the horizontal and vertical size of the output figure in inch (!); default is 8 x 8 inch
 #
-def plotgrids(simulation, figsize=(8,8), output_path=None, silent=False):
+def plotgrids(simulation, figsize=(8,8), output_path=None, silent=False, prefix=None):
     for gridfile in simulation.gridxxdatpaths():
+
         plotfile = gridfile[:-4] + ".pdf"
+        if prefix is not None: plotfile = prefix + "_" + plotfile
 
         if output_path is not None: plotfile = os.path.join(output_path, os.path.basename(plotfile))
 

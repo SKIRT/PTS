@@ -71,13 +71,17 @@ class FittingPlotter(PlottingComponent):
         self.transmission_curves = dict()
 
         # The distribution of dust cells per level
-        self.cell_distribution = None
+        self.cell_distribution_lowres = None
+        self.cell_distribution_highres = None
 
         # The runtimes
         self.runtimes = None
 
+        # The SEDs of all the models
+        self.seds = []
+
         # The SEDs of the different stellar contributions (total, old, young, ionizing)
-        self.seds = OrderedDict()
+        self.sed_contributions = OrderedDict()
 
         # The observed SED
         self.observed_sed = None
@@ -110,7 +114,7 @@ class FittingPlotter(PlottingComponent):
         self.load_wavelength_grids()
 
         # 4. Load the transmission curves
-        #self.load_transmission_curves()
+        self.load_transmission_curves()
 
         # 5. Load the dust cell tree data
         self.load_dust_cell_tree()
@@ -118,16 +122,22 @@ class FittingPlotter(PlottingComponent):
         # 6. Load the runtimes
         self.load_runtimes()
 
-        # 7. Load the SEDs for the various contribution
-        #self.load_seds()
+        # 7. Load the observed SED
+        self.load_observed_sed()
 
-        # 8. Load the simulated images
+        # 8. Load the SEDs of the various models
+        self.load_model_seds()
+
+        # 9. Load the SEDs for the various contribution
+        self.load_sed_contributions()
+
+        # 10. Load the simulated images
         self.load_images()
 
-        # 9. Load the geometries
+        # 11. Load the geometries
         self.load_geometries()
 
-        # 10. Plot
+        # 12. Plot
         self.plot()
 
     # -----------------------------------------------------------------
@@ -242,15 +252,49 @@ class FittingPlotter(PlottingComponent):
         # Inform the user
         log.info("Loading the dust cell tree information ...")
 
+        # Load the low-resolution dust cell tree information
+        self.load_low_res_dust_cell_tree()
+
+        # Load the high-resolution dust cell tree information
+        self.load_high_res_dust_cell_tree()
+
+    # -----------------------------------------------------------------
+
+    def load_low_res_dust_cell_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Determine the path to the log file of the dust grid generating simulation
-        fit_grid_path = fs.join(self.fit_path, "grid")
-        log_file_path = fs.join(fit_grid_path, self.galaxy_name + "_log.txt")
+        fit_grid_lowres_path = fs.join(self.fit_path, "grid", "low-res")
+        log_file_path = fs.join(fit_grid_lowres_path, self.galaxy_name + "_log.txt")
 
         # Open the log file
         log_file = LogFile(log_file_path)
 
         # Get the distribution of cells per level of the tree
-        self.cell_distribution = log_file.tree_leaf_distribution
+        self.cell_distribution_lowres = log_file.tree_leaf_distribution
+
+    # -----------------------------------------------------------------
+
+    def load_high_res_dust_cell_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path to the log file of the dust grid generating simulation
+        fit_grid_highres_path = fs.join(self.fit_path, "grid", "high-res")
+        log_file_path = fs.join(fit_grid_highres_path, self.galaxy_name + "_log.txt")
+
+        # Open the log file
+        log_file = LogFile(log_file_path)
+
+        # Get the distribution of cells per level of the tree
+        self.cell_distribution_highres = log_file.tree_leaf_distribution
 
     # -----------------------------------------------------------------
 
@@ -300,7 +344,7 @@ class FittingPlotter(PlottingComponent):
 
     # -----------------------------------------------------------------
 
-    def load_seds(self):
+    def load_observed_sed(self):
 
         """
         This function ...
@@ -308,7 +352,53 @@ class FittingPlotter(PlottingComponent):
         """
 
         # Inform the user
-        log.info("Loading the SEDs ...")
+        log.info("Loading the observed SED ...")
+
+        # Determine the path to the observed SED
+        observed_sed_path = fs.join(self.phot_path, "fluxes.dat")
+
+        # Load the observed SED
+        self.observed_sed = ObservedSED.from_file(observed_sed_path)
+
+    # -----------------------------------------------------------------
+
+    def load_model_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the SEDs of all the fit models ...")
+
+        # Determine the path to the fit/out directory
+        fit_out_path = fs.join(self.fit_path, "out")
+
+        # Loop over all directories in the fit/out directory
+        for path in fs.directories_in_path(fit_out_path):
+
+            # Check whether the SED file is present in the simulation's output directory
+            sed_path = fs.join(path, "out", self.galaxy_name + "_earth_sed.dat")
+            if not fs.is_file(sed_path): continue
+
+            # Load the SED
+            sed = SED.from_skirt(sed_path)
+
+            # Add the sed to the list of SEDs
+            self.seds.append(sed)
+
+    # -----------------------------------------------------------------
+
+    def load_sed_contributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the SEDs of the various stellar contributions ...")
 
         # Determine the path to the fit/best directory
         fit_best_path = fs.join(self.fit_path, "best")
@@ -326,7 +416,7 @@ class FittingPlotter(PlottingComponent):
             sed = SED.from_skirt(sed_path)
 
             # Add the total SED to the dictionary of SEDs
-            self.seds["total"] = sed
+            self.sed_contributions["total"] = sed
 
         # Add the SEDs of the simulations with the individual stellar populations
         contributions = ["old", "young", "ionizing"]
@@ -345,13 +435,7 @@ class FittingPlotter(PlottingComponent):
             sed = SED.from_skirt(sed_path)
 
             # Add the SED to the dictionary of SEDs
-            self.seds[contribution] = sed
-
-        # Determine the path to the observed SED
-        observed_sed_path = fs.join(self.phot_path, "fluxes.dat")
-
-        # Load the observed SED
-        self.observed_sed = ObservedSED.from_file(observed_sed_path)
+            self.sed_contributions[contribution] = sed
 
     # -----------------------------------------------------------------
 
@@ -480,7 +564,7 @@ class FittingPlotter(PlottingComponent):
         self.plot_wavelengths()
 
         # Plot the dust grid
-        self.plot_dust_grid()
+        self.plot_dust_grids()
 
         # Plot the distribution of dust cells for the different tree levels
         if self.cell_distribution is not None: self.plot_dust_cell_distribution()
@@ -488,8 +572,11 @@ class FittingPlotter(PlottingComponent):
         # Plot the distributions of the runtimes on different remote systems
         if self.runtimes is not None: self.plot_runtimes()
 
+        # Plot the SEDs of the models
+        if len(self.seds) > 0: self.plot_model_seds()
+
         # Plot the SEDs
-        if len(self.seds) > 0: self.plot_seds()
+        if len(self.sed_contributions) > 0: self.plot_sed_contributions()
 
         # Plot the images
         if len(self.simulated_images) > 0: self.plot_images()
@@ -592,7 +679,7 @@ class FittingPlotter(PlottingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_dust_grid(self):
+    def plot_dust_grids(self):
 
         """
         This function ...
@@ -602,13 +689,45 @@ class FittingPlotter(PlottingComponent):
         # Inform the user
         log.info("Plotting the dust grid ...")
 
+        # Plot the low-resolution dust grid
+        self.plot_low_res_dust_grid()
+
+        # Plot the high-resolution dust grid
+        self.plot_high_res_dust_grid()
+
+    # -----------------------------------------------------------------
+
+    def plot_low_res_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Create a SkirtSimulation instance for the grid generating simulation
-        fit_grid_path = fs.join(self.fit_path, "grid")
-        ski_path = fs.join(fit_grid_path, self.galaxy_name + ".ski")
-        simulation = SkirtSimulation(ski_path=ski_path, outpath=fit_grid_path)
+        fit_grid_lowres_path = fs.join(self.fit_path, "grid", "low-res")
+        ski_path = fs.join(fit_grid_lowres_path, self.galaxy_name + ".ski")
+        simulation = SkirtSimulation(ski_path=ski_path, outpath=fit_grid_lowres_path)
 
         # Plot the grid
-        plotgrids(simulation, output_path=self.plot_fitting_path, silent=True)
+        plotgrids(simulation, output_path=self.plot_fitting_path, silent=True, prefix="lowres")
+
+    # -----------------------------------------------------------------
+
+    def plot_high_res_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a SkirtSimulation instance for the grid generating simulation
+        fit_grid_highres_path = fs.join(self.fit_path, "grid", "high-res")
+        ski_path = fs.join(fit_grid_highres_path, self.galaxy_name + ".ski")
+        simulation = SkirtSimulation(ski_path=ski_path, outpath=fit_grid_highres_path)
+
+        # Plot the grid
+        plotgrids(simulation, output_path=self.plot_fitting_path, silent=True, prefix="highres")
 
     # -----------------------------------------------------------------
 
@@ -622,12 +741,43 @@ class FittingPlotter(PlottingComponent):
         # Inform the user
         log.info("Plotting the dust cell distribution ...")
 
+        # Plot low-resolution dust cell distribution
+        self.plot_low_res_dust_cell_distribution()
+
+        # Plot high-resolution dust cell distribution
+        self.plot_high_res_dust_cell_distribution()
+
+    # -----------------------------------------------------------------
+
+    def plot_low_res_dust_cell_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Set plot title and path
         title = "Dust cells in each tree level"
-        path = fs.join(self.plot_fitting_path, "cells_tree.pdf")
+        path = fs.join(self.plot_fitting_path, "cells_tree_lowres.pdf")
 
         # Make the plot
-        self.cell_distribution.plot(title=title, path=path)
+        self.cell_distribution_lowres.plot(title=title, path=path)
+
+    # -----------------------------------------------------------------
+
+    def plot_high_res_dust_cell_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set plot title and path
+        title = "Dust cells in each tree level"
+        path = fs.join(self.plot_fitting_path, "cells_tree_highres.pdf")
+
+        # Make the plot
+        self.cell_distribution_highres.plot(title=title, path=path)
 
     # -----------------------------------------------------------------
 
@@ -661,7 +811,40 @@ class FittingPlotter(PlottingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_seds(self):
+    def plot_model_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the SEDs of all the models ...")
+
+        # Create the SEDPlotter object
+        plotter = SEDPlotter(self.galaxy_name)
+
+        # Add all model SEDs (these have to be plotted in gray)
+        counter = 0
+        for sed in self.seds:
+            plotter.add_modeled_sed(sed, str(counter))
+            counter += 1
+
+        # Add the 'best' model total SED
+        plotter.add_modeled_sed(self.sed_contributions["total"], "best") # this SED has to be plotted in black
+
+        # Add the observed SED to the plotter
+        plotter.add_observed_sed(self.observed_sed, "observation")
+
+        # Determine the path to the SED plot file
+        path = fs.join(self.plot_fitting_path, "model_seds.pdf")
+
+        # Run the plotter
+        plotter.run(path)
+
+    # -----------------------------------------------------------------
+
+    def plot_sed_contributions(self):
 
         """
         This function ...

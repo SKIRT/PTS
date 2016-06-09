@@ -886,7 +886,7 @@ class InputInitializer(FittingComponent):
         scale_height = 100. * Unit("pc") # M51
 
         # Convert the SFR into a FUV luminosity
-        sfr = 1.0 # The star formation rate
+        sfr = 1.5 # The star formation rate
         mappings = Mappings(ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor, sfr)
         luminosity = mappings.luminosity_for_filter(self.fuv)
         #luminosity = luminosity.to(self.sun_fuv).value

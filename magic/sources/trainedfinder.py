@@ -153,8 +153,6 @@ class TrainedFinder(Configurable):
         :return:
         """
 
-        self.config.detection.method = "experimental"
-
         # Inform the user
         log.info("Looking for sources in the frame ...")
 
@@ -547,7 +545,7 @@ class TrainedFinder(Configurable):
 
         mask = Mask(self.galaxy_finder.segments) + Mask(self.star_finder.segments)
 
-        peaks = find_peaks(result, 0.6, box_size=5, mask=mask)
+        peaks = find_peaks(result, 0.8, box_size=5, mask=mask)
 
         index = 1
 

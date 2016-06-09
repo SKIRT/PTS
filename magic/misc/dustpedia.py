@@ -264,7 +264,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
-    def get_image_links(self, galaxy_name):
+    def get_image_urls(self, galaxy_name):
 
         """
         This function ...
@@ -272,6 +272,10 @@ class DustPediaDatabase(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting the URLs of the available images for galaxy '" + galaxy_name + "' ...")
+
+        # Go to the page
         r = self.session.get(data_link + "?GalaxyName="+galaxy_name+"&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search")
 
         page_as_string = r.content
@@ -334,13 +338,16 @@ class DustPediaDatabase(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting the names of the images that are available for galaxy '" + galaxy_name + "' ...")
+
         # Example link: http://dustpedia.astro.noa.gr/Data/GetImage?imageName=NGC3031_Planck_10600.fits&instrument=Planck
 
         names = []
 
-        for link in self.get_image_links(galaxy_name):
+        for url in self.get_image_urls(galaxy_name):
 
-            name = link.split("imageName=")[1].split("&instrument")[0]
+            name = url.split("imageName=")[1].split("&instrument")[0]
             names.append(name)
 
         return names
@@ -355,6 +362,9 @@ class DustPediaDatabase(object):
         :param image_name:
         :return:
         """
+
+        # Inform the user
+        log.info("Getting the image '" + image_name + "' for galaxy '" + galaxy_name + "' ...")
 
         # Determine a temporary path for the image file
         local_path = fs.join(self.temp_path, image_name)
@@ -383,14 +393,17 @@ class DustPediaDatabase(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Downloading the image '" + image_name + "' for galaxy '" + galaxy_name + "' to '" + path + " ...")
+
         get_link = None
 
-        for link in self.get_image_links(galaxy_name):
+        for url in self.get_image_urls(galaxy_name):
 
-            link_name = link.split("imageName=")[1].split("&instrument")[0]
+            link_name = url.split("imageName=")[1].split("&instrument")[0]
 
             if link_name == image_name:
-                get_link = link
+                get_link = url
                 break
 
         self.download_file(get_link, path)
@@ -405,6 +418,10 @@ class DustPediaDatabase(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting general information about galaxy '" + galaxy_name + "' ...")
+
+        # Set the names of the table columns
         names = ["Name", "RA", "DEC", "Hubble Stage", "Hubble Type", "V", "D25", "Inclination"]
 
         r = self.session.get(data_link + "?GalaxyName="+galaxy_name+"&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search")
