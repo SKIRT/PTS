@@ -14,6 +14,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import tempfile
 import numpy as np
 import requests
 from lxml import html
@@ -62,6 +63,9 @@ class DustPediaDatabase(object):
         The constructor ...
         :return:
         """
+
+        # Determine the path to a temporary directory
+        self.temp_path = tempfile.gettempdir()
 
         # Create the session
         self.session = requests.session()
@@ -352,20 +356,11 @@ class DustPediaDatabase(object):
         :return:
         """
 
-        get_link = None
+        # Determine a temporary path for the image file
+        local_path = fs.join(self.temp_path, image_name)
 
-        for link in self.get_image_links(galaxy_name):
-
-            link_name = link.split("imageName=")[1].split("&instrument")[0]
-
-            if link_name == image_name:
-
-                get_link = link
-                break
-
-        local_path = fs.join(fs.home(), "test.fits")
-
-        self.download_image(get_link, local_path)
+        # Download the image to the temporary directory
+        self.download_image(galaxy_name, image_name, local_path)
 
         # Open the image
         frame = Frame.from_file(local_path)
@@ -375,6 +370,30 @@ class DustPediaDatabase(object):
 
         # Return the image frame
         return frame
+
+    # -----------------------------------------------------------------
+
+    def download_image(self, galaxy_name, image_name, path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param image_name:
+        :param path:
+        :return:
+        """
+
+        get_link = None
+
+        for link in self.get_image_links(galaxy_name):
+
+            link_name = link.split("imageName=")[1].split("&instrument")[0]
+
+            if link_name == image_name:
+                get_link = link
+                break
+
+        self.download_file(get_link, path)
 
     # -----------------------------------------------------------------
 
@@ -465,7 +484,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
-    def download_image(self, link, local_path):
+    def download_file(self, link, local_path):
 
         """
         This function ...

@@ -14,10 +14,11 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .component import DataComponent
-from ...magic.misc.dustpedia import DustPediaDatabase
+from ...magic.misc.dustpedia import DustPediaDatabase, get_account
 from ...core.tools.logging import log
 from ...magic.tools import catalogs
 from ...core.tools import tables
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -111,8 +112,14 @@ class DataFetcher(DataComponent):
         # Call the setup function of the base class
         super(DataFetcher, self).setup()
 
+        if self.config.database.username is not None:
+            username = self.config.database.username
+            password = self.config.database.password
+        else:
+            username, password = get_account()
+
         # Login to the DustPedia database
-        self.database.login(self.config.database.username, self.config.database.password)
+        self.database.login(username, password)
 
         # Determine the NGC id of the galaxy
         self.ngc_id = catalogs.get_ngc_name(self.galaxy_name, delimiter="")
@@ -147,7 +154,14 @@ class DataFetcher(DataComponent):
         # Get the image names
         image_names = self.database.get_image_names(self.ngc_id)
 
-        print(image_names)
+        # Download the images
+        for image_name in image_names:
+
+            # Determine the path to the image file
+            path = fs.join(self.data_path, image_name)
+
+            # Download the image
+            self.database.download_image(self.ngc_id, image_name, path)
 
     # -----------------------------------------------------------------
 

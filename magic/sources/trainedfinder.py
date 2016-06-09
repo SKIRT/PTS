@@ -535,11 +535,39 @@ class TrainedFinder(Configurable):
 
         #plotting.plot_box(result)
 
-        y, x = np.unravel_index(np.argmax(result), result.shape)
+        #y, x = np.unravel_index(np.argmax(result), result.shape)
+        #source = Source.around_coordinate(self.frame, Coordinate(x,y), radius=5, factor=1.3)
+        #source.plot()
 
-        source = Source.around_coordinate(self.frame, Coordinate(x,y), radius=10, factor=1.3)
+        #from ...core.basics.distribution import Distribution
+        #distribution = Distribution.from_values(result.flatten())
+        #distribution.plot()
 
-        source.plot()
+        from photutils import find_peaks
+
+        mask = Mask(self.galaxy_finder.segments) + Mask(self.star_finder.segments)
+
+        peaks = find_peaks(result, 0.6, box_size=5, mask=mask)
+
+        index = 1
+
+        self.segments = Frame.zeros_like(self.frame)
+
+        # Loop over the peaks
+        for peak in peaks:
+
+            # Calculate the absolute x and y coordinate of the peak
+            x = peak['x_peak']
+            y = peak['y_peak']
+            coordinate = Coordinate(x,y)
+
+            source = Source.around_coordinate(self.frame, coordinate, radius=5, factor=1.3)
+
+            self.segments[source.y_slice, source.x_slice][source.mask] = index
+
+            index += 1
+
+            #self.sources.append(source)
 
     # -----------------------------------------------------------------
 
