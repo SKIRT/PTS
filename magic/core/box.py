@@ -547,12 +547,13 @@ class Box(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def interpolated(self, mask, method):
+    def interpolated(self, mask, method, no_clip_mask=None):
 
         """
         This function ...
         :param mask:
         :param method:
+        :param no_clip_mask:
         :return:
         """
 
@@ -628,12 +629,13 @@ class Box(np.ndarray):
         # Use the 'PTS' method
         elif method == "pts":
 
+            polynomial_fit_mask = mask if no_clip_mask is None else no_clip_mask # determine the mask to use for fitting the polynomial
             order = 3
-            try: polynomial = fitting.fit_polynomial(self, order, mask=mask)
+            try: polynomial = fitting.fit_polynomial(self, order, mask=polynomial_fit_mask)
             except TypeError:
                 try:
-                    mask = mask.eroded(connectivity=2, iterations=1)
-                    polynomial = fitting.fit_polynomial(self, order, mask=mask)
+                    polynomial_fit_mask = polynomial_fit_mask.eroded(connectivity=2, iterations=1)
+                    polynomial = fitting.fit_polynomial(self, order, mask=polynomial_fit_mask)
                 except TypeError:
                     log.warning("Cannot interpolate over this box ...")
                     return self.copy()

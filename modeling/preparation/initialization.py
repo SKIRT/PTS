@@ -26,6 +26,7 @@ from ...magic.core.image import Image
 from ...magic.core.frame import Frame
 from ...core.basics.animation import Animation
 from ...core.tools import time
+from ...core.tools import parsing
 
 # -----------------------------------------------------------------
 
@@ -362,7 +363,7 @@ class PreparationInitializer(PreparationComponent):
         fwhm = None
         with open(statistics_path) as statistics_file:
             for line in statistics_file:
-                if "FWHM" in line: fwhm = get_quantity(line.split("FWHM: ")[1].replace("\n", ""))
+                if "FWHM" in line: fwhm = parsing.get_quantity(line.split("FWHM: ")[1].replace("\n", ""))
 
         # Check whether the FWHM is valid
         if fwhm is None: raise RuntimeError("The FWHM could not be found")
@@ -470,25 +471,5 @@ class PreparationInitializer(PreparationComponent):
 
         # Clear the source finder
         self.source_finder.clear()
-
-# -----------------------------------------------------------------
-
-def get_quantity(entry, default_unit=None):
-
-    """
-    This function ...
-    :param entry:
-    :param default_unit:
-    :return:
-    """
-
-    splitted = entry.split()
-    value = float(splitted[0])
-    try: unit = splitted[1]
-    except IndexError: unit = default_unit
-
-    # Create a quantity object and return it
-    if unit is not None: value = value * Unit(unit)
-    return value
 
 # -----------------------------------------------------------------

@@ -427,12 +427,29 @@ class Source(object):
         :return:
         """
 
-        # Perform sigma-clipping on the background if requested
-        if sigma_clip: mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
-        else: mask = self.mask
+        # Make a distinction between the "PTS" way of estimating the background and all other methods.
+        # For the PTS way, in case sigma clipping is disabled, this means it is disabled only for the 'polynomial fitting step'
+        # of the background estimation, so provide two distinct masks to the interpolated() method: the clipped mask for
+        # the 'background noise' estimation and the non-clipped mask for the 'polynomial fitting step'.
+        if method == "pts":
+
+            if sigma_clip:
+                mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
+                no_clip_mask = None
+            else:
+                mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
+                no_clip_mask = self.mask
+
+        else:
+
+            # Perform sigma-clipping on the background if requested
+            if sigma_clip: mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
+            else: mask = self.mask
+
+            no_clip_mask = None
 
         # Perform the interpolation
-        self.background = self.cutout.interpolated(mask, method)
+        self.background = self.cutout.interpolated(mask, method, no_clip_mask=no_clip_mask)
 
     # -----------------------------------------------------------------
 
