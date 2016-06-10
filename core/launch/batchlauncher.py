@@ -637,7 +637,7 @@ class BatchLauncher(Configurable):
                     simulation.parallelization = parallellization
 
                     # Set the analysis options for the simulation
-                    simulation.analysis = analysis_options
+                    if analysis_options is not None: simulation.analysis = analysis_options
 
                     # Remove remote files
                     simulation.remove_remote_input = not self.config.keep and not share_input

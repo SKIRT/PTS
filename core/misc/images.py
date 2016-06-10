@@ -362,7 +362,8 @@ class ObservedImageMaker(object):
                 conversion_factor *= (pivot ** 2 / speed_of_light).to("micron/Hz").value
 
                 # From W / (m2 * arcsec2 * Hz) to MJy / sr
-                conversion_factor *= (Unit("W/(m2 * arcsec2 * Hz)") / Unit("MJy/sr")).to("")
+                #conversion_factor *= (Unit("W/(m2 * arcsec2 * Hz)") / Unit("MJy/sr")).to("")
+                conversion_factor *= 1e26 * 1e-6 * (Unit("sr") / Unit("arcsec2")).to("")
 
                 # Convert
                 self.images[datacube_name][filter_name] *= conversion_factor

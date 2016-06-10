@@ -81,13 +81,7 @@ class ParameterExplorer(FittingComponent):
         super(ParameterExplorer, self).setup()
 
         # Get the names of the filters for which we have photometry
-        fluxes_table_path = fs.join(self.phot_path, "fluxes.dat")
-        fluxes_table = tables.from_file(fluxes_table_path, format="ascii.ecsv")
-        # Loop over the entries in the fluxes table, get the filter
-        for entry in fluxes_table:
-            # Get the filter
-            filter_id = entry["Instrument"] + "." + entry["Band"]
-            self.filter_names.append(filter_id)
+        self.filter_names = self.get_filter_names()
 
         # Set options for the BatchLauncher: basic options
         self.launcher.config.shared_input = True  # The input directories for the different simulations are shared

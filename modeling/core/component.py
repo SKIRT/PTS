@@ -120,7 +120,7 @@ class ModelingComponent(Configurable):
         for entry in fluxes_table:
 
             # Get the filter
-            filter_id = entry["Instrument"] + "." + entry["Band"]
+            filter_id = entry["Instrument"] + "_" + entry["Band"]
             filter_names.append(filter_id)
 
         return filter_names

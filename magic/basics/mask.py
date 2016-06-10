@@ -24,7 +24,6 @@ from photutils import detect_sources
 # Import the relevant PTS classes and modules
 from .vector import Position
 from ...core.tools.logging import log
-from ..tools import headers
 
 # -----------------------------------------------------------------
 
@@ -86,6 +85,8 @@ class Mask(np.ndarray):
         if nframes > 1:
 
             if plane is not None:
+
+                from ..tools import headers
 
                 for i in range(nframes):
                     # Get name and description of frame
