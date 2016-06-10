@@ -67,8 +67,9 @@ class SEDPlotter(object):
         self.title = title
 
         # Create ordered dictionaries for the model and observed SEDs (the order of adding SEDs is remembered)
-        self.models = OrderedDict()
-        self.models_no_residuals = OrderedDict()
+        #self.models = OrderedDict()
+        #self.models_no_residuals = OrderedDict()
+        self.models = []
         self.observations = OrderedDict()
 
         # Keep track of the minimal and maximal wavelength and flux encountered during the plotting
@@ -106,7 +107,7 @@ class SEDPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def add_modeled_sed(self, sed, label, residuals=True):
+    def add_modeled_sed(self, sed, label, residuals=True, ghost=False):
 
         """
         This function ...
@@ -118,8 +119,10 @@ class SEDPlotter(object):
         """
 
         # Add the SED to the appropriate dictionary
-        if residuals: self.models[label] = sed
-        else: self.models_no_residuals[label] = sed
+        #if residuals: self.models[label] = sed
+        #el: self.models_no_residuals[label] = sed
+
+        self.models.append((label, sed, residuals, ghost))
 
     # -----------------------------------------------------------------
 
@@ -171,8 +174,9 @@ class SEDPlotter(object):
         log.info("Clearing the SED plotter ...")
 
         # Set default values for all attributes
-        self.models = OrderedDict()
-        self.models_no_residuals = OrderedDict()
+        #self.models = OrderedDict()
+        #self.models_no_residuals = OrderedDict()
+        self.models = []
         self.observations = OrderedDict()
         self._min_wavelength = None
         self._max_wavelength = None
@@ -199,7 +203,7 @@ class SEDPlotter(object):
         # Inform the user
         log.info("Making the SED plot ...")
 
-        if len(self.models) == 0 and len(self.models_no_residuals) == 0: self.plot_no_models(path)
+        if len(self.models) == 0: self.plot_no_models(path)
         else: self.plot_with_models(path)
 
     # -----------------------------------------------------------------
@@ -432,38 +436,47 @@ class SEDPlotter(object):
         self._main_axis = self._figure.gca()
 
         # Add model SEDs
-        model_labels = self.models.keys()
-        for j in range(len(model_labels)):
 
-            model_label = model_labels[j]
+        counter_residuals = 0
+        counter_no_residals = 0
 
-            # Get fluxes, wavelengths and errors
-            fluxes = self.models[model_label].fluxes(unit="Jy", add_unit=False)
-            wavelengths = self.models[model_label].wavelengths(unit="micron", add_unit=False)
-            errors = self.models[model_label].errors(unit="Jy", add_unit=False) if self.models[
-                model_label].has_errors else None
+        line_colors_models_no_residuals = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
+        line_styles_models_no_residuals = ["-"] * len(self.models)
 
-            # Plot the model SED as a line (with errors if present)
-            self.draw_model(self._main_axis, wavelengths, fluxes, line_styles[j], model_label, errors=errors)
+        for model_label, sed, plot_residuals, ghost in self.models:
 
-        if len(self.models_no_residuals) > 0:
-
-            line_colors_models_no_residuals = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
-            line_styles_models_no_residuals = ["-"] * len(self.models_no_residuals)
-
-            # Add model SEDs in the models_no_residuals dictionary
-            model_labels_no_residuals = self.models_no_residuals.keys()
-            for j in range(len(model_labels_no_residuals)):
-
-                model_label = model_labels_no_residuals[j]
+            if ghost:
 
                 # Get fluxes, wavelengths and errors
-                fluxes = self.models_no_residuals[model_label].fluxes(unit="Jy", add_unit=False)
-                wavelengths = self.models_no_residuals[model_label].wavelengths(unit="micron", add_unit=False)
-                errors = self.models_no_residuals[model_label].errors(unit="Jy", add_unit=False) if self.models_no_residuals[model_label].has_errors else None
+                fluxes = sed.fluxes(unit="Jy", add_unit=False)
+                wavelengths = sed.wavelengths(unit="micron", add_unit=False)
+
+                # Plot the model SED as a grey line (no errors)
+                self.draw_model(self._main_axis, wavelengths, fluxes, "-", linecolor="lightgrey")
+
+            elif plot_residuals:
+
+                # Get fluxes, wavelengths and errors
+                fluxes = sed.fluxes(unit="Jy", add_unit=False)
+                wavelengths = sed.wavelengths(unit="micron", add_unit=False)
+                errors = sed.errors(unit="Jy", add_unit=False) if sed.has_errors else None
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self._main_axis, wavelengths, fluxes, line_styles_models_no_residuals[j], model_label, errors=errors, linecolor=line_colors_models_no_residuals[j], adjust_extrema=False)
+                self.draw_model(self._main_axis, wavelengths, fluxes, line_styles[counter_residuals], model_label, errors=errors)
+
+                counter_residuals += 1
+
+            else:
+
+                # Get fluxes, wavelengths and errors
+                fluxes = sed.fluxes(unit="Jy", add_unit=False)
+                wavelengths = sed.wavelengths(unit="micron", add_unit=False)
+                errors = sed.errors(unit="Jy", add_unit=False) if sed.has_errors else None
+
+                # Plot the model SED as a line (with errors if present)
+                self.draw_model(self._main_axis, wavelengths, fluxes, line_styles_models_no_residuals[counter_no_residals], model_label, errors=errors, linecolor=line_colors_models_no_residuals[counter_no_residals], adjust_extrema=False)
+
+                counter_no_residals += 1
 
         # Finish the plot
         self.finish_plot(path)
@@ -539,77 +552,62 @@ class SEDPlotter(object):
             error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
             ax2.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
 
-        # Model labels
-        model_labels = self.models.keys()
-
         line_styles_models = line_styles
-        line_colors_models = ['black'] * len(model_labels)
+        line_colors_models = ['black'] * len(self.models)
 
-        # Residuals
-        for j in range(len(model_labels)):
+        line_colors_models_no_residuals = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
+        line_styles_models_no_residuals = ["-"] * len(self.models)
 
-            model_label = model_labels[j]
+        counter = 0
 
-            #log_model = np.log10(self.models[model_label].fluxes(unit="Jy", add_unit=False))
+        for model_label, sed, plot_residuals, ghost in self.models:
 
-            model_fluxes= self.models[model_label].fluxes(unit="Jy", add_unit=False)
-            f2 = interp1d(self.models[model_label].wavelengths(unit="micron", add_unit=False), model_fluxes, kind='cubic')
-            residuals = -(fluxes - f2(wavelengths))/fluxes * 100.
+            if not plot_residuals: continue
 
-            ax2.plot(wavelengths, residuals, line_styles_models[j], color=line_colors_models[j], label='model')
+            if ghost:
+
+                model_fluxes = sed.fluxes(unit="Jy", add_unit=False)
+                f2 = interp1d(sed.wavelengths(unit="micron", add_unit=False), model_fluxes, kind='cubic')
+                residuals = -(fluxes - f2(wavelengths)) / fluxes * 100.
+
+                ax2.plot(wavelengths, residuals, "-", color="lightgrey")
+
+            else:
+
+                #log_model = np.log10(sed.fluxes(unit="Jy", add_unit=False))
+                model_fluxes = sed.fluxes(unit="Jy", add_unit=False)
+                f2 = interp1d(sed.wavelengths(unit="micron", add_unit=False), model_fluxes, kind='cubic')
+                residuals = -(fluxes - f2(wavelengths))/fluxes * 100.
+
+                ax2.plot(wavelengths, residuals, line_styles_models[counter], color=line_colors_models[counter], label='model')
+
+                counter += 1
+
+        counter = 0
+        counter_no_residuals = 0
 
         # Add model SEDs
-        for j in range(len(model_labels)):
+        for model_label, sed, plot_residuals, ghost in self.models:
 
-            # Get the current model label
-            model_label = model_labels[j]
+            if ghost:
 
-            log_model = np.log10(self.models[model_label].fluxes(unit="Jy", add_unit=False))
-            self._main_axis.plot(self.models[model_label].wavelengths(unit="micron", add_unit=False), log_model, line_styles_models[j], color=line_colors_models[j], label=model_label)
+                log_model = np.log10(sed.fluxes(unit="Jy", add_unit=False))
+                self._main_axis.plot(sed.wavelengths(unit="micron", add_unit=False), log_model, "-", color="lightgrey")
 
-            if self.models[model_label].has_errors:
+            elif plot_residuals:
 
-                bottom = []
-                top = []
-                for j in range(len(self.models[model_label].errors)):
+                log_model = np.log10(sed.fluxes(unit="Jy", add_unit=False))
+                self._main_axis.plot(sed.wavelengths(unit="micron", add_unit=False), log_model, line_styles_models[counter], color=line_colors_models[counter], label=model_label)
 
-                    value = self.models[model_label].fluxes[j]
-                    bottom.append(value + self.models[model_label].errors[j][0])
-                    top.append(value + self.models[model_label].errors[j][1])
-
-                bottom = np.array(bottom)
-                top = np.array(top)
-
-                log_bottom = np.log10(bottom)
-                log_top = np.log10(top)
-
-                self._main_axis.fill_between(self.models[model_label].wavelengths, log_bottom, log_top, where=log_top<=log_bottom, facecolor='cyan', edgecolor='cyan', interpolate=True, alpha=0.5)
-                self._main_axis.plot([], [], color='cyan', linewidth=10, label='spread')
-
-        if len(self.models_no_residuals) > 0:
-
-            line_colors_models_no_residuals = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
-            line_styles_models_no_residuals = ["-"] * len(self.models_no_residuals)
-
-            # Add model SEDs from the models_no_residuals dictionary
-            model_labels_no_residuals = self.models_no_residuals.keys()
-            for j in range(len(model_labels_no_residuals)):
-
-                # Get the current model label
-                model_label = model_labels_no_residuals[j]
-
-                log_model = np.log10(self.models_no_residuals[model_label].fluxes(unit="Jy", add_unit=False))
-                self._main_axis.plot(self.models_no_residuals[model_label].wavelengths(unit="micron", add_unit=False), log_model,
-                                     line_styles_models_no_residuals[j], color=line_colors_models_no_residuals[j], label=model_label)
-
-                if self.models_no_residuals[model_label].has_errors:
+                if sed.has_errors:
 
                     bottom = []
                     top = []
-                    for j in range(len(self.models_no_residuals[model_label].errors)):
-                        value = self.models_no_residuals[model_label].fluxes[j]
-                        bottom.append(value + self.models_no_residuals[model_label].errors[j][0])
-                        top.append(value + self.models_no_residuals[model_label].errors[j][1])
+                    for j in range(len(sed.errors)):
+
+                        value = sed.fluxes[j]
+                        bottom.append(value + sed.errors[j][0])
+                        top.append(value + sed.errors[j][1])
 
                     bottom = np.array(bottom)
                     top = np.array(top)
@@ -617,10 +615,37 @@ class SEDPlotter(object):
                     log_bottom = np.log10(bottom)
                     log_top = np.log10(top)
 
-                    self._main_axis.fill_between(self.models_no_residuals[model_label].wavelengths, log_bottom, log_top,
+                    self._main_axis.fill_between(sed.wavelengths, log_bottom, log_top, where=log_top<=log_bottom, facecolor='cyan', edgecolor='cyan', interpolate=True, alpha=0.5)
+                    self._main_axis.plot([], [], color='cyan', linewidth=10, label='spread')
+
+                counter += 1
+
+            else:
+
+                log_model = np.log10(sed.fluxes(unit="Jy", add_unit=False))
+                self._main_axis.plot(sed.wavelengths(unit="micron", add_unit=False), log_model, line_styles_models_no_residuals[counter_no_residuals], color=line_colors_models_no_residuals[counter_no_residuals], label=model_label)
+
+                if sed.has_errors:
+
+                    bottom = []
+                    top = []
+                    for j in range(len(sed.errors)):
+                        value = sed.fluxes[j]
+                        bottom.append(value + sed.errors[j][0])
+                        top.append(value + sed.errors[j][1])
+
+                    bottom = np.array(bottom)
+                    top = np.array(top)
+
+                    log_bottom = np.log10(bottom)
+                    log_top = np.log10(top)
+
+                    self._main_axis.fill_between(sed.wavelengths, log_bottom, log_top,
                                                  where=log_top <= log_bottom, facecolor='cyan', edgecolor='cyan',
                                                  interpolate=True, alpha=0.5)
                     self._main_axis.plot([], [], color='cyan', linewidth=10, label='spread')
+
+                counter_no_residuals += 1
 
         # Finish the plot
         self.finish_plot(path)
@@ -667,6 +692,9 @@ class SEDPlotter(object):
 
         # Used labels
         used_labels = []
+
+        line_colors_models_no_residuals = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
+        line_styles_models_no_residuals = ["-"] * len(self.models)
 
         # Loop over the different observed SEDs
         for label in self.observations:
@@ -718,29 +746,46 @@ class SEDPlotter(object):
                 ax2.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
 
             # Residuals
-            model_labels = self.models.keys()
-            for j in range(len(model_labels)):
+            counter = 0
+            for model_label, sed, plot_residuals, ghost in self.models:
 
-                model_label = model_labels[j]
+                if not plot_residuals: continue
 
-                log_model = np.log10(self.models[model_label].fluxes(unit="Jy", add_unit=False))
+                log_model = np.log10(sed.fluxes(unit="Jy", add_unit=False))
+                f2 = interp1d(sed.wavelengths(unit="micron", add_unit=False), log_model, kind='cubic')
 
-                f2 = interp1d(self.models[model_label].wavelengths(unit="micron", add_unit=False), log_model, kind='cubic')
-                ax2.plot(wavelengths, -(fluxes - f2(wavelengths))/fluxes * 100., line_styles[j], color='black', label='model')
+                if ghost:
+                    ax2.plot(wavelengths, -(fluxes - f2(wavelengths))/fluxes * 100., "-", color='lightgrey')
+                else:
+                    ax2.plot(wavelengths, -(fluxes - f2(wavelengths)) / fluxes * 100., line_styles[counter], color='black', label=model_label)
+                    counter += 1
 
         # Add model SEDs
-        model_labels = self.models.keys()
-        for j in range(len(model_labels)):
-
-            model_label = model_labels[j]
+        counter = 0
+        counter_no_residuals = 0
+        for model_label, sed, plot_residuals, ghost in self.models:
 
             # Get fluxes, wavelengths and errors
-            fluxes = self.models[model_label].fluxes(unit="Jy", add_unit=False)
-            wavelengths = self.models[model_label].wavelengths(unit="micron", add_unit=False)
-            errors = self.models[model_label].errors(unit="Jy", add_unit=False) if self.models[model_label].has_errors else None
+            fluxes = sed.fluxes(unit="Jy", add_unit=False)
+            wavelengths = sed.wavelengths(unit="micron", add_unit=False)
+            errors = sed.errors(unit="Jy", add_unit=False) if sed.has_errors else None
 
-            # Plot the model SED as a line (with errors if present)
-            self.draw_model(self._main_axis, wavelengths, fluxes, line_styles[j], model_label, errors=errors)
+            if ghost:
+
+                # Plot the model SED as a line (with errors if present)
+                self.draw_model(self._main_axis, wavelengths, fluxes, "-", linecolor="lightgrey")
+
+            elif plot_residuals:
+
+                # Plot the model SED as a line (with errors if present)
+                self.draw_model(self._main_axis, wavelengths, fluxes, line_styles[counter], linecolor="black", label=model_label)
+                counter += 1
+
+            else:
+
+                # Plot the model SED as a line (with errors if present)
+                self.draw_model(self._main_axis, wavelengths, fluxes, line_styles_models_no_residuals[counter_no_residuals], linecolor=line_colors_models_no_residuals[counter_no_residuals], label=model_label)
+                counter_no_residuals += 1
 
         # Finish the plot
         self.finish_plot(path)
@@ -846,7 +891,7 @@ class SEDPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def draw_model(self, axis, wavelengths, fluxes, linestyle, label, errors=None, linecolor='black', errorcolor='cyan', adjust_extrema=True):
+    def draw_model(self, axis, wavelengths, fluxes, linestyle, label=None, errors=None, linecolor='black', errorcolor='cyan', adjust_extrema=True):
 
         """
         This function ...

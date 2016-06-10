@@ -23,8 +23,8 @@ from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
-# The path to the PTS kernels directory
-kernels_path = fs.join(inspection.pts_user_dir, "extinction")
+# The path to the PTS user/extinction directory
+extinction_path = fs.join(inspection.pts_user_dir, "extinction")
 
 # -----------------------------------------------------------------
 
@@ -59,11 +59,27 @@ class GalacticExtinction(object):
         :return:
         """
 
+        # Check whether the user/extinction directory exists
+        if not fs.is_directory(extinction_path): fs.create_directory(extinction_path)
+
+        # Get query
         if isinstance(coordinate_or_galaxy, basestring): query = coordinate_or_galaxy
         else: query = coordinate_or_galaxy.to_astropy()
 
-        # Get the extinction table from IRSA
-        self.table = IrsaDust.get_extinction_table(query)
+        # Determine the path to the local extinction table
+        path = fs.join(extinction_path, str(query))
+
+        # Check if the local file exists
+        if not fs.is_file(path):
+
+            # Get the extinction table from IRSA
+            self.table = IrsaDust.get_extinction_table(query)
+
+            # Save the table
+            tables.write(self.table, path)
+
+        # Load the table
+        else: self.table = tables.from_file(path)
 
     # -----------------------------------------------------------------
 

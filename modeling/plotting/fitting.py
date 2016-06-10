@@ -486,10 +486,13 @@ class FittingPlotter(PlottingComponent):
             log.debug("Loading the '" + name + "' image ...")
 
             # Get the filter name
-            filter_name = name.split("__")[1]
+            #filter_name = name.split("__")[1]
 
             # Open the image
             frame = Frame.from_file(path)
+
+            # Get the filter name
+            filter_name = str(frame.filter)
 
             # Add the image frame to the dictionary
             self.simulated_images[filter_name] = frame
@@ -517,8 +520,7 @@ class FittingPlotter(PlottingComponent):
 
             # Check whether a simulated image exists for this band
             if name not in self.simulated_images:
-                log.warning(
-                    "The simulated version of the " + name + " image could not be found, skipping " + name + " data ...")
+                log.warning("The simulated version of the " + name + " image could not be found, skipping " + name + " data ...")
                 continue
 
             # Debugging
@@ -602,18 +604,22 @@ class FittingPlotter(PlottingComponent):
         # Inform the user
         log.info("Plotting the wavelength grid ...")
 
-        # Plot the wavelength grid with the observation filters
-        self.plot_wavelengths_filters()
+        # Plot the low-resolution and high-resolution wavelength grids with the observation filters
+        self.plot_wavelengths_filters(self.lowres_wavelength_grid, "wavelengths_filters_lowres.pdf")
+        self.plot_wavelengths_filters(self.highres_wavelength_grid, "wavelengths_filters_highres.pdf")
 
         # Plot the wavelengths with the SEDs of stars and dust
-        self.plot_wavelengths_seds()
+        self.plot_wavelengths_seds(self.lowres_wavelength_grid, "wavelengths_seds_lowres.pdf")
+        self.plot_wavelengths_seds(self.highres_wavelength_grid, "wavelengths_seds_highres.pdf")
 
     # -----------------------------------------------------------------
 
-    def plot_wavelengths_filters(self):
+    def plot_wavelengths_filters(self, grid, filename):
 
         """
         This function ...
+        :param grid:
+        :param filename:
         :return:
         """
 
@@ -630,21 +636,22 @@ class FittingPlotter(PlottingComponent):
         for label in self.transmission_curves: plotter.add_transmission_curve(self.transmission_curves[label], label)
 
         # Add the wavelength points
-        for wavelength in self.lowres_wavelength_grid.wavelengths(): plotter.add_wavelength(wavelength)
+        for wavelength in grid.wavelengths(): plotter.add_wavelength(wavelength)
 
         # Determine the path to the plot file
-        path = fs.join(self.plot_fitting_path, "wavelengths_filters.pdf")
+        path = fs.join(self.plot_fitting_path, filename)
 
         # Run the plotter
-        plotter.run(path, min_wavelength=self.lowres_wavelength_grid.min_wavelength,
-                    max_wavelength=self.lowres_wavelength_grid.max_wavelength, min_transmission=0.0, max_transmission=1.05)
+        plotter.run(path, min_wavelength=grid.min_wavelength, max_wavelength=grid.max_wavelength, min_transmission=0.0, max_transmission=1.05)
 
     # -----------------------------------------------------------------
 
-    def plot_wavelengths_seds(self):
+    def plot_wavelengths_seds(self, grid, filename):
 
         """
         This function ...
+        :param grid:
+        :param filename:
         :return:
         """
 
@@ -659,7 +666,7 @@ class FittingPlotter(PlottingComponent):
         plotter.transparent = True
 
         # Add the wavelength grid
-        plotter.add_wavelength_grid(self.lowres_wavelength_grid, "fitting simulations")
+        plotter.add_wavelength_grid(grid, "fitting simulations")
 
         # Add MAPPINGS SFR SED
         mappings_sed = load_example_mappings_sed()
@@ -678,10 +685,10 @@ class FittingPlotter(PlottingComponent):
         for line in emission_lines: plotter.add_emission_line(line)
 
         # Determine the path to the plot file
-        path = fs.join(self.plot_fitting_path, "wavelengths_seds.pdf")
+        path = fs.join(self.plot_fitting_path, filename)
 
         # Run the plotter
-        plotter.run(path, min_wavelength=self.lowres_wavelength_grid.min_wavelength, max_wavelength=self.lowres_wavelength_grid.max_wavelength)
+        plotter.run(path, min_wavelength=grid.min_wavelength, max_wavelength=grid.max_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -833,7 +840,7 @@ class FittingPlotter(PlottingComponent):
         # Add all model SEDs (these have to be plotted in gray)
         counter = 0
         for sed in self.seds:
-            plotter.add_modeled_sed(sed, str(counter))
+            plotter.add_modeled_sed(sed, str(counter), ghost=True)
             counter += 1
 
         # Add the 'best' model total SED
@@ -864,10 +871,10 @@ class FittingPlotter(PlottingComponent):
         plotter = SEDPlotter(self.galaxy_name)
 
         # Loop over the simulated SEDs of the various stellar contributions
-        for label in self.seds:
+        for label in self.sed_contributions:
 
             # Add the simulated SED to the plotter
-            plotter.add_modeled_sed(self.seds[label], label)
+            plotter.add_modeled_sed(self.sed_contributions[label], label, residuals=(label=="total"))
 
         # Add the observed SED to the plotter
         plotter.add_observed_sed(self.observed_sed, "observation")
@@ -899,7 +906,7 @@ class FittingPlotter(PlottingComponent):
         plotter = ResidualImageGridPlotter(title="Image residuals")
 
         # Create list of filter names sorted by increasing wavelength
-        sorted_filter_names = sorted(self.observed_images.keys(), key=lambda key: self.observed[key].filter.pivotwavelength())
+        sorted_filter_names = sorted(self.observed_images.keys(), key=lambda key: self.observed_images[key].filter.pivotwavelength())
 
         # Loop over the filter names, add a row to the image grid plotter for each filter
         for filter_name in sorted_filter_names:

@@ -564,10 +564,11 @@ def remote_filter_convolution(host_id, datacube_path, wavelengths, filters, keep
     script_file.write("# Loop over the filters, perform the convolution\n")
     script_file.write("for filter_name in filters:\n")
     script_file.write("\n")
-    script_file.write("    log.info('Creating the ' + str(fltr) + ' image ...')\n")
+    script_file.write("    log.info('Making the observed image for the ' + str(fltr) + ' filter ...')\n")
     script_file.write("    fltr = filters[filter_name]\n")
     script_file.write("    data = fltr.convolve(wavelengths, fluxdensities)\n")
     script_file.write("    frame = Frame(data)\n")
+    script_file.write("    frame.unit = 'W/(m2 * arcsec2 * micron)'\n")
     script_file.write("    path = fs.join('" + remote_temp_path + "', filter_name + '.fits')\n")
     script_file.write("    frame.save(path)\n")
 
