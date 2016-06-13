@@ -23,8 +23,8 @@ from astropy.utils import lazyproperty
 from .component import PlottingComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
-from ...magic.core.frame import Frame
-from ...magic.basics.mask import Mask
+from ...magic.core.frame import Frame, get_frame_names
+from ...magic.basics.mask import Mask, get_mask_names
 from ...magic.basics.region import Region
 from ...magic.plot.imagegrid import StandardImageGridPlotter
 from ...core.plot.distribution import DistributionGridPlotter
@@ -209,6 +209,10 @@ class PreparationPlotter(PlottingComponent):
         # Loop over the image paths
         for label in self.result_paths:
 
+            # Check whether the sources mask is present in the FITS file
+            if not "sources" in get_mask_names(self.result_paths[label]):
+                log.warning("The sources mask is not present in the " + label + " image")
+
             # Open the sources mask
             mask = Mask.from_file(self.result_paths[label], plane="sources")
 
@@ -229,6 +233,11 @@ class PreparationPlotter(PlottingComponent):
 
         # Loop over the image paths
         for label in self.result_paths:
+
+            # Check whether the sky mask is present in the FITS file
+            if not "sky" in get_mask_names(self.result_paths[label]):
+                log.warning("The sky mask is not present in the " + label + " image")
+                continue
 
             # Open the sky mask
             mask = Mask.from_file(self.result_paths[label], plane="sky")
@@ -362,7 +371,7 @@ class PreparationPlotter(PlottingComponent):
 
     # -----------------------------------------------------------------
 
-    def load_possion_errors(self):
+    def load_poisson_errors(self):
 
         """
         This function ...
@@ -371,6 +380,9 @@ class PreparationPlotter(PlottingComponent):
 
         # Loop over the image paths
         for label in self.result_paths:
+
+            # Check if the poisson_errors frame is present in the FITS file
+            if not "poisson_errors" in get_frame_names(self.result_paths[label]): continue
 
             # Open the poisson errors frame
             errors = Frame.from_file(self.result_paths[label], plane="poisson_errors")
@@ -390,6 +402,11 @@ class PreparationPlotter(PlottingComponent):
         # Loop over the image paths
         for label in self.result_paths:
 
+            # Check if the sky_errors frame is present in the FITS file
+            if not "sky_errors" in get_frame_names(self.result_paths[label]):
+                log.warning("The sky_errors frame is not present in the " + label + " image")
+                continue
+
             # Open the sky error frame
             errors = Frame.from_file(self.result_paths[label], plane="sky_errors")
 
@@ -407,6 +424,11 @@ class PreparationPlotter(PlottingComponent):
 
         # Loop over the image paths
         for label in self.result_paths:
+
+            # Check if the calibration_errors frame is present in the FITS file
+            if not "calibration_errors" in get_frame_names(self.result_paths[label]):
+                log.warning("The calibration_errors frame is not present in the " + label + " image")
+                continue
 
             # Open the calibration error frame
             errors = Frame.from_file(self.result_paths[label], plane="calibration_errors")

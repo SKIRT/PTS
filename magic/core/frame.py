@@ -35,6 +35,35 @@ from ..basics.mask import Mask
 
 # -----------------------------------------------------------------
 
+def get_frame_names(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Load the header
+    header = fits.getheader(path)
+
+    # Get the number of planes
+    nplanes = headers.get_number_of_frames(header)
+
+    # Initialize a dictionary to contain the frame names and corresponding descriptions
+    frames = dict()
+
+    # Look at the properties of each plane
+    for i in range(nplanes):
+
+        # Get name and description of plane
+        name, description, plane_type = headers.get_frame_name_and_description(header, i, always_call_first_primary=False)
+        if plane_type == "frame": frames[name] = description
+
+    # Return the frames with their name and description
+    return frames
+
+# -----------------------------------------------------------------
+
 class Frame(np.ndarray):
 
     """

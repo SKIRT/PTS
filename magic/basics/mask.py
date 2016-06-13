@@ -27,6 +27,37 @@ from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
+def get_mask_names(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    from ..tools import headers
+
+    # Load the header
+    header = fits.getheader(path)
+
+    # Get the number of planes
+    nplanes = headers.get_number_of_frames(header)
+
+    # Initialize a dictionary to contain the mask names and corresponding descriptions
+    masks = dict()
+
+    # Look at the properties of each plane
+    for i in range(nplanes):
+
+        # Get name and description of plane
+        name, description, plane_type = headers.get_frame_name_and_description(header, i, always_call_first_primary=False)
+        if plane_type == "mask": masks[name] = description
+
+    # Return the masks with their name and description
+    return masks
+
+# -----------------------------------------------------------------
+
 class Mask(np.ndarray):
 
     """
