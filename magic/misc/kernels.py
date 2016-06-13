@@ -19,6 +19,7 @@ import urllib
 import requests
 from lxml import html
 from collections import OrderedDict
+from scipy import ndimage
 
 # Import astronomical modules
 from astropy.units import Unit
@@ -33,6 +34,54 @@ from ...core.tools.logging import log
 
 # The path to the PTS kernels directory
 kernels_path = fs.join(inspection.pts_user_dir, "kernels")
+
+# -----------------------------------------------------------------
+
+def rebin_kernel(kernel, pixelscale):
+
+    """
+    This function ...
+    :param kernel:
+    :param pixelscale:
+    :return:
+    """
+
+    # Calculate the zooming factor
+    factor = (pixelscale / kernel.xy_average_pixelscale).to("").value
+
+    # Rebin to the pixelscale
+    data = ndimage.interpolation.zoom(kernel, zoom=1.0 / factor)
+    rebinned = Frame(data)
+
+    # Return the rebinned kernel
+    rebinned.fwhm = kernel.fwhm
+    return rebinned
+
+# -----------------------------------------------------------------
+
+def rebin_kernel_for_image(kernel, image):
+
+    """
+    This function ...
+    :param kernel:
+    :param image:
+    :return:
+    """
+
+    return rebin_kernel(kernel, image.xy_average_pixelscale)
+
+# -----------------------------------------------------------------
+
+def rebin_kernel_for_frame(kernel, frame):
+
+    """
+    This function ...
+    :param kernel:
+    :param frame:
+    :return:
+    """
+
+    return rebin_kernel(kernel, frame.xy_average_pixelscale)
 
 # -----------------------------------------------------------------
 

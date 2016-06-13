@@ -727,9 +727,9 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        self.apertures_frame = Frame.zeros_like(self.frame)
-        self.apertures_mean_frame = Frame.zeros_like(self.frame)
-        self.apertures_noise_frame = Frame.zeros_like(self.frame)
+        self.apertures_frame = Frame.nans_like(self.frame)
+        self.apertures_mean_frame = Frame.nans_like(self.frame)
+        self.apertures_noise_frame = Frame.nans_like(self.frame)
 
         for i in range(len(aperture_centers)):
 

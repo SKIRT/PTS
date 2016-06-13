@@ -13,10 +13,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 from textwrap import wrap
 #import seaborn as sns
+import matplotlib.gridspec as gridspec
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
@@ -256,5 +258,114 @@ class DistributionPlotter(object):
         # Save the figure
         plt.savefig(path, bbox_inches='tight', pad_inches=0.25, format=format, transparent=self.transparent)
         plt.close()
+
+# -----------------------------------------------------------------
+
+class DistributionGridPlotter(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, title=None):
+
+        """
+        The constructor ...
+        """
+
+        # Set the title
+        self.title = title
+
+        # The different distributions
+        self.distributions = OrderedDict()
+        self.extra_distributions = dict()
+
+        # Properties
+        self.ncols = 7
+        self.width = 16
+
+    # -----------------------------------------------------------------
+
+    def add_distribution(self, distribution, label):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if label in self.distributions: self.extra_distributions[label] = distribution
+        else: self.distributions[label] = distribution
+
+    # -----------------------------------------------------------------
+
+    def run(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Make the plot
+        self.plot(path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def npanels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.distributions)
+
+    # -----------------------------------------------------------------
+
+    def plot(self, path):
+
+        """
+        This function ...
+        :parm path:
+        :return:
+        """
+
+        # Determine the necessary number of rows
+        nrows = int(math.ceil(self.npanels / self.ncols))
+
+        ratio = float(nrows) / float(self.ncols)
+        height = ratio * self.width
+
+        # Create the figure
+        self._figure = plt.figure(figsize=(self.width, height))
+
+        self._figure.subplots_adjust(hspace=0.0, wspace=0.0)
+
+
+        gs = gridspec.GridSpec(nrows, self.ncols, wspace=0.0, hspace=0.0)
+
+        # Loop over the distributions
+        counter = 0
+        ax = None
+        for label in self.distributions:
+
+            row = int(counter / self.ncols)
+            col = counter % self.ncols
+
+            subplotspec = gs[row, col]
+
+            ax = plt.subplot(subplotspec)
+
+            #ax.imshow(frame, vmin=min_value, vmax=max_value, cmap=cmap, origin='lower', norm=norm, interpolation="nearest",
+            #          aspect=1)
+
+            # Add the label
+            ax.text(0.95, 0.95, label, color='white', transform=ax.transAxes, fontsize=10, va="top",
+                    ha="right")  # fontweight='bold'
+
+            # ax.coords.grid(color='white')
+
+            counter += 1
 
 # -----------------------------------------------------------------

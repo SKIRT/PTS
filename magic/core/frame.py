@@ -153,7 +153,7 @@ class Frame(np.ndarray):
                     # Get name and description of frame
                     name, description, plane_type = headers.get_frame_name_and_description(header, i, always_call_first_primary=False)
 
-                    if plane == name:
+                    if plane == name and plane_type == "frame":
                         index = i
                         break
 
@@ -282,6 +282,22 @@ class Frame(np.ndarray):
 
         # Return a zero-filled copy of the frame
         return np.zeros_like(frame)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def nans_like(cls, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        # Return a NaN-filled copy of the frame
+        nans = cls.zeros_like(frame)
+        nans.fill(np.nan)
+        return nans
 
     # -----------------------------------------------------------------
 
@@ -442,12 +458,6 @@ class Frame(np.ndarray):
             copy = self.copy()
             copy.fwhm = kernel_fwhm
             return copy
-
-        # Calculate the zooming factor
-        factor = (self.xy_average_pixelscale.to("arcsec/pix").value / kernel.xy_average_pixelscale.to("arcsec/pix").value)
-
-        # Rebin the kernel to the same grid of the image
-        kernel = ndimage.interpolation.zoom(kernel, zoom=1.0/factor)
 
         nans_mask = np.isnan(self)
 

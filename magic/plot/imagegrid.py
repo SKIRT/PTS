@@ -105,6 +105,9 @@ class StandardImageGridPlotter(ImageGridPlotter):
         # The images to be plotted
         self.images = OrderedDict()
 
+        # Masks to be overlayed on the images
+        self.masks = dict()
+
         # Properties
         self.ncols = 7
         self.width = 16
@@ -124,16 +127,18 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def add_image(self, image, label):
+    def add_image(self, image, label, mask=None):
 
         """
         This function ...
         :param image:
         :param label:
+        :param mask:
         :return:
         """
 
         self.images[label] = image
+        if mask is not None: self.masks[label] = mask
 
     # -----------------------------------------------------------------
 

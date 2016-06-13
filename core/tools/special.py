@@ -24,13 +24,12 @@ from .logging import log
 
 # -----------------------------------------------------------------
 
-def remote_convolution(image, kernel_path, kernel_fwhm, host_id):
+def remote_convolution(image, kernel, host_id):
 
     """
     This function ...
     :param image:
-    :param kernel_path:
-    :param kernel_fwhm:
+    :param kernel:
     :param host_id:
     """
 
@@ -55,23 +54,21 @@ def remote_convolution(image, kernel_path, kernel_fwhm, host_id):
     remote.create_directory(remote_temp_path)
 
     # Debugging
-    log.debug("Uploading the kernel to the remote directory ...")
+    #log.debug("Uploading the kernel to the remote directory ...")
 
     # Upload the kernel FITS file to the remote directory
-    remote_kernel_path = fs.join(remote_temp_path, "kernel.fits")
-    remote.upload(kernel_path, remote_temp_path, new_name="kernel.fits", compress=True, show_output=True)
+    #remote_kernel_path = fs.join(remote_temp_path, "kernel.fits")
+    #remote.upload(kernel_path, remote_temp_path, new_name="kernel.fits", compress=True, show_output=True)
 
     # Debugging
-    log.debug("Uploading the image frames to the remote directory ...")
-
-    # Upload the image to the remote directory
-    #local_image_path = self.full_output_path("converted_unit.fits")
-    #remote_image_path = fs.join(remote_temp_path, "image.fits")
-    #remote.upload(local_image_path, remote_temp_path, new_name="image.fits", compress=True)
+    log.debug("Creating a local temporary directory ...")
 
     # Create a temporary directory locally to contain the frames
     local_temp_path = fs.join(fs.home(), time.unique_name("convolution"))
     fs.create_directory(local_temp_path)
+
+    # Debugging
+    log.debug("Saving the image frames to the temporary directory ...")
 
     # Save the frames
     local_frame_paths = []
@@ -90,6 +87,14 @@ def remote_convolution(image, kernel_path, kernel_fwhm, host_id):
             log.debug("The " + frame_name + " frame is constant, so this won't be uploaded and convolved")
             constant_frames.append(frame_name)
 
+    # Debugging
+    log.debug("Saving the kernel to the temporary directory ...")
+    local_kernel_path = fs.join(local_temp_path, "kernel.fits")
+    kernel.save(local_kernel_path)
+
+    # Debugging
+    log.debug("Uploading the image frames to the remote directory ...")
+
     # Upload the frames
     remote_frame_paths = []
     for local_frame_path in local_frame_paths:
@@ -104,6 +109,13 @@ def remote_convolution(image, kernel_path, kernel_fwhm, host_id):
         remote_frame_path = fs.join(remote_temp_path, frame_file_name)
         remote.upload(local_frame_path, remote_temp_path, new_name=frame_file_name, compress=True, show_output=True)
         remote_frame_paths.append(remote_frame_path)
+
+    # Debugging
+    log.debug("Uploading the kernel to the remote directory ...")
+
+    # Upload the kernel
+    remote_kernel_path = fs.join(remote_temp_path, "kernel.fits")
+    remote.upload(local_kernel_path, remote_temp_path, new_name="kernel.fits", compress=True, show_output=True)
 
     # Debugging
     log.debug("Creating a python script to perform the convolution remotely ...")
@@ -132,18 +144,6 @@ def remote_convolution(image, kernel_path, kernel_fwhm, host_id):
     script_file.write("# Open the kernel frame\n")
     script_file.write("kernel = Frame.from_file('" + remote_kernel_path + "')\n")
     script_file.write("\n")
-    script_file.write("# Set the FWHM of the kernel\n")
-    if kernel_fwhm is not None:
-        script_file.write("fwhm = " + str(kernel_fwhm.to("arcsec").value) + " * Unit('arcsec')\n")
-    else: script_file.write("fwhm = None\n")
-    script_file.write("if kernel.fwhm is None and fwhm is not None: kernel.fwhm = fwhm\n")
-    script_file.write("\n")
-    #script_file.write("# Open the image\n")
-    #script_file.write("image = Image.from_file(" + remote_image_path + ")\n")
-    #script_file.write("\n")
-    #script_file.write("# Do the convolution")
-    #script_file.write("image.convolve(kernel)\n")
-    #script_file.write("\n")
     for remote_frame_path in remote_frame_paths:
 
         frame_name = fs.strip_extension(fs.name(remote_frame_path))

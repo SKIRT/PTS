@@ -34,6 +34,7 @@ from ...core.tools import time
 from ..tools import plotting
 from ..animation.imageblink import ImageBlinkAnimation
 from ..animation.sourceextraction import SourceExtractionAnimation
+from ..misc.kernels import rebin_kernel_for_image
 
 # -----------------------------------------------------------------
 
@@ -395,34 +396,32 @@ class ImagePreparer(Configurable):
 
         else: animation = None
 
+        # Open the kernel frame
+        kernel = Frame.from_file(self.config.convolution.kernel_path)
+
+        # Set the kernel FWHM
+        if kernel.fwhm is None and self.config.convolution.kernel_fwhm is not None: kernel.fwhm = self.config.convolution.kernel_fwhm
+        if kernel.fwhm is None: raise RuntimeError("Kernel must either have its FWHM defined in the header or the kernel FWHM must be specified as a configuration option for the ImagePreparer")
+
+        # Rebin the kernel
+        kernel = rebin_kernel_for_image(kernel, self.image)
+
+        # Save the kernel frame for manual inspection
+        if self.config.write_steps:
+            kernel_path = self.full_output_path("kernel.fits")
+            kernel.save(kernel_path)
+
         # Check whether the convolution has to be performed remotely
         if self.config.convolution.remote is not None:
 
             # Inform the user
             log.info("Convolution will be performed remotely on host '" + self.config.convolution.remote + "' ...")
 
-            # Check whether the FWHM of the kernel is defined
-            kernel = Frame.from_file(self.config.convolution.kernel_path)
-            if kernel.fwhm is not None:
-                kernel_fwhm = kernel.fwhm
-            elif self.config.convolution.kernel_fwhm is not None:
-                kernel_fwhm = self.config.convolution.kernel_fwhm
-            else: raise RuntimeError("Kernel must either have its FWHM defined in the header or the kernel FWHM must be specified as a configuration option for the ImagePreparer")
-
             # Perform the remote convolution
-            special.remote_convolution(self.image, self.config.convolution.kernel_path, kernel_fwhm, self.config.convolution.remote)
+            special.remote_convolution(self.image, kernel, self.config.convolution.remote)
 
-        # The convolution is performed locally
-        else:
-
-            # Open the kernel frame
-            kernel = Frame.from_file(self.config.convolution.kernel_path)
-
-            # Set the kernel FWHM
-            if kernel.fwhm is None and self.config.convolution.kernel_fwhm is not None: kernel.fwhm = self.config.convolution.kernel_fwhm
-
-            # Convolve the image (the primary and errors frame)
-            self.image.convolve(kernel, allow_huge=True)
+        # The convolution is performed locally. # Convolve the image (the primary and errors frame)
+        else: self.image.convolve(kernel, allow_huge=True)
 
         # Save convolved frame
         if self.config.write_steps: self.write_intermediate_result("convolved.fits")

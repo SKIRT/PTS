@@ -91,7 +91,7 @@ class Mask(np.ndarray):
                 for i in range(nframes):
                     # Get name and description of frame
                     name, description, plane_type = headers.get_frame_name_and_description(header, i, always_call_first_primary=False)
-                    if plane == name:
+                    if plane == name and plane_type == "mask":
                         index = i
                         break
 
