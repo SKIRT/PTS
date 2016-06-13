@@ -281,6 +281,7 @@ class DistributionGridPlotter(object):
         self.extra_distributions = dict()
 
         # Properties
+        self.transparent = False
         self.ncols = 7
         self.width = 16
 
@@ -357,15 +358,47 @@ class DistributionGridPlotter(object):
 
             ax = plt.subplot(subplotspec)
 
-            #ax.imshow(frame, vmin=min_value, vmax=max_value, cmap=cmap, origin='lower', norm=norm, interpolation="nearest",
-            #          aspect=1)
+            distribution = self.distributions[label]
 
-            # Add the label
-            ax.text(0.95, 0.95, label, color='white', transform=ax.transAxes, fontsize=10, va="top",
-                    ha="right")  # fontweight='bold'
+            # Plot the distribution as a histogram
+            ax.bar(distribution.edges[:-1], distribution.counts, linewidth=0, width=distribution.bin_width, alpha=0.5, color=pretty_colors[0])
 
-            # ax.coords.grid(color='white')
+            if label in self.extra_distributions:
+
+                extra_distribution = self.extra_distributions[label]
+
+                # Plot the distribution as a histogram
+                ax.bar(extra_distribution.edges[:-1], extra_distribution.counts, linewidth=0, width=extra_distribution.bin_width, alpha=0.5, color=pretty_colors[1])
 
             counter += 1
+
+        # Finish
+        self.finish_plot(path)
+
+    # -----------------------------------------------------------------
+
+    def finish_plot(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Set the title
+        if self.title is not None: self._figure.suptitle("\n".join(wrap(self.title, 60)))
+
+        # plt.tight_layout()
+
+        # Debugging
+        if type(path).__name__ == "BytesIO": log.debug("Saving the distribution plot to a buffer ...")
+        elif path is None: log.debug("Showing the distribution plot ...")
+        else: log.debug("Saving the distribution plot to " + str(path) + " ...")
+
+        if path is not None:
+            # Save the figure
+            plt.savefig(path, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent, format=self.format)
+        else: plt.show()
+        plt.close()
 
 # -----------------------------------------------------------------

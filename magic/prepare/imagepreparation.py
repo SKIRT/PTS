@@ -314,7 +314,7 @@ class ImagePreparer(Configurable):
         """
 
         # Inform the user
-        log.info("Calculating the poisson noise on the image pixels ...")
+        log.info("Calculating the poisson noise on the image pixels ... (but not really)")
 
     # -----------------------------------------------------------------
 
@@ -525,9 +525,9 @@ class ImagePreparer(Configurable):
         # Write sky annuli maps if requested
         if self.config.write_sky_annuli:
 
-            # Write the annulus region
-            annulus_path = fs.join(self.config.sky_annuli_path, "annulus.reg")
-            self.sky_subtractor.annulus_region.save(annulus_path)
+            # Write the sky region
+            region_path = fs.join(self.config.sky_annuli_path, "sky.reg")
+            self.sky_subtractor.region.save(region_path)
 
             # Write the apertures frame
             apertures_frame_path = fs.join(self.config.sky_annuli_path, "apertures.fits")

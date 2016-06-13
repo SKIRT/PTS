@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Import astronomical modules
 from astropy.utils import lazyproperty
@@ -28,6 +29,11 @@ from ...magic.basics.region import Region
 from ...magic.plot.imagegrid import StandardImageGridPlotter
 from ...core.plot.distribution import DistributionGridPlotter
 from ...core.basics.distribution import Distribution
+
+# -----------------------------------------------------------------
+
+filled_markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd']
+pretty_colors = ["dodgerblue", "r", "purple", "darkorange", "lawngreen", "yellow", "darkblue", "teal", "darkgreen", "lightcoral", "crimson", "saddlebrown"]
 
 # -----------------------------------------------------------------
 
@@ -59,6 +65,12 @@ class PreparationPlotter(PlottingComponent):
         # The dictionary of prepared image frames
         self.images = dict()
 
+        # The dictionary of error frames
+        self.errors = dict()
+        self.poisson_errors = dict()
+        self.calibration_errors = dict()
+        self.sky_errors = dict()
+
         # The dictionary of sources masks
         self.sources_masks = dict()
 
@@ -73,9 +85,6 @@ class PreparationPlotter(PlottingComponent):
 
         # The dictionary of sky apertures
         self.apertures = dict()
-
-        # The dictionary of error frames
-        self.errors = dict()
 
     # -----------------------------------------------------------------
 
@@ -92,20 +101,20 @@ class PreparationPlotter(PlottingComponent):
         # 2. Load the prepared images
         self.load_images()
 
-        # 3. Load the source and sky masks
+        # 3. Load the error frame
+        self.load_errors()
+
+        # 4. Load the source and sky masks
         self.load_masks()
 
-        # 4. Load the sky values
+        # 5. Load the sky values
         self.load_sky()
 
-        # 5. Load the galaxy and sky annuli
+        # 6. Load the galaxy and sky annuli
         self.load_annuli()
 
-        # 6. Load the sky apertures
+        # 7. Load the sky apertures
         self.load_apertures()
-
-        # 7. Load the error frames
-        self.load_errors()
 
         # 8. Plot
         self.plot()
@@ -318,10 +327,31 @@ class PreparationPlotter(PlottingComponent):
         # Inform the user
         log.info("Loading the error frames ...")
 
+        # Load the total errors
+        self.load_total_errors()
+
+        # Load the poisson errors
+        self.load_poisson_errors()
+
+        # Load the sky errors
+        self.load_sky_errors()
+
+        # Load the calibration errors
+        self.load_calibration_errors()
+
+    # -----------------------------------------------------------------
+
+    def load_total_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Loop over the image paths
         for label in self.result_paths:
 
-            # Open the prepared image frame
+            # Open the errors frame
             frame = Frame.from_file(self.result_paths[label], plane="errors")
 
             # Set the image name
@@ -329,6 +359,60 @@ class PreparationPlotter(PlottingComponent):
 
             # Add the error frame to the dictionary
             self.errors[label] = frame
+
+    # -----------------------------------------------------------------
+
+    def load_possion_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the image paths
+        for label in self.result_paths:
+
+            # Open the poisson errors frame
+            errors = Frame.from_file(self.result_paths[label], plane="poisson_errors")
+
+            # Add the error frame to the dictionary
+            self.poisson_errors[label] = errors
+
+    # -----------------------------------------------------------------
+
+    def load_sky_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the image paths
+        for label in self.result_paths:
+
+            # Open the sky error frame
+            errors = Frame.from_file(self.result_paths[label], plane="sky_errors")
+
+            # Add the error frame to the dictionary
+            self.sky_errors[label] = errors
+
+    # -----------------------------------------------------------------
+
+    def load_calibration_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the image paths
+        for label in self.result_paths:
+
+            # Open the calibration error frame
+            errors = Frame.from_file(self.result_paths[label], plane="calibration_errors")
+
+            # Add the error frame to the dictionary
+            self.calibration_errors[label] = errors
 
     # -----------------------------------------------------------------
 
@@ -522,7 +606,45 @@ class PreparationPlotter(PlottingComponent):
         # Inform the user
         log.info("Plotting the relative error for each pixel in each prepared image ...")
 
+        figure = plt.figure()
 
+        #figure, (ax1, ax2, ax3) = plt.subplots(3)
+
+        fluxes = dict()
+        total_errors = dict()
+        poisson_errors = dict()
+        calibration_errors = dict()
+        sky_errors = dict()
+        colors = dict()
+
+        # Loop over the various bands and get the flux values and error contributions for each pixel
+        counter = 0
+        for label in self.sorted_labels:
+
+            # Determine the color
+            colors[label] = pretty_colors[counter]
+
+
+            counter += 1
+
+        ax1 = figure.add_subplot(4,1,1) # Poisson
+        ax2 = figure.add_subplot(4,1,2) # Calibration
+        ax3 = figure.add_subplot(4,1,3) # Sky
+        ax4 = figure.add_subplot(4,1,4) # Total
+
+        # Loop over the various bands
+        for label in fluxes:
+
+            ax1.scatter(fluxes[label], poisson_errors[label], color=colors[label], label=label)
+            ax2.scatter(fluxes[label], calibration_errors[label], color=colors[label], label=label)
+            ax3.scatter(fluxes[label], sky_errors[label], color=colors[label], label=label)
+            ax4.scatter(fluxes[label], total_errors[label], color=colors[label], label=label)
+
+        # Determine the path to the plot file
+        path = fs.join(self.plot_preparation_path, "errors_pixels.pdf")
+
+        # Save the figure
+        figure.savefig(path)
 
     # -----------------------------------------------------------------
 

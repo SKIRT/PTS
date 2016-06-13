@@ -233,8 +233,9 @@ class Region(list):
         # Check whether the argument is a valid shape
         if not (shape.__class__.__name__ == "Coordinate" or shape.__class__.__name__ == "Line"
                 or shape.__class__.__name__ == "Circle" or shape.__class__.__name__ == "Ellipse"
-                or shape.__class__.__name__ == "Rectangle" or shape.__class__.__name__ == "Polygon"):
-            raise ValueError("Shape must of of type Coordinate, Line, Circle, Ellipse, Rectangle or Polygon")
+                or shape.__class__.__name__ == "Rectangle" or shape.__class__.__name__ == "Polygon"
+                or shape.__class__.__name__ == "Composite"):
+            raise ValueError("Shape must of of type Coordinate, Line, Circle, Ellipse, Rectangle, Polygon or Composite")
 
         # Otherwise, add the shape
         super(Region, self).append(shape)

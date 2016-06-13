@@ -236,7 +236,7 @@ class SkySubtractor(Configurable):
         log.info("Creating the sky region ...")
 
         # If the sky region has to be loaded from file
-        if self.config.sky_region is not None:
+        if self.config.sky_region is not None: self.region = Region.from_file(self.config.sky_region)
 
         # If no region file is given by the user, create an annulus from the principal ellipse
         else:
@@ -248,7 +248,11 @@ class SkySubtractor(Configurable):
             outer_ellipse = self.principal_ellipse * annulus_outer_factor
 
             # Create the annulus
-            self.region = Composite(outer_ellipse, inner_ellipse)
+            annulus = Composite(outer_ellipse, inner_ellipse)
+
+            # Create the sky region consisting of only the annulus
+            self.region = Region()
+            self.region.append(annulus)
 
     # -----------------------------------------------------------------
 
@@ -1019,22 +1023,6 @@ class SkySubtractor(Configurable):
         # Save the figure
         plt.savefig(self.config.writing.histogram_path, bbox_inches='tight', pad_inches=0.25)
         plt.close()
-
-    # -----------------------------------------------------------------
-
-    @property
-    def annulus_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create the region and return it
-        region = Region()
-        region.append(self.inner_ellipse)
-        region.append(self.outer_ellipse)
-        return region
 
     # -----------------------------------------------------------------
 

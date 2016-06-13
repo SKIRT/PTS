@@ -212,7 +212,7 @@ class SkyRegion(list):
         """
 
         # Check whether the shape is in sky coordinates
-        if not shape.__class__.__name__.startswith("Sky"): raise ValueError("Shape must be SkyCoordinate, SkyLine, SkyCircle, SkyEllipse or SkyRectangle")
+        if not shape.__class__.__name__.startswith("Sky"): raise ValueError("Shape must be SkyCoordinate, SkyLine, SkyCircle, SkyEllipse, SkyRectangle, SkyPolygon or SkyComposite")
 
         # Otherwise, add the shape
         super(SkyRegion, self).append(shape)

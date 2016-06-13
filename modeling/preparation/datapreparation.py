@@ -273,12 +273,45 @@ class DataPreparer(PreparationComponent):
             rebinned_path = fs.join(output_path, "rebinned.fits")
             subtracted_path = fs.join(output_path, "sky_subtracted.fits")
 
+            ## CURRENT ORDER OF STEPS IN IMAGEPREPARER:
+
+            # 1. Setup
+
+            # 2. Extract stars and galaxies from the image
+            # extract_sources
+
+            # 3. If requested, calculate the poisson noise
+            # calculate_poisson_noise
+
+            # 4. If requested, correct for galactic extinction
+            # correct_for_extinction
+
+            # 5. If requested, convert the unit
+            # convert_unit
+
+            # 6. If requested, convolve
+            # convolve
+
+            # 7. If requested, rebin
+            # rebin
+
+            # 8. If requested, subtract the sky
+            # subtract_sky
+
+            # 9. Calculate the calibration uncertainties
+            # calculate_calibration_uncertainties
+
+            # 10. If requested, set the uncertainties
+            # set_uncertainties
+
+            ##
+
             # Check if the sky-subtracted image is present
             if fs.is_file(subtracted_path):
 
                 # Disable all steps preceeding and including the sky subtraction
-                self.image_preparer.config.calculate_calibration_uncertainties = False
                 self.image_preparer.config.extract_sources = False
+                self.image_preparer.config.calculate_poisson_noise = False
                 self.image_preparer.config.correct_for_extinction = False
                 self.image_preparer.config.convert_unit = False
                 self.image_preparer.config.convolve = False
@@ -297,8 +330,8 @@ class DataPreparer(PreparationComponent):
             elif fs.is_file(rebinned_path):
 
                 # Disable all steps preceeding and including the rebinning
-                self.image_preparer.config.calculate_calibration_uncertainties = False
                 self.image_preparer.config.extract_sources = False
+                self.image_preparer.config.calculate_poisson_noise = False
                 self.image_preparer.config.correct_for_extinction = False
                 self.image_preparer.config.convert_unit = False
                 self.image_preparer.config.convolve = False
@@ -316,8 +349,8 @@ class DataPreparer(PreparationComponent):
             elif fs.is_file(convolved_path):
 
                 # Disable all steps preceeding and including the convolution
-                self.image_preparer.config.calculate_calibration_uncertainties = False
                 self.image_preparer.config.extract_sources = False
+                self.image_preparer.config.calculate_poisson_noise = False
                 self.image_preparer.config.correct_for_extinction = False
                 self.image_preparer.config.convert_unit = False
                 self.image_preparer.config.convolve = False
@@ -334,8 +367,8 @@ class DataPreparer(PreparationComponent):
             elif fs.is_file(converted_path):
 
                 # Disable all steps preceeding and including the unit conversion
-                self.image_preparer.config.calculate_calibration_uncertainties = False
                 self.image_preparer.config.extract_sources = False
+                self.image_preparer.config.calculate_poisson_noise = False
                 self.image_preparer.config.correct_for_extinction = False
                 self.image_preparer.config.convert_unit = False
 
@@ -351,8 +384,8 @@ class DataPreparer(PreparationComponent):
             elif fs.is_file(corrected_path):
 
                 # Disable all steps preceeding and including the correction for extinction
-                self.image_preparer.config.calculate_calibration_uncertainties = False
                 self.image_preparer.config.extract_sources = False
+                self.image_preparer.config.calculate_poisson_noise = False
                 self.image_preparer.config.correct_for_extinction = False
 
                 # Set the principal ellipse and saturation region in sky coordinates
@@ -367,7 +400,6 @@ class DataPreparer(PreparationComponent):
             elif fs.is_file(extracted_path):
 
                 # Disable all steps preceeding and including the source extraction
-                self.image_preparer.config.calculate_calibration_uncertainties = False
                 self.image_preparer.config.extract_sources = False
 
                 # Set the principal ellipse and saturation region in sky coordinates
