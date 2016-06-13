@@ -467,7 +467,7 @@ class SourceExtractor(Configurable):
         :return:
         """
 
-        if self.galaxy_ellipse is None: return None
+        if self.principal_ellipse is None: return None
         return self.principal_ellipse.to_mask(self.frame.xsize, self.frame.ysize)
 
 # -----------------------------------------------------------------
