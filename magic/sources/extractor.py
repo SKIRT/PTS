@@ -361,7 +361,8 @@ class SourceExtractor(Configurable):
 
             # Check whether the source is in front of the principal galaxy
             #foreground = self.principal_mask.masks(source.center)
-            foreground = masks.overlap(self.principal_mask[source.y_slice, source.x_slice], source.mask)
+            if self.principal_mask is not None: foreground = masks.overlap(self.principal_mask[source.y_slice, source.x_slice], source.mask)
+            else: foreground = False
 
             # Disable sigma-clipping for estimating background when the source is foreground to the principal galaxy (to avoid clipping the galaxy's gradient)
             sigma_clip = self.config.sigma_clip if not foreground else False
@@ -385,7 +386,7 @@ class SourceExtractor(Configurable):
             self.mask[source.y_slice, source.x_slice] += source.mask
 
             # Add frame to the animation
-            if self.animation is not None and self.principal_mask.masks(source.center) and self.animation.nframes <= 20:
+            if self.animation is not None and (self.principal_mask is None or self.principal_mask.masks(source.center)) and self.animation.nframes <= 20:
                 self.animation.add_source(source)
 
             # Replace the pixels by the background
@@ -439,6 +440,8 @@ class SourceExtractor(Configurable):
         :return:
         """
 
+        if self.galaxy_region is None: return None
+
         largest_shape = None
 
         # Loop over all the shapes in the galaxy region
@@ -464,6 +467,7 @@ class SourceExtractor(Configurable):
         :return:
         """
 
+        if self.galaxy_ellipse is None: return None
         return self.principal_ellipse.to_mask(self.frame.xsize, self.frame.ysize)
 
 # -----------------------------------------------------------------

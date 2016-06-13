@@ -148,26 +148,26 @@ class ImagePreparer(Configurable):
         # 1. Call the setup function
         self.setup(image, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, visualisation_path)
 
-        # 2. Calculate the calibration uncertainties
-        if self.config.calculate_calibration_uncertainties: self.calculate_calibration_uncertainties()
-
-        # 3. Extract stars and galaxies from the image
+        # 2. Extract stars and galaxies from the image
         if self.config.extract_sources: self.extract_sources()
 
-        # 4. If requested, correct for galactic extinction
+        # 3. If requested, correct for galactic extinction
         if self.config.correct_for_extinction: self.correct_for_extinction()
 
-        # 5. If requested, convert the unit
+        # 4. If requested, convert the unit
         if self.config.convert_unit: self.convert_unit()
 
-        # 6. If requested, convolve
+        # 5. If requested, convolve
         if self.config.convolve: self.convolve()
 
-        # 7. If requested, rebin
+        # 6. If requested, rebin
         if self.config.rebin: self.rebin()
 
-        # 8. If requested, subtract the sky
+        # 7. If requested, subtract the sky
         if self.config.subtract_sky: self.subtract_sky()
+
+        # 8. Calculate the calibration uncertainties
+        if self.config.calculate_calibration_uncertainties: self.calculate_calibration_uncertainties()
 
         # 9. If requested, set the uncertainties
         if self.config.set_uncertainties: self.set_uncertainties()

@@ -351,6 +351,8 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
 # -----------------------------------------------------------------
 
+# TODO: add option to plot histograms of the residuals (DL14)
+
 class ResidualImageGridPlotter(ImageGridPlotter):
 
     """

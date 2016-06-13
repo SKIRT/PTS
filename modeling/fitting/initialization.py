@@ -757,7 +757,8 @@ class InputInitializer(FittingComponent):
         # Like M31
         bulge_template = "BruzualCharlot"
         bulge_age = 12
-        bulge_metallicity = 0.02
+        #bulge_metallicity = 0.02
+        bulge_metallicity = 0.03
 
         # Get the flux density of the bulge
         fluxdensity = self.parameters.bulge.fluxdensity # In Jy
@@ -789,7 +790,8 @@ class InputInitializer(FittingComponent):
         # Like M31
         disk_template = "BruzualCharlot"
         disk_age = 8
-        disk_metallicity = 0.02
+        #disk_metallicity = 0.02
+        disk_metallicity = 0.03
 
         # Get the scale height
         #scale_height = 521. * Unit("pc") # first models
@@ -832,7 +834,8 @@ class InputInitializer(FittingComponent):
         # Like M31
         young_template = "BruzualCharlot"
         young_age = 0.1
-        young_metallicity = 0.02
+        #young_metallicity = 0.02
+        young_metallicity = 0.03
 
         # Get the scale height
         #scale_height = 150 * Unit("pc") # first models
@@ -873,7 +876,8 @@ class InputInitializer(FittingComponent):
         log.info("Configuring the ionizing stellar component ...")
 
         # Like M51 and M31
-        ionizing_metallicity = 0.02
+        #ionizing_metallicity = 0.02
+        ionizing_metallicity = 0.03 # XU KONG et al. 2000
         ionizing_compactness = 6
         ionizing_pressure = 1e12 * Unit("K/m3")
         ionizing_covering_factor = 0.2

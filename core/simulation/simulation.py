@@ -672,6 +672,22 @@ class RemoteSimulation(SkirtSimulation):
         # Check whether a path is defined for the simulation file
         if self.path is None: raise RuntimeError("The simulation file does not exist yet")
 
+        # Save to the original path
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Set the new path
+        self.path = path
+
         # Set the _parameters to None to avoid an error when trying to pickle the SkiFile instance
         self._parameters = None
 

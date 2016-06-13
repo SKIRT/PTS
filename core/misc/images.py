@@ -202,7 +202,7 @@ class ObservedImageMaker(object):
                 datacube = Image.from_file(path, always_call_first_primary=False)
 
                 # Convert the frames from neutral surface brightness to wavelength surface brightness
-                for l in range(self.wavelengths):
+                for l in range(len(self.wavelengths)):
 
                     # Get the wavelength
                     wavelength = self.wavelengths[l]

@@ -66,6 +66,11 @@ class SimulationAnalyser(Configurable):
         # 1. Call the setup function
         self.setup(simulation)
 
+        # If the simulation has no analysis options, finish the procedure right away
+        if self.simulation.analysis is None:
+            self.finish()
+            return
+
         # 2. Run the basic analysis
         self.analyse_basic()
 

@@ -18,6 +18,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.frame import Frame
 from ...magic.basics.mask import Mask
+from ...magic.basics.region import Region
 from ...magic.plot.imagegrid import StandardImageGridPlotter
 
 # -----------------------------------------------------------------
@@ -47,6 +48,12 @@ class PreparationPlotter(PlottingComponent):
         # The dictionary of sources masks
         self.masks = dict()
 
+        # The dictionary of sky annuli
+        self.annuli = dict()
+
+        # The dictionary of error frames
+        self.errors = dict()
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -68,7 +75,10 @@ class PreparationPlotter(PlottingComponent):
         # 4. Load the galaxy and sky annuli
         self.load_annuli()
 
-        # 5. Plot
+        # 5. Load the error frames
+        self.load_errors()
+
+        # 6. Plot
         self.plot()
 
     # -----------------------------------------------------------------
@@ -155,12 +165,76 @@ class PreparationPlotter(PlottingComponent):
                 log.warning("Sky directory is not present for " + directory_name)
                 continue
 
+            # Look for the annulus region file
+            region_path = fs.join(sky_path, "annulus.reg")
+            if not fs.is_file(region_path):
+                log.warning("The annulus region could not be found for " + directory_name)
+                continue
 
+            # Open the annulus region
+            region = Region.from_file(region_path)
 
+            # Add the region to the dictionary
+            self.annuli[directory_name] = region
+
+    # -----------------------------------------------------------------
+
+    def load_errors(self):
+
+        """
+        This function ...
+        :param self:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the error frames ...")
+
+        # Loop over all directories in the preparation directory
+        for directory_path, directory_name in fs.directories_in_path(self.prep_path, returns=["path", "name"]):
+
+            # Look for a file called 'result.fits'
+            image_path = fs.join(directory_path, "result.fits")
+            if not fs.is_file(image_path):
+                log.warning("Prepared image could not be found for " + directory_name)
+                continue
+
+            # Open the prepared image frame
+            frame = Frame.from_file(image_path, plane="errors")
+
+            # Set the image name
+            frame.name = directory_name
+
+            # Add the error frame to the dictionary
+            self.errors[directory_name] = frame
 
     # -----------------------------------------------------------------
 
     def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot a grid of the prepared images
+        self.plot_images()
+
+        # Plot the grid of images with the sources masks and sky annuli overlayed
+        self.plot_masks_and_annuli()
+
+        # Plot the sky values
+        self.plot_sky()
+
+        # Plot the distributions of the relative errors
+        self.plot_errors()
+
+    # -----------------------------------------------------------------
+
+    def plot_images(self):
 
         """
         This function ...
@@ -190,5 +264,59 @@ class PreparationPlotter(PlottingComponent):
 
         # Make the plot
         plotter.run(path)
+
+    # -----------------------------------------------------------------
+
+    def plot_sky(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot histogram of sky pixels
+
+    # -----------------------------------------------------------------
+
+    def plot_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.plot_error_histograms()
+
+        self.plot_errors_pixels()
+
+    # -----------------------------------------------------------------
+
+    def plot_error_histogram(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_errors_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_masks_and_annuli(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the images with the sources masks and sky annuli overlayed ...")
 
 # -----------------------------------------------------------------
