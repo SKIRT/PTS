@@ -16,10 +16,8 @@ from __future__ import absolute_import, division, print_function
 import io
 import imageio
 import numpy as np
-from scipy import interpolate
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
-from matplotlib.figure import Figure
 
 from scipy.interpolate import CloughTocher2DInterpolator as intp
 from scipy.interpolate import SmoothBivariateSpline
@@ -39,9 +37,8 @@ from astropy import stats
 from ..core.frame import Frame
 from ..basics.mask import Mask
 from ..core.source import Source
-from ..basics.geometry import Coordinate, Circle
+from ..basics.geometry import Coordinate, Circle, Composite
 from ..basics.region import Region
-from ..basics.vector import Position, Extent
 from ..tools import plotting, statistics, fitting, plotting
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
@@ -86,9 +83,8 @@ class SkySubtractor(Configurable):
         # The animation
         self.animation = None
 
-        # The annulus ellipses
-        self.inner_ellipse = None
-        self.outer_ellipse = None
+        # The sky region
+        self.region = None
 
         # The output mask (combined input + bad mask + galaxy annulus mask + expanded saturation mask + sigma-clipping mask)
         self.mask = None
@@ -144,8 +140,8 @@ class SkySubtractor(Configurable):
         # 1. Call the setup function
         self.setup(frame, principal_ellipse, sources_mask, extra_mask, saturation_region, animation)
 
-        # 2. Create the annulus
-        self.create_annulus()
+        # 2. Create the sky region
+        self.create_region()
 
         # 3. Create mask
         self.create_mask()
@@ -229,7 +225,7 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_annulus(self):
+    def create_region(self):
 
         """
         This function ...
@@ -237,13 +233,22 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        log.info("Creating the annulus ellipses ...")
+        log.info("Creating the sky region ...")
 
-        # Create the sky annulus
-        annulus_outer_factor = self.config.mask.annulus_outer_factor
-        annulus_inner_factor = self.config.mask.annulus_inner_factor
-        self.inner_ellipse = self.principal_ellipse * annulus_inner_factor
-        self.outer_ellipse = self.principal_ellipse * annulus_outer_factor
+        # If the sky region has to be loaded from file
+        if self.config.sky_region is not None:
+
+        # If no region file is given by the user, create an annulus from the principal ellipse
+        else:
+
+            # Create the sky annulus
+            annulus_outer_factor = self.config.mask.annulus_outer_factor
+            annulus_inner_factor = self.config.mask.annulus_inner_factor
+            inner_ellipse = self.principal_ellipse * annulus_inner_factor
+            outer_ellipse = self.principal_ellipse * annulus_outer_factor
+
+            # Create the annulus
+            self.region = Composite(outer_ellipse, inner_ellipse)
 
     # -----------------------------------------------------------------
 
@@ -257,12 +262,11 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Creating the sky mask ...")
 
-        # Create a mask for all the pixels outside of the annulus
-        annulus_mask = Mask.from_shape(self.outer_ellipse, self.frame.xsize, self.frame.ysize).inverse() + \
-                       Mask.from_shape(self.inner_ellipse, self.frame.xsize, self.frame.ysize)
+        # Create a mask from the pixels outside of the sky region
+        outside_mask = self.region.to_mask(self.frame.xsize, self.frame.ysize).inverse()
 
         # Set the mask, make a copy of the input mask initially
-        self.mask = self.sources_mask + annulus_mask
+        self.mask = self.sources_mask + outside_mask
 
         # Add the extra mask (if specified)
         if self.extra_mask is not None: self.mask += self.extra_mask

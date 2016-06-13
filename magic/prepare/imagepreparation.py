@@ -123,6 +123,7 @@ class ImagePreparer(Configurable):
         if arguments.sky_annulus_inner is not None: preparer.config.sky_subtraction.mask.annulus_inner_factor = arguments.sky_annulus_inner
         if arguments.sky_annulus_outer is not None: preparer.config.sky_subtraction.mask.annulus_outer_factor = arguments.sky_annulus_outer
         if arguments.convolution_remote is not None: preparer.config.convolution.remote = arguments.convolution_remote
+        if arguments.sky_region is not None: preparer.config.sky_subtraction.sky_region = arguments.sky_region
 
         # Return the new instance
         return preparer
@@ -151,31 +152,34 @@ class ImagePreparer(Configurable):
         # 2. Extract stars and galaxies from the image
         if self.config.extract_sources: self.extract_sources()
 
-        # 3. If requested, correct for galactic extinction
+        # 3. If requested, calculate the poisson noise
+        if self.config.calculate_poisson_noise: self.calculate_poisson_noise()
+
+        # 4. If requested, correct for galactic extinction
         if self.config.correct_for_extinction: self.correct_for_extinction()
 
-        # 4. If requested, convert the unit
+        # 5. If requested, convert the unit
         if self.config.convert_unit: self.convert_unit()
 
-        # 5. If requested, convolve
+        # 6. If requested, convolve
         if self.config.convolve: self.convolve()
 
-        # 6. If requested, rebin
+        # 7. If requested, rebin
         if self.config.rebin: self.rebin()
 
-        # 7. If requested, subtract the sky
+        # 8. If requested, subtract the sky
         if self.config.subtract_sky: self.subtract_sky()
 
-        # 8. Calculate the calibration uncertainties
+        # 9. Calculate the calibration uncertainties
         if self.config.calculate_calibration_uncertainties: self.calculate_calibration_uncertainties()
 
-        # 9. If requested, set the uncertainties
+        # 10. If requested, set the uncertainties
         if self.config.set_uncertainties: self.set_uncertainties()
 
-        # 10. If requested, crop to a smaller coordinate grid
+        # 11. If requested, crop to a smaller coordinate grid
         if self.config.crop: self.crop()
 
-        # 11. Save the result
+        # 12. Save the result
         self.save_result()
 
     # -----------------------------------------------------------------
@@ -235,93 +239,7 @@ class ImagePreparer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def calculate_calibration_uncertainties(self):
 
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Calculating the calibration uncertainties ...")
-
-        # Add the calibration uncertainty defined in (AB) magnitude
-        if self.config.uncertainties.calibration_error.magnitude:
-
-            # -----------------------------------------------------------------
-
-            # Convert the frame into AB magnitudes
-            invalid = Mask.is_zero_or_less(self.image.frames.primary)
-            ab_frame = unitconversion.jansky_to_ab(self.image.frames.primary)
-            # Set infinites to zero
-            ab_frame[invalid] = 0.0
-
-            # -----------------------------------------------------------------
-
-            # The calibration uncertainty in AB magnitude
-            mag_error = self.config.uncertainties.calibration_error.value
-
-            # a = image[mag] - mag_error
-            a = ab_frame - mag_error
-
-            # b = image[mag] + mag_error
-            b = ab_frame + mag_error
-
-            # Convert a and b to Jy
-            a = unitconversion.ab_mag_zero_point.to("Jy").value * np.power(10.0, -2./5.*a)
-            b = unitconversion.ab_mag_zero_point.to("Jy").value * np.power(10.0, -2./5.*b)
-
-            # c = a[Jy] - image[Jy]
-            #c = a - jansky_frame
-            c = a - self.image.frames.primary
-
-            # d = image[Jy] - b[Jy]
-            #d = jansky_frame - b
-            d = self.image.frames.primary - b
-
-            # ----------------------------------------------------------------- BELOW: if frame was not already in Jy
-
-            # Calibration errors = max(c, d)
-            #calibration_errors = np.maximum(c, d)  # element-wise maxima
-            #calibration_errors[invalid] = 0.0 # set zero where AB magnitude could not be calculated
-
-            #relative_calibration_errors = calibration_errors / jansky_frame
-            #relative_calibration_errors[invalid] = 0.0
-
-            # Check that there are no infinities or nans in the result
-            #assert not np.any(np.isinf(relative_calibration_errors)) and not np.any(np.isnan(relative_calibration_errors))
-
-            # The actual calibration errors in the same unit as the data
-            #calibration_frame = self.image.frames.primary * relative_calibration_errors
-
-            # -----------------------------------------------------------------
-
-            calibration_frame = np.maximum(c, d) # element-wise maxima
-            calibration_frame[invalid] = 0.0 # set zero where AB magnitude could not be calculated
-
-            new_invalid = Mask.is_nan(calibration_frame) + Mask.is_inf(calibration_frame)
-            calibration_frame[new_invalid] = 0.0
-
-            # Check that there are no infinities or nans in the result
-            assert not np.any(np.isinf(calibration_frame)) and not np.any(np.isnan(calibration_frame))
-
-            # -----------------------------------------------------------------
-
-        # The calibration uncertainty is expressed in a percentage (from the flux values)
-        elif self.config.uncertainties.calibration_error.percentage:
-
-            # Calculate calibration errors with percentage
-            fraction = self.config.uncertainties.calibration_error.value * 0.01
-            calibration_frame = self.image.frames.primary * fraction
-
-        # Unrecognized calibration error (not a magnitude, not a percentage)
-        else: raise ValueError("Unrecognized calibration error")
-
-        # Add the calibration frame
-        self.image.add_frame(calibration_frame, "calibration_errors")
-
-        # Inform the user
-        log.success("Calibration uncertainties calculated")
 
     # -----------------------------------------------------------------
 
@@ -384,6 +302,18 @@ class ImagePreparer(Configurable):
 
         # Inform the user
         log.success("Sources extracted")
+
+    # -----------------------------------------------------------------
+
+    def calculate_poisson_noise(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the poisson noise on the image pixels ...")
 
     # -----------------------------------------------------------------
 
@@ -632,6 +562,96 @@ class ImagePreparer(Configurable):
 
         # Inform the user
         log.success("Sky subtracted")
+
+    # -----------------------------------------------------------------
+
+    def calculate_calibration_uncertainties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the calibration uncertainties ...")
+
+        # Add the calibration uncertainty defined in (AB) magnitude
+        if self.config.uncertainties.calibration_error.magnitude:
+
+            # -----------------------------------------------------------------
+
+            # Convert the frame into AB magnitudes
+            invalid = Mask.is_zero_or_less(self.image.frames.primary)
+            ab_frame = unitconversion.jansky_to_ab(self.image.frames.primary)
+            # Set infinites to zero
+            ab_frame[invalid] = 0.0
+
+            # -----------------------------------------------------------------
+
+            # The calibration uncertainty in AB magnitude
+            mag_error = self.config.uncertainties.calibration_error.value
+
+            # a = image[mag] - mag_error
+            a = ab_frame - mag_error
+
+            # b = image[mag] + mag_error
+            b = ab_frame + mag_error
+
+            # Convert a and b to Jy
+            a = unitconversion.ab_mag_zero_point.to("Jy").value * np.power(10.0, -2. / 5. * a)
+            b = unitconversion.ab_mag_zero_point.to("Jy").value * np.power(10.0, -2. / 5. * b)
+
+            # c = a[Jy] - image[Jy]
+            # c = a - jansky_frame
+            c = a - self.image.frames.primary
+
+            # d = image[Jy] - b[Jy]
+            # d = jansky_frame - b
+            d = self.image.frames.primary - b
+
+            # ----------------------------------------------------------------- BELOW: if frame was not already in Jy
+
+            # Calibration errors = max(c, d)
+            # calibration_errors = np.maximum(c, d)  # element-wise maxima
+            # calibration_errors[invalid] = 0.0 # set zero where AB magnitude could not be calculated
+
+            # relative_calibration_errors = calibration_errors / jansky_frame
+            # relative_calibration_errors[invalid] = 0.0
+
+            # Check that there are no infinities or nans in the result
+            # assert not np.any(np.isinf(relative_calibration_errors)) and not np.any(np.isnan(relative_calibration_errors))
+
+            # The actual calibration errors in the same unit as the data
+            # calibration_frame = self.image.frames.primary * relative_calibration_errors
+
+            # -----------------------------------------------------------------
+
+            calibration_frame = np.maximum(c, d)  # element-wise maxima
+            calibration_frame[invalid] = 0.0  # set zero where AB magnitude could not be calculated
+
+            new_invalid = Mask.is_nan(calibration_frame) + Mask.is_inf(calibration_frame)
+            calibration_frame[new_invalid] = 0.0
+
+            # Check that there are no infinities or nans in the result
+            assert not np.any(np.isinf(calibration_frame)) and not np.any(np.isnan(calibration_frame))
+
+            # -----------------------------------------------------------------
+
+        # The calibration uncertainty is expressed in a percentage (from the flux values)
+        elif self.config.uncertainties.calibration_error.percentage:
+
+            # Calculate calibration errors with percentage
+            fraction = self.config.uncertainties.calibration_error.value * 0.01
+            calibration_frame = self.image.frames.primary * fraction
+
+        # Unrecognized calibration error (not a magnitude, not a percentage)
+        else: raise ValueError("Unrecognized calibration error")
+
+        # Add the calibration frame
+        self.image.add_frame(calibration_frame, "calibration_errors")
+
+        # Inform the user
+        log.success("Calibration uncertainties calculated")
 
     # -----------------------------------------------------------------
 
