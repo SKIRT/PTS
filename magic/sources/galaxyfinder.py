@@ -265,6 +265,8 @@ class GalaxyFinder(Configurable):
                 outer_factor = self.config.detection.background_outer_factor
                 galaxy.source_from_shape(self.frame, shape, outer_factor)
 
+                galaxy.source.plot()
+
             else:
 
                 # If requested, use the galaxy extents obtained from the catalog to create the source

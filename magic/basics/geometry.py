@@ -1672,15 +1672,13 @@ class Polygon(object):
         #points = [(x1,y1),(x2,y2),...] or [x1,y1,x2,y2,...]
         points = []
         for point in self.points:
+
             #points.append((point.x, point.y))
-            points.append(point.x)
-            points.append(point.y)
+            points.append(float(point.x))
+            points.append(float(point.y))
 
         img = Image.new('L', (width, height), 0)
         ImageDraw.Draw(img).polygon(points, outline=1, fill=1)
-
-        #from ..tools import plotting
-        #plotting.plot_box(np.array(img))
 
         return Mask(np.array(img))
 

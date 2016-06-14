@@ -45,6 +45,9 @@ parser.add_argument('--report', action='store_true', help='write a report file')
 parser.add_argument("-i", "--input", type=str, help="the name of the input directory")
 parser.add_argument("-o", "--output", type=str, help="the name of the output directory")
 
+# Writing
+parser.add_argument("--catalogs", action="store_true", help="save the catalog files")
+
 # Advanced options
 parser.add_argument("--principal_region", type=str, help="the path to a region file with a contour of the principal galaxy (in sky coordinates!)")
 parser.add_argument("--synchronize", action="store_true", help="synchronize with DustPedia catalog")
@@ -125,8 +128,31 @@ bad_mask = image.masks.bad if "bad" in image.masks else None
 # Create a CatalogImporter instance
 catalog_importer = CatalogImporter()
 
+# Set file catalog options
+if arguments.filecatalog:
+
+    catalog_importer.config.galaxies.use_catalog_file = True
+    catalog_importer.config.galaxies.catalog_path = fs.join(input_path, "galaxies.cat")
+    catalog_importer.config.stars.use_catalog_file = True
+    catalog_importer.config.stars.catalog_path = fs.join(input_path, "stars.cat")
+
 # Run the catalog importer
 catalog_importer.run(image.frames.primary) # work with coordinate box instead ? image.coordinate_box ?
+
+# Save the catalogs if requested
+if arguments.catalogs:
+
+    # Determine the full path to the galactic catalog file
+    path = fs.join(output_path, "galaxies.cat")
+
+    # Save the galactic catalog
+    catalog_importer.write_galactic_catalog_to(path)
+
+    # Determine the full path to the stellar catalog file
+    path = fs.join(output_path, "stars.cat")
+
+    # Save the stellar catalog
+    catalog_importer.write_stellar_catalog_to(path)
 
 # -----------------------------------------------------------------
 
@@ -161,6 +187,10 @@ if arguments.ignore is not None:
 
 # No ignore region
 else: ignore_region = None
+
+# -----------------------------------------------------------------
+
+if arguments.principal_region is not None: arguments.principal_region = fs.join(input_path, arguments.principal_region)
 
 # -----------------------------------------------------------------
 

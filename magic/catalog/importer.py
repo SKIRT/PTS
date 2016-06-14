@@ -300,6 +300,38 @@ class CatalogImporter(Configurable):
 
     # -----------------------------------------------------------------
 
+    def write_galactic_catalog_to(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing galactic catalog to " + path + " ...")
+
+        # Write the catalog to file
+        tables.write(self.galactic_catalog, path)
+
+    # -----------------------------------------------------------------
+
+    def write_stellar_catalog_to(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing stellar catalog to " + path + " ...")
+
+        # Write the catalog to file
+        tables.write(self.stellar_catalog, path)
+
+    # -----------------------------------------------------------------
+
     def write_galactic_catalog(self):
 
         """
@@ -310,11 +342,8 @@ class CatalogImporter(Configurable):
         # Determine the full path to the catalog file
         path = self.full_output_path(self.config.writing.galactic_catalog_path)
 
-        # Inform the user
-        log.info("Writing galactic catalog to " + path + " ...")
-
-        # Write the catalog to file
-        tables.write(self.galactic_catalog, path)
+        # Write
+        self.write_galactic_catalog_to(path)
 
     # -----------------------------------------------------------------
 
@@ -328,10 +357,7 @@ class CatalogImporter(Configurable):
         # Determine the full path to the catalog file
         path = self.full_output_path(self.config.writing.stellar_catalog_path)
 
-        # Inform the user
-        log.info("Writing stellar catalog to " + path + " ...")
-
-        # Write the catalog to file
-        tables.write(self.stellar_catalog, path)
+        # Write
+        self.write_stellar_catalog_to(path)
 
 # -----------------------------------------------------------------

@@ -81,15 +81,6 @@ class SourceFinder(Configurable):
         elif arguments.settings is not None: finder = cls(arguments.settings)
         else: finder = cls()
 
-        # Options for using a file as input catalog
-        if arguments.filecatalog:
-
-            finder.config.catalogs.galaxies.use_catalog_file = True
-            finder.config.catalogs.galaxies.catalog_path = "galaxies.cat"
-
-            finder.config.catalogs.stars.use_catalog_file = True
-            finder.config.catalogs.stars.catalog_path = "stars.cat"
-
         # Set the downsample factor
         if arguments.downsample is not None: finder.config.downsample_factor = arguments.downsample
 

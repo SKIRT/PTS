@@ -184,8 +184,8 @@ class SkyRegion(list):
                 for i in range(number_of_points):
 
                     # Create a new SkyCoordinate object
-                    ra = shape.coord_list[0]
-                    dec = shape.coord_list[1]
+                    ra = shape.coord_list[2*i]
+                    dec = shape.coord_list[2*i + 1]
                     coordinate = SkyCoordinate(ra=ra, dec=dec, unit="deg", frame=coord_format)
 
                     # Add the coordinate to the polygon

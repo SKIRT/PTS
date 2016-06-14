@@ -962,14 +962,17 @@ class SkyPolygon(object):
         # Initialize line
         line = "fk5;polygon("
 
+        lines = []
+
         # Add the points to the line
         for point in self.points:
+
             ra = point.ra.to("deg").value
             dec = point.dec.to("deg").value
-            line += "{},{}".format(ra, dec)
+            lines.append("{},{}".format(ra, dec))
 
         # Finish line
-        line += ")" + suffix
+        line += ",".join(lines) + ")" + suffix
 
         # Return the line
         return line
