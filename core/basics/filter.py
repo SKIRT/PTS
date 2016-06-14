@@ -232,7 +232,7 @@ class Filter:
 
         # Ha
         if name == "656_1": return cls(name)
-        ha_names = ["Ha", "H alpha", "H-alpha", "H-a", "Halpha", "H_alpha"]
+        ha_names = ["Ha", "H alpha", "H-alpha", "H-a", "Halpha", "H_alpha", "Mosaic Halpha"]
 
         # SWIFT UVOT filters
         uvot_uvw2_names = ["UVOT W2", "UVW2", "W2", "Swift W2", "SWIFT W2", "UVOT_W2"]

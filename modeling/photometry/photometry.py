@@ -28,6 +28,37 @@ from ...core.plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------
 
+# CHRIS:
+
+# For SPIRE: Section 5.2.12 of the SPIRE Handbook (http://herschel.esac.esa.int/Docs/SPIRE/spire_handbook.pdf)
+# provides the "official" way of performing aperture corrections; we specifically care about the "Extended source photometry
+# (starting from extended source maps)" part. If you're using arbitrarily-large, non-circular apertures, you basically
+# have to use maps of the beam profile to work out what fraction of the flux is outside your aperture.
+# Those can be retrieved from the SPIRE calibration wiki (http://herschel.esac.esa.int/twiki/bin/view/Public/SpirePhotometerBeamProfile2).
+
+# In the meantime, I'm working on sensible automated aperture-corrections - current plan is to assume that the underlying
+# flux distribution follows a 2D-sersic profile, and so fit to each source a 2D-sersic convolved with the beam, and hence estimate the amount of flux that gets spread beyond the aperture. Hopefully it will be easily applicable to your work too.
+
+# For PACS: The most up-to-date document on the PACS calibration wiki (http://herschel.esac.esa.int/twiki/pub/Public/PacsCalibrationWeb/bolopsf_22.pdf)
+# and its accompanying tar.gz (ftp://ftp.sciops.esa.int/pub/hsc-calibration/PACS/PSF/PACSPSF_PICC-ME-TN-033_v2.2.tar.gz)
+# give the most recent PACS beam profiles, and encircled energy fractions (EEFs) for different aperture sizes in the
+# various scanning modes.
+
+# PIETER:
+
+# Zie bijlage voor de tabellen met de correcties voor de enclosed energy fraction (EEF) voor elke aperture size for PACS en SPIRE.
+# Voor de aperture size moet ge mogelijks voor elke band een andere waarde gebruiken (door evt de beamsize in rekening te brengen ofzo).
+# De flux in elke band moet dan gedeeld worden door de correction factor voor die band, gebruik makend van de aperture size in die band.
+
+# De Growth_Curve_Final_XXmicron.dat geven de aperture size in arcsec en de correction factor voor de 2 PACS bands.
+
+# De PSF_correction_HATLAS_SPIRE.dat geeft de aperture size in arcsec en dan de correction factors for 250um,350um en 500um.
+
+# Deze corrections zijn voor een centrale pointsource en zijn dus een soort minimum correctie voor een extended source.
+# Deze minimum correcties worden doorgaands toegepast op extended sources omdat ze een goed genoege 1ste orde benadering zijn.
+
+# -----------------------------------------------------------------
+
 class PhotoMeter(PhotometryComponent):
     
     """
@@ -95,6 +126,9 @@ class PhotoMeter(PhotometryComponent):
         # 2. Load the truncated images
         self.load_images()
 
+        # 3. Calculate the Enclosed Energy Fractions
+        self.calculate_eefs()
+
         # 3. Do the photometry
         self.do_photometry()
 
@@ -159,6 +193,17 @@ class PhotoMeter(PhotometryComponent):
 
             # Add the image to the list
             self.images.append(image)
+
+    # -----------------------------------------------------------------
+
+    def calculate_eefs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 

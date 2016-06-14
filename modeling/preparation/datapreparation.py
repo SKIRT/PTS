@@ -111,6 +111,11 @@ class DataPreparer(PreparationComponent):
         # 2. Check which images can be prepared
         self.check_images()
 
+        # If all images have already been prepared, break
+        if len(self.paths) == 0:
+            log.success("All images are already prepared")
+            return
+
         # 3. Get attenuations
         self.get_attenuations()
 

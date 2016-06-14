@@ -86,7 +86,7 @@ class Composite(object):
         exclude = self.exclude.to_mask(x_size, y_size)
 
         # Return the mask
-        return base + np.logical_not(exclude)
+        return base * np.logical_not(exclude)
 
     # -----------------------------------------------------------------
 
@@ -97,13 +97,10 @@ class Composite(object):
         :return:
         """
 
-        # Create the suffix
-        if len(self.meta) > 0:
-            suffix = " #"
-            for key in self.meta: suffix += " " + key + " = " + str(self.meta[key])
-        else: suffix = ""
+        line1 = self.base.to_region_string()
+        line2 = self.exclude.to_region_string()
 
-        pass
+        return line1 + "\n" + line2.replace("image;", "image;-")
 
     # -----------------------------------------------------------------
 

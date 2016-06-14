@@ -125,6 +125,7 @@ class ImagePreparer(Configurable):
         if arguments.sky_annulus_outer is not None: preparer.config.sky_subtraction.mask.annulus_outer_factor = arguments.sky_annulus_outer
         if arguments.convolution_remote is not None: preparer.config.convolution.remote = arguments.convolution_remote
         if arguments.sky_region is not None: preparer.config.sky_subtraction.sky_region = arguments.sky_region
+        if arguments.error_frames is not None: preparer.config.error_frame_names = arguments.error_frames
 
         # Return the new instance
         return preparer
@@ -667,11 +668,25 @@ class ImagePreparer(Configurable):
         # Inform the user
         log.info("Calculating the uncertainties ...")
 
-        # Add all the errors quadratically: existing error map + large scale variations + pixel to pixel noise + calibration error
-        #if "errors" in self.image.frames: self.image.frames.errors = np.sqrt(self.image.frames.errors**2 + self.sky_subtractor.noise**2 + self.image.frames.calibration_errors**2)
+        # Create a list to contain (the squares of) all the individual error contributions so that we can sum these arrays element-wise later
+        squared_error_maps = []
 
-        # Calculate the total error map
-        errors = np.sqrt(self.sky_subtractor.noise**2 + self.image.frames.calibration_errors**2)
+        # Add the Poisson errors
+        if "poisson_errors" in self.image.frames: squared_error_maps.append(self.image.frames.poisson_errors**2)
+
+        # Add the sky errors
+        squared_error_maps.append(self.sky_subtractor.noise**2)
+
+        # Add the calibration errors
+        squared_error_maps.append(self.image.frames.calibration_errors**2)
+
+        # Add additional error frames indicated by the user
+        for error_frame_name in self.config.error_frame_names: squared_error_maps.append(self.image.frames[error_frame_name]**2)
+
+        # Calculate the final error map
+        errors = np.sqrt(np.sum(squared_error_maps, axis=0))
+
+        # Add the combined errors frame
         self.image.add_frame(errors, "errors")
 
         # Inform the user

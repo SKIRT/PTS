@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.sources.finder Contains the SourceFinder class.
+## \package pts.magic.sources.batchfinder Contains the BatchSourceFinder class.
 
 # -----------------------------------------------------------------
 
@@ -26,7 +26,7 @@ from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-class SourceFinder(Configurable):
+class BatchSourceFinder(Configurable):
 
     """
     This class ...
@@ -41,15 +41,12 @@ class SourceFinder(Configurable):
         """
 
         # Call the constructor of the base class
-        super(SourceFinder, self).__init__(config, "magic")
+        super(BatchSourceFinder, self).__init__(config, "magic")
 
         # -- Attributes --
 
-        # The image frame
-        self.frame = None
-
-        # The original WCS
-        self.original_wcs = None
+        # The image frames
+        self.frame = []
 
         # The galactic and stellar catalog
         self.galactic_catalog = None
@@ -59,9 +56,6 @@ class SourceFinder(Configurable):
         self.special_mask = None
         self.ignore_mask = None
         self.bad_mask = None
-
-        # The animation
-        self.animation = None
 
         # The name of the principal galaxy
         self.galaxy_name = None
@@ -76,28 +70,10 @@ class SourceFinder(Configurable):
         :param arguments:
         """
 
-        # Create a new SourceFinder instance
+        # Create a new BatchSourceFinder instance
         if arguments.config is not None: finder = cls(arguments.config)
         elif arguments.settings is not None: finder = cls(arguments.settings)
         else: finder = cls()
-
-        # Options for using a file as input catalog
-        if arguments.filecatalog:
-
-            finder.config.catalogs.galaxies.use_catalog_file = True
-            finder.config.catalogs.galaxies.catalog_path = "galaxies.cat"
-
-            finder.config.catalogs.stars.use_catalog_file = True
-            finder.config.catalogs.stars.catalog_path = "stars.cat"
-
-        # Set the downsample factor
-        if arguments.downsample is not None: finder.config.downsample_factor = arguments.downsample
-
-        # Don't look for saturated stars if requested
-        if arguments.no_saturation: finder.config.stars.find_saturation = False
-
-        # Set the region describing the principal galaxy
-        if arguments.principal_region is not None: finder.config.galaxies.principal_region = arguments.principal_region
 
         # Return the new instance
         return finder
@@ -263,11 +239,22 @@ class SourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, galactic_catalog, stellar_catalog, special_region=None, ignore_region=None, bad_mask=None, animation=None):
+    def add_frame(self, frame):
 
         """
         This function ...
         :param frame:
+        :return:
+        """
+
+        self.frames.append(frame)
+
+    # -----------------------------------------------------------------
+
+    def run(self, galactic_catalog, stellar_catalog, special_region=None, ignore_region=None, bad_mask=None):
+
+        """
+        This function ...
         :param galactic_catalog:
         :param stellar_catalog:
         :param special_region:
@@ -278,7 +265,7 @@ class SourceFinder(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup(frame, galactic_catalog, stellar_catalog, special_region, ignore_region, bad_mask, animation)
+        self.setup(galactic_catalog, stellar_catalog, special_region, ignore_region, bad_mask)
 
         # 2. Find the galaxies
         self.find_galaxies()
@@ -302,26 +289,23 @@ class SourceFinder(Configurable):
         """
 
         # Base class implementation removes the children
-        super(SourceFinder, self).clear()
+        super(BatchSourceFinder, self).clear()
 
         # Set default values for all attributes
-        self.frame = None
-        self.original_wcs = None
+        self.frames = []
         self.galactic_catalog = None
         self.stellar_catalog = None
         self.special_mask = None
         self.ignore_mask = None
         self.bad_mask = None
-        self.animation = None
         self.galaxy_name = None
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, galactic_catalog, stellar_catalog, special_region, ignore_region, bad_mask=None, animation=None):
+    def setup(self, galactic_catalog, stellar_catalog, special_region, ignore_region, bad_mask=None):
 
         """
         This function ...
-        :param frame:
         :param galactic_catalog:
         :param stellar_catalog:
         :param special_region:
@@ -342,42 +326,21 @@ class SourceFinder(Configurable):
         # -- Setup of the base class --
 
         # Call the setup function of the base class
-        super(SourceFinder, self).setup()
+        super(BatchSourceFinder, self).setup()
 
         # Inform the user
-        log.info("Setting up the source finder ...")
-
-        # Downsample or just make a local reference to the image frame
-        if self.downsampled:
-            self.frame = frame.downsampled(self.config.downsample_factor)
-            self.original_wcs = frame.wcs
-        else: self.frame = frame
+        log.info("Setting up the batch source finder ...")
 
         # Set the galactic and stellar catalog
         self.galactic_catalog = galactic_catalog
         self.stellar_catalog = stellar_catalog
 
         # Set the special and ignore mask
-        self.special_mask = Mask.from_region(special_region, self.frame.xsize, self.frame.ysize) if special_region is not None else None
-        self.ignore_mask = Mask.from_region(ignore_region, self.frame.xsize, self.frame.ysize) if ignore_region is not None else None
+        #self.special_mask = Mask.from_region(special_region, self.frame.xsize, self.frame.ysize) if special_region is not None else None
+        #self.ignore_mask = Mask.from_region(ignore_region, self.frame.xsize, self.frame.ysize) if ignore_region is not None else None
 
         # Set a reference to the mask of bad pixels
         self.bad_mask = bad_mask
-
-        # Make a reference to the animation
-        self.animation = animation
-
-    # -----------------------------------------------------------------
-
-    @property
-    def downsampled(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.config.downsample_factor is not None and self.config.downsample != 1
 
     # -----------------------------------------------------------------
 
