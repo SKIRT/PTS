@@ -72,7 +72,7 @@ class ImagePreparer(Configurable):
         self.other_segments = None
 
         # The principal ellipse and saturation region in sky coordinates
-        self.principal_ellipse_sky = None
+        self.principal_shape_sky = None
         self.saturation_region_sky = None
 
         # The path to the directory where the visualisation output should be placed
@@ -290,7 +290,6 @@ class ImagePreparer(Configurable):
         self.image.add_mask(self.extractor.mask, "sources")
 
         # Get the principal shape in sky coordinates
-        #self.principal_ellipse_sky = self.extractor.principal_ellipse.to_sky(self.image.wcs)
         self.principal_shape_sky = self.extractor.principal_shape.to_sky(self.image.wcs)
 
         # Get the saturation region in sky coordinates
@@ -493,7 +492,7 @@ class ImagePreparer(Configurable):
             skysubtractor_animation = None
 
         # Convert the principal ellipse in sky coordinates into pixel coordinates
-        principal_ellipse = self.principal_ellipse_sky.to_pixel(self.image.wcs)
+        principal_shape = self.principal_shape_sky.to_pixel(self.image.wcs)
 
         # Convert the saturation region in sky coordinates into pixel coordinates
         if self.saturation_region_sky is not None:
@@ -509,7 +508,7 @@ class ImagePreparer(Configurable):
         elif "padded" in self.image.masks: extra_mask = self.image.masks.padded # just use padded mask
 
         # Run the sky subtractor
-        self.sky_subtractor.run(self.image.frames.primary, principal_ellipse, self.image.masks.sources, extra_mask, saturation_region, skysubtractor_animation)
+        self.sky_subtractor.run(self.image.frames.primary, principal_shape, self.image.masks.sources, extra_mask, saturation_region, skysubtractor_animation)
 
         # Add the sky frame to the image
         self.image.add_frame(self.sky_subtractor.sky_frame, "sky")

@@ -24,7 +24,7 @@ from pts.magic.basics.region import Region
 from pts.magic.misc.calibration import CalibrationError
 from pts.magic.misc.extinction import GalacticExtinction
 from pts.core.basics.filter import Filter
-from pts.magic.misc.kernels import AnianoKernels, aniano_names
+from pts.magic.misc.kernels import AnianoKernels, aniano_names, variable_fwhms
 
 # -----------------------------------------------------------------
 
@@ -91,6 +91,8 @@ image = Image.from_file(image_path)
 # Determine the absolute path to the reference image
 arguments.rebin_to = fs.absolute(arguments.rebin_to)
 
+# -----------------------------------------------------------------
+
 # Determine the path to the galaxy region
 galaxy_region_path = fs.join(arguments.input, "galaxies.reg")
 
@@ -123,6 +125,15 @@ segments = Image.from_file(segments_path, no_filter=True)
 galaxy_segments = segments.frames.galaxies
 star_segments = segments.frames.stars
 other_segments = segments.frames.other_sources
+
+# Load the statistics file
+statistics_path = fs.join(arguments.input, "statistics.dat")
+
+# Get the FWHM from the statistics file
+fwhm = None
+with open(statistics_path) as statistics_file:
+    for line in statistics_file:
+        if "FWHM" in line: fwhm = parsing.get_quantity(line.split("FWHM: ")[1].replace("\n", ""))
 
 # -----------------------------------------------------------------
 
@@ -163,6 +174,9 @@ kernels = AnianoKernels()
 # Get the aniano names for the image filter and the filter to which to convolve
 from_instrument = aniano_names[str(image.filter)]
 to_instrument = aniano_names[str(convolve_to_filter)]
+
+# Give a warning for the user to check the FWHM and the aniano name
+if from_instrument in variable_fwhms: log.warning("The FWHM of this image was found to be " + str(fwhm) + " by the SourceFinder. Please check that this corresponds to the aniano PSF that will be used: " + to_instrument)
 
 # Get the path to the appropriate convolution kernel
 kernel_path = kernels.get_kernel_path(from_instrument, to_instrument)
