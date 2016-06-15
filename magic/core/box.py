@@ -20,7 +20,7 @@ from scipy import ndimage
 # Import the relevant PTS classes and modules
 from ..basics.vector import Position, Extent
 from ..basics.geometry import Rectangle
-from ..tools import cropping, fitting, interpolation, plotting
+from ..tools import cropping, fitting, interpolation, plotting, statistics
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
 
@@ -629,9 +629,37 @@ class Box(np.ndarray):
         # Use the 'PTS' method
         elif method == "pts":
 
-            no_clip_mask = None
 
-            polynomial_fit_mask = mask if no_clip_mask is None else no_clip_mask # determine the mask to use for fitting the polynomial
+            #test = no_clip_mask is not None
+
+            # POLYNOMIAL WITHOUT SIGMA-CLIPPING
+
+            """
+            polynomial_fit_mask = mask if no_clip_mask is None else no_clip_mask  # determine the mask to use for fitting the polynomial
+            order = 3
+            try:
+                polynomial = fitting.fit_polynomial(self, order, mask=polynomial_fit_mask)
+            except TypeError:
+                try:
+                    polynomial_fit_mask = polynomial_fit_mask.eroded(connectivity=2, iterations=1)
+                    polynomial = fitting.fit_polynomial(self, order, mask=polynomial_fit_mask)
+                except TypeError:
+                    log.warning("Cannot interpolate over this box ...")
+                    return self.copy()
+
+            # Evaluate the polynomial
+            poly_data = fitting.evaluate_model(polynomial, 0, self.xsize, 0, self.ysize)
+
+            subtracted = self - poly_data
+
+            if test: plotting.plot_difference(self, poly_data, title="without sigma-clipping")
+            """
+
+            #no_clip_mask = None
+            #polynomial_fit_mask = mask if no_clip_mask is None else no_clip_mask # determine the mask to use for fitting the polynomial
+
+            polynomial_fit_mask = mask
+
             order = 3
             try: polynomial = fitting.fit_polynomial(self, order, mask=polynomial_fit_mask)
             except TypeError:
@@ -647,6 +675,9 @@ class Box(np.ndarray):
 
             subtracted = self - poly_data
 
+            #if test: plotting.plot_difference(self, poly_data, title="with sigma-clipping")
+
+
             #if no_clip_mask is not None:
             #    plotting.plot_difference(self, poly_data)
             #    plotting.plot_box(subtracted)
@@ -656,6 +687,11 @@ class Box(np.ndarray):
             #    plotting.plot_box(np.ma.array(subtracted, mask=new_mask))
             #    background_pixels = subtracted[new_mask.inverse()]
             #else:
+
+            #if test:
+            #    new_mask = statistics.sigma_clip_mask(subtracted, sigma_level=2.0, mask=mask)
+            #    background_pixels = subtracted[new_mask.inverse()]
+            #else: background_pixels = subtracted[mask.inverse()]
 
             background_pixels = subtracted[mask.inverse()]
 
@@ -676,6 +712,25 @@ class Box(np.ndarray):
             random = np.random.normal(center, stddev, self.shape)
 
             #plotting.plot_box(random)
+
+            # Fit polynomial again but with no-sigma-clipped-mask
+
+            if no_clip_mask is not None:
+
+                polynomial_fit_mask = no_clip_mask
+                order = 3
+                try:
+                    polynomial = fitting.fit_polynomial(self, order, mask=polynomial_fit_mask)
+                except TypeError:
+                    try:
+                        polynomial_fit_mask = polynomial_fit_mask.eroded(connectivity=2, iterations=1)
+                        polynomial = fitting.fit_polynomial(self, order, mask=polynomial_fit_mask)
+                    except TypeError:
+                        log.warning("Cannot interpolate over this box ...")
+                        return self.copy()
+
+                # Evaluate the polynomial
+                poly_data = fitting.evaluate_model(polynomial, 0, self.xsize, 0, self.ysize)
 
             return Box(random + poly_data, self.x_min, self.x_max, self.y_min, self.y_max)
 

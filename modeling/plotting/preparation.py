@@ -512,7 +512,9 @@ class PreparationPlotter(PlottingComponent):
             distribution = Distribution.from_values(self.images[label].flatten() + self.sky_values[label])
 
             # Create an array of all the pixels used for estimating the sky
-            notnan = np.logical_not(np.isnan(self.apertures))
+            #notnan = np.logical_not(np.isnan(self.apertures))
+            print(self.apertures)
+            notnan = Mask.is_nan(self.apertures).inverse()
             sky_values = self.apertures[notnan]
 
             # Create the distribution of pixel values used for the sky estimation
@@ -684,14 +686,14 @@ class PreparationPlotter(PlottingComponent):
         plotter = StandardImageGridPlotter()
 
         # Add the images
-        for label in self.sorted_labels: plotter.add_image(self.images[label], label, mask=self.masks[label])
+        for label in self.sorted_labels: plotter.add_image(self.images[label], label, mask=self.sources_masks[label])
 
         # Determine the path to the plot file
         path = fs.join(self.plot_preparation_path, "preparation_masks_annuli.pdf")
 
         plotter.vmin = 0.0
 
-        plotter.set_title("Prepared images with source masks and sky annuli")
+        plotter.set_title("Prepared images with sources masks and sky annuli")
 
         # Make the plot
         plotter.run(path)

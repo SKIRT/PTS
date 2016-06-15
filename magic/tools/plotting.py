@@ -562,7 +562,7 @@ def plot_background_center(cutout, mask, peaks=None, title=None, show=True, scal
 
 # -----------------------------------------------------------------
 
-def plot_difference(box_a, box_b, share_colorscale=False):
+def plot_difference(box_a, box_b, share_colorscale=False, title=None):
 
     """
     This function ...
@@ -609,6 +609,9 @@ def plot_difference(box_a, box_b, share_colorscale=False):
         plt.ylim(0, box_a.shape[0]-1)
         plt.title("Residual")
         plt.colorbar(residualimage, format="%.2f")
+
+    # Set the main title
+    if title is not None: plt.suptitle(title, size=16)
 
     plt.show()
 
