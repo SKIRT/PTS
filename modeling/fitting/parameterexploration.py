@@ -96,7 +96,7 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.plotting.seds = True  # Plot the output SEDs
         #self.launcher.config.analysis.plotting.reference_sed = fs.join(self.phot_path, "fluxes.dat") # the path to the reference SED (for plotting the simulated SED against the reference points)
         self.launcher.config.analysis.plotting.reference_sed = fs.join(self.data_path, "fluxes.dat") # the path to the DustPedia SED
-        self.launcher.config.analysis.misc.fluxes = True  # Calculate observed fluxes
+        #self.launcher.config.analysis.misc.fluxes = True  # Calculate observed fluxes
         #self.launcher.config.analysis.misc.images = True  # Make observed images
         self.launcher.config.analysis.misc.observation_filters = self.filter_names  # The filters for which to create the observations
         self.launcher.config.analysis.plotting.format = "png" # plot in PNG format so that an animation can be made from the fit SEDs

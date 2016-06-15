@@ -59,6 +59,10 @@ class ModelingComponent(Configurable):
         # Reference image
         self.reference_image = "Pacs red"
 
+        # The path to the observed SEDs
+        self.observed_sed_path = None
+        self.observed_sed_dustpedia_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -103,6 +107,12 @@ class ModelingComponent(Configurable):
 
         # Exit with an error
         else: raise ValueError("The current working directory is not a radiative transfer modeling directory (the data directory is missing)")
+
+        # Set the path to the observed SED
+        self.observed_sed_path = fs.join(self.phot_path, "fluxes.dat")
+
+        # Set the path to the DustPedia observed SED
+        self.observed_sed_dustpedia_path = fs.join(self.data_path, "fluxes.dat")
 
     # -----------------------------------------------------------------
 

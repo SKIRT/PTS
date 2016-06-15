@@ -89,10 +89,7 @@ image_path = fs.absolute(arguments.image)
 image = Image.from_file(image_path)
 
 # Determine the absolute path to the reference image
-arguments.reference = fs.absolute(arguments.reference)
-
-# Determine the absolute path to the convolution kernel
-arguments.kernel = fs.absolute(arguments.kernel)
+arguments.rebin_to = fs.absolute(arguments.rebin_to)
 
 # Determine the path to the galaxy region
 galaxy_region_path = fs.join(arguments.input, "galaxies.reg")
