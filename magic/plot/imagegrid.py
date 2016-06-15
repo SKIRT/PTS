@@ -108,6 +108,9 @@ class StandardImageGridPlotter(ImageGridPlotter):
         # Masks to be overlayed on the images
         self.masks = dict()
 
+        # Regions to be overlayed on the images
+        self.regions = dict()
+
         # Properties
         self.ncols = 7
         self.width = 16
@@ -127,18 +130,20 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def add_image(self, image, label, mask=None):
+    def add_image(self, image, label, mask=None, region=None):
 
         """
         This function ...
         :param image:
         :param label:
         :param mask:
+        :param region:
         :return:
         """
 
         self.images[label] = image
         if mask is not None: self.masks[label] = mask
+        if region is not None: self.regions[label] = region
 
     # -----------------------------------------------------------------
 
@@ -275,7 +280,16 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
             # Plot
             frame[np.isnan(frame)] = 0.0
+
+            # Add mask if present
+            if label in self.masks: frame[self.masks[label]] = float('nan')
+
             ax.imshow(frame, vmin=min_value, vmax=max_value, cmap=cmap, origin='lower', norm=norm, interpolation="nearest", aspect=1)
+
+            # Add region if present
+            if label in self.regions:
+                for patch in self.regions[label].to_mpl_patches():
+                    ax.add_patch(patch)
 
             # Add the label
             ax.text(0.95, 0.95, label, color='white', transform=ax.transAxes, fontsize=10, va="top", ha="right") # fontweight='bold'

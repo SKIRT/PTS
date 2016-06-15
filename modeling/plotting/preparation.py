@@ -27,7 +27,7 @@ from ...magic.core.frame import Frame, get_frame_names
 from ...magic.basics.mask import Mask, get_mask_names
 from ...magic.basics.region import Region
 from ...magic.plot.imagegrid import StandardImageGridPlotter
-from ...core.plot.distribution import DistributionGridPlotter
+from ...core.plot.distribution import DistributionGridPlotter, DistributionPlotter
 from ...core.basics.distribution import Distribution
 
 # -----------------------------------------------------------------
@@ -285,13 +285,13 @@ class PreparationPlotter(PlottingComponent):
         for label in self.sky_paths:
 
             # Look for the annulus region file
-            region_path = fs.join(self.sky_paths[label], "annulus.reg")
+            region_path = fs.join(self.sky_paths[label], "sky.reg")
             if not fs.is_file(region_path):
                 log.warning("The annulus region could not be found for " + label)
                 continue
 
             # Open the annulus region
-            region = Region.from_file(region_path)
+            region = Region.from_file(region_path).homogenized()
 
             # Add the region to the dictionary
             self.annuli[label] = region
@@ -454,6 +454,9 @@ class PreparationPlotter(PlottingComponent):
         # Plot the grid of images with the sources masks and sky annuli overlayed
         self.plot_masks_and_annuli()
 
+        # Plot a grid of the apertures
+        self.plot_apertures()
+
         # Plot the sky values
         self.plot_sky()
 
@@ -479,7 +482,7 @@ class PreparationPlotter(PlottingComponent):
         for label in self.sorted_labels: plotter.add_image(self.images[label], label)
 
         # Determine the path to the plot file
-        path = fs.join(self.plot_path, "preparation.pdf")
+        path = fs.join(self.plot_preparation_path, "preparation.pdf")
 
         # plotter.colormap = "hot"
 
@@ -505,17 +508,22 @@ class PreparationPlotter(PlottingComponent):
         # Create the distribution grid plotter
         plotter = DistributionGridPlotter()
 
+        sky_path = fs.join(self.plot_preparation_path, "sky")
+        if not fs.is_directory(sky_path): fs.create_directory(sky_path)
+
         # Loop over the different images
         for label in self.sorted_labels:
 
+            not_nan = Mask.is_nan(self.images[label]).inverse()
+
             # Create the distribution from the image pixel values
-            distribution = Distribution.from_values(self.images[label].flatten() + self.sky_values[label])
+            distribution = Distribution.from_values(self.images[label][not_nan].flatten() + self.sky_values[label])
 
             # Create an array of all the pixels used for estimating the sky
             #notnan = np.logical_not(np.isnan(self.apertures))
-            print(self.apertures)
-            notnan = Mask.is_nan(self.apertures).inverse()
-            sky_values = self.apertures[notnan]
+            #print(self.apertures.dtype)
+            notnan = Mask.is_nan(self.apertures[label]).inverse()
+            sky_values = self.apertures[label][notnan]
 
             # Create the distribution of pixel values used for the sky estimation
             sky_distribution = Distribution.from_values(sky_values)
@@ -523,6 +531,12 @@ class PreparationPlotter(PlottingComponent):
             # Add the distributions
             plotter.add_distribution(distribution, label)
             plotter.add_distribution(sky_distribution, label)
+
+            # Plot seperately
+            distr_plotter = DistributionPlotter()
+            distr_plotter.add_distribution(distribution, "image")
+            distr_plotter.add_distribution(sky_distribution, "sky")
+            distr_plotter.run(fs.join(sky_path, label + ".pdf"))
 
         # Determine the path to the plot file
         path = fs.join(self.plot_preparation_path, "sky_distribution.pdf")
@@ -546,7 +560,7 @@ class PreparationPlotter(PlottingComponent):
         self.plot_error_histograms_absolute()
 
         # Plot histograms of the relative error values
-        self.plot_error_histograms_relative()
+        #self.plot_error_histograms_relative()
 
         # Plot the relative errors of each pixel
         self.plot_errors_pixels()
@@ -566,18 +580,31 @@ class PreparationPlotter(PlottingComponent):
         # Create the distribution grid plotter
         plotter = DistributionGridPlotter()
 
+        absolute_errors_path = fs.join(self.plot_preparation_path, "absolute_errors")
+        if not fs.is_directory(absolute_errors_path): fs.create_directory(absolute_errors_path)
+
         # Loop over the different images
         for label in self.sorted_labels:
 
+            not_nan = Mask.is_nan(self.images[label]).inverse()
+
             # Create the distribution from the image pixel values
-            distribution = Distribution.from_values(self.images[label].flatten())
+            distribution = Distribution.from_values(self.images[label][not_nan].flatten())
+
+            not_nan = Mask.is_nan(self.errors[label]).inverse()
 
             # Create the distribution from the error values
-            error_distribution = Distribution.from_values(self.errors[label].flatten())
+            error_distribution = Distribution.from_values(self.errors[label][not_nan].flatten())
 
             # Add an entry to the distribution grid plotter
             plotter.add_distribution(distribution, label)
             plotter.add_distribution(error_distribution, label)
+
+            # Plot seperately
+            distr_plotter = DistributionPlotter()
+            distr_plotter.add_distribution(distribution, "image")
+            distr_plotter.add_distribution(error_distribution, "absolute errors")
+            distr_plotter.run(fs.join(absolute_errors_path, label + ".pdf"))
 
         # Determine the path to the plot file
         path = fs.join(self.plot_preparation_path, "absolute_errors.pdf")
@@ -600,6 +627,9 @@ class PreparationPlotter(PlottingComponent):
         # Create the distribution grid plotter
         plotter = DistributionGridPlotter()
 
+        relative_errors_path = fs.join(self.plot_preparation_path, "relative_errors")
+        if not fs.is_directory(relative_errors_path): fs.create_directory(relative_errors_path)
+
         # Loop over the different images
         for label in self.sorted_labels:
 
@@ -611,6 +641,9 @@ class PreparationPlotter(PlottingComponent):
 
             # Add the distribution to the plotter
             plotter.add_distribution(rel_error_distribution, label)
+
+            # Plot seperately
+            rel_error_distribution.plot(title="relative errors", path=fs.join(relative_errors_path, label + ".pdf"))
 
         # Determine the path to the plot file
         path = fs.join(self.plot_preparation_path, "relative_errors.pdf")
@@ -634,35 +667,71 @@ class PreparationPlotter(PlottingComponent):
 
         #figure, (ax1, ax2, ax3) = plt.subplots(3)
 
-        fluxes = dict()
-        total_errors = dict()
-        poisson_errors = dict()
-        calibration_errors = dict()
-        sky_errors = dict()
-        colors = dict()
+        #fluxes = dict()
+        #total_errors = dict()
+        #poisson_errors = dict()
+        #calibration_errors = dict()
+        #sky_errors = dict()
+        #colors = dict()
 
         # Loop over the various bands and get the flux values and error contributions for each pixel
-        counter = 0
-        for label in self.sorted_labels:
-
+        #counter = 0
+        #for label in self.sorted_labels:
             # Determine the color
-            colors[label] = pretty_colors[counter]
-
-
-            counter += 1
+        #    colors[label] = pretty_colors[counter]
+         #   not_nan = Mask.is_nan(self.images[label]).inverse()
+            #fluxes[label] = self.images[label][not_nan].flatten()
+     #     counter += 1
 
         ax1 = figure.add_subplot(4,1,1) # Poisson
         ax2 = figure.add_subplot(4,1,2) # Calibration
         ax3 = figure.add_subplot(4,1,3) # Sky
         ax4 = figure.add_subplot(4,1,4) # Total
 
-        # Loop over the various bands
-        for label in fluxes:
+        counter = 0
+        for label in self.sorted_labels:
 
-            ax1.scatter(fluxes[label], poisson_errors[label], color=colors[label], label=label)
-            ax2.scatter(fluxes[label], calibration_errors[label], color=colors[label], label=label)
-            ax3.scatter(fluxes[label], sky_errors[label], color=colors[label], label=label)
-            ax4.scatter(fluxes[label], total_errors[label], color=colors[label], label=label)
+            flux_notnan = Mask.is_nan(self.images[label]).inverse()
+            error_notnan = Mask.is_nan(self.errors[label]).inverse()
+            notnan = flux_notnan + error_notnan
+
+            fluxes = self.images[label][notnan]
+            errors = self.errors[label][notnan]
+            rel_errors = errors / fluxes
+            notinf = np.logical_not(np.isinf(rel_errors))
+
+            fluxes = fluxes[notinf]
+            rel_errors = rel_errors[notinf]
+
+            if label in self.poisson_errors:
+
+                rel_poisson_errors = self.poisson_errors[label][notnan][notinf] / fluxes
+                notinf_poisson = np.logical_not(np.isinf(rel_poisson_errors))
+                ax1.scatter(fluxes[notinf_poisson], rel_poisson_errors[notinf_poisson], color=pretty_colors[counter])
+
+            if label in self.calibration_errors:
+
+                rel_calibration_errors = self.calibration_errors[label][notnan][notinf] / fluxes
+                notinf_calibration = np.logical_not(np.isinf(rel_calibration_errors))
+                ax2.scatter(fluxes[notinf_calibration], rel_calibration_errors[notinf_calibration], color=pretty_colors[counter])
+
+            if label in self.sky_errors:
+
+                rel_sky_errors = self.sky_errors[label][notnan][notinf] / fluxes
+                notinf_sky = np.logical_not(np.isinf(rel_sky_errors))
+                ax3.scatter(fluxes[notinf_sky], rel_sky_errors[notinf_sky], color=pretty_colors[counter])
+
+            ax4.scatter(fluxes, rel_errors)
+
+            counter += 1
+
+        # Loop over the various bands
+        #for label in fluxes:
+
+        #    ax1.scatter(fluxes[label], poisson_errors[label], color=colors[label], label=label)
+        #    ax2.scatter(fluxes[label], calibration_errors[label], color=colors[label], label=label)
+        #    ax3.scatter(fluxes[label], sky_errors[label], color=colors[label], label=label)
+        #    ax4.scatter(fluxes[label], total_errors[label], color=colors[label], label=label)
 
         # Determine the path to the plot file
         path = fs.join(self.plot_preparation_path, "errors_pixels.pdf")
@@ -686,7 +755,7 @@ class PreparationPlotter(PlottingComponent):
         plotter = StandardImageGridPlotter()
 
         # Add the images
-        for label in self.sorted_labels: plotter.add_image(self.images[label], label, mask=self.sources_masks[label])
+        for label in self.sorted_labels: plotter.add_image(self.images[label], label, mask=self.sources_masks[label], region=self.annuli[label])
 
         # Determine the path to the plot file
         path = fs.join(self.plot_preparation_path, "preparation_masks_annuli.pdf")
@@ -694,6 +763,34 @@ class PreparationPlotter(PlottingComponent):
         plotter.vmin = 0.0
 
         plotter.set_title("Prepared images with sources masks and sky annuli")
+
+        # Make the plot
+        plotter.run(path)
+
+    # -----------------------------------------------------------------
+
+    def plot_apertures(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the aperture frames with the sky annuli overlayed ...")
+
+        # Create the image plotter
+        plotter = StandardImageGridPlotter()
+
+        # Add the images
+        for label in self.sorted_labels: plotter.add_image(self.apertures[label], label, region=self.annuli[label])
+
+        # Determine the path to the plot file
+        path = fs.join(self.plot_preparation_path, "preparation_apertures.pdf")
+
+        plotter.vmin = 0.0
+
+        plotter.set_title("Aperture frames with sky annuli")
 
         # Make the plot
         plotter.run(path)

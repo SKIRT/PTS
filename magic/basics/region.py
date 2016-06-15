@@ -392,6 +392,24 @@ class Region(list):
 
     # -----------------------------------------------------------------
 
+    def to_mpl_patches(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list to contain the patches
+        patches = []
+
+        # Add the patches from the shapes
+        for shape in self: patches.append(shape.to_mpl_patch())
+
+        # Return the list of patches
+        return patches
+
+    # -----------------------------------------------------------------
+
     def save(self, path):
 
         """
@@ -406,10 +424,43 @@ class Region(list):
         # Initialize the region string
         print("# Region file format: DS9 version 4.1", file=f)
 
+        # Print the coordinate system
+        print("image", file=f)
+
         # Loop over all shapes, get string and print it to the region file
-        for shape in self: print(shape.to_region_string(), file=f)
+        for shape in self: print(shape.to_region_string(coordinate_system=False), file=f)
 
         # Close the file
         f.close()
+
+    # -----------------------------------------------------------------
+
+    def homogenized(self):
+
+        """
+        This function returns a copy of the region where Composite objects have been dissolved into their individual components
+        :return:
+        """
+
+        import copy
+
+        new = Region()
+
+        for shape in self:
+
+            if isinstance(shape, Composite):
+
+                copy_base = copy.deepcopy(shape.base)
+                copy_exclude = copy.deepcopy(shape.exclude)
+                copy_base.meta = shape.meta
+                copy_exclude.meta = shape.meta
+
+                new.append(copy_base)
+                new.append(copy_exclude)
+
+            else: new.append(copy.deepcopy(shape))
+
+        # Return the new region
+        return new
 
 # -----------------------------------------------------------------

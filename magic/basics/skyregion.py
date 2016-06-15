@@ -301,8 +301,11 @@ class SkyRegion(list):
         # Initialize the region string
         print("# Region file format: DS9 version 4.1", file=f)
 
+        # Write the coordinate system
+        print("fk5\n", file=f)
+
         # Loop over all shapes, get string and print it to the region file
-        for shape in self: print(shape.to_region_string(), file=f)
+        for shape in self: print(shape.to_region_string(coordinate_system=False), file=f)
 
         # Close the file
         f.close()

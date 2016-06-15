@@ -281,6 +281,7 @@ class DistributionGridPlotter(object):
         self.extra_distributions = dict()
 
         # Properties
+        self.format = None
         self.transparent = False
         self.ncols = 7
         self.width = 16

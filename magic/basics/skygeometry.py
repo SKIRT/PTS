@@ -71,10 +71,11 @@ class SkyComposite(object):
 
     # -----------------------------------------------------------------
 
-    def to_region_string(self):
+    def to_region_string(self, coordinate_system=True):
 
         """
         This function ...
+        :param coordinate_system:
         :return:
         """
 
@@ -279,10 +280,11 @@ class SkyCoordinate(SkyCoord):
 
     # -----------------------------------------------------------------
 
-    def to_region_string(self):
+    def to_region_string(self, coordinate_system=True):
 
         """
         This function ...
+        :param coordinate_system:
         :return:
         """
 
@@ -299,7 +301,8 @@ class SkyCoordinate(SkyCoord):
         dec_deg = self.dec.to("deg").value
 
         # Create and return the line
-        line = "fk5;point({},{})".format(ra_deg, dec_deg) + suffix
+        if coordinate_system: line = "fk5;point({},{})".format(ra_deg, dec_deg) + suffix
+        else: line = "point({},{})".format(ra_deg, dec_deg) + suffix
         return line
 
 # -----------------------------------------------------------------
@@ -386,7 +389,7 @@ class SkyLine(object):
 
     # -----------------------------------------------------------------
 
-    def to_region_string(self):
+    def to_region_string(self, coordinate_system=True):
 
         """
         This function ...
@@ -410,7 +413,8 @@ class SkyLine(object):
         end_dec = self.end.dec.to("deg").value
 
         # Create and return the line
-        line = "fk5;line({},{},{},{})".format(start_ra, start_dec, end_ra, end_dec) + suffix
+        if coordinate_system: line = "fk5;line({},{},{},{})".format(start_ra, start_dec, end_ra, end_dec) + suffix
+        else: line = "line({},{},{},{})".format(start_ra, start_dec, end_ra, end_dec) + suffix
         return line
 
 # -----------------------------------------------------------------
@@ -588,7 +592,7 @@ class SkyEllipse(object):
 
     # -----------------------------------------------------------------
 
-    def to_region_string(self):
+    def to_region_string(self, coordinate_system=True):
 
         """
         This function ...
@@ -611,7 +615,8 @@ class SkyEllipse(object):
         angle = self.angle.degree
 
         # Create and return the line
-        line = "fk5;ellipse(%s,%s,%.2f\",%.2f\",%s)" % (ra_deg, dec_deg, major, minor, angle)
+        if coordinate_system: line = "fk5;ellipse(%s,%s,%.2f\",%.2f\",%s)" % (ra_deg, dec_deg, major, minor, angle)
+        else: line = "ellipse(%s,%s,%.2f\",%.2f\",%s)" % (ra_deg, dec_deg, major, minor, angle)
         line += suffix
         return line
 
@@ -715,7 +720,7 @@ class SkyCircle(object):
 
     # -----------------------------------------------------------------
 
-    def to_region_string(self):
+    def to_region_string(self, coordinate_system=True):
 
         """
         This function ...
@@ -736,7 +741,8 @@ class SkyCircle(object):
         radius = self.radius.to("arcsec").value
 
         # Create and return the line
-        line = "fk5;circle(%s,%s,%.2f\")" % (ra_deg, dec_deg, radius)
+        if coordinate_system: line = "fk5;circle(%s,%s,%.2f\")" % (ra_deg, dec_deg, radius)
+        else:  line = "circle(%s,%s,%.2f\")" % (ra_deg, dec_deg, radius)
         line += suffix
         return line
 
@@ -844,7 +850,7 @@ class SkyRectangle(object):
 
     # -----------------------------------------------------------------
 
-    def to_region_string(self):
+    def to_region_string(self, coordinate_system=True):
 
         """
         This function ...
@@ -867,7 +873,8 @@ class SkyRectangle(object):
         angle = self.angle.degree
 
         # Create and return the line
-        line = "fk5;box(%s,%s,%.2f\",%.2f\",%s)" % (center_ra, center_dec, width, height, angle)
+        if coordinate_system: line = "fk5;box(%s,%s,%.2f\",%.2f\",%s)" % (center_ra, center_dec, width, height, angle)
+        else: line = "box(%s,%s,%.2f\",%.2f\",%s)" % (center_ra, center_dec, width, height, angle)
         line += suffix
         return line
 
@@ -944,7 +951,7 @@ class SkyPolygon(object):
 
     # -----------------------------------------------------------------
 
-    def to_region_string(self):
+    def to_region_string(self, coordinate_system=True):
 
         """
         This function ...
@@ -960,7 +967,8 @@ class SkyPolygon(object):
         else: suffix = ""
 
         # Initialize line
-        line = "fk5;polygon("
+        if coordinate_system: line = "fk5;polygon("
+        else: line = "polygon("
 
         lines = []
 
