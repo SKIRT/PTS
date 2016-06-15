@@ -128,22 +128,26 @@ class ModelingComponent(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_filter_names(self):
+    def get_observed_filters(self):
 
         """
         This function ...
         :return:
         """
 
-        filter_names = []
-        fluxes_table = tables.from_file(fluxes_table_path, format="ascii.ecsv")
-        # Loop over the entries in the fluxes table, get the filter
-        for entry in fluxes_table:
+        sed = self.get_observed_sed()
+        return sed.filters()
 
-            # Get the filter
-            filter_id = entry["Instrument"] + "_" + entry["Band"]
-            filter_names.append(filter_id)
+    # -----------------------------------------------------------------
 
-        return filter_names
+    def get_observed_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        filters = self.get_observed_filters()
+        return [str(fltr) for fltr in filters]
 
 # -----------------------------------------------------------------

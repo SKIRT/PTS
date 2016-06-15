@@ -397,7 +397,7 @@ class BestModelLauncher(AnalysisComponent):
         """
 
         # Get the names of the filters for which we have photometry
-        filter_names = self.get_filter_names()
+        filter_names = self.get_observed_filter_names()
 
         # Set the paths to the for each image (except for the SPIRE images)
         kernel_paths = dict()

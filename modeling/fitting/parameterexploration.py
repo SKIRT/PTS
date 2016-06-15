@@ -81,7 +81,7 @@ class ParameterExplorer(FittingComponent):
         super(ParameterExplorer, self).setup()
 
         # Get the names of the filters for which we have photometry
-        self.filter_names = self.get_filter_names()
+        self.filter_names = self.get_observed_filter_names()
 
         # Set options for the BatchLauncher: basic options
         self.launcher.config.shared_input = True  # The input directories for the different simulations are shared

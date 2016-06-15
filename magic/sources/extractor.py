@@ -367,6 +367,9 @@ class SourceExtractor(Configurable):
             # Disable sigma-clipping for estimating background when the source is foreground to the principal galaxy (to avoid clipping the galaxy's gradient)
             sigma_clip = self.config.sigma_clip if not foreground else False
 
+            # Debugging
+            log.debug("Sigma-clipping enabled for estimating background gradient for this source" if sigma_clip else "Sigma-clipping disabled for estimating background gradient for this source")
+
             # Estimate the background
             try:
                 source.estimate_background(self.config.interpolation_method, sigma_clip=sigma_clip)
