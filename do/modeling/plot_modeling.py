@@ -27,6 +27,8 @@ parser = argparse.ArgumentParser()
 
 # The modeling step
 parser.add_argument("step", type=str, help="the modeling step for which plots should be made")
+parser.add_argument("features", type=parsing.string_list, nargs="?", help="the features to be plotted "
+                                                                          "(if not specified this means all features will be plotted)")
 
 # Logging options
 parser.add_argument("--debug", action="store_true", help="enable debug logging mode")

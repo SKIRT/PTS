@@ -65,6 +65,9 @@ class Plotter(PlottingComponent):
         # Set the modeling step for which to make the plots
         plotter.config.step = arguments.step
 
+        # Set the features to be plotted
+        plotter.config.features = arguments.features
+
         # Return the new instance
         return plotter
 
@@ -124,7 +127,7 @@ class Plotter(PlottingComponent):
         plotter.config.path = self.config.path
 
         # Run the plotter
-        plotter.run()
+        plotter.run(self.config.features)
 
     # -----------------------------------------------------------------
 
@@ -143,7 +146,7 @@ class Plotter(PlottingComponent):
         plotter.config.path = self.config.path
 
         # Run the plotter
-        plotter.run()
+        plotter.run(self.config.features)
 
     # -----------------------------------------------------------------
 
@@ -162,7 +165,7 @@ class Plotter(PlottingComponent):
         plotter.config.path = self.config.path
 
         # Run the plotter
-        plotter.run()
+        plotter.run(self.config.features)
 
     # -----------------------------------------------------------------
 
@@ -181,7 +184,7 @@ class Plotter(PlottingComponent):
         plotter.config.path = self.config.path
 
         # Run the plotter
-        plotter.run()
+        plotter.run(self.config.features)
 
     # -----------------------------------------------------------------
 
@@ -200,7 +203,7 @@ class Plotter(PlottingComponent):
         plotter.config.path = self.config.path
 
         # Run the plotter
-        plotter.run()
+        plotter.run(self.config.features)
 
     # -----------------------------------------------------------------
 
@@ -219,7 +222,7 @@ class Plotter(PlottingComponent):
         plotter.config.path = self.config.path
 
         # Run the plotter
-        plotter.run()
+        plotter.run(self.config.features)
 
     # -----------------------------------------------------------------
 
@@ -238,7 +241,7 @@ class Plotter(PlottingComponent):
         plotter.config.path = self.config.path
 
         # Run the plotter
-        plotter.run()
+        plotter.run(self.config.features)
 
     # -----------------------------------------------------------------
 
@@ -257,6 +260,6 @@ class Plotter(PlottingComponent):
         plotter.config.path = self.config.path
 
         # Run the plotter
-        plotter.run()
+        plotter.run(self.config.features)
 
 # -----------------------------------------------------------------

@@ -45,7 +45,7 @@ class TruncationPlotter(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, features=None):
 
         """
         This function ...

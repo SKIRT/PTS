@@ -45,7 +45,7 @@ class MapsPlotter(PlottingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, features=None):
 
         """
         This function ...
