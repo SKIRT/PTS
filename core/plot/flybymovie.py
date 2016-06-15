@@ -48,21 +48,26 @@ def prepareflybymovie(skifile, timeline):
 # Parameters:
 #  - simulation: a SkirtSimulation object representing the simuluation to be handled
 #  - rate: the number of frames per second (default is 24)
+#  - wavelengths: a 3-tuple of wavelengths to be used for the RGB frames;
+#                 if missing or None the RGBImage default frames are used
 #  - from_percentile and to_percentile: the percentile values, in range [0,100], used to clip the luminosity
 #    values loaded from the fits file
 #  - contrast: if True, the contrast of each frame is enhanced (nice, but it takes quite a while); default is False
 #
-def makeflybymovie(simulation, rate=24, from_percentile=30, to_percentile=100, contrast=False):
+def makeflybymovie(simulation, rate=24, wavelengths=None, from_percentile=30, to_percentile=100, contrast=False):
     # verify the simulation status
     if simulation.status() != 'Finished':  raise ValueError("Simulation " + simulation.status())
     fitspaths = simulation.totalfitspaths()
     outpath = simulation.outfilepath("flyby.mov")
 
+    # find the appropriate wavelength indices in the data cube
+    indices = simulation.frameindices(wavelengths) if wavelengths is not None else None
+
     # determine the appropriate pixel range for ALL images
     print("  preprocessing frames for " + outpath.rsplit("/",1)[1] + "...")
     ranges = []
     for fits in fitspaths:
-        im = RGBImage(fits)
+        im = RGBImage(fits, frames=indices)
         ranges += list(im.percentilepixelrange(from_percentile,to_percentile))
     rmin = min(ranges)
     rmax = max(ranges)
@@ -72,9 +77,10 @@ def makeflybymovie(simulation, rate=24, from_percentile=30, to_percentile=100, c
     nframes = len(fitspaths)
     for frame in range(nframes):
         print("  adding frame " + str(frame+1) + "/" + str(nframes) + "...")
-        im = RGBImage(fitspaths[frame])
+        im = RGBImage(fitspaths[frame], frames=indices)
         im.setrange(rmin,rmax)
         im.applylog()
+        #im.applysqrt()
         if contrast: im.applycurve()
         im.addto(movie)
     movie.close()
