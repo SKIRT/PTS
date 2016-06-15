@@ -37,11 +37,14 @@ class GalacticCatalog(object):
         :return:
         """
 
-        # Create the catalogs user path if necessary
-        if not fs.is_directory(catalogs_user_path):
+        # Create the catalogs user directory if necessary
+        if not fs.is_directory(catalogs_user_path): fs.create_directory(catalogs_user_path)
 
         # Determine the path to the 'galaxies' catalog path
         galaxies_catalog_path = fs.join(catalogs_user_path, "galaxies")
+
+        # Create the catalogs/galaxies directory is necessary
+        if not fs.is_directory(galaxies_catalog_path): fs.create_directory(galaxies_catalog_path)
 
         # Get the center coordinate and the range of RA and DEC
         center, ra_span, dec_span = frame_or_wcs.coordinate_range
@@ -93,8 +96,14 @@ class StellarCatalog(object):
         :return:
         """
 
+        # Create the catalogs user directory if necessary
+        if not fs.is_directory(catalogs_user_path): fs.create_directory(catalogs_user_path)
+
         # Determine the path to the 'galaxies' catalog path
         stars_catalog_path = fs.join(catalogs_user_path, "stars")
+
+        # Create the catalogs/stars directory is necessary
+        if not fs.is_directory(stars_catalog_path): fs.create_directory(stars_catalog_path)
 
         # Get the center coordinate and the range of RA and DEC
         center, ra_span, dec_span = frame_or_wcs.coordinate_range

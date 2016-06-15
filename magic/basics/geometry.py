@@ -1749,6 +1749,21 @@ class Polygon(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def center(self):
+
+        """
+        This property returns the center coordinate of the polygon, calcualted as the mean x value with the mean y value
+        :return:
+        """
+
+        x = np.array([point.x for point in self.points])
+        y = np.array([point.y for point in self.points])
+
+        return Coordinate(np.mean(x), np.mean(y))
+
+    # -----------------------------------------------------------------
+
     def __add__(self, extent):
 
         """
@@ -1780,5 +1795,96 @@ class Polygon(object):
         for point in self.points: polygon.add_point(point - extent)
 
         return polygon
+
+    # -----------------------------------------------------------------
+
+    def __mul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new = Polygon(meta=self.meta)
+
+        center = self.center
+
+        for point in self.points:
+
+            point_to_center = point - self.center # is Extent with x and y
+            new_point = Coordinate(center.x + point_to_center.x * value, center.y + point_to_center.y * value)
+            new.add_point(new_point)
+
+        # Return the new polygon
+        return new
+
+    # -----------------------------------------------------------------
+
+    def __imul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        center = self.center
+
+        for point in self.points:
+
+            point_to_center = point - self.center  # is Extent with x and y
+            point.x = center.x + point_to_center.x * value
+            point.y = center.y + point_to_center.y * value
+
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__mul__(1./value)
+
+    # -----------------------------------------------------------------
+
+    def __idiv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__imul__(1./value)
+
+    # -----------------------------------------------------------------
+
+    def __truediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__div__(value)
+
+    # -----------------------------------------------------------------
+
+    def __itruediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__idiv__(value)
 
 # -----------------------------------------------------------------

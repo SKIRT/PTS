@@ -155,6 +155,18 @@ class Galaxy(SkyObject):
 
     # -----------------------------------------------------------------
 
+    @property
+    def shape(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.source.shape
+
+    # -----------------------------------------------------------------
+
     def ellipse_parameters(self, wcs, default_radius):
 
         """

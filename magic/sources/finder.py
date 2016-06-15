@@ -87,6 +87,9 @@ class SourceFinder(Configurable):
         # Don't look for saturated stars if requested
         if arguments.no_saturation: finder.config.stars.find_saturation = False
 
+        # Don't look for other sources if requested
+        if arguments.no_other: finder.config.find_other_sources = False
+
         # Set the region describing the principal galaxy
         if arguments.principal_region is not None: finder.config.galaxies.principal_region = arguments.principal_region
 

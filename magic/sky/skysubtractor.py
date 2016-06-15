@@ -74,8 +74,8 @@ class SkySubtractor(Configurable):
         # The extra mask
         self.extra_mask = None
 
-        # The principal ellipse
-        self.principal_ellipse = None
+        # The principal shape
+        self.principal_shape = None
 
         # The region of saturated stars
         self.saturation_region = None
@@ -125,12 +125,12 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, principal_ellipse, sources_mask, extra_mask=None, saturation_region=None, animation=None):
+    def run(self, frame, principal_shape, sources_mask, extra_mask=None, saturation_region=None, animation=None):
 
         """
         This function ...
         :param frame:
-        :param principal_ellipse:
+        :param principal_shape:
         :param sources_mask:
         :param extra_mask:
         :param saturation_region:
@@ -138,7 +138,7 @@ class SkySubtractor(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup(frame, principal_ellipse, sources_mask, extra_mask, saturation_region, animation)
+        self.setup(frame, principal_shape, sources_mask, extra_mask, saturation_region, animation)
 
         # 2. Create the sky region
         self.create_region()
@@ -177,7 +177,7 @@ class SkySubtractor(Configurable):
         self.frame = None
         self.sources_mask = None
         self.extra_mask = None
-        self.principal_ellipse = None
+        self.principal_shape = None
         self.saturation_region = None
         self.animation = None
         self.mask = None
@@ -191,12 +191,12 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, principal_ellipse, sources_mask, extra_mask=None, saturation_region=None, animation=None):
+    def setup(self, frame, principal_shape, sources_mask, extra_mask=None, saturation_region=None, animation=None):
 
         """
         This function ...
         :param frame:
-        :param principal_ellipse:
+        :param principal_shape:
         :param sources_mask:
         :param extra_mask:
         :param saturation_region:
@@ -210,8 +210,8 @@ class SkySubtractor(Configurable):
         # Make a local reference to the image frame
         self.frame = frame
 
-        # Make a reference to the principal ellipse
-        self.principal_ellipse = principal_ellipse
+        # Make a reference to the principal shape
+        self.principal_shape = principal_shape
 
         # Set the masks
         self.sources_mask = sources_mask
@@ -244,11 +244,11 @@ class SkySubtractor(Configurable):
             # Create the sky annulus
             annulus_outer_factor = self.config.mask.annulus_outer_factor
             annulus_inner_factor = self.config.mask.annulus_inner_factor
-            inner_ellipse = self.principal_ellipse * annulus_inner_factor
-            outer_ellipse = self.principal_ellipse * annulus_outer_factor
+            inner_shape = self.principal_shape * annulus_inner_factor
+            outer_shape = self.principal_shape * annulus_outer_factor
 
             # Create the annulus
-            annulus = Composite(outer_ellipse, inner_ellipse)
+            annulus = Composite(outer_shape, inner_shape)
 
             # Create the sky region consisting of only the annulus
             self.region = Region()
@@ -269,8 +269,11 @@ class SkySubtractor(Configurable):
         # Create a mask from the pixels outside of the sky region
         outside_mask = self.region.to_mask(self.frame.xsize, self.frame.ysize).inverse()
 
+        # Create a mask from the principal shape
+        principal_mask = self.principal_shape.to_mask(self.frame.xsize, self.frame.ysize)
+
         # Set the mask, make a copy of the input mask initially
-        self.mask = self.sources_mask + outside_mask
+        self.mask = self.sources_mask + outside_mask + principal_mask
 
         # Add the extra mask (if specified)
         if self.extra_mask is not None: self.mask += self.extra_mask

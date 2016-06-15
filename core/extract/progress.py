@@ -16,6 +16,82 @@ from __future__ import absolute_import, division, print_function
 # Import astronomical modules
 from astropy.table import Table
 from astropy.io import ascii
+from astropy.utils import lazyproperty
+
+# -----------------------------------------------------------------
+
+class ProgressTable(Table):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, process_list, phase_list, seconds_list, progress_list):
+
+        """
+        The constructor ...
+        :param process_list:
+        :param phase_list:
+        :param seconds_list:
+        :param progress_list:
+        """
+
+        names = ["Process rank", "Simulation phase", "Time", "Progress"]
+        data = [process_list, phase_list, seconds_list, progress_list]
+
+        # Call the constructor of the base class
+        super(ProgressTable, self).__init__(data, names=names, masked=True)
+
+        # The path to the table file
+        self.path = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Open the table
+        table = super(ProgressTable, cls).read(path, format="ascii.ecsv")
+
+        # Set the path
+        table.path = path
+
+        # Return the table
+        return table
+
+    # -----------------------------------------------------------------
+
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save to the current path
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Write the table in ECSV format
+        self.write(path, format="ascii.ecsv")
+
+        # Set the path
+        self.path = path
 
 # -----------------------------------------------------------------
 

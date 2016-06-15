@@ -551,30 +551,25 @@ class GalaxyFinder(Configurable):
 
             radius = Extent(x_radius, y_radius)
 
-            # Add point for the center
-            #print("image;point({},{})".format(center.x+1, center.y+1) + point_suffix, file=f)
-            #print("image;ellipse({},{},{},{},{})".format(center.x+1, center.y+1, x_radius, y_radius, angle) + color_suffix, file=f)
-
             # Create a coordinate for the center and add it to the region
             meta = {"point": "x"}
             self.region.append(Coordinate(center.x, center.y, meta=meta))
 
-            # Create an ellipse for the galaxy and add it to the region
-            meta = {"text": galaxy.name, "color": color}
-            shape = Ellipse(center, radius, angle, meta=meta)
+            text = galaxy.name
+            if galaxy.principal: text += " (principal)"
+
+            # If hand-drawn principal region
+            if galaxy.principal and self.config.principal_region is not None: shape = galaxy.shape
+
+            # Create an ellipse for the galaxy
+            else: shape = Ellipse(center, radius, angle, meta=meta)
+
+            # Set meta information
+            meta = {"text": text, "color": color}
+            shape.meta = meta
+
+            # Add the shape to the region
             self.region.append(shape)
-
-            # Add aperture
-            #if galaxy.has_contour:
-
-                #contour_center = galaxy.contour.center
-                #major = galaxy.contour.major
-                #minor = galaxy.contour.minor
-                #angle = galaxy.contour.angle.degree
-
-                #aperture_suffix = " # color = white"
-
-                #print("image;ellipse({},{},{},{},{})".format(contour_center.x+1, contour_center.y+1, major, minor, angle) + aperture_suffix, file=f)
 
     # -----------------------------------------------------------------
 

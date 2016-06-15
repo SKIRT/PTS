@@ -20,7 +20,7 @@ from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ..basics.mask import Mask
-from ..basics.geometry import Ellipse
+from ..basics.geometry import Ellipse, Coordinate
 from ..core.source import Source
 from ...core.tools.logging import log
 from ...core.basics.configurable import Configurable
@@ -350,7 +350,7 @@ class SourceExtractor(Configurable):
 
         # Set principal ellipse and mask for the animation
         if self.animation is not None:
-            self.animation.principal_ellipse = self.principal_ellipse
+            self.animation.principal_shape = self.principal_shape
             self.animation.mask = self.mask
 
         # Loop over all sources and remove them from the frame
@@ -433,7 +433,7 @@ class SourceExtractor(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def principal_ellipse(self):
+    def principal_shape(self):
 
         """
         This function ...
@@ -447,14 +447,17 @@ class SourceExtractor(Configurable):
         # Loop over all the shapes in the galaxy region
         for shape in self.galaxy_region:
 
-            # Skip shapes that are not ellipses
-            if not isinstance(shape, Ellipse): continue
+            # Skip single coordinates
+            if isinstance(shape, Coordinate): continue
+
+            if "principal" in shape.meta["text"]: return shape
+
+            if not isinstance(shape, Ellipse): return shape
 
             major_axis_length = shape.major
-
             if largest_shape is None or major_axis_length > largest_shape.major: largest_shape = shape
 
-        # Return the largest shape in the galaxy region
+        # Return the largest shape
         return largest_shape
 
     # -----------------------------------------------------------------
@@ -467,7 +470,7 @@ class SourceExtractor(Configurable):
         :return:
         """
 
-        if self.principal_ellipse is None: return None
-        return self.principal_ellipse.to_mask(self.frame.xsize, self.frame.ysize)
+        if self.principal_shape is None: return None
+        return self.principal_shape.to_mask(self.frame.xsize, self.frame.ysize)
 
 # -----------------------------------------------------------------

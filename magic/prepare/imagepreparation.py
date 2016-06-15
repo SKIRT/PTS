@@ -289,8 +289,9 @@ class ImagePreparer(Configurable):
         # Add the sources mask to the image
         self.image.add_mask(self.extractor.mask, "sources")
 
-        # Get the principal ellipse in sky coordinates
-        self.principal_ellipse_sky = self.extractor.principal_ellipse.to_sky(self.image.wcs)
+        # Get the principal shape in sky coordinates
+        #self.principal_ellipse_sky = self.extractor.principal_ellipse.to_sky(self.image.wcs)
+        self.principal_shape_sky = self.extractor.principal_shape.to_sky(self.image.wcs)
 
         # Get the saturation region in sky coordinates
         self.saturation_region_sky = self.saturation_region.to_sky(self.image.wcs) if self.saturation_region is not None else None

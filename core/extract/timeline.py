@@ -19,6 +19,83 @@ from datetime import datetime
 # Import astronomical modules
 from ..tools import tables
 from astropy.io import ascii
+from astropy.table import Table
+from astropy.utils import lazyproperty
+
+# -----------------------------------------------------------------
+
+class TimeLineTable(Table):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, process_list, phase_list, start_list, end_list):
+
+        """
+        The constructor ...
+        :param process_list:
+        :param phase_list:
+        :param start_list:
+        :param end_list:
+        """
+
+        names = ["Process rank", "Simulation phase", "Start time", "End time"]
+        data = [process_list, phase_list, start_list, end_list]
+
+        # Call the constructor of the base class
+        super(TimeLineTable, self).__init__(data, names=names, masked=True)
+
+        # The path to the table file
+        self.path = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Open the table
+        table = super(TimeLineTable, cls).read(path, format="ascii.ecsv")
+
+        # Set the path
+        table.path = path
+
+        # Return the table
+        return table
+
+    # -----------------------------------------------------------------
+
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save to the current path
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Write the table in ECSV format
+        self.write(path, format="ascii.ecsv")
+
+        # Set the path
+        self.path = path
 
 # -----------------------------------------------------------------
 
