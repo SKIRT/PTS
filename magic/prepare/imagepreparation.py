@@ -680,7 +680,7 @@ class ImagePreparer(Configurable):
         for error_frame_name in self.config.error_frame_names: squared_error_maps.append(self.image.frames[error_frame_name]**2)
 
         # Calculate the final error map
-        errors = np.sqrt(np.sum(squared_error_maps, axis=0))
+        errors = Frame(np.sqrt(np.sum(squared_error_maps, axis=0)))
 
         # Add the combined errors frame
         self.image.add_frame(errors, "errors")
