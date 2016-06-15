@@ -332,11 +332,8 @@ class InputInitializer(FittingComponent):
         # Inform the user
         log.info("Loading the observed SED ...")
 
-        # Determine the path to the SED
-        sed_path = fs.join(self.phot_path, "fluxes.dat")
-
         # Load the SED
-        self.observed_sed = ObservedSED.from_file(sed_path)
+        self.observed_sed = ObservedSED.from_file(self.observed_sed_path)
 
     # -----------------------------------------------------------------
 

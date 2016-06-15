@@ -81,11 +81,8 @@ class DataPlotter(PlottingComponent):
         # Inform the user
         log.info("Loading the observed SED ...")
 
-        # Determine the path to the SED file
-        path = fs.join(self.data_path, "fluxes.dat")
-
         # Load the sed
-        self.sed = ObservedSED.from_file(path)
+        self.sed = ObservedSED.from_file(self.observed_sed_path)
 
     # -----------------------------------------------------------------
 

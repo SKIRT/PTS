@@ -422,7 +422,7 @@ class BestModelLauncher(AnalysisComponent):
         self.analysis_options.plotting.timeline = True
         self.analysis_options.plotting.seds = True
         self.analysis_options.plotting.grids = True
-        self.analysis_options.plotting.reference_sed = fs.join(self.phot_path, "fluxes.dat")
+        self.analysis_options.plotting.reference_sed = self.observed_sed_path
 
         # Set miscellaneous options
         self.analysis_options.misc.path = self.analysis_misc_path

@@ -149,11 +149,8 @@ class AnalysisPlotter(PlottingComponent):
         # Inform the user
         log.info("Loading the transmission curves ...")
 
-        # Determine the path to the fluxes table
-        fluxes_path = fs.join(self.phot_path, "fluxes.dat")
-
         # Load the observed SED
-        sed = ObservedSED.from_file(fluxes_path)
+        sed = ObservedSED.from_file(self.observed_sed_path)
 
         # Loop over all filters for the points in the SED
         for fltr in sed.filters():
@@ -283,11 +280,8 @@ class AnalysisPlotter(PlottingComponent):
         # Break if no simulated SEDs were found
         if len(self.seds) == 0: return
 
-        # Determine the path to the observed SED
-        observed_sed_path = fs.join(self.phot_path, "fluxes.dat")
-
         # Load the observed SED
-        self.observed_sed = ObservedSED.from_file(observed_sed_path)
+        self.observed_sed = ObservedSED.from_file(self.observed_sed_path)
 
     # -----------------------------------------------------------------
 

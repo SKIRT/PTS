@@ -115,7 +115,10 @@ fwhms = {"GALEX_FUV": 4.48 * Unit("arcsec"),
 
 # -----------------------------------------------------------------
 
-aniano_names = {"GALEX FUV": "GALEX_FUV",
+aniano_names = {"UVOT UVM2": "Gauss_02.5",
+                "UVOT UVW1": "Gauss_02.5",
+                "UVOT UVW2": "Gauss_03.0",
+                "GALEX FUV": "GALEX_FUV",
                 "GALEX NUV": "GALEX_NUV",
                 "SDSS u": "BiGauss_02.0",  # FWHM is actually variable
                 "SDSS g": "BiGauss_02.0",  # FWHM is actually variable

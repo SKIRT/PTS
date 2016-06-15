@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ...core.basics.configurable import Configurable
 from ...core.tools import inspection, tables
 from ...core.tools import filesystem as fs
+from ..core.sed import ObservedSED
 
 # -----------------------------------------------------------------
 
@@ -116,6 +117,17 @@ class ModelingComponent(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_observed_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ObservedSED.from_file(self.observed_sed_path)
+
+    # -----------------------------------------------------------------
+
     def get_filter_names(self):
 
         """
@@ -124,7 +136,6 @@ class ModelingComponent(Configurable):
         """
 
         filter_names = []
-        fluxes_table_path = fs.join(self.phot_path, "fluxes.dat")
         fluxes_table = tables.from_file(fluxes_table_path, format="ascii.ecsv")
         # Loop over the entries in the fluxes table, get the filter
         for entry in fluxes_table:

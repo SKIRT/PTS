@@ -53,8 +53,8 @@ class FitModelAnalyser(FittingComponent):
         # The weights given to each band for the calculation of the chi squared
         self.weights = None
 
-        # The observed fluxes
-        self.fluxes = None
+        # The observed SED
+        self.observed_sed = None
 
         # The flux differences table
         self.differences = None
@@ -103,7 +103,7 @@ class FitModelAnalyser(FittingComponent):
         # Set the attributes to default values
         self.simulation = None
         self.flux_calculator = None
-        self.fluxes = None
+        self.observed_sed = None
         self.differences = None
         self.chi_squared = None
 
@@ -152,11 +152,8 @@ class FitModelAnalyser(FittingComponent):
         # Inform the user
         log.info("Loading the observed SED ...")
 
-        # Determine the path to the fluxes table
-        fluxes_path = fs.join(self.phot_path, "fluxes.dat")
-
         # Load the observed SED
-        self.fluxes = ObservedSED.from_file(fluxes_path)
+        self.observed_sed = ObservedSED.from_file(self.observed_sed_path)
 
     # -----------------------------------------------------------------
 
@@ -188,10 +185,10 @@ class FitModelAnalyser(FittingComponent):
             fluxdensity = table["Flux"][i]
 
             # Find the corresponding flux in the SED derived from observation
-            observed_fluxdensity = self.fluxes.flux_for_band(instrument, band, unit="Jy").value
+            observed_fluxdensity = self.observed_sed.flux_for_band(instrument, band, unit="Jy").value
 
             # Find the corresponding flux error in the SED derived from observation
-            observed_fluxdensity_error = self.fluxes.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
+            observed_fluxdensity_error = self.observed_sed.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
 
             # If no match with (instrument, band) is found in the observed SED
             if observed_fluxdensity is None:
@@ -227,7 +224,7 @@ class FitModelAnalyser(FittingComponent):
         log.info("Calculating the chi squared value for this model ...")
 
         # Calculate the degrees of freedom
-        dof = len(self.fluxes.table) - 3. - 1.  # number of data points - number of fitted parameters - 1
+        dof = len(self.observed_sed.table) - 3. - 1.  # number of data points - number of fitted parameters - 1
 
         # The (reduced) chi squared value is the sum of all the terms (for each band),
         # divided by the number of degrees of freedom

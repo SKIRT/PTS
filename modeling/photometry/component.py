@@ -37,9 +37,6 @@ class PhotometryComponent(ModelingComponent):
 
         # -- Attributes --
 
-        # The path to the observed fluxes table
-        self.fluxes_path = None
-
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -54,8 +51,5 @@ class PhotometryComponent(ModelingComponent):
 
         # Set the output path
         self.config.output_path = self.phot_path
-
-        # Set the path to the fluxes table
-        self.fluxes_path = fs.join(self.phot_path, "fluxes.dat")
 
 # -----------------------------------------------------------------

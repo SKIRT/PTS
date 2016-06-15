@@ -366,7 +366,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Writing SED to a data file ...")
 
         # Save the SED
-        self.sed.save(self.fluxes_path)
+        self.sed.save(self.observed_sed_path)
 
     # -----------------------------------------------------------------
 
