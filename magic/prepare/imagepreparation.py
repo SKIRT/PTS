@@ -671,7 +671,7 @@ class ImagePreparer(Configurable):
         if "poisson_errors" in self.image.frames: squared_error_maps.append(self.image.frames.poisson_errors**2)
 
         # Add the sky errors
-        squared_error_maps.append(self.sky_subtractor.noise**2)
+        squared_error_maps.append(self.sky_subtractor.noise_frame**2)
 
         # Add the calibration errors
         squared_error_maps.append(self.image.frames.calibration_errors**2)
