@@ -131,7 +131,7 @@ class LogFile(object):
         return None
 
     # -----------------------------------------------------------------
-
+    
     @lazyproperty
     def peak_memory(self):
 

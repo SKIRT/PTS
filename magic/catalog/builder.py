@@ -165,8 +165,8 @@ class CatalogBuilder(Configurable):
             if not self.star_extractor.statistics["Detected"][i]: continue
 
             # Add the appropriate values in the columns
-            catalog_column.append(self.star_extractor.catalog["Catalog"][index] if not self.star_extractor.catalog["Catalog"].mask[index] else None)
-            id_column.append(self.star_extractor.catalog["Id"][index] if not self.star_extractor.catalog["Id"].mask[index] else None)
+            catalog_column.append(self.star_extractor.catalog["Catalog"][index] if not (hasattr(self.star_extractor.catalog["Catalog"], "mask") and self.star_extractor.catalog["Catalog"].mask[index]) else None)
+            id_column.append(self.star_extractor.catalog["Id"][index] if not (hasattr(self.star_extractor.catalog["Id"], "mask") and self.star_extractor.catalog["Id"].mask[index]) else None)
             ra_column.append(self.star_extractor.catalog["Right ascension"][index])
             dec_column.append(self.star_extractor.catalog["Declination"][index])
             ra_error_column.append(self.star_extractor.catalog["Right ascension error"][index])

@@ -93,7 +93,7 @@ class ImagePreparer(Configurable):
         preparer = cls()
 
         # The path to the reference image (for rebinning)
-        preparer.config.rebinning.rebin_to = arguments.reference
+        preparer.config.rebinning.rebin_to = arguments.rebin_to
 
         # The path to the convolution kernel
         preparer.config.convolution.kernel_path = arguments.kernel

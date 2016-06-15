@@ -23,6 +23,8 @@ from pts.magic.core.image import Image
 from pts.magic.basics.region import Region
 from pts.magic.misc.calibration import CalibrationError
 from pts.magic.misc.extinction import GalacticExtinction
+from pts.core.basics.filter import Filter
+from pts.magic.misc.kernels import AnianoKernels, aniano_names
 
 # -----------------------------------------------------------------
 
@@ -30,9 +32,9 @@ from pts.magic.misc.extinction import GalacticExtinction
 parser = argparse.ArgumentParser()
 
 # Basic
-parser.add_argument("image", type=str, nargs='?', help="the name/path of the image for which to run the preparation")
-parser.add_argument("kernel", type=str, help="the name/path of the kernel file for the convolution")
-parser.add_argument("reference", type=str, help="the name/path of the reference image (to which the image is rebinned)")
+parser.add_argument("image", type=str, help="the name/path of the image for which to run the preparation")
+parser.add_argument("convolve_to", type=str, help="the name of the band to convolve the image to")
+parser.add_argument("rebin_to", type=str, nargs='?', help="the name/path of the reference image to which the image is rebinned")
 
 # Advanced options
 parser.add_argument("--sky_annulus_outer", type=float, help="the factor to which the ellipse describing the principal galaxy should be multiplied to represent the outer edge of the sky annulus")
@@ -152,6 +154,24 @@ arguments.calibration = CalibrationError.from_filter(image.filter)
 # If visualisation is enabled, set the visualisation path (=output path)
 if arguments.visualise: visualisation_path = arguments.output
 else: visualisation_path = None
+
+# -----------------------------------------------------------------
+
+# Get the filter to which to convolve to
+convolve_to_filter = Filter.from_string(arguments.convolve_to)
+
+# Create an AnianoKernels instance
+kernels = AnianoKernels()
+
+# Get the aniano names for the image filter and the filter to which to convolve
+from_instrument = aniano_names[str(image.filter)]
+to_instrument = aniano_names[str(convolve_to_filter)]
+
+# Get the path to the appropriate convolution kernel
+kernel_path = kernels.get_kernel_path(from_instrument, to_instrument)
+
+# Set the kernel path
+arguments.kernel = kernel_path
 
 # -----------------------------------------------------------------
 

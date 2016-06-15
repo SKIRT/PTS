@@ -19,6 +19,7 @@ from datetime import datetime
 # Import astronomical modules
 from astropy.table import Table
 from astropy.io import ascii
+from astropy.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -189,7 +190,7 @@ class MemoryExtractor(object):
         """
 
         # Write the table to file
-        self.table.write(output_path, format="ascii.commented_header")
+        self.table.write(output_path, format="ascii.ecsv")
 
     # -----------------------------------------------------------------
 

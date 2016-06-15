@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.catalogimporter Contains the CatalogImporter class.
+## \package pts.magic.catalog.importer Contains the CatalogImporter class.
 
 # -----------------------------------------------------------------
 
