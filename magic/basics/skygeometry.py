@@ -922,7 +922,20 @@ class SkyPolygon(object):
         :return:
         """
 
-        pass
+        # Create the SkyPolygon object
+        skypolygon = cls(meta=polygon.meta)
+
+        # Loop over the points in the polygon
+        for point in polygon.points:
+
+            # Convert the coordinate to a SkyCoordinate
+            coordinate = point.to_sky(wcs)
+
+            # Add the SkyCoordinate to the points of the new SkyPolygon
+            skypolygon.add_point(coordinate)
+
+        # Return the new sky polygon
+        return skypolygon
 
     # -----------------------------------------------------------------
 
