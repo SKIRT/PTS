@@ -93,6 +93,11 @@ class SourceFinder(Configurable):
         # Set the region describing the principal galaxy
         if arguments.principal_region is not None: finder.config.galaxies.principal_region = arguments.principal_region
 
+        # Set the dilation factor for saturation segments
+        if arguments.saturation_dilation_factor is not None:
+            finder.config.stars.saturation.dilate = True
+            finder.config.stars.saturation.dilation_factor = arguments.saturation_dilation_factor
+
         # Return the new instance
         return finder
 

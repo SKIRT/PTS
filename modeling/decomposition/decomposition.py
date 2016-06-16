@@ -213,7 +213,6 @@ class GalaxyDecomposer(DecompositionComponent):
         # Inform the user
         log.info("Getting the structural galaxy parameters from the S4G catalog ...")
 
-
         # Tracing spiral density waves in M81: (Kendall et. al, 2008)
         # - Sersic bulge:
         #    n = 2.62

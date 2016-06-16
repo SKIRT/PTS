@@ -705,8 +705,6 @@ class PreparationPlotter(PlottingComponent):
         number_of_images = len(self.sorted_labels)
         for label in self.sorted_labels:
 
-            print(label)
-
             color = rainbow(float(counter)/float(number_of_images))
 
             flux_notnan = Mask.is_nan(self.images[label]).inverse()

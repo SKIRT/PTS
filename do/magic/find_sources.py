@@ -56,6 +56,7 @@ parser.add_argument("--interpolation_method", type=str, help="the interpolation 
 parser.add_argument("--downsample", type=float, help="specify the degree of downsampling (no downsampling if not specified)")
 parser.add_argument("--no_saturation", action="store_true", help="don't look for saturated stars")
 parser.add_argument("--no_other", action="store_true", help="don't look for sources outside of the catalogs")
+parser.add_argument("--saturation_dilation_factor", type=float, help="the dilation factor to be used for the detected saturation")
 
 # Input regions
 parser.add_argument("--ignore", type=str, help="the name of the file specifying regions to ignore")
