@@ -43,6 +43,10 @@ colours = ['Pink','LightPink','HotPink','DeepPink','PaleVioletRed','MediumViolet
 
 pretty_colours = ["r", "dodgerblue", "purple", "darkorange", "lawngreen", "yellow", "darkblue", "teal", "darkgreen", "lightcoral", "crimson", "saddlebrown"]
 
+filled_markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd']
+
+line_styles = ['-', '--', '-.', ':']
+
 # -----------------------------------------------------------------
 
 def plot_box(box, title=None, path=None, format=None, vmin=None, vmax=None, norm="log"):

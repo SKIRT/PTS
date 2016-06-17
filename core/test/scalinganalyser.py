@@ -43,28 +43,28 @@ class ScalingAnalyser(Configurable):
         # Set the simulation object to None initially
         self.simulation = None
 
-        # Set the timeline and memory extractors to None initially
-        self.te = None
-        self.me = None
+        # The timeline and memory usage tables
+        self.timeline = None
+        self.memory = None
 
         # Set the scaling table to None initially
         self.scaling = None
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, timeline_extractor, memory_extractor, plot=True):
+    def run(self, simulation, timeline, memory, plot=True):
 
         """
         This function ...
         :return:
         :param simulation:
-        :param timeline_extractor:
-        :param memory_extractor:
+        :param timeline:
+        :param memory:
         :param plot:
         """
 
         # 1. Call the setup function
-        self.setup(simulation, timeline_extractor, memory_extractor)
+        self.setup(simulation, timeline, memory)
 
         # 2. Extract scaling information
         self.extract()
@@ -74,13 +74,13 @@ class ScalingAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation, timeline_extractor, memory_extractor):
+    def setup(self, simulation, timeline, memory):
 
         """
         This function ...
         :param simulation:
-        :param timeline_extractor:
-        :param memory_extractor:
+        :param timeline:
+        :param memory:
         :return:
         """
 
@@ -91,8 +91,8 @@ class ScalingAnalyser(Configurable):
         self.simulation = simulation
 
         # Make local references to the timeline and memory extractors
-        self.te = timeline_extractor
-        self.me = memory_extractor
+        self.timeline = timeline
+        self.memory = memory
 
     # -----------------------------------------------------------------
 
@@ -116,14 +116,13 @@ class ScalingAnalyser(Configurable):
         """
 
         # Inform the user
-        log.info("Extracting the scaling information...")
+        log.info("Extracting the scaling information ...")
 
-        # Create and run a ScalingExtractor object
+        # Create a ScalingExtractor object
         extractor = ScalingExtractor()
-        extractor.run(self.simulation, self.te, self.me)
 
-        # Set the table
-        self.scaling = extractor.table
+        # Run the scaling extractor
+        self.scaling = extractor.run(self.simulation, self.timeline, self.memory)
 
     # -----------------------------------------------------------------
 
@@ -135,10 +134,12 @@ class ScalingAnalyser(Configurable):
         """
 
         # Inform the user
-        log.info("Plotting the scaling information...")
+        log.info("Plotting the scaling information ...")
 
-        # Create and run a ScalingPlotter object
+        # Create a ScalingPlotter object
         plotter = ScalingPlotter()
+
+        # Run the scaling plotter
         plotter.run(self.scaling, self.simulation.analysis.scaling_plot_path)
 
 # -----------------------------------------------------------------

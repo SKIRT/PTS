@@ -18,12 +18,7 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
-
-# -----------------------------------------------------------------
-
-line_styles = ['-', '--', '-.', ':']
-filled_markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd']
-pretty_colors = ["r", "dodgerblue", "purple", "darkorange", "lawngreen", "yellow", "darkblue", "teal", "darkgreen", "lightcoral", "crimson", "saddlebrown"]
+from ...magic.tools.plotting import pretty_colours, line_styles, filled_markers
 
 # -----------------------------------------------------------------
 
@@ -160,7 +155,7 @@ class AttenuationPlotter(object):
         #plt.plot(modWls, n_atts_diff, 'k--', label="M31 diffuse", linewidth=2)
         #plt.plot(modWls, n_atts_mappings, 'k:', label="M31 SF regions", linewidth=2)
 
-        colors = iter(pretty_colors)
+        colors = iter(pretty_colours)
 
         for label in self.curves:
 

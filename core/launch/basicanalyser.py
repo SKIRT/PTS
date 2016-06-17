@@ -60,10 +60,10 @@ class BasicAnalyser(Configurable):
         self.plotting_options = None
         self.misc_options = None
 
-        # The extractors
-        self.progress_extractor = ProgressExtractor()
-        self.timeline_extractor = TimeLineExtractor()
-        self.memory_extractor = MemoryExtractor()
+        # The tables with extracted information
+        self.progress = None
+        self.timeline = None
+        self.memory = None
 
         # The flux calculator and image maker
         self.flux_calculator = None
@@ -209,11 +209,14 @@ class BasicAnalyser(Configurable):
         # Inform the user
         log.info("Extracting the progress information ...")
 
+        # Create a ProgressExtractor instance
+        extractor = ProgressExtractor()
+
         # Determine the path to the progress file
         path = fs.join(self.extraction_options.path, "progress.dat")
 
         # Run the progress extractor
-        self.progress_extractor.run(self.simulation, path)
+        self.progress = extractor.run(self.simulation, path)
 
     # -----------------------------------------------------------------
 
@@ -227,11 +230,14 @@ class BasicAnalyser(Configurable):
         # Inform the user
         log.info("Extracting the timeline information ...")
 
+        # Create a TimeLineExtractor instance
+        extractor = TimeLineExtractor()
+
         # Determine the path to the timeline file
         path = fs.join(self.extraction_options.path, "timeline.dat")
 
         # Run the timeline extractor
-        self.timeline_extractor.run(self.simulation, path)
+        self.timeline = extractor.run(self.simulation, path)
 
     # -----------------------------------------------------------------
 
@@ -245,11 +251,14 @@ class BasicAnalyser(Configurable):
         # Inform the user
         log.info("Extracting the memory information ...")
 
+        # Create a MemoryExtractor instance
+        extractor = MemoryExtractor()
+
         # Determine the path to the memory file
         path = fs.join(self.extraction_options.path, "memory.dat")
 
         # Run the memory extractor
-        self.memory_extractor.run(self.simulation, path)
+        self.memory = extractor.run(self.simulation, path)
 
     # -----------------------------------------------------------------
 
@@ -366,9 +375,11 @@ class BasicAnalyser(Configurable):
         # Inform the user
         log.info("Plotting the progress information ...")
 
-        # Create and run a ProgressPlotter object
+        # Create a ProgressPlotter object
         plotter = ProgressPlotter()
-        plotter.run(self.progress_extractor.table, self.plotting_options.path)
+
+        # Run the progress plotter
+        plotter.run(self.progress, self.plotting_options.path)
 
     # -----------------------------------------------------------------
 
@@ -382,9 +393,11 @@ class BasicAnalyser(Configurable):
         # Inform the user
         log.info("Plotting the timeline ...")
 
-        # Create and run a TimeLinePlotter object
+        # Create a TimeLinePlotter object
         plotter = TimeLinePlotter()
-        plotter.run(self.timeline_extractor.table, self.plotting_options.path)
+
+        # Run the timeline plotter
+        plotter.run(self.timeline, self.plotting_options.path)
 
     # -----------------------------------------------------------------
 
@@ -398,9 +411,11 @@ class BasicAnalyser(Configurable):
         # Inform the user
         log.info("Plotting the memory information ...")
 
-        # Create and run a MemoryPlotter object
+        # Create a MemoryPlotter object
         plotter = MemoryPlotter()
-        plotter.run(self.memory_extractor.table, self.plotting_options.path)
+
+        # Run the memory plotter
+        plotter.run(self.memory, self.plotting_options.path)
 
     # -----------------------------------------------------------------
 

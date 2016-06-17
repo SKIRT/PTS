@@ -281,7 +281,7 @@ class SourceFinder(Configurable):
 
         # 2. Find the galaxies
         self.find_galaxies()
-        
+
         # 3. Find the stars
         if self.config.find_stars: self.find_stars()
 

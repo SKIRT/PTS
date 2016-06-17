@@ -46,20 +46,20 @@ class ScalingExtractor(object):
         # The scaling table
         self.table = None
 
-        # The timeline and memory extractors
-        self.te = None
-        self.me = None
+        # The timeline and memory usage tables
+        self.timeline = None
+        self.memory = None
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, timeline_extractor, memory_extractor):
+    def run(self, simulation, timeline, memory):
 
         """
         This function ...
         :return:
         :param simulation:
-        :param timeline_extractor:
-        :param memory_extractor:
+        :param timeline:
+        :param memory:
         """
 
         # Set the parallelization mode
@@ -72,15 +72,18 @@ class ScalingExtractor(object):
         # Set the path to the scaling file
         self.scaling_file_path = simulation.analysis.scaling_data_file
 
-        # Cache local references to the timeline and memory extractors
-        self.te = timeline_extractor
-        self.me = memory_extractor
+        # Cache local references to the timeline and memory usage tables
+        self.timeline = timeline
+        self.memory = memory
 
         # Write the relevant of the current simulation
         self.write()
 
         # Read in the extracted scaling table
         self.read()
+
+        # Return the scaling table
+        return self.table
 
     # -----------------------------------------------------------------
 
@@ -95,10 +98,10 @@ class ScalingExtractor(object):
         resultfile = open(self.scaling_file_path, 'a')
 
         # Add a line to the output file containing the runtimes for the current simulation
-        resultfile.write(self.mode + ' ' + str(self.processes) + ' ' + str(self.threads) + ' ' + str(self.te.setup)
-                         + ' ' + str(self.te.stellar) + ' ' + str(self.te.spectra) + ' ' + str(self.te.dust)
-                         + ' ' + str(self.te.writing) + ' ' + str(self.te.waiting) + ' ' + str(self.te.communication)
-                         + ' ' + str(self.te.total) + ' ' + str(self.me.peak) + '\n')
+        resultfile.write(self.mode + ' ' + str(self.processes) + ' ' + str(self.threads) + ' ' + str(self.timeline.setup)
+                         + ' ' + str(self.timeline.stellar) + ' ' + str(self.timeline.spectra) + ' ' + str(self.timeline.dust)
+                         + ' ' + str(self.timeline.writing) + ' ' + str(self.timeline.waiting) + ' ' + str(self.timeline.communication)
+                         + ' ' + str(self.timeline.total) + ' ' + str(self.memory.peak) + '\n')
 
         # Close the output file
         resultfile.close()
@@ -113,6 +116,6 @@ class ScalingExtractor(object):
         """
 
         # Read in the scaling data file
-        self.table = Table.read(self.scaling_file_path, format="ascii.commented_header")
+        self.table = Table.read(self.scaling_file_path, format="ascii.ecsv")
 
 # -----------------------------------------------------------------

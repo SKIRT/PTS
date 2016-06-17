@@ -22,12 +22,7 @@ import matplotlib.gridspec as gridspec
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
-
-# -----------------------------------------------------------------
-
-line_styles = ['-', '--', '-.', ':']
-filled_markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd']
-pretty_colors = ["dodgerblue", "r", "purple", "darkorange", "lawngreen", "yellow", "darkblue", "teal", "darkgreen", "lightcoral", "crimson", "saddlebrown"]
+from ...magic.tools.plotting import line_styles, filled_markers, pretty_colours
 
 # -----------------------------------------------------------------
 
@@ -181,7 +176,7 @@ class DistributionPlotter(object):
         # Create the figure
         self._figure = plt.figure()
 
-        colors = iter(pretty_colors)
+        colors = iter(pretty_colours)
 
         # Plot the distributions
         for label in self.distributions:
@@ -362,14 +357,14 @@ class DistributionGridPlotter(object):
             distribution = self.distributions[label]
 
             # Plot the distribution as a histogram
-            ax.bar(distribution.edges[:-1], distribution.counts, linewidth=0, width=distribution.bin_width, alpha=0.5, color=pretty_colors[0])
+            ax.bar(distribution.edges[:-1], distribution.counts, linewidth=0, width=distribution.bin_width, alpha=0.5, color=pretty_colours[0])
 
             if label in self.extra_distributions:
 
                 extra_distribution = self.extra_distributions[label]
 
                 # Plot the distribution as a histogram
-                ax.bar(extra_distribution.edges[:-1], extra_distribution.counts, linewidth=0, width=extra_distribution.bin_width, alpha=0.5, color=pretty_colors[1])
+                ax.bar(extra_distribution.edges[:-1], extra_distribution.counts, linewidth=0, width=extra_distribution.bin_width, alpha=0.5, color=pretty_colours[1])
 
             counter += 1
 

@@ -21,6 +21,8 @@ import montage_wrapper as montage
 from astropy.table import Table
 from astropy.utils import lazyproperty
 from astropy.units import Unit
+from astropy.io.fits import Header
+from astroquery.sdss import SDSS
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
@@ -84,11 +86,16 @@ dustpedia_final_pixelsizes = {"GALEX": 3.2 * Unit("arcsec"), "SDSS": 0.45 * Unit
 # area of sky (there is a nice Python wrapper available for Montage, which can make it easier to interact with).
 # This function outputs a table giving the details of the relevant fields, including URLs where they can be downloaded.
 
-#Note that I only used the SDSS primary fields to produce the DustPedia cutouts (the Ancillary Data Report I attached in the previous email explains this in more detail). I have attached a file that lists all the SDSS primary fields. After you have the results table produced by mArchiveGet, you can match the results with the primary fields list to find out the fields I used to make the final cutouts.
+# Note that I only used the SDSS primary fields to produce the DustPedia cutouts (the Ancillary Data Report I attached
+# in the previous email explains this in more detail). I have attached a file that lists all the SDSS primary fields.
+# After you have the results table produced by mArchiveGet, you can match the results with the primary fields list
+# to find out the fields I used to make the final cutouts.
 
-#Also, bear in mind that the DustPedia SDSS cutouts are re-gridded to North-East orientation, and 0.45" pixel sizes (again, see the ancillary data report for details).
+# Also, bear in mind that the DustPedia SDSS cutouts are re-gridded to North-East orientation, and 0.45" pixel sizes (again, see the ancillary data report for details).
 
-#The SDSS database website provides extensive information about every SDSS field. It may be possible to use this database to find out the information you want about each field without having to download the actual FITS files, once you have the fields' ID information.
+# The SDSS database website provides extensive information about every SDSS field. It may be possible to use this
+# database to find out the information you want about each field without having to download the actual FITS files,
+# once you have the fields' ID information.
 
 
 ## EXTRA INFO:
@@ -187,6 +194,39 @@ class PoissonErrorCalculator(object):
 
     # -----------------------------------------------------------------
 
+    def get_sdss_primary_fields_for_galaxy(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Get the coordinate range first for this galaxy
+        ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)
+
+        # Get the SDSS fields that cover this coordinate range (from Montage)
+        table = self.get_sdss_fields_for_coordinate_range(ra, dec, width)
+
+    # -----------------------------------------------------------------
+
+    def get_sdss_fields_for_coordinate_range(self, ra, dec, width):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path to the temporary table file
+        path = fs.join(self.temp_path, "fields.tbl")
+
+
+        #montage.mArchiveList('2MASS', 'K', 'm31', 0.5, 0.5, path)
+
+        montage.mArchiveGet()
+
+    # -----------------------------------------------------------------
+
     def get_header_for_galaxy(self, galaxy_name, instrument):
 
         """
@@ -244,30 +284,19 @@ class PoissonErrorCalculator(object):
         # pix_size is 3.2 for GALEX, and 0.45 for SDSS.
 
         #
-
         ra = ra.to("deg").value
         dec = dec.to("deg").value
         width = width.to("deg").value
         pix_size = pix_size.to("arcsec").value
 
-        #header_path = fs.join(self.temp_path, "header.hdr")
-
-        header_path = fs.join(fs.home(), "header.hdr")
+        # Determine the path to the temporary header file
+        header_path = fs.join(self.temp_path, "header.hdr")
 
         # Create the header
         montage.commands.mHdr(str(ra) + ' ' + str(dec), width, header_path, pix_size=pix_size)
 
-    # -----------------------------------------------------------------
-
-    def get_sdss_dr9_field_for_sky_area(self, sky_area):
-
-        """
-        This function ...
-        :param sky_area:
-        :return:
-        """
-
-        montage.mArchiveList('2MASS', 'K', 'm31', 0.5, 0.5, 'm31.tbl')
+        # Load the header
+        return Header.fromtextfile(header_path)
 
 # -----------------------------------------------------------------
 

@@ -702,7 +702,7 @@ class ScalingTest(Configurable):
         table["Peak memory usage"].unit = "GB"
 
         # Write the table to file
-        table.write(self.scaling_file_path, format="ascii.commented_header")
+        table.write(self.scaling_file_path, format="ascii.ecsv")
 
     # -----------------------------------------------------------------
 

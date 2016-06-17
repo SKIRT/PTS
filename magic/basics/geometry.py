@@ -1852,11 +1852,13 @@ class Polygon(object):
         if coordinate_system: line = "image;polygon("
         else: line = "polygon("
 
+        lines = []
+
         # Add the points to the line
-        for point in self.points: line += "{},{}".format(point.x+1, point.y+1)
+        for point in self.points: lines.append("{},{}".format(point.x+1, point.y+1))
 
         # Finish line
-        line += ")" + suffix
+        line += ",".join(lines) + ")" + suffix
 
         # Return the line
         return line
