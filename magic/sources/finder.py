@@ -126,7 +126,7 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        return self.galaxy_finder.region.to_sky(self.frame.wcs)
+        return self.galaxy_finder.region.to_sky(self.frame.wcs) if self.galaxy_finder.region is not None else None
 
     # -----------------------------------------------------------------
 
@@ -153,7 +153,7 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        return self.star_finder.star_region.to_sky(self.frame.wcs)
+        return self.star_finder.star_region.to_sky(self.frame.wcs) if self.star_finder.star_region is not None else None
 
     # -----------------------------------------------------------------
 
@@ -180,7 +180,7 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        return self.star_finder.saturation_region.to_sky(self.frame.wcs)
+        return self.star_finder.saturation_region.to_sky(self.frame.wcs) if self.star_finder.saturation_region is not None else None
 
     # -----------------------------------------------------------------
 

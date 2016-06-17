@@ -210,24 +210,36 @@ log.info("The FWHM that could be fitted to the point sources is " + str(finder.f
 # -----------------------------------------------------------------
 
 # Save the galaxy region
-galaxy_region = finder.galaxy_sky_region.to_pixel(image.wcs)
-path = fs.join(output_path, "galaxies.reg")
-galaxy_region.save(path)
+galaxy_sky_region = finder.galaxy_sky_region
+if galaxy_sky_region is not None:
+
+    galaxy_region = galaxy_sky_region.to_pixel(image.wcs)
+    path = fs.join(output_path, "galaxies.reg")
+    galaxy_region.save(path)
 
 # Save the star region
-star_region = finder.star_sky_region.to_pixel(image.wcs)
-path = fs.join(output_path, "stars.reg")
-star_region.save(path)
+star_sky_region = finder.star_sky_region
+if star_sky_region is not None:
+
+    star_region = star_sky_region.to_pixel(image.wcs)
+    path = fs.join(output_path, "stars.reg")
+    star_region.save(path)
 
 # Save the saturation region
-saturation_region = finder.saturation_sky_region.to_pixel(image.wcs)
-path = fs.join(output_path, "saturation.reg")
-saturation_region.save(path)
+saturation_sky_region = finder.saturation_region
+if saturation_sky_region is not None:
+
+    saturation_region = saturation_sky_region.to_pixel(image.wcs)
+    path = fs.join(output_path, "saturation.reg")
+    saturation_region.save(path)
 
 # Save the region of other sources
-other_region = finder.other_sky_region.to_pixel(image.wcs)
-path = fs.join(output_path, "other_sources.reg")
-other_region.save(path)
+other_sky_region = finder.other_sky_region
+if other_sky_region is not None:
+
+    other_region = other_sky_region.to_pixel(image.wcs)
+    path = fs.join(output_path, "other_sources.reg")
+    other_region.save(path)
 
 # -----------------------------------------------------------------
 
