@@ -5,8 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.extract.memory Contains the MemoryExtractor class, used for extracting memory information from SKIRT
-#  simulation log files.
+## \package pts.core.extract.memory Contains the MemoryUsageTable and MemoryExtractor classes. The latter is used for
+# extracting memory information from SKIRT simulation log files into a MemoryUsageTable object.
 
 # -----------------------------------------------------------------
 
@@ -18,7 +18,6 @@ from datetime import datetime
 
 # Import astronomical modules
 from astropy.table import Table
-from astropy.io import ascii
 from astropy.utils import lazyproperty
 
 # -----------------------------------------------------------------
@@ -29,7 +28,7 @@ class MemoryUsageTable(Table):
     This function ...
     """
 
-    def __init__(self, process_list, phase_list, seconds_list, memory_list):
+    def __init__(self, process_list, phase_list, seconds_list, memory_list, delta_list=None, id_list=None):
 
         """
         The constructor ...
@@ -42,8 +41,23 @@ class MemoryUsageTable(Table):
         names = ['Process rank', 'Simulation phase', 'Simulation time', 'Memory usage']
         data = [process_list, phase_list, seconds_list, memory_list]
 
+        # Add column of allocated memory
+        if delta_list is not None:
+            names.append("Array (de)allocation")
+            data.append(delta_list)
+
+        # Add column of allocation memory adresses
+        if id_list is not None:
+            names.append("Array ID")
+            data.append(id_list)
+
         # Call the constructor of the base class
         super(MemoryUsageTable, self).__init__(data, names=names, masked=True)
+
+        # Set the column units
+        self["Simulation time"].unit = "s"
+        self["Memory usage"].unit = "GB"
+        if self.has_allocation_info: self["Array (de)allocation"].unit = "GB"
 
         # The path to the table file
         self.path = None
@@ -67,6 +81,51 @@ class MemoryUsageTable(Table):
 
         # Return the table
         return table
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_allocation_info(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return "Array (de)allocation" in self.colnames
+
+    # -----------------------------------------------------------------
+
+    @property
+    def processes(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return max(self["Process rank"]) + 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def peak(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return self.peak_per_process * self.processes
+
+    # -----------------------------------------------------------------
+
+    @property
+    def peak_per_process(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return max(self["Memory usage"])
 
     # -----------------------------------------------------------------
 
@@ -118,27 +177,6 @@ class MemoryExtractor(object):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def open_table(cls, filepath):
-
-        """
-        This function ...
-        :param filepath:
-        :return:
-        """
-
-        # Create a new MemoryExtractor instance
-        extractor = cls()
-
-        # Set the table attribute
-        fill_values = [('--', '0', 'Simulation phase'), ('--', '0', 'Array (de)allocation'), ('--', '0', 'Array ID')]
-        extractor.table = ascii.read(filepath, fill_values=fill_values)
-
-        # Return the new MemoryExtractor instance
-        return extractor
-
-    # -----------------------------------------------------------------
-
     def run(self, simulation, output_path=None):
 
         """
@@ -156,6 +194,9 @@ class MemoryExtractor(object):
 
         # Write the results
         if output_path is not None: self.write(output_path)
+
+        # Return the memory usage table
+        return self.table
 
     # -----------------------------------------------------------------
 
@@ -239,21 +280,13 @@ class MemoryExtractor(object):
                     delta_list.append(delta)
                     id_list.append(id)
 
-        # Create the table data structures
-        names = ['Process rank', 'Simulation phase', 'Simulation time', 'Memory usage']
-        data = [process_list, phase_list, seconds_list, memory_list]
+        # Set delta_list and id_list to None if not allocation logging
+        if not allocation_logging:
+            delta_list = None
+            id_list = None
 
-        # If memory (de)allocation logging was enabled, add the 2 additional columns
-        if allocation_logging:
-
-            data += [delta_list, id_list]
-            names += ["Array (de)allocation", "Array ID"]
-
-        # Create the table
-        self.table = Table(data, names=names, masked=True)
-        self.table["Simulation time"].unit = "s"
-        self.table["Memory usage"].unit = "GB"
-        if allocation_logging: self.table["Array (de)allocation"].unit = "GB"
+        # Create the memory usage table
+        self.table = MemoryUsageTable(process_list, phase_list, seconds_list, memory_list, delta_list, id_list)
 
     # -----------------------------------------------------------------
 
@@ -265,7 +298,7 @@ class MemoryExtractor(object):
         """
 
         # Write the table to file
-        self.table.write(output_path, format="ascii.ecsv")
+        self.table.saveto(output_path)
 
     # -----------------------------------------------------------------
 
@@ -278,41 +311,5 @@ class MemoryExtractor(object):
 
         # Set the table to None
         self.table = None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def processes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return max(self.table["Process rank"])+1
-
-    # -----------------------------------------------------------------
-
-    @property
-    def peak(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.peak_per_process * self.processes
-
-    # -----------------------------------------------------------------
-
-    @property
-    def peak_per_process(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return max(self.table["Memory usage"])
 
 # -----------------------------------------------------------------

@@ -14,7 +14,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import numpy as np
 from collections import defaultdict
 import matplotlib.pyplot as plt
@@ -23,6 +22,7 @@ import matplotlib.pyplot as plt
 from .plotter import Plotter
 from ..basics.map import Map
 from ..tools.logging import log
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -46,18 +46,6 @@ class ProgressPlotter(Plotter):
 
         # Call the constructor of the base class
         super(ProgressPlotter, self).__init__()
-
-    # -----------------------------------------------------------------
-
-    @staticmethod
-    def fill_values():
-
-        """
-        This function ...
-        :return:
-        """
-
-        return ('--', '0', 'Simulation phase')
 
     # -----------------------------------------------------------------
 
@@ -128,7 +116,7 @@ class ProgressPlotter(Plotter):
         for phase in self.data:
 
             # Determine the path to the plot file for this phase
-            plot_path = os.path.join(self.output_path, "progress_" + phase + ".pdf")
+            plot_path = fs.join(self.output_path, "progress_" + phase + ".pdf")
 
             # Determine the title for the plot
             title = "Progress of " + full_phase_names[phase]

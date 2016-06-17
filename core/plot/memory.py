@@ -14,7 +14,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -22,6 +21,7 @@ import matplotlib.pyplot as plt
 from ..basics.map import Map
 from .plotter import Plotter
 from ..tools.logging import log
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -45,18 +45,6 @@ class MemoryPlotter(Plotter):
 
         # A data structure to store the memory (de)allocation information
         self.allocation = None
-
-    # -----------------------------------------------------------------
-
-    @staticmethod
-    def fill_values():
-
-        """
-        This function ...
-        :return:
-        """
-
-        return [('--', '0', 'Simulation phase'), ('--', '0', 'Array (de)allocation'), ('--', '0', 'Array ID')]
 
     # -----------------------------------------------------------------
 
@@ -173,7 +161,7 @@ class MemoryPlotter(Plotter):
         """
 
         # Determine the path to the plot file
-        plot_path = os.path.join(self.output_path, "memory.pdf")
+        plot_path = fs.join(self.output_path, "memory.pdf")
 
         # Initialize figure
         plt.figure()
@@ -213,7 +201,7 @@ class MemoryPlotter(Plotter):
         """
 
         # Determine the path to the plot file
-        plot_path = os.path.join(self.output_path, "allocation.pdf")
+        plot_path = fs.join(self.output_path, "allocation.pdf")
 
         # Initialize figure
         plt.figure()

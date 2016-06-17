@@ -13,22 +13,17 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import os
-
 # Import the relevant PTS classes and modules
 from pts.core.simulation.simulation import createsimulations
-from pts.core.extract.memory import MemoryExtractor
+from pts.core.extract.memory import MemoryExtractor, MemoryUsageTable
 from pts.core.plot.memory import MemoryPlotter
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
 # Look for a file in the current working directory that contains extracted memory information
-memory_file_path = os.path.join(os.getcwd(), "memory.dat")
-if os.path.isfile(memory_file_path):
-
-    # Create a MemoryExtractor instance from the saved memory data
-    extractor = MemoryExtractor.open_table(memory_file_path)
+memory_table_path = fs.join(fs.getcwd(), "memory.dat")
+if fs.is_file(memory_table_path): table = MemoryUsageTable.from_file(memory_table_path)
 
 # If extracted memory information is not present, first perform the extraction
 else:
@@ -39,16 +34,18 @@ else:
     # Create a new MemoryExtractor instance
     extractor = MemoryExtractor()
 
-    # Run the extractor
-    extractor.run(simulation)
+    # Run the extractor and get the memory table
+    table = extractor.run(simulation)
+
+# -----------------------------------------------------------------
 
 # Determine the path to the plotting directory
-plot_path = os.path.join(os.getcwd())
+plot_path = fs.join(fs.cwd())
 
 # Create a MemoryPlotter instance
 plotter = MemoryPlotter()
 
 # Run the memory plotter
-plotter.run(extractor.table, plot_path)
+plotter.run(table, plot_path)
 
 # -----------------------------------------------------------------

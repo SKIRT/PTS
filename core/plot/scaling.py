@@ -73,18 +73,6 @@ class ScalingPlotter(Plotter):
     # -----------------------------------------------------------------
 
     @staticmethod
-    def fill_values():
-
-        """
-        This function ...
-        :return:
-        """
-
-        return None
-
-    # -----------------------------------------------------------------
-
-    @staticmethod
     def default_input():
 
         """

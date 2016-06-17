@@ -15,10 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from abc import ABCMeta, abstractmethod, abstractproperty
 
-# Import astronomical modules
-from astropy.table import Table
-from astropy.io import ascii
-
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..tools.logging import log
@@ -60,19 +56,6 @@ class Plotter(Configurable):
 
     @staticmethod
     @abstractproperty
-    def fill_values():
-
-        """
-        This function ...
-        :return:
-        """
-
-        return []
-
-    # -----------------------------------------------------------------
-
-    @staticmethod
-    @abstractproperty
     def default_input():
 
         """
@@ -84,17 +67,17 @@ class Plotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, input, output_path):
+    def run(self, table, output_path):
 
         """
         This function should be called to invoke the plotting routine ...
-        :param input:
+        :param table:
         :param output_path:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(input, output_path)
+        self.setup(table, output_path)
 
         # 2. Prepare the input data into plottable format
         self.prepare_data()
@@ -104,11 +87,11 @@ class Plotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, input, output_path):
+    def setup(self, table, output_path):
 
         """
         This function ...
-        :param input:
+        :param table:
         :param output_path:
         :return:
         """
@@ -119,14 +102,8 @@ class Plotter(Configurable):
         # Inform the user
         log.info("Reading input data...")
 
-        # If the input is a Table object
-        if isinstance(input, Table): self.table = input
-
-        # If the input is a string
-        elif isinstance(input, basestring): self.table = ascii.read(input, fill_values=self.fill_values)
-
-        # Invalid input
-        else: raise ValueError("Input must be either an Astropy Table object or a filename (e.g. " + self.default_input() + ")")
+        # Set the input table
+        self.table = table
 
         # Set the path to the output directory
         self.output_path = output_path

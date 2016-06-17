@@ -47,9 +47,9 @@ class BatchAnalyser(Configurable):
         self.timing_table_path = None
         self.memory_table_path = None
 
-        # The timeline and memory extractors
-        self.te = None
-        self.me = None
+        # The timeline and memory usage tables
+        self.timeline = None
+        self.memory = None
 
         # The log file of the simulation
         self.log_file = None
@@ -59,18 +59,18 @@ class BatchAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, timeline_extractor, memory_extractor):
+    def run(self, simulation, timeline, memory):
 
         """
         This function ...
         :param simulation:
-        :param timeline_extractor:
-        :param memory_extractor:
+        :param timeline:
+        :param memory:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(simulation, timeline_extractor, memory_extractor)
+        self.setup(simulation, timeline, memory)
 
         # 2. Load the log file of the simulation
         self.load_log_file()
@@ -94,20 +94,20 @@ class BatchAnalyser(Configurable):
         self.simulation = None
         self.timing_table_path = None
         self.memory_table_path = None
-        self.te = None
-        self.me = None
+        self.timeline = None
+        self.memory = None
         self.log_file = None
         self.ski = None
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation, timeline_extractor, memory_extractor):
+    def setup(self, simulation, timeline, memory):
 
         """
         This function ...
         :param simulation:
-        :param timeline_extractor:
-        :param memory_extractor:
+        :param timeline:
+        :param memory:
         :return:
         """
 
@@ -121,8 +121,9 @@ class BatchAnalyser(Configurable):
         self.timing_table_path = self.simulation.analysis.timing_table_path
         self.memory_table_path = self.simulation.analysis.memory_table_path
 
-        # Make a reference to the timeline extractor
-        self.te = timeline_extractor
+        # Make a reference to the timeline and memory usage tables
+        self.timeline = timeline
+        self.memory = memory
 
         # Load the ski file
         self.ski = self.simulation.parameters()
@@ -206,14 +207,14 @@ class BatchAnalyser(Configurable):
         data_parallel = self.ski.dataparallel()
 
         # Get the different contributions to the simulation's runtime
-        setup_time = self.te.setup
-        stellar_time = self.te.stellar
-        spectra_time = self.te.spectra
-        dust_time = self.te.dust
-        writing_time = self.te.writing
-        waiting_time = self.te.waiting
-        communication_time = self.te.communication
-        intermediate_time = self.te.other
+        setup_time = self.timeline.setup
+        stellar_time = self.timeline.stellar
+        spectra_time = self.timeline.spectra
+        dust_time = self.timeline.dust
+        writing_time = self.timeline.writing
+        waiting_time = self.timeline.waiting
+        communication_time = self.timeline.communication
+        intermediate_time = self.timeline.other
 
         # Open the timing table
         timing_table = TimingTable(self.timing_table_path)

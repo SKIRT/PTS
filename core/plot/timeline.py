@@ -14,13 +14,13 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import numpy as np
 import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
 from .plotter import Plotter
 from ..tools.logging import log
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -66,18 +66,6 @@ class TimeLinePlotter(Plotter):
 
         # A list of the process ranks
         self.ranks = None
-
-    # -----------------------------------------------------------------
-
-    @staticmethod
-    def fill_values():
-
-        """
-        This function ...
-        :return:
-        """
-
-        return ('--', '0', 'Simulation phase')
 
     # -----------------------------------------------------------------
 
@@ -142,7 +130,7 @@ class TimeLinePlotter(Plotter):
         log.info("Making the plots...")
 
         # Create the plot
-        plot_path = os.path.join(self.output_path, "timeline.pdf")
+        plot_path = fs.join(self.output_path, "timeline.pdf")
         create_timeline_plot(self.data, plot_path, self.ranks)
 
 # -----------------------------------------------------------------

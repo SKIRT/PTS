@@ -5,8 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.extract.timeline Contains the TimeLineExtractor class, used for extracting timeline information
-#  from a simulation's log files.
+## \package pts.core.extract.timeline Contains the TimeLineTable and TimeLineExtractor classes. The latter class is used
+#  for extracting timeline information from a simulation's log files to a TimeLineTable object.
 
 # -----------------------------------------------------------------
 
@@ -18,7 +18,6 @@ from datetime import datetime
 
 # Import astronomical modules
 from ..tools import tables
-from astropy.io import ascii
 from astropy.table import Table
 from astropy.utils import lazyproperty
 
@@ -46,6 +45,10 @@ class TimeLineTable(Table):
         # Call the constructor of the base class
         super(TimeLineTable, self).__init__(data, names=names, masked=True)
 
+        # Set the column units
+        self["Start time"].unit = "s"
+        self["End time"].unit = "s"
+
         # The path to the table file
         self.path = None
 
@@ -68,6 +71,265 @@ class TimeLineTable(Table):
 
         # Return the table
         return table
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def processes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return max(self["Process rank"]) + 1
+
+    # -----------------------------------------------------------------
+
+    def duration(self, phase, single=False):
+
+        """
+        This function ...
+        :param phase:
+        :param single:
+        :return:
+        """
+
+        # Keep track of the total amount of time spent in the specified phase
+        total = 0.0
+
+        assert self["Process rank"][0] == 0
+
+        # Loop over the table rows
+        for i in range(len(self)):
+
+            # Only add the contributions from the root process
+            if self["Process rank"][i] > 0: break
+
+            # Check whether the current entry corresponds to the desired phase
+            if self["Simulation phase"][i] == phase:
+
+                # Get the start and end time for the phase
+                start = self["Start time"][i]
+                end = self["End time"][i]
+
+                # Calculate the time duration for this phase, returning it if single=True, otherwise add it to the total
+                if single: return end - start
+                else: total += end - start
+
+        # Return the total amount of time spent in the specified phase
+        return total
+
+    # -----------------------------------------------------------------
+
+    def duration_without(self, phases):
+
+        """
+        This function ...
+        :param phases:
+        :return:
+        """
+
+        # If no phases are given, set an empty list
+        if phases is None: phases = []
+
+        # Create a list of phases is only one is given
+        if isinstance(phases, basestring): phases = [phases]
+
+        # Keep track of the total amount of time spent in phases other than the specified phase
+        total = 0.0
+
+        assert self["Process rank"][0] == 0
+
+        # Loop over the table rows
+        for i in range(len(self)):
+
+            # Only add the contributions from the root process
+            if self["Process rank"][i] > 0: break
+
+            # Check whether the current entry corresponds to a phase different from the specified phase
+            if self["Simulation phase"][i] not in phases:
+
+                # Get the start and end time for this phase
+                start = self["Start time"][i]
+                end = self["End time"][i]
+
+                # Add the duration to the total
+                total += end - start
+
+        # Return the total amount of time spent in phases other than the specified phase
+        return total
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration_without(None)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def setup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("setup")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stellar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("stellar", single=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("spectra")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("dust")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dustem(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the table rows in opposite direction so that we know the first dust photon shooting phase is the
+        # final dust emission phase
+        for i in reversed(range(len(self))):
+
+            # Only add the contributions from the root process
+            if self["Process rank"][i] > 0: break
+
+            # Check whether the current entry corresponds to the desired phase
+            if self["Simulation phase"][i] == "dust":
+
+                # Get the start and end time for the phase
+                start = self["Start time"][i]
+                end = self["End time"][i]
+
+                # Calculate the time duration for the dust emission phase (only the shooting part)
+                return end - start
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def writing(self):
+
+        """
+        This function ....
+        :return:
+        """
+
+        return self.duration("write")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("comm")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def waiting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("wait")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def other(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration(None)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def serial(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.setup + self.writing + self.other
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parallel(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.stellar + self.spectra + self.dust
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def overhead(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.communication + self.waiting
 
     # -----------------------------------------------------------------
 
@@ -122,27 +384,6 @@ class TimeLineExtractor(object):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def open_table(cls, filepath):
-
-        """
-        This function ...
-        :param filepath:
-        :return:
-        """
-
-        # Create a new TimeLineExtractor instance
-        extractor = cls()
-
-        # Set the table attribute
-        fill_values = ('--', '0', 'Simulation phase')
-        extractor.table = ascii.read(filepath, fill_values=fill_values)
-
-        # Return the new TimeLineExtractor instance
-        return extractor
-
-    # -----------------------------------------------------------------
-
     def run(self, simulation, output_path=None):
 
         """
@@ -160,6 +401,9 @@ class TimeLineExtractor(object):
 
         # Write the results
         if output_path is not None: self.write(output_path)
+
+        # Return the timeline table
+        return self.table
 
     # -----------------------------------------------------------------
 
@@ -224,14 +468,8 @@ class TimeLineExtractor(object):
         # Fix for when the number of phases does not correspond between the different processes
         if len(unique_processes) > 1: verify_phases(process_list, phase_list, start_list, end_list)
 
-        # Create the table data structures
-        names = ["Process rank", "Simulation phase", "Start time", "End time"]
-        data = [process_list, phase_list, start_list, end_list]
-
         # Create the table
-        self.table = tables.new(data, names)
-        self.table["Start time"].unit = "s"
-        self.table["End time"].unit = "s"
+        self.table = TimeLineTable(process_list, phase_list, start_list, end_list)
 
     # -----------------------------------------------------------------
 
@@ -257,265 +495,6 @@ class TimeLineExtractor(object):
 
         # Set the table to None
         self.table = None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def processes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return max(self.table["Process rank"]) + 1
-
-    # -----------------------------------------------------------------
-
-    def duration(self, phase, single=False):
-
-        """
-        This function ...
-        :param phase:
-        :param single:
-        :return:
-        """
-
-        # Keep track of the total amount of time spent in the specified phase
-        total = 0.0
-
-        assert self.table["Process rank"][0] == 0
-
-        # Loop over the table rows
-        for i in range(len(self.table)):
-
-            # Only add the contributions from the root process
-            if self.table["Process rank"][i] > 0: break
-
-            # Check whether the current entry corresponds to the desired phase
-            if self.table["Simulation phase"][i] == phase:
-
-                # Get the start and end time for the phase
-                start = self.table["Start time"][i]
-                end = self.table["End time"][i]
-
-                # Calculate the time duration for this phase, returning it if single=True, otherwise add it to the total
-                if single: return end - start
-                else: total += end - start
-
-        # Return the total amount of time spent in the specified phase
-        return total
-
-    # -----------------------------------------------------------------
-
-    def duration_without(self, phases):
-
-        """
-        This function ...
-        :param phases:
-        :return:
-        """
-
-        # If no phases are given, set an empty list
-        if phases is None: phases = []
-
-        # Create a list of phases is only one is given
-        if isinstance(phases, basestring): phases = [phases]
-
-        # Keep track of the total amount of time spent in phases other than the specified phase
-        total = 0.0
-
-        assert self.table["Process rank"][0] == 0
-
-        # Loop over the table rows
-        for i in range(len(self.table)):
-
-            # Only add the contributions from the root process
-            if self.table["Process rank"][i] > 0: break
-
-            # Check whether the current entry corresponds to a phase different from the specified phase
-            if self.table["Simulation phase"][i] not in phases:
-
-                # Get the start and end time for this phase
-                start = self.table["Start time"][i]
-                end = self.table["End time"][i]
-
-                # Add the duration to the total
-                total += end - start
-
-        # Return the total amount of time spent in phases other than the specified phase
-        return total
-
-    # -----------------------------------------------------------------
-
-    @property
-    def total(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.duration_without(None)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def setup(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.duration("setup")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def stellar(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.duration("stellar", single=True)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def spectra(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.duration("spectra")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.duration("dust")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def dustem(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Loop over the table rows in opposite direction so that we know the first dust photon shooting phase is the
-        # final dust emission phase
-        for i in reversed(range(len(self.table))):
-
-            # Only add the contributions from the root process
-            if self.table["Process rank"][i] > 0: break
-
-            # Check whether the current entry corresponds to the desired phase
-            if self.table["Simulation phase"][i] == "dust":
-
-                # Get the start and end time for the phase
-                start = self.table["Start time"][i]
-                end = self.table["End time"][i]
-
-                # Calculate the time duration for the dust emission phase (only the shooting part)
-                return end - start
-
-    # -----------------------------------------------------------------
-
-    @property
-    def writing(self):
-
-        """
-        This function ....
-        :return:
-        """
-
-        return self.duration("write")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def communication(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.duration("comm")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def waiting(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.duration("wait")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def other(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.duration(None)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def serial(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.setup + self.writing + self.other
-
-    # -----------------------------------------------------------------
-
-    @property
-    def parallel(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.stellar + self.spectra + self.dust
-
-    # -----------------------------------------------------------------
-
-    @property
-    def overhead(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.communication + self.waiting
 
 # -----------------------------------------------------------------
 

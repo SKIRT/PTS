@@ -151,7 +151,7 @@ class SimulationAnalyser(Configurable):
         log.info("Analysing the properties relevant for the batch of simulations ...")
 
         # Run the batch analyser on the simulation
-        self.batch_analyser.run(self.simulation, self.basic_analyser.timeline_extractor, self.basic_analyser.memory_extractor)
+        self.batch_analyser.run(self.simulation, self.basic_analyser.timeline, self.basic_analyser.memory)
 
     # -----------------------------------------------------------------
 
@@ -166,7 +166,7 @@ class SimulationAnalyser(Configurable):
         log.info("Analysing the scaling results ...")
 
         # Run the scaling analyser
-        self.scaling_analyser.run(self.simulation, self.basic_analyser.timeline_extractor, self.basic_analyser.memory_extractor)
+        self.scaling_analyser.run(self.simulation, self.basic_analyser.timeline, self.basic_analyser.memory)
 
     # -----------------------------------------------------------------
 

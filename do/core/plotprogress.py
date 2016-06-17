@@ -30,24 +30,19 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import os
-
 # Import the relevant PTS classes and modules
 from pts.core.simulation.simulation import createsimulations
-from pts.core.extract.progress import ProgressExtractor
+from pts.core.extract.progress import ProgressExtractor, ProgressTable
 from pts.core.plot.progress import ProgressPlotter
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
 # Look for a file in the current working directory that contains extracted progress information
-progress_file_path = os.path.join(os.getcwd(), "progress.dat")
-if os.path.isfile(progress_file_path):
+progress_table_path = fs.join(fs.cwd(), "progress.dat")
+if fs.is_file(progress_table_path): table = ProgressTable.from_file(progress_table_path)
 
-    # Create a ProgressExtractor instance from the saved progress data
-    extractor = ProgressExtractor.open_table(progress_file_path)
-
-# If extracted timeline information is not present, first perform the extraction
+# If extracted progress information is not present, first perform the extraction
 else:
 
     # Create a SkirtSimulation object based on a log file present in the current working directory
@@ -56,16 +51,18 @@ else:
     # Create a new ProgressExtractor instance
     extractor = ProgressExtractor()
 
-    # Run the extractor
-    extractor.run(simulation)
+    # Run the extractor and get the table
+    table = extractor.run(simulation)
+
+# -----------------------------------------------------------------
 
 # Determine the path to the plotting directory
-plot_path = os.path.join(os.getcwd())
+plot_path = fs.join(fs.cwd())
 
 # Create a ProgressPlotter instance
 plotter = ProgressPlotter()
 
 # Run the progress plotter
-plotter.run(extractor.table, plot_path)
+plotter.run(table, plot_path)
 
 # -----------------------------------------------------------------
