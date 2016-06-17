@@ -226,7 +226,7 @@ if star_sky_region is not None:
     star_region.save(path)
 
 # Save the saturation region
-saturation_sky_region = finder.saturation_region
+saturation_sky_region = finder.saturation_sky_region
 if saturation_sky_region is not None:
 
     saturation_region = saturation_sky_region.to_pixel(image.wcs)

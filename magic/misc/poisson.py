@@ -134,18 +134,6 @@ class PoissonErrorCalculator(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, image):
-
-        """
-        This function ...
-        :param image:
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def galex_observations_table(self):
 
@@ -194,7 +182,7 @@ class PoissonErrorCalculator(object):
 
     # -----------------------------------------------------------------
 
-    def get_sdss_primary_fields_for_galaxy(self, galaxy_name):
+    def get_sdss_primary_fields_for_galaxy(self, galaxy_name, band):
 
         """
         This function ...
@@ -206,11 +194,11 @@ class PoissonErrorCalculator(object):
         ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)
 
         # Get the SDSS fields that cover this coordinate range (from Montage)
-        table = self.get_sdss_fields_for_coordinate_range(ra, dec, width)
+        table = self.get_sdss_fields_for_coordinate_range(band, ra, dec, width)
 
     # -----------------------------------------------------------------
 
-    def get_sdss_fields_for_coordinate_range(self, ra, dec, width):
+    def get_sdss_fields_for_coordinate_range(self, band, ra, dec, width):
 
         """
         This function ...
@@ -220,10 +208,18 @@ class PoissonErrorCalculator(object):
         # Determine the path to the temporary table file
         path = fs.join(self.temp_path, "fields.tbl")
 
+        ra = ra.to("deg").value
+        dec = dec.to("deg").value
+        width = width.to("deg").value
 
-        #montage.mArchiveList('2MASS', 'K', 'm31', 0.5, 0.5, path)
+        # Get the info
+        montage.mArchiveList("SDSS", band, str(ra) + " " + str(dec), width, width, path)
 
-        montage.mArchiveGet()
+        # Load the table
+        table = Table.read(path, format="ascii")
+
+        # Return the table
+        return table
 
     # -----------------------------------------------------------------
 
