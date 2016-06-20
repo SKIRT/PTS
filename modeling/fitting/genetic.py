@@ -163,6 +163,7 @@ ga = GSimpleGA.GSimpleGA(genome)
 # IN OUR CASE, THIS IS COMPLEX !! CREATING SKI FILE, SUBMITTING SKIRT SIMULATION TO CLUSTER, RETURNING SIMULATION OUTPUT,
 # CALCULATING FLUXES FOR DIFFERENT BANDS, CHI SQUARED COMPARED TO OBSERVED FLUXES
 #
+
 def eval_func(chromosome):
    score = 0.0
    # iterate over the chromosome elements (items)
@@ -226,6 +227,30 @@ def eval_func(chromosome):
 
 
 
+test_data_x = [20., 16., 19.79999924, 18.39999962, 17.10000038, 15.5, 14.69999981, 17.10000038, 15.39999962, 16.20000076,
+               15., 17.20000076, 16., 17., 14.39999962]
+test_data_y = [88.59999847, 71.59999847, 93.30000305, 84.30000305, 80.59999847, 75.19999695, 69.69999695, 82.,
+               69.40000153, 83.30000305, 79.59999847, 82.59999847, 80.59999847, 83.5, 76.30000305]
+
+
+def run_test():
+
+    """
+    This function ...
+    :return:
+    """
+
+    genome = G1DList.G1DList(20)
+
+    genome.evaluator.set(eval_func)
+
+    ga = GSimpleGA.GSimpleGA(genome)
+
+    ga.nGenerations = 10
+
+    ga.evolve(freq_stats=1)
+
+    #print(ga.bestIndividual())
 
 # -----------------------------------------------------------------
 

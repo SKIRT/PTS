@@ -61,6 +61,7 @@ class Source(object):
         self.shape = shape
 
         self.special = False
+        self.contamination = None
 
         # The elliptical contour
         self.contour = Ellipse(self.center, self.radius, self.angle)
@@ -465,6 +466,10 @@ class Source(object):
             else: mask = self.mask
 
             no_clip_mask = None
+
+        if self.contamination is not None:
+            mask = mask + self.contamination
+            if no_clip_mask is not None: no_clip_mask = no_clip_mask + self.contamination
 
         # Perform the interpolation
         self.background = self.cutout.interpolated(mask, method, no_clip_mask=no_clip_mask, plot=self.special)

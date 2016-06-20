@@ -20,7 +20,7 @@ import argparse
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.tools import inspection
-from pts.magic.misc.dustpedia import DustPediaDatabase, get_account
+from pts.dustpedia.core.database import DustPediaDatabase, get_account
 
 # -----------------------------------------------------------------
 

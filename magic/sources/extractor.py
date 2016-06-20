@@ -124,13 +124,19 @@ class SourceExtractor(Configurable):
         # 2. Load the sources
         self.load_sources()
 
-        # 3. Remove the sources
+        # 3. Create the mask of all sources to be removed
+        self.create_mask()
+
+        # 3. For each source, check the pixels in the background that belong to an other source
+        self.set_cross_contamination()
+
+        # 4. Remove the sources
         self.remove_sources()
 
-        # 4. Fix extreme values that showed up during the interpolation steps
+        # 5. Fix extreme values that showed up during the interpolation steps
         self.fix_extreme_values()
 
-        # 4. Set nans back into the frame
+        # 6. Set nans back into the frame
         self.set_nans()
 
     # -----------------------------------------------------------------
@@ -361,6 +367,59 @@ class SourceExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    def create_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the mask of all sources to be removed ...")
+
+        # Loop over all sources
+        #for source in self.sources:
+        index = 0
+        while index < len(self.sources):
+
+            # Get the current source
+            source = self.sources[index]
+
+            # If these pixels are already masked by an overlapping source (e.g. saturation), remove this source,
+            # otherwise the area will be messed up
+            current_mask_cutout = self.mask[source.y_slice, source.x_slice]
+            if current_mask_cutout.covers(source.mask):
+                self.sources.pop(index)
+                continue
+
+            # Adapt the mask
+            self.mask[source.y_slice, source.x_slice] += source.mask
+
+            # Increment the index
+            index += 1
+
+    # -----------------------------------------------------------------
+
+    def set_cross_contamination(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("For each source, checking which pixels in the neighborhood are contaminated by other sources ...")
+
+        # Loop over all sources
+        for source in self.sources:
+
+            # Create the contamination mask for this source
+            other_sources_mask = Mask.empty_like(source.cutout)
+            other_sources_mask[source.background_mask] = self.mask[source.y_slice, source.x_slice][source.background_mask]
+            source.contamination = other_sources_mask
+
+    # -----------------------------------------------------------------
+
     def remove_sources(self):
 
         """
@@ -374,10 +433,8 @@ class SourceExtractor(Configurable):
         nsources = len(self.sources)
         count = 0
 
-        # Set principal ellipse and mask for the animation
-        if self.animation is not None:
-            self.animation.principal_shape = self.principal_shape
-            self.animation.mask = self.mask
+        # Set principal ellipse for the source extraction animation
+        if self.animation is not None: self.animation.principal_shape = self.principal_shape
 
         # Loop over all sources and remove them from the frame
         for source in self.sources:
@@ -396,6 +453,14 @@ class SourceExtractor(Configurable):
             # Debugging
             log.debug("Sigma-clipping enabled for estimating background gradient for this source" if sigma_clip else "Sigma-clipping disabled for estimating background gradient for this source")
 
+            # If these pixels are already replaced by an overlapping source (e.g. saturation), skip this source,
+            # otherwise the area will be messed up
+            #current_mask_cutout = self.mask[source.y_slice, source.x_slice]
+            #if current_mask_cutout.covers(source.mask):
+            #    count += 1
+            #    continue
+            ## ==> this is now also done in create_mask
+
             # Estimate the background
             try:
                 source.estimate_background(self.config.interpolation_method, sigma_clip=sigma_clip)
@@ -404,15 +469,8 @@ class SourceExtractor(Configurable):
                 count += 1
                 continue
 
-            # If these pixels are already replaced by an overlapping source (e.g. saturation), skip this source,
-            # otherwise the area will be messed up
-            current_mask_cutout = self.mask[source.y_slice, source.x_slice]
-            if current_mask_cutout.covers(source.mask):
-                count += 1
-                continue
-
             # Adapt the mask
-            self.mask[source.y_slice, source.x_slice] += source.mask
+            #self.mask[source.y_slice, source.x_slice] += source.mask # this is now done beforehand, in the create_mask function
 
             # Add frame to the animation
             if self.animation is not None and (self.principal_mask is None or self.principal_mask.masks(source.center)) and self.animation.nframes <= 20:

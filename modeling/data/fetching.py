@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .component import DataComponent
-from ...magic.misc.dustpedia import DustPediaDatabase, get_account
+from ...dustpedia.core.database import DustPediaDatabase, get_account
 from ...core.tools.logging import log
 from ...magic.tools import catalogs
 from ...core.tools import tables

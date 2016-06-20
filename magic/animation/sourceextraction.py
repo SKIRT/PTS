@@ -25,6 +25,7 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 from ...core.basics.animation import Animation
 from ..tools import plotting
 from ..basics.geometry import Ellipse
+from ..basics.mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -51,7 +52,7 @@ class SourceExtractionAnimation(Animation):
 
         # Have to be set
         self.principal_shape = None
-        self.mask = None
+        self.mask = Mask.empty_like(self.frame)
 
     # -----------------------------------------------------------------
 
@@ -118,6 +119,9 @@ class SourceExtractionAnimation(Animation):
 
         # Add the third subplot
         ax = fig.add_subplot(2, 3, 3)
+
+        # Adapt the mask
+        self.mask[source.y_slice, source.x_slice] += source.mask
 
         # Plot the mask
         # ax.imshow(self.mask[new_ymin:new_ymax, new_xmin:new_xmax], origin="lower", cmap='Greys')
