@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.misc.dustpedia Contains the DustPediaDatabase class,
+## \package pts.dustpedia.database Contains the DustPediaDatabase class,
 #  which provides an interface to the DustPedia database.
 
 # -----------------------------------------------------------------
@@ -22,8 +22,8 @@ from lxml import html
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import tables
-from ..core.image import Image
-from ..core.frame import Frame
+from ...magic.core.image import Image
+from ...magic.core.frame import Frame
 from ...core.tools import filesystem as fs
 from ...core.tools import inspection
 

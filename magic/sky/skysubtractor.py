@@ -39,6 +39,7 @@ from ..basics.mask import Mask
 from ..core.source import Source
 from ..basics.geometry import Coordinate, Circle, Composite
 from ..basics.region import Region
+from ..basics.skyregion import SkyRegion
 from ..tools import plotting, statistics, fitting, plotting
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
@@ -236,7 +237,9 @@ class SkySubtractor(Configurable):
         log.info("Creating the sky region ...")
 
         # If the sky region has to be loaded from file
-        if self.config.sky_region is not None: self.region = Region.from_file(self.config.sky_region)
+        if self.config.sky_region is not None:
+            sky_region = SkyRegion.from_file(self.config.sky_region)
+            self.region = sky_region.to_pixel(self.frame.wcs)
 
         # If no region file is given by the user, create an annulus from the principal ellipse
         else:
@@ -271,6 +274,10 @@ class SkySubtractor(Configurable):
 
         # Create a mask from the principal shape
         principal_mask = self.principal_shape.to_mask(self.frame.xsize, self.frame.ysize)
+
+        #plotting.plot_mask(outside_mask, title="outside mask")
+        #plotting.plot_mask(principal_mask, title="principal mask")
+        #plotting.plot_mask(self.sources_mask, title="sources mask")
 
         # Set the mask, make a copy of the input mask initially
         self.mask = self.sources_mask + outside_mask + principal_mask

@@ -165,7 +165,7 @@ if arguments.special is not None:
     path = fs.join(input_path, arguments.special)
 
     # Inform the user
-    log.info("Creating mask covering objects that require special attention from " + path + " ...")
+    log.info("Loading region indicating areas that require special attention from " + path + " ...")
 
     # Load the region and create a mask from it
     special_region = Region.from_file(path)
@@ -182,7 +182,7 @@ if arguments.ignore is not None:
     path = fs.join(input_path, arguments.ignore)
 
     # Inform the user
-    log.info("Creating mask covering objects that should be ignored from " + path + " ...")
+    log.info("Loading region indicating areas that should be ignored from " + path + " ...")
 
     # Load the region and create a mask from it
     ignore_region = Region.from_file(path)

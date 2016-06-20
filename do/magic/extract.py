@@ -151,6 +151,23 @@ else: animation = None
 
 # -----------------------------------------------------------------
 
+# If a special region is defined
+if arguments.special is not None:
+
+    # Determine the full path to the special region file
+    path = fs.join(input_path, arguments.special)
+
+    # Inform the user
+    log.info("Loading region indicating areas that require special attention from " + path + " ...")
+
+    # Load the region and create a mask from it
+    special_region = Region.from_file(path)
+
+# No special region
+else: special_region = None
+
+# -----------------------------------------------------------------
+
 # Create an Extractor instance and configure it according to the command-line arguments
 extractor = SourceExtractor.from_arguments(arguments)
 
@@ -161,7 +178,7 @@ if arguments.interpolation is not None: extractor.config.interpolation_method = 
 if arguments.disable_sigma_clipping: extractor.config.sigma_clip = False
 
 # Run the extractor
-extractor.run(image.frames.primary, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, animation)
+extractor.run(image.frames.primary, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, animation, special_region)
 
 # -----------------------------------------------------------------
 

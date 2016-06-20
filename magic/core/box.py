@@ -547,7 +547,7 @@ class Box(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def interpolated(self, mask, method, no_clip_mask=None):
+    def interpolated(self, mask, method, no_clip_mask=None, plot=False):
 
         """
         This function ...
@@ -675,8 +675,7 @@ class Box(np.ndarray):
 
             subtracted = self - poly_data
 
-            #if test: plotting.plot_difference(self, poly_data, title="with sigma-clipping")
-
+            if plot: plotting.plot_difference(self, poly_data, title="with sigma-clipping")
 
             #if no_clip_mask is not None:
             #    plotting.plot_difference(self, poly_data)
@@ -711,7 +710,7 @@ class Box(np.ndarray):
             # Generate random pixel values
             random = np.random.normal(center, stddev, self.shape)
 
-            #plotting.plot_box(random)
+            if plot: plotting.plot_box(random, title="random (center value=" + str(center) + " stddev=" + str(stddev) + ")")
 
             # Fit polynomial again but with no-sigma-clipped-mask
 
@@ -731,6 +730,8 @@ class Box(np.ndarray):
 
                 # Evaluate the polynomial
                 poly_data = fitting.evaluate_model(polynomial, 0, self.xsize, 0, self.ysize)
+
+                if plot: plotting.plot_difference(self, poly_data, title="polynomial with sigma-clipping")
 
             return Box(random + poly_data, self.x_min, self.x_max, self.y_min, self.y_max)
 

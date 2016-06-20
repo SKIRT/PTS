@@ -23,6 +23,7 @@ from pyevolve import GSimpleGA
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
+from ...core.tools import serialization
 
 # -----------------------------------------------------------------
 

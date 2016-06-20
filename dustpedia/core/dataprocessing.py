@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.misc.poisson Contains the PoissonErrorCalculator class.
+## \package pts.dustpedia.dataprocessing Contains the DustPediaDataProcessing class.
 
 # -----------------------------------------------------------------
 
@@ -114,10 +114,9 @@ dustpedia_final_pixelsizes = {"GALEX": 3.2 * Unit("arcsec"), "SDSS": 0.45 * Unit
 
 # This should allow you to work on the exact same pixel grid as I did for any given target.
 
-
 # -----------------------------------------------------------------
 
-class PoissonErrorCalculator(object):
+class DustPediaDataProcessing(object):
 
     """
     This class ...
@@ -182,11 +181,27 @@ class PoissonErrorCalculator(object):
 
     # -----------------------------------------------------------------
 
+    def get_galex_observation_urls_for_galaxy(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Find the indices in the table
+        indices = tables.find_indices(self.galex_observations_table, "NGC3031", column_name="uploadID")
+
+
+
+    # -----------------------------------------------------------------
+
     def get_sdss_primary_fields_for_galaxy(self, galaxy_name, band):
 
         """
         This function ...
         :param galaxy_name:
+        :param band:
         :return:
         """
 
@@ -195,6 +210,8 @@ class PoissonErrorCalculator(object):
 
         # Get the SDSS fields that cover this coordinate range (from Montage)
         table = self.get_sdss_fields_for_coordinate_range(band, ra, dec, width)
+
+
 
     # -----------------------------------------------------------------
 

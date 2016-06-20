@@ -69,6 +69,9 @@ class SourceExtractor(Configurable):
         # The animation
         self.animation = None
 
+        # Special mask
+        self.special_mask = None
+
         # Segmentation maps
         self.galaxy_segments = None
         self.star_segments = None
@@ -99,7 +102,7 @@ class SourceExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, animation=None):
+    def run(self, frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, animation=None, special_region=None):
 
         """
         This function ...
@@ -116,7 +119,7 @@ class SourceExtractor(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup(frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, animation)
+        self.setup(frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, animation, special_region)
 
         # 2. Load the sources
         self.load_sources()
@@ -133,7 +136,7 @@ class SourceExtractor(Configurable):
     # -----------------------------------------------------------------
 
     def setup(self, frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments,
-              other_segments, animation=None):
+              other_segments, animation=None, special_region=None):
 
         """
         This function ...
@@ -146,6 +149,7 @@ class SourceExtractor(Configurable):
         :param star_segments:
         :param other_segments:
         :param animation:
+        :param special_region:
         :return:
         """
 
@@ -176,6 +180,9 @@ class SourceExtractor(Configurable):
 
         # Make a reference to the animation
         self.animation = animation
+
+        # Create mask from special region
+        self.special_mask = Mask.from_region(special_region, self.frame.xsize, self.frame.ysize) if special_region is not None else None
 
     # -----------------------------------------------------------------
 
@@ -224,8 +231,13 @@ class SourceExtractor(Configurable):
 
             if label == 3 or (label == 2 and self.config.remove_companions):
 
-                # Create a source and add it to the list
+                # Create a source
                 source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
+
+                # Check whether it is a 'special' source
+                source.special = self.special_mask.masks(center) if self.special_mask is not None else False
+
+                # Add the source to the list
                 self.sources.append(source)
 
     # -----------------------------------------------------------------
@@ -286,15 +298,26 @@ class SourceExtractor(Configurable):
                         # Break the loop
                         break
 
+            # Check whether the star is a 'special' region
+            special = self.special_mask.masks(shape.center) if self.special_mask is not None else False
+
             if saturation_source is not None:
+
+                # Set special
+                saturation_source.special = special
 
                 # Add the saturation source
                 self.sources.append(saturation_source)
 
             else:
 
-                # Create a new source from the shape and add it
+                # Create a new source from the shape
                 source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
+
+                # Set special
+                source.special = special
+
+                # Add it to the list
                 self.sources.append(source)
 
     # -----------------------------------------------------------------
@@ -329,6 +352,9 @@ class SourceExtractor(Configurable):
 
                 # Create a source
                 source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
+
+            # Check whether source is 'special'
+            source.special = self.special_mask.masks(shape.center) if self.special_mask is not None else False
 
             # Add the source to the list
             self.sources.append(source)
