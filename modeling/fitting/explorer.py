@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
 from .launcher import FittingModelLauncher
@@ -28,6 +28,10 @@ class ParameterExplorer(FittingModelLauncher):
     """
     This class...
     """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
 
     def __init__(self, config=None):
 

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.fitting.launcher Contains the FittingModelLauncher class.
+## \package pts.modeling.fitting.launcher Contains the abstract FittingModelLauncher class.
 
 # -----------------------------------------------------------------
 
@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 
 # Import astronomical modules
@@ -38,6 +38,10 @@ class FittingModelLauncher(FittingComponent):
     """
     This class...
     """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
 
     def __init__(self, config=None):
 
@@ -179,11 +183,9 @@ class FittingModelLauncher(FittingComponent):
         # Inform the user
         log.info("Setting the parameter ranges ...")
 
-
-
-        [self.config.young_stars.min, self.config.young_stars.max],
-        [self.config.ionizing_stars.min, self.config.ionizing_stars.max], \
-        [self.config.dust.min, self.config.dust.max]
+        #[self.config.young_stars.min, self.config.young_stars.max],
+        #[self.config.ionizing_stars.min, self.config.ionizing_stars.max], \
+        #[self.config.dust.min, self.config.dust.max]
 
     # -----------------------------------------------------------------
 
@@ -500,6 +502,34 @@ class FittingModelLauncher(FittingComponent):
 
         # Write the parameter table
         tables.write(self.table, self.parameter_table_path, format="ascii.ecsv")
+
+    # -----------------------------------------------------------------
+
+    def write_animations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the animations ...")
+
+        # Save the animation of the parameter values as points in a 3D plot
+        path = fs.join(self.visualisation_path, time.unique_name("fittingmodellauncher") + ".gif")
+        self.scatter_animation.save(path)
+
+        # Save the animation of the distribution of values for the FUV luminosity of the young stars
+        path = fs.join(self.visualisation_path, time.unique_name("fittingmodellauncher_fuvyoung") + ".gif")
+        if self.fuv_young_animation is not None: self.fuv_young_animation.save(path)
+
+        # Save the animation of the distribution of values for the FUV luminosity of the ionizing stars
+        path = fs.join(self.visualisation_path, time.unique_name("fittingmodellauncher_fuvionizing") + ".gif")
+        if self.fuv_ionizing_animation is not None: self.fuv_ionizing_animation.save(path)
+
+        # Save the animation of the distribution of values for the dust mass
+        path = fs.join(self.visualisation_path, time.unique_name("fittingmodellauncher_dustmass") + ".gif")
+        if self.dust_mass_animation is not None: self.dust_mass_animation.save(path)
 
 # -----------------------------------------------------------------
 

@@ -14,11 +14,11 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
 from .launcher import FittingModelLauncher
-from ...core.tools import tables, time
+from ...core.tools import time
 from ...core.tools.logging import log
 from ...core.launch.options import SchedulingOptions
 from ...core.launch.parallelization import Parallelization
@@ -32,6 +32,10 @@ class ModelEvolver(FittingModelLauncher):
     """
     This class...
     """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
 
     def __init__(self, config=None):
 
@@ -48,50 +52,6 @@ class ModelEvolver(FittingModelLauncher):
 
         # The probability distributions for the different fit parameters
         self.distributions = dict()
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new ParameterExplorer instance
-        explorer = cls(arguments.config)
-
-        # Set the modeling path
-        explorer.config.path = arguments.path
-
-        # Set the number of simulations to launch in the batch
-        if arguments.simulations is not None: explorer.config.simulations = arguments.simulations
-
-        # Set the remote host IDs
-        if arguments.remotes is not None: explorer.config.remotes = arguments.remotes
-
-        # Set the limits of the FUV luminosity of the young stellar population
-        if arguments.young is not None:
-            explorer.config.young_stars.min = arguments.young[0]
-            explorer.config.young_stars_max = arguments.young[1]
-
-        # Set the limits of the FUV luminosity of the ionizing stellar population
-        if arguments.ionizing is not None:
-            explorer.config.ionizing_stars.min = arguments.ionizing[0]
-            explorer.config.ionizing_stars.max = arguments.ionizing[1]
-
-        # Set the limits of the dust mass
-        if arguments.dust is not None:
-            explorer.config.dust.min = arguments.dust[0]
-            explorer.config.dust.max = arguments.dust[1]
-
-        # Make visualisations
-        explorer.config.visualise = arguments.visualise
-
-        # Return the new instance
-        return explorer
 
     # -----------------------------------------------------------------
 
@@ -249,53 +209,5 @@ class ModelEvolver(FittingModelLauncher):
 
         # Write the animations
         if self.config.visualise: self.write_animations()
-
-    # -----------------------------------------------------------------
-
-    def write_parameter_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the parameter table ...")
-
-        # Set the units of the parameter table
-        self.table["FUV young"].unit = "Lsun_FUV"
-        self.table["FUV ionizing"].unit = "Lsun_FUV"
-        self.table["Dust mass"].unit = "Msun"
-
-        # Write the parameter table
-        tables.write(self.table, self.parameter_table_path, format="ascii.ecsv")
-
-    # -----------------------------------------------------------------
-
-    def write_animations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the animations ...")
-
-        # Save the animation of the parameter values as points in a 3D plot
-        path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration") + ".gif")
-        self.scatter_animation.save(path)
-
-        # Save the animation of the distribution of values for the FUV luminosity of the young stars
-        path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_fuvyoung") + ".gif")
-        self.fuv_young_animation.save(path)
-
-        # Save the animation of the distribution of values for the FUV luminosity of the ionizing stars
-        path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_fuvionizing") + ".gif")
-        self.fuv_ionizing_animation.save(path)
-
-        # Save the animation of the distribution of values for the dust mass
-        path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_dustmass") + ".gif")
-        self.dust_mass_animation.save(path)
 
 # -----------------------------------------------------------------

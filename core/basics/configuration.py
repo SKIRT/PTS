@@ -57,6 +57,23 @@ class Configuration(object):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_file(cls, path, add_logging=True, add_cwd=True):
+
+        """
+        This function ...
+        """
+
+        # Create new configuration
+        config = cls(add_logging, add_cwd)
+
+        # Add options from file ...
+
+        # Return the configuration object
+        return config
+
+    # -----------------------------------------------------------------
+
     def add_fixed(self, name, value):
 
         """

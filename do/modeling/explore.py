@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.explore_initial Explore the parameter space for the radiative transfer modeling.
+## \package pts.do.modeling.explore Explore the parameter space for the radiative transfer modeling.
 
 # -----------------------------------------------------------------
 

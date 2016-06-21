@@ -41,50 +41,6 @@ class GeneticModelEvolver(ModelEvolver):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new ParameterExplorer instance
-        explorer = cls(arguments.config)
-
-        # Set the modeling path
-        explorer.config.path = arguments.path
-
-        # Set the number of simulations to launch in the batch
-        if arguments.simulations is not None: explorer.config.simulations = arguments.simulations
-
-        # Set the remote host IDs
-        if arguments.remotes is not None: explorer.config.remotes = arguments.remotes
-
-        # Set the limits of the FUV luminosity of the young stellar population
-        if arguments.young is not None:
-            explorer.config.young_stars.min = arguments.young[0]
-            explorer.config.young_stars_max = arguments.young[1]
-
-        # Set the limits of the FUV luminosity of the ionizing stellar population
-        if arguments.ionizing is not None:
-            explorer.config.ionizing_stars.min = arguments.ionizing[0]
-            explorer.config.ionizing_stars.max = arguments.ionizing[1]
-
-        # Set the limits of the dust mass
-        if arguments.dust is not None:
-            explorer.config.dust.min = arguments.dust[0]
-            explorer.config.dust.max = arguments.dust[1]
-
-        # Make visualisations
-        explorer.config.visualise = arguments.visualise
-
-        # Return the new instance
-        return explorer
-
-    # -----------------------------------------------------------------
-
     def initialize_animations(self):
 
         """

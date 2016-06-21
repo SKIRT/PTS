@@ -44,56 +44,6 @@ class GeneticParameterExplorer(ParameterExplorer):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new ParameterExplorer instance
-        explorer = cls(arguments.config)
-
-        # Set the modeling path
-        explorer.config.path = arguments.path
-
-        # Set the remote host IDs
-        if arguments.remote is not None: explorer.config.remotes = arguments.remote
-
-        # Set options for the young stellar population
-        if arguments.young_nvalues is not None: explorer.config.young_stars.nvalues = arguments.young_nvalues
-        if arguments.young_range is not None:
-            explorer.config.young_stars.rel_min = arguments.young_range[0]
-            explorer.config.young_stars.rel_max = arguments.young_range[1]
-        if arguments.young_log: explorer.config.young_stars.scale = "log"
-        else: explorer.config.young_stars.scale = "linear"
-
-        # Set options for the ionizing stellar population
-        if arguments.ionizing_nvalues is not None: explorer.config.ionizing_stars.nvalues = arguments.ionizing_nvalues
-        if arguments.ionizing_range is not None:
-            explorer.config.ionizing_stars.rel_min = arguments.ionizing_range[0]
-            explorer.config.ionizing_stars.rel_max = arguments.ionizing_range[1]
-        if arguments.ionizing_log: explorer.config.ionizing_stars = "log"
-        else: explorer.config.ionizing_stars.scale = "linear"
-
-        # Set options for the dust component
-        if arguments.dust_nvalues is not None: explorer.config.dust.nvalues = arguments.dust_nvalues
-        if arguments.dust_range is not None:
-            explorer.config.dust.rel_min = arguments.dust_range[0]
-            explorer.config.dust.rel_max = arguments.dust_range[1]
-        if arguments.dust_log: explorer.config.dust.scale = "log"
-        else: explorer.config.dust.scale = "linear"
-
-        # Make visualisations
-        explorer.config.visualise = arguments.visualise
-
-        # Return the new instance
-        return explorer
-
-    # -----------------------------------------------------------------
-
     def set_parameters(self):
 
         """
