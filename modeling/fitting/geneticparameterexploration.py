@@ -21,12 +21,10 @@ from ...core.launch.parallelization import Parallelization
 from ...core.launch.runtime import RuntimeEstimator
 from ...core.basics.distribution import Distribution
 from ...core.tools import filesystem as fs
-from ...magic.animation.scatter import ScatterAnimation
-from ...magic.animation.distribution import DistributionAnimation
 
 # -----------------------------------------------------------------
 
-class AdvancedParameterExplorer(ParameterExplorer):
+class GeneticParameterExplorer(ParameterExplorer):
     
     """
     This class...
@@ -41,15 +39,12 @@ class AdvancedParameterExplorer(ParameterExplorer):
         """
 
         # Call the constructor of the base class
-        super(AdvancedParameterExplorer, self).__init__(config)
+        super(GeneticParameterExplorer, self).__init__(config)
 
         # -- Attributes --
 
         # The probability distributions for the different fit parameters
         self.distributions = dict()
-
-        # The animations
-        self.scatter_animation = self.fuv_young_animation = self.fuv_ionizing_animation = self.dust_mass_animation = None
 
     # -----------------------------------------------------------------
 
@@ -116,9 +111,6 @@ class AdvancedParameterExplorer(ParameterExplorer):
         # Load the probability distributions for the different parameters
         self.load_distributions()
 
-        # Initialize the animations if requested
-        if self.config.visualise: self.initialize_animations()
-
         # 4. Set the combinations of parameter values
         self.set_parameters()
 
@@ -160,38 +152,6 @@ class AdvancedParameterExplorer(ParameterExplorer):
 
     # -----------------------------------------------------------------
 
-    def initialize_animations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Initializing the animations ...")
-
-        # Initialize the scatter animation
-        self.scatter_animation = ScatterAnimation([self.config.young_stars.min, self.config.young_stars.max],
-                                             [self.config.ionizing_stars.min, self.config.ionizing_stars.max],
-                                             [self.config.dust.min, self.config.dust.max])
-        self.scatter_animation.x_label = "FUV luminosity of young stars"
-        self.scatter_animation.y_label = "FUV luminosity of ionizing stars"
-        self.scatter_animation.z_label = "Dust mass"
-
-        # Initialize the young FUV luminosity distribution animation
-        self.fuv_young_animation = DistributionAnimation(self.config.young_stars.min, self.config.young_stars.max, "FUV luminosity of young stars", "New models")
-        self.fuv_young_animation.add_reference_distribution("Previous models", self.distributions["FUV young"])
-
-        # Initialize the ionizing FUV luminosity distribution animation
-        self.fuv_ionizing_animation = DistributionAnimation(self.config.ionizing_stars.min, self.config.ionizing_stars.max, "FUV luminosity of ionizing stars", "New models")
-        self.fuv_ionizing_animation.add_reference_distribution("Previous models", self.distributions["FUV ionizing"])
-
-        # Initialize the dust mass distribution animation
-        self.dust_mass_animation = DistributionAnimation(self.config.dust.min, self.config.dust.max, "Dust mass", "New models")
-        self.dust_mass_animation.add_reference_distribution("Previous models", self.distributions["Dust mass"])
-
-    # -----------------------------------------------------------------
-
     def set_parameters(self):
 
         """
@@ -200,7 +160,7 @@ class AdvancedParameterExplorer(ParameterExplorer):
         """
 
         # Inform the user
-        log.info("Picking random parameter values based on the probability distributions ...")
+        log.info("Picking new individuals for the next generations ...")
 
         # Draw parameters values for the specified number of simulations
         for counter in range(self.config.simulations):
@@ -221,36 +181,6 @@ class AdvancedParameterExplorer(ParameterExplorer):
             self.parameters["FUV young"].append(young_luminosity)
             self.parameters["FUV ionizing"].append(ionizing_luminosity)
             self.parameters["Dust mass"].append(dust_mass)
-
-            # Update the animations
-            if self.config.visualise: self.update_animations(young_luminosity, ionizing_luminosity, dust_mass)
-
-    # -----------------------------------------------------------------
-
-    def update_animations(self, young_luminosity, ionizing_luminosity, dust_mass):
-
-        """
-        This function ...
-        :param young_luminosity:
-        :param ionizing_luminosity:
-        :param dust_mass:
-        :return:
-        """
-
-        # Add the point (and thus a frame) to the animation of parameter points
-        self.scatter_animation.add_point(young_luminosity, ionizing_luminosity, dust_mass)
-
-        # Update the distribution animations
-        if self.number_of_models > 1:
-
-            # Add a frame to the animation of the distribution of the FUV luminosity of young starss
-            self.fuv_young_animation.add_value(young_luminosity)
-
-            # Add a frame to the animation of the distribution of the FUV luminosity of ionizing stars
-            self.fuv_ionizing_animation.add_value(ionizing_luminosity)
-
-            # Add a frame to the animation of the distribution of the dust mass
-            self.dust_mass_animation.add_value(dust_mass)
 
     # -----------------------------------------------------------------
 
@@ -355,9 +285,6 @@ class AdvancedParameterExplorer(ParameterExplorer):
         # Create and write a table with the parameter values for each simulation
         self.write_parameter_table()
 
-        # Write the animations
-        if self.config.visualise: self.write_animations()
-
     # -----------------------------------------------------------------
 
     def write_parameter_table(self):
@@ -377,33 +304,5 @@ class AdvancedParameterExplorer(ParameterExplorer):
 
         # Write the parameter table
         tables.write(self.table, self.parameter_table_path, format="ascii.ecsv")
-
-    # -----------------------------------------------------------------
-
-    def write_animations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the animations ...")
-
-        # Save the animation of the parameter values as points in a 3D plot
-        path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration") + ".gif")
-        self.scatter_animation.save(path)
-
-        # Save the animation of the distribution of values for the FUV luminosity of the young stars
-        path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_fuvyoung") + ".gif")
-        self.fuv_young_animation.save(path)
-
-        # Save the animation of the distribution of values for the FUV luminosity of the ionizing stars
-        path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_fuvionizing") + ".gif")
-        self.fuv_ionizing_animation.save(path)
-
-        # Save the animation of the distribution of values for the dust mass
-        path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_dustmass") + ".gif")
-        self.dust_mass_animation.save(path)
 
 # -----------------------------------------------------------------

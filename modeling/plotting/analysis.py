@@ -17,6 +17,7 @@ from collections import defaultdict, OrderedDict
 
 # Import the relevant PTS classes and modules
 from .component import PlottingComponent
+from ..analysis.component import AnalysisComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.simulation.wavelengthgrid import WavelengthGrid
@@ -32,7 +33,7 @@ from ...core.plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------
 
-class AnalysisPlotter(PlottingComponent):
+class AnalysisPlotter(PlottingComponent, AnalysisComponent):
     
     """
     This class...
@@ -47,7 +48,9 @@ class AnalysisPlotter(PlottingComponent):
         """
 
         # Call the constructor of the base class
-        super(AnalysisPlotter, self).__init__(config)
+        #super(AnalysisPlotter, self).__init__(config) # not sure this works
+        PlottingComponent.__init__(self, config)
+        AnalysisComponent.__init__(self)
 
         # -- Attributes --
 

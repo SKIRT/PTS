@@ -17,6 +17,7 @@ from collections import defaultdict, OrderedDict
 
 # Import the relevant PTS classes and modules
 from .component import PlottingComponent
+from ..fitting.component import FittingComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.simulation.wavelengthgrid import WavelengthGrid
@@ -41,7 +42,7 @@ from ..misc.geometryplotter import GeometryPlotter
 
 # -----------------------------------------------------------------
 
-class FittingPlotter(PlottingComponent):
+class FittingPlotter(PlottingComponent, FittingComponent):
     
     """
     This class...
@@ -56,7 +57,9 @@ class FittingPlotter(PlottingComponent):
         """
 
         # Call the constructor of the base class
-        super(FittingPlotter, self).__init__(config)
+        #super(FittingPlotter, self).__init__(config) # not sure this works
+        PlottingComponent.__init__(self, config)
+        FittingComponent.__init__(self)
 
         # -- Attributes --
 
@@ -112,6 +115,9 @@ class FittingPlotter(PlottingComponent):
 
         # 3. Load the wavelength grids
         self.load_wavelength_grids()
+
+        # Load the current probability distributions of the different fit parameters
+        self.load_distributions()
 
         # 4. Load the transmission curves
         self.load_transmission_curves()
@@ -211,6 +217,30 @@ class FittingPlotter(PlottingComponent):
 
         # Load the wavelength grid
         if fs.is_file(path): self.highres_wavelength_grid = WavelengthGrid.from_skirt_input(path)
+
+    # -----------------------------------------------------------------
+
+    def load_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the probability distributions for the different fit parameters ...")
+
+        # Loop over the different fit parameters
+        for parameter_name in self.parameter_names:
+
+            # Load the probability distribution
+            distribution = Distribution.from_file(self.distribution_table_paths[parameter_name])
+
+            # Normalize the distribution
+            distribution.normalize(value=1.0, method="max")
+
+            # Set the distribution
+            self.distributions[parameter_name] = distribution
 
     # -----------------------------------------------------------------
 
@@ -562,6 +592,9 @@ class FittingPlotter(PlottingComponent):
         :return:
         """
 
+        # Plot the probability distributions of the parameter values
+        self.plot_distributions()
+
         # Plot the wavelength grid used for the fitting
         self.plot_wavelengths()
 
@@ -585,6 +618,45 @@ class FittingPlotter(PlottingComponent):
 
         # Plot the geometries
         if len(self.geometries) > 0: self.plot_geometries()
+
+    # -----------------------------------------------------------------
+
+    def plot_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the probability distributions ...")
+
+        # Young stars
+        x_limits = [self.config.young_stars.min, self.config.young_stars.max]
+        linear_path = fs.join(self.plot_fitting_path, "fuv_young_distribution_linear.pdf")
+        log_path = fs.join(self.plot_fitting_path, "fuv_young_distribution_log.pdf")
+        cumulative_path = fs.join(self.plot_fitting_path, "fuv_young_distribution_cumulative.pdf")
+        self.distributions["FUV young"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of young stars will be drawn", path=linear_path)
+        self.distributions["FUV young"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of young stars will be drawn (in log scale)", path=log_path)
+        self.distributions["FUV young"].plot_cumulative_smooth(x_limits=x_limits, title="Cumulative distribution of FUV luminosities of young stars", path=cumulative_path)
+
+        # Ionizing stars
+        x_limits = [self.config.ionizing_stars.min, self.config.ionizing_stars.max]
+        linear_path = fs.join(self.plot_fitting_path, "fuv_ionizing_distribution_linear.pdf")
+        log_path = fs.join(self.plot_fitting_path, "fuv_ionizing_distribution_log.pdf")
+        cumulative_path = fs.join(self.plot_fitting_path, "fuv_ionizing_distribution_cumulative.pdf")
+        self.distributions["FUV ionizing"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of ionizing stars will be drawn", path=linear_path)
+        self.distributions["FUV ionizing"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of ionizing stars will be drawn (in log scale)", path=log_path)
+        self.distributions["FUV ionizing"].plot_cumulative_smooth(x_limits=x_limits, title="Cumulative distribution of FUV luminosities of ionizing stars", path=cumulative_path)
+
+        # Dust mass
+        x_limits = [self.config.dust.min, self.config.dust.max]
+        linear_path = fs.join(self.plot_fitting_path, "dust_mass_distribution_linear.pdf")
+        log_path = fs.join(self.plot_fitting_path, "dust_mass_distribution_log.pdf")
+        cumulative_path = fs.join(self.plot_fitting_path, "dust_mass_distribution_cumulative.pdf")
+        self.distributions["Dust mass"].plot_smooth(x_limits=x_limits, title="Probability distribution from which dust masses will be drawn", path=linear_path)
+        self.distributions["Dust mass"].plot_smooth(x_limits=x_limits, title="Probability distribution from which dust masses will be drawn (in log scale)", path=log_path)
+        self.distributions["Dust mass"].plot_cumulative_smooth(x_limits=x_limits, title="Cumulative distribution of dust masses", path=cumulative_path)
 
     # -----------------------------------------------------------------
 

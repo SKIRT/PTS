@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .component import PlottingComponent
+from ..decomposition.component import DecompositionComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.frame import Frame
@@ -21,7 +22,7 @@ from ...magic.plot.imagegrid import ResidualImageGridPlotter
 
 # -----------------------------------------------------------------
 
-class DecompositionPlotter(PlottingComponent):
+class DecompositionPlotter(PlottingComponent, DecompositionComponent):
     
     """
     This class...
@@ -36,7 +37,9 @@ class DecompositionPlotter(PlottingComponent):
         """
 
         # Call the constructor of the base class
-        super(DecompositionPlotter, self).__init__(config)
+        #super(DecompositionPlotter, self).__init__(config) # not sure this works
+        PlottingComponent.__init__(self, config)
+        DecompositionComponent.__init__(self)
 
         # -- Attributes --
 

@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .component import PlottingComponent
+from ..maps.component import MapsComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.frame import Frame
@@ -21,7 +22,7 @@ from ...magic.plot.imagegrid import StandardImageGridPlotter
 
 # -----------------------------------------------------------------
 
-class MapsPlotter(PlottingComponent):
+class MapsPlotter(PlottingComponent, MapsComponent):
     
     """
     This class...
@@ -36,7 +37,9 @@ class MapsPlotter(PlottingComponent):
         """
 
         # Call the constructor of the base class
-        super(MapsPlotter, self).__init__(config)
+        #super(MapsPlotter, self).__init__(config) # not sure this works
+        PlottingComponent.__init__(self, config)
+        MapsComponent.__init__(self)
 
         # -- Attributes --
 

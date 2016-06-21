@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .component import PlottingComponent
+from ..data.component import DataComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.frame import Frame
@@ -23,7 +24,7 @@ from ..core.sed import ObservedSED
 
 # -----------------------------------------------------------------
 
-class DataPlotter(PlottingComponent):
+class DataPlotter(PlottingComponent, DataComponent):
     
     """
     This class...
@@ -38,7 +39,9 @@ class DataPlotter(PlottingComponent):
         """
 
         # Call the constructor of the base class
-        super(DataPlotter, self).__init__(config)
+        #super(DataPlotter, self).__init__(config)  # not sure this works
+        PlottingComponent.__init__(self, config)
+        DataComponent.__init__(self)
 
         # -- Attributes --
 

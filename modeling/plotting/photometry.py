@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .component import PlottingComponent
+from ..photometry.component import PhotometryComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ..core.sed import ObservedSED
@@ -21,7 +22,7 @@ from ...core.plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------
 
-class PhotometryPlotter(PlottingComponent):
+class PhotometryPlotter(PlottingComponent, PhotometryComponent):
     
     """
     This class...
@@ -36,7 +37,9 @@ class PhotometryPlotter(PlottingComponent):
         """
 
         # Call the constructor of the base class
-        super(PlottingComponent, self).__init__(config)
+        #super(PlottingComponent, self).__init__(config) # not sure this will work
+        PlottingComponent.__init__(self, config)
+        PhotometryComponent.__init__(self)
 
         # -- Attributes --
 

@@ -20,6 +20,7 @@ from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from .component import PlottingComponent
+from ..preparation.component import PreparationComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.frame import Frame, get_frame_names
@@ -32,7 +33,7 @@ from ...magic.plot.error import ErrorPlotter
 
 # -----------------------------------------------------------------
 
-class PreparationPlotter(PlottingComponent):
+class PreparationPlotter(PlottingComponent, PreparationComponent):
     
     """
     This class...
@@ -47,7 +48,9 @@ class PreparationPlotter(PlottingComponent):
         """
 
         # Call the constructor of the base class
-        super(PlottingComponent, self).__init__(config)
+        #super(PlottingComponent, self).__init__(config) # not sure this works
+        PlottingComponent.__init__(self, config)
+        PreparationComponent.__init__(self)
 
         # -- Attributes --
 

@@ -16,10 +16,17 @@ from __future__ import absolute_import, division, print_function
 import math
 import bisect
 import numpy as np
-#import pyevolve
 
-from pyevolve import G1DList
 from pyevolve import GSimpleGA
+from pyevolve import G1DList
+from pyevolve import Mutators, Initializators
+from pyevolve import Selectors
+from pyevolve import Consts
+from scipy import stats
+
+import matplotlib.pyplot as plt
+
+import math
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
@@ -233,6 +240,24 @@ test_data_y = [88.59999847, 71.59999847, 93.30000305, 84.30000305, 80.59999847, 
                69.40000153, 83.30000305, 79.59999847, 82.59999847, 80.59999847, 83.5, 76.30000305]
 
 
+def chi_squared_function(chromosome):
+
+    chi_squared = 0.0
+
+    for i in range(len(test_data_x)):
+        x = test_data_x[i]
+        y = test_data_y[i]
+
+        chromosome_y = chromosome[0] + chromosome[1] * x
+
+        chi_squared += (y - chromosome_y) ** 2.
+
+    chi_squared /= 2.0
+
+    return chi_squared
+
+# -----------------------------------------------------------------
+
 def run_test():
 
     """
@@ -240,17 +265,44 @@ def run_test():
     :return:
     """
 
-    genome = G1DList.G1DList(20)
+    slope, intercept, r_value, p_value, std_err = stats.linregress(test_data_x, test_data_y)
 
-    genome.evaluator.set(eval_func)
+    # Genome instance
+    genome = G1DList.G1DList(2)
+    genome.setParams(rangemin=0., rangemax=50., bestrawscore=0.00, rounddecimal=2)
+    genome.initializator.set(Initializators.G1DListInitializatorReal)
+    genome.mutator.set(Mutators.G1DListMutatorRealGaussian)
 
+    genome.evaluator.set(chi_squared_function)
+
+
+    ngenerations = 10
+
+
+    # Genetic Algorithm Instance
     ga = GSimpleGA.GSimpleGA(genome)
+    ga.terminationCriteria.set(GSimpleGA.RawScoreCriteria)
+    ga.setMinimax(Consts.minimaxType["minimize"])
+    ga.setGenerations(ngenerations)
+    ga.setCrossoverRate(0.5)
+    ga.setPopulationSize(100)
+    ga.setMutationRate(0.5)
 
-    ga.nGenerations = 10
 
-    ga.evolve(freq_stats=1)
 
-    #print(ga.bestIndividual())
+    #ga.evolve(freq_stats=1)
+
+    for i in range(ngenerations):
+
+        population = ga.get_next_population()
+
+
+
+    best = ga.bestIndividual()
+    print(best)
+
+    print("slope", slope)
+    print("intercept", intercept)
 
 # -----------------------------------------------------------------
 
