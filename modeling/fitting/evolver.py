@@ -5,28 +5,29 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.fitting.advancedparameterexplorer Contains the AdvancedParameterExplorer class.
+## \package pts.modeling.fitting.evolver Contains the ModelEvolver class, an abstract base class for GeneticModelEvolver
+#  and BasicModelEvolver
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from abc import abstractmethod
+
 # Import the relevant PTS classes and modules
-from .parameterexploration import ParameterExplorer
+from .launcher import FittingModelLauncher
 from ...core.tools import tables, time
 from ...core.tools.logging import log
 from ...core.launch.options import SchedulingOptions
 from ...core.launch.parallelization import Parallelization
 from ...core.launch.runtime import RuntimeEstimator
-from ...core.basics.distribution import Distribution
 from ...core.tools import filesystem as fs
-from ...magic.animation.scatter import ScatterAnimation
-from ...magic.animation.distribution import DistributionAnimation
 
 # -----------------------------------------------------------------
 
-class AdvancedParameterExplorer(ParameterExplorer):
+class ModelEvolver(FittingModelLauncher):
     
     """
     This class...
@@ -41,15 +42,12 @@ class AdvancedParameterExplorer(ParameterExplorer):
         """
 
         # Call the constructor of the base class
-        super(AdvancedParameterExplorer, self).__init__(config)
+        super(ModelEvolver, self).__init__(config)
 
         # -- Attributes --
 
         # The probability distributions for the different fit parameters
         self.distributions = dict()
-
-        # The animations
-        self.scatter_animation = self.fuv_young_animation = self.fuv_ionizing_animation = self.dust_mass_animation = None
 
     # -----------------------------------------------------------------
 
@@ -97,101 +95,19 @@ class AdvancedParameterExplorer(ParameterExplorer):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    @abstractmethod
+    def load_input(self):
 
         """
         This function ...
         :return:
         """
 
-        # 1. Call the setup function
-        self.setup()
-
-        # 2. Load the current parameter table
-        self.load_table()
-
-        # 3. Load the ski file
-        self.load_ski()
-
-        # Load the probability distributions for the different parameters
-        self.load_distributions()
-
-        # Initialize the animations if requested
-        if self.config.visualise: self.initialize_animations()
-
-        # 4. Set the combinations of parameter values
-        self.set_parameters()
-
-        # 5. Set the parallelization schemes for the different remote hosts
-        self.set_parallelization()
-
-        # 6. Estimate the runtimes for the different remote hosts
-        self.estimate_runtimes()
-
-        # 7. Launch the simulations for different parameter values
-        self.simulate()
-
-        # 8. Writing
-        self.write()
+        return
 
     # -----------------------------------------------------------------
 
-    def load_distributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the probability distributions for the different fit parameters ...")
-
-        # Loop over the different fit parameters
-        for parameter_name in self.parameter_names:
-
-            # Load the probability distribution
-            distribution = Distribution.from_file(self.distribution_table_paths[parameter_name])
-
-            # Normalize the distribution
-            distribution.normalize(value=1.0, method="max")
-
-            # Set the distribution
-            self.distributions[parameter_name] = distribution
-
-    # -----------------------------------------------------------------
-
-    def initialize_animations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Initializing the animations ...")
-
-        # Initialize the scatter animation
-        self.scatter_animation = ScatterAnimation([self.config.young_stars.min, self.config.young_stars.max],
-                                             [self.config.ionizing_stars.min, self.config.ionizing_stars.max],
-                                             [self.config.dust.min, self.config.dust.max])
-        self.scatter_animation.x_label = "FUV luminosity of young stars"
-        self.scatter_animation.y_label = "FUV luminosity of ionizing stars"
-        self.scatter_animation.z_label = "Dust mass"
-
-        # Initialize the young FUV luminosity distribution animation
-        self.fuv_young_animation = DistributionAnimation(self.config.young_stars.min, self.config.young_stars.max, "FUV luminosity of young stars", "New models")
-        self.fuv_young_animation.add_reference_distribution("Previous models", self.distributions["FUV young"])
-
-        # Initialize the ionizing FUV luminosity distribution animation
-        self.fuv_ionizing_animation = DistributionAnimation(self.config.ionizing_stars.min, self.config.ionizing_stars.max, "FUV luminosity of ionizing stars", "New models")
-        self.fuv_ionizing_animation.add_reference_distribution("Previous models", self.distributions["FUV ionizing"])
-
-        # Initialize the dust mass distribution animation
-        self.dust_mass_animation = DistributionAnimation(self.config.dust.min, self.config.dust.max, "Dust mass", "New models")
-        self.dust_mass_animation.add_reference_distribution("Previous models", self.distributions["Dust mass"])
-
-    # -----------------------------------------------------------------
-
+    @abstractmethod
     def set_parameters(self):
 
         """
@@ -199,31 +115,7 @@ class AdvancedParameterExplorer(ParameterExplorer):
         :return:
         """
 
-        # Inform the user
-        log.info("Picking random parameter values based on the probability distributions ...")
-
-        # Draw parameters values for the specified number of simulations
-        for counter in range(self.config.simulations):
-
-            # Debugging
-            log.debug("Calculating random parameter set " + str(counter+1) + " of " + str(self.config.simulations) + " ...")
-
-            # Draw a random FUV luminosity of the young stellar population
-            young_luminosity = self.distributions["FUV young"].random(self.config.young_stars.min, self.config.young_stars.max)
-
-            # Draw a random FUV luminosity of the ionizing stellar population
-            ionizing_luminosity = self.distributions["FUV ionizing"].random(self.config.ionizing_stars.min, self.config.ionizing_stars.max)
-
-            # Draw a random dust mass
-            dust_mass = self.distributions["Dust mass"].random(self.config.dust.min, self.config.dust.max)
-
-            # Add the parameter values to the dictionary
-            self.parameters["FUV young"].append(young_luminosity)
-            self.parameters["FUV ionizing"].append(ionizing_luminosity)
-            self.parameters["Dust mass"].append(dust_mass)
-
-            # Update the animations
-            if self.config.visualise: self.update_animations(young_luminosity, ionizing_luminosity, dust_mass)
+        return
 
     # -----------------------------------------------------------------
 
@@ -259,7 +151,7 @@ class AdvancedParameterExplorer(ParameterExplorer):
         """
         This function sets the parallelization scheme for those remote hosts used by the batch launcher that use
         a scheduling system (the parallelization for the other hosts is left up to the batch launcher and will be
-        based on the current load of the correponding system).
+        based on the current load of the corresponding system).
         :return:
         """
 

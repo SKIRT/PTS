@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.fitting.initialization Contains the InputInitializer
+## \package pts.modeling.fitting.genetic Contains the GeneticAlgorithm class.
 
 # -----------------------------------------------------------------
 

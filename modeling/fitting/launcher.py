@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.fitting.parameterexploration Contains the ParameterExplorer class.
+## \package pts.modeling.fitting.launcher Contains the FittingModelLauncher class.
 
 # -----------------------------------------------------------------
 
@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+from abc import abstractmethod
 from collections import defaultdict
 
 # Import astronomical modules
@@ -27,13 +28,12 @@ from ...core.basics.filter import Filter
 from ...core.simulation.skifile import SkiFile
 from ...core.launch.batchlauncher import BatchLauncher
 from ...core.tools.logging import log
-from ...core.launch.parallelization import Parallelization
 from ...core.launch.options import AnalysisOptions
 from ...magic.misc.kernels import AnianoKernels
 
 # -----------------------------------------------------------------
 
-class ParameterExplorer(FittingComponent):
+class FittingModelLauncher(FittingComponent):
     
     """
     This class...
@@ -48,7 +48,14 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Call the constructor of the base class
-        super(ParameterExplorer, self).__init__(config)
+        super(FittingModelLauncher, self).__init__(config)
+
+        # -- Attributes --
+
+        # The parameter ranges
+        self.fuv_young_range = None
+        self.fuv_ionizing_range = None
+        self.dust_mass_range = None
 
         # The names of the filters for which we have photometry
         self.filter_names = []
@@ -68,6 +75,48 @@ class ParameterExplorer(FittingComponent):
         # A dictionary with the scheduling options for the different remote hosts
         self.scheduling_options = dict()
 
+        # The animations
+        self.scatter_animation = None
+        self.fuv_young_animation = None
+        self.fuv_ionizing_animation = None
+        self.dust_mass_animation = None
+
+    # -----------------------------------------------------------------
+
+    def run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup()
+
+        # 2. Load the necessary input
+        self.load_input()
+
+        # 3. Set the parameter ranges
+        self.set_parameter_ranges()
+
+        # 4. Initialize the animations, if requested
+        if self.config.visualise: self.initialize_animations()
+
+        # 5. Set the combinations of parameter values
+        self.set_parameters()
+
+        # 6. Set the parallelization schemes for the different remote hosts
+        self.set_parallelization()
+
+        # 7. Estimate the runtimes for the different remote hosts
+        self.estimate_runtimes()
+
+        # 8. Launch the simulations for different parameter values
+        self.launch()
+
+        # 9. Writing
+        self.write()
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -78,7 +127,7 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Call the setup function of the base class
-        super(ParameterExplorer, self).setup()
+        super(FittingModelLauncher, self).setup()
 
         # Get the names of the filters for which we have photometry
         self.filter_names = self.get_observed_filter_names()
@@ -105,6 +154,84 @@ class ParameterExplorer(FittingComponent):
 
         # Set remote for the 'extra' simulations
         self.launcher.config.extra_remote = "nancy"
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def load_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return
+
+    # -----------------------------------------------------------------
+
+    def set_parameter_ranges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parameter ranges ...")
+
+
+
+        [self.config.young_stars.min, self.config.young_stars.max],
+        [self.config.ionizing_stars.min, self.config.ionizing_stars.max], \
+        [self.config.dust.min, self.config.dust.max]
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def initialize_animations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def set_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def set_parallelization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def estimate_runtimes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return
 
     # -----------------------------------------------------------------
 
@@ -138,39 +265,6 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def set_parallelization(self):
-
-        """
-        This function sets the parallelization scheme for those remote hosts used by the batch launcher that use
-        a scheduling system (the parallelization for the other hosts is left up to the batch launcher and will be
-        based on the current load of the correponding system).
-        :return:
-        """
-
-        # Loop over the IDs of the hosts used by the batch launcher that use a scheduling system
-        for host in self.launcher.scheduler_hosts:
-
-            # Get the number of cores per node for this host
-            cores_per_node = host.clusters[host.cluster_name].cores
-
-            # Determine the number of cores corresponding to 4 full nodes
-            cores = cores_per_node * 4
-
-            # Use 1 core for each process (assume there is enough memory)
-            processes = cores
-
-            # Determine the number of threads per core
-            if host.use_hyperthreading: threads_per_core = host.clusters[host.cluster_name].threads_per_core
-            else: threads_per_core = 1
-
-            # Create a Parallelization instance
-            parallelization = Parallelization(cores, threads_per_core, processes)
-
-            # Set the parallelization for this host
-            self.launcher.set_parallelization_for_host(host.id, parallelization)
-
-    # -----------------------------------------------------------------
-
     @property
     def number_of_models(self):
 
@@ -183,7 +277,7 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def simulate(self):
+    def launch(self):
 
         """
         This function ...
@@ -214,8 +308,6 @@ class ParameterExplorer(FittingComponent):
             simulation_name = time.unique_name()
 
             # Change the parameter values in the ski file
-            #self.ski.set_stellar_component_luminosity("Young stars", young_luminosity, fuv)
-            #self.ski.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv)
             self.ski.set_stellar_component_luminosity("Young stars", young_luminosity, fuv.centerwavelength() * Unit("micron"))
             self.ski.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv.centerwavelength() * Unit("micron"))
             self.ski.set_dust_component_mass(0, dust_mass)
@@ -379,6 +471,7 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @abstractmethod
     def write(self):
 
         """
@@ -386,11 +479,7 @@ class ParameterExplorer(FittingComponent):
         :return:
         """
 
-        # Inform the user
-        log.info("Writing ...")
-
-        # Create and write a table with the parameter values for each simulation
-        self.write_parameter_table()
+        return
 
     # -----------------------------------------------------------------
 

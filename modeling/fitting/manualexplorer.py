@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from .parameterexploration import ParameterExplorer
+from .explorer import ParameterExplorer
 from ...core.tools.logging import log
 from ...magic.animation.scatter import ScatterAnimation
 from ...core.tools import filesystem as fs
@@ -24,7 +24,7 @@ from ...core.tools import time
 
 # -----------------------------------------------------------------
 
-class InitialParameterExplorer(ParameterExplorer):
+class ManualParameterExplorer(ParameterExplorer):
     
     """
     This class...
@@ -39,7 +39,7 @@ class InitialParameterExplorer(ParameterExplorer):
         """
 
         # Call the constructor of the base class
-        super(InitialParameterExplorer, self).__init__(config)
+        super(ManualParameterExplorer, self).__init__(config)
 
     # -----------------------------------------------------------------
 
@@ -90,33 +90,6 @@ class InitialParameterExplorer(ParameterExplorer):
 
         # Return the new instance
         return explorer
-
-    # -----------------------------------------------------------------
-
-    def run(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # 1. Call the setup function
-        self.setup()
-
-        # 2. Load the current parameter table
-        self.load_table()
-
-        # 3. Load the ski file
-        self.load_ski()
-
-        # 4. Set the parameter combinations
-        self.set_parameters()
-
-        # 5. Launch the simulations for different parameter values
-        self.simulate()
-
-        # 6. Writing
-        self.write()
 
     # -----------------------------------------------------------------
 
