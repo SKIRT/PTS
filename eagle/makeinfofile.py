@@ -310,6 +310,9 @@ def limitedfluxdensity(simulation, instrumentname, wavelengths, cmask, filterobj
     sim_pixelarea = simulation.angularpixelarea()   # in sr
     sim_pixelwidth = np.sqrt(sim_pixelarea) * 648000 / np.pi   # in arcsec
 
+    # convolve the frame with a Gaussian of the appropriate size
+    frame = gaussian_filter(frame, sigma=fwhm/sim_pixelwidth/2.35482, mode='constant')
+
     # get information on the observational instrument's pixels (assume pixel width ~ fwhm/3)
     obs_pixelwidth = fwhm/3   # in arcsec
 
@@ -319,9 +322,6 @@ def limitedfluxdensity(simulation, instrumentname, wavelengths, cmask, filterobj
 
     # rebin the frame
     frame = frame.reshape((sim_pixels//bin_pixels,bin_pixels,sim_pixels//bin_pixels,bin_pixels)).mean(axis=3).mean(axis=1)
-
-    # convolve the frame with a Gaussian of the appropriate size
-    frame = gaussian_filter(frame, sigma=fwhm/sim_pixelwidth/bin_pixels/2.35482, mode='constant')
 
     # integrate over the frame to obtain the total flux density and convert from MJy to Jy
     fluxdensity = frame[frame>fluxlimit].sum() * bin_pixelarea * 1e6
