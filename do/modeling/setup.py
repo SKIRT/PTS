@@ -13,32 +13,27 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import argparse
-
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time, parsing
+from pts.core.tools import logging
 from pts.magic.tools import catalogs
 from pts.core.tools import filesystem as fs
+from pts.core.basics.configuration import Configuration
 
 # -----------------------------------------------------------------
 
-# Create the command-line parser
-parser = argparse.ArgumentParser()
+# Create the configuration
+config = Configuration()
 
-# The name of the galaxy
-parser.add_argument("name", type=str, help="the name of the galaxy")
+# Add required settings
+config.add_required("name", str, "the name of the galaxy", to_instance=False)
 
-# Logging
-parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
-
-# Parse the command line arguments
-arguments = parser.parse_args()
+# Read the configuration settings from the provided command-line arguments
+config.read()
 
 # -----------------------------------------------------------------
 
 # Determine the log level
-level = "DEBUG" if arguments.debug else "INFO"
+level = "DEBUG" if config.arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level)
@@ -50,7 +45,7 @@ log.start("Starting setup ...")
 log.info("Resolving the galaxy name ...")
 
 # Get the NGC name of the galaxy
-ngc_name = catalogs.get_ngc_name(arguments.name)
+ngc_name = catalogs.get_ngc_name(config.arguments.name)
 
 # Inform the user
 log.info("Galaxy NGC ID is '" + ngc_name + "'")

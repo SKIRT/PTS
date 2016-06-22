@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
-import argparse
 
 # Import astronomical modules
 from astropy.units import Unit
@@ -29,35 +28,23 @@ from pts.magic.core.source import Source
 from pts.magic.tools import statistics, plotting, fitting
 from pts.magic.basics.geometry import Ellipse
 from pts.magic.basics.vector import Extent
+from pts.core.basics.configuration import Configuration
 
 # -----------------------------------------------------------------
 
-# Create the command-line parser
-parser = argparse.ArgumentParser()
+# Create the configuration
+config = Configuration()
 
-# Logging options
-parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
-parser.add_argument("--report", action='store_true', help="write a report file")
-
-# Configuration
-parser.add_argument("--config", type=str, help="the name of a configuration file")
-
-# Parse the command line arguments
-arguments = parser.parse_args()
-
-# -----------------------------------------------------------------
-
-# Set the modeling path and the log path
-arguments.path = fs.cwd()
-log_path = fs.join(arguments.path, "log")
+# Read the configuration settings from the provided command-line arguments
+config.read()
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(log_path, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(fs.cwd(), "log", time.unique_name("log") + ".txt") if config.arguments.report else None
 
 # Determine the log level
-level = "DEBUG" if arguments.debug else "INFO"
+level = "DEBUG" if config.arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
@@ -65,9 +52,9 @@ log.start("Starting decomposition_residuals ...")
 
 # -----------------------------------------------------------------
 
-components_path = fs.join(arguments.path, "components")
-truncation_path = fs.join(arguments.path, "truncated")
-residuals_path = fs.join(arguments.path, "residuals")
+components_path = fs.join(config.arguments.path, "components")
+truncation_path = fs.join(config.arguments.path, "truncated")
+residuals_path = fs.join(config.arguments.path, "residuals")
 
 # -----------------------------------------------------------------
 

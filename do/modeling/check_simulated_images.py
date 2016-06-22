@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -21,32 +20,23 @@ import matplotlib.pyplot as plt
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.magic.core.frame import Frame
+from pts.core.basics.configuration import Configuration
 
 # -----------------------------------------------------------------
 
-# Create the command-line parser
-parser = argparse.ArgumentParser()
+# Create the configuration
+config = Configuration()
 
-# Logging
-parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
-parser.add_argument("--report", action='store_true', help='write a report file')
-
-# Parse the command line arguments
-arguments = parser.parse_args()
-
-# -----------------------------------------------------------------
-
-# Set the modeling path and the log path
-arguments.path = fs.cwd()
-log_path = fs.join(arguments.path, "log")
+# Read the configuration settings from the provided command-line arguments
+config.read()
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(log_path, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(fs.cwd(), "log", time.unique_name("log") + ".txt") if config.arguments.report else None
 
 # Determine the log level
-level = "DEBUG" if arguments.debug else "INFO"
+level = "DEBUG" if config.arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
@@ -54,9 +44,9 @@ log.start("Starting check_simulated_images ...")
 
 # -----------------------------------------------------------------
 
-galaxy_name = fs.name(arguments.path)
+galaxy_name = fs.name(config.arguments.path)
 
-fit_best_images_path = fs.join(arguments.path, "fit", "best", "images")
+fit_best_images_path = fs.join(config.arguments.path, "fit", "best", "images")
 
 simulated = dict()
 
@@ -74,7 +64,7 @@ for path, name in fs.files_in_path(fit_best_images_path, extension="fits", retur
 
     simulated[str(frame.filter)] = frame
 
-trunc_path = fs.join(arguments.path, "truncated")
+trunc_path = fs.join(config.arguments.path, "truncated")
 
 observed = dict()
 
@@ -117,3 +107,5 @@ plt.xscale('log')
 plt.yscale('log')
 
 plt.show()
+
+# -----------------------------------------------------------------

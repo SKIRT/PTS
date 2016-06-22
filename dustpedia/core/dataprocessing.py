@@ -68,7 +68,7 @@ dustpedia_final_pixelsizes = {"GALEX": 3.2 * Unit("arcsec"), "SDSS": 0.45 * Unit
 #   sky large enough to produce a 1 degree cutout - I just discarded the observation that were not needed for the smaller
 #   cutouts.
 
-# Also, note that the DustPedia GALEX cutouts have been re-gridded to larger pixel sizes than the standard GALEX
+# Also, note that the DustPedia GALtEX cutouts have been re-gridded to larger pixel sizes than the standard GALEX
 # archive data (the ancillary data report provides details).
 
 # Also attached is a file that lists the URLs each GALEX observation can be downloaded from. Annoyingly, the URLs are
@@ -82,7 +82,7 @@ dustpedia_final_pixelsizes = {"GALEX": 3.2 * Unit("arcsec"), "SDSS": 0.45 * Unit
 
 #SDSS:
 
-# For SDSS, you can use the Montage function mArchiveGet to get a listing of the SDSS DR9 fields that cover a given
+# For SDSS, you can use the Montage function mArchiveList to get a listing of the SDSS DR9 fields that cover a given
 # area of sky (there is a nice Python wrapper available for Montage, which can make it easier to interact with).
 # This function outputs a table giving the details of the relevant fields, including URLs where they can be downloaded.
 
@@ -188,6 +188,26 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
+    def download_files(self, urls, path):
+
+        """
+        This function ...
+        :param urls:
+        :param path:
+        :return:
+        """
+
+        # Loop over the urls
+        for url in urls:
+
+            filename = fs.name(url)
+            filepath = fs.join(path, filename)
+
+            # Download
+            urllib.urlretrieve(url, filepath)
+
+    # -----------------------------------------------------------------
+
     def download_galex_observations_for_galaxy(self, galaxy_name, path):
 
         """
@@ -200,16 +220,8 @@ class DustPediaDataProcessing(object):
         # Get the urls
         urls = self.get_galex_observation_urls_for_galaxy(galaxy_name)
 
-        # Loop over the urls
-        for url in urls:
-
-            filename = fs.name(url)
-            filepath = fs.join(path, filename)
-
-            # Download
-            urllib.urlretrieve(url, filepath)
-
-            break
+        # Download the files
+        self.download_files(urls, path)
 
     # -----------------------------------------------------------------
 
@@ -278,8 +290,8 @@ class DustPediaDataProcessing(object):
         # Get the urls
         urls = self.get_sdss_primary_field_urls_for_galaxy(galaxy_name, band)
 
-        # Loop over the urls
-        for url in urls: pass
+        # Download the files
+        self.download_files(urls, path)
 
     # -----------------------------------------------------------------
 

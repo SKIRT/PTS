@@ -12,49 +12,32 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import argparse
-
 # Import the relevant PTS classes and modules
 from pts.modeling.preparation.initialization import PreparationInitializer
 from pts.core.tools import logging, time, tables
 from pts.core.tools import filesystem as fs
 from pts.magic.core.frame import Frame
+from pts.core.basics.configuration import Configuration
 
 # -----------------------------------------------------------------
 
-# Create the command-line parser
-parser = argparse.ArgumentParser()
+# Create the configuration
+config = Configuration()
 
-# Basic options
-parser.add_argument("image", type=str, nargs='?', help="the name of the image for which to run the initialization")
+# Add optional arguments
+config.add_optional("image", str, "the name of the image for which to run the initialization")
+config.add_flag("visualise", "make visualisations")
 
-# Logging
-parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
-parser.add_argument("--report", action='store_true', help='write a report file')
-
-# Configuration
-parser.add_argument("--config", type=str, help="the name of a configuration file")
-
-# Visualisation
-parser.add_argument("--visualise", action="store_true", help="make visualisations")
-
-# Parse the command line arguments
-arguments = parser.parse_args()
-
-# -----------------------------------------------------------------
-
-# Set the modeling path and the log path
-arguments.path = fs.cwd()
-log_path = fs.join(arguments.path, "log")
+# Read the configuration settings from the provided command-line arguments
+config.read()
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(log_path, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(fs.cwd(), "log", time.unique_name("log") + ".txt") if config.arguments.report else None
 
 # Determine the log level
-level = "DEBUG" if arguments.debug else "INFO"
+level = "DEBUG" if config.arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
@@ -68,7 +51,7 @@ prep_names_column = []
 names = ["Image name", "Image path", "Preparation name"]
 
 # Loop over all subdirectories of the data directory
-for path, name in fs.directories_in_path(fs.join(arguments.path, "data"), not_contains="bad", returns=["path", "name"]):
+for path, name in fs.directories_in_path(fs.join(config.arguments.path, "data"), not_contains="bad", returns=["path", "name"]):
 
     # Loop over all FITS files found in the current subdirectory
     for image_path, image_name in fs.files_in_path(path, extension="fits", not_contains="_Error", returns=["path", "name"]):
@@ -90,7 +73,7 @@ data = [names_column, paths_column, prep_names_column]
 table = tables.new(data, names)
 
 # Check whether the preparation directory exists
-prep_path = fs.join(arguments.path, "prep")
+prep_path = fs.join(config.arguments.path, "prep")
 if not fs.is_directory(prep_path): fs.create_directory(prep_path)
 
 # Save the table
@@ -100,7 +83,7 @@ tables.write(table, prep_info_table_path, format="ascii.ecsv")
 # -----------------------------------------------------------------
 
 # Create a PreparationInitializer instance
-initializer = PreparationInitializer.from_arguments(arguments)
+initializer = PreparationInitializer(config.get_settings())
 
 # Run the data initializer
 initializer.run()

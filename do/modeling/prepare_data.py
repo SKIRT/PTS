@@ -12,51 +12,35 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import argparse
-
 # Import the relevant PTS classes and modules
 from pts.modeling.preparation.datapreparation import DataPreparer
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
+from pts.core.basics.configuration import Configuration
 
 # -----------------------------------------------------------------
 
-# Create the command-line parser
-parser = argparse.ArgumentParser()
+# Create the configuration
+config = Configuration()
 
-# Basic
-parser.add_argument("image", type=str, nargs='?', help="the name of the image for which to run the preparation")
-parser.add_argument("--reference", type=str, help="the name of the reference image")
+# Add required arguments
+config.add_required("image", str, "the name of the image for which to run the preparation")
 
-# Logging
-parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
-parser.add_argument("--report", action='store_true', help="write a report file")
+# Add optional arguments
+config.add_optional("reference", str, "the name of the reference image")
+config.add_flag("steps", "write the results of intermediate steps")
+config.add_flag("visualise", "make visualisations")
 
-parser.add_argument("--steps", action="store_true", help="write the results of intermediate steps")
-
-# Configuration
-parser.add_argument("--config", type=str, help="the name of a configuration file")
-
-# Visualisation
-parser.add_argument("--visualise", action="store_true", help="make visualisations")
-
-# Parse the command line arguments
-arguments = parser.parse_args()
-
-# -----------------------------------------------------------------
-
-# Set the modeling path and the log path
-arguments.path = fs.cwd()
-log_path = fs.join(arguments.path, "log")
+# Read the configuration settings from the provided command-line arguments
+config.read()
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(log_path, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(fs.cwd(), "log", time.unique_name("log") + ".txt") if config.arguments.report else None
 
 # Determine the log level
-level = "DEBUG" if arguments.debug else "INFO"
+level = "DEBUG" if config.arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
@@ -65,7 +49,7 @@ log.start("Starting prepare_data ...")
 # -----------------------------------------------------------------
 
 # Create a DataPreparer instance
-preparer = DataPreparer.from_arguments(arguments)
+preparer = DataPreparer(config.get_settings())
 
 # Run the data preparation
 preparer.run()

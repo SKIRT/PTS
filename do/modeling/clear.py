@@ -12,41 +12,29 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import argparse
-
 # Import the relevant PTS classes and modules
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
+from pts.core.basics.configuration import Configuration
 
 # -----------------------------------------------------------------
 
-# Create the command-line parser
-parser = argparse.ArgumentParser()
+# Create the configuration
+config = Configuration()
 
-# Basic options
-parser.add_argument("step", type=str, help="the preparation step for which to clear the output")
+# Add setting
+config.add_required("step", str, "the modeling step for which to clear the output", to_instance=False)
 
-# Logging
-parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
-parser.add_argument("--report", action='store_true', help='write a report file')
-
-# Parse the command line arguments
-arguments = parser.parse_args()
-
-# -----------------------------------------------------------------
-
-# Set the modeling path and the log path
-arguments.path = fs.cwd()
-log_path = fs.join(arguments.path, "log")
+# Read the configuration settings from the provided command-line arguments
+config.read()
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(log_path, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(fs.cwd(), "log", time.unique_name("log") + ".txt") if config.arguments.report else None
 
 # Determine the log level
-level = "DEBUG" if arguments.debug else "INFO"
+level = "DEBUG" if config.arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
@@ -54,21 +42,21 @@ log.start("Starting clear ...")
 
 # -----------------------------------------------------------------
 
-prep_path = fs.join(arguments.path, "prep")
-components_path = fs.join(arguments.path, "components")
-truncated_path = fs.join(arguments.path, "truncated")
-phot_path = fs.join(arguments.path, "phot")
-maps_path = fs.join(arguments.path, "maps")
-fit_path = fs.join(arguments.path, "fit")
-analysis_path = fs.join(arguments.path, "analysis")
+prep_path = fs.join(config.arguments.path, "prep")
+components_path = fs.join(config.arguments.path, "components")
+truncated_path = fs.join(config.arguments.path, "truncated")
+phot_path = fs.join(config.arguments.path, "phot")
+maps_path = fs.join(config.arguments.path, "maps")
+fit_path = fs.join(config.arguments.path, "fit")
+analysis_path = fs.join(config.arguments.path, "analysis")
 
-if arguments.step == "prep": fs.clear_directory(prep_path)
-elif arguments.step == "components": fs.clear_directory(components_path)
-elif arguments.step == "truncated": fs.clear_directory(truncated_path)
-elif arguments.step == "phot": fs.clear_directory(phot_path)
-elif arguments.step == "maps": fs.clear_directory(maps_path)
-elif arguments.step == "fit": fs.clear_directory(fit_path)
-elif arguments.step == "analysis": fs.clear_directory(analysis_path)
+if config.arguments.step == "prep": fs.clear_directory(prep_path)
+elif config.arguments.step == "components": fs.clear_directory(components_path)
+elif config.arguments.step == "truncated": fs.clear_directory(truncated_path)
+elif config.arguments.step == "phot": fs.clear_directory(phot_path)
+elif config.arguments.step == "maps": fs.clear_directory(maps_path)
+elif config.arguments.step == "fit": fs.clear_directory(fit_path)
+elif config.arguments.step == "analysis": fs.clear_directory(analysis_path)
 else: raise ValueError("Invalid modeling step")
 
 # -----------------------------------------------------------------

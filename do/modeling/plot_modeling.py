@@ -12,45 +12,33 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import argparse
-
 # Import the relevant PTS classes and modules
 from pts.core.tools import logging, parsing, time
 from pts.core.tools import filesystem as fs
 from pts.modeling.plotting.plotter import Plotter
+from pts.core.basics.configuration import Configuration
 
 # -----------------------------------------------------------------
 
-# Create the command-line parser
-parser = argparse.ArgumentParser()
+# Create the configuration
+config = Configuration()
 
-# The modeling step
-parser.add_argument("step", type=str, help="the modeling step for which plots should be made")
-parser.add_argument("features", type=parsing.string_list, nargs="?", help="the features to be plotted "
-                                                                          "(if not specified this means all features will be plotted)")
+# Add required arguments
+config.add_required("step", str, "the modeling step for which plots should be made")
 
-# Logging options
-parser.add_argument("--debug", action="store_true", help="enable debug logging mode")
-parser.add_argument("--report", action='store_true', help='write a report file')
-parser.add_argument("--config", type=str, help="the name of a configuration file")
+# Add optional
+config.add_optional("features", "string_list", "the features to be plotted (if not specified this means all features will be plotted")
 
-# Parse the command line arguments
-arguments = parser.parse_args()
-
-# -----------------------------------------------------------------
-
-# Set the modeling path and the log path
-arguments.path = fs.cwd()
-log_path = fs.join(arguments.path, "log")
+# Read the configuration settings from the provided command-line arguments
+config.read()
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(log_path, time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(fs.cwd(), "log", time.unique_name("log") + ".txt") if config.arguments.report else None
 
 # Determine the log level
-level = "DEBUG" if arguments.debug else "INFO"
+level = "DEBUG" if config.arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
@@ -59,7 +47,7 @@ log.start("Starting plot_modeling ...")
 # -----------------------------------------------------------------
 
 # Create a Plotter instance
-plotter = Plotter.from_arguments(arguments)
+plotter = Plotter(config.get_settings())
 
 # Run the plotter
 plotter.run()
