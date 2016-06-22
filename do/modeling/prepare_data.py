@@ -27,9 +27,12 @@ config = Configuration()
 config.add_required("image", str, "the name of the image for which to run the preparation")
 
 # Add optional arguments
-config.add_optional("reference", str, "the name of the reference image")
+config.add_optional("reference_image", str, "the name of the reference image")
 config.add_flag("steps", "write the results of intermediate steps")
 config.add_flag("visualise", "make visualisations")
+
+config.add_section("importation")
+config.add_section("preparation")
 
 # Read the configuration settings from the provided command-line arguments
 config.read()

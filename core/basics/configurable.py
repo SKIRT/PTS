@@ -15,9 +15,57 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+from abc import ABCMeta
 
 # Import the relevant PTS classes and modules
 from ..tools import configuration
+
+# -----------------------------------------------------------------
+
+class NewConfigurable(object):
+
+    """
+    This class ...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, config):
+
+        """
+        The constructor ...
+        :param config:
+        """
+
+        self.config = config
+
+    # -----------------------------------------------------------------
+
+    def setup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # nothing is (yet) required here
+        pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        name = type(self).__name__.lower()
+        if "plotter" in name: return "plotter"
+        else: return name
 
 # -----------------------------------------------------------------
 

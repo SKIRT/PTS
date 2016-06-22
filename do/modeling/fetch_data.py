@@ -23,6 +23,11 @@ from pts.core.basics.configuration import Configuration
 # Create the configuration
 config = Configuration()
 
+# Add settings
+config.add_section("database")
+config.sections["database"].add_optional("username", str, "the username")
+config.sections["database"].add_optional("password", str, "the password")
+
 # Read the configuration settings from the provided command-line arguments
 config.read()
 

@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import argparse
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from .map import Map
@@ -36,6 +37,9 @@ class Configuration(object):
 
         # Create the command-line parser
         self.parser = argparse.ArgumentParser()
+
+        # Dictionary of sections
+        self.sections = OrderedDict()
 
         # Dictionary of fixed parameters
         self.fixed = dict()
@@ -71,6 +75,18 @@ class Configuration(object):
 
         # Return the configuration object
         return config
+
+    # -----------------------------------------------------------------
+
+    def add_section(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        self.sections[name] = Configuration(add_logging=False)
 
     # -----------------------------------------------------------------
 
