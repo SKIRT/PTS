@@ -32,8 +32,11 @@ from pts.core.plot.flybymovie import makeflybymovie
 
 rate = 15                       # movie frame rate
 contrast = False                # if true, a contrast curve is applied to each frame (takes quite a while)
-from_percentile = 30            # lower percentile used to clip the luminosity values
+from_percentile = 50            # lower percentile used to clip the luminosity values
 to_percentile = 100             # upper percentile used to clip the luminosity values
+#wavelengths = (0.95,0.50,0.25)  # use optical wavelengths
+#wavelengths = (130,68,35)       # use infrared wavelengths
+wavelengths = None
 
 # -----------------------------------------------------------------
 
@@ -44,7 +47,7 @@ argument = sys.argv[1] if len(sys.argv) > 1 else ""
 
 # construct the list of simulation objects and make the plots
 for simulation in createsimulations(argument):
-    makeflybymovie(simulation, rate=rate, contrast=contrast,
+    makeflybymovie(simulation, rate=rate, contrast=contrast, wavelengths=wavelengths,
                    from_percentile=from_percentile, to_percentile=to_percentile)
 
 print "Finished makeflybymovie."

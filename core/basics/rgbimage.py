@@ -280,6 +280,18 @@ class RGBImage:
         self.darr = np.log(self.darr)
         self.rangearr = ( np.log(self.rangearr[0]), np.log(self.rangearr[1]) )
 
+    ## This function applies the square root function to the pixel values of the image, and adjusts
+    # the pixel range accordingly. This function raises an error if the pixel range includes zero or negative
+    # values when this function is called. This can be avoided, for example, by calling the setrange()
+    # function with a nonzero minimum value before calling the applylog() function.
+    def applysqrt(self):
+        self.ensurearr(invalidate=True)
+        # verify that all values are positive
+        if self.rangearr[0] <= 0: raise ValueError("Sqrt can't be applied to negative or zero pixel values")
+        # apply logarithm to array values and range
+        self.darr = np.sqrt(self.darr)
+        self.rangearr = ( np.sqrt(self.rangearr[0]), np.sqrt(self.rangearr[1]) )
+
     ## This function applies a transformation defined by a cubic spline curve to the (scaled) pixel values,
     # and replaces the image data with the result. The pixel values are scaled to the interval [0,1].
     # The curve is composed of three cubic spline segments connecting the four points
