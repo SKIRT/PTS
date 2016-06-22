@@ -85,9 +85,11 @@ def makeinfofile(skirtrun):
 
     # compute the dust mass from the gas input file and the parameters in the ski file
     infile = arch.listdir(inpath, "_gas.dat")[0]
+    info["exported_mass_cold_gas"], info["exported_mass_negative_cold_gas"], \
     info["exported_mass_metallic_gas"], info["exported_mass_negative_metallic_gas"] = \
-            loadmetallicgasmasses(os.path.join(inpath,infile), simulation.maximumtemperature())
+            loadgasmasses(os.path.join(inpath,infile), simulation.maximumtemperature())
     info["exported_mass_dust"] = info["exported_mass_metallic_gas"] * simulation.dustfraction()
+    info["exported_mass_negative_dust"] = info["exported_mass_negative_metallic_gas"] * simulation.dustfraction()
 
     # gather SKIRT setup statistics
     info["setup_mass_dust"] = simulation.dustmass()
@@ -186,7 +188,7 @@ def makeinfofile(skirtrun):
     infofile.write('# magnitude : mag\n')
     maxkeylen = max(map(len,info.keys()))
     for key in sorted(info.keys()):
-        valueformat = ".0f" if "_particles_" in key or "_cells_" in key or "run_id" in key else ".9e"
+        valueformat = ".0f" if "_particles_" in key or "_cells_" in key or "_id" in key else ".9e"
         infofile.write( ("{0:"+str(maxkeylen)+"} = {1:16"+valueformat+"}\n").format(key, info[key]) )
     infofile.close()
 
@@ -195,13 +197,19 @@ def makeinfofile(skirtrun):
 
 # -----------------------------------------------------------------
 
-# This function calculates and returns the positive and negative metallic gas masses
-# from the specified gas input file and maximum temperature
-def loadmetallicgasmasses(inpath, Tmax):
-    M,Z,T = np.loadtxt(arch.opentext(inpath), usecols=(4,5,6), unpack=True)
-    mask_pos = (T<=Tmax) & (M>0)
-    mask_neg = (T<=Tmax) & (M<0)
-    return (M[mask_pos]*Z[mask_pos]).sum(), -(M[mask_neg]*Z[mask_neg]).sum()
+# This function calculates and returns the positive and negative cold and metallic gas masses
+# from the specified gas input file and maximum temperature; it returns a tuple
+# (positive cold gas mass, negative cold gas mass, positive metallic gas mass, negative metallic gas mass)
+
+def loadgasmasses(inpath, Tmax):
+    data = np.loadtxt(arch.opentext(inpath), usecols=(4,5,6), unpack=True)
+    if len(data)>0:
+        M,Z,T = data
+        mask_pos = (T<=Tmax) & (M>0)
+        mask_neg = (T<=Tmax) & (M<0)
+        return M[mask_pos].sum(), -M[mask_neg].sum(), (M[mask_pos]*Z[mask_pos]).sum(), -(M[mask_neg]*Z[mask_neg]).sum()
+    else:
+        return 0,0,0,0
 
 # -----------------------------------------------------------------
 
@@ -302,6 +310,9 @@ def limitedfluxdensity(simulation, instrumentname, wavelengths, cmask, filterobj
     sim_pixelarea = simulation.angularpixelarea()   # in sr
     sim_pixelwidth = np.sqrt(sim_pixelarea) * 648000 / np.pi   # in arcsec
 
+    # convolve the frame with a Gaussian of the appropriate size
+    frame = gaussian_filter(frame, sigma=fwhm/sim_pixelwidth/2.35482, mode='constant')
+
     # get information on the observational instrument's pixels (assume pixel width ~ fwhm/3)
     obs_pixelwidth = fwhm/3   # in arcsec
 
@@ -311,9 +322,6 @@ def limitedfluxdensity(simulation, instrumentname, wavelengths, cmask, filterobj
 
     # rebin the frame
     frame = frame.reshape((sim_pixels//bin_pixels,bin_pixels,sim_pixels//bin_pixels,bin_pixels)).mean(axis=3).mean(axis=1)
-
-    # convolve the frame with a Gaussian of the appropriate size
-    frame = gaussian_filter(frame, sigma=fwhm/sim_pixelwidth/bin_pixels/2.35482, mode='constant')
 
     # integrate over the frame to obtain the total flux density and convert from MJy to Jy
     fluxdensity = frame[frame>fluxlimit].sum() * bin_pixelarea * 1e6

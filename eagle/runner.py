@@ -31,6 +31,7 @@ from .skirtrun import SkirtRun
 from ..core.simulation.skifile import SkiFile
 from ..core.plot.seds import plotseds
 from ..core.plot.rgbimages import makergbimages
+from .makeinfofile import makeinfofile
 
 # -----------------------------------------------------------------
 
@@ -77,7 +78,8 @@ def run(runid):
         # extract the particle data for the galaxy from the EAGLE snapshot
         galaxies = Snapshot(record['eaglesim'], redshift=record['redshift']).galaxies()
         galaxy = galaxies.galaxy(record['galaxyid'])
-        galaxy.export(skirtrun.inpath())
+        galaxy.export(skirtrun.inpath(), f_PDR=record['fpdr'] if record['fpdr'] is not None else 0.15,
+                                         align=record['align']!=0, seed=record['seed']!=0)
 
         # create an adjusted copy of the ski file for this run
         ski = SkiFile(os.path.join(config.templates_path, record['skitemplate']+".ski"))
@@ -85,6 +87,9 @@ def run(runid):
         ski.setstarfile(prefix + "_stars.dat")
         ski.setgasfile(prefix + "_gas.dat")
         ski.sethiifile(prefix + "_hii.dat")
+        if record['numpp'] is not None: ski.setpackages(record['numpp'])
+        if record['deltamax'] is not None: ski.setmaxmassfraction(record['deltamax'])
+        if record['fdust'] is not None: ski.setdustfraction(record['fdust'])
         ski.saveto(os.path.join(skirtrun.runpath(), prefix+"_"+record['skitemplate']+".ski"))
 
         # copy the wavelength grid
@@ -104,8 +109,11 @@ def run(runid):
         # create basic RGB images at the SDSS gri wavelengths (not integrated over bands)
         makergbimages(simulation, wavelength_tuples=((0.753,0.617,0.470),) )
 
-        # move any .png and .pdf files to the visualization directory
-        for visfile in filter(lambda fn: fn.endswith((".png",".pdf")), os.listdir(skirtrun.outpath())):
+        # build info file
+        makeinfofile(skirtrun)
+
+        # move any .png, .pdf and info.txt files to the visualization directory
+        for visfile in filter(lambda fn: fn.endswith((".png",".pdf","_info.txt")), os.listdir(skirtrun.outpath())):
             os.rename(os.path.join(skirtrun.outpath(), visfile),
                       os.path.join(skirtrun.vispath(), visfile))
 
@@ -122,5 +130,10 @@ def run(runid):
             db.updatestatus((runid,), 'failed')
         db.close()
         raise
+
+    # if requested, remove intermediate output files
+    if record['keep']==0:
+        for filename in os.listdir(skirtrun.outpath()):
+            os.remove(os.path.join(skirtrun.outpath(), filename))
 
 # -----------------------------------------------------------------

@@ -341,7 +341,12 @@ class Galaxy:
     # in the public EAGLE database. The file format is as described for SKIRT SPH import.
     # In addition, the function creates a text file named "SIM_GID_info.txt", which contains relevant statistics
     # including particle numbers and various total masses. The contents is documented in the file.
-    def export(self, directory=""):
+    # The optional arguments include:
+    #  - directory: path to the output directory; default is current directory.
+    #  - f_PDR: PDR covering fraction used for all HII regions; default is 0.15.
+    #  - align: align z-axis with stellar agular momentum when True (default)
+    #  - seed: set the seed to the Galaxy ID for a stable randomization when True (default)
+    def export(self, directory="", f_PDR=0.15, align=True, seed=True):
         print "Exporting galaxy ({0},{1}) from {2} files...".format(  \
                     self.groupnumber, self.subgroupnumber, len(self.fileindices))
 
@@ -427,25 +432,26 @@ class Galaxy:
 
         # ---- convert to Local Galactic Coordinates (LGC)
 
-        # calculate stellar centre of mass and translational velocity using shrinking aperture technique
-        com, v_bar = shrinkingCentroid(sdat['r'], sdat['m'], sdat['v'])
-
-        # find unit rotation axis vector, choosing to use only stellar information and an aperture of 30 kpc
-        n_rot = rotAxis(sdat['r'], sdat['v'], sdat['m'], com, v_bar, apt = 3.e4, aptfrac = 0.08)
-
         # set up transform object
         transf = Transform()
+
+        # calculate stellar centre of mass and translational velocity using shrinking aperture technique
+        com, v_bar = shrinkingCentroid(sdat['r'], sdat['m'], sdat['v'])
         bx, by, bz = com[0], com[1], com[2]
         transf.translate(-bx, -by, -bz)
-        a, b, c = n_rot[0], n_rot[1], n_rot[2]
-        v = np.sqrt(b*b+c*c)
-        if v > 0.3:
-            transf.rotateX(c/v, -b/v)
-            transf.rotateY(v, -a)
-        else:
-            v = np.sqrt(a*a+c*c)
-            transf.rotateY(c/v, -a/v)
-            transf.rotateX(v, -b)
+
+        if align:
+            # find unit rotation axis vector, choosing to use only stellar information and an aperture of 30 kpc
+            n_rot = rotAxis(sdat['r'], sdat['v'], sdat['m'], com, v_bar, apt = 3.e4, aptfrac = 0.08)
+            a, b, c = n_rot[0], n_rot[1], n_rot[2]
+            v = np.sqrt(b*b+c*c)
+            if v > 0.3:
+                transf.rotateX(c/v, -b/v)
+                transf.rotateY(v, -a)
+            else:
+                v = np.sqrt(a*a+c*c)
+                transf.rotateY(c/v, -a/v)
+                transf.rotateX(v, -b)
 
         # transform coordinates
         sdat['r'],w = transf.transform_vec(sdat['r'][:,0],sdat['r'][:,1],sdat['r'][:,2], np.ones(sdat['r'].shape[0]))
@@ -458,6 +464,7 @@ class Galaxy:
         # ---- gather statistics about data as it is read from the hdf5 snapshot
 
         info = { }
+        info["galaxy_id"] = self.galaxyid
         info["original_particles_stars"] = len(sdat['m'])
         info["original_initial_mass_stars"] = sdat['im'].sum()
         info["original_mass_stars"] = sdat['m'].sum()
@@ -493,20 +500,18 @@ class Galaxy:
         info["exported_initial_mass_hii_regions_from_gas"] = 0
         info["exported_mass_hii_regions_from_gas"] = 0
 
+        info["exported_particles_negative_gas_from_stars"] = 0
+        info["exported_particles_negative_gas_from_gas"] = 0
+        info["exported_mass_negative_gas_from_stars"] = 0
+        info["exported_mass_negative_gas_from_gas"] = 0
+
         info["exported_particles_unspent_gas_from_gas"] = 0
         info["exported_mass_unspent_gas_from_gas"] = 0
 
         # ---- resample star forming regions
 
         # seed the random generator so that a consistent pseudo-random sequence is used for each particular galaxy
-        np.random.seed(self.galaxyid)
-
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # define discretionary HII region properties
-        f_PDR = 0.20        # PDR covering fraction
-        b_PDR = 50.         # boost factor for negative gas mass compensating for PDR dust emission,
-                            #   M_negative_gas = SFR * infant_age * b_PDR
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        if seed: np.random.seed(self.galaxyid)
 
         # define HII region age constants (in years)
         young_age = 1e8     # 100 Myr  --> particles below this age are resampled
@@ -568,15 +573,15 @@ class Galaxy:
                 hiiregions['SFR']   = ms[isinfant] / infant_age          # Assume constant SFR over HII region lifetime
                 hiiregions['Z']     = sdat['Z'][idxs][isinfant]
                 hiiregions['P']     = sdat['P'][idxs][isinfant] * 0.1   # Convert to Pa for output
-                hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
+                hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN']) + 0.4
                 hiiregions['fPDR']  = np.zeros_like(ts[isinfant]) + f_PDR  # Covering fraction is set to constant value
 
                 # calculate the HII region smoothing length from the mass of the surrounding PDR region,
                 # estimated to be 10 times as massive (see Jonsson et al. 2010, MNRAS 403, 17-44),
                 # using SKIRT's standard smoothing kernel mass/size normalization: rho = 8/pi * M/h^3;
                 # and randomly shift the positions of the HII regions within a similarly enlarged range
-                hiiregions['h_mapp'] = (10. * ms[isinfant] / (np.pi/8 * sdat['rho_born'][idxs][isinfant] * densconv))**(1/3.)
-                sf.stochShiftPos(hiiregions['r'], 10.**(1/3.) * hiiregions['h'], hiiregions['h_mapp'])
+                hiiregions['h_mapp'] = (10*ms[isinfant] / (np.pi/8 * sdat['rho_born'][idxs][isinfant] * densconv))**(1/3.)
+                sf.stochShiftPos(hiiregions['r'], hiiregions['h'], hiiregions['h_mapp'])
 
                 # append to MAPPINGSIII array
                 mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
@@ -587,12 +592,12 @@ class Galaxy:
                 info["exported_mass_hii_regions_from_stars"] = info["exported_initial_mass_hii_regions_from_stars"]
 
                 # append to dust array with negative mass to compensate for the mass of the surrounding PDR region,
-                # considered to be b_PDR times as massive; use zero temperature as T is unavailable for resampled star particles
-                dust = np.concatenate((dust, np.column_stack([hiiregions['r'], hiiregions['h_mapp']*(b_PDR/10.)**(1/3.),
-                                                             -b_PDR*ms[isinfant], hiiregions['Z'],
+                # considered to be 10 times as massive; use zero temperature as T is unavailable for resampled star particles
+                dust = np.concatenate((dust, np.column_stack([hiiregions['r'], hiiregions['h_mapp']*3.,
+                                                             -10*ms[isinfant], hiiregions['Z'],
                                                              np.zeros(hiiregions['Z'].shape[0])]).copy()), axis=0)
                 info["exported_particles_negative_gas_from_stars"] = np.count_nonzero(isinfant)
-                info["exported_mass_negative_gas_from_stars"] = b_PDR*ms[isinfant].sum()
+                info["exported_mass_negative_gas_from_stars"] = 10*ms[isinfant].sum()
 
             # add unspent young star particle material to dust array
             # use zero temperature as T is unavailable for resampled star particles
@@ -626,15 +631,15 @@ class Galaxy:
                 hiiregions['SFR']   = ms[isinfant] / infant_age          # Assume constant SFR over HII region lifetime
                 hiiregions['Z']     = gdat['Z'][idxs][isinfant]
                 hiiregions['P']     = gdat['P'][idxs][isinfant] * 0.1     # convert to Pa
-                hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN'])
+                hiiregions['logC']  = 0.6*np.log10(ms[isinfant]) + 0.4*np.log10(hiiregions['P']) - 0.4*np.log10(self.snapshot.constants['BOLTZMANN']) + 0.4
                 hiiregions['fPDR']  = np.zeros_like(ts[isinfant]) + f_PDR  # Covering fraction is set to constant value
 
                 # calculate the HII region smoothing length from the mass of the surrounding PDR region,
                 # estimated to be 10 times as massive (see Jonsson et al. 2010, MNRAS 403, 17-44),
                 # using SKIRT's standard smoothing kernel mass/size normalization: rho = 8/pi * M/h^3;
                 # and randomly shift the positions of the HII regions within a similarly enlarged range
-                hiiregions['h_mapp'] = (10. * ms[isinfant] / (np.pi/8 * gdat['rho'][idxs][isinfant] * densconv))**(1/3.)
-                sf.stochShiftPos(hiiregions['r'], 10.**(1/3.) * hiiregions['h'], hiiregions['h_mapp'])
+                hiiregions['h_mapp'] = (10*ms[isinfant] / (np.pi/8 * gdat['rho'][idxs][isinfant] * densconv))**(1/3.)
+                sf.stochShiftPos(hiiregions['r'], hiiregions['h'], hiiregions['h_mapp'])
 
                 # append to MAPPINGSIII array
                 mapstars = np.concatenate((mapstars, np.column_stack([hiiregions['r'], hiiregions['h_mapp'], hiiregions['SFR'],
@@ -645,11 +650,11 @@ class Galaxy:
                 info["exported_mass_hii_regions_from_gas"] = info["exported_initial_mass_hii_regions_from_gas"]
 
                 # append to dust array with negative mass to compensate for the mass of the surrounding PDR region,
-                # considered to be b_PDR times as massive; use negative temperature to indicate that it is not a physical value
-                dust = np.concatenate((dust, np.column_stack([hiiregions['r'], hiiregions['h_mapp']*(b_PDR/10.)**(1/3.),
-                                                             -b_PDR*ms[isinfant], hiiregions['Z'], -gdat['T'][idxs][isinfant]]).copy()), axis=0)
+                # considered to be 10 times as massive; use negative temperature to indicate that it is not a physical value
+                dust = np.concatenate((dust, np.column_stack([hiiregions['r'], hiiregions['h_mapp']*3,
+                                                             -10*ms[isinfant], hiiregions['Z'], -gdat['T'][idxs][isinfant]]).copy()), axis=0)
                 info["exported_particles_negative_gas_from_gas"] = np.count_nonzero(isinfant)
-                info["exported_mass_negative_gas_from_gas"] = b_PDR*ms[isinfant].sum()
+                info["exported_mass_negative_gas_from_gas"] = 10*ms[isinfant].sum()
 
             # add unspent SF gas material to dust array; use negative temperature to indicate that it is not a physical value
             mass = gdat['m'] - mdiffs
@@ -687,7 +692,7 @@ class Galaxy:
         infofile.write('# Masses are expressed in solar mass units\n')
         maxkeylen = max(map(len,info.keys()))
         for key in sorted(info.keys()):
-            valueformat = "d" if "_particles_" in key else ".9e"
+            valueformat = "d" if "_particles_" in key or "_id" in key else ".9e"
             infofile.write( ("{0:"+str(maxkeylen)+"} = {1:15"+valueformat+"}\n").format(key, info[key]) )
         infofile.close()
 
