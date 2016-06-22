@@ -33,7 +33,7 @@ from ...magic.tools import plotting
 
 # -----------------------------------------------------------------
 
-dustpedia_dat_path = fs.join(inspection.pts_dat_dir("magic"), "dustpedia")
+dustpedia_dat_path = fs.join(inspection.pts_dat_dir("dustpedia"))
 
 # -----------------------------------------------------------------
 
@@ -114,6 +114,13 @@ dustpedia_final_pixelsizes = {"GALEX": 3.2 * Unit("arcsec"), "SDSS": 0.45 * Unit
 
 # This should allow you to work on the exact same pixel grid as I did for any given target.
 
+
+# The reason mArchiveList queries DR9 is that the SDSS imaging products haven't changed since DR9, so Montage haven't
+# felt the need to explicitly update which data release they query, as they'd get the same results.
+# Hence the lack of specifying the data release.
+
+
+
 # -----------------------------------------------------------------
 
 class DustPediaDataProcessing(object):
@@ -153,7 +160,7 @@ class DustPediaDataProcessing(object):
         :return:
         """
 
-        return  get_galex_url_table()
+        return get_galex_url_table()
 
     # -----------------------------------------------------------------
 
@@ -181,6 +188,31 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
+    def download_galex_observations_for_galaxy(self, galaxy_name, path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param path:
+        :return:
+        """
+
+        # Get the urls
+        urls = self.get_galex_observation_urls_for_galaxy(galaxy_name)
+
+        # Loop over the urls
+        for url in urls:
+
+            filename = fs.name(url)
+            filepath = fs.join(path, filename)
+
+            # Download
+            urllib.urlretrieve(url, filepath)
+
+            break
+
+    # -----------------------------------------------------------------
+
     def get_galex_observation_urls_for_galaxy(self, galaxy_name):
 
         """
@@ -189,14 +221,69 @@ class DustPediaDataProcessing(object):
         :return:
         """
 
-        # Find the indices in the table
-        indices = tables.find_indices(self.galex_observations_table, "NGC3031", column_name="uploadID")
+        # Get the tilenames
+        tilenames = self.get_galex_tilenames_for_galaxy(galaxy_name)
 
+        # Search through the URL table to get all the URLS that contain one of the tilenames
+        urls = []
+        for i in range(len(self.galex_url_table)):
 
+            url = self.galex_url_table["URL"][i]
+
+            for tilename in tilenames:
+
+                if tilename in url:
+                    urls.append(url)
+                    break # URL added, so no need to look at the other tilenames for this URL
+
+        # Return the list of URLS
+        return urls
 
     # -----------------------------------------------------------------
 
-    def get_sdss_primary_fields_for_galaxy(self, galaxy_name, band):
+    def get_galex_tilenames_for_galaxy(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Find the indices in the table
+        indices = tables.find_indices(self.galex_observations_table, galaxy_name, column_name="uploadID")
+
+        tilenames = set()
+
+        # Loop over the indices corresponding to the specified galaxy
+        for index in indices:
+
+            tilename = self.galex_observations_table["tilename"][index]
+            tilenames.add(tilename)
+
+        # Return the tilenames as a list
+        return list(tilenames)
+
+    # -----------------------------------------------------------------
+
+    def download_sdss_primary_fields_for_galaxy(self, galaxy_name, band, path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param band:
+        :param path:
+        :return:
+        """
+
+        # Get the urls
+        urls = self.get_sdss_primary_field_urls_for_galaxy(galaxy_name, band)
+
+        # Loop over the urls
+        for url in urls: pass
+
+    # -----------------------------------------------------------------
+
+    def get_sdss_primary_field_urls_for_galaxy(self, galaxy_name, band):
 
         """
         This function ...
@@ -208,10 +295,23 @@ class DustPediaDataProcessing(object):
         # Get the coordinate range first for this galaxy
         ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)
 
-        # Get the SDSS fields that cover this coordinate range (from Montage)
+        # Get the SDSS fields that cover this coordinate range (from Montage) (URLS)
         table = self.get_sdss_fields_for_coordinate_range(band, ra, dec, width)
 
+        # Get the set of unique URLs
+        sdss_urls = list(set(table["url"]))
 
+        # ...
+        dr12_pri = []
+        for i in range(len(self.sdss_field_table)):
+            entry = str(int(self.sdss_field_table['RUN'][i])) + ' ' + str(int(self.sdss_field_table['CAMCOL'][i])) + ' ' + str(int(self.sdss_field_table['FIELD'][i]))
+            dr12_pri.append(entry)
+
+        # Get the URLS of the primary fields
+        sdss_urls_pri = SDSS_Primary_Check(sdss_urls, dr12_pri)
+
+        # Return the list of URLS
+        return sdss_urls_pri
 
     # -----------------------------------------------------------------
 
@@ -373,5 +473,19 @@ def get_galex_observations_table():
 
     # Return the table
     return table
+
+# -----------------------------------------------------------------
+
+def SDSS_Primary_Check(urls, index):
+
+    urls_pri = []
+    for url in urls:
+        run = url.split('/')[9].lstrip('0')
+        camcol = url.split('/')[10].lstrip('0')
+        field = url.split('/')[11].split('.')[0].split('-')[4].lstrip('0')
+        check_string = run+' '+camcol+' '+field
+        if check_string in index:
+            urls_pri.append(url)
+    return urls_pri
 
 # -----------------------------------------------------------------
