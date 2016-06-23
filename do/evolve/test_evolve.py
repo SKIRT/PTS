@@ -12,7 +12,7 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-from pts.evolve import GSimpleGA
+from pts.evolve.GSimpleGA import GSimpleGA, RawScoreCriteria
 from pts.evolve import G1DList
 from pts.evolve import Mutators, Initializators
 from pts.evolve import Selectors
@@ -24,6 +24,14 @@ import matplotlib.pyplot as plt
 import math
 
 from pts.core.tools import serialization
+from pts.core.tools import filesystem as fs
+from pts.core.basics.configuration import Configuration
+
+# -----------------------------------------------------------------
+
+config = Configuration()
+config.add_required("dump_or_load", str, "dump or load")
+config.read()
 
 # -----------------------------------------------------------------
 
@@ -56,46 +64,60 @@ def chi_squared_function(chromosome):
 
     return chi_squared
 
+# path to the GA object
+path = fs.join(fs.home(), "ga.pickle")
 
-# Genome instance
-genome = G1DList.G1DList(2)
-genome.setParams(rangemin=0., rangemax=50., bestrawscore=0.00, rounddecimal=2)
-genome.initializator.set(Initializators.G1DListInitializatorReal)
-genome.mutator.set(Mutators.G1DListMutatorRealGaussian)
 
-genome.evaluator.set(chi_squared_function)
+if config.arguments.dump_or_load == "dump":
 
-# Genetic Algorithm Instance
-ga = GSimpleGA.GSimpleGA(genome)
-ga.terminationCriteria.set(GSimpleGA.RawScoreCriteria)
-ga.setMinimax(Consts.minimaxType["minimize"])
-ga.setGenerations(20)
-ga.setCrossoverRate(0.5)
-ga.setPopulationSize(100)
-ga.setMutationRate(0.5)
+    # Genome instance
+    genome = G1DList.G1DList(2)
+    genome.setParams(rangemin=0., rangemax=50., bestrawscore=0.00, rounddecimal=2)
+    genome.initializator.set(Initializators.G1DListInitializatorReal)
+    genome.mutator.set(Mutators.G1DListMutatorRealGaussian)
 
-# ga.evolve(freq_stats=50)
+    genome.evaluator.set(chi_squared_function)
 
-# ga.initialize_evolution()
+    # Genetic Algorithm Instance
+    ga = GSimpleGA(genome)
+    ga.terminationCriteria.set(RawScoreCriteria)
+    ga.setMinimax(Consts.minimaxType["minimize"])
+    ga.setGenerations(20)
+    ga.setCrossoverRate(0.5)
+    ga.setPopulationSize(100)
+    ga.setMutationRate(0.5)
 
-ga.initialize()
+    #ga.evolve(freq_stats=50)
+    #exit()
 
-pop = ga.internalPop
-for ind in pop: print(ind.genomeList)
+    # ga.initialize_evolution()
+
+    ga.initialize()
+
+    #pop = ga.internalPop
+    #for ind in pop: print(ind.genomeList)
+
+
+
+    # Dump
+    ga.saveto(path)
+
+elif config.arguments.dump_or_load == "load":
+
+    ga = GSimpleGA.from_file(path)
+
+    pop = ga.internalPop
+    for ind in pop: print(ind.genomeList)
 
 # newpop = ga.generate_new_population()
 # for ind in newpop: print(ind.genomeList)
 
-exit()
+#pop = ga.getPopulation()
+#print(pop)
+#best = ga.bestIndividual()
 
-print(newpop)
-
-pop = ga.getPopulation()
-print(pop)
-best = ga.bestIndividual()
-
-slope, intercept, r_value, p_value, std_err = stats.linregress(test_data_x, test_data_y)
-print("slope", best[0], "(real:", slope, ")")
-print("intercept", best[1], "(real:", intercept, ")")
+#slope, intercept, r_value, p_value, std_err = stats.linregress(test_data_x, test_data_y)
+#print("slope", best[0], "(real:", slope, ")")
+#print("intercept", best[1], "(real:", intercept, ")")
 
 # -----------------------------------------------------------------

@@ -23,15 +23,15 @@
 # -----------------------------------------------------------------
 
 # Ensure Python 3 functionality
-from __future__ import absolute_import, division, print_function
+from __future__ import division, print_function
 
 # Import standard modules
 import random
 
 # Import other evolve modules
-from .GenomeBase import GenomeBase, GTreeBase, GTreeNodeBase
-from . import Consts
-from . import Util
+from GenomeBase import GenomeBase, GTreeBase, GTreeNodeBase
+import Consts
+import Util
 
 try:
     import pydot

@@ -5,28 +5,22 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.evolve.GSimpleGA
+## \package pts.evolve.Migration This module contains all the migration
+#  schemes and the distributed GA related functions.
 
 # -----------------------------------------------------------------
 
-"""
-:mod:`Migration` -- the migration schemes, distributed GA
-=====================================================================
-
-This module contains all the migration schemes and the distributed
-GA related functions.
-
-.. versionadded:: 0.6
-   The :mod:`Migration` module.
-
-"""
-
-import Util
+# Import standard modules
 from random import randint as rand_randint, choice as rand_choice
+
+# Import other evolve modules
+import Util
 import Network
 import Consts
 from FunctionSlot import FunctionSlot
-import logging
+
+# Import the relevant PTS classes and modules
+from ..core.tools.logging import log
 
 try:
    from mpi4py import MPI
@@ -34,16 +28,26 @@ try:
 except ImportError:
    HAS_MPI4PY = False
 
-class MigrationScheme(object):
-   """ This is the base class for all migration schemes """
+# -----------------------------------------------------------------
 
-   selector = None
-   """ This is the function slot for the selection method
-   if you want to change the default selector, you must do this: ::
+class MigrationScheme(object):
+
+    """ This is the base class for all migration schemes """
+
+    selector = None
+    """ This is the function slot for the selection method
+    if you want to change the default selector, you must do this: ::
 
       migration_scheme.selector.set(Selectors.GRouletteWheel) """
 
-   def __init__(self):
+    # -----------------------------------------------------------------
+
+    def __init__(self):
+
+      """
+      The constructor ...
+      """
+
       self.selector = FunctionSlot("Selector")
       self.GAEngine = None
       self.nMigrationRate = Consts.CDefGenMigrationRate
@@ -51,18 +55,27 @@ class MigrationScheme(object):
       self.nReplacement = Consts.CDefGenMigrationReplacement
       self.networkCompression = 9
 
-   def isReady(self):
+    # -----------------------------------------------------------------
+
+    def isReady(self):
+
       """ Returns true if is time to migrate """
+
       return True if self.GAEngine.getCurrentGeneration() % self.nMigrationRate == 0 else False
 
-   def getCompressionLevel(self):
-      """ Get the zlib compression level of network data
+    # -----------------------------------------------------------------
 
+    def getCompressionLevel(self):
+
+      """ Get the zlib compression level of network data
       The values are in the interval described on the :func:`Network.pickleAndCompress`
       """
+
       return self.networkCompression
 
-   def setCompressionLevel(self, level):
+    # -----------------------------------------------------------------
+
+    def setCompressionLevel(self, level):
       """ Set the zlib compression level of network data
 
       The values are in the interval described on the :func:`Network.pickleAndCompress`
@@ -71,66 +84,99 @@ class MigrationScheme(object):
       """
       self.networkCompression = level
 
-   def getNumReplacement(self):
+    # -----------------------------------------------------------------
+
+    def getNumReplacement(self):
+
       """ Return the number of individuals that will be
       replaced in the migration process """
+
       return self.nReplacement
 
-   def setNumReplacement(self, num_individuals):
+    # -----------------------------------------------------------------
+
+    def setNumReplacement(self, num_individuals):
+
       """ Return the number of individuals that will be
       replaced in the migration process
-
       :param num_individuals: the number of individuals to be replaced
       """
+
       self.nReplacement = num_individuals
 
-   def getNumIndividuals(self):
-      """ Return the number of individuals that will migrate
+    # -----------------------------------------------------------------
 
+    def getNumIndividuals(self):
+
+      """ Return the number of individuals that will migrate
       :rtype: the number of individuals to be replaced
       """
+
       return self.nIndividuals
 
-   def setNumIndividuals(self, num_individuals):
-      """ Set the number of individuals that will migrate
+    # -----------------------------------------------------------------
 
+    def setNumIndividuals(self, num_individuals):
+
+      """ Set the number of individuals that will migrate
       :param num_individuals: the number of individuals
       """
+
       self.nIndividuals = num_individuals
 
-   def setMigrationRate(self, generations):
+    # -----------------------------------------------------------------
+
+    def setMigrationRate(self, generations):
+
       """ Sets the generation frequency supposed to migrate
       and receive individuals.
-
       :param generations: the number of generations
       """
+
       self.nMigrationRate = generations
 
-   def getMigrationRate(self):
+    # -----------------------------------------------------------------
+
+    def getMigrationRate(self):
+
       """ Return the the generation frequency supposed to migrate
       and receive individuals
-
       :rtype: the number of generations
       """
+
       return self.nMigrationRate
 
-   def setGAEngine(self, ga_engine):
+    # -----------------------------------------------------------------
+
+    def setGAEngine(self, ga_engine):
+
       """ Sets the GA Engine handler """
       self.GAEngine = ga_engine
 
-   def start(self):
+    # -----------------------------------------------------------------
+
+    def start(self):
+
       """ Initializes the migration scheme """
+
       pass
 
-   def stop(self):
+    # -----------------------------------------------------------------
+
+    def stop(self):
+
       """ Stops the migration engine """
+
       pass
 
-   def select(self):
-      """ Picks an individual from population using specific selection method
+    # -----------------------------------------------------------------
 
+    def select(self):
+
+      """ Picks an individual from population using specific selection method
       :rtype: an individual object
       """
+
       if self.selector.isEmpty():
          return self.GAEngine.select(popID=self.GAEngine.currentGeneration)
       else:
@@ -138,7 +184,9 @@ class MigrationScheme(object):
                                                 popID=self.GAEngine.currentGeneration):
             return it
 
-   def selectPool(self, num_individuals):
+    # -----------------------------------------------------------------
+
+    def selectPool(self, num_individuals):
       """ Select num_individuals number of individuals and return a pool
 
       :param num_individuals: the number of individuals to select
@@ -147,12 +195,18 @@ class MigrationScheme(object):
       pool = [self.select() for i in xrange(num_individuals)]
       return pool
 
-   def exchange(self):
+    # -----------------------------------------------------------------
+
+    def exchange(self):
+
       """ Exchange individuals """
+
       pass
 
+# -----------------------------------------------------------------
 
 class WANMigration(MigrationScheme):
+
    """ This is the Simple Migration class for distributed GA
 
    Example:
@@ -232,10 +286,10 @@ class WANMigration(MigrationScheme):
       self.clientThread.join(client_timeout + 3)
 
       if self.serverThread.isAlive():
-         logging.warning("warning: server thread not joined !")
+         log.warning("warning: server thread not joined !")
 
       if self.clientThread.isAlive():
-         logging.warning("warning: client thread not joined !")
+         log.warning("warning: client thread not joined !")
 
    def exchange(self):
       """ This is the main method, is where the individuals
@@ -313,20 +367,28 @@ class MPIMigration(MigrationScheme):
       else:
          return False
 
+    # -----------------------------------------------------------------
+
    def gather_bests(self):
+
       '''
       Collect all the best individuals from the various populations. The
       result is stored in process 0
       '''
+
       best_guy = self.select()
       self.all_stars = self.comm.gather(sendobj=best_guy, root=0)
 
-   def exchange(self):
-      """ This is the main method, is where the individuals
-      are exchanged """
+    # -----------------------------------------------------------------
 
-      if not self.isReady():
-         return
+   def exchange(self):
+
+      """
+      This is the main method, is where the individuals
+      are exchanged
+      """
+
+      if not self.isReady(): return
 
       pool_to_send = self.selectPool(self.getNumIndividuals())
       pool_received = self.comm.sendrecv(sendobj=pool_to_send,
@@ -350,3 +412,5 @@ class MPIMigration(MigrationScheme):
          population[len(population) - 1 - i] = choice
 
       self.gather_bests()
+
+# -----------------------------------------------------------------

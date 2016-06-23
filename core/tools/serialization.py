@@ -30,20 +30,21 @@ def to_json(object):
 
 # -----------------------------------------------------------------
 
-def dump(object, path, method="pickle"):
+def dump(object, path, method="pickle", protocol=None):
 
     """
     This function ...
     :param object:
     :param path:
     :param method:
+    :param protocol:
     :return:
     """
 
     # Serialize using pickle
     if method == "pickle":
 
-        pickle.dump(object, open(path, 'wb'))
+        pickle.dump(object, open(path, 'wb'), protocol=protocol)
 
     # Serialize to the json format
     elif method == "json":

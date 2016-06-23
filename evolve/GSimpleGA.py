@@ -36,6 +36,9 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 functionality
+from __future__ import division, print_function
+
 # Import standard modules
 import random
 from time import time
@@ -53,6 +56,7 @@ import Util
 
 # Import the relevant PTS classes and modules
 from ..core.tools.logging import log
+from ..core.tools import serialization
 
 # Platform dependant code for the Interactive Mode
 #if sys_platform[:3] == "win":
@@ -244,6 +248,53 @@ class GSimpleGA(object):
                 break
 
         log.debug("A GA Engine was created, nGenerations=%d", self.nGenerations)
+
+        # New
+        self.path = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Load the GA object from file
+        ga = serialization.load(path)
+
+        # Set the path of the GA file
+        ga.path = path
+
+        # Return the GA
+        return ga
+
+    # -----------------------------------------------------------------
+
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        self.path = path
+        serialization.dump(self, path, protocol=2)
 
     # -----------------------------------------------------------------
 
@@ -671,7 +722,7 @@ class GSimpleGA(object):
 
     def initialize(self):
 
-        """ Initializes the GA Engine. Create and initialize population """
+        """ Initializes the GA Engine. Create and initialize the first population """
 
         self.internalPop.create(minimax=self.minimax)
         self.internalPop.initialize(ga_engine=self)
@@ -825,7 +876,7 @@ class GSimpleGA(object):
         percent = self.currentGeneration * 100 / float(self.nGenerations)
         message = "Gen. %d (%.2f%%):" % (self.currentGeneration, percent)
         log.info(message)
-        print message,
+        print(message,)
         sys_stdout.flush()
         self.internalPop.statistics()
         stat_ret = self.internalPop.printStats()
@@ -837,7 +888,7 @@ class GSimpleGA(object):
 
         """ Shows the time elapsed since the begin of evolution """
         total_time = time() - self.time_init
-        print "Total time elapsed: %.3f seconds." % total_time
+        print("Total time elapsed: %.3f seconds." % total_time)
         return total_time
 
     # -----------------------------------------------------------------
@@ -980,13 +1031,13 @@ class GSimpleGA(object):
         if stopFlagTerminationCriteria:
             log.debug("Evolution stopped by the Termination Criteria !")
             if freq_stats:
-                print "\n\tEvolution stopped by Termination Criteria function !\n"
+                print("\n\tEvolution stopped by Termination Criteria function !\n")
             return False
 
         if stopFlagCallback:
             log.debug("Evolution stopped by Step Callback function !")
             if freq_stats:
-                print "\n\tEvolution stopped by Step Callback function !\n"
+                print("\n\tEvolution stopped by Step Callback function !\n")
             return False
 
         if self.step(): return False

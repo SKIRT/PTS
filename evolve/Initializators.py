@@ -5,50 +5,39 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.evolve.GSimpleGA
+## \package pts.evolve.Initializers In this module we have the genetic operators of initialization for each
+#  chromosome representation, the most part of initialization is done by
+#  choosing random data.
+#
+#.. note:: In Pyevolve, the Initializator defines the data type that will
+#          be used on the chromosome, for example, the :func:`G1DListInitializatorInteger`
+#          will initialize the G1DList with Integers.
+#
 
 # -----------------------------------------------------------------
 
-"""
-
-:mod:`Initializators` -- initialization methods module
-===================================================================
-
-In this module we have the genetic operators of initialization for each
-chromosome representation, the most part of initialization is done by
-choosing random data.
-
-.. note:: In Pyevolve, the Initializator defines the data type that will
-          be used on the chromosome, for example, the :func:`G1DListInitializatorInteger`
-          will initialize the G1DList with Integers.
-
-
-"""
-
+# Import other evolve modules
 from random import randint as rand_randint, uniform as rand_uniform, choice as rand_choice
 import GTree
 import Util
 
-
-#############################
-##     1D Binary String    ##
-#############################
+# -----------------------------------------------------------------
 
 def G1DBinaryStringInitializator(genome, **args):
+
     """ 1D Binary String initializator """
+
     genome.genomeList = [rand_choice((0, 1)) for _ in xrange(genome.getListSize())]
 
-
-#############################
-##     2D Binary String    ##
-#############################
+# -----------------------------------------------------------------
 
 def G2DBinaryStringInitializator(genome, **args):
-    """ Integer initialization function of 2D Binary String
 
+    """ Integer initialization function of 2D Binary String
     .. versionadded:: 0.6
        The *G2DBinaryStringInitializator* function
     """
+
     genome.clearString()
 
     for i in xrange(genome.getHeight()):
@@ -56,17 +45,13 @@ def G2DBinaryStringInitializator(genome, **args):
             random_gene = rand_choice((0, 1))
             genome.setItem(i, j, random_gene)
 
-
-####################
-##     1D List    ##
-####################
+# -----------------------------------------------------------------
 
 def G1DListInitializatorAllele(genome, **args):
-    """ Allele initialization function of G1DList
 
+    """ Allele initialization function of G1DList
     To use this initializator, you must specify the *allele* genome parameter with the
     :class:`GAllele.GAlleles` instance.
-
     """
 
     allele = genome.getParam("allele", None)
@@ -75,6 +60,7 @@ def G1DListInitializatorAllele(genome, **args):
 
     genome.genomeList = [allele[i].getRandomAllele() for i in xrange(genome.getListSize())]
 
+# -----------------------------------------------------------------
 
 def G1DListInitializatorInteger(genome, **args):
     """ Integer initialization function of G1DList
@@ -87,29 +73,27 @@ def G1DListInitializatorInteger(genome, **args):
 
     genome.genomeList = [rand_randint(range_min, range_max) for i in xrange(genome.getListSize())]
 
+# -----------------------------------------------------------------
 
 def G1DListInitializatorReal(genome, **args):
+
     """ Real initialization function of G1DList
-
     This initializator accepts the *rangemin* and *rangemax* genome parameters.
-
     """
+
     range_min = genome.getParam("rangemin", 0)
     range_max = genome.getParam("rangemax", 100)
 
     genome.genomeList = [rand_uniform(range_min, range_max) for i in xrange(genome.getListSize())]
 
-
-####################
-##     2D List    ##
-####################
+# -----------------------------------------------------------------
 
 def G2DListInitializatorInteger(genome, **args):
+
     """ Integer initialization function of G2DList
-
     This initializator accepts the *rangemin* and *rangemax* genome parameters.
-
     """
+
     genome.clearList()
 
     for i in xrange(genome.getHeight()):
@@ -118,13 +102,14 @@ def G2DListInitializatorInteger(genome, **args):
                                          genome.getParam("rangemax", 100))
             genome.setItem(i, j, randomInteger)
 
+# -----------------------------------------------------------------
 
 def G2DListInitializatorReal(genome, **args):
+
     """ Integer initialization function of G2DList
-
     This initializator accepts the *rangemin* and *rangemax* genome parameters.
-
     """
+
     genome.clearList()
 
     for i in xrange(genome.getHeight()):
@@ -133,15 +118,14 @@ def G2DListInitializatorReal(genome, **args):
                                       genome.getParam("rangemax", 100))
             genome.setItem(i, j, randomReal)
 
+# -----------------------------------------------------------------
 
 def G2DListInitializatorAllele(genome, **args):
-    """ Allele initialization function of G2DList
 
+    """ Allele initialization function of G2DList
     To use this initializator, you must specify the *allele* genome parameter with the
     :class:`GAllele.GAlleles` instance.
-
     .. warning:: the :class:`GAllele.GAlleles` instance must have the homogeneous flag enabled
-
     """
 
     allele = genome.getParam("allele", None)
@@ -158,14 +142,11 @@ def G2DListInitializatorAllele(genome, **args):
             random_allele = allele[0].getRandomAllele()
             genome.setItem(i, j, random_allele)
 
-
-####################
-##      Tree      ##
-####################
+# -----------------------------------------------------------------
 
 def GTreeInitializatorInteger(genome, **args):
-    """ Integer initialization function of GTree
 
+    """ Integer initialization function of GTree
     This initializator accepts the *rangemin* and *rangemax* genome parameters.
     It accepts the following parameters too:
 
@@ -181,6 +162,7 @@ def GTreeInitializatorInteger(genome, **args):
     .. versionadded:: 0.6
        The *GTreeInitializatorInteger* function.
     """
+
     max_depth = genome.getParam("max_depth", 5)
     max_siblings = genome.getParam("max_siblings", 2)
 
@@ -207,18 +189,18 @@ def GTreeInitializatorInteger(genome, **args):
     genome.processNodes()
     assert genome.getHeight() <= max_depth
 
+# -----------------------------------------------------------------
 
 def GTreeInitializatorAllele(genome, **args):
-    """ Allele initialization function of GTree
 
+    """ Allele initialization function of GTree
     To use this initializator, you must specify the *allele* genome parameter with the
     :class:`GAllele.GAlleles` instance.
-
     .. warning:: the :class:`GAllele.GAlleles` instance **must** have the homogeneous flag enabled
-
     .. versionadded:: 0.6
        The *GTreeInitializatorAllele* function.
     """
+
     max_depth = genome.getParam("max_depth", 5)
     max_siblings = genome.getParam("max_siblings", 2)
     method = genome.getParam("method", "grow")
@@ -246,20 +228,15 @@ def GTreeInitializatorAllele(genome, **args):
     genome.processNodes()
     assert genome.getHeight() <= max_depth
 
-
-####################
-##      Tree GP   ##
-####################
+# -----------------------------------------------------------------
 
 def GTreeGPInitializator(genome, **args):
-    """This initializator accepts the follow parameters:
 
+    """This initializator accepts the follow parameters:
     *max_depth*
        The max depth of the tree
-
     *method*
        The method, accepts "grow", "full" or "ramped"
-
     .. versionadded:: 0.6
        The *GTreeGPInitializator* function.
     """
@@ -283,3 +260,5 @@ def GTreeGPInitializator(genome, **args):
     genome.setRoot(root)
     genome.processNodes()
     assert genome.getHeight() <= max_depth
+
+# -----------------------------------------------------------------
