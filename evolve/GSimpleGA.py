@@ -5,101 +5,71 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.evolve.GSimpleGA
+## \package pts.evolve.GSimpleGA This module contains the GA Engine, the GA Engine class is responsible
+#  for all the evolutionary process. It contains the GA Engine related
+#  functions, like the Termination Criteria functions for convergence analysis, etc.
+#
+#  Default Parameters:
+#*Number of Generations*
+#   Default is 100 generations
+#*Mutation Rate*
+#   Default is 0.02, which represents 2%
+#*Crossover Rate*
+#   Default is 0.9, which represents 90%
+#*Elitism Replacement*
+#   Default is 1 individual
+#*Population Size*
+#   Default is 80 individuals
+#*Minimax*
+#   >>> Consts.minimaxType["maximize"]
+#   Maximize the evaluation function
+#*DB Adapter*
+#   Default is **None**
+#*Migration Adapter*
+#   Default is **None**
+#*Interactive Mode*
+#   Default is **True**
+#*Selector (Selection Method)*
+#   :func:`Selectors.GRankSelector`
+#   The Rank Selection method
+#
 
 # -----------------------------------------------------------------
 
-"""
-
-:mod:`GSimpleGA` -- the genetic algorithm by itself
-=====================================================================
-
-This module contains the GA Engine, the GA Engine class is responsible
-for all the evolutionary process. It contains the GA Engine related
-funtions, like the Termination Criteria functions for convergence analysis, etc.
-
-Default Parameters
--------------------------------------------------------------
-
-*Number of Generations*
-
-   Default is 100 generations
-
-*Mutation Rate*
-
-   Default is 0.02, which represents 2%
-
-*Crossover Rate*
-
-   Default is 0.9, which represents 90%
-
-*Elitism Replacement*
-
-   Default is 1 individual
-
-*Population Size*
-
-   Default is 80 individuals
-
-*Minimax*
-
-   >>> Consts.minimaxType["maximize"]
-
-   Maximize the evaluation function
-
-*DB Adapter*
-
-   Default is **None**
-
-*Migration Adapter*
-
-   Default is **None**
-
-*Interactive Mode*
-
-   Default is **True**
-
-*Selector (Selection Method)*
-
-   :func:`Selectors.GRankSelector`
-
-   The Rank Selection method
-
-Class
--------------------------------------------------------------
-
-"""
+# Import standard modules
 import random
-import logging
 from time import time
 from types import BooleanType
 from sys import platform as sys_platform
 from sys import stdout as sys_stdout
-import code
 
+# Import other evolve modules
 from GPopulation import GPopulation
 from FunctionSlot import FunctionSlot
 from GenomeBase import GenomeBase
 from DBAdapters import DBBaseAdapter
 import Consts
 import Util
-#import pyevolve
+
+# Import the relevant PTS classes and modules
+from ..core.tools.logging import log
 
 # Platform dependant code for the Interactive Mode
-if sys_platform[:3] == "win":
-    import msvcrt
+#if sys_platform[:3] == "win":
+#    import msvcrt
 
+# -----------------------------------------------------------------
 
 def RawScoreCriteria(ga_engine):
+
     """ Terminate the evolution using the **bestrawscore** and **rounddecimal**
     parameter obtained from the individual
-
     Example:
        >>> genome.setParams(bestrawscore=0.00, rounddecimal=2)
        (...)
        >>> ga_engine.terminationCriteria.set(GSimpleGA.RawScoreCriteria)
-
     """
+
     ind = ga_engine.bestIndividual()
     bestRawScore = ind.getParam("bestrawscore")
     roundDecimal = ind.getParam("rounddecimal")
@@ -118,40 +88,43 @@ def RawScoreCriteria(ga_engine):
         else:
             return bestRawScore >= ind.score
 
+# -----------------------------------------------------------------
 
 def ConvergenceCriteria(ga_engine):
+
     """ Terminate the evolution when the population have converged
-
     Example:
-       >>> ga_engine.terminationCriteria.set(GSimpleGA.ConvergenceCriteria)
 
+       >>> ga_engine.terminationCriteria.set(GSimpleGA.ConvergenceCriteria)
     """
+
     pop = ga_engine.getPopulation()
     return pop[0] == pop[len(pop) - 1]
 
+# -----------------------------------------------------------------
 
 def RawStatsCriteria(ga_engine):
-    """ Terminate the evolution based on the raw stats
 
+    """ Terminate the evolution based on the raw stats
     Example:
        >>> ga_engine.terminationCriteria.set(GSimpleGA.RawStatsCriteria)
-
     """
+
     stats = ga_engine.getStatistics()
     if stats["rawMax"] == stats["rawMin"]:
         if stats["rawAve"] == stats["rawMax"]:
             return True
     return False
 
+# -----------------------------------------------------------------
 
 def FitnessStatsCriteria(ga_engine):
-    """ Terminate the evoltion based on the fitness stats
 
+    """ Terminate the evoltion based on the fitness stats
     Example:
        >>> ga_engine.terminationCriteria.set(GSimpleGA.FitnessStatsCriteria)
-
-
     """
+
     stats = ga_engine.getStatistics()
     if stats["fitMax"] == stats["fitMin"]:
         if stats["fitAve"] == stats["fitMax"]:
@@ -226,7 +199,7 @@ class GSimpleGA(object):
 
         """ Initializator of GSimpleGA """
 
-        if seed:
+        if seed is not None:
             random.seed(seed)
 
         if type(interactiveMode) != BooleanType:
@@ -270,16 +243,16 @@ class GSimpleGA(object):
                 self.setGPMode(True)
                 break
 
-        logging.debug("A GA Engine was created, nGenerations=%d", self.nGenerations)
+        log.debug("A GA Engine was created, nGenerations=%d", self.nGenerations)
 
     # -----------------------------------------------------------------
 
     def setGPMode(self, bool_value):
 
         """ Sets the Genetic Programming mode of the GA Engine
-
         :param bool_value: True or False
         """
+
         self.GPMode = bool_value
 
     # -----------------------------------------------------------------
@@ -287,9 +260,9 @@ class GSimpleGA(object):
     def getGPMode(self):
 
         """ Get the Genetic Programming mode of the GA Engine
-
         :rtype: True or False
         """
+
         return self.GPMode
 
     # -----------------------------------------------------------------
@@ -297,33 +270,28 @@ class GSimpleGA(object):
     def __call__(self, *args, **kwargs):
 
         """ A method to implement a callable object
-
         Example:
            >>> ga_engine(freq_stats=10)
-
         .. versionadded:: 0.6
            The callable method.
         """
+
         if kwargs.get("freq_stats", None):
             return self.evolve(kwargs.get("freq_stats"))
-        else:
-            return self.evolve()
+        else: return self.evolve()
 
     # -----------------------------------------------------------------
 
     def setParams(self, **args):
 
         """ Set the internal params
-
         Example:
            >>> ga.setParams(gp_terminals=['x', 'y'])
-
-
         :param args: params to save
-
         ..versionaddd:: 0.6
            Added the *setParams* method.
         """
+
         self.internalParams.update(args)
 
     # -----------------------------------------------------------------
@@ -331,17 +299,15 @@ class GSimpleGA(object):
     def getParam(self, key, nvl=None):
 
         """ Gets an internal parameter
-
         Example:
            >>> ga.getParam("gp_terminals")
            ['x', 'y']
-
         :param key: the key of param
         :param nvl: if the key doesn't exist, the nvl will be returned
-
         ..versionaddd:: 0.6
            Added the *getParam* method.
         """
+
         return self.internalParams.get(key, nvl)
 
     # -----------------------------------------------------------------
@@ -350,12 +316,11 @@ class GSimpleGA(object):
 
         """ Sets the generation in which the GA must enter in the
         Interactive Mode
-
         :param generation: the generation number, use "-1" to disable
-
         .. versionadded::0.6
            The *setInteractiveGeneration* method.
         """
+
         if generation < -1:
             Util.raiseException("Generation must be >= -1", ValueError)
         self.interactiveGen = generation
@@ -366,12 +331,11 @@ class GSimpleGA(object):
 
         """ returns the generation in which the GA must enter in the
         Interactive Mode
-
         :rtype: the generation number or -1 if not set
-
         .. versionadded::0.6
            The *getInteractiveGeneration* method.
         """
+
         return self.interactiveGen
 
     # -----------------------------------------------------------------
@@ -379,13 +343,11 @@ class GSimpleGA(object):
     def setElitismReplacement(self, numreplace):
 
         """ Set the number of best individuals to copy to the next generation on the elitism
-
         :param numreplace: the number of individuals
-
         .. versionadded:: 0.6
            The *setElitismReplacement* method.
-
         """
+
         if numreplace < 1:
             Util.raiseException("Replacement number must be >= 1", ValueError)
         self.nElitismReplacement = numreplace
@@ -393,14 +355,13 @@ class GSimpleGA(object):
     # -----------------------------------------------------------------
 
     def setInteractiveMode(self, flag=True):
+
         """ Enable/disable the interactive mode
-
         :param flag: True or False
-
         .. versionadded: 0.6
            The *setInteractiveMode* method.
-
         """
+
         if type(flag) != BooleanType:
             Util.raiseException("Interactive Mode option must be True or False", TypeError)
         self.interactiveMode = flag
@@ -410,6 +371,7 @@ class GSimpleGA(object):
     def __repr__(self):
 
         """ The string representation of the GA Engine """
+
         minimax_type = Consts.minimaxType.keys()[Consts.minimaxType.values().index(self.minimax)]
         ret = "- GSimpleGA\n"
         ret += "\tGP Mode:\t\t %s\n" % self.getGPMode()
@@ -425,6 +387,8 @@ class GSimpleGA(object):
         for slot in self.allSlots:
             ret += "\t" + slot.__repr__()
         ret += "\n"
+
+        # Return the string
         return ret
 
     # -----------------------------------------------------------------
@@ -464,8 +428,8 @@ class GSimpleGA(object):
 
         .. versionadded:: 0.6
            The `setMultiProcessing` method.
-
         """
+
         if type(flag) != BooleanType:
             Util.raiseException("Multiprocessing option must be True or False", TypeError)
 
@@ -478,8 +442,8 @@ class GSimpleGA(object):
 
     def setMigrationAdapter(self, migration_adapter=None):
 
-        """ Sets the Migration Adapter
-
+        """
+        Sets the Migration Adapter
         .. versionadded:: 0.6
            The `setMigrationAdapter` method.
         """
@@ -492,13 +456,13 @@ class GSimpleGA(object):
 
     def setDBAdapter(self, dbadapter=None):
 
-        """ Sets the DB Adapter of the GA Engine
-
+        """
+        Sets the DB Adapter of the GA Engine
         :param dbadapter: one of the :mod:`DBAdapters` classes instance
-
         .. warning:: the use the of a DB Adapter can reduce the speed performance of the
                      Genetic Algorithm.
         """
+
         if (dbadapter is not None) and (not isinstance(dbadapter, DBBaseAdapter)):
             Util.raiseException("The DB Adapter must be a DBBaseAdapter subclass", TypeError)
         self.dbAdapter = dbadapter
@@ -507,13 +471,12 @@ class GSimpleGA(object):
 
     def setPopulationSize(self, size):
 
-        """ Sets the population size, calls setPopulationSize() of GPopulation
-
-        :param size: the population size
-
-        .. note:: the population size must be >= 2
-
         """
+        Sets the population size, calls setPopulationSize() of GPopulation
+        :param size: the population size
+        .. note:: the population size must be >= 2
+        """
+
         if size < 2:
             Util.raiseException("population size must be >= 2", ValueError)
         self.internalPop.setPopulationSize(size)
@@ -522,14 +485,14 @@ class GSimpleGA(object):
 
     def setSortType(self, sort_type):
 
-        """ Sets the sort type, Consts.sortType["raw"]/Consts.sortType["scaled"]
-
+        """
+        Sets the sort type, Consts.sortType["raw"]/Consts.sortType["scaled"]
         Example:
            >>> ga_engine.setSortType(Consts.sortType["scaled"])
 
         :param sort_type: the Sort Type
-
         """
+
         if sort_type not in Consts.sortType.values():
             Util.raiseException("sort type must be a Consts.sortType type", TypeError)
         self.internalPop.sortType = sort_type
@@ -538,10 +501,9 @@ class GSimpleGA(object):
 
     def setMutationRate(self, rate):
 
-        """ Sets the mutation rate, between 0.0 and 1.0
-
+        """
+        Sets the mutation rate, between 0.0 and 1.0
         :param rate: the rate, between 0.0 and 1.0
-
         """
         if (rate > 1.0) or (rate < 0.0):
             Util.raiseException("Mutation rate must be >= 0.0 and <= 1.0", ValueError)
@@ -551,11 +513,11 @@ class GSimpleGA(object):
 
     def setCrossoverRate(self, rate):
 
-        """ Sets the crossover rate, between 0.0 and 1.0
-
-        :param rate: the rate, between 0.0 and 1.0
-
         """
+        Sets the crossover rate, between 0.0 and 1.0
+        :param rate: the rate, between 0.0 and 1.0
+        """
+
         if (rate > 1.0) or (rate < 0.0):
             Util.raiseException("Crossover rate must be >= 0.0 and <= 1.0", ValueError)
         self.pCrossover = rate
@@ -564,11 +526,11 @@ class GSimpleGA(object):
 
     def setGenerations(self, num_gens):
 
-        """ Sets the number of generations to evolve
-
-        :param num_gens: the number of generations
-
         """
+        Sets the number of generations to evolve
+        :param num_gens: the number of generations
+        """
+
         if num_gens < 1:
             Util.raiseException("Number of generations must be >= 1", ValueError)
         self.nGenerations = num_gens
@@ -577,13 +539,13 @@ class GSimpleGA(object):
 
     def getGenerations(self):
 
-        """ Return the number of generations to evolve
-
+        """
+        Return the number of generations to evolve
         :rtype: the number of generations
-
         .. versionadded:: 0.6
            Added the *getGenerations* method
         """
+
         return self.nGenerations
 
     # -----------------------------------------------------------------
@@ -591,10 +553,9 @@ class GSimpleGA(object):
     def getMinimax(self):
 
         """ Gets the minimize/maximize mode
-
         :rtype: the Consts.minimaxType type
-
         """
+
         return self.minimax
 
     # -----------------------------------------------------------------
@@ -602,10 +563,9 @@ class GSimpleGA(object):
     def setMinimax(self, mtype):
 
         """ Sets the minimize/maximize mode, use Consts.minimaxType
-
         :param mtype: the minimax mode, from Consts.minimaxType
-
         """
+
         if mtype not in Consts.minimaxType.values():
             Util.raiseException("Minimax must be maximize or minimize", TypeError)
         self.minimax = mtype
@@ -615,10 +575,9 @@ class GSimpleGA(object):
     def getCurrentGeneration(self):
 
         """ Gets the current generation
-
         :rtype: the current generation
-
         """
+
         return self.currentGeneration
 
     # -----------------------------------------------------------------
@@ -626,10 +585,9 @@ class GSimpleGA(object):
     def setElitism(self, flag):
 
         """ Sets the elitism option, True or False
-
         :param flag: True or False
-
         """
+
         if type(flag) != BooleanType:
             Util.raiseException("Elitism option must be True or False", TypeError)
         self.elitism = flag
@@ -639,10 +597,9 @@ class GSimpleGA(object):
     def getDBAdapter(self):
 
         """ Gets the DB Adapter of the GA Engine
-
         :rtype: a instance from one of the :mod:`DBAdapters` classes
-
         """
+
         return self.dbAdapter
 
     # -----------------------------------------------------------------
@@ -650,9 +607,9 @@ class GSimpleGA(object):
     def setMaxTime(self, seconds):
 
         """ Sets the maximun evolve time of the GA Engine
-
         :param seconds: maximum time in seconds
         """
+
         self.max_time = seconds
 
     # -----------------------------------------------------------------
@@ -660,9 +617,9 @@ class GSimpleGA(object):
     def getMaxTime(self):
 
         """ Get the maximun evolve time of the GA Engine
-
         :rtype: True or False
         """
+
         return self.max_time
 
     # -----------------------------------------------------------------
@@ -670,10 +627,9 @@ class GSimpleGA(object):
     def bestIndividual(self):
 
         """ Returns the population best individual
-
         :rtype: the best individual
-
         """
+
         return self.internalPop.bestRaw()
 
     # -----------------------------------------------------------------
@@ -681,10 +637,9 @@ class GSimpleGA(object):
     def worstIndividual(self):
 
         """ Returns the population worst individual
-
         :rtype: the best individual
-
         """
+
         return self.internalPop.worstRaw()
 
     # -----------------------------------------------------------------
@@ -693,6 +648,7 @@ class GSimpleGA(object):
 
         """ Internally used to catch functions with some specific prefix
         as non-terminals of the GP core """
+
         import __main__ as mod_main
 
         function_set = {}
@@ -719,7 +675,7 @@ class GSimpleGA(object):
 
         self.internalPop.create(minimax=self.minimax)
         self.internalPop.initialize(ga_engine=self)
-        logging.debug("The GA Engine was initialized!")
+        log.debug("The GA Engine was initialized!")
 
     # -----------------------------------------------------------------
 
@@ -752,7 +708,7 @@ class GSimpleGA(object):
         """
 
         newPop = GPopulation(self.internalPop)
-        logging.debug("Population was cloned.")
+        log.debug("Population was cloned.")
 
         size_iterate = len(self.internalPop)
 
@@ -827,7 +783,7 @@ class GSimpleGA(object):
         # through elitism remain eligible for selection as parents when breeding the remainder of the next generation.
         if self.elitism:
 
-            logging.debug("Doing elitism.")
+            log.debug("Doing elitism.")
 
             if self.getMinimax() == Consts.minimaxType["maximize"]:
                 for i in xrange(self.nElitismReplacement):
@@ -845,7 +801,7 @@ class GSimpleGA(object):
         self.internalPop = newPop
         self.internalPop.sort()
 
-        logging.debug("The generation %d was finished.", self.currentGeneration)
+        log.debug("The generation %d was finished.", self.currentGeneration)
 
         self.currentGeneration += 1
 
@@ -868,7 +824,7 @@ class GSimpleGA(object):
         """
         percent = self.currentGeneration * 100 / float(self.nGenerations)
         message = "Gen. %d (%.2f%%):" % (self.currentGeneration, percent)
-        logging.info(message)
+        log.info(message)
         print message,
         sys_stdout.flush()
         self.internalPop.statistics()
@@ -889,7 +845,7 @@ class GSimpleGA(object):
     def dumpStatsDB(self):
 
         """ Dumps the current statistics to database adapter """
-        logging.debug("Dumping stats to the DB Adapter")
+        log.debug("Dumping stats to the DB Adapter")
         self.internalPop.statistics()
         self.dbAdapter.insert(self)
 
@@ -933,7 +889,7 @@ class GSimpleGA(object):
 
         self.time_init = time()
 
-        logging.debug("Starting the DB Adapter and the Migration Adapter if any")
+        log.debug("Starting the DB Adapter and the Migration Adapter if any")
         if self.dbAdapter:
             self.dbAdapter.open(self)
         if self.migrationAdapter:
@@ -957,7 +913,7 @@ class GSimpleGA(object):
         :return:
         """
 
-        logging.debug("Starting loop over evolutionary algorithm.")
+        log.debug("Starting loop over evolutionary algorithm.")
 
         while True:
             if not self.evolve_generation(freq_stats): break
@@ -975,13 +931,13 @@ class GSimpleGA(object):
         self.printTimeElapsed()
 
         if self.dbAdapter:
-            logging.debug("Closing the DB Adapter")
+            log.debug("Closing the DB Adapter")
             if not (self.currentGeneration % self.dbAdapter.getStatsGenFreq() == 0):
                 self.dumpStatsDB()
             self.dbAdapter.commitAndClose()
 
         if self.migrationAdapter:
-            logging.debug("Closing the Migration Adapter")
+            log.debug("Closing the Migration Adapter")
             self.migrationAdapter.stop()
 
         return self.bestIndividual()
@@ -1000,7 +956,7 @@ class GSimpleGA(object):
         stopFlagTerminationCriteria = False
 
         if self.migrationAdapter:
-            logging.debug("Migration adapter: exchange")
+            log.debug("Migration adapter: exchange")
             self.migrationAdapter.exchange()
             self.internalPop.clearFlags()
             self.internalPop.sort()
@@ -1022,13 +978,13 @@ class GSimpleGA(object):
                 self.dumpStatsDB()
 
         if stopFlagTerminationCriteria:
-            logging.debug("Evolution stopped by the Termination Criteria !")
+            log.debug("Evolution stopped by the Termination Criteria !")
             if freq_stats:
                 print "\n\tEvolution stopped by Termination Criteria function !\n"
             return False
 
         if stopFlagCallback:
-            logging.debug("Evolution stopped by Step Callback function !")
+            log.debug("Evolution stopped by Step Callback function !")
             if freq_stats:
                 print "\n\tEvolution stopped by Step Callback function !\n"
             return False
@@ -1041,10 +997,9 @@ class GSimpleGA(object):
 
     def select(self, **args):
 
-        """ Select one individual from population
-
+        """
+        Select one individual from population
         :param args: this parameters will be sent to the selector
-
         """
 
         for it in self.selector.applyFunctions(self.internalPop, **args):

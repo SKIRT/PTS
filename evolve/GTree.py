@@ -5,49 +5,33 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.evolve.GSimpleGA
+## \package pts.evolve.GSimpleGA This is the rooted tree representation, this chromosome representation
+#  can carry any data-type.
+#
+#  Default Parameters:
+#  *Initializator*
+#    :func:`Initializators.GTreeInitializatorInteger`
+#    The Integer Initializator for GTree
+#  *Mutator*
+#    :func:`Mutators.GTreeMutatorIntegerRange`
+#    The Integer Range mutator for GTree
+#  *Crossover*
+#    :func:`Crossovers.GTreeCrossoverSinglePointStrict`
+#    The Strict Single Point crossover for GTree
+#
 
 # -----------------------------------------------------------------
 
-"""
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
 
-:mod:`GTree` and GTreeGP -- the tree chromosomes
-=============================================================
-
-This is the rooted tree representation, this chromosome representation
-can carry any data-type.
-
-Default Parameters
--------------------------------------------------------------
-
-*Initializator*
-
-  :func:`Initializators.GTreeInitializatorInteger`
-
-   The Integer Initializator for GTree
-
-*Mutator*
-
-   :func:`Mutators.GTreeMutatorIntegerRange`
-
-   The Integer Range mutator for GTree
-
-*Crossover*
-
-   :func:`Crossovers.GTreeCrossoverSinglePointStrict`
-
-   The Strict Single Point crossover for GTree
-
-.. versionadded:: 0.6
-   The *GTree* module.
-
-Classes
--------------------------------------------------------------
-"""
+# Import standard modules
 import random
-from GenomeBase import GenomeBase, GTreeBase, GTreeNodeBase
-import Consts
-import Util
+
+# Import other evolve modules
+from .GenomeBase import GenomeBase, GTreeBase, GTreeNodeBase
+from . import Consts
+from . import Util
 
 try:
     import pydot
@@ -55,53 +39,67 @@ try:
 except ImportError:
     HAVE_PYDOT = False
 
-#################################
-#             GTree             #
-#################################
-
+# -----------------------------------------------------------------
 
 class GTree(GTreeBase):
-    """ The GTree class - The tree chromosome representation
 
+    """
+    The GTree class - The tree chromosome representation
     Inheritance diagram for :class:`GTree.GTree`:
-
     .. inheritance-diagram:: GTree.GTree
-
     :param root_node: the root node of the tree
     """
 
     def __init__(self, root_node=None):
+
+        """
+        The constructor ...
+        :param root_node:
+        """
+
         super(GTree, self).__init__(root_node)
         self.initializator.set(Consts.CDefGTreeInit)
         self.mutator.set(Consts.CDefGGTreeMutator)
         self.crossover.set(Consts.CDefGTreeCrossover)
 
+    # -----------------------------------------------------------------
+
     def __repr__(self):
+
         """ Return a string representation of Genome """
+
         ret = GenomeBase.__repr__(self)
         ret += GTreeBase.__repr__(self)
         return ret
 
-    def copy(self, g):
-        """ Copy the contents to the destination g
+    # -----------------------------------------------------------------
 
+    def copy(self, g):
+
+        """ Copy the contents to the destination g
         :param g: the GTree genome destination
         """
+
         GenomeBase.copy(self, g)
         GTreeBase.copy(self, g)
 
-    def clone(self):
-        """ Return a new instance of the genome
+    # -----------------------------------------------------------------
 
+    def clone(self):
+
+        """ Return a new instance of the genome
         :rtype: new GTree instance
         """
+
         newcopy = GTree()
         self.copy(newcopy)
         newcopy.processNodes(True)
         return newcopy
 
+# -----------------------------------------------------------------
 
 class GTreeNode(GTreeNodeBase):
+
     """ The GTreeNode class - The node representation
 
     Inheritance diagram for :class:`GTree.GTreeNode`:
@@ -112,72 +110,93 @@ class GTreeNode(GTreeNodeBase):
     :param parent: the parent node, if root, this
                    must be *None*
     """
+
     __slots__ = ["node_data"]
 
     def __init__(self, data, parent=None):
+
         super(GTreeNode, self).__init__(parent)
         self.node_data = data
 
+    # -----------------------------------------------------------------
+
     def __repr__(self):
+
         str_repr = GTreeNodeBase.__repr__(self)
         str_repr += " - [%s]" % self.node_data
         return str_repr
 
-    def setData(self, data):
-        """ Sets the data of the node
+    # -----------------------------------------------------------------
 
+    def setData(self, data):
+
+        """ Sets the data of the node
         :param data: the data of the node
         """
+
         self.node_data = data
 
-    def getData(self):
-        """ Return the data of the node
+    # -----------------------------------------------------------------
 
+    def getData(self):
+
+        """ Return the data of the node
         :rtype: the data of the node
         """
+
         return self.node_data
 
-    def newNode(self, data):
-        """ Created a new child node
+    # -----------------------------------------------------------------
 
+    def newNode(self, data):
+
+        """ Created a new child node
         :param data: the data of the new created node
         """
+
         node = GTreeNode(data, self)
         self.addChild(node)
         return node
 
-    def swapNodeData(self, node):
-        """ Swaps the node data with another node
+    # -----------------------------------------------------------------
 
+    def swapNodeData(self, node):
+
+        """ Swaps the node data with another node
         :param node: the node to do the data swap
         """
+
         tmp_data = self.node_data
         self.setData(node.getData())
         node.setData(tmp_data)
 
-    def copy(self, g):
-        """ Copy the contents to the destination g
+    # -----------------------------------------------------------------
 
+    def copy(self, g):
+
+        """ Copy the contents to the destination g
         :param g: the GTreeNode genome destination
         """
+
         GTreeNodeBase.copy(self, g)
         g.node_data = self.node_data
 
-    def clone(self):
-        """ Return a new instance of the genome
+    # -----------------------------------------------------------------
 
+    def clone(self):
+
+        """ Return a new instance of the genome
         :rtype: new GTree instance
         """
+
         newcopy = GTreeNode(None)
         self.copy(newcopy)
         return newcopy
 
-#################################
-#    Tree Utility Functions     #
-#################################
-
+# -----------------------------------------------------------------
 
 def buildGTreeGrow(depth, value_callback, max_siblings, max_depth):
+
     """ Random generates a Tree structure using the value_callback
     for data generation and the method "Grow"
 
@@ -202,6 +221,7 @@ def buildGTreeGrow(depth, value_callback, max_siblings, max_depth):
         n.addChild(child)
     return n
 
+# -----------------------------------------------------------------
 
 def buildGTreeFull(depth, value_callback, max_siblings, max_depth):
     """ Random generates a Tree structure using the value_callback
@@ -233,40 +253,42 @@ def buildGTreeFull(depth, value_callback, max_siblings, max_depth):
         n.addChild(child)
     return n
 
-#################################
-#             GTree   GP        #
-#################################
-
+# -----------------------------------------------------------------
 
 class GTreeNodeGP(GTreeNodeBase):
+
     """ The GTreeNodeGP Class - The Genetic Programming Node representation
-
     Inheritance diagram for :class:`GTree.GTreeNodeGP`:
-
     .. inheritance-diagram:: GTree.GTreeNodeGP
-
     :param data: the node data
     :param type: the node type
     :param parent: the node parent
-
     """
+
     __slots__ = ["node_type", "node_data"]
 
     def __init__(self, data, node_type=0, parent=None):
+
         super(GTreeNodeGP, self).__init__(parent)
         self.node_type = node_type
         self.node_data = data
 
+    # -----------------------------------------------------------------
+
     def __repr__(self):
+
         str_repr = GTreeNodeBase.__repr__(self)
         str_repr += " - [%s]" % self.node_data
         return str_repr
 
-    def compare(self, other):
-        """ Compare this node with other
+    # -----------------------------------------------------------------
 
+    def compare(self, other):
+
+        """ Compare this node with other
         :param other: the other GTreeNodeGP
         """
+
         if not isinstance(other, GTreeNodeGP):
             Util.raiseException("The other node used to compare is not a GTreeNodeGP class", TypeError)
 
@@ -275,49 +297,67 @@ class GTreeNodeGP(GTreeNodeBase):
                 return 0
         return -1
 
-    def setData(self, data):
-        """Sets the node internal data
+    # -----------------------------------------------------------------
 
+    def setData(self, data):
+
+        """Sets the node internal data
         :param data: the internal data
         """
+
         self.node_data = data
 
-    def getData(self):
-        """Gets the node internal data
+    # -----------------------------------------------------------------
 
+    def getData(self):
+
+        """Gets the node internal data
         :rtype: the internal data
         """
+
         return self.node_data
 
-    def setType(self, node_type):
-        """Sets the node type
+    # -----------------------------------------------------------------
 
+    def setType(self, node_type):
+
+        """Sets the node type
         :param node_type: the node type is type of Consts.nodeType
         """
+
         self.node_type = node_type
 
-    def getType(self):
-        """Get the node type
+    # -----------------------------------------------------------------
 
+    def getType(self):
+
+        """Get the node type
         :rtype: the node type is type of Consts.nodeType
         """
+
         return self.node_type
 
+    # -----------------------------------------------------------------
+
     def newNode(self, data):
+
         """Creates a new node and adds this
         node as children of current node
-
         :param data: the internal node data
         """
+
         node = GTreeNodeGP(data, self)
         self.addChild(node)
         return node
 
-    def swapNodeData(self, node):
-        """Swaps the node data and type with another node
+    # -----------------------------------------------------------------
 
+    def swapNodeData(self, node):
+
+        """Swaps the node data and type with another node
         :param node: the node
         """
+
         tmp_data = self.node_data
         tmp_type = self.node_type
         self.setData(node.getData())
@@ -325,34 +365,40 @@ class GTreeNodeGP(GTreeNodeBase):
         node.setData(tmp_data)
         node.setType(tmp_type)
 
-    def copy(self, g):
-        """ Copy the contents to the destination g
+    # -----------------------------------------------------------------
 
+    def copy(self, g):
+
+        """ Copy the contents to the destination g
         :param g: the GTreeNodeGP genome destination
         """
+
         GTreeNodeBase.copy(self, g)
         g.node_data = self.node_data
         g.node_type = self.node_type
 
-    def clone(self):
-        """ Return a new copy of the node
+    # -----------------------------------------------------------------
 
+    def clone(self):
+
+        """ Return a new copy of the node
         :rtype: the new GTreeNodeGP instance
         """
+
         newcopy = GTreeNodeGP(None)
         self.copy(newcopy)
         return newcopy
 
+# -----------------------------------------------------------------
 
 class GTreeGP(GTreeBase):
+
     """ The GTreeGP Class - The Genetic Programming Tree representation
-
     Inheritance diagram for :class:`GTree.GTreeGP`:
-
     .. inheritance-diagram:: GTree.GTreeGP
-
     :param root_node: the Root node of the GP Tree
     """
+
     def __init__(self, root_node=None, cloning=False):
         super(GTreeGP, self).__init__(root_node)
         if not cloning:
@@ -360,19 +406,26 @@ class GTreeGP(GTreeBase):
             self.mutator.set(Consts.CDefGGTreeGPMutator)
             self.crossover.set(Consts.CDefGTreeGPCrossover)
 
+    # -----------------------------------------------------------------
+
     def __repr__(self):
+
         """ Return a string representation of Genome """
+
         ret = GenomeBase.__repr__(self)
         ret += GTreeBase.__repr__(self)
         ret += "\n- GTreeGP\n"
         ret += "\tExpression: %s\n" % self.getPreOrderExpression()
         return ret
 
-    def writeDotImage(self, filename):
-        """ Writes a image representation of the individual
+    # -----------------------------------------------------------------
 
+    def writeDotImage(self, filename):
+
+        """ Writes a image representation of the individual
         :param filename: the output file image
         """
+
         if not HAVE_PYDOT:
             Util.raiseException("You must install Pydot to use this feature !")
 
@@ -380,18 +433,23 @@ class GTreeGP(GTreeBase):
         self.writeDotGraph(graph)
         graph.write_jpeg(filename, prog='dot')
 
+    # -----------------------------------------------------------------
+
     def writeDotRaw(self, filename):
+
         """ Writes the raw dot file (text-file used by dot/neato) with the
         representation of the individual
-
         :param filename: the output file, ex: individual.dot
         """
+
         if not HAVE_PYDOT:
             Util.raiseException("You must install Pydot to use this feature !")
 
         graph = pydot.Dot(graph_type="digraph")
         self.writeDotGraph(graph)
         graph.write(filename, prog='dot', format="raw")
+
+    # -----------------------------------------------------------------
 
     def writeDotGraph(self, graph, startNode=0):
         """ Write a graph to the pydot Graph instance
@@ -400,7 +458,7 @@ class GTreeGP(GTreeBase):
         :param startNode: used to plot more than one individual
         """
         if not HAVE_PYDOT:
-            print "You must install Pydot to use this feature !"
+            print("You must install Pydot to use this feature !")
             return
 
         count = startNode
@@ -454,11 +512,14 @@ class GTreeGP(GTreeBase):
 
         return count
 
-    def getSExpression(self, start_node=None):
-        """ Returns a tree-formated string (s-expression) of the tree.
+    # -----------------------------------------------------------------
 
+    def getSExpression(self, start_node=None):
+
+        """ Returns a tree-formated string (s-expression) of the tree.
         :rtype: a S-Expression representing the tree
         """
+
         str_buff = ""
         if start_node is None:
             start_node = self.getRoot()
@@ -476,10 +537,12 @@ class GTreeGP(GTreeBase):
             str_buff += " )"
         return str_buff
 
+    # -----------------------------------------------------------------
+
     def getPreOrderExpression(self, start_node=None):
+
         """ Return the pre order expression string of the Tree, used
         to python *eval*.
-
         :rtype: the expression string
         """
         if start_node is None:
@@ -498,39 +561,51 @@ class GTreeGP(GTreeBase):
 
         return str_buff
 
+    # -----------------------------------------------------------------
+
     def getCompiledCode(self):
+
         """ Get the compiled code for the Tree expression
         After getting the compiled code object, you just need to evaluate it using
         the :func:`eval` native Python method.
-
         :rtype: compiled python code
         """
+
         expr = self.getPreOrderExpression()
         return compile(expr, "<string>", "eval")
 
-    def copy(self, g):
-        """ Copy the contents to the destination g
+    # -----------------------------------------------------------------
 
+    def copy(self, g):
+
+        """ Copy the contents to the destination g
         :param g: the GTreeGP genome destination
         """
+
         GenomeBase.copy(self, g)
         GTreeBase.copy(self, g)
 
-    def clone(self):
-        """ Return a new instance of the genome
+    # -----------------------------------------------------------------
 
+    def clone(self):
+
+        """ Return a new instance of the genome
         :rtype: the new GTreeGP instance
         """
+
         newcopy = GTreeGP(cloning=True)
         self.copy(newcopy)
         newcopy.processNodes(True)
         return newcopy
 
-    def compare(self, other):
-        """ This method will compare the currently tree with another one
+    # -----------------------------------------------------------------
 
+    def compare(self, other):
+
+        """ This method will compare the currently tree with another one
         :param other: the other GTreeGP to compare
         """
+
         if not isinstance(other, GTreeGP):
             Util.raiseException("The other tree used to compare is not a GTreeGP class", TypeError)
 
@@ -554,10 +629,12 @@ class GTreeGP(GTreeBase):
 
         return 0
 
+    # -----------------------------------------------------------------
+
     @staticmethod
     def writePopulationDot(ga_engine, filename, format="jpeg", start=0, end=0):
-        """ Writes to a graphical file using pydot, the population of trees
 
+        """ Writes to a graphical file using pydot, the population of trees
         Example:
            >>> GTreeGP.writePopulationDot(ga_engine, "pop.jpg", "jpeg", 0, 10)
 
@@ -591,10 +668,12 @@ class GTreeGP(GTreeBase):
 
         graph.write(filename, prog='dot', format=format)
 
+    # -----------------------------------------------------------------
+
     @staticmethod
     def writePopulationDotRaw(ga_engine, filename, start=0, end=0):
-        """ Writes to a raw dot file using pydot, the population of trees
 
+        """ Writes to a raw dot file using pydot, the population of trees
         Example:
            >>> GTreeGP.writePopulationDotRaw(ga_engine, "pop.dot", 0, 10)
 
@@ -606,6 +685,7 @@ class GTreeGP(GTreeBase):
         :param start: the start index of individuals
         :param end: the end index of individuals
         """
+
         if not HAVE_PYDOT:
             Util.raiseException("You must install Pydot to use this feature !")
 
@@ -628,10 +708,7 @@ class GTreeGP(GTreeBase):
 
         graph.write(filename, prog='dot', format="raw")
 
-
-#################################
-#    Tree GP Utility Functions  #
-#################################
+# -----------------------------------------------------------------
 
 def gpdec(**kwds):
     """ This is a decorator to use with genetic programming non-terminals
@@ -644,24 +721,26 @@ def gpdec(**kwds):
         return f
     return decorate
 
+# -----------------------------------------------------------------
 
 def checkTerminal(terminal):
-    """ Do some check on the terminal, to evaluate ephemeral constants
 
+    """ Do some check on the terminal, to evaluate ephemeral constants
     :param terminal: the terminal string
     """
+
     if terminal.startswith("ephemeral:"):
         splited = terminal.split(":")
         ephemeral_constant = eval(splited[1])
         return str(ephemeral_constant)
-    else:
-        return terminal
+    else: return terminal
 
+# -----------------------------------------------------------------
 
 def buildGTreeGPGrow(ga_engine, depth, max_depth):
+
     """ Creates a new random GTreeGP root node with subtrees using
     the "Grow" method.
-
     :param ga_engine: the GA Core
     :param depth: the initial depth
     :max_depth: the maximum depth of the tree
@@ -699,16 +778,18 @@ def buildGTreeGPGrow(ga_engine, depth, max_depth):
 
     return n
 
+# -----------------------------------------------------------------
 
 def buildGTreeGPFull(ga_engine, depth, max_depth):
+
     """ Creates a new random GTreeGP root node with subtrees using
     the "Full" method.
-
     :param ga_engine: the GA Core
     :param depth: the initial depth
     :max_depth: the maximum depth of the tree
     :rtype: the root node
     """
+
     gp_terminals = ga_engine.getParam("gp_terminals")
     assert gp_terminals is not None
 
@@ -730,3 +811,5 @@ def buildGTreeGPFull(ga_engine, depth, max_depth):
             n.addChild(child)
 
     return n
+
+# -----------------------------------------------------------------

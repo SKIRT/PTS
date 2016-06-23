@@ -383,7 +383,7 @@ import Initializators
 import Mutators
 import Crossovers
 import logging
-from GTree import GTreeGP
+#from GTree import GTreeGP
 
 # Required python version 2.5+
 CDefPythonRequire = (2, 5)
@@ -536,7 +536,7 @@ CDefXMLRPCStatsGenFreq = 20
 CDefBroadcastAddress = "255.255.255.255"
 nodeType = {"TERMINAL": 0, "NONTERMINAL": 1}
 
-CDefGPGenomes = [GTreeGP]
+#CDefGPGenomes = [GTreeGP]
 
 # Migration Consts
 CDefGenMigrationRate = 20
