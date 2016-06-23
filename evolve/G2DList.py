@@ -1,3 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+## \package pts.evolve.GSimpleGA
+
+# -----------------------------------------------------------------
+
 """
 :mod:`G2DList` -- the 2D list chromosome
 ================================================================

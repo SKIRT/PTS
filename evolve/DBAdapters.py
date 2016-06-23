@@ -1,3 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+## \package pts.evolve.GSimpleGA
+
+# -----------------------------------------------------------------
+
 """
 :mod:`DBAdapters` -- database adapters for statistics
 =====================================================================
@@ -17,7 +28,7 @@ module, you'll find the adapters above cited.
 
 """
 
-from pyevolve import __version__
+from . import __version__
 import Consts
 import Util
 import logging
