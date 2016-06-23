@@ -29,9 +29,9 @@ from __future__ import division, print_function
 import random
 
 # Import other evolve modules
-from GenomeBase import GenomeBase, GTreeBase, GTreeNodeBase
-import Consts
-import Util
+from genome import GenomeBase, GTreeBase, GTreeNodeBase
+import constants
+import utils
 
 try:
     import pydot
@@ -58,9 +58,9 @@ class GTree(GTreeBase):
         """
 
         super(GTree, self).__init__(root_node)
-        self.initializator.set(Consts.CDefGTreeInit)
-        self.mutator.set(Consts.CDefGGTreeMutator)
-        self.crossover.set(Consts.CDefGTreeCrossover)
+        self.initializator.set(constants.CDefGTreeInit)
+        self.mutator.set(constants.CDefGGTreeMutator)
+        self.crossover.set(constants.CDefGTreeCrossover)
 
     # -----------------------------------------------------------------
 
@@ -290,7 +290,7 @@ class GTreeNodeGP(GTreeNodeBase):
         """
 
         if not isinstance(other, GTreeNodeGP):
-            Util.raiseException("The other node used to compare is not a GTreeNodeGP class", TypeError)
+            utils.raiseException("The other node used to compare is not a GTreeNodeGP class", TypeError)
 
         if other.node_type == self.node_type:
             if other.node_data == self.node_data:
@@ -400,11 +400,18 @@ class GTreeGP(GTreeBase):
     """
 
     def __init__(self, root_node=None, cloning=False):
+
+        """
+        The constructor ...
+        :param root_node:
+        :param cloning:
+        """
+
         super(GTreeGP, self).__init__(root_node)
         if not cloning:
-            self.initializator.set(Consts.CDefGTreeGPInit)
-            self.mutator.set(Consts.CDefGGTreeGPMutator)
-            self.crossover.set(Consts.CDefGTreeGPCrossover)
+            self.initializator.set(constants.CDefGTreeGPInit)
+            self.mutator.set(constants.CDefGGTreeGPMutator)
+            self.crossover.set(constants.CDefGTreeGPCrossover)
 
     # -----------------------------------------------------------------
 
@@ -427,7 +434,7 @@ class GTreeGP(GTreeBase):
         """
 
         if not HAVE_PYDOT:
-            Util.raiseException("You must install Pydot to use this feature !")
+            utils.raiseException("You must install Pydot to use this feature !")
 
         graph = pydot.Dot()
         self.writeDotGraph(graph)
@@ -443,7 +450,7 @@ class GTreeGP(GTreeBase):
         """
 
         if not HAVE_PYDOT:
-            Util.raiseException("You must install Pydot to use this feature !")
+            utils.raiseException("You must install Pydot to use this feature !")
 
         graph = pydot.Dot(graph_type="digraph")
         self.writeDotGraph(graph)
@@ -470,12 +477,12 @@ class GTreeGP(GTreeBase):
             newnode = pydot.Node(str(count), style="filled")
             count += 1
 
-            if self.nodes_list[i].getType() == Consts.nodeType["TERMINAL"]:
+            if self.nodes_list[i].getType() == constants.nodeType["TERMINAL"]:
                 newnode.set_color("lightblue2")
             else:
                 newnode.set_color("goldenrod2")
 
-            if self.nodes_list[i].getType() == Consts.nodeType["NONTERMINAL"]:
+            if self.nodes_list[i].getType() == constants.nodeType["NONTERMINAL"]:
                 func = getattr(main_module, self.nodes_list[i].getData())
 
                 if hasattr(func, "shape"):
@@ -607,7 +614,7 @@ class GTreeGP(GTreeBase):
         """
 
         if not isinstance(other, GTreeGP):
-            Util.raiseException("The other tree used to compare is not a GTreeGP class", TypeError)
+            utils.raiseException("The other tree used to compare is not a GTreeGP class", TypeError)
 
         stack_self = []
         stack_other = []
@@ -647,13 +654,13 @@ class GTreeGP(GTreeBase):
         :param end: the end index of individuals
         """
         if not HAVE_PYDOT:
-            Util.raiseException("You must install Pydot to use this feature !")
+            utils.raiseException("You must install Pydot to use this feature !")
 
         pop = ga_engine.getPopulation()
         graph = pydot.Dot(graph_type="digraph")
 
         if not isinstance(pop[0], GTreeGP):
-            Util.raiseException("The population must have individuals of the GTreeGP chromosome !")
+            utils.raiseException("The population must have individuals of the GTreeGP chromosome !")
 
         n = 0
         end_index = len(pop) if end == 0 else end
@@ -687,13 +694,13 @@ class GTreeGP(GTreeBase):
         """
 
         if not HAVE_PYDOT:
-            Util.raiseException("You must install Pydot to use this feature !")
+            utils.raiseException("You must install Pydot to use this feature !")
 
         pop = ga_engine.getPopulation()
         graph = pydot.Dot(graph_type="digraph")
 
         if not isinstance(pop[0], GTreeGP):
-            Util.raiseException("The population must have individuals of the GTreeGP chromosome !")
+            utils.raiseException("The population must have individuals of the GTreeGP chromosome !")
 
         n = 0
         end_index = len(pop) if end == 0 else end
@@ -755,7 +762,7 @@ def buildGTreeGPGrow(ga_engine, depth, max_depth):
 
     if depth == max_depth:
         random_terminal = checkTerminal(random.choice(gp_terminals))
-        n = GTreeNodeGP(random_terminal, Consts.nodeType["TERMINAL"])
+        n = GTreeNodeGP(random_terminal, constants.nodeType["TERMINAL"])
         return n
     else:
         # Do not generate degenerative trees
@@ -766,11 +773,11 @@ def buildGTreeGPGrow(ga_engine, depth, max_depth):
             random_node = random.choice(fchoice)
 
         if random_node in gp_terminals:
-            n = GTreeNodeGP(checkTerminal(random_node), Consts.nodeType["TERMINAL"])
+            n = GTreeNodeGP(checkTerminal(random_node), constants.nodeType["TERMINAL"])
         else:
-            n = GTreeNodeGP(random_node, Consts.nodeType["NONTERMINAL"])
+            n = GTreeNodeGP(random_node, constants.nodeType["NONTERMINAL"])
 
-    if n.getType() == Consts.nodeType["NONTERMINAL"]:
+    if n.getType() == constants.nodeType["NONTERMINAL"]:
         for i in xrange(gp_function_set[n.getData()]):
             child = buildGTreeGPGrow(ga_engine, depth + 1, max_depth)
             child.setParent(n)
@@ -798,13 +805,13 @@ def buildGTreeGPFull(ga_engine, depth, max_depth):
 
     if depth == max_depth:
         random_terminal = checkTerminal(random.choice(gp_terminals))
-        n = GTreeNodeGP(random_terminal, Consts.nodeType["TERMINAL"])
+        n = GTreeNodeGP(random_terminal, constants.nodeType["TERMINAL"])
         return n
     else:
         random_oper = random.choice(gp_function_set.keys())
-        n = GTreeNodeGP(random_oper, Consts.nodeType["NONTERMINAL"])
+        n = GTreeNodeGP(random_oper, constants.nodeType["NONTERMINAL"])
 
-    if n.getType() == Consts.nodeType["NONTERMINAL"]:
+    if n.getType() == constants.nodeType["NONTERMINAL"]:
         for i in xrange(gp_function_set[n.getData()]):
             child = buildGTreeGPFull(ga_engine, depth + 1, max_depth)
             child.setParent(n)

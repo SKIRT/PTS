@@ -5,117 +5,139 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.evolve.GSimpleGA
+## \package pts.evolve.dbadapters Pyevolve have a feature in which you can save the statistics of every
+#  generation in a database, file or call an URL with the statistics as param.
+#  You can use the database to plot evolution statistics graphs later. In this
+#  module, you'll find the adapters above cited.
+#
+# warning: the use the of a DB Adapter can reduce the performance of the Genetic Algorithm.
+# seealso:
+#   Method :meth:`GSimpleGA.GSimpleGA.setDBAdapter`
+#      DB Adapters are set in the GSimpleGA Class.
 
 # -----------------------------------------------------------------
 
-"""
-:mod:`DBAdapters` -- database adapters for statistics
-=====================================================================
-
-.. warning:: the use the of a DB Adapter can reduce the performance of the
-             Genetic Algorithm.
-
-Pyevolve have a feature in which you can save the statistics of every
-generation in a database, file or call an URL with the statistics as param.
-You can use the database to plot evolution statistics graphs later. In this
-module, you'll find the adapters above cited.
-
-.. seealso::
-
-   Method :meth:`GSimpleGA.GSimpleGA.setDBAdapter`
-      DB Adapters are set in the GSimpleGA Class.
-
-"""
-
 from . import __version__
-import Consts
-import Util
-import logging
+
+# Import standard modules
 import types
 import datetime
-import Statistics
 
+# Import other evolve modules
+import statistics
+import constants
+import utils
+
+# Import the relevant PTS classes and modules
+from ..core.tools.logging import log
+
+# -----------------------------------------------------------------
 
 class DBBaseAdapter(object):
-   """ DBBaseAdapter Class - The base class for all DB Adapters
 
-   If you want to create your own DB Adapter, you must subclass this
-   class.
-
-   :param frequency: the the generational dump frequency
-
-   .. versionadded:: 0.6
+    """ DBBaseAdapter Class - The base class for all DB Adapters
+    If you want to create your own DB Adapter, you must subclass this
+    class.
+    :param frequency: the the generational dump frequency
+    .. versionadded:: 0.6
       Added the :class:`DBBaseAdapter` class.
-   """
-   def __init__(self, frequency, identify):
+    """
+
+    def __init__(self, frequency, identify):
       """ The class constructor """
       self.statsGenFreq = frequency
 
       if identify is None:
-         self.identify = datetime.datetime.strftime(datetime.datetime.now(), "%d/%m/%y-%H:%M")
-      else:
-         self.identify = identify
+         self.identify = datetime.datetime.now().strftime("%d/%m/%y-%H:%M")
+      else: self.identify = identify
 
-   def setIdentify(self, identify):
-      """ Sets the identify of the statistics
+    # -----------------------------------------------------------------
 
+    def setIdentify(self, identify):
+
+      """
+      Sets the identify of the statistics
       :param identify: the id string
       """
+
       if identify is None:
-         self.identify = datetime.datetime.strftime(datetime.datetime.now(), "%d/%m/%y-%H:%M")
-      else:
-         self.identify = identify
+         self.identify = datetime.datetime.now().strftime("%d/%m/%y-%H:%M")
+      else: self.identify = identify
 
-   def getIdentify(self):
-      """ Return the statistics identify
+    # -----------------------------------------------------------------
 
+    def getIdentify(self):
+
+      """
+      Return the statistics identify
       :rtype: identify string
       """
+
       return self.identify
 
-   def getStatsGenFreq(self):
-      """ Returns the frequency of statistical dump
+    # -----------------------------------------------------------------
 
+    def getStatsGenFreq(self):
+
+      """
+      Returns the frequency of statistical dump
       :rtype: the generation interval of statistical dump
       """
       return self.statsGenFreq
 
-   def setStatsGenFreq(self, statsGenFreq):
-      """ Set the frequency of statistical dump
+    # -----------------------------------------------------------------
 
+    def setStatsGenFreq(self, statsGenFreq):
+
+      """
+      Set the frequency of statistical dump
       :param statsGenFreq: the generation interval of statistical dump
       """
+
       self.statsGenFreq = statsGenFreq
 
-   def open(self, ga_engine):
+    # -----------------------------------------------------------------
+
+    def open(self, ga_engine):
+
       """ This method is called one time to do the initialization of
       the DB Adapter
-
       :param ga_engine: the GA Engine
       """
+
       pass
 
-   def commitAndClose(self):
-      """ This method is called at the end of the evolution, to closes the
-      DB Adapter and commit the changes """
+    # -----------------------------------------------------------------
+
+    def commitAndClose(self):
+
+      """
+      This method is called at the end of the evolution, to closes the
+      DB Adapter and commit the changes
+      """
+
       pass
 
-   def insert(self, ga_engine):
-      """ Insert the stats
+    # -----------------------------------------------------------------
 
+    def insert(self, ga_engine):
+
+      """
+      Insert the stats
       :param ga_engine: the GA Engine
       """
-      Util.raiseException("This method is not implemented on the ABC", NotImplementedError)
+
+      utils.raiseException("This method is not implemented on the ABC", NotImplementedError)
+
+# -----------------------------------------------------------------
 
 class DBFileCSV(DBBaseAdapter):
-   """ DBFileCSV Class - Adapter to dump statistics in CSV format
 
-   Inheritance diagram for :class:`DBAdapters.DBFileCSV`:
+    """ DBFileCSV Class - Adapter to dump statistics in CSV format
+    Inheritance diagram for :class:`DBAdapters.DBFileCSV`:
+    .. inheritance-diagram:: DBAdapters.DBFileCSV
 
-   .. inheritance-diagram:: DBAdapters.DBFileCSV
-
-   Example:
+    Example:
       >>> adapter = DBFileCSV(filename="file.csv", identify="run_01",
                               frequency = 1, reset = True)
 
@@ -124,12 +146,13 @@ class DBFileCSV(DBBaseAdapter):
       :param frequency: the generational dump frequency
       :param reset: if True, the file old data will be overwrite with the new
 
-   .. versionadded:: 0.6
+    .. versionadded:: 0.6
       Removed the stub methods and subclassed the :class:`DBBaseAdapter` class.
 
-   """
-   def __init__(self, filename=Consts.CDefCSVFileName, identify=None,
-                frequency=Consts.CDefCSVFileStatsGenFreq, reset=True):
+    """
+    def __init__(self, filename=constants.CDefCSVFileName, identify=None,
+                frequency=constants.CDefCSVFileStatsGenFreq, reset=True):
+
       """ The creator of DBFileCSV Class """
 
       super(DBFileCSV, self).__init__(frequency, identify)
@@ -141,12 +164,12 @@ class DBFileCSV(DBBaseAdapter):
       self.fHandle = None
       self.reset = reset
 
-   def __repr__(self):
+    def __repr__(self):
       """ The string representation of adapter """
       ret = "DBFileCSV DB Adapter [File='%s', identify='%s']" % (self.filename, self.getIdentify())
       return ret
 
-   def open(self, ga_engine):
+    def open(self, ga_engine):
       """ Open the CSV file or creates a new file
 
       :param ga_engine: the GA Engine
@@ -155,25 +178,25 @@ class DBFileCSV(DBBaseAdapter):
          The method now receives the *ga_engine* parameter.
       """
       if self.csvmod is None:
-         logging.debug("Loading the csv module...")
-         self.csvmod = Util.importSpecial("csv")
+         log.debug("Loading the csv module...")
+         self.csvmod = utils.importSpecial("csv")
 
-      logging.debug("Opening the CSV file to dump statistics [%s]", self.filename)
+      log.debug("Opening the CSV file to dump statistics [%s]", self.filename)
       open_mode = 'w' if self.reset else 'a'
       self.fHandle = open(self.filename, open_mode)
       self.csvWriter = self.csvmod.writer(self.fHandle, delimiter=';')
 
-   def close(self):
+    def close(self):
       """ Closes the CSV file handle """
-      logging.debug("Closing the CSV file [%s]", self.filename)
+      log.debug("Closing the CSV file [%s]", self.filename)
       if self.fHandle:
          self.fHandle.close()
 
-   def commitAndClose(self):
+    def commitAndClose(self):
       """ Commits and closes """
       self.close()
 
-   def insert(self, ga_engine):
+    def insert(self, ga_engine):
       """ Inserts the stats into the CSV file
 
       :param ga_engine: the GA Engine
@@ -218,7 +241,7 @@ class DBURLPost(DBBaseAdapter):
    """
 
    def __init__(self, url, identify=None,
-                frequency=Consts.CDefURLPostStatsGenFreq, post=True):
+                frequency=constants.CDefURLPostStatsGenFreq, post=True):
       """ The creator of the DBURLPost Class. """
 
       super(DBURLPost, self).__init__(frequency, identify)
@@ -241,8 +264,8 @@ class DBURLPost(DBBaseAdapter):
          The method now receives the *ga_engine* parameter.
       """
       if self.urllibmod is None:
-         logging.debug("Loading urllib module...")
-         self.urllibmod = Util.importSpecial("urllib")
+         log.debug("Loading urllib module...")
+         self.urllibmod = utils.importSpecial("urllib")
 
    def insert(self, ga_engine):
       """ Sends the data to the URL using POST or GET
@@ -252,7 +275,7 @@ class DBURLPost(DBBaseAdapter):
       .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
       """
-      logging.debug("Sending http request to %s.", self.url)
+      log.debug("Sending http request to %s.", self.url)
       stats = ga_engine.getStatistics()
       response = None
       params = stats.internalDict.copy()
@@ -292,9 +315,9 @@ class DBSQLite(DBBaseAdapter):
    :param commit_freq: the commit frequency
    """
 
-   def __init__(self, dbname=Consts.CDefSQLiteDBName, identify=None, resetDB=False,
-                resetIdentify=True, frequency=Consts.CDefSQLiteStatsGenFreq,
-                commit_freq=Consts.CDefSQLiteStatsCommitFreq):
+   def __init__(self, dbname=constants.CDefSQLiteDBName, identify=None, resetDB=False,
+                resetIdentify=True, frequency=constants.CDefSQLiteStatsGenFreq,
+                commit_freq=constants.CDefSQLiteStatsCommitFreq):
       """ The creator of the DBSQLite Class """
 
       super(DBSQLite, self).__init__(frequency, identify)
@@ -322,16 +345,16 @@ class DBSQLite(DBBaseAdapter):
          The method now receives the *ga_engine* parameter.
       """
       if self.sqlite3mod is None:
-         logging.debug("Loading sqlite3 module...")
-         self.sqlite3mod = Util.importSpecial("sqlite3")
+         log.debug("Loading sqlite3 module...")
+         self.sqlite3mod = utils.importSpecial("sqlite3")
 
-      logging.debug("Opening database, dbname=%s", self.dbName)
+      log.debug("Opening database, dbname=%s", self.dbName)
       self.connection = self.sqlite3mod.connect(self.dbName)
 
-      temp_stats = Statistics.Statistics()
+      temp_stats = statistics.Statistics()
 
       if self.resetDB:
-         self.resetStructure(Statistics.Statistics())
+         self.resetStructure(statistics.Statistics())
 
       self.createStructure(temp_stats)
 
@@ -345,7 +368,7 @@ class DBSQLite(DBBaseAdapter):
 
    def close(self):
       """ Close the database connection """
-      logging.debug("Closing database.")
+      log.debug("Closing database.")
       if self.cursorPool:
          self.cursorPool.close()
          self.cursorPool = None
@@ -353,7 +376,7 @@ class DBSQLite(DBBaseAdapter):
 
    def commit(self):
       """ Commit changes to database """
-      logging.debug("Commiting changes to database.")
+      log.debug("Commiting changes to database.")
       self.connection.commit()
 
    def getCursor(self):
@@ -363,7 +386,7 @@ class DBSQLite(DBBaseAdapter):
 
       """
       if not self.cursorPool:
-         logging.debug("Creating new cursor for database...")
+         log.debug("Creating new cursor for database...")
          self.cursorPool = self.connection.cursor()
          return self.cursorPool
       else:
@@ -376,26 +399,26 @@ class DBSQLite(DBBaseAdapter):
 
       """
       c = self.getCursor()
-      pstmt = "create table if not exists %s(identify text, generation integer, " % (Consts.CDefSQLiteDBTable)
+      pstmt = "create table if not exists %s(identify text, generation integer, " % (constants.CDefSQLiteDBTable)
       for k, v in stats.items():
          pstmt += "%s %s, " % (k, self.typeDict[type(v)])
       pstmt = pstmt[:-2] + ")"
-      logging.debug("Creating table %s: %s.", Consts.CDefSQLiteDBTable, pstmt)
+      log.debug("Creating table %s: %s.", constants.CDefSQLiteDBTable, pstmt)
       c.execute(pstmt)
 
       pstmt = """create table if not exists %s(identify text, generation integer,
-              individual integer, fitness real, raw real)""" % (Consts.CDefSQLiteDBTablePop)
-      logging.debug("Creating table %s: %s.", Consts.CDefSQLiteDBTablePop, pstmt)
+              individual integer, fitness real, raw real)""" % (constants.CDefSQLiteDBTablePop)
+      log.debug("Creating table %s: %s.", constants.CDefSQLiteDBTablePop, pstmt)
       c.execute(pstmt)
       self.commit()
 
    def resetTableIdentify(self):
       """ Delete all records on the table with the same Identify """
       c = self.getCursor()
-      stmt = "delete from %s where identify = ?" % (Consts.CDefSQLiteDBTable)
-      stmt2 = "delete from %s where identify = ?" % (Consts.CDefSQLiteDBTablePop)
+      stmt = "delete from %s where identify = ?" % (constants.CDefSQLiteDBTable)
+      stmt2 = "delete from %s where identify = ?" % (constants.CDefSQLiteDBTablePop)
 
-      logging.debug("Erasing data from the tables with the identify = %s", self.getIdentify())
+      log.debug("Erasing data from the tables with the identify = %s", self.getIdentify())
       try:
          c.execute(stmt, (self.getIdentify(),))
          c.execute(stmt2, (self.getIdentify(),))
@@ -411,10 +434,10 @@ class DBSQLite(DBBaseAdapter):
       :param stats: the statistics object
 
       """
-      logging.debug("Reseting structure, droping table and creating new empty table.")
+      log.debug("Reseting structure, droping table and creating new empty table.")
       c = self.getCursor()
-      c.execute("drop table if exists %s" % (Consts.CDefSQLiteDBTable,))
-      c.execute("drop table if exists %s" % (Consts.CDefSQLiteDBTablePop,))
+      c.execute("drop table if exists %s" % (constants.CDefSQLiteDBTable,))
+      c.execute("drop table if exists %s" % (constants.CDefSQLiteDBTablePop,))
       self.commit()
       self.createStructure(stats)
 
@@ -431,13 +454,13 @@ class DBSQLite(DBBaseAdapter):
       generation = ga_engine.getCurrentGeneration()
 
       c = self.getCursor()
-      pstmt = "insert into %s values (?, ?, " % (Consts.CDefSQLiteDBTable)
+      pstmt = "insert into %s values (?, ?, " % (constants.CDefSQLiteDBTable)
       for i in xrange(len(stats)):
          pstmt += "?, "
       pstmt = pstmt[:-2] + ")"
       c.execute(pstmt, (self.getIdentify(), generation) + stats.asTuple())
 
-      pstmt = "insert into %s values(?, ?, ?, ?, ?)" % (Consts.CDefSQLiteDBTablePop,)
+      pstmt = "insert into %s values(?, ?, ?, ?, ?)" % (constants.CDefSQLiteDBTablePop,)
       tups = []
       for i in xrange(len(population)):
          ind = population[i]
@@ -483,7 +506,7 @@ class DBXMLRPC(DBBaseAdapter):
       The :class:`DBXMLRPC` class.
 
    """
-   def __init__(self, url, identify=None, frequency=Consts.CDefXMLRPCStatsGenFreq):
+   def __init__(self, url, identify=None, frequency=constants.CDefXMLRPCStatsGenFreq):
       """ The creator of DBXMLRPC Class """
 
       super(DBXMLRPC, self).__init__(frequency, identify)
@@ -506,10 +529,10 @@ class DBXMLRPC(DBBaseAdapter):
          The method now receives the *ga_engine* parameter.
       """
       if self.xmlrpclibmod is None:
-         logging.debug("Loding the xmlrpclib module...")
-         self.xmlrpclibmod = Util.importSpecial("xmlrpclib")
+         log.debug("Loding the xmlrpclib module...")
+         self.xmlrpclibmod = utils.importSpecial("xmlrpclib")
 
-      logging.debug("Opening the XML RPC Server Proxy on %s", self.url)
+      log.debug("Opening the XML RPC Server Proxy on %s", self.url)
       self.proxy = self.xmlrpclibmod.ServerProxy(self.url, allow_none=True)
 
    def insert(self, ga_engine):
@@ -581,9 +604,9 @@ class DBVPythonGraph(DBBaseAdapter):
 
       :param ga_engine: the GA Engine
       """
-      logging.debug("Loading visual.graph (VPython) module...")
+      log.debug("Loading visual.graph (VPython) module...")
       if self.vtkGraph is None:
-         self.vtkGraph = Util.importSpecial("visual.graph").graph
+         self.vtkGraph = utils.importSpecial("visual.graph").graph
 
       display_rawmin = self.makeDisplay("Raw Score (min)", 0, 0, ga_engine)
       display_rawmax = self.makeDisplay("Raw Score (max)", 0, 250, ga_engine)
@@ -643,9 +666,9 @@ class DBMySQLAdapter(DBBaseAdapter):
    :param commit_freq: the commit frequency
    """
 
-   def __init__(self, user, passwd, host=Consts.CDefMySQLDBHost, port=Consts.CDefMySQLDBPort,
-                db=Consts.CDefMySQLDBName, identify=None, resetDB=False, resetIdentify=True,
-                frequency=Consts.CDefMySQLStatsGenFreq, commit_freq=Consts.CDefMySQLStatsCommitFreq):
+   def __init__(self, user, passwd, host=constants.CDefMySQLDBHost, port=constants.CDefMySQLDBPort,
+                db=constants.CDefMySQLDBName, identify=None, resetDB=False, resetIdentify=True,
+                frequency=constants.CDefMySQLStatsGenFreq, commit_freq=constants.CDefMySQLStatsCommitFreq):
       """ The creator of the DBSQLite Class """
 
       super(DBMySQLAdapter, self).__init__(frequency, identify)
@@ -678,18 +701,18 @@ class DBMySQLAdapter(DBBaseAdapter):
          The method now receives the *ga_engine* parameter.
       """
       if self.mysqldbmod is None:
-         logging.debug("Loading MySQLdb module...")
-         self.mysqldbmod = Util.importSpecial("MySQLdb")
+         log.debug("Loading MySQLdb module...")
+         self.mysqldbmod = utils.importSpecial("MySQLdb")
 
-      logging.debug("Opening database, host=%s", self.host)
+      log.debug("Opening database, host=%s", self.host)
       self.connection = self.mysqldbmod.connect(host=self.host, user=self.user,
                                                 passwd=self.passwd, db=self.db,
                                                 port=self.port)
-      temp_stats = Statistics.Statistics()
+      temp_stats = statistics.Statistics()
       self.createStructure(temp_stats)
 
       if self.resetDB:
-         self.resetStructure(Statistics.Statistics())
+         self.resetStructure(statistics.Statistics())
 
       if self.resetIdentify:
          self.resetTableIdentify()
@@ -701,7 +724,7 @@ class DBMySQLAdapter(DBBaseAdapter):
 
    def close(self):
       """ Close the database connection """
-      logging.debug("Closing database.")
+      log.debug("Closing database.")
       if self.cursorPool:
          self.cursorPool.close()
          self.cursorPool = None
@@ -709,7 +732,7 @@ class DBMySQLAdapter(DBBaseAdapter):
 
    def commit(self):
       """ Commit changes to database """
-      logging.debug("Commiting changes to database.")
+      log.debug("Commiting changes to database.")
       self.connection.commit()
 
    def getCursor(self):
@@ -719,7 +742,7 @@ class DBMySQLAdapter(DBBaseAdapter):
 
       """
       if not self.cursorPool:
-         logging.debug("Creating new cursor for database...")
+         log.debug("Creating new cursor for database...")
          self.cursorPool = self.connection.cursor()
          return self.cursorPool
       else:
@@ -732,26 +755,26 @@ class DBMySQLAdapter(DBBaseAdapter):
 
       """
       c = self.getCursor()
-      pstmt = "create table if not exists %s(identify VARCHAR(80), generation INTEGER, " % (Consts.CDefMySQLDBTable)
+      pstmt = "create table if not exists %s(identify VARCHAR(80), generation INTEGER, " % (constants.CDefMySQLDBTable)
       for k, v in stats.items():
          pstmt += "%s %s, " % (k, self.typeDict[type(v)])
       pstmt = pstmt[:-2] + ")"
-      logging.debug("Creating table %s: %s.", Consts.CDefSQLiteDBTable, pstmt)
+      log.debug("Creating table %s: %s.", constants.CDefSQLiteDBTable, pstmt)
       c.execute(pstmt)
 
       pstmt = """create table if not exists %s(identify VARCHAR(80), generation INTEGER,
-              individual INTEGER, fitness DOUBLE(14,6), raw DOUBLE(14,6))""" % (Consts.CDefMySQLDBTablePop)
-      logging.debug("Creating table %s: %s.", Consts.CDefMySQLDBTablePop, pstmt)
+              individual INTEGER, fitness DOUBLE(14,6), raw DOUBLE(14,6))""" % (constants.CDefMySQLDBTablePop)
+      log.debug("Creating table %s: %s.", constants.CDefMySQLDBTablePop, pstmt)
       c.execute(pstmt)
       self.commit()
 
    def resetTableIdentify(self):
       """ Delete all records on the table with the same Identify """
       c = self.getCursor()
-      stmt = "delete from %s where identify = '%s'" % (Consts.CDefMySQLDBTable, self.getIdentify())
-      stmt2 = "delete from %s where identify = '%s'" % (Consts.CDefMySQLDBTablePop, self.getIdentify())
+      stmt = "delete from %s where identify = '%s'" % (constants.CDefMySQLDBTable, self.getIdentify())
+      stmt2 = "delete from %s where identify = '%s'" % (constants.CDefMySQLDBTablePop, self.getIdentify())
 
-      logging.debug("Erasing data from the tables with the identify = %s", self.getIdentify())
+      log.debug("Erasing data from the tables with the identify = %s", self.getIdentify())
       c.execute(stmt)
       c.execute(stmt2)
 
@@ -763,10 +786,10 @@ class DBMySQLAdapter(DBBaseAdapter):
       :param stats: the statistics object
 
       """
-      logging.debug("Reseting structure, droping table and creating new empty table.")
+      log.debug("Reseting structure, droping table and creating new empty table.")
       c = self.getCursor()
-      c.execute("drop table if exists %s" % (Consts.CDefMySQLDBTable,))
-      c.execute("drop table if exists %s" % (Consts.CDefMySQLDBTablePop,))
+      c.execute("drop table if exists %s" % (constants.CDefMySQLDBTable,))
+      c.execute("drop table if exists %s" % (constants.CDefMySQLDBTablePop,))
       self.commit()
       self.createStructure(stats)
 
@@ -783,13 +806,13 @@ class DBMySQLAdapter(DBBaseAdapter):
       generation = ga_engine.getCurrentGeneration()
 
       c = self.getCursor()
-      pstmt = "insert into " + Consts.CDefMySQLDBTable + " values (%s, %s, "
+      pstmt = "insert into " + constants.CDefMySQLDBTable + " values (%s, %s, "
       for i in xrange(len(stats)):
          pstmt += "%s, "
       pstmt = pstmt[:-2] + ")"
       c.execute(pstmt, (self.getIdentify(), generation) + stats.asTuple())
 
-      pstmt = "insert into " + Consts.CDefMySQLDBTablePop + " values(%s, %s, %s, %s, %s)"
+      pstmt = "insert into " + constants.CDefMySQLDBTablePop + " values(%s, %s, %s, %s, %s)"
 
       tups = []
       for i in xrange(len(population)):
@@ -799,3 +822,5 @@ class DBMySQLAdapter(DBBaseAdapter):
       c.executemany(pstmt, tups)
       if (generation % self.commitFreq == 0):
          self.commit()
+
+# -----------------------------------------------------------------

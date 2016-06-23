@@ -21,7 +21,7 @@
 #*Population Size*
 #   Default is 80 individuals
 #*Minimax*
-#   >>> Consts.minimaxType["maximize"]
+#   >>> constants.minimaxType["maximize"]
 #   Maximize the evaluation function
 #*DB Adapter*
 #   Default is **None**
@@ -47,20 +47,16 @@ from sys import platform as sys_platform
 from sys import stdout as sys_stdout
 
 # Import other evolve modules
-from GPopulation import GPopulation
-from FunctionSlot import FunctionSlot
-from GenomeBase import GenomeBase
-from DBAdapters import DBBaseAdapter
-import Consts
-import Util
+from population import GPopulation
+from functionslot import FunctionSlot
+from genome import GenomeBase
+from dbadapters import DBBaseAdapter
+import constants
+import utils
 
 # Import the relevant PTS classes and modules
 from ..core.tools.logging import log
 from ..core.tools import serialization
-
-# Platform dependant code for the Interactive Mode
-#if sys_platform[:3] == "win":
-#    import msvcrt
 
 # -----------------------------------------------------------------
 
@@ -79,9 +75,9 @@ def RawScoreCriteria(ga_engine):
     roundDecimal = ind.getParam("rounddecimal")
 
     if bestRawScore is None:
-        Util.raiseException("you must specify the bestrawscore parameter", ValueError)
+        utils.raiseException("you must specify the bestrawscore parameter", ValueError)
 
-    if ga_engine.getMinimax() == Consts.minimaxType["maximize"]:
+    if ga_engine.getMinimax() == constants.minimaxType["maximize"]:
         if roundDecimal is not None:
             return round(bestRawScore, roundDecimal) <= round(ind.score, roundDecimal)
         else:
@@ -207,18 +203,18 @@ class GSimpleGA(object):
             random.seed(seed)
 
         if type(interactiveMode) != BooleanType:
-            Util.raiseException("Interactive Mode option must be True or False", TypeError)
+            utils.raiseException("Interactive Mode option must be True or False", TypeError)
 
         if not isinstance(genome, GenomeBase):
-            Util.raiseException("The genome must be a GenomeBase subclass", TypeError)
+            utils.raiseException("The genome must be a GenomeBase subclass", TypeError)
 
         self.internalPop = GPopulation(genome)
-        self.nGenerations = Consts.CDefGAGenerations
-        self.pMutation = Consts.CDefGAMutationRate
-        self.pCrossover = Consts.CDefGACrossoverRate
-        self.nElitismReplacement = Consts.CDefGAElitismReplacement
-        self.setPopulationSize(Consts.CDefGAPopulationSize)
-        self.minimax = Consts.minimaxType["maximize"]
+        self.nGenerations = constants.CDefGAGenerations
+        self.pMutation = constants.CDefGAMutationRate
+        self.pCrossover = constants.CDefGACrossoverRate
+        self.nElitismReplacement = constants.CDefGAElitismReplacement
+        self.setPopulationSize(constants.CDefGAPopulationSize)
+        self.minimax = constants.minimaxType["maximize"]
         self.elitism = True
 
         # Adapters
@@ -234,7 +230,7 @@ class GSimpleGA(object):
         self.selector = FunctionSlot("Selector")
         self.stepCallback = FunctionSlot("Generation Step Callback")
         self.terminationCriteria = FunctionSlot("Termination Criteria")
-        self.selector.set(Consts.CDefGASelector)
+        self.selector.set(constants.CDefGASelector)
         self.allSlots = (self.selector, self.stepCallback, self.terminationCriteria)
 
         self.internalParams = {}
@@ -242,7 +238,7 @@ class GSimpleGA(object):
         self.currentGeneration = 0
 
         # GP Testing
-        for classes in Consts.CDefGPGenomes:
+        for classes in constants.CDefGPGenomes:
             if isinstance(self.internalPop.oneSelfGenome, classes):
                 self.setGPMode(True)
                 break
@@ -373,7 +369,7 @@ class GSimpleGA(object):
         """
 
         if generation < -1:
-            Util.raiseException("Generation must be >= -1", ValueError)
+            utils.raiseException("Generation must be >= -1", ValueError)
         self.interactiveGen = generation
 
     # -----------------------------------------------------------------
@@ -400,7 +396,7 @@ class GSimpleGA(object):
         """
 
         if numreplace < 1:
-            Util.raiseException("Replacement number must be >= 1", ValueError)
+            utils.raiseException("Replacement number must be >= 1", ValueError)
         self.nElitismReplacement = numreplace
 
     # -----------------------------------------------------------------
@@ -414,7 +410,7 @@ class GSimpleGA(object):
         """
 
         if type(flag) != BooleanType:
-            Util.raiseException("Interactive Mode option must be True or False", TypeError)
+            utils.raiseException("Interactive Mode option must be True or False", TypeError)
         self.interactiveMode = flag
 
     # -----------------------------------------------------------------
@@ -423,7 +419,7 @@ class GSimpleGA(object):
 
         """ The string representation of the GA Engine """
 
-        minimax_type = Consts.minimaxType.keys()[Consts.minimaxType.values().index(self.minimax)]
+        minimax_type = constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)]
         ret = "- GSimpleGA\n"
         ret += "\tGP Mode:\t\t %s\n" % self.getGPMode()
         ret += "\tPopulation Size:\t %d\n" % self.internalPop.popSize
@@ -482,10 +478,10 @@ class GSimpleGA(object):
         """
 
         if type(flag) != BooleanType:
-            Util.raiseException("Multiprocessing option must be True or False", TypeError)
+            utils.raiseException("Multiprocessing option must be True or False", TypeError)
 
         if type(full_copy) != BooleanType:
-            Util.raiseException("Multiprocessing 'full_copy' option must be True or False", TypeError)
+            utils.raiseException("Multiprocessing 'full_copy' option must be True or False", TypeError)
 
         self.internalPop.setMultiProcessing(flag, full_copy, max_processes)
 
@@ -515,7 +511,7 @@ class GSimpleGA(object):
         """
 
         if (dbadapter is not None) and (not isinstance(dbadapter, DBBaseAdapter)):
-            Util.raiseException("The DB Adapter must be a DBBaseAdapter subclass", TypeError)
+            utils.raiseException("The DB Adapter must be a DBBaseAdapter subclass", TypeError)
         self.dbAdapter = dbadapter
 
     # -----------------------------------------------------------------
@@ -529,7 +525,7 @@ class GSimpleGA(object):
         """
 
         if size < 2:
-            Util.raiseException("population size must be >= 2", ValueError)
+            utils.raiseException("population size must be >= 2", ValueError)
         self.internalPop.setPopulationSize(size)
 
     # -----------------------------------------------------------------
@@ -537,15 +533,15 @@ class GSimpleGA(object):
     def setSortType(self, sort_type):
 
         """
-        Sets the sort type, Consts.sortType["raw"]/Consts.sortType["scaled"]
+        Sets the sort type, constants.sortType["raw"]/constants.sortType["scaled"]
         Example:
-           >>> ga_engine.setSortType(Consts.sortType["scaled"])
+           >>> ga_engine.setSortType(constants.sortType["scaled"])
 
         :param sort_type: the Sort Type
         """
 
-        if sort_type not in Consts.sortType.values():
-            Util.raiseException("sort type must be a Consts.sortType type", TypeError)
+        if sort_type not in constants.sortType.values():
+            utils.raiseException("sort type must be a constants.sortType type", TypeError)
         self.internalPop.sortType = sort_type
 
     # -----------------------------------------------------------------
@@ -557,7 +553,7 @@ class GSimpleGA(object):
         :param rate: the rate, between 0.0 and 1.0
         """
         if (rate > 1.0) or (rate < 0.0):
-            Util.raiseException("Mutation rate must be >= 0.0 and <= 1.0", ValueError)
+            utils.raiseException("Mutation rate must be >= 0.0 and <= 1.0", ValueError)
         self.pMutation = rate
 
     # -----------------------------------------------------------------
@@ -570,7 +566,7 @@ class GSimpleGA(object):
         """
 
         if (rate > 1.0) or (rate < 0.0):
-            Util.raiseException("Crossover rate must be >= 0.0 and <= 1.0", ValueError)
+            utils.raiseException("Crossover rate must be >= 0.0 and <= 1.0", ValueError)
         self.pCrossover = rate
 
     # -----------------------------------------------------------------
@@ -583,7 +579,7 @@ class GSimpleGA(object):
         """
 
         if num_gens < 1:
-            Util.raiseException("Number of generations must be >= 1", ValueError)
+            utils.raiseException("Number of generations must be >= 1", ValueError)
         self.nGenerations = num_gens
 
     # -----------------------------------------------------------------
@@ -604,7 +600,7 @@ class GSimpleGA(object):
     def getMinimax(self):
 
         """ Gets the minimize/maximize mode
-        :rtype: the Consts.minimaxType type
+        :rtype: the constants.minimaxType type
         """
 
         return self.minimax
@@ -613,12 +609,12 @@ class GSimpleGA(object):
 
     def setMinimax(self, mtype):
 
-        """ Sets the minimize/maximize mode, use Consts.minimaxType
-        :param mtype: the minimax mode, from Consts.minimaxType
+        """ Sets the minimize/maximize mode, use constants.minimaxType
+        :param mtype: the minimax mode, from constants.minimaxType
         """
 
-        if mtype not in Consts.minimaxType.values():
-            Util.raiseException("Minimax must be maximize or minimize", TypeError)
+        if mtype not in constants.minimaxType.values():
+            utils.raiseException("Minimax must be maximize or minimize", TypeError)
         self.minimax = mtype
 
     # -----------------------------------------------------------------
@@ -640,7 +636,7 @@ class GSimpleGA(object):
         """
 
         if type(flag) != BooleanType:
-            Util.raiseException("Elitism option must be True or False", TypeError)
+            utils.raiseException("Elitism option must be True or False", TypeError)
         self.elitism = flag
 
     # -----------------------------------------------------------------
@@ -714,7 +710,7 @@ class GSimpleGA(object):
                 function_set[obj] = op_len
 
         if len(function_set) <= 0:
-            Util.raiseException("No function set found using function prefix '%s' !" % prefix, ValueError)
+            utils.raiseException("No function set found using function prefix '%s' !" % prefix, ValueError)
 
         self.setParams(gp_function_set=function_set)
 
@@ -722,10 +718,21 @@ class GSimpleGA(object):
 
     def initialize(self):
 
-        """ Initializes the GA Engine. Create and initialize the first population """
+        """
+        This function initializes the GA Engine. Create and initialize the first population
+        """
 
+        # Inform the user
+        log.info("Initializing the GA engine")
+
+        self.time_init = time()
+
+        # Create the first population
         self.internalPop.create(minimax=self.minimax)
+
+        # Initialize the population (initializes all individuals of the population)
         self.internalPop.initialize(ga_engine=self)
+
         log.debug("The GA Engine was initialized!")
 
     # -----------------------------------------------------------------
@@ -777,7 +784,7 @@ class GSimpleGA(object):
                 for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2):
                     (sister, brother) = it
             else:
-                if not crossover_empty and Util.randomFlipCoin(self.pCrossover):
+                if not crossover_empty and utils.randomFlipCoin(self.pCrossover):
                     for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2):
                         (sister, brother) = it
                 else:
@@ -795,7 +802,7 @@ class GSimpleGA(object):
             genomeMom = self.select(popID=self.currentGeneration)
             genomeDad = self.select(popID=self.currentGeneration)
 
-            if Util.randomFlipCoin(self.pCrossover):
+            if utils.randomFlipCoin(self.pCrossover):
                 for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=1):
                     (sister, brother) = it
             else:
@@ -836,13 +843,13 @@ class GSimpleGA(object):
 
             log.debug("Doing elitism.")
 
-            if self.getMinimax() == Consts.minimaxType["maximize"]:
+            if self.getMinimax() == constants.minimaxType["maximize"]:
                 for i in xrange(self.nElitismReplacement):
                     #re-evaluate before being sure this is the best
                     self.internalPop.bestRaw(i).evaluate()
                     if self.internalPop.bestRaw(i).score > newPop.bestRaw(i).score:
                         newPop[len(newPop) - 1 - i] = self.internalPop.bestRaw(i)
-            elif self.getMinimax() == Consts.minimaxType["minimize"]:
+            elif self.getMinimax() == constants.minimaxType["minimize"]:
                 for i in xrange(self.nElitismReplacement):
                     #re-evaluate before being sure this is the best
                     self.internalPop.bestRaw(i).evaluate()
@@ -937,19 +944,6 @@ class GSimpleGA(object):
         This function ...
         :return:
         """
-
-        self.time_init = time()
-
-        log.debug("Starting the DB Adapter and the Migration Adapter if any")
-        if self.dbAdapter:
-            self.dbAdapter.open(self)
-        if self.migrationAdapter:
-            self.migrationAdapter.start()
-
-        if self.getGPMode():
-            gp_function_prefix = self.getParam("gp_function_prefix")
-            if gp_function_prefix is not None:
-                self.__gp_catch_functions(gp_function_prefix)
 
         self.initialize()
         self.internalPop.evaluate()

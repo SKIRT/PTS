@@ -97,6 +97,8 @@ if config.arguments.dump_or_load == "dump":
     #pop = ga.internalPop
     #for ind in pop: print(ind.genomeList)
 
+    # Set scores of first population
+    for ind in self.internalPop:
 
 
     # Dump

@@ -5,32 +5,31 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.evolve.GSimpleGA
+## \package pts.evolve.scaling This module have the *scaling schemes* like Linear scaling, etc.
 
 # -----------------------------------------------------------------
 
-"""
-
-:mod:`Scaling` -- scaling schemes module
-===========================================================
-
-This module have the *scaling schemes* like Linear scaling, etc.
-
-"""
-import Consts
-import Util
+# Import standard modules
 import math
-import logging
+
+# Import other evolve modules
+import constants
+import utils
+
+# Import the relevant PTS classes and modules
+from ..core.tools.logging import log
+
+# -----------------------------------------------------------------
 
 def LinearScaling(pop):
+
    """ Linear Scaling scheme
-
    .. warning :: Linear Scaling is only for positive raw scores
-
    """
-   logging.debug("Running linear scaling.")
+
+   log.debug("Running linear scaling.")
    pop.statistics()
-   c = Consts.CDefScaleLinearMultiplier
+   c = constants.CDefScaleLinearMultiplier
    a = b = delta = 0.0
 
    pop_rawAve = pop.stats["rawAve"]
@@ -52,17 +51,21 @@ def LinearScaling(pop):
    for i in xrange(len(pop)):
       f = pop[i].score
       if f < 0.0:
-         Util.raiseException("Score %r is negative, linear scaling not supported !" % (f,), ValueError)
+         utils.raiseException("Score %r is negative, linear scaling not supported !" % (f,), ValueError)
       f = f * a + b
       if f < 0:
          f = 0.0
       pop[i].fitness = f
 
+# -----------------------------------------------------------------
+
 def SigmaTruncScaling(pop):
+
    """ Sigma Truncation scaling scheme, allows negative scores """
-   logging.debug("Running sigma truncation scaling.")
+
+   log.debug("Running sigma truncation scaling.")
    pop.statistics()
-   c = Consts.CDefScaleSigmaTruncMultiplier
+   c = constants.CDefScaleSigmaTruncMultiplier
    pop_rawAve = pop.stats["rawAve"]
    pop_rawDev = pop.stats["rawDev"]
    for i in xrange(len(pop)):
@@ -72,23 +75,27 @@ def SigmaTruncScaling(pop):
          f = 0.0
       pop[i].fitness = f
 
+# -----------------------------------------------------------------
+
 def PowerLawScaling(pop):
+
    """ Power Law scaling scheme
-
    .. warning :: Power Law Scaling is only for positive raw scores
-
    """
-   logging.debug("Running power law scaling.")
-   k = Consts.CDefScalePowerLawFactor
+
+   log.debug("Running power law scaling.")
+   k = constants.CDefScalePowerLawFactor
    for i in xrange(len(pop)):
       f = pop[i].score
       if f < 0.0:
-         Util.raiseException("Score %r is negative, power law scaling not supported !" % (f,), ValueError)
+         utils.raiseException("Score %r is negative, power law scaling not supported !" % (f,), ValueError)
       f = math.pow(f, k)
       pop[i].fitness = f
 
+# -----------------------------------------------------------------
 
 def BoltzmannScaling(pop):
+
    """ Boltzmann scaling scheme. You can specify the **boltz_temperature** to the
    population parameters, this parameter will set the start temperature. You
    can specify the **boltz_factor** and the **boltz_min** parameters, the **boltz_factor**
@@ -99,9 +106,9 @@ def BoltzmannScaling(pop):
       The `BoltzmannScaling` function.
 
    """
-   boltz_temperature = pop.getParam("boltz_temperature", Consts.CDefScaleBoltzStart)
-   boltz_factor = pop.getParam("boltz_factor", Consts.CDefScaleBoltzFactor)
-   boltz_min = pop.getParam("boltz_min", Consts.CDefScaleBoltzMinTemp)
+   boltz_temperature = pop.getParam("boltz_temperature", constants.CDefScaleBoltzStart)
+   boltz_factor = pop.getParam("boltz_factor", constants.CDefScaleBoltzFactor)
+   boltz_min = pop.getParam("boltz_min", constants.CDefScaleBoltzMinTemp)
 
    boltz_temperature -= boltz_factor
    boltz_temperature = max(boltz_temperature, boltz_min)
@@ -120,22 +127,30 @@ def BoltzmannScaling(pop):
    for i in xrange(len(pop)):
       pop[i].fitness = boltz_e[i] / avg
 
-def ExponentialScaling(pop):
-   """ Exponential Scaling Scheme. The fitness will be the same as (e^score).
+# -----------------------------------------------------------------
 
+def ExponentialScaling(pop):
+
+   """ Exponential Scaling Scheme. The fitness will be the same as (e^score).
    .. versionadded: 0.6
       The `ExponentialScaling` function.
    """
+
    for i in xrange(len(pop)):
       score = pop[i].score
       pop[i].fitness = math.exp(score)
 
-def SaturatedScaling(pop):
-   """ Saturated Scaling Scheme. The fitness will be the same as 1.0-(e^score)
+# -----------------------------------------------------------------
 
+def SaturatedScaling(pop):
+
+   """ Saturated Scaling Scheme. The fitness will be the same as 1.0-(e^score)
    .. versionadded: 0.6
       The `SaturatedScaling` function.
    """
+
    for i in xrange(len(pop)):
       score = pop[i].score
       pop[i].fitness = 1.0 - math.exp(score)
+
+# -----------------------------------------------------------------

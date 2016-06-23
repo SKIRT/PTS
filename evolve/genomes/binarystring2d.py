@@ -5,71 +5,48 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.evolve.GSimpleGA
+## \package pts.evolve.genomes.binarystring2d This representation is a 2D Binary String, the string looks like
+#  this matrix:
+#
+#  00101101010
+#  00100011010
+#  00101101010
+#  10100101000
+#
+#  *Initializator*
+#    :func:`Initializators.G2DBinaryStringInitializator`
+#    The Binary String Initializator for G2DBinaryString
+#  *Mutator*
+#    :func:`Mutators.G2DBinaryStringMutatorFlip`
+#    The Flip Mutator for G2DBinaryString
+#  *Crossover*
+#    :func:`Crossovers.G2DBinaryStringXSinglePoint`
+#    The Single Point Crossover for G2DBinaryString
+#
 
 # -----------------------------------------------------------------
 
-"""
-:mod:`G2DBinaryString` -- the classical binary string chromosome
-=====================================================================
+# Import other evolve modules
+from genome import GenomeBase
+import constants
+import utils
 
-This representation is a 2D Binary String, the string looks like
-this matrix:
-
-00101101010
-00100011010
-00101101010
-10100101000
-
-Default Parameters
--------------------------------------------------------------
-
-*Initializator*
-
-   :func:`Initializators.G2DBinaryStringInitializator`
-
-   The Binatry String Initializator for G2DBinaryString
-
-*Mutator*
-
-   :func:`Mutators.G2DBinaryStringMutatorFlip`
-
-   The Flip Mutator for G2DBinaryString
-
-*Crossover*
-
-   :func:`Crossovers.G2DBinaryStringXSinglePoint`
-
-   The Single Point Crossover for G2DBinaryString
-
-.. versionadded:: 0.6
-   Added the module :mod:`G2DBinaryString`
-
-Class
--------------------------------------------------------------
-"""
-
-from GenomeBase import GenomeBase
-import Consts
-import Util
-
+# -----------------------------------------------------------------
 
 class G2DBinaryString(GenomeBase):
+
     """ G3DBinaryString Class - The 2D Binary String chromosome
-
     Inheritance diagram for :class:`G2DBinaryString.G2DBinaryString`:
-
     .. inheritance-diagram:: G2DBinaryString.G2DBinaryString
-
     Example:
-       >>> genome = G2DBinaryString.G2DBinaryString(10, 12)
-
-
+       >>> genome = G2DBinaryString(10, 12)
     :param height: the number of rows
     :param width: the number of columns
-
     """
+
     __slots__ = ["height", "width", "genomeString"]
+
+    # -----------------------------------------------------------------
 
     def __init__(self, height, width):
         """ The initializator of G2DBinaryString representation,
@@ -82,9 +59,11 @@ class G2DBinaryString(GenomeBase):
         for i in xrange(height):
             self.genomeString[i] = [None] * width
 
-        self.initializator.set(Consts.CDefG2DBinaryStringInit)
-        self.mutator.set(Consts.CDefG2DBinaryStringMutator)
-        self.crossover.set(Consts.CDefG2DBinaryStringCrossover)
+        self.initializator.set(constants.CDefG2DBinaryStringInit)
+        self.mutator.set(constants.CDefG2DBinaryStringMutator)
+        self.crossover.set(constants.CDefG2DBinaryStringCrossover)
+
+    # -----------------------------------------------------------------
 
     def __eq__(self, other):
         """ Compares one chromosome with another """
@@ -93,50 +72,62 @@ class G2DBinaryString(GenomeBase):
         cond3 = (self.width == other.width)
         return True if cond1 and cond2 and cond3 else False
 
-    def getItem(self, x, y):
-        """ Return the specified gene of List
+    # -----------------------------------------------------------------
 
+    def getItem(self, x, y):
+
+        """ Return the specified gene of List
         Example:
            >>> genome.getItem(3, 1)
            0
-
         :param x: the x index, the column
         :param y: the y index, the row
         :rtype: the item at x,y position
-
         """
+
         return self.genomeString[x][y]
 
-    def setItem(self, x, y, value):
-        """ Set the specified gene of List
+    # -----------------------------------------------------------------
 
+    def setItem(self, x, y, value):
+
+        """ Set the specified gene of List
         Example:
            >>> genome.setItem(3, 1, 0)
-
         :param x: the x index, the column
         :param y: the y index, the row
         :param value: the value (integers 0 or 1)
-
         """
+
         if value not in [0, 1]:
-            Util.raiseException("The item value must be 0 or 1 in the G2DBinaryString chromosome", ValueError)
+            utils.raiseException("The item value must be 0 or 1 in the G2DBinaryString chromosome", ValueError)
         self.genomeString[x][y] = value
+
+    # -----------------------------------------------------------------
 
     def __getitem__(self, key):
         """ Return the specified gene of List """
         return self.genomeString[key]
 
+    # -----------------------------------------------------------------
+
     def __iter__(self):
         """ Iterator support to the list """
         return iter(self.genomeString)
+
+    # -----------------------------------------------------------------
 
     def getHeight(self):
         """ Return the height (lines) of the List """
         return self.height
 
+    # -----------------------------------------------------------------
+
     def getWidth(self):
         """ Return the width (lines) of the List """
         return self.width
+
+    # -----------------------------------------------------------------
 
     def getSize(self):
         """ Returns a tuple (height, widht)
@@ -147,6 +138,8 @@ class G2DBinaryString(GenomeBase):
 
         """
         return self.getHeight(), self.getWidth()
+
+    # -----------------------------------------------------------------
 
     def __repr__(self):
         """ Return a string representation of Genome """
@@ -162,6 +155,8 @@ class G2DBinaryString(GenomeBase):
         ret += "\n"
         return ret
 
+    # -----------------------------------------------------------------
+
     def resumeString(self):
         """ Returns a resumed string representation of the Genome
 
@@ -173,6 +168,8 @@ class G2DBinaryString(GenomeBase):
             ret += "\n"
         return ret
 
+    # -----------------------------------------------------------------
+
     def clearString(self):
         """ Remove all genes from Genome """
         del self.genomeString[:]
@@ -180,6 +177,8 @@ class G2DBinaryString(GenomeBase):
         self.genomeString = [None] * self.height
         for i in xrange(self.height):
             self.genomeString[i] = [None] * self.width
+
+    # -----------------------------------------------------------------
 
     def copy(self, g):
         """ Copy genome to 'g'
@@ -196,6 +195,8 @@ class G2DBinaryString(GenomeBase):
         for i in xrange(self.height):
             g.genomeString[i] = self.genomeString[i][:]
 
+    # -----------------------------------------------------------------
+
     def clone(self):
         """ Return a new instace copy of the genome
 
@@ -205,3 +206,5 @@ class G2DBinaryString(GenomeBase):
         newcopy = G2DBinaryString(self.height, self.width)
         self.copy(newcopy)
         return newcopy
+
+# -----------------------------------------------------------------

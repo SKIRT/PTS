@@ -5,27 +5,17 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.evolve.GSimpleGA
+## \package pts.evolve.network In this module you'll find all the network related implementation.
 
 # -----------------------------------------------------------------
 
-"""
-
-:mod:`Network` -- network utility module
-============================================================================
-
-In this module you'll find all the network related implementation
-
-.. versionadded:: 0.6
-   The *Network* module.
-
-"""
 from __future__ import with_statement
+
+# Import standard modules
 import threading
 import socket
 import time
 import sys
-import Util
 import cPickle
 
 try:
@@ -34,10 +24,17 @@ try:
 except ImportError:
     ZLIB_SUPPORT = False
 
-import Consts
-import logging
+# Import other evolve modules
+import constants
+import utils
+
+# Import the relevant PTS classes and modules
+from ..core.tools.logging import log
+
+# -----------------------------------------------------------------
 
 def getMachineIP():
+
    """ Return all the IPs from current machine.
 
    Example:
@@ -52,24 +49,36 @@ def getMachineIP():
    ips = [x[4][0] for x in addresses]
    return ips
 
+# -----------------------------------------------------------------
+
 class UDPThreadBroadcastClient(threading.Thread):
-   """ The Broadcast UDP client thread class.
 
-   This class is a thread to serve as Pyevolve client on the UDP
-   datagrams, it is used to send data over network lan/wan.
+    """ The Broadcast UDP client thread class.
 
-   Example:
+    This class is a thread to serve as Pyevolve client on the UDP
+    datagrams, it is used to send data over network lan/wan.
+
+    Example:
       >>> s = Network.UDPThreadClient('192.168.0.2', 1500, 666)
       >>> s.setData("Test data")
       >>> s.start()
       >>> s.join()
 
-   :param host: the hostname to bind the socket on sender (this is NOT the target host)
-   :param port: the sender port (this is NOT the target port)
-   :param target_port: the destination port target
+    :param host: the hostname to bind the socket on sender (this is NOT the target host)
+    :param port: the sender port (this is NOT the target port)
+    :param target_port: the destination port target
 
-   """
-   def __init__(self, host, port, target_port):
+    """
+
+    def __init__(self, host, port, target_port):
+
+      """
+      The constructor ...
+      :param host:
+      :param port:
+      :param target_port:
+      """
+
       super(UDPThreadBroadcastClient, self).__init__()
       self.host = host
       self.port = port
@@ -82,53 +91,73 @@ class UDPThreadBroadcastClient(threading.Thread):
       self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
       self.sock.bind((host, port))
 
-   def setData(self, data):
+    # -----------------------------------------------------------------
+
+    def setData(self, data):
+
       """ Set the data to send
-
       :param data: the data to send
-
       """
+
       self.data = data
 
-   def getData(self):
+    # -----------------------------------------------------------------
+
+    def getData(self):
+
       """ Get the data to send
-
       :rtype: data to send
-
       """
+
       return self.data
 
-   def close(self):
+    # -----------------------------------------------------------------
+
+    def close(self):
+
       """ Close the internal socket """
+
       self.sock.close()
 
-   def getSentBytes(self):
+    # -----------------------------------------------------------------
+
+    def getSentBytes(self):
+
       """ Returns the number of sent bytes. The use of this method makes sense
       when you already have sent the data
-
       :rtype: sent bytes
-
       """
+
       sent = None
       with self.sentBytesLock:
          if self.sentBytes is None:
-            Util.raiseException('Bytes sent is None')
+            utils.raiseException('Bytes sent is None')
          else:
              sent = self.sentBytes
       return sent
 
-   def send(self):
-      """ Broadcasts the data """
-      return self.sock.sendto(self.data, (Consts.CDefBroadcastAddress, self.targetPort))
+    # -----------------------------------------------------------------
 
-   def run(self):
+    def send(self):
+
+      """ Broadcasts the data """
+
+      return self.sock.sendto(self.data, (constants.CDefBroadcastAddress, self.targetPort))
+
+    # -----------------------------------------------------------------
+
+    def run(self):
+
       """ Method called when you call *.start()* of the thread """
+
       if self.data is None:
-         Util.raiseException('You must set the data with setData method', ValueError)
+         utils.raiseException('You must set the data with setData method', ValueError)
 
       with self.sentBytesLock:
          self.sentBytes = self.send()
       self.close()
+
+# -----------------------------------------------------------------
 
 class UDPThreadUnicastClient(threading.Thread):
    """ The Unicast UDP client thread class.
@@ -206,7 +235,7 @@ class UDPThreadUnicastClient(threading.Thread):
 
       """
       if self.poolLength() >= self.poolSize:
-         logging.warning('the send pool is full, consider increasing the pool size or decreasing the timeout !')
+         log.warning('the send pool is full, consider increasing the pool size or decreasing the timeout !')
          return
 
       with self.sendPoolLock:
@@ -249,7 +278,7 @@ class UDPThreadUnicastClient(threading.Thread):
    def run(self):
       """ Method called when you call *.start()* of the thread """
       if len(self.target) <= 0:
-         Util.raiseException('You must set the target(s) before send data', ValueError)
+         utils.raiseException('You must set the target(s) before send data', ValueError)
 
       while True:
          if self.doshutdown:
@@ -396,35 +425,42 @@ class UDPThreadServer(threading.Thread):
 
       self.close()
 
-def pickleAndCompress(obj, level=9):
-   """ Pickles the object and compress the dumped string with zlib
+# -----------------------------------------------------------------
 
+def pickleAndCompress(obj, level=9):
+
+   """ Pickles the object and compress the dumped string with zlib
    :param obj: the object to be pickled
    :param level: the compression level, 9 is the best
                     and -1 is to not compress
-
    """
+
    pickled = cPickle.dumps(obj)
    if level < 0:
        return pickled
    else:
       if not ZLIB_SUPPORT:
-         Util.raiseException('zlib not found !', ImportError)
+         utils.raiseException('zlib not found !', ImportError)
       pickled_zlib = zlib.compress(pickled, level)
       return pickled_zlib
 
-def unpickleAndDecompress(obj_dump, decompress=True):
-   """ Decompress a zlib compressed string and unpickle the data
+# -----------------------------------------------------------------
 
+def unpickleAndDecompress(obj_dump, decompress=True):
+
+   """ Decompress a zlib compressed string and unpickle the data
    :param obj: the object to be decompressend and unpickled
    """
+
    if decompress:
       if not ZLIB_SUPPORT:
-         Util.raiseException('zlib not found !', ImportError)
+         utils.raiseException('zlib not found !', ImportError)
       obj_decompress = zlib.decompress(obj_dump)
    else:
       obj_decompress = obj_dump
    return cPickle.loads(obj_decompress)
+
+# -----------------------------------------------------------------
 
 if __name__ == "__main__":
    arg = sys.argv[1]
@@ -453,3 +489,5 @@ if __name__ == "__main__":
       print s.getSentBytes()
 
    print "end..."
+
+# -----------------------------------------------------------------

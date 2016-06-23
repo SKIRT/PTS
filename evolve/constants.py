@@ -14,12 +14,12 @@
 # -----------------------------------------------------------------
 
 # Import other evolve modules
-import Scaling
-import Selectors
-import Initializators
-import Mutators
-import Crossovers
-from GTree import GTreeGP
+import scaling
+import selectors
+import initializators
+import mutators
+import crossovers
+from tree import GTreeGP
 
 # -----------------------------------------------------------------
 
@@ -69,14 +69,14 @@ CDefScaleBoltzStart = 40.0
 # - Population Defaults
 CDefPopSortType = sortType["scaled"]
 CDefPopMinimax = minimaxType["maximize"]
-CDefPopScale = Scaling.LinearScaling
+CDefPopScale = scaling.LinearScaling
 
 # - GA Engine defaults
 CDefGAGenerations = 100
 CDefGAMutationRate = 0.02
 CDefGACrossoverRate = 0.9
 CDefGAPopulationSize = 80
-CDefGASelector = Selectors.GRankSelector
+CDefGASelector = selectors.GRankSelector
 CDefGAElitismReplacement = 1
 
 # - This is general used by integer/real ranges defaults
@@ -84,26 +84,26 @@ CDefRangeMin = 0
 CDefRangeMax = 100
 
 # - G1DBinaryString defaults
-CDefG1DBinaryStringMutator = Mutators.G1DBinaryStringMutatorFlip
-CDefG1DBinaryStringCrossover = Crossovers.G1DBinaryStringXSinglePoint
-CDefG1DBinaryStringInit = Initializators.G1DBinaryStringInitializator
+CDefG1DBinaryStringMutator = mutators.G1DBinaryStringMutatorFlip
+CDefG1DBinaryStringCrossover = crossovers.G1DBinaryStringXSinglePoint
+CDefG1DBinaryStringInit = initializators.G1DBinaryStringInitializator
 CDefG1DBinaryStringUniformProb = 0.5
 
 # - G2DBinaryString defaults
-CDefG2DBinaryStringMutator = Mutators.G2DBinaryStringMutatorFlip
-CDefG2DBinaryStringCrossover = Crossovers.G2DBinaryStringXUniform
-CDefG2DBinaryStringInit = Initializators.G2DBinaryStringInitializator
+CDefG2DBinaryStringMutator = mutators.G2DBinaryStringMutatorFlip
+CDefG2DBinaryStringCrossover = crossovers.G2DBinaryStringXUniform
+CDefG2DBinaryStringInit = initializators.G2DBinaryStringInitializator
 CDefG2DBinaryStringUniformProb = 0.5
 
 # - GTree defaults
-CDefGTreeInit = Initializators.GTreeInitializatorInteger
-CDefGGTreeMutator = Mutators.GTreeMutatorIntegerRange
-CDefGTreeCrossover = Crossovers.GTreeCrossoverSinglePointStrict
+CDefGTreeInit = initializators.GTreeInitializatorInteger
+CDefGGTreeMutator = mutators.GTreeMutatorIntegerRange
+CDefGTreeCrossover = crossovers.GTreeCrossoverSinglePointStrict
 
 # - GTreeGP defaults
-CDefGTreeGPInit = Initializators.GTreeGPInitializator
-CDefGGTreeGPMutator = Mutators.GTreeGPMutatorSubtree
-CDefGTreeGPCrossover = Crossovers.GTreeGPCrossoverSinglePoint
+CDefGTreeGPInit = initializators.GTreeGPInitializator
+CDefGGTreeGPMutator = mutators.GTreeGPMutatorSubtree
+CDefGTreeGPCrossover = crossovers.GTreeGPCrossoverSinglePoint
 
 # - G1DList defaults
 CDefG1DListMutIntMU = 2
@@ -112,9 +112,9 @@ CDefG1DListMutIntSIGMA = 10
 CDefG1DListMutRealMU = 0
 CDefG1DListMutRealSIGMA = 1
 
-CDefG1DListMutator = Mutators.G1DListMutatorSwap
-CDefG1DListCrossover = Crossovers.G1DListCrossoverSinglePoint
-CDefG1DListInit = Initializators.G1DListInitializatorInteger
+CDefG1DListMutator = mutators.G1DListMutatorSwap
+CDefG1DListCrossover = crossovers.G1DListCrossoverSinglePoint
+CDefG1DListInit = initializators.G1DListInitializatorInteger
 CDefG1DListCrossUniformProb = 0.5
 
 # SBX Crossover defaults
@@ -131,9 +131,9 @@ CDefG2DListMutIntSIGMA = 10
 CDefG2DListMutRealMU = 0
 CDefG2DListMutRealSIGMA = 1
 
-CDefG2DListMutator = Mutators.G2DListMutatorSwap
-CDefG2DListCrossover = Crossovers.G2DListCrossoverUniform
-CDefG2DListInit = Initializators.G2DListInitializatorInteger
+CDefG2DListMutator = mutators.G2DListMutatorSwap
+CDefG2DListCrossover = crossovers.G2DListCrossoverUniform
+CDefG2DListInit = initializators.G2DListInitializatorInteger
 CDefG2DListCrossUniformProb = 0.5
 
 # Gaussian Gradient

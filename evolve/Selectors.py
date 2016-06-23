@@ -5,30 +5,29 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.evolve.GSimpleGA
+## \package pts.evolve.selectors This module have the *selection methods*, like roulette wheel, tournament, ranking,
+#  etc.
 
 # -----------------------------------------------------------------
 
-"""
-
-:mod:`Selectors` -- selection methods module
-==============================================================
-
-This module have the *selection methods*, like roulette wheel, tournament, ranking, etc.
-
-"""
-
+# Import standard modules
 import random
-import Consts
+
+# Import other evolve modules
+import constants
+
+# -----------------------------------------------------------------
 
 def GRankSelector(population, **args):
+
    """ The Rank Selector - This selector will pick the best individual of
    the population every time.
    """
+
    count = 0
 
    if args["popID"] != GRankSelector.cachePopID:
-      if population.sortType == Consts.sortType["scaled"]:
+      if population.sortType == constants.sortType["scaled"]:
          best_fitness = population.bestFitness().fitness
          for index in xrange(1, len(population.internalPop)):
             if population[index].fitness == best_fitness:
@@ -50,64 +49,72 @@ def GRankSelector(population, **args):
 GRankSelector.cachePopID = None
 GRankSelector.cacheCount = None
 
+# -----------------------------------------------------------------
+
 def GUniformSelector(population, **args):
+
    """ The Uniform Selector """
+
    return population[random.randint(0, len(population) - 1)]
 
+# -----------------------------------------------------------------
+
 def GTournamentSelector(population, **args):
+
    """ The Tournament Selector
-
    It accepts the *tournamentPool* population parameter.
-
    .. note::
       the Tournament Selector uses the Roulette Wheel to
       pick individuals for the pool
-
    .. versionchanged:: 0.6
       Changed the parameter `poolSize` to the `tournamentPool`, now the selector
       gets the pool size from the population.
-
    """
+
    choosen = None
-   should_minimize = population.minimax == Consts.minimaxType["minimize"]
+   should_minimize = population.minimax == constants.minimaxType["minimize"]
    minimax_operator = min if should_minimize else max
 
-   poolSize = population.getParam("tournamentPool", Consts.CDefTournamentPoolSize)
+   poolSize = population.getParam("tournamentPool", constants.CDefTournamentPoolSize)
    tournament_pool = [GRouletteWheel(population, **args) for i in xrange(poolSize)]
 
-   if population.sortType == Consts.sortType["scaled"]:
+   if population.sortType == constants.sortType["scaled"]:
       choosen = minimax_operator(tournament_pool, key=lambda ind: ind.fitness)
    else:
       choosen = minimax_operator(tournament_pool, key=lambda ind: ind.score)
 
    return choosen
 
+# -----------------------------------------------------------------
+
 def GTournamentSelectorAlternative(population, **args):
+
    """ The alternative Tournament Selector
-
    This Tournament Selector don't uses the Roulette Wheel
-
    It accepts the *tournamentPool* population parameter.
-
    .. versionadded: 0.6
       Added the GTournamentAlternative function.
-
    """
-   pool_size = population.getParam("tournamentPool", Consts.CDefTournamentPoolSize)
+
+   pool_size = population.getParam("tournamentPool", constants.CDefTournamentPoolSize)
    len_pop = len(population)
-   should_minimize = population.minimax == Consts.minimaxType["minimize"]
+   should_minimize = population.minimax == constants.minimaxType["minimize"]
    minimax_operator = min if should_minimize else max
    tournament_pool = [population[random.randint(0, len_pop - 1)] for i in xrange(pool_size)]
 
-   if population.sortType == Consts.sortType["scaled"]:
+   if population.sortType == constants.sortType["scaled"]:
       choosen = minimax_operator(tournament_pool, key=lambda ind: ind.fitness)
    else:
       choosen = minimax_operator(tournament_pool, key=lambda ind: ind.score)
 
    return choosen
 
+# -----------------------------------------------------------------
+
 def GRouletteWheel(population, **args):
+
    """ The Roulette Wheel selector """
+
    psum = None
    if args["popID"] != GRouletteWheel.cachePopID:
       GRouletteWheel.cachePopID = args["popID"]
@@ -131,10 +138,15 @@ def GRouletteWheel(population, **args):
 
    return population.bestFitness(lower)
 
+# -----------------------------------------------------------------
+
 GRouletteWheel.cachePopID = None
 GRouletteWheel.cacheWheel = None
 
+# -----------------------------------------------------------------
+
 def GRouletteWheel_PrepareWheel(population):
+
    """ A preparation for Roulette Wheel selection """
 
    len_pop = len(population)
@@ -143,7 +155,7 @@ def GRouletteWheel_PrepareWheel(population):
 
    population.statistics()
 
-   if population.sortType == Consts.sortType["scaled"]:
+   if population.sortType == constants.sortType["scaled"]:
       pop_fitMax = population.stats["fitMax"]
       pop_fitMin = population.stats["fitMin"]
 
@@ -152,7 +164,7 @@ def GRouletteWheel_PrepareWheel(population):
             psum[index] = (index + 1) / float(len_pop)
       elif (pop_fitMax > 0 and pop_fitMin >= 0) or (pop_fitMax <= 0 and pop_fitMin < 0):
          population.sort()
-         if population.minimax == Consts.minimaxType["maximize"]:
+         if population.minimax == constants.minimaxType["maximize"]:
             psum[0] = population[0].fitness
             for i in xrange(1, len_pop):
                psum[i] = population[i].fitness + psum[i - 1]
@@ -174,7 +186,7 @@ def GRouletteWheel_PrepareWheel(population):
 
       elif (pop_rawMax > 0 and pop_rawMin >= 0) or (pop_rawMax <= 0 and pop_rawMin < 0):
          population.sort()
-         if population.minimax == Consts.minimaxType["maximize"]:
+         if population.minimax == constants.minimaxType["maximize"]:
             psum[0] = population[0].score
             for i in xrange(1, len_pop):
                psum[i] = population[i].score + psum[i - 1]
@@ -188,3 +200,5 @@ def GRouletteWheel_PrepareWheel(population):
                psum[i] /= float(psum[len_pop - 1])
 
    return psum
+
+# -----------------------------------------------------------------

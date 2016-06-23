@@ -14,10 +14,10 @@
 from random import randint as rand_randint, choice as rand_choice
 
 # Import other evolve modules
-import Util
-import Network
-import Consts
-from FunctionSlot import FunctionSlot
+import utils
+import network
+import constants
+from functionslot import FunctionSlot
 
 # Import the relevant PTS classes and modules
 from ..core.tools.logging import log
@@ -207,31 +207,31 @@ class MigrationScheme(object):
 
 class WANMigration(MigrationScheme):
 
-   """ This is the Simple Migration class for distributed GA
+    """ This is the Simple Migration class for distributed GA
 
-   Example:
+    Example:
       >>> mig = WANMigration("192.168.0.1", "10000", "group1")
 
-   :param host: the source hostname
-   :param port: the source port number
-   :param group_name: the group name
-   """
+    :param host: the source hostname
+    :param port: the source port number
+    :param group_name: the group name
+    """
 
-   selector = None
-   """ This is the function slot for the selection method
-   if you want to change the default selector, you must do this: ::
+    selector = None
+    """ This is the function slot for the selection method
+    if you want to change the default selector, you must do this: ::
 
       migration_scheme.selector.set(Selectors.GRouletteWheel) """
 
-   def __init__(self, host, port, group_name):
+    def __init__(self, host, port, group_name):
       super(WANMigration, self).__init__()
       self.setMyself(host, port)
       self.setGroupName(group_name)
       self.topologyGraph = None
-      self.serverThread = Network.UDPThreadServer(host, port)
-      self.clientThread = Network.UDPThreadUnicastClient(self.myself[0], rand_randint(30000, 65534))
+      self.serverThread = network.UDPThreadServer(host, port)
+      self.clientThread = network.UDPThreadUnicastClient(self.myself[0], rand_randint(30000, 65534))
 
-   def setMyself(self, host, port):
+    def setMyself(self, host, port):
       """ Which interface you will use to send/receive data
 
       :param host: your hostname
@@ -239,7 +239,7 @@ class WANMigration(MigrationScheme):
       """
       self.myself = (host, port)
 
-   def getGroupName(self):
+    def getGroupName(self):
       """ Gets the group name
 
       .. note:: all islands of evolution which are supposed to exchange
@@ -247,7 +247,7 @@ class WANMigration(MigrationScheme):
       """
       return self.groupName
 
-   def setGroupName(self, name):
+    def setGroupName(self, name):
       """ Sets the group name
 
       :param name: the group name
@@ -257,25 +257,25 @@ class WANMigration(MigrationScheme):
       """
       self.groupName = name
 
-   def setTopology(self, graph):
+    def setTopology(self, graph):
       """ Sets the topology of the migrations
 
       :param graph: the :class:`Util.Graph` instance
       """
       self.topologyGraph = graph
 
-   def start(self):
+    def start(self):
       """ Start capture of packets and initialize the migration scheme """
       self.serverThread.start()
 
       if self.topologyGraph is None:
-         Util.raiseException("You must add a topology graph to the migration scheme !")
+         utils.raiseException("You must add a topology graph to the migration scheme !")
 
       targets = self.topologyGraph.getNeighbors(self.myself)
       self.clientThread.setMultipleTargetHost(targets)
       self.clientThread.start()
 
-   def stop(self):
+    def stop(self):
       """ Stops the migration engine """
       self.serverThread.shutdown()
       self.clientThread.shutdown()
@@ -291,7 +291,8 @@ class WANMigration(MigrationScheme):
       if self.clientThread.isAlive():
          log.warning("warning: client thread not joined !")
 
-   def exchange(self):
+    def exchange(self):
+
       """ This is the main method, is where the individuals
       are exchanged """
 
@@ -304,8 +305,8 @@ class WANMigration(MigrationScheme):
 
       for individual in pool:
          # (code, group name, individual)
-         networkObject = (Consts.CDefNetworkIndividual, self.getGroupName(), individual)
-         networkData = Network.pickleAndCompress(networkObject, self.getCompressionLevel())
+         networkObject = (constants.CDefNetworkIndividual, self.getGroupName(), individual)
+         networkData = network.pickleAndCompress(networkObject, self.getCompressionLevel())
          # Send the individuals to the topology
          self.clientThread.addData(networkData)
 
@@ -314,7 +315,7 @@ class WANMigration(MigrationScheme):
       while self.serverThread.isReady():
          # (IP source, data)
          networkData = self.serverThread.popPool()
-         networkObject = Network.unpickleAndDecompress(networkData[1])
+         networkObject = network.unpickleAndDecompress(networkData[1])
          # (code, group name, individual)
          pool.append(networkObject)
 
@@ -333,11 +334,13 @@ class WANMigration(MigrationScheme):
          # replace the worst
          population[len(population) - 1 - i] = choice[2]
 
+# -----------------------------------------------------------------
 
 class MPIMigration(MigrationScheme):
-   """ This is the MPIMigration """
 
-   def __init__(self):
+    """ This is the MPIMigration """
+
+    def __init__(self):
       # Delayed ImportError of mpi4py
       if not HAS_MPI4PY:
          raise ImportError("No module named mpi4py, you must install mpi4py to use MPIMIgration!")
@@ -356,7 +359,7 @@ class MPIMigration(MigrationScheme):
 
       self.all_stars = None
 
-   def isReady(self):
+    def isReady(self):
       """ Returns true if is time to migrate """
 
       if self.GAEngine.getCurrentGeneration() == 0:
@@ -369,7 +372,7 @@ class MPIMigration(MigrationScheme):
 
     # -----------------------------------------------------------------
 
-   def gather_bests(self):
+    def gather_bests(self):
 
       '''
       Collect all the best individuals from the various populations. The
@@ -381,7 +384,7 @@ class MPIMigration(MigrationScheme):
 
     # -----------------------------------------------------------------
 
-   def exchange(self):
+    def exchange(self):
 
       """
       This is the main method, is where the individuals
