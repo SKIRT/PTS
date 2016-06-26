@@ -18,6 +18,8 @@ from collections import defaultdict
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
+from ..simulation.arguments import SkirtArguments
+from .options import LoggingOptions
 from ..tools import inspection, time
 from ..tools import filesystem as fs
 from ..tools.logging import log
@@ -78,6 +80,9 @@ class BatchLauncher(Configurable):
         # Create a SimulationAnalyser instance
         self.analyser = SimulationAnalyser()
 
+        # The logging options
+        self.logging_options = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -97,17 +102,18 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_to_queue(self, arguments, name=None):
+    def add_to_queue(self, definition, name=None, parallelization=None):
 
         """
         This function ...
-        :param arguments:
+        :param definition:
         :param name: a name that is given to the simulation
+        :param parallelization: individual parallelization scheme for this particular simulation
         :return:
         """
 
-        # Add the SkirtArguments object to the queue
-        self.queue.append((arguments, name))
+        # Add the simulation definition object to the queue
+        self.queue.append((definition, name, parallelization))
 
     # -----------------------------------------------------------------
 
@@ -126,18 +132,20 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_to_extra_queue(self, arguments, analysis_options=None, name=None, share_input=False):
+    def add_to_extra_queue(self, definition, name=None, analysis_options=None, logging_options=None, share_input=False):
 
         """
         This function ...
-        :param arguments:
-        :param analysis_options:
+        :param definition:
         :param name:
+        :param analysis_options:
+        :param logging_options:
+        :param share_input:
         :return:
         """
 
-        # Add the SkirtArguments and AnalysisOptions object to the queue
-        self.extra_queue.append((arguments, analysis_options, name, share_input))
+        # Add the simulation definition, simulation name, analysis options and logging options to the queue
+        self.extra_queue.append((definition, name, analysis_options, logging_options, share_input))
 
     # -----------------------------------------------------------------
 
@@ -458,6 +466,10 @@ class BatchLauncher(Configurable):
             # Add the remote to the list of remote objects
             self.remotes.append(remote)
 
+        # Create the logging options
+        self.logging_options = LoggingOptions()
+        self.logging_options.set_options(self.config.logging)
+
     # -----------------------------------------------------------------
 
     def assign(self):
@@ -574,9 +586,7 @@ class BatchLauncher(Configurable):
         for remote in self.remotes:
 
             # Get the parallelization scheme for this remote host
-            parallellization = self.parallelization[remote.host_id]
-            processes = parallellization.processes
-            threads = parallellization.threads
+            parallelization = self.parallelization[remote.host_id]
 
             # Cache the simulation objects scheduled to the current remote
             simulations_remote = []
@@ -585,11 +595,11 @@ class BatchLauncher(Configurable):
             for _ in range(next(self.assignment)):
 
                 # Get the last item from the queue (it is removed)
-                arguments, name = self.queue.pop()
+                definition, name, parallelization_item = self.queue.pop()
+                if parallelization_item is None: parallelization_item = parallelization
 
-                # Set the parallelization
-                arguments.parallel.processes = processes
-                arguments.parallel.threads = threads
+                # Create the SkirtArguments object
+                arguments = SkirtArguments(definition, self.logging_options, parallelization_item)
 
                 # Check whether scheduling options are defined for this simulation and for this remote host
                 if remote.host_id in self.scheduling_options and name in self.scheduling_options[remote.host_id]:
@@ -600,12 +610,13 @@ class BatchLauncher(Configurable):
                 simulation = remote.add_to_queue(arguments, name=name, scheduling_options=scheduling_options, remote_input_path=remote_input_path)
                 simulations_remote.append(simulation)
 
+                # Set the parallelization scheme of the simulation (important since SkirtRemote does not know whether
+                # hyperthreading would be enabled if the user provided the parallelization_item when adding the
+                # simulation to the queue
+                simulation.parallelization = parallelization_item
+
                 # If the input directory is shared between the different simulations
                 if self.config.shared_input and remote_input_path is None: remote_input_path = simulation.remote_input_path
-
-                # Set the parallelization properties for the simulation
-                # (this is actually already done by SkirtRemote in the add_to_queue function)
-                simulation.parallelization = parallellization
 
                 # Set the analysis options for the simulation
                 self.set_analysis_options(simulation)
@@ -619,11 +630,10 @@ class BatchLauncher(Configurable):
                 for _ in range(self.in_extra_queue):
 
                     # Get the last item from the extra queue
-                    arguments, analysis_options, name, share_input = self.extra_queue.pop()
+                    definition, name, analysis_options, logging_options, share_input = self.extra_queue.pop()
 
-                    # Set the parallelization
-                    arguments.parallel.processes = processes
-                    arguments.parallel.threads = threads
+                    # Create the SkirtArguments object
+                    arguments = SkirtArguments(definition, logging_options, parallelization)
 
                     # Set the remote input path
                     if share_input and self.config.shared_input: remote_in_path = remote_input_path
@@ -632,9 +642,6 @@ class BatchLauncher(Configurable):
                     # Queue the simulation
                     simulation = remote.add_to_queue(arguments, name=name, remote_input_path=remote_in_path)
                     simulations_remote.append(simulation)
-
-                    # Set parallelization
-                    simulation.parallelization = parallellization
 
                     # Set the analysis options for the simulation
                     if analysis_options is not None: simulation.analysis = analysis_options
@@ -751,6 +758,10 @@ class BatchLauncher(Configurable):
         if simulation.analysis.any_misc:
             if not fs.is_directory(misc_path): fs.create_directory(misc_path, recursive=True)
             simulation.analysis.misc.path = misc_path
+
+        # Set timing and memory table paths (if specified for this batch launcher)
+        if self.config.timing_table_path is not None: simulation.analysis.timing_table_path = self.config.timing_table_path
+        if self.config.memory_table_path is not None: simulation.analysis.memory_table_path = self.config.memory_table_path
 
         # Remove remote files
         simulation.remove_remote_input = not self.config.keep and not self.config.shared_input

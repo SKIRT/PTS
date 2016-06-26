@@ -12,26 +12,14 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-from pts.evolve.GSimpleGA import GSimpleGA, RawScoreCriteria
-from pts.evolve import G1DList
-from pts.evolve import Mutators, Initializators
-from pts.evolve import Selectors
-from pts.evolve import Consts
-from scipy import stats
+# Import standard modules
+import numpy as np
 
-import matplotlib.pyplot as plt
-
-import math
-
+# Import the relevant PTS classes and modules
+from pts.evolve.simplega import GSimpleGA, RawScoreCriteria
 from pts.core.tools import serialization
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import Configuration
-
-# -----------------------------------------------------------------
-
-config = Configuration()
-config.add_required("dump_or_load", str, "dump or load")
-config.read()
+from pts.core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -42,10 +30,6 @@ test_data_y = [88.59999847, 71.59999847, 93.30000305, 84.30000305, 80.59999847, 
                69.40000153, 83.30000305, 79.59999847, 82.59999847, 80.59999847, 83.5, 76.30000305]
 
 # -----------------------------------------------------------------
-
-# plt.figure
-# plt.scatter(test_data_x, test_data_y)
-# plt.show()
 
 def chi_squared_function(chromosome):
 
@@ -64,52 +48,61 @@ def chi_squared_function(chromosome):
 
     return chi_squared
 
+# -----------------------------------------------------------------
+
 # path to the GA object
-path = fs.join(fs.home(), "ga.pickle")
+path = fs.join(fs.cwd(), "ga.pickle")
+
+# Path to the parameters table
+parameters_path = fs.join(fs.cwd(), "parameters.dat")
+
+# -----------------------------------------------------------------
+
+# Loda the GA
+ga = GSimpleGA.from_file(path)
+
+# Load the parameters table
+table = tables.from_file(parameters_path,format="ascii.ecsv")
+
+# Set scores of first population
+index = 0
+for ind in ga.internalPop:
+
+    parameter_a = ind.genomeList[0]
+    parameter_b = ind.genomeList[1]
+
+    parameter_a_tab = table["Parameter a"][index]
+    parameter_b_tab = table["Parameter b"][index]
+
+    #rel_diff_a = abs((parameter_a - parameter_a_tab) / parameter_a)
+    #rel_diff_b = abs((parameter_b - parameter_b_tab) / parameter_b)
+    #print(rel_diff_a, rel_diff_b)
+
+    assert np.isclose(parameter_a, parameter_a_tab, rtol=1e-11)
+    assert np.isclose(parameter_b, parameter_b_tab, rtol=1e-11)
+
+    #assert float(parameter_a) == float(parameter_a_tab), parameter_a - parameter_a_tab
+    #assert float(parameter_b) == float(parameter_b_tab), parameter_b - parameter_b_tab
+
+    # Set the score
+    ind.score = chi_squared_function(ind)
+
+    # Increment the index
+    index += 1
+
+# Dump
+#ga.saveto(path)
 
 
-if config.arguments.dump_or_load == "dump":
-
-    # Genome instance
-    genome = G1DList.G1DList(2)
-    genome.setParams(rangemin=0., rangemax=50., bestrawscore=0.00, rounddecimal=2)
-    genome.initializator.set(Initializators.G1DListInitializatorReal)
-    genome.mutator.set(Mutators.G1DListMutatorRealGaussian)
-
-    genome.evaluator.set(chi_squared_function)
-
-    # Genetic Algorithm Instance
-    ga = GSimpleGA(genome)
-    ga.terminationCriteria.set(RawScoreCriteria)
-    ga.setMinimax(Consts.minimaxType["minimize"])
-    ga.setGenerations(20)
-    ga.setCrossoverRate(0.5)
-    ga.setPopulationSize(100)
-    ga.setMutationRate(0.5)
-
-    #ga.evolve(freq_stats=50)
-    #exit()
-
-    # ga.initialize_evolution()
-
-    ga.initialize()
-
-    #pop = ga.internalPop
-    #for ind in pop: print(ind.genomeList)
-
-    # Set scores of first population
-    for ind in self.internalPop:
+# Initialize evolution:
+# self.initialize() # done in 'explore'
+# self.internalPop.evaluate()
+# self.internalPop.sort()
 
 
-    # Dump
-    ga.saveto(path)
+# Evaluate function of population is just loop over evaluate function of individuals
+# Evaluate function of individual (genome) is just calculating the sum of scores of each target function
 
-elif config.arguments.dump_or_load == "load":
-
-    ga = GSimpleGA.from_file(path)
-
-    pop = ga.internalPop
-    for ind in pop: print(ind.genomeList)
 
 # newpop = ga.generate_new_population()
 # for ind in newpop: print(ind.genomeList)

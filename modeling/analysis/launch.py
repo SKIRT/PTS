@@ -20,10 +20,12 @@ from .component import AnalysisComponent
 from ...core.tools import tables, time
 from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import SkiFile
+from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.tools.logging import log
 from ..basics.instruments import FullInstrument
 from ...core.launch.options import AnalysisOptions
 from ...core.launch.options import SchedulingOptions
+from ...core.launch.options import LoggingOptions
 from ...core.simulation.arguments import SkirtArguments
 from ...core.launch.runtime import RuntimeEstimator
 from ...core.launch.parallelization import Parallelization
@@ -541,20 +543,14 @@ class BestModelLauncher(AnalysisComponent):
         :return:
         """
 
+        # Create the simulation definition
+        definition = SingleSimulationDefinition(self.analysis_ski_path, self.analysis_in_path, self.analysis_out_path)
+
+        # Create the logging options
+        logging = LoggingOptions(verbose=True, memory=True)
+
         # Create the SKIRT arguments object
-        arguments = SkirtArguments()
-
-        # Set the arguments
-        arguments.ski_pattern = self.analysis_ski_path
-        arguments.single = True
-        arguments.input_path = self.analysis_in_path
-        arguments.output_path = self.analysis_out_path
-        arguments.logging.verbose = True
-        arguments.logging.memory = True
-
-        # Set the parallelization options
-        arguments.parallel.processes = self.parallelization.processes
-        arguments.parallel.threads = self.parallelization.threads
+        arguments = SkirtArguments(definition, logging, self.parallelization)
 
         # Debugging: save the screen output in a text file
         remote_skirt_dir_path = self.remote.skirt_dir

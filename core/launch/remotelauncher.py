@@ -344,7 +344,7 @@ class SkirtRemoteLauncher(Configurable):
         else: scheduling_options = None
 
         # Run the simulation
-        arguments = SkirtArguments(self.config.arguments)
+        arguments = SkirtArguments.from_config(self.config.arguments)
         simulation = self.remote.run(arguments, scheduling_options=scheduling_options)
 
         # Set the analysis options for the simulation

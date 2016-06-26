@@ -23,8 +23,8 @@ from .component import DustHeatingAnalysisComponent
 from ....core.tools import filesystem as fs
 from ....core.simulation.skifile import SkiFile
 from ....core.launch.batchlauncher import BatchLauncher
+from ....core.simulation.definition import SingleSimulationDefinition
 from ....core.tools.logging import log
-from ....core.simulation.arguments import SkirtArguments
 from ...basics.instruments import SimpleInstrument, FrameInstrument
 from ...basics.projection import GalaxyProjection
 
@@ -136,6 +136,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         self.launcher.config.shared_input = True  # The input directories for the different simulations are shared
         #self.launcher.config.group_simulations = True  # group multiple simulations into a single job
         self.launcher.config.remotes = self.config.remotes  # the remote hosts on which to run the simulations
+        self.launcher.config.logging.verbose = True
 
     # -----------------------------------------------------------------
 
@@ -359,14 +360,14 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
             # Get the local output path for the simulation
             output_path = self.output_paths[contribution]
 
-            # Create the SKIRT arguments object
-            arguments = create_arguments(ski_path, self.analysis_in_path, output_path)
+            # Create the SKIRT simulation definition
+            definition = SingleSimulationDefinition(ski_path, self.analysis_in_path, output_path)
 
             # Debugging
             log.debug("Adding the simulation of the contribution of the " + contribution + " stellar population to the queue ...")
 
             # Put the parameters in the queue and get the simulation object
-            self.launcher.add_to_queue(arguments, simulation_name)
+            self.launcher.add_to_queue(definition, simulation_name)
 
             # Set scheduling options (for the different remote hosts with a scheduling system)
             #for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
@@ -376,39 +377,5 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
 
         # Loop over the scheduled simulations (if something has to be set)
         #for simulation in simulations: pass
-
-# -----------------------------------------------------------------
-
-def create_arguments(ski_path, input_path, output_path):
-
-    """
-    This function ...
-    :param ski_path:
-    :param input_path:
-    :param output_path:
-    :return:
-    """
-
-    # Create a new SkirtArguments object
-    arguments = SkirtArguments()
-
-    # The ski file pattern
-    arguments.ski_pattern = ski_path
-    arguments.recursive = False
-    arguments.relative = False
-
-    # Input and output
-    arguments.input_path = input_path
-    arguments.output_path = output_path
-
-    # Parallelization settings
-    arguments.parallel.threads = None
-    arguments.parallel.processes = None
-
-    # Logging options
-    arguments.logging.verbose = True
-
-    # Return the SKIRT arguments object
-    return arguments
 
 # -----------------------------------------------------------------

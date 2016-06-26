@@ -30,51 +30,64 @@ class SkirtArguments(object):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, definition=None, logging_options=None, parallelization=None):
 
         """
         The constructor ...
+        :param definition:
+        :param logging_options:
+        :param parallelization:
         :return:
         """
 
-        # If the set of arguments is passed to the constructor as a configuration mapping, set the
-        # attributes of this object according to the configuration settings
-        if config is not None:
+        # TODO: discriminate between different types of 'SimulationDefinition' (multiple or single)
 
-            # Loop over the entries in the configuration and create an attribute with the same name
-            for entry in config: setattr(self, entry, config[entry])
+        # Options for the ski file pattern
+        self.ski_pattern = definition.ski_path if definition is not None else None
+        self.recursive = None
+        self.relative = None
 
-        # If no configuration mapping is passed to this object, set all attributes to default values
-        else:
+        # The input and output paths
+        self.input_path = definition.input_path if definition is not None else None
+        self.output_path = definition.output_path if definition is not None else None
 
-            ## Set the attributes of the object to default values
+        # Other options
+        self.emulate = False    # Run in emulation mode
+        self.single = False     # True if only a single simulation is expected
 
-            # Options for the ski file pattern
-            self.ski_pattern = None
-            self.recursive = None
-            self.relative = None
+        # Options for logging
+        self.logging = Map()
+        self.logging.brief = logging_options.brief if logging_options is not None else False     # Brief console logging
+        self.logging.verbose = logging_options.verbose if logging_options is not None else False  # Verbose logging
+        self.logging.memory = logging_options.memory if logging_options is not None else False  # State the amount of used memory with each log message
+        self.logging.allocation = logging_options.allocation if logging_options is not None else False # Write log messages with the amount of (de)allocated memory
+        self.logging.allocation_limit = logging_options.allocation_limit if logging_options is not None else 1e-5  # The lower limit for the amount of (de)allocated memory to be logged
 
-            # The input and output paths
-            self.input_path = None
-            self.output_path = None
+        # Options for parallelization
+        self.parallel = Map()
+        self.parallel.simulations = None  # The number of parallel simulations
+        self.parallel.threads = parallelization.threads if parallelization is not None else None # The number of parallel threads per simulation
+        self.parallel.processes = parallelization.processes if parallelization is not None else None # The number of parallel processes per simulation
 
-            # Other options
-            self.emulate = False    # Run in emulation mode
-            self.single = False     # True if only a single simulation is expected
+    # -----------------------------------------------------------------
 
-            # Options for logging
-            self.logging = Map()
-            self.logging.brief = False            # Brief console logging
-            self.logging.verbose = False          # Verbose logging
-            self.logging.memory = False           # State the amount of used memory with each log message
-            self.logging.allocation = False       # Write log messages with the amount of (de)allocated memory
-            self.logging.allocation_limit = 1e-5  # The lower limit for the amount of (de)allocated memory to be logged
+    @classmethod
+    def from_config(cls, config):
 
-            # Options for parallelization
-            self.parallel = Map()
-            self.parallel.simulations = None  # The number of parallel simulations
-            self.parallel.threads = None      # The number of parallel threads per simulation
-            self.parallel.processes = None    # The number of parallel processes per simulation
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        # Create a new instance
+        arguments = cls()
+
+        # Loop over the entries in the configuration and create an attribute with the same name
+        for entry in config: setattr(arguments, entry, config[entry])
+
+        # Return the arguments instance
+        return arguments
 
     # -----------------------------------------------------------------
 

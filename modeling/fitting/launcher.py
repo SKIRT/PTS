@@ -23,7 +23,8 @@ from astropy.units import Unit
 from .component import FittingComponent
 from ...core.tools import filesystem as fs
 from ...core.tools import time, tables
-from ...core.simulation.arguments import SkirtArguments
+from ...core.simulation.definition import SingleSimulationDefinition
+from ...core.launch.options import LoggingOptions
 from ...core.basics.filter import Filter
 from ...core.simulation.skifile import SkiFile
 from ...core.launch.batchlauncher import BatchLauncher
@@ -140,6 +141,8 @@ class FittingModelLauncher(FittingComponent):
         self.launcher.config.shared_input = True  # The input directories for the different simulations are shared
         self.launcher.config.group_simulations = True  # group multiple simulations into a single job (because a very large number of simulations will be scheduled)
         self.launcher.config.remotes = self.config.remotes  # the remote hosts on which to run the simulations
+        self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file
+        self.launcher.config.memory_table_path = self.memory_table_path  # The path to the memory table file
 
         # Set options for the BatchLauncher: simulation analysis options
         self.launcher.config.analysis.extraction.path = self.fit_res_path
@@ -153,8 +156,6 @@ class FittingModelLauncher(FittingComponent):
         #self.launcher.config.analysis.misc.images = True  # Make observed images
         self.launcher.config.analysis.misc.observation_filters = self.filter_names  # The filters for which to create the observations
         self.launcher.config.analysis.plotting.format = "png" # plot in PNG format so that an animation can be made from the fit SEDs
-        self.launcher.config.analysis.timing_table_path = self.timing_table_path # The path to the timing table file
-        self.launcher.config.analysis.memory_table_path = self.memory_table_path # The path to the memory table file
 
         # Set remote for the 'extra' simulations
         self.launcher.config.extra_remote = "nancy"
@@ -328,16 +329,16 @@ class FittingModelLauncher(FittingComponent):
             ski_path = fs.join(simulation_path, self.galaxy_name + ".ski")
             self.ski.saveto(ski_path)
 
-            # Create the SKIRT arguments object
-            arguments = create_arguments(ski_path, self.fit_in_path, output_path)
+            # Create the SKIRT simulation definition
+            definition = SingleSimulationDefinition(ski_path, self.fit_in_path, output_path)
 
             # Debugging
             log.debug("Adding a simulation to the queue with:")
-            log.debug(" - ski path: " + arguments.ski_pattern)
-            log.debug(" - output path: " + arguments.output_path)
+            log.debug(" - ski path: " + definition.ski_path)
+            log.debug(" - output path: " + definition.output_path)
 
             # Put the parameters in the queue and get the simulation object
-            self.launcher.add_to_queue(arguments, simulation_name)
+            self.launcher.add_to_queue(definition, simulation_name)
 
             # Set scheduling options (for the different remote hosts with a scheduling system)
             for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
@@ -385,26 +386,17 @@ class FittingModelLauncher(FittingComponent):
             # Simulation name
             simulation_name = contribution
 
-            # Create the SkirtArguments instance
-            arguments = SkirtArguments()
-
             # Set the ski file path
             ski_path = fs.join(self.fit_best_path, contribution, self.galaxy_name + ".ski")
-            arguments.ski_pattern = ski_path
-            arguments.single = True
-            arguments.recursive = False
-            arguments.relative = False
-            arguments.parallel.threads = None
-            arguments.parallel.processes = None
-            arguments.input_path = self.fit_in_path
-            arguments.output_path = fs.join(self.fit_best_path, contribution)
+
+            # Create the SKIRT simulation definition
+            definition = SingleSimulationDefinition(ski_path, self.fit_in_path, fs.join(self.fit_best_path, contribution))
 
             # Create the AnalysisOptions instance
             #analysis_options = AnalysisOptions()
 
             # Add the arguments object
-            #self.launcher.add_to_extra_queue(arguments, analysis_options, simulation_name, share_input=True)
-            self.launcher.add_to_extra_queue(arguments, name=simulation_name, share_input=True)
+            self.launcher.add_to_extra_queue(definition, simulation_name, share_input=True)
 
             # Set scheduling options if necessary
             #for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
@@ -428,8 +420,30 @@ class FittingModelLauncher(FittingComponent):
         input_path = self.fit_in_path
         output_path = fs.join(self.fit_best_path, "images")
 
-        # Create the SkirtArguments instance
-        arguments = SkirtArguments.single(ski_path, input_path, output_path, verbose=True, memory=True)
+        # Create the SKIRT simulation definition
+        definition = SingleSimulationDefinition(ski_path, input_path, output_path)
+
+        # Create the logging options instance
+        logging = LoggingOptions(verbose=True, memory=True)
+
+        # Create the analysis options object
+        analysis_options = self.create_analysis_options_images_simulation(output_path)
+
+        # Add the arguments object
+        self.launcher.add_to_extra_queue(definition, "images", logging, analysis_options, share_input=True)
+
+        # Set scheduling options if necessary
+        #for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, "images", self.scheduling_options[host_id])
+
+    # -----------------------------------------------------------------
+
+    def create_analysis_options_images_simulation(self, output_path):
+
+        """
+        This function ...
+        :param output_path:
+        :return:
+        """
 
         # Create the AnalysisOptions instance
         analysis_options = AnalysisOptions()
@@ -465,11 +479,8 @@ class FittingModelLauncher(FittingComponent):
         analysis_options.misc.images_unit = "MJy/sr"
         analysis_options.misc.images_kernels = kernel_paths
 
-        # Add the arguments object
-        self.launcher.add_to_extra_queue(arguments, analysis_options, "images", share_input=True)
-
-        # Set scheduling options if necessary
-        #for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, "images", self.scheduling_options[host_id])
+        # Return the analysis options
+        return analysis_options
 
     # -----------------------------------------------------------------
 
@@ -530,36 +541,5 @@ class FittingModelLauncher(FittingComponent):
         # Save the animation of the distribution of values for the dust mass
         path = fs.join(self.visualisation_path, time.unique_name("fittingmodellauncher_dustmass") + ".gif")
         if self.dust_mass_animation is not None: self.dust_mass_animation.save(path)
-
-# -----------------------------------------------------------------
-
-def create_arguments(ski_path, input_path, output_path):
-
-    """
-    This function ...
-    :param ski_path:
-    :param input_path:
-    :param output_path:
-    :return:
-    """
-
-    # Create a new SkirtArguments object
-    arguments = SkirtArguments()
-
-    # The ski file pattern
-    arguments.ski_pattern = ski_path
-    arguments.recursive = False
-    arguments.relative = False
-
-    # Input and output
-    arguments.input_path = input_path
-    arguments.output_path = output_path
-
-    # Parallelization settings
-    arguments.parallel.threads = None
-    arguments.parallel.processes = None
-
-    # Return the SKIRT arguments object
-    return arguments
 
 # -----------------------------------------------------------------

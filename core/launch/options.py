@@ -51,15 +51,37 @@ class Options(object):
             if hasattr(self, option):
 
                 # Check if the option is composed of other options (a Map), or if it is just a simple variable
-                if isinstance(getattr(self, option), Map):
-                    getattr(self, option).set_items(options[option])
+                if isinstance(getattr(self, option), Map): getattr(self, option).set_items(options[option])
 
                 # If it is a simple variable, just use setattr to set the attribute of this class
-                else:
-                    setattr(self, option, options[option])
+                else: setattr(self, option, options[option])
 
             # If the option does not exist, ignore it but give a warning
             else: warnings.warn("The option " + option + " does not exist")
+
+# -----------------------------------------------------------------
+
+class LoggingOptions(Options):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, brief=False, verbose=False, memory=False, allocation=False, allocation_limit=1e-5):
+
+        """
+        The constructor ...
+        """
+
+        # Call the constructor of the base class
+        super(LoggingOptions, self).__init__()
+
+        # Set options
+        self.brief = brief     # Brief console logging
+        self.verbose = verbose # Verbose logging
+        self.memory = memory   # State the amount of used memory with each log message
+        self.allocation = allocation    # Write log messages with the amount of (de)allocated memory
+        self.allocation_limit = allocation_limit  # The lower limit for the amount of (de)allocated memory to be logged
 
 # -----------------------------------------------------------------
 

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.scaling Test the scaling of SKIRT on a particular system
+## \package pts.do.core.scaling Test the scaling of SKIRT on a particular system.
 #
 
 # -----------------------------------------------------------------
@@ -14,12 +14,26 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import argparse
 
 # Import the relevant PTS classes and modules
 from pts.core.test.scaling import ScalingTest
 from pts.core.tools import logging, time
+from pts.core.tools import filesystem as fs
+from pts.core.basics.configuration import Configuration
+
+# -----------------------------------------------------------------
+
+# Create the configuration
+config = Configuration()
+
+# TODO: add the configuration settings from the .cfg file
+# add --wavelengths option to vary number of wavelengths
+# add --packages option to vary number of packages
+# add --memory option to run a memory scaling test
+
+# Read the configuration settings from the provided command-line arguments
+config.read()
 
 # -----------------------------------------------------------------
 
@@ -42,19 +56,19 @@ arguments = parser.parse_args()
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = os.path.join(os.getcwd(), time.unique_name("scaling") + ".txt") if arguments.report else None
+logfile_path = fs.join(fs.cwd(), time.unique_name("scaling") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting scaling test procedure ...")
+log.start("Starting scaling test ...")
 
 # -----------------------------------------------------------------
 
 # Determine the full path to the ski file
-arguments.filepath = os.path.abspath(arguments.file)
+arguments.filepath = fs.absolute(arguments.file)
 
 # Create a ScalingTest instance initialized with the command-line arguments
 test = ScalingTest.from_arguments(arguments)

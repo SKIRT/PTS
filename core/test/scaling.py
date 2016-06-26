@@ -22,9 +22,11 @@ from astropy.table import Table
 # Import the relevant PTS classes and modules
 from ..simulation.simulation import SkirtSimulation
 from ..simulation.arguments import SkirtArguments
+from ..simulation.definition import SingleSimulationDefinition
+from ..launch.parallelization import Parallelization
 from ..launch.analyser import SimulationAnalyser
 from .resources import ResourceEstimator
-from ..basics.configurable import Configurable
+from ..basics.configurable import Configurable, NewConfigurable
 from ..simulation.remote import SkirtRemote
 from ..extract.timeline import TimeLineExtractor
 from ..tools import time
@@ -86,13 +88,20 @@ class ScalingTest(Configurable):
 
         # -- Attributes --
 
-        # Create the SKIRT remote execution context
-        self.remote = SkirtRemote()
+        # The SKIRT batch launcher
+        self.launcher = BatchLauncher()
+
+        # Paths
+        self.input_path = None
+        self.output_path = None
+        self.result_path = None
+        self.plot_path = None
+        self.temp_path = None
 
         # Create a SimulationAnalyser instance
         self.analyser = SimulationAnalyser()
 
-        # Initialize a list to contain the retrieved simulations
+        # The list to contain the retrieved simulations
         self.simulations = []
 
         # The number of cores on the remote system
@@ -115,12 +124,13 @@ class ScalingTest(Configurable):
         # The base path
         self.base_path = None
 
+        # The paths of the timing and memory table
+        self.timing_table_path = None
+        self.memory_table_path = None
+
         # The name of the scaling run
         self.scaling_run_name = None
         self.long_scaling_run_name = None
-
-        # The SKIRT arguments object
-        self.arguments = None
 
     # -----------------------------------------------------------------
 
@@ -191,14 +201,87 @@ class ScalingTest(Configurable):
         # Call the setup function of the base class
         super(ScalingTest, self).setup()
 
-        # -- Remote execution environment --
+        # Basic setup
+        self.setup_basic()
 
-        # Setup the remote SKIRT execution context
-        self.remote.setup(self.config.remote, self.config.cluster)
+        # Setup the batch launcher
+        self.setup_launcher()
+
+        # Used to be: Setup the remote SKIRT execution context
+        #self.remote.setup(self.config.remote, self.config.cluster)
+
+        # Setup the properties of this scaling run
+        self.setup_run()
+
+    # -----------------------------------------------------------------
+
+    def setup_basic(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the simulation prefix
+        self.prefix = fs.name(self.config.ski_path).split(".")[0]
+
+        # Set the base path (the ski file directory)
+        self.base_path = fs.directory_of(self.config.ski_path) if "/" in self.config.ski_path else fs.cwd()
+
+        # Set the path to the timing table and initialize it if necessary
+        self.timing_table_path = fs.join(self.base_path, "timing.dat")
+        if not fs.is_file(self.timing_table_path): timing_table = TimingTable(self.timing_table_path)
+
+        # Set the path to the memory table and initialize it if necessary
+        self.memory_table_path = fs.join(self.base_path, "memory.dat")
+        if not fs.is_file(self.memory_table_path): memory_table = MemoryTable(self.memory_table_path)
+
+    # -----------------------------------------------------------------
+
+    def setup_launcher(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set options for the batch launcher: basic options
+        self.launcher.config.shared_input = True  # The input directories for the different simulations are shared
+        self.launcher.config.group_simulations = True  # group multiple simulations into a single job (because a very large number of simulations will be scheduled)
+        self.launcher.config.remotes = self.config.remote  # the remote hosts on which to run the simulations
+        self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file
+        self.launcher.config.memory_table_path = self.memory_table_path  # The path to the memory table file
+
+        # Set options for the batch launcher: simulation analysis options
+        self.launcher.config.analysis.extraction.path = self.fit_res_path
+        self.launcher.config.analysis.misc.path = self.fit_res_path  # The base directory where all of the simulations will have a seperate directory with the 'misc' analysis output
+        self.launcher.config.analysis.plotting.path = self.fit_plot_path  # The base directory where all of the simulations will have a seperate directory with the plotting analysis output
+        self.launcher.config.analysis.extraction.timeline = True  # extract the simulation timeline
+        self.launcher.config.analysis.extraction.progress = True  # extract the simulation phase progress information
+        self.launcher.config.analysis.extraction.memory = True  # extract memory information
+        # self.launcher.config.analysis.plotting.format = "png"  # plot in PNG format so that an animation can be made from the fit SEDs
+
+        # Options for the batch launcher: logging options
+        self.launcher.config.logging.brief = False
+        self.launcher.config.logging.verbose = True
+        self.launcher.config.logging.memory = True
+        self.launcher.config.logging.allocation = True
+        self.launcher.config.logging.allocation_limit = 1e-6
+
+    # -----------------------------------------------------------------
+
+    def setup_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # TODO: fix this
 
         # Get the number of cores (per node) on the remote system
         # (cache it because it requires a external call each time)
-        self.cores = self.remote.cores
+        #self.cores = self.remote.cores # used to be like this
 
         # Determine how many threads that we want to use per core, depending on the number of hyperthreads per core
         # on the remote system and whether hyperthreading is enabled in the remote host configuration file
@@ -235,12 +318,6 @@ class ScalingTest(Configurable):
 
         # -- Directory structure --
 
-        # Determine the simulation prefix
-        self.prefix = fs.name(self.config.ski_path).split(".")[0]
-
-        # Set the base path (the ski file directory)
-        self.base_path = fs.directory_of(self.config.ski_path) if "/" in self.config.ski_path else fs.cwd()
-
         # Define a name identifying this scaling test run
         self.scaling_run_name = time.unique_name(self.mode_info, separator="__")
         self.long_scaling_run_name = "SKIRT__scaling__" + self.prefix + "__" + self.remote.system_name + "__" + self.scaling_run_name
@@ -254,33 +331,6 @@ class ScalingTest(Configurable):
 
         # Inide the results directory of this run, create a file which gives useful information about this run
         self.create_info_file()
-
-        # -- SKIRT arguments --
-
-        self.arguments = SkirtArguments()
-
-        # Ski file options
-        self.arguments.ski_pattern = self.config.ski_path
-        self.arguments.recursive = False
-        self.arguments.relative = False
-
-        # Input path for the simulation
-        self.arguments.input_path = self.input_path
-
-        # The output path is adjusted seperately for each simulation
-
-        # Other options
-        self.arguments.emulate = False
-        self.arguments.single = True
-
-        # Options for logging
-        self.arguments.logging.brief = False
-        self.arguments.logging.verbose = True
-        self.arguments.logging.memory = True
-        #self.arguments.logging.allocation = True
-        #self.arguments.logging.allocation_limit = 1e-6
-
-        # Options for parallelization are adjusted seperately for each simulation
 
     # -----------------------------------------------------------------
 
@@ -514,12 +564,12 @@ class ScalingTest(Configurable):
 
         ###
 
-        # Adjust the SKIRT command-line arguments
-        self.arguments.parallel.processes = processes
-        self.arguments.parallel.threads = threads
+        # Create the SKIRT simulation definition
+        definition = create_definition(self.config.ski_path, self.input_path, self.output_path_simulation)
 
-        # The local output path
-        self.arguments.output_path = self.output_path_simulation
+        # Create the parallelization object
+        threads_per_core = 1 # TODO: adapt this so hyperthreading can be enabled
+        parallelization = Parallelization.from_processes_and_threads(processes, threads, threads_per_core)
 
         # Create a unique name for this simulation, based on the scaling run name and the current number of processors
         simulation_name = self.long_scaling_run_name + "_" + str(processors)
@@ -548,10 +598,13 @@ class ScalingTest(Configurable):
             scheduling_options.full_node = True
 
         # Add the simulation to the remote queue
-        simulation = self.remote.add_to_queue(self.arguments, simulation_name, scheduling_options)
+        #simulation = self.remote.add_to_queue(self.arguments, simulation_name, scheduling_options)
+
+        # Add the simulation to the queue
+        self.launcher.add_to_queue(definition, simulation_name, parallelization)
 
         # Set analysis options for the simulation
-        self.set_analysis_options(simulation)
+        #self.set_analysis_options(simulation)
 
         # Add information about the path to the directory where the extracted data will be placed
         infofile.write(" - progress information will be extracted to: " + self.result_path_simulation + "\n")
@@ -861,5 +914,94 @@ class ScalingTest(Configurable):
 
             # Return the estimated walltime
             return estimator.walltime * factor
+
+# -----------------------------------------------------------------
+
+def create_arguments(ski_path, input_path, output_path):
+
+    """
+    This function ...
+    :param ski_path:
+    :param input_path:
+    :param output_path:
+    :return:
+    """
+
+    # Create a new SkirtArguments object
+    arguments = SkirtArguments()
+
+    # The ski file pattern
+    arguments.ski_pattern = ski_path
+    arguments.recursive = False
+    arguments.relative = False
+
+    # Input and output
+    arguments.input_path = input_path
+    arguments.output_path = output_path
+
+    # Parallelization settings
+    arguments.parallel.threads = None
+    arguments.parallel.processes = None
+
+    # Return the SKIRT arguments object
+    return arguments
+
+# -----------------------------------------------------------------
+
+def create_definition(ski_path, input_path, output_path):
+
+    """
+    This function ...
+    :param ski_path:
+    :param input_path:
+    :param output_path:
+    :return:
+    """
+
+    # Create a new SingleSimulationDefinition object
+    definition = SingleSimulationDefinition(ski_path, input_path, output_path)
+
+    # Return the definition
+    return definition
+
+# -----------------------------------------------------------------
+
+class MemoryScalingTest(NewConfigurable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, config=None):
+
+        """
+        The constructor ...
+        :param config:
+        """
+
+        # Call the constructor of the base class
+        super(MemoryScalingTest, self).__init__(config)
+
+        pass
+
+# -----------------------------------------------------------------
+
+class PerformanceScalingTest(NewConfigurable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, config=None):
+
+        """
+        The constructor ...
+        :param config:
+        """
+
+        # Call the constructor of the base class
+        super(PerformanceScalingTest, self).__init__(config)
+
+        pass
 
 # -----------------------------------------------------------------

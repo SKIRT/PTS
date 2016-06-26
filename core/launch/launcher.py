@@ -253,7 +253,7 @@ class SkirtLauncher(Configurable):
         log.info("Performing the simulation...")
 
         # Run the simulation
-        arguments = SkirtArguments(self.config.arguments)
+        arguments = SkirtArguments.from_config(self.config.arguments)
         self.simulation = self.skirt.run(arguments, silent=True)
 
     # -----------------------------------------------------------------
