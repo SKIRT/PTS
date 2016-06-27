@@ -12,10 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import os
-import shutil
-
 # Import the relevant PTS classes and modules
 from ..simulation.skifile import SkiFile
 from ..simulation.execute import SkirtExec
@@ -23,6 +19,7 @@ from ..simulation.arguments import SkirtArguments
 from ..extract.timeline import TimeLineExtractor
 from ..tools import time
 from ..tools.logging import log
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -124,12 +121,12 @@ class ResourceEstimator(object):
         """
 
         # Determine the path to the temporary directory
-        base_path = os.path.dirname(ski_path) if "/" in ski_path else os.getcwd()
+        base_path = fs.directory_of(ski_path) if "/" in ski_path else fs.cwd()
         temp_name = time.unique_name("temp")
-        self.temp_path = os.path.join(base_path, temp_name)
+        self.temp_path = fs.join(base_path, temp_name)
 
         # Create the temporary directory if necessary
-        if not os.path.exists(self.temp_path): os.makedirs(self.temp_path)
+        if not fs.is_directory(self.temp_path): fs.create_directory(self.temp_path, recursive=True)
 
     # -----------------------------------------------------------------
 
@@ -196,7 +193,7 @@ class ResourceEstimator(object):
         """
 
         # Remove the temporary directory if it exists
-        if os.path.exists(self.temp_path): shutil.rmtree(self.temp_path)
+        if fs.is_directory(self.temp_path): fs.remove_directory(self.temp_path)
 
     # -----------------------------------------------------------------
 

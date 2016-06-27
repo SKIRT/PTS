@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.launch.runtime Contains the RuntimeEstimator class.
+## \package pts.core.launch.estimate Contains the RuntimeEstimator and MemoryEstimator classes.
 
 # -----------------------------------------------------------------
 
@@ -17,7 +17,8 @@ from ..tools.logging import log
 from .parallelization import Parallelization
 from ..basics.distribution import Distribution
 from ..tools import tables
-from .timing import TimingTable, SimpleTimingTable
+from .timing import TimingTable
+from .memory import MemoryTable
 from ..plot.distribution import DistributionPlotter
 
 # -----------------------------------------------------------------
@@ -268,15 +269,9 @@ class RuntimeEstimator(object):
             parallelization_sim = self.parallelization_for_entry(index)
 
             # Get the serial runtime, parallel runtime and runtime overhead
-            if isinstance(self.timing_table, TimingTable):
-                serial = self.timing_table["Setup time"] + self.timing_table["Writing time"] + self.timing_table["Intermediate time"]
-                parallel = self.timing_table["Stellar emission time"] + self.timing_table["Spectra calculation time"] + self.timing_table["Dust emission time"]
-                overhead = self.timing_table["Communication time"] + self.timing_table["Waiting time"]
-            elif isinstance(self.timing_table, SimpleTimingTable):
-                serial = self.timing_table["Serial runtime"][index]
-                parallel = self.timing_table["Parallel runtime"][index]
-                overhead = self.timing_table["Runtime overhead"][index]
-            else: raise ValueError("The timing table is not recognized")
+            serial = self.timing_table["Setup time"] + self.timing_table["Writing time"] + self.timing_table["Intermediate time"]
+            parallel = self.timing_table["Stellar emission time"] + self.timing_table["Spectra calculation time"] + self.timing_table["Dust emission time"]
+            overhead = self.timing_table["Communication time"] + self.timing_table["Waiting time"]
 
             # TODO: the steps below can be more advanced (cores is not necessarily the total number of threads
             # (hyperthreading), hyperthreading gives 30% performance boost?)
@@ -309,5 +304,42 @@ class RuntimeEstimator(object):
 
         # Create and return a Parallelization instance
         return Parallelization(cores, threads_per_core, processes)
+
+# -----------------------------------------------------------------
+
+class MemoryEstimator(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, memory_table):
+
+        """
+        This function ...
+        :param memory_table:
+        """
+
+        # -- Attributes --
+
+        # Set the memory table
+        self.memory_table = memory_table
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Load the memory table
+        memory_table = MemoryTable.read(path)
+
+        # Create the MemoryEstimator object
+        return cls(memory_table)
 
 # -----------------------------------------------------------------

@@ -27,7 +27,7 @@ from ...core.launch.options import AnalysisOptions
 from ...core.launch.options import SchedulingOptions
 from ...core.launch.options import LoggingOptions
 from ...core.simulation.arguments import SkirtArguments
-from ...core.launch.runtime import RuntimeEstimator
+from ...core.launch.estimate import RuntimeEstimator
 from ...core.launch.parallelization import Parallelization
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...core.simulation.remote import SkirtRemote

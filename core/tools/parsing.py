@@ -12,12 +12,27 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import os
+
 # Import astronomical modules
 from astropy.coordinates import Angle
 from astropy.units import Unit
 
 # Import standard modules
 import argparse
+
+# -----------------------------------------------------------------
+
+def absolute_path(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return os.path.abspath(argument)
 
 # -----------------------------------------------------------------
 

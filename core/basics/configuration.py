@@ -103,7 +103,7 @@ class Configuration(object):
 
     # -----------------------------------------------------------------
 
-    def add_required(self, name, user_type, description, to_instance=True):
+    def add_required(self, name, user_type, description, to_instance=True, choices=None):
 
         """
         This function ...
@@ -111,6 +111,7 @@ class Configuration(object):
         :param user_type:
         :param description:
         :param to_instance:
+        :param choices:
         :return:
         """
 
@@ -118,7 +119,33 @@ class Configuration(object):
         real_type = get_real_type(user_type)
 
         # Add the argument
-        self.parser.add_argument(name, type=real_type, help=description)
+        self.parser.add_argument(name, type=real_type, help=description, choices=choices)
+
+        # To instance
+        if to_instance: self.to_instance.append(name)
+
+    # -----------------------------------------------------------------
+
+    def add_positional_optional(self, name, user_type, description, default, to_instance=True):
+
+        """
+        This function ...
+        :param name:
+        :param user_type:
+        :param description:
+        :param default:
+        :param to_instance:
+        :return:
+        """
+
+        # Get the real type
+        real_type = get_real_type(user_type)
+
+        # Get the real default value
+        default = get_real_value(default, user_type)
+
+        # Add the argument
+        self.parser.add_argument(name, type=real_type, help=description, default=default, nargs='?')
 
         # To instance
         if to_instance: self.to_instance.append(name)

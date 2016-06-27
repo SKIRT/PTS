@@ -22,7 +22,7 @@ from ...core.tools import time
 from ...core.tools.logging import log
 from ...core.launch.options import SchedulingOptions
 from ...core.launch.parallelization import Parallelization
-from ...core.launch.runtime import RuntimeEstimator
+from ...core.launch.estimate import RuntimeEstimator
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------

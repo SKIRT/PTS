@@ -13,17 +13,11 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-from collections import defaultdict
-
 # Import the relevant PTS classes and modules
 from ..basics.map import Map
-from ..simulation.simulation import SkirtSimulation
 from ..simulation.definition import SingleSimulationDefinition
 from ..launch.parallelization import Parallelization
-from .resources import ResourceEstimator
-from ..basics.configurable import Configurable, NewConfigurable
-from ..extract.timeline import TimeLineExtractor
+from ..basics.configurable import NewConfigurable
 from ..tools import time
 from ..tools import filesystem as fs
 from ..tools.logging import log
@@ -32,7 +26,7 @@ from ..launch.batchlauncher import BatchLauncher
 from ..launch.timing import TimingTable
 from ..launch.memory import MemoryTable
 from ..tools import tables
-from ..launch.runtime import RuntimeEstimator
+from ..launch.estimate import RuntimeEstimator
 
 # -----------------------------------------------------------------
 
@@ -67,7 +61,7 @@ def subset_sum(numbers, target, partial=[]):
 
 # -----------------------------------------------------------------
 
-class ScalingTest(Configurable):
+class ScalingTest(NewConfigurable):
 
     """
     An instance of the ScalingTest class represents a SKIRT scaling benchmark test for a particular ski file.
@@ -80,7 +74,7 @@ class ScalingTest(Configurable):
         """
 
         # Call the constructor of the base class
-        super(ScalingTest, self).__init__(config, "core")
+        super(ScalingTest, self).__init__(config)
 
         # -- Attributes --
 
@@ -134,6 +128,9 @@ class ScalingTest(Configurable):
         # The path to the info table
         self.info_table_path = None
 
+        # The runtime estimator
+        self.estimator = None
+
         # The paths of the timing and memory table
         self.timing_table_path = None
         self.memory_table_path = None
@@ -141,43 +138,6 @@ class ScalingTest(Configurable):
         # The name of the scaling run
         self.scaling_run_name = None
         self.long_scaling_run_name = None
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new ScalingTest instance
-        test = cls()
-
-        ## Adjust the configuration settings according to the command-line arguments
-
-        # Ski file
-        test.config.ski_path = arguments.filepath
-
-        # Remote host and cluster (if applicable)
-        test.config.remote = arguments.remote
-        test.config.cluster = arguments.cluster
-
-        # Parallelization mode
-        test.config.mode = arguments.mode
-
-        # Maximum and minimum number of nodes
-        test.config.min_nodes = arguments.minnodes
-        test.config.max_nodes = arguments.maxnodes
-
-        # Other options
-        test.config.manual = arguments.manual
-        test.config.keep = arguments.keep
-
-        # Return the new scaling test
-        return test
 
     # -----------------------------------------------------------------
 
@@ -191,9 +151,12 @@ class ScalingTest(Configurable):
         self.setup()
 
         # 2. Load (and create) the info tables
-        self.load_tables()
+        self.create_info_table()
 
-        # 2. Launch the simulations as a part of the scaling test
+        # 3. Set the runtime estimator
+        if self.scheduler: self.set_estimator()
+
+        # 4. Launch the simulations
         self.launch()
 
     # -----------------------------------------------------------------
@@ -262,20 +225,20 @@ class ScalingTest(Configurable):
         self.launcher.config.keep = self.config.keep
 
         # Options for the batch launcher: extraction analysis options
-        self.launcher.config.analysis.extraction.path = self.result_path_run
+        self.launcher.config.analysis.extraction.path = self.run_paths.result
         self.launcher.config.analysis.extraction.timeline = True  # extract the simulation timeline
         self.launcher.config.analysis.extraction.progress = True  # extract the simulation phase progress information
         self.launcher.config.analysis.extraction.memory = True  # extract memory information
 
         # Options for the batch launcher: plotting analysis options
-        self.launcher.config.analysis.plotting.path = self.plot_path_run  # The base directory where all of the simulations will have a seperate directory with the plotting analysis output
+        self.launcher.config.analysis.plotting.path = self.run_paths.plot  # The base directory where all of the simulations will have a seperate directory with the plotting analysis output
         self.launcher.config.analysis.plotting.progress = True
         self.launcher.config.analysis.plotting.timeline = True
         self.launcher.config.analysis.plotting.memory = True
         # self.launcher.config.analysis.plotting.format = "png"  # plot in PNG format so that an animation can be made from the fit SEDs
 
         # Options for the batch launcher: miscellaneous analysis options
-        self.launcher.config.analysis.misc.path = self.fit_res_path  # The base directory where all of the simulations will have a seperate directory with the 'misc' analysis output
+        self.launcher.config.analysis.misc.path = self.run_paths.result  # The base directory where all of the simulations will have a seperate directory with the 'misc' analysis output
 
         # Options for the batch launcher: logging options
         self.launcher.config.logging.brief = False
@@ -413,10 +376,10 @@ class ScalingTest(Configurable):
         """
 
         # Set the input, output, result, plot and temp paths for the system we are running this scaling test on
-        self.system_paths.output = fs.join(self.output_path, self.system_name)
-        self.system_paths.result = fs.join(self.result_path, self.system_name)
-        self.system_paths.plot = fs.join(self.plot_path, self.system_name)
-        self.system_paths.temp = fs.join(self.temp_path, self.system_name)
+        self.system_paths.output = fs.join(self.main_paths.output, self.system_name)
+        self.system_paths.result = fs.join(self.main_paths.result, self.system_name)
+        self.system_paths.plot = fs.join(self.main_paths.plot, self.system_name)
+        self.system_paths.temp = fs.join(self.main_paths.temp, self.system_name)
 
         # Create the output, result, plot and temp directories for the system if necessary
         fs.create_directories([self.system_paths.output, self.system_paths.result, self.system_paths.plot, self.system_paths.temp])
@@ -431,17 +394,17 @@ class ScalingTest(Configurable):
         """
 
         # Determine the paths to the directories that will contain the output, results, plots and temporary files of this particular scaling test run
-        self.run_paths.output = fs.join(self.output_path_system, self.scaling_run_name)
-        self.run_paths.result = fs.join(self.result_path_system, self.scaling_run_name)
-        self.run_paths.plot = fs.join(self.plot_path_system, self.scaling_run_name)
-        self.run_paths.temp = fs.join(self.temp_path_system, self.scaling_run_name)
+        self.run_paths.output = fs.join(self.system_paths.output, self.scaling_run_name)
+        self.run_paths.result = fs.join(self.system_paths.result, self.scaling_run_name)
+        self.run_paths.plot = fs.join(self.system_paths.plot, self.scaling_run_name)
+        self.run_paths.temp = fs.join(self.system_paths.temp, self.scaling_run_name)
 
         # Create the output, result, plot and temp directories for this run if necessary
         fs.create_directories([self.run_paths.output, self.run_paths.result, self.run_paths.plot, self.run_paths.temp])
 
     # -----------------------------------------------------------------
 
-    def load_tables(self):
+    def create_info_table(self):
 
         """
         This function ...
@@ -472,7 +435,7 @@ class ScalingTest(Configurable):
                                   + str(self.config.min_nodes)) + " " + str(self.max_cores) + " " + str(self.min_cores)
 
         # Determine the path to the simulations info table
-        self.info_table_simulations_path = fs.join(self.run_paths.result, "info.dat")
+        self.info_table_path = fs.join(self.run_paths.result, "info.dat")
 
         # Initialize the columns
         names = ["Simulation name", "Cores", "Processes", "Threads per process", "Nodes", "Cores per node"]
@@ -480,7 +443,22 @@ class ScalingTest(Configurable):
         #dtypes = []
 
         # Create the table
-        self.info_table_simulations = tables.new(data, names)
+        self.info_table = tables.new(data, names)
+
+    # -----------------------------------------------------------------
+
+    def set_estimator(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the runtime estimator ...")
+
+        # Load the timing table
+        self.estimator = RuntimeEstimator.from_file(self.timing_table_path)
 
     # -----------------------------------------------------------------
 
@@ -490,6 +468,9 @@ class ScalingTest(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Launching the simulations ...")
 
         # Log the remote host name, the parallelization mode and the version of SKIRT used for this test
         log.info("Starting scaling test run " + self.scaling_run_name + ":")
@@ -507,12 +488,11 @@ class ScalingTest(Configurable):
             # The next run will be performed with double the amount of cores
             cores *= 2
 
-        # If the remote host does not use a scheduling system, manually start the queued simulations
-        #if not self.scheduler:
+        # Set the local path for the batch script for manual inspection
+        self.launcher.set_script_path(self.config.remote, self.run_paths.temp)
 
-            # Determine a local path for the batch script for manual inspection
-        #    shell_script_path = fs.join(self.temp_path_run, "simulations.sh")
-        #    self.remote.start_queue(self.long_scaling_run_name, shell_script_path)
+        # Enable screen output to be written out (for debugging)
+        if not self.scheduler: self.launcher.enable_screen_output(self.config.remote)
 
         # Run the launcher, schedules or initiates the simulations
         simulations = self.launcher.run()
@@ -540,6 +520,9 @@ class ScalingTest(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Adding a simulation to the queue with " + str(cores) + " cores ...")
+
         # Determine the parallelization scheme for the simulation
         parallelization = Parallelization.from_mode(self.config.mode, cores, self.threads_per_core, self.threads_per_process)
 
@@ -554,20 +537,6 @@ class ScalingTest(Configurable):
         # Create the SKIRT simulation definition
         definition = SingleSimulationDefinition(self.config.ski_path, self.main_paths.input, output_path_simulation, name=simulation_name)
 
-        # Schedule or launch the simulation
-        self.run_simulation(definition, parallelization)
-
-    # -----------------------------------------------------------------
-
-    def run_simulation(self, definition, parallelization):
-
-        """
-        This function schedules a simulation on the cluster. This function takes the following arguments:
-        :param definition:
-        :param parallelization:
-        :return:
-        """
-
         # Determine the required number of nodes (and in case of a single node, the number of cores on that node)
         nodes, ppn = parallelization.get_requirements(self.cores_per_node) # give the number of cores per node
 
@@ -579,26 +548,27 @@ class ScalingTest(Configurable):
             log.warning("The number of threads " + str(parallelization.threads) + " exceeds the number of logical cores on a node: skipping")
             return
 
+        # Debugging
         # Inform the user about the number of processors, processes, threads per process, nodes and processors per node
-        log.info("Scheduling simulation with:")
-        log.info(" - total number of processing cores = " + str(parallelization.cores))
-        log.info(" - number of parallel processes = " + str(parallelization.processes))
-        log.info(" - number of parallel threads per process = " + str(parallelization.threads))
-        log.info(" - number of nodes = " + str(nodes))
-        log.info(" - number of requested processors per node = " + str(ppn))
-
-        # Calculate the expected walltime for this number of processors if a scheduling system is used
-        if self.scheduler:
-            walltime = self.estimate_walltime(parallelization.processes, parallelization.threads)
-            log.info(" - expected walltime: " + str(walltime) + " seconds")
-        else: walltime = None
+        log.debug(" - total number of processing cores = " + str(parallelization.cores))
+        log.debug(" - number of parallel processes = " + str(parallelization.processes))
+        log.debug(" - number of parallel threads per process = " + str(parallelization.threads))
+        log.debug(" - number of nodes = " + str(nodes))
+        log.debug(" - number of requested processors per node = " + str(ppn))
 
         # Add an entry to the simulations info table
-        self.info_table_simulations.add_row([definition.name, parallelization.cores, parallelization.processes, parallelization.threads, nodes, ppn])
+        self.info_table.add_row([definition.name, parallelization.cores, parallelization.processes, parallelization.threads, nodes, ppn])
 
-        # Run the simulation
-        scheduling_options = None
+        # Add the simulation to the queue
+        self.launcher.add_to_queue(definition, definition.name, parallelization)
+
+        # Set the scheduling options if necessary
         if self.scheduler:
+
+            # Calculate the expected walltime for this number of processors if a scheduling system is used
+            # Estimate the walltime
+            runtime = self.estimate_runtime(parallelization)
+            log.info(" - expected runtime: " + str(runtime) + " seconds")
 
             # Create the job script. The name of the script indicates the mode in which we run this scaling test and
             # the current number of processors used. We enable the SKIRT verbose logging mode to be able to compare
@@ -606,7 +576,7 @@ class ScalingTest(Configurable):
             # processes to end up on different nodes or the SKIRT processes sensing interference from other programs,
             # we set the 'fullnode' flag to True, which makes sure we always request at least one full node, even when
             # the current number of processors is less than the number of cores per node
-            jobscript_path = fs.join(self.temp_path_run, "job_" + str(parallelization.cores) + ".sh")
+            jobscript_path = fs.join(self.run_paths.temp, "job_" + str(parallelization.cores) + ".sh")
 
             # Create a SchedulingOptions instance
             scheduling_options = SchedulingOptions()
@@ -614,118 +584,36 @@ class ScalingTest(Configurable):
             # Adjust the scheduling options
             scheduling_options.nodes = nodes
             scheduling_options.ppn = ppn
-            scheduling_options.walltime = walltime
+            scheduling_options.walltime = runtime
             scheduling_options.local_jobscript_path = jobscript_path
             scheduling_options.mail = False
             scheduling_options.full_node = True
 
-        # Add the simulation to the queue
-        self.launcher.add_to_queue(definition, definition.name, parallelization)
-
-        # TODO: do something with the scheduling options
+            # Set scheduling options (for the different remote hosts with a scheduling system)
+            self.launcher.set_scheduling_options(self.config.remote, definition.name, scheduling_options)
 
     # -----------------------------------------------------------------
 
-    def estimate_walltime(self, processes, threads, factor=1.2):
+    def estimate_runtime(self, parallelization):
 
         """
-        This function estimates the total runtime (walltime) for the current simulation, number of processors,
-        system and parallelization mode. This function takes the following arguments:
-        :param processes: the number of processes used for this run of the simulation
-        :param threads: the number of threads used for this run of the simulation
-        :param factor: this optional argument determines how much the upper limit on the walltime should deviate from
-            a previous run of the same simulation.
+        This function ...
+        :param parallelization:
         :return:
         """
 
-        processors = processes * threads
+        # Inform the user
+        log.info("Estimating the walltime for the simulation ...")
 
-        # Create a dictionary to contain the paths to timeline data files found for the ski file,
-        # indexed on (system_name, mode, processors)
-        timeline_paths = defaultdict(list)
+        # Get, for this scaling run,
+        #  - the number of photon packages
+        #  - the number of wavelengths
+        #  - the number of dust cells (?)
 
-        # Recursively search for files contained in the result directory
-        for file_path, file_name in fs.files_in_path(self.result_path, contains="timeline", extension="dat", returns=["path", "name"], recursive=True):
+        # Estimate the runtime for the configured remote host and the simulation properties
+        runtime = self.estimator.runtime_for(self.config.remote, packages, parallelization)
 
-            # Get the path to the directory where this timeline.dat file is in
-            dir_path = fs.directory_of(file_path)
-            dir_of_dir_path = fs.directory_of(dir_path)
-            dir_of_dir_of_dir_path = fs.directory_of(dir_path)
-
-            # Get properties of scaling test run
-            processors = int(fs.name(dir_path))
-            scaling_run_name = fs.name(dir_of_dir_path)
-            system_name = fs.name(dir_of_dir_of_dir_path)
-            mode = scaling_run_name.split("_")[0]
-
-            # Add the timeline file path to the dictionary
-            timeline_paths[(system_name, mode, processors)].append(file_path)
-
-        # 1. Try to find an extracted timeline for the system and parallelization mode of this run and the current
-        #    number of processors
-        key = (self.remote.system_name, self.mode_info, processors)
-        if key in timeline_paths:
-
-            # Create a TimeLineExtractor instance (from the first timeline file in the list)
-            extractor = TimeLineExtractor.open_table(timeline_paths[key][0])
-
-            # Return the total runtime (multiplied by the specified factor)
-            return extractor.total * factor
-
-        # 2. Try to find an extracted timeline for the system of this run and the current number of processors, but
-        #    a different parallelization mode
-        for key in timeline_paths:
-
-            # Check whether the system name and number of processors in the key correspond to those of the current scaling test run
-            if key[0] == self.remote.system_name and key[2] == processors:
-
-                # Create a TimeLineExtractor instance (from the first timeline file in the list)
-                extractor = TimeLineExtractor.open_table(timeline_paths[key][0])
-
-                # Return the total runtime (multiplied by the specified factor)
-                return extractor.total * factor
-
-        # 3. Try to find an extracted timeline for the current number of processors, but for a different system
-        for key in timeline_paths:
-
-            # Check whether the number of processors in the key corresponds to the current one
-            if key[2] == processors:
-
-                # Create a TimeLineExtractor instance (from the first timeline file in the list)
-                extractor = TimeLineExtractor.open_table(timeline_paths[key][0])
-
-                # Return the total runtime (multiplied by the specified factor)
-                return extractor.total * factor
-
-        # 4. Try to find a log file placed next to the ski file used for the scaling test
-        log_file_path = fs.join(self.base_path, self.prefix + "_log.txt")
-        if fs.is_file(log_file_path):
-
-            # Create a SkirtSimulation object
-            simulation = SkirtSimulation(self.prefix, self.input_path, self.base_path)
-
-            # Create a new TimeLineExtractor instance
-            extractor = TimeLineExtractor()
-            extractor.run(simulation)
-
-            # Determine the number of threads and processes for the log file
-            log_processes = simulation.processes()
-            log_threads = simulation.threads()
-
-            # Determine the number of used processors (assuming each single threads was run on a seperate processor)
-            log_processors = log_processes * log_threads
-
-            # Return the estimated total runtime for the current number of processors (assuming the overhead increases linearly with the number of processors)
-            return (extractor.serial + extractor.parallel * log_processors / processors + extractor.overhead / log_processors * processors) * factor
-
-        # 5. Try to estimate the runtime by using the ResourceEstimator class
-        else:
-
-            # Create and run a ResourceEstimator instance
-            estimator = ResourceEstimator()
-            estimator.run(self.arguments.ski_pattern, processes, threads)
-
-            # Return the estimated walltime
-            return estimator.walltime * factor
+        # Return the runtime
+        return runtime
 
 # -----------------------------------------------------------------
