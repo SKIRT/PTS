@@ -193,8 +193,8 @@ class ScalingTest(Configurable):
         # 2. Load (and create) the info tables
         self.load_tables()
 
-        # 2. Perform the simulations as a part of the scaling test
-        self.perform()
+        # 2. Launch the simulations as a part of the scaling test
+        self.launch()
 
     # -----------------------------------------------------------------
 
@@ -484,7 +484,7 @@ class ScalingTest(Configurable):
 
     # -----------------------------------------------------------------
 
-    def perform(self):
+    def launch(self):
 
         """
         This function ...
@@ -502,7 +502,7 @@ class ScalingTest(Configurable):
         while cores <= self.max_cores:
 
             # Perform this run
-            self.launch(cores)
+            self.launch_simulation(cores)
 
             # The next run will be performed with double the amount of cores
             cores *= 2
@@ -532,7 +532,7 @@ class ScalingTest(Configurable):
 
     # -----------------------------------------------------------------
 
-    def launch(self, cores):
+    def launch_simulation(self, cores):
 
         """
         This function performs one simulation of the scaling test with a particular number of processors
@@ -620,7 +620,7 @@ class ScalingTest(Configurable):
             scheduling_options.full_node = True
 
         # Add the simulation to the queue
-        self.launcher.add_to_queue(definition, simulation_name, parallelization)
+        self.launcher.add_to_queue(definition, definition.name, parallelization)
 
         # TODO: do something with the scheduling options
 
@@ -727,45 +727,5 @@ class ScalingTest(Configurable):
 
             # Return the estimated walltime
             return estimator.walltime * factor
-
-# -----------------------------------------------------------------
-
-class MemoryScalingTest(NewConfigurable):
-
-    """
-    This class ...
-    """
-
-    def __init__(self, config=None):
-
-        """
-        The constructor ...
-        :param config:
-        """
-
-        # Call the constructor of the base class
-        super(MemoryScalingTest, self).__init__(config)
-
-        pass
-
-# -----------------------------------------------------------------
-
-class PerformanceScalingTest(NewConfigurable):
-
-    """
-    This class ...
-    """
-
-    def __init__(self, config=None):
-
-        """
-        The constructor ...
-        :param config:
-        """
-
-        # Call the constructor of the base class
-        super(PerformanceScalingTest, self).__init__(config)
-
-        pass
 
 # -----------------------------------------------------------------
