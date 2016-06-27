@@ -51,6 +51,10 @@ class BatchLauncher(Configurable):
         # Initialize a list to contain different SkirtRemote instances for the different remote hosts
         self.remotes = []
 
+        # For some remote hosts, if they use a scheduling system, defines the name of the cluster to be used
+        # (the default cluster will be used if not defined)
+        self.cluster_names = dict()
+
         # The queue
         self.queue = []
 
@@ -117,6 +121,19 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def set_cluster_for_host(self, host_id, cluster_name):
+
+        """
+        This function ...
+        :param host_id:
+        :param cluster_name:
+        :return:
+        """
+
+        self.cluster_names[host_id] = cluster_name
+
+    # -----------------------------------------------------------------
+
     def set_scheduling_options(self, host_id, name, options):
 
         """
@@ -170,6 +187,20 @@ class BatchLauncher(Configurable):
         """
 
         return len(self.extra_queue)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if len(self.remotes) == 0: raise RuntimeError("The setup has not been called yet")
+        elif len(self.remotes) == 1: return self.remotes[0]
+        else: raise RuntimeError("Multiple remotes have been configured for this batch launcher")
 
     # -----------------------------------------------------------------
 
@@ -418,6 +449,9 @@ class BatchLauncher(Configurable):
         # Clear the list of remotes
         self.remotes = []
 
+        # Clear the cluster names
+        self.cluster_names = dict()
+
         # Clear the queue
         self.queue = []
 
@@ -448,6 +482,22 @@ class BatchLauncher(Configurable):
         # Call the setup function of the base class
         super(BatchLauncher, self).setup()
 
+        # Setup the remote instances
+        if len(self.remotes) == 0: self.setup_remotes()
+
+        # Create the logging options
+        self.logging_options = LoggingOptions()
+        self.logging_options.set_options(self.config.logging)
+
+    # -----------------------------------------------------------------
+
+    def setup_remotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # If a list of remotes is defined
         if self.config.remotes is not None: host_ids = self.config.remotes
 
@@ -460,15 +510,14 @@ class BatchLauncher(Configurable):
             # Create a remote SKIRT execution context
             remote = SkirtRemote()
 
+            # Check whether a cluster name is defined
+            cluster_name = self.cluster_names[host_id] if host_id in self.cluster_names else None
+
             # Setup the remote for the specified host
-            remote.setup(host_id)
+            remote.setup(host_id, cluster=cluster_name)
 
             # Add the remote to the list of remote objects
             self.remotes.append(remote)
-
-        # Create the logging options
-        self.logging_options = LoggingOptions()
-        self.logging_options.set_options(self.config.logging)
 
     # -----------------------------------------------------------------
 
@@ -672,6 +721,7 @@ class BatchLauncher(Configurable):
 
             # Set the screen name for all of the simulation objects
             for simulation in simulations_remote:
+
                 simulation.screen_name = screen_name
                 simulation.remote_screen_output_path = screen_output_path
                 simulation.save()

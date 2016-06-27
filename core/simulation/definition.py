@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.simulation.definition Contains the SingleSimulationDefinition class.
+## \package pts.core.simulation.definition Contains the SingleSimulationDefinition and MultiSimulationDefinition classes.
 
 # -----------------------------------------------------------------
 
@@ -20,13 +20,14 @@ class SingleSimulationDefinition(object):
     This class ...
     """
 
-    def __init__(self, ski_path, input_path, output_path):
+    def __init__(self, ski_path, input_path, output_path, name=None):
 
         """
         The constructor ...
         :param ski_path:
         :param input_path:
         :param output_path:
+        :param name:
         :return:
         """
         
@@ -36,6 +37,9 @@ class SingleSimulationDefinition(object):
         # The input and output paths
         self.input_path = input_path
         self.output_path = output_path
+
+        # A name for this simulation
+        self.name = name
             
     # -----------------------------------------------------------------
 
@@ -63,5 +67,25 @@ class SingleSimulationDefinition(object):
         """
 
         return '<' + self.__class__.__name__ + " ski path: '" + self.ski_path + "'>"
+
+# -----------------------------------------------------------------
+
+class MultiSimulationDefinition(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, base_path, pattern, input_name, output_name, recursive=True):
+
+        """
+        The constructor ...
+        """
+
+        self.base_path = base_path
+        self.pattern = pattern
+        self.input = input_name
+        self.output = output_name
+        self.recursive = recursive
 
 # -----------------------------------------------------------------

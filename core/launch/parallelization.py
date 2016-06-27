@@ -92,7 +92,10 @@ class Parallelization(object):
     def from_mode(cls, mode, cores, threads_per_core, threads_per_process=None):
 
         """
-        This function ...
+        This function calculates the number of processes and the number of threads (per process) for
+        a certain number of cores, depending on the mode of parallelization (pure 'mpi', pure 'threads' or 'hybrid').
+        In other words, this function determines the 'mapping' from a number of cores to an appropriate
+        set of threads and processes.
         :param mode:
         :param cores:
         :param threads_per_core:
@@ -145,6 +148,25 @@ class Parallelization(object):
 
         # Create a new class instance and return it
         return cls(cores, threads_per_core, processes)
+
+    # -----------------------------------------------------------------
+
+    def get_requirements(self, cores_per_node):
+
+        """
+        This function ...
+        :param cores_per_node:
+        :return:
+        """
+
+        # Calculate the necessary amount of nodes
+        nodes = self.cores // cores_per_node + (self.cores % cores_per_node > 0)
+
+        # Determine the number of processors per node
+        ppn = self.cores if nodes == 1 else cores_per_node
+
+        # Return the required number of nodes and cores per node
+        return nodes, ppn
 
     # -----------------------------------------------------------------
 

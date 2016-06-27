@@ -188,9 +188,8 @@ class AnalysisOptions(Options):
         self.memory_table_path = None
 
         # Properties relevant for simulations part of a scaling test
+        self.scaling_path = None
         self.scaling_run_name = None
-        self.scaling_data_file = None
-        self.scaling_plot_path = None
 
         # Properties relevant for simulations part of radiative transfer modeling
         self.modeling_path = None
