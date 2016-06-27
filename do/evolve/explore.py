@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.evolve.example Example of using the 'evolve' subpackage for genetic algorithms.
+## \package pts.do.evolve.explore Do first model exploration for GA test.
 
 # -----------------------------------------------------------------
 
@@ -20,6 +20,8 @@ from pts.evolve.genomes.list1d import G1DList
 from pts.evolve import mutators
 from pts.evolve import initializators
 from pts.evolve import constants
+from pts.core.tools.logging import log
+from pts.core.tools import time
 
 # -----------------------------------------------------------------
 
@@ -30,6 +32,9 @@ path = fs.join(fs.cwd(), "ga.pickle")
 parameters_path = fs.join(fs.cwd(), "parameters.dat")
 
 # -----------------------------------------------------------------
+
+# Inform the user
+log.info("Creating the GA ...")
 
 # Genome instance
 genome = G1DList(2)
@@ -48,31 +53,31 @@ ga.setCrossoverRate(0.5)
 ga.setPopulationSize(100)
 ga.setMutationRate(0.5)
 
-# ga.initialize_evolution()
-
+# Initialize the genetic algorithm
 ga.initialize()
 
+name_column = []
 par_a_column = []
 par_b_column = []
-#par_c_column = []
 
 pop = ga.internalPop
 for ind in pop:
 
-    #print(ind.genomeList)
-
+    # Give the individual a unique name
+    name = time.unique_name(precision="micro")
+    name_column.append(name)
     par_a_column.append(ind.genomeList[0])
     par_b_column.append(ind.genomeList[1])
 
-#data = [par_a_column, par_b_column, par_c_column]
-#names = ["Parameter a", "Parameter b", "Parameter c"]
-data = [par_a_column, par_b_column]
-names = ["Parameter a", "Parameter b"]
-
+# Create the parameters table
+data = [name_column, par_a_column, par_b_column]
+names = ["Unique name", "Parameter a", "Parameter b"]
 parameters_table = tables.new(data, names)
 
 # Save the genetic algorithm
 ga.saveto(path)
+
+print("Current generation: ", ga.currentGeneration)
 
 # Save the parameter table
 tables.write(parameters_table, parameters_path, format="ascii.ecsv")

@@ -46,7 +46,8 @@ class GenomeBase(object):
 
    def getRawScore(self):
 
-      """ Get the Raw Score of the genome
+      """
+      Get the Raw Score of the genome
       :rtype: genome raw score
       """
 
@@ -55,17 +56,20 @@ class GenomeBase(object):
    # -----------------------------------------------------------------
 
    def getFitnessScore(self):
-      """ Get the Fitness Score of the genome
-
-      :rtype: genome fitness score
 
       """
+      Get the Fitness Score of the genome
+      :rtype: genome fitness score
+      """
+
       return self.fitness
 
    # -----------------------------------------------------------------
 
    def __repr__(self):
+
       """String representation of Genome"""
+
       allSlots = [self.evaluator, self.initializator, self.mutator,
                   self.crossover]
 
@@ -87,10 +91,8 @@ class GenomeBase(object):
       """ Set the internal params
       Example:
          >>> genome.setParams(rangemin=0, rangemax=100, gauss_mu=0, gauss_sigma=1)
-
       .. note:: All the individuals of the population shares this parameters and uses
                 the same instance of this dict.
-
       :param args: this params will saved in every chromosome for genetic op. use
       """
 
@@ -104,13 +106,10 @@ class GenomeBase(object):
       Example:
          >>> genome.getParam("rangemax")
          100
-
       .. note:: All the individuals of the population shares this parameters and uses
                 the same instance of this dict.
-
       :param key: the key of param
       :param nvl: if the key doesn't exist, the nvl will be returned
-
       """
 
       return self.internalParams.get(key, nvl)

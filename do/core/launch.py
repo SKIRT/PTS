@@ -14,13 +14,49 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import argparse
 
 # Import the relevant PTS classes and modules
 from pts.core.launch.launcher import SkirtLauncher
 from pts.core.launch.remotelauncher import SkirtRemoteLauncher
 from pts.core.tools import logging, time, parsing
+from pts.core.tools import filesystem as fs
+from pts.core.basics.configuration import Configuration
+
+# -----------------------------------------------------------------
+
+# TODO: work on this further
+
+# Create the configuration
+config = Configuration()
+
+# Add required arguments
+config.add_required("filename", "absolute_path", "the name/path of the ski file")
+
+# Add positional arguments
+config.add_positional_optional("remote", str, "the remote host on which to run the simulation (if none is specified, the simulation is run locally")
+config.add_optional("input", "absolute_path", "the simulation input directory", letter="i")
+config.add_optional("output", "absolute_path", "the simulation output directory", letter="o")
+config.add_optional("cluster", str, "the name of the cluster", letter="c")
+config.add_optional("parallel", "int_tuple", "the parallelization scheme (processes, threads)", letter="p")
+config.add_optional("walltime", "duration", "an estimate for the walltime of the simulation for the specified parallelization scheme")
+
+# Flags
+config.add_flag("relative", "treats the given input and output paths as being relative to the ski/fski file")
+config.add_flag("brief", "enable brief console logging", letter="b")
+config.add_flag("verbose", "enable verbose logging", letter="v")
+config.add_flag("memory", "enable memory logging", letter="m")
+config.add_flag("allocation", "enable memory (de)allocation logging", letter="a")
+config.add_flag("emulate", "emulate the simulation while limiting computation", letter="e")
+
+config.add_section("extraction")
+
+config.add_section("plotting")
+
+config.add_section("misc")
+
+# Read the configuration settings from the provided command-line arguments
+config.read()
 
 # -----------------------------------------------------------------
 
@@ -67,16 +103,16 @@ arguments = parser.parse_args()
 # -----------------------------------------------------------------
 
 # Determine the full path to the parameter file
-arguments.filepath = os.path.abspath(arguments.file)
+arguments.filepath = fs.absolute(arguments.file)
 
 # Determine the full path to the input and output directories
-if arguments.input is not None: arguments.input_path = os.path.abspath(arguments.input)
-if arguments.output is not None: arguments.output_path = os.path.abspath(arguments.output)
+if arguments.input is not None: arguments.input_path = fs.absolute(arguments.input)
+if arguments.output is not None: arguments.output_path = fs.absolute(arguments.output)
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = os.path.join(os.getcwd(), time.unique_name("launch") + ".txt") if arguments.report else None
+logfile_path = fs.join(fs.cwd(), time.unique_name("launch") + ".txt") if arguments.report else None
 
 # Determine the log level
 level = "DEBUG" if arguments.debug else "INFO"
@@ -87,22 +123,11 @@ log.start("Starting launch ...")
 
 # -----------------------------------------------------------------
 
-# If the parameter file describes a SKIRT simulation
-if arguments.filepath.endswith(".ski"):
+# Either create a SkirtRemoteLauncher or a SkirtLauncher
+if arguments.remote: launcher = SkirtRemoteLauncher.from_arguments(arguments)
+else: launcher = SkirtLauncher.from_arguments(arguments)
 
-    # Either create a SkirtRemoteLauncher or a SkirtLauncher
-    if arguments.remote: launcher = SkirtRemoteLauncher.from_arguments(arguments)
-    else: launcher = SkirtLauncher.from_arguments(arguments)
-
-    # Run the launcher (the simulation is performed locally or remotely depending on which launcher is used)
-    launcher.run()
-
-# If the parameter file describes a FitSKIRT simulation
-elif arguments.filepath.endswith(".fski"):
-
-    raise ValueError("Launching FitSkirt simulations is not supported yet")
-
-# If the parameter file has a different extension
-else: raise argparse.ArgumentError(arguments.filepath, "The parameter file is not a ski or fski file")
+# Run the launcher (the simulation is performed locally or remotely depending on which launcher is used)
+launcher.run()
 
 # -----------------------------------------------------------------

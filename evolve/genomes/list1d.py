@@ -29,6 +29,14 @@ from .. import constants
 
 # -----------------------------------------------------------------
 
+#class HeterogeneousList(G1DBase):
+#
+#    """
+#    This function ...
+#    """
+
+
+
 class G1DList(G1DBase):
 
     """ G1DList Class - The 1D List chromosome representation

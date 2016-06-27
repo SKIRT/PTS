@@ -113,19 +113,49 @@ def timestamp():
 
 # -----------------------------------------------------------------
 
-def unique_name(name=None, separator="_"):
+def day_and_time_as_string():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
+
+# -----------------------------------------------------------------
+
+def unique_name(name=None, separator="_", precision="milli"):
 
     """
     This function ...
     :param name:
     :param separator:
+    :param precision:
     :return:
     """
 
-    if name is None: return datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f")[:-3]
+    if precision == "milli" or precision == "millisecond": ndigits = 3
+    elif precision == "micro" or precision == "microsecond": ndigits = 0
+    else: raise ValueError("Invalid precision")
+
+    if name is None: return strip_last_digits(datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f"), ndigits)
     else:
 
         # Add a timestamp accurate up to the millisecond to the passed name
-        return name + separator + datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f")[:-3]
+        return name + separator + strip_last_digits(datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f"), ndigits)
+
+# -----------------------------------------------------------------
+
+def strip_last_digits(string, ndigits):
+
+    """
+    This function ...
+    :param string:
+    :param ndigits:
+    :return:
+    """
+
+    if ndigits == 0: return string
+    else: return string[:-ndigits]
 
 # -----------------------------------------------------------------

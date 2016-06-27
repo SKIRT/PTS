@@ -126,7 +126,7 @@ class Configuration(object):
 
     # -----------------------------------------------------------------
 
-    def add_positional_optional(self, name, user_type, description, default, to_instance=True):
+    def add_positional_optional(self, name, user_type, description, default=None, to_instance=True):
 
         """
         This function ...
@@ -152,7 +152,7 @@ class Configuration(object):
 
     # -----------------------------------------------------------------
 
-    def add_optional(self, name, user_type, description, default, to_instance=True):
+    def add_optional(self, name, user_type, description, default=None, to_instance=True, letter=None):
 
         """
         This function ...
@@ -161,6 +161,7 @@ class Configuration(object):
         :param description:
         :param default:
         :param to_instance:
+        :param letter:
         :return:
         """
 
@@ -171,14 +172,15 @@ class Configuration(object):
         default = get_real_value(default, user_type)
 
         # Add the argument
-        self.parser.add_argument("--" + name, type=real_type, help=description, default=default)
+        if letter is None: self.parser.add_argument("--" + name, type=real_type, help=description, default=default)
+        else: self.parser.add_argument("-" + letter, "--" + name, type=real_type, help=description, default=default)
 
         # To instance
         if to_instance: self.to_instance.append(name)
 
     # -----------------------------------------------------------------
 
-    def add_flag(self, name, description, to_instance=True):
+    def add_flag(self, name, description, to_instance=True, letter=None):
 
         """
         This function ...
@@ -189,7 +191,8 @@ class Configuration(object):
         """
 
         # Add the argument
-        self.parser.add_argument("--" + name, action="store_true", help=description)
+        if letter is None: self.parser.add_argument("--" + name, action="store_true", help=description)
+        else: self.parser.add_argument("-" + letter, "--" + name, action="store_true", help=description)
 
         # To instance
         if to_instance: self.to_instance.append(name)

@@ -192,6 +192,43 @@ def G1DListMutatorRealRange(genome, **args):
 
 # -----------------------------------------------------------------
 
+def HeterogeneousListMutatorRealRange(genome, **args):
+
+    """
+    Real range mutator for HeterogeneousList
+    :param genome:
+    :param args:
+    :return:
+    """
+
+    if args["pmut"] <= 0.0:
+        return 0
+
+    listSize = len(genome)
+    mutations = args["pmut"] * (listSize)
+
+    if mutations < 1.0:
+
+        mutations = 0
+        for it in xrange(listSize):
+
+            if utils.randomFlipCoin(args["pmut"]):
+
+                genome[it] = rand_uniform(genome.getParam("minima")[it], genome.getParam("maxima")[it])
+                mutations += 1
+
+    else:
+
+        for it in xrange(int(round(mutations))):
+
+            which_gene = rand_randint(0, listSize - 1)
+
+            genome[which_gene] = rand_uniform(genome.getParam("minima")[which_gene], genome.getParam("maxima")[which_gene])
+
+    return int(mutations)
+
+# -----------------------------------------------------------------
+
 def G1DListMutatorIntegerGaussianGradient(genome, **args):
 
    """ A gaussian mutator for G1DList of Integers
@@ -286,7 +323,8 @@ def G1DListMutatorIntegerGaussian(genome, **args):
 
 def G1DListMutatorRealGaussian(genome, **args):
 
-   """ The mutator of G1DList, Gaussian Mutator
+   """
+   The mutator of G1DList, Gaussian Mutator
    Accepts the *rangemin* and *rangemax* genome parameters, both optional. Also
    accepts the parameter *gauss_mu* and the *gauss_sigma* which respectively
    represents the mean and the std. dev. of the random distribution.

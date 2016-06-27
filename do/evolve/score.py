@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.evolve.example Example of using the 'evolve' subpackage for genetic algorithms.
+## \package pts.do.evolve.score Set scores for GA test.
 
 # -----------------------------------------------------------------
 
@@ -14,14 +14,16 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
 
 # Import the relevant PTS classes and modules
-from pts.evolve.simplega import GSimpleGA, RawScoreCriteria
-from pts.core.tools import serialization
 from pts.core.tools import filesystem as fs
 from pts.core.tools import tables
 
 # -----------------------------------------------------------------
+
+x = np.linspace(12,25,100)
 
 test_data_x = [20., 16., 19.79999924, 18.39999962, 17.10000038, 15.5, 14.69999981, 17.10000038, 15.39999962,
                16.20000076,
@@ -31,88 +33,134 @@ test_data_y = [88.59999847, 71.59999847, 93.30000305, 84.30000305, 80.59999847, 
 
 # -----------------------------------------------------------------
 
+def fit_function(x, a, b):
+
+    """
+    This function ...
+    :param x:
+    :param a:
+    :param b:
+    :return:
+    """
+
+    return a * x + b
+
+# -----------------------------------------------------------------
+
 def chi_squared_function(chromosome):
 
+    """
+    This function calculates the chi-squared value for a certain set of parameters (chromosome)
+    :param chromosome:
+    :return:
+    """
+
     chi_squared = 0.0
-
     for i in range(len(test_data_x)):
-
         x = test_data_x[i]
         y = test_data_y[i]
-
-        chromosome_y = chromosome[0] * x + chromosome[1]
-
+        chromosome_y = fit_function(x, chromosome[0], chromosome[1])
         chi_squared += (y - chromosome_y) ** 2.
-
     chi_squared /= 2.0
-
     return chi_squared
 
 # -----------------------------------------------------------------
 
-# path to the GA object
-path = fs.join(fs.cwd(), "ga.pickle")
+last_generation = None
 
-# Path to the parameters table
-parameters_path = fs.join(fs.cwd(), "parameters.dat")
+# Check the index of the last generation
+for name in fs.directories_in_path():
+    if "ref" in name: continue
+    generation = int(name.split("Generation ")[1])
+    if last_generation is None or generation > last_generation: last_generation = generation
 
 # -----------------------------------------------------------------
 
-# Loda the GA
-ga = GSimpleGA.from_file(path)
+if last_generation is None:
+    generation_path = fs.cwd()
+    print("current generation: the initial population")
+else:
+    generation_path = fs.join(fs.cwd(), "Generation " + str(last_generation))
+    print("Current generation: " + str(last_generation))
+
+# -----------------------------------------------------------------
+
+# Path to the current GA object
+path = fs.join(generation_path, "ga.pickle")
+
+# Path to the parameters table
+parameters_path = fs.join(generation_path, "parameters.dat")
+
+# -----------------------------------------------------------------
 
 # Load the parameters table
-table = tables.from_file(parameters_path,format="ascii.ecsv")
+table = tables.from_file(parameters_path, format="ascii.ecsv")
 
-# Set scores of first population
-index = 0
-for ind in ga.internalPop:
+# -----------------------------------------------------------------
 
-    parameter_a = ind.genomeList[0]
-    parameter_b = ind.genomeList[1]
+names = []
+scores = []
 
+lowest_score = None
+index_lowest = None
+
+for index in range(len(table)):
+
+    # Get the parameter values
     parameter_a_tab = table["Parameter a"][index]
     parameter_b_tab = table["Parameter b"][index]
 
-    #rel_diff_a = abs((parameter_a - parameter_a_tab) / parameter_a)
-    #rel_diff_b = abs((parameter_b - parameter_b_tab) / parameter_b)
-    #print(rel_diff_a, rel_diff_b)
+    # Calculate the score
+    score = chi_squared_function([parameter_a_tab, parameter_b_tab])
 
-    assert np.isclose(parameter_a, parameter_a_tab, rtol=1e-11)
-    assert np.isclose(parameter_b, parameter_b_tab, rtol=1e-11)
+    # Keep track of index of lowest score
+    if lowest_score is None or score < lowest_score:
+        lowest_score = score
+        index_lowest = index
 
-    #assert float(parameter_a) == float(parameter_a_tab), parameter_a - parameter_a_tab
-    #assert float(parameter_b) == float(parameter_b_tab), parameter_b - parameter_b_tab
+    # Add the score to the list
+    name = table["Unique name"][index]
+    names.append(name)
+    scores.append(score)
 
-    # Set the score
-    ind.score = chi_squared_function(ind)
+# Create the chi squared table
+data = [names, scores]
+names = ["Unique name", "Chi-squared"]
+chi_squared_table = tables.new(data, names)
 
-    # Increment the index
-    index += 1
+# Determine the path to the chi squared table
+chi_squared_path = fs.join(generation_path, "chi_squared.dat")
 
-# Dump
-#ga.saveto(path)
+# Write the chi squared table
+tables.write(chi_squared_table, chi_squared_path, format="ascii.ecsv")
 
+# -----------------------------------------------------------------
 
-# Initialize evolution:
-# self.initialize() # done in 'explore'
-# self.internalPop.evaluate()
-# self.internalPop.sort()
+best_parameter_a = table["Parameter a"][index_lowest]
+best_parameter_b = table["Parameter b"][index_lowest]
 
+best_path = fs.join(generation_path, "best.dat")
 
-# Evaluate function of population is just loop over evaluate function of individuals
-# Evaluate function of individual (genome) is just calculating the sum of scores of each target function
+with open(best_path, 'w') as best_file:
+    best_file.write("Parameter a: " + str(best_parameter_a) + "\n")
+    best_file.write("Parameter b: " + str(best_parameter_b) + "\n")
 
+popt, pcov = curve_fit(fit_function, test_data_x, test_data_y)
 
-# newpop = ga.generate_new_population()
-# for ind in newpop: print(ind.genomeList)
+parameter_a_real = popt[0]
+parameter_b_real = popt[1]
 
-#pop = ga.getPopulation()
-#print(pop)
-#best = ga.bestIndividual()
+print("Best parameter a:", best_parameter_a, " REAL:", parameter_a_real)
+print("Best parameter b:", best_parameter_b, " REAL:", parameter_b_real)
 
-#slope, intercept, r_value, p_value, std_err = stats.linregress(test_data_x, test_data_y)
-#print("slope", best[0], "(real:", slope, ")")
-#print("intercept", best[1], "(real:", intercept, ")")
+plt.figure()
+plt.scatter(test_data_x, test_data_y)
+plt.plot(x, [fit_function(best_parameter_a, best_parameter_b, x_i) for x_i in x])
+plt.ylim(65, 95)
+plt.xlim(12,22)
+
+# Save the figure
+plot_path = fs.join(generation_path, "best.pdf")
+plt.savefig(plot_path)
 
 # -----------------------------------------------------------------

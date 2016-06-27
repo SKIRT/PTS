@@ -217,6 +217,9 @@ class GSimpleGA(object):
         self.minimax = constants.minimaxType["maximize"]
         self.elitism = True
 
+        # NEW
+        self.new_population = None
+
         # Adapters
         self.dbAdapter = None
         self.migrationAdapter = None
@@ -723,8 +726,9 @@ class GSimpleGA(object):
         """
 
         # Inform the user
-        log.info("Initializing the GA engine")
+        log.info("Initializing the GA engine ...")
 
+        # Keep track of the time passed
         self.time_init = time()
 
         # Create the first population
@@ -732,8 +736,6 @@ class GSimpleGA(object):
 
         # Initialize the population (initializes all individuals of the population)
         self.internalPop.initialize(ga_engine=self)
-
-        log.debug("The GA Engine was initialized!")
 
     # -----------------------------------------------------------------
 
@@ -765,6 +767,7 @@ class GSimpleGA(object):
         :return:
         """
 
+        # Clone the current internal population
         newPop = GPopulation(self.internalPop)
         log.debug("Population was cloned.")
 
@@ -777,6 +780,7 @@ class GSimpleGA(object):
         crossover_empty = self.select(popID=self.currentGeneration).crossover.isEmpty()
 
         for i in xrange(0, size_iterate, 2):
+
             genomeMom = self.select(popID=self.currentGeneration)
             genomeDad = self.select(popID=self.currentGeneration)
 
@@ -813,21 +817,60 @@ class GSimpleGA(object):
             newPop.internalPop.append(sister)
 
         # Return the new population
-        return newPop
+        #return newPop
+
+        # NEW
+        self.new_population = newPop
 
     # -----------------------------------------------------------------
 
     def step(self):
 
-        """ Just do one step in evolution, one generation """
+        """
+        This function performs one step in the evolution, i.e. one generation
+        """
 
-        # Generate the new population
-        newPop = self.generate_new_population()
+        # Inform the user
+        log.info("Performing step in the evolutionary process ...")
+
+        # Generate the new population ## NEW
+        self.generate_new_population()
 
         # Evaluate
-        newPop.evaluate()
+        self.new_population.evaluate()
 
         # Elitism:
+        if self.elitism: self.do_elitism(self.new_population)
+
+        # Set the new population as the internal population and sort it
+        self.internalPop = self.new_population
+        self.internalPop.sort()
+
+        ### NEW
+        self.new_population = None
+
+        log.success("The generation %d was finished.", self.currentGeneration)
+
+        # Increment the current generation number
+        self.currentGeneration += 1
+
+        if self.max_time:
+           total_time = time() - self.time_init
+           if total_time > self.max_time:
+              return True
+
+        return self.currentGeneration == self.nGenerations
+
+    # -----------------------------------------------------------------
+
+    def do_elitism(self, new_population):
+
+        """
+        This function ...
+        :param new_population:
+        :return:
+        """
+
         # Elitism concept has different meanings for metaheuristic and particular for GA. In general, elitism
         # is related with memory: "remember the best solution found" (kind of greedying). In the most traditional way,
         # for evolutionary algorithms (GA, EA, DE...), elitism implies the best solution found is used for to build the
@@ -839,47 +882,39 @@ class GSimpleGA(object):
         # This can sometimes have a dramatic impact on performance by ensuring that the EA does not waste time
         # re-discovering previously discarded partial solutions. Candidate solutions that are preserved unchanged
         # through elitism remain eligible for selection as parents when breeding the remainder of the next generation.
-        if self.elitism:
 
-            log.debug("Doing elitism.")
+        log.debug("Doing elitism ...")
 
-            if self.getMinimax() == constants.minimaxType["maximize"]:
-                for i in xrange(self.nElitismReplacement):
-                    #re-evaluate before being sure this is the best
-                    self.internalPop.bestRaw(i).evaluate()
-                    if self.internalPop.bestRaw(i).score > newPop.bestRaw(i).score:
-                        newPop[len(newPop) - 1 - i] = self.internalPop.bestRaw(i)
-            elif self.getMinimax() == constants.minimaxType["minimize"]:
-                for i in xrange(self.nElitismReplacement):
-                    #re-evaluate before being sure this is the best
-                    self.internalPop.bestRaw(i).evaluate()
-                    if self.internalPop.bestRaw(i).score < newPop.bestRaw(i).score:
-                        newPop[len(newPop) - 1 - i] = self.internalPop.bestRaw(i)
+        if self.getMinimax() == constants.minimaxType["maximize"]:
 
-        self.internalPop = newPop
-        self.internalPop.sort()
+            for i in xrange(self.nElitismReplacement):
 
-        log.debug("The generation %d was finished.", self.currentGeneration)
+                ##re-evaluate before being sure this is the best
+                # self.internalPop.bestRaw(i).evaluate() # IS THIS REALLY NECESSARY ?
 
-        self.currentGeneration += 1
+                if self.internalPop.bestRaw(i).score > new_population.bestRaw(i).score:
+                    new_population[len(new_population) - 1 - i] = self.internalPop.bestRaw(i)
 
-        if self.max_time:
-           total_time = time() - self.time_init
-           if total_time > self.max_time:
-              return True
-        return self.currentGeneration == self.nGenerations
+        elif self.getMinimax() == constants.minimaxType["minimize"]:
+
+            for i in xrange(self.nElitismReplacement):
+
+                ##re-evaluate before being sure this is the best
+                # self.internalPop.bestRaw(i).evaluate() # IS THIS REALLY NECESSARY ?
+
+                if self.internalPop.bestRaw(i).score < new_population.bestRaw(i).score:
+                    new_population[len(new_population) - 1 - i] = self.internalPop.bestRaw(i)
 
     # -----------------------------------------------------------------
 
     def printStats(self):
 
         """ Print generation statistics
-
         :rtype: the printed statistics as string
-
         .. versionchanged:: 0.6
            The return of *printStats* method.
         """
+
         percent = self.currentGeneration * 100 / float(self.nGenerations)
         message = "Gen. %d (%.2f%%):" % (self.currentGeneration, percent)
         log.info(message)
@@ -893,7 +928,10 @@ class GSimpleGA(object):
 
     def printTimeElapsed(self):
 
-        """ Shows the time elapsed since the begin of evolution """
+        """
+        Shows the time elapsed since the begin of evolution
+        """
+
         total_time = time() - self.time_init
         print("Total time elapsed: %.3f seconds." % total_time)
         return total_time
@@ -902,7 +940,10 @@ class GSimpleGA(object):
 
     def dumpStatsDB(self):
 
-        """ Dumps the current statistics to database adapter """
+        """
+        Dumps the current statistics to database adapter
+        """
+
         log.debug("Dumping stats to the DB Adapter")
         self.internalPop.statistics()
         self.dbAdapter.insert(self)
