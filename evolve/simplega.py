@@ -739,6 +739,38 @@ class GSimpleGA(object):
 
     # -----------------------------------------------------------------
 
+    def load_scores(self, scores):
+
+        """
+        This function ...
+        :param scores:
+        :return:
+        """
+
+        if self.new_population is not None:
+
+            index = 0
+            for ind in self.new_population:
+
+                # Set the score
+                ind.score = scores[index]
+
+                # Increment the index
+                index += 1
+
+        else:
+
+            index = 0
+            for ind in self.internalPop:
+
+                # Set the score
+                ind.score = scores[index]
+
+                # Increment the index
+                index += 1
+
+    # -----------------------------------------------------------------
+
     def getPopulation(self):
 
         """ Return the internal population of GA Engine
