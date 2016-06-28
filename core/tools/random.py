@@ -18,10 +18,18 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from . import serialization
+from .logging import log
 
 # -----------------------------------------------------------------
 
 # Based on: http://stackoverflow.com/questions/20911147/choose-random-seed-and-save-it
+
+# -----------------------------------------------------------------
+
+# IMPORTANT: (from NumPy docs)
+
+# randint (low[, high, size, dtype])	Return random integers from low (inclusive) to high (exclusive).  # EXCLUSIVE END !
+# random_integers (low[, high, size])	Random integers of type np.int between low and high, inclusive. # INCLUSIVE END !
 
 # -----------------------------------------------------------------
 
@@ -42,6 +50,9 @@ def init_prng(seed=None):
     :return:
     """
 
+    # Inform the user
+    log.info("Initializing the random number generator ...")
+
     global prng
 
     # Create a new random generator
@@ -57,7 +68,13 @@ def setup_prng(seed):
     :return:
     """
 
+    # Inform the user
+    log.info("Seeding the random number generator ...")
+
     prng.seed(seed)
+
+    # Return the instance
+    return prng
 
 # -----------------------------------------------------------------
 
@@ -92,6 +109,9 @@ def save_state(path):
     :return:
     """
 
+    # Inform the user
+    log.info("Saving the state of the random number generator to '" + path + "' ...")
+
     state = prng.get_state()
     serialization.dump(state, path)
 
@@ -104,6 +124,9 @@ def load_state(path):
     :param path:
     :return:
     """
+
+    # Inform the user
+    log.info("Loading the state of the random number generator from '" + path + "' ...")
 
     state = serialization.load(path)
     prng.set_state(state)

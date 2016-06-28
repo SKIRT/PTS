@@ -61,7 +61,8 @@ from ..core.tools.random import prng
 
 def RawScoreCriteria(ga_engine):
 
-    """ Terminate the evolution using the **bestrawscore** and **rounddecimal**
+    """
+    Terminate the evolution using the **bestrawscore** and **rounddecimal**
     parameter obtained from the individual
     Example:
        >>> genome.setParams(bestrawscore=0.00, rounddecimal=2)
@@ -91,7 +92,8 @@ def RawScoreCriteria(ga_engine):
 
 def ConvergenceCriteria(ga_engine):
 
-    """ Terminate the evolution when the population have converged
+    """
+    Terminate the evolution when the population have converged
     Example:
 
        >>> ga_engine.terminationCriteria.set(GSimpleGA.ConvergenceCriteria)
@@ -194,7 +196,7 @@ class SimpleGeneticAlgorithm(object):
     generation.
     """
 
-    def __init__(self, genome, seed=None, interactiveMode=True):
+    def __init__(self, genome, interactiveMode=True):
 
         """ Initializator of GSimpleGA """
 

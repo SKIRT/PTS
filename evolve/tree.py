@@ -215,7 +215,7 @@ def buildGTreeGrow(depth, value_callback, max_siblings, max_depth):
     if depth == max_depth:
         return n
 
-    for i in xrange(prng.randint(0, abs(max_siblings))):
+    for i in xrange(prng.randint(0, abs(max_siblings))): # HERE IT SHOULD BE INCLUSIVE
         child = buildGTreeGrow(depth + 1, value_callback, max_siblings, max_depth)
         child.setParent(n)
         n.addChild(child)
@@ -245,7 +245,7 @@ def buildGTreeFull(depth, value_callback, max_siblings, max_depth):
     if max_siblings < 0:
         range_val = abs(max_siblings)
     else:
-        range_val = prng.randint(1, abs(max_siblings))
+        range_val = prng.randint(1, abs(max_siblings)) # HERE IT SHOULD BE INCLUSIVE
 
     for i in xrange(range_val):
         child = buildGTreeFull(depth + 1, value_callback, max_siblings, max_depth)

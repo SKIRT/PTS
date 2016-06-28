@@ -20,13 +20,14 @@ from ..core.tools.random import prng
 
 def GRankSelector(population, **args):
 
-   """ The Rank Selector - This selector will pick the best individual of
-   the population every time.
-   """
+    """
+    The Rank Selector - This selector will pick the best individual of
+    the population every time.
+    """
 
-   count = 0
+    count = 0
 
-   if args["popID"] != GRankSelector.cachePopID:
+    if args["popID"] != GRankSelector.cachePopID:
       if population.sortType == constants.sortType["scaled"]:
          best_fitness = population.bestFitness().fitness
          for index in xrange(1, len(population.internalPop)):
@@ -41,10 +42,14 @@ def GRankSelector(population, **args):
       GRankSelector.cachePopID = args["popID"]
       GRankSelector.cacheCount = count
 
-   else:
-      count = GRankSelector.cacheCount
+    else: count = GRankSelector.cacheCount
 
-   return population[prng.randint(0, count)]
+    if count == 0: individual = population[0]
+    else: individual = population[prng.randint(0, count)] # HERE IT SHOULD BE INCLUSIVE
+
+    return individual
+
+# -----------------------------------------------------------------
 
 GRankSelector.cachePopID = None
 GRankSelector.cacheCount = None

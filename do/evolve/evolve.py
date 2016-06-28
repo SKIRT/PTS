@@ -20,6 +20,7 @@ from pts.evolve.simplega import SimpleGeneticAlgorithm
 from pts.core.tools import filesystem as fs
 from pts.core.tools import tables
 from pts.core.tools import time
+from pts.core.tools.random import load_state
 
 # -----------------------------------------------------------------
 
@@ -53,6 +54,14 @@ chi_squared_path = fs.join(generation_path, "chi_squared.dat")
 
 # Check whether the generation is scored
 if not fs.is_file(chi_squared_path): raise RuntimeError("The last generation has not been scored yet!")
+
+# Path to the random state
+random_path = fs.join(generation_path, "rndstate.pickle")
+
+# -----------------------------------------------------------------
+
+# Load the random state
+load_state(random_path)
 
 # -----------------------------------------------------------------
 

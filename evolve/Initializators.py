@@ -74,7 +74,7 @@ def G1DListInitializatorInteger(genome, **args):
     range_min = genome.getParam("rangemin", 0)
     range_max = genome.getParam("rangemax", 100)
 
-    genome.genomeList = [prng.randint(range_min, range_max) for i in xrange(genome.getListSize())]
+    genome.genomeList = [prng.randint(range_min, range_max) for i in xrange(genome.getListSize())] # HERE IT SHOULD BE INCLUSIVE
 
 # -----------------------------------------------------------------
 
@@ -122,7 +122,7 @@ def G2DListInitializatorInteger(genome, **args):
     for i in xrange(genome.getHeight()):
         for j in xrange(genome.getWidth()):
             randomInteger = prng.randint(genome.getParam("rangemin", 0),
-                                         genome.getParam("rangemax", 100))
+                                         genome.getParam("rangemax", 100)) # HERE IT SHOULD BE INCLUSIVE
             genome.setItem(i, j, randomInteger)
 
 # -----------------------------------------------------------------
@@ -192,7 +192,7 @@ def GTreeInitializatorInteger(genome, **args):
     range_min = genome.getParam("rangemin", 0)
     range_max = genome.getParam("rangemax", 100)
 
-    lambda_generator = lambda: prng.randint(range_min, range_max)
+    lambda_generator = lambda: prng.randint(range_min, range_max) # HERE IT SHOULD BE INCLUSIVE
 
     method = genome.getParam("method", "grow")
 

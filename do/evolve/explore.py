@@ -22,12 +22,12 @@ from pts.evolve import initializators
 from pts.evolve import constants
 from pts.core.tools.logging import log
 from pts.core.tools import time
+from pts.core.tools.random import setup_prng, save_state
 
 # -----------------------------------------------------------------
 
 seed = 4357
-
-
+prng = setup_prng(seed)
 
 # -----------------------------------------------------------------
 
@@ -51,10 +51,10 @@ genome.mutator.set(mutators.G1DListMutatorRealGaussian)
 #genome.evaluator.set(chi_squared_function)
 
 # Genetic algorithm instance
-ga = SimpleGeneticAlgorithm(genome, seed=4357)
+ga = SimpleGeneticAlgorithm(genome)
 ga.terminationCriteria.set(RawScoreCriteria)
 ga.setMinimax(constants.minimaxType["minimize"])
-ga.setGenerations(20)
+ga.setGenerations(5)
 ga.setCrossoverRate(0.5)
 ga.setPopulationSize(100)
 ga.setMutationRate(0.5)
@@ -87,5 +87,13 @@ print("Current generation: ", ga.currentGeneration)
 
 # Save the parameter table
 tables.write(parameters_table, parameters_path, format="ascii.ecsv")
+
+# -----------------------------------------------------------------
+
+# Path to the random state
+random_path = fs.join(fs.cwd(), "rndstate.pickle")
+
+# Save the state of the random generator
+save_state(random_path)
 
 # -----------------------------------------------------------------

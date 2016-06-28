@@ -27,6 +27,7 @@ from pts.evolve import constants
 from pts.core.tools.logging import log
 from pts.core.tools import time
 from pts.core.tools import filesystem as fs
+from pts.core.tools.random import setup_prng
 
 # -----------------------------------------------------------------
 
@@ -73,6 +74,11 @@ def chi_squared_function(chromosome):
 
 # -----------------------------------------------------------------
 
+seed = 4357
+prng = setup_prng(seed)
+
+# -----------------------------------------------------------------
+
 # Genome instance
 genome = G1DList(2)
 genome.setParams(rangemin=0., rangemax=50., bestrawscore=0.00, rounddecimal=2)
@@ -83,10 +89,10 @@ genome.mutator.set(mutators.G1DListMutatorRealGaussian)
 genome.evaluator.set(chi_squared_function)
 
 # Genetic algorithm instance
-ga = SimpleGeneticAlgorithm(genome, seed=4357)
+ga = SimpleGeneticAlgorithm(genome)
 ga.terminationCriteria.set(RawScoreCriteria)
 ga.setMinimax(constants.minimaxType["minimize"])
-ga.setGenerations(10)
+ga.setGenerations(5)
 ga.setCrossoverRate(0.5)
 ga.setPopulationSize(100)
 ga.setMutationRate(0.5)

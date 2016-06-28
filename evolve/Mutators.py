@@ -49,7 +49,9 @@ def G1DBinaryStringMutatorSwap(genome, **args):
 
 def G1DBinaryStringMutatorFlip(genome, **args):
 
-   """ The classical flip mutator for binary strings """
+   """
+   The classical flip mutator for binary strings
+   """
 
    if args["pmut"] <= 0.0:
       return 0
@@ -114,13 +116,13 @@ def G1DListMutatorSIM(genome, **args):
    if args["pmut"] <= 0.0:
       return 0
 
-   cuts = [prng.randint(0, len(genome)), prng.randint(0, len(genome))]
+   cuts = [prng.randint(0, len(genome)), prng.randint(0, len(genome))] # HERE IT SHOULD BE INCLUSIVE
 
    if cuts[0] > cuts[1]:
       utils.listSwapElement(cuts, 0, 1)
 
    if (cuts[1] - cuts[0]) <= 0:
-      cuts[1] = prng.randint(cuts[0], len(genome))
+      cuts[1] = prng.randint(cuts[0], len(genome)) # HERE IT SHOULD BE INCLUSIVE
 
    if utils.randomFlipCoin(args["pmut"]):
       part = genome[cuts[0]:cuts[1]]
@@ -149,15 +151,15 @@ def G1DListMutatorIntegerRange(genome, **args):
       mutations = 0
       for it in xrange(listSize):
          if utils.randomFlipCoin(args["pmut"]):
-            genome[it] = prng.randint(genome.getParam("rangemin", constants.CDefRangeMin),
-                                      genome.getParam("rangemax", constants.CDefRangeMax))
+            genome[it] = prng.randint(genome.getParam("rangemin", constants.CDefRangeMin), # HERE IT SHOULD BE INCLUSIVE
+                                      genome.getParam("rangemax", constants.CDefRangeMax)) # HERE IT SHOULD BE INCLUSIVE
             mutations += 1
 
    else:
       for it in xrange(int(round(mutations))):
          which_gene = prng.randint(0, listSize - 1)
-         genome[which_gene] = prng.randint(genome.getParam("rangemin", constants.CDefRangeMin),
-                                           genome.getParam("rangemax", constants.CDefRangeMax))
+         genome[which_gene] = prng.randint(genome.getParam("rangemin", constants.CDefRangeMin), # HERE IT SHOULD BE INCLUSIVE
+                                           genome.getParam("rangemax", constants.CDefRangeMax)) # HERE IT SHOULD BE INCLUSIVE
 
    return int(mutations)
 
@@ -585,7 +587,7 @@ def G2DListMutatorIntegerRange(genome, **args):
       for i in xrange(genome.getHeight()):
          for j in xrange(genome.getWidth()):
             if utils.randomFlipCoin(args["pmut"]):
-               random_int = prng.randint(range_min, range_max)
+               random_int = prng.randint(range_min, range_max) # HERE IT SHOULD BE INCLUSIVE
                genome.setItem(i, j, random_int)
                mutations += 1
 
@@ -593,7 +595,7 @@ def G2DListMutatorIntegerRange(genome, **args):
       for it in xrange(int(round(mutations))):
          which_x = prng.randint(0, genome.getWidth() - 1)
          which_y = prng.randint(0, genome.getHeight() - 1)
-         random_int = prng.randint(range_min, range_max)
+         random_int = prng.randint(range_min, range_max) # HERE IT SHOULD BE INCLUSIVE
          genome.setItem(which_y, which_x, random_int)
 
    return int(mutations)
@@ -972,13 +974,13 @@ def GTreeMutatorIntegerRange(genome, **args):
          if utils.randomFlipCoin(args["pmut"]):
             mutations += 1
             rand_node = genome.getRandomNode()
-            random_int = prng.randint(range_min, range_max)
+            random_int = prng.randint(range_min, range_max) # HERE IT SHOULD BE INCLUSIVE
             rand_node.setData(random_int)
 
    else:
       for it in xrange(int(round(mutations))):
          rand_node = genome.getRandomNode()
-         random_int = prng.randint(range_min, range_max)
+         random_int = prng.randint(range_min, range_max) # HERE IT SHOULD BE INCLUSIVE
          rand_node.setData(random_int)
 
    return int(mutations)
